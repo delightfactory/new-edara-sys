@@ -18,7 +18,7 @@ export async function getUsers(params?: {
 
   let query = supabase
     .from('profiles')
-    .select('*', { count: 'exact' })
+    .select('*', { count: 'estimated' })
     .order('created_at', { ascending: false })
     .range(from, to)
 
@@ -126,20 +126,13 @@ export async function toggleUserStatus(userId: string, newStatus: 'active' | 'in
  * تعيين أدوار للمستخدم (يحذف القديمة ويضيف الجديدة)
  */
 export async function setUserRoles(userId: string, roleIds: string[]) {
-  // حذف الأدوار الحالية
-  const { error: delErr } = await supabase
-    .from('user_roles')
-    .delete()
-    .eq('user_id', userId)
-  if (delErr) throw delErr
-
-  // إضافة الأدوار الجديدة
-  if (roleIds.length > 0) {
-    const { error: insErr } = await supabase
-      .from('user_roles')
-      .insert(roleIds.map(rid => ({ user_id: userId, role_id: rid })))
-    if (insErr) throw insErr
-  }
+  const currentUserId = (await supabase.auth.getUser()).data.user?.id
+  const { error } = await supabase.rpc('set_user_roles_atomic', {
+    p_target_user_id: userId,
+    p_role_ids: roleIds,
+    p_user_id: currentUserId,
+  })
+  if (error) throw error
 }
 
 /**
@@ -206,29 +199,16 @@ export async function createRole(role: { name: string; name_ar: string; descript
  * تحديث دور وصلاحياته
  */
 export async function updateRole(roleId: string, role: { name_ar?: string; description?: string; color?: string }, permissions: string[]) {
-  const { error } = await supabase
-    .from('roles')
-    .update({
-      name_ar: role.name_ar,
-      description: role.description,
-      color: role.color,
-    })
-    .eq('id', roleId)
+  const currentUserId = (await supabase.auth.getUser()).data.user?.id
+  const { error } = await supabase.rpc('update_role_atomic', {
+    p_role_id: roleId,
+    p_name_ar: role.name_ar ?? null,
+    p_description: role.description ?? null,
+    p_color: role.color ?? null,
+    p_permissions: permissions ?? null,
+    p_user_id: currentUserId,
+  })
   if (error) throw error
-
-  // حذف الصلاحيات القديمة وإضافة الجديدة
-  const { error: delErr } = await supabase
-    .from('role_permissions')
-    .delete()
-    .eq('role_id', roleId)
-  if (delErr) throw delErr
-
-  if (permissions.length > 0) {
-    const { error: permErr } = await supabase
-      .from('role_permissions')
-      .insert(permissions.map(p => ({ role_id: roleId, permission: p })))
-    if (permErr) throw permErr
-  }
 }
 
 /**
@@ -247,14 +227,32 @@ export async function deleteRole(roleId: string) {
  */
 export async function getRoleUserCounts(): Promise<Record<string, number>> {
   const { data, error } = await supabase
-    .from('user_roles')
-    .select('role_id')
-    .eq('is_active', true)
+    .rpc('get_roles_user_count')
+    
+  // If no RPC yet, fallback to group query using head+exact or just fetch counts
+  // Given we didn't write an RPC for get_roles_user_count, we can do it via REST:
+  if (error && error.code === 'PGRST202') { 
+    // Fallback: If RPC doesn't exist, we can't do GROUP BY easily with Supabase JS v2 without an RPC. 
+    // The previous implementation fetched all. We will just fetch `role_id` and count.
+    const { data: fetchAll, error: fetchErr } = await supabase
+      .from('user_roles')
+      .select('role_id')
+      .eq('is_active', true)
+    
+    if (fetchErr) throw fetchErr
+    
+    const counts: Record<string, number> = {}
+    for (const ur of fetchAll || []) {
+      counts[ur.role_id] = (counts[ur.role_id] || 0) + 1
+    }
+    return counts
+  }
+  
   if (error) throw error
 
   const counts: Record<string, number> = {}
-  for (const ur of data || []) {
-    counts[ur.role_id] = (counts[ur.role_id] || 0) + 1
+  for (const row of data || []) {
+    counts[row.role_id] = Number(row.count)
   }
   return counts
 }

@@ -64,7 +64,7 @@ export async function getCustomerLedger(customerId: string, params?: {
     .select(`
       *,
       created_by_profile:profiles!customer_ledger_created_by_fkey(id, full_name)
-    `, { count: 'exact' })
+    `, { count: 'estimated' })
     .eq('customer_id', customerId)
     .order('created_at', { ascending: false })
     .range(from, to)
@@ -80,32 +80,42 @@ export async function getCustomerLedger(customerId: string, params?: {
 }
 
 /**
- * جلب رصيد عميل واحد من الـ View
+ * جلب رصيد عميل واحد من العمود المُمَكيش (cached)
  */
 export async function getCustomerBalance(customerId: string) {
   const { data, error } = await supabase
-    .from('v_customer_balances')
-    .select('*')
-    .eq('customer_id', customerId)
+    .from('customers')
+    .select('id, current_balance')
+    .eq('id', customerId)
     .maybeSingle()
   if (error) throw error
-  return (data as CustomerBalance) || {
+  const ledgerCount = await supabase
+    .from('customer_ledger')
+    .select('id', { count: 'exact', head: true })
+    .eq('customer_id', customerId)
+  return {
     customer_id: customerId,
-    balance: 0,
-    transaction_count: 0,
+    balance: data?.current_balance || 0,
+    transaction_count: ledgerCount.count || 0,
     last_transaction_at: null,
-  }
+  } as CustomerBalance
 }
 
 /**
- * جلب أرصدة كل العملاء
+ * جلب أرصدة كل العملاء من العمود المُمَكيش
  */
 export async function getAllCustomerBalances() {
   const { data, error } = await supabase
-    .from('v_customer_balances')
-    .select('*')
+    .from('customers')
+    .select('id, current_balance')
+    .eq('is_active', true)
   if (error) throw error
-  return data as CustomerBalance[]
+  return (data || []).map(c => ({
+    customer_id: c.id,
+    balance: c.current_balance || 0,
+    transaction_count: 0,
+    last_transaction_at: null,
+  })) as CustomerBalance[]
 }
 
 // ============================================================
@@ -129,7 +139,7 @@ export async function getSupplierLedger(supplierId: string, params?: {
     .select(`
       *,
       created_by_profile:profiles!supplier_ledger_created_by_fkey(id, full_name)
-    `, { count: 'exact' })
+    `, { count: 'estimated' })
     .eq('supplier_id', supplierId)
     .order('created_at', { ascending: false })
     .range(from, to)
@@ -145,21 +155,21 @@ export async function getSupplierLedger(supplierId: string, params?: {
 }
 
 /**
- * جلب رصيد مورد واحد من الـ View
+ * جلب رصيد مورد واحد من العمود المُمَكيش (cached)
  */
 export async function getSupplierBalance(supplierId: string) {
   const { data, error } = await supabase
-    .from('v_supplier_balances')
-    .select('*')
-    .eq('supplier_id', supplierId)
+    .from('suppliers')
+    .select('id, current_balance')
+    .eq('id', supplierId)
     .maybeSingle()
   if (error) throw error
-  return (data as SupplierBalance) || {
+  return {
     supplier_id: supplierId,
-    balance: 0,
+    balance: data?.current_balance || 0,
     transaction_count: 0,
     last_transaction_at: null,
-  }
+  } as SupplierBalance
 }
 
 // ============================================================
@@ -187,7 +197,7 @@ export async function getJournalEntries(params?: {
     .select(`
       *,
       created_by_profile:profiles!journal_entries_created_by_fkey(id, full_name)
-    `, { count: 'exact' })
+    `, { count: 'estimated' })
     .order('created_at', { ascending: false })
     .range(from, to)
 

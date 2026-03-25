@@ -117,7 +117,7 @@ export async function getCustodyTransactions(custodyId: string, params?: {
       *,
       vault:vaults(id, name, type),
       created_by_profile:profiles!custody_transactions_created_by_fkey(id, full_name)
-    `, { count: 'exact' })
+    `, { count: 'estimated' })
     .eq('custody_id', custodyId)
     .order('created_at', { ascending: false })
     .range(from, to)

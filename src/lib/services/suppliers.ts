@@ -27,7 +27,7 @@ export async function getSuppliers(params?: {
       *,
       governorate:governorates(id, name),
       city:cities(id, name)
-    `, { count: 'exact' })
+    `, { count: 'estimated' })
     .order('created_at', { ascending: false })
     .range(from, to)
 
@@ -169,7 +169,7 @@ export async function getPaymentReminders(params?: {
 
   let query = supabase
     .from('supplier_payment_reminders')
-    .select('*', { count: 'exact' })
+    .select('*', { count: 'estimated' })
     .order('due_date', { ascending: true })
     .range(from, to)
 

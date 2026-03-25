@@ -15,7 +15,6 @@
  */
 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 
 // ─── Services ───
@@ -29,6 +28,10 @@ import {
 import { getVaults, getVaultTransactions } from '@/lib/services/vaults'
 import { getCustodyAccounts, getCustodyTransactions } from '@/lib/services/custody'
 import { getExpenses, getPaymentReceipts, getExpenseCategories } from '@/lib/services/payments'
+import { getUsers, getRoles } from '@/lib/services/users'
+import { getAuditLogs } from '@/lib/services/settings'
+import { getChartOfAccounts, getJournalEntries } from '@/lib/services/finance'
+import { getSuppliers } from '@/lib/services/suppliers'
 
 // ════════════════════════════════════════════
 // 1. REFERENCE DATA — بيانات مرجعية (staleTime: 10 min)
@@ -223,42 +226,63 @@ export function usePaymentReceipts(params?: Parameters<typeof getPaymentReceipts
 }
 
 // ════════════════════════════════════════════
-// 6. REALTIME INVALIDATION — تحديثات فورية
-//    يُبطل الـ cache عند تغيير البيانات في DB
+// 6. SETTINGS & AUTH — الإعدادات والمستخدمين
 // ════════════════════════════════════════════
 
-/**
- * Hook for realtime cache invalidation
- * Usage: useRealtimeInvalidation('expenses', ['expenses'])
- */
-export function useRealtimeInvalidation(
-  table: string,
-  queryKeys: string[],
-  options?: { event?: 'INSERT' | 'UPDATE' | 'DELETE' | '*' }
-) {
-  const queryClient = useQueryClient()
+export function useUsers(params?: Parameters<typeof getUsers>[0]) {
+  return useQuery({
+    queryKey: ['users', params],
+    queryFn: () => getUsers(params),
+  })
+}
 
-  useEffect(() => {
-    const channel = supabase
-      .channel(`realtime-${table}`)
-      .on('postgres_changes', {
-        event: options?.event || '*',
-        schema: 'public',
-        table,
-      }, () => {
-        queryKeys.forEach(key => {
-          queryClient.invalidateQueries({ queryKey: [key] })
-        })
-      })
-      .subscribe()
+export function useRoles() {
+  return useQuery({
+    queryKey: ['roles'],
+    queryFn: getRoles,
+    staleTime: REF_STALE,
+  })
+}
 
-    return () => { supabase.removeChannel(channel) }
-  }, [table, queryClient, ...queryKeys])
+export function useAuditLogs(params?: Parameters<typeof getAuditLogs>[0]) {
+  return useQuery({
+    queryKey: ['audit-logs', params],
+    queryFn: () => getAuditLogs(params),
+  })
 }
 
 // ════════════════════════════════════════════
-// 7. MUTATION HELPERS — مساعدات الكتابة
+// 7. FINANCE EXTENDED — المالية الممتدة
+// ════════════════════════════════════════════
+
+export function useChartOfAccounts() {
+  return useQuery({
+    queryKey: ['chart-of-accounts'],
+    queryFn: getChartOfAccounts,
+    staleTime: REF_STALE, // شجرة الحسابات لا تتغير كثيراً
+  })
+}
+
+export function useJournalEntries(params?: Parameters<typeof getJournalEntries>[0]) {
+  return useQuery({
+    queryKey: ['journal-entries', params],
+    queryFn: () => getJournalEntries(params),
+  })
+}
+
+export function useSuppliers(params?: Parameters<typeof getSuppliers>[0]) {
+  return useQuery({
+    queryKey: ['suppliers', params],
+    queryFn: () => getSuppliers(params),
+  })
+}
+
+// ════════════════════════════════════════════
+// 6. MUTATION HELPERS — مساعدات الكتابة
 //    لإبطال الـ cache بعد عمليات الإضافة/التعديل/الحذف
+//
+// ملاحظة: Realtime invalidation تتم عبر GlobalRealtimeManager
+//         بدلاً من hook لكل صفحة على حدة
 // ════════════════════════════════════════════
 
 /**

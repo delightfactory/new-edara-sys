@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/auth-store'
 import { supabase } from '@/lib/supabase/client'
 import { Users, BoxesIcon, Warehouse, Package } from 'lucide-react'
@@ -11,40 +11,39 @@ interface DashboardStat {
   color: string
 }
 
+async function fetchDashboardStats(): Promise<DashboardStat[]> {
+  const [customersRes, productsRes, warehousesRes, stockRes] = await Promise.all([
+    supabase.from('customers').select('id', { count: 'estimated', head: true }).eq('is_active', true),
+    supabase.from('products').select('id', { count: 'estimated', head: true }).eq('is_active', true),
+    supabase.from('warehouses').select('id', { count: 'estimated', head: true }).eq('is_active', true),
+    supabase.from('stock').select('id', { count: 'estimated', head: true }),
+  ])
+
+  return [
+    { label: 'العملاء النشطون', value: formatNumber(customersRes.count ?? 0), icon: Users, color: 'var(--color-primary)' },
+    { label: 'المنتجات', value: formatNumber(productsRes.count ?? 0), icon: BoxesIcon, color: 'var(--color-success)' },
+    { label: 'المخازن', value: formatNumber(warehousesRes.count ?? 0), icon: Warehouse, color: 'var(--color-warning)' },
+    { label: 'أصناف المخزون', value: formatNumber(stockRes.count ?? 0), icon: Package, color: 'var(--color-info)' },
+  ]
+}
+
 export default function DashboardPage() {
   const profile = useAuthStore(s => s.profile)
-  const [stats, setStats] = useState<DashboardStat[]>([
+
+  const { data: stats, isLoading: loading } = useQuery({
+    queryKey: ['dashboard-stats'],
+    queryFn: fetchDashboardStats,
+    staleTime: 60_000, // 1 minute — dashboard stats don't need real-time precision
+  })
+
+  const defaultStats: DashboardStat[] = [
     { label: 'العملاء النشطون', value: '...', icon: Users, color: 'var(--color-primary)' },
     { label: 'المنتجات', value: '...', icon: BoxesIcon, color: 'var(--color-success)' },
     { label: 'المخازن', value: '...', icon: Warehouse, color: 'var(--color-warning)' },
     { label: 'أصناف المخزون', value: '...', icon: Package, color: 'var(--color-info)' },
-  ])
-  const [loading, setLoading] = useState(true)
+  ]
 
-  useEffect(() => {
-    const loadStats = async () => {
-      try {
-        const [customersRes, productsRes, warehousesRes, stockRes] = await Promise.all([
-          supabase.from('customers').select('id', { count: 'exact', head: true }).eq('is_active', true),
-          supabase.from('products').select('id', { count: 'exact', head: true }).eq('is_active', true),
-          supabase.from('warehouses').select('id', { count: 'exact', head: true }).eq('is_active', true),
-          supabase.from('stock').select('id', { count: 'exact', head: true }),
-        ])
-
-        setStats([
-          { label: 'العملاء النشطون', value: formatNumber(customersRes.count ?? 0), icon: Users, color: 'var(--color-primary)' },
-          { label: 'المنتجات', value: formatNumber(productsRes.count ?? 0), icon: BoxesIcon, color: 'var(--color-success)' },
-          { label: 'المخازن', value: formatNumber(warehousesRes.count ?? 0), icon: Warehouse, color: 'var(--color-warning)' },
-          { label: 'أصناف المخزون', value: formatNumber(stockRes.count ?? 0), icon: Package, color: 'var(--color-info)' },
-        ])
-      } catch {
-        // Silently fail — stats are non-critical
-      } finally {
-        setLoading(false)
-      }
-    }
-    loadStats()
-  }, [])
+  const displayStats = stats || defaultStats
 
   return (
     <div className="page-container animate-enter">
@@ -60,7 +59,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-4 gap-4" style={{ marginBottom: 'var(--space-6)' }}>
-        {stats.map((stat) => (
+        {displayStats.map((stat) => (
           <div key={stat.label} className="stat-card">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span className="stat-card-label">{stat.label}</span>

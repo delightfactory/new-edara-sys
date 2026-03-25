@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Plus, Building2, Edit, MapPin, Phone, ToggleLeft, ToggleRight } from 'lucide-react'
-import { getBranches, createBranch, updateBranch } from '@/lib/services/geography'
-import { getGovernorates, getCities } from '@/lib/services/geography'
+import { createBranch, updateBranch, getCities } from '@/lib/services/geography'
+import { useBranches, useGovernorates, useProfiles } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
-import type { Branch, BranchInput, BranchType, Governorate, City } from '@/lib/types/master-data'
+import type { Branch, BranchInput, BranchType, City } from '@/lib/types/master-data'
 import PageHeader from '@/components/shared/PageHeader'
 import EmptyState from '@/components/shared/EmptyState'
 import Badge from '@/components/ui/Badge'
@@ -14,12 +15,16 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 export default function BranchesPage() {
   const can = useAuthStore(s => s.can)
-  const [branches, setBranches] = useState<Branch[]>([])
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
+
+  // ─── React Query hooks ───
+  const { data: branches = [], isLoading: loading } = useBranches()
+  const { data: governorates = [] } = useGovernorates()
+  const { data: profiles = [] } = useProfiles()
+
+  // ─── Local state (modal-only) ───
   const [modal, setModal] = useState<{ open: boolean; editing?: Branch }>({ open: false })
-  const [governorates, setGovernorates] = useState<Governorate[]>([])
   const [cities, setCities] = useState<City[]>([])
-  const [profiles, setProfiles] = useState<{ id: string; full_name: string }[]>([])
   const [saving, setSaving] = useState(false)
   const [selectedGov, setSelectedGov] = useState('')
   const [confirmTarget, setConfirmTarget] = useState<Branch | null>(null)
@@ -29,24 +34,7 @@ export default function BranchesPage() {
     city_id: null, address: '', phone: '', manager_id: null,
   })
 
-  const load = async () => {
-    setLoading(true)
-    try { setBranches(await getBranches()) }
-    catch { toast.error('فشل تحميل الفروع') }
-    finally { setLoading(false) }
-  }
-
-  useEffect(() => {
-    const init = async () => {
-      const [govs] = await Promise.all([getGovernorates()])
-      setGovernorates(govs)
-      const { data } = await (await import('@/lib/supabase/client')).supabase
-        .from('profiles').select('id, full_name').eq('status', 'active').order('full_name')
-      if (data) setProfiles(data)
-      await load()
-    }
-    init()
-  }, [])
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['branches'] })
 
   const handleGovChange = async (govId: string) => {
     setSelectedGov(govId)
@@ -84,7 +72,7 @@ export default function BranchesPage() {
         toast.success('تم الإنشاء')
       }
       setModal({ open: false })
-      load()
+      invalidate()
     } catch { toast.error('فشلت العملية') }
     finally { setSaving(false) }
   }
@@ -94,7 +82,7 @@ export default function BranchesPage() {
     try {
       await updateBranch(confirmTarget.id, { is_active: !confirmTarget.is_active } as Partial<BranchInput> & { is_active: boolean })
       toast.success(confirmTarget.is_active ? 'تم التعطيل' : 'تم التفعيل')
-      load()
+      invalidate()
     } catch { toast.error('فشلت العملية') }
     finally { setConfirmTarget(null) }
   }

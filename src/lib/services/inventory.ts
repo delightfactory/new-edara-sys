@@ -131,37 +131,22 @@ export async function removeWarehouseManager(id: string) {
 
 /**
  * جلب المخازن المرتبطة بالمستخدم الحالي
- * (عبر warehouse_managers أو warehouses.manager_id)
+ * يستخدم get_my_warehouse_ids() الموجودة في DB بدلاً من 3 استعلامات متتالية
  */
 export async function getMyWarehouses(): Promise<Warehouse[]> {
-  const userId = (await supabase.auth.getUser()).data.user?.id
-  if (!userId) return []
+  // 1. جلب معرفات المخازن عبر الدالة الخادمة (SECURITY DEFINER)
+  const { data: warehouseIds, error: idsError } = await supabase.rpc('get_my_warehouse_ids')
+  if (idsError) throw idsError
 
-  // 1. المخازن عبر warehouse_managers
-  const { data: assignments } = await supabase
-    .from('warehouse_managers')
-    .select('warehouse_id')
-    .eq('profile_id', userId)
+  // الدالة ترجع مصفوفة UUIDs — إذا فارغة = لا مخازن
+  const ids = (warehouseIds as string[]) || []
+  if (!ids.length) return []
 
-  const assignedIds = (assignments || []).map(a => a.warehouse_id)
-
-  // 2. المخازن عبر warehouses.manager_id
-  const { data: ownedWhs } = await supabase
-    .from('warehouses')
-    .select('id')
-    .eq('manager_id', userId)
-
-  const ownedIds = (ownedWhs || []).map(w => w.id)
-
-  // 3. جمع كل المعرفات الفريدة
-  const allIds = [...new Set([...assignedIds, ...ownedIds])]
-  if (!allIds.length) return []
-
-  // 4. جلب البيانات الكاملة
+  // 2. جلب البيانات الكاملة — استعلام واحد
   const { data, error } = await supabase
     .from('warehouses')
     .select('*, branch:branches(id, name), manager:profiles!warehouses_manager_id_fkey(id, full_name)')
-    .in('id', allIds)
+    .in('id', ids)
     .eq('is_active', true)
     .order('name')
 
@@ -233,7 +218,7 @@ export async function getStock(params?: {
       *,
       warehouse:warehouses(id, name, type),
       product:products(id, name, sku, min_stock_level, base_unit:units!products_base_unit_id_fkey(id, name, symbol))
-    `, { count: 'exact' })
+    `, { count: 'estimated' })
     .order('updated_at', { ascending: false })
     .range(from, to)
 
@@ -297,7 +282,7 @@ export async function getStockMovements(params?: {
       warehouse:warehouses(id, name),
       product:products(id, name, sku),
       created_by_profile:profiles!stock_movements_created_by_fkey(id, full_name)
-    `, { count: 'exact' })
+    `, { count: 'estimated' })
     .order('created_at', { ascending: false })
     .range(from, to)
 
@@ -372,7 +357,7 @@ export async function getTransfers(params?: {
         product:products(id, name, sku),
         unit:units(id, name, symbol)
       )
-    `, { count: 'exact' })
+    `, { count: 'estimated' })
     .order('created_at', { ascending: false })
     .range(from, to)
 
@@ -534,7 +519,7 @@ export async function getAdjustments(params?: {
         *,
         product:products(id, name, sku)
       )
-    `, { count: 'exact' })
+    `, { count: 'estimated' })
     .order('created_at', { ascending: false })
     .range(from, to)
 

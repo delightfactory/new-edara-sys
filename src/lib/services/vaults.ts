@@ -104,7 +104,7 @@ export async function getVaultTransactions(vaultId: string, params?: {
     .select(`
       *,
       created_by_profile:profiles!vault_transactions_created_by_fkey(id, full_name)
-    `, { count: 'exact' })
+    `, { count: 'estimated' })
     .eq('vault_id', vaultId)
     .order('created_at', { ascending: false })
     .range(from, to)

@@ -14,13 +14,13 @@ import LoginPage from '@/pages/auth/LoginPage'
 import UnauthorizedPage from '@/pages/auth/UnauthorizedPage'
 import DashboardPage from '@/pages/dashboard/DashboardPage'
 
-// Settings Pages
-import UsersPage from '@/pages/settings/users/UsersPage'
-import UserFormPage from '@/pages/settings/users/UserFormPage'
-import RolesPage from '@/pages/settings/roles/RolesPage'
-import RoleFormPage from '@/pages/settings/roles/RoleFormPage'
-import CompanySettingsPage from '@/pages/settings/company/CompanySettingsPage'
-import AuditLogPage from '@/pages/settings/audit/AuditLogPage'
+// Settings Pages — lazy loaded
+const UsersPage = lazy(() => import('@/pages/settings/users/UsersPage'))
+const UserFormPage = lazy(() => import('@/pages/settings/users/UserFormPage'))
+const RolesPage = lazy(() => import('@/pages/settings/roles/RolesPage'))
+const RoleFormPage = lazy(() => import('@/pages/settings/roles/RoleFormPage'))
+const CompanySettingsPage = lazy(() => import('@/pages/settings/company/CompanySettingsPage'))
+const AuditLogPage = lazy(() => import('@/pages/settings/audit/AuditLogPage'))
 
 // Master Data Pages — lazy loaded
 const ProductsPage = lazy(() => import('@/pages/products/ProductsPage'))
@@ -205,28 +205,28 @@ export default function App() {
 
               {/* Settings */}
               <Route path="settings/users" element={
-                <ProtectedRoute permission="auth.users.read"><UsersPage /></ProtectedRoute>
+                <ProtectedRoute permission="auth.users.read"><Suspense fallback={<LazyFallback />}><UsersPage /></Suspense></ProtectedRoute>
               } />
               <Route path="settings/users/new" element={
-                <ProtectedRoute permission="auth.users.create"><UserFormPage /></ProtectedRoute>
+                <ProtectedRoute permission="auth.users.create"><Suspense fallback={<LazyFallback />}><UserFormPage /></Suspense></ProtectedRoute>
               } />
               <Route path="settings/users/:id/edit" element={
-                <ProtectedRoute permission="auth.users.update"><UserFormPage /></ProtectedRoute>
+                <ProtectedRoute permission="auth.users.update"><Suspense fallback={<LazyFallback />}><UserFormPage /></Suspense></ProtectedRoute>
               } />
               <Route path="settings/roles" element={
-                <ProtectedRoute permission="auth.roles.read"><RolesPage /></ProtectedRoute>
+                <ProtectedRoute permission="auth.roles.read"><Suspense fallback={<LazyFallback />}><RolesPage /></Suspense></ProtectedRoute>
               } />
               <Route path="settings/roles/new" element={
-                <ProtectedRoute permission="auth.roles.create"><RoleFormPage /></ProtectedRoute>
+                <ProtectedRoute permission="auth.roles.create"><Suspense fallback={<LazyFallback />}><RoleFormPage /></Suspense></ProtectedRoute>
               } />
               <Route path="settings/roles/:id/edit" element={
-                <ProtectedRoute permission="auth.roles.update"><RoleFormPage /></ProtectedRoute>
+                <ProtectedRoute permission="auth.roles.update"><Suspense fallback={<LazyFallback />}><RoleFormPage /></Suspense></ProtectedRoute>
               } />
               <Route path="settings/company" element={
-                <ProtectedRoute permission="settings.read"><CompanySettingsPage /></ProtectedRoute>
+                <ProtectedRoute permission="settings.read"><Suspense fallback={<LazyFallback />}><CompanySettingsPage /></Suspense></ProtectedRoute>
               } />
               <Route path="settings/audit" element={
-                <ProtectedRoute permission="settings.audit.read"><AuditLogPage /></ProtectedRoute>
+                <ProtectedRoute permission="settings.audit.read"><Suspense fallback={<LazyFallback />}><AuditLogPage /></Suspense></ProtectedRoute>
               } />
             </Route>
 

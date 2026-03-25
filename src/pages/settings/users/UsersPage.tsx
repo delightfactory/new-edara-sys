@@ -1,45 +1,33 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Plus, Search, UserCog, KeyRound, Ban, CheckCircle, Loader2 } from 'lucide-react'
-import { getUsers, toggleUserStatus, getRoles } from '@/lib/services/users'
+import { toggleUserStatus } from '@/lib/services/users'
 import { adminResetPassword } from '@/lib/services/auth'
+import { useUsers, useRoles } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
-import type { UserWithRoles, Role } from '@/lib/types/auth'
+import type { UserWithRoles } from '@/lib/types/auth'
 
 export default function UsersPage() {
   const navigate = useNavigate()
   const can = useAuthStore(s => s.can)
-  const [users, setUsers] = useState<UserWithRoles[]>([])
-  const [roles, setRoles] = useState<Role[]>([])
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
+
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [roleFilter, setRoleFilter] = useState('')
   const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
   const [resetModal, setResetModal] = useState<string | null>(null)
   const [newPassword, setNewPassword] = useState('')
   const [resetting, setResetting] = useState(false)
 
-  const loadData = async () => {
-    setLoading(true)
-    try {
-      const [usersRes, rolesRes] = await Promise.all([
-        getUsers({ search, status: statusFilter, role: roleFilter, page }),
-        getRoles(),
-      ])
-      setUsers(usersRes.data)
-      setTotalPages(usersRes.totalPages)
-      setRoles(rolesRes)
-    } catch (err) {
-      toast.error('فشل تحميل البيانات')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { data: usersResult, isLoading: loading } = useUsers({ search, status: statusFilter, role: roleFilter, page })
+  const users = usersResult?.data || []
+  const totalPages = usersResult?.totalPages || 1
+  const { data: roles = [] } = useRoles()
 
-  useEffect(() => { loadData() }, [search, statusFilter, roleFilter, page])
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['users'] })
 
   const handleToggleStatus = async (user: UserWithRoles) => {
     const newStatus = user.status === 'active' ? 'inactive' : 'active'
@@ -47,7 +35,7 @@ export default function UsersPage() {
     try {
       await toggleUserStatus(user.id, newStatus)
       toast.success(`تم ${newStatus === 'active' ? 'تفعيل' : 'تعطيل'} المستخدم`)
-      loadData()
+      invalidate()
     } catch { toast.error('فشلت العملية') }
   }
 

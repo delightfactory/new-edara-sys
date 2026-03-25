@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react'
-import { toast } from 'sonner'
+import { useState } from 'react'
 import { Search, FileText, Eye } from 'lucide-react'
-import { getAuditLogs } from '@/lib/services/settings'
+import { useAuditLogs } from '@/hooks/useQueryHooks'
 import type { AuditLog } from '@/lib/types/auth'
 
 const ACTION_LABELS: Record<string, { label: string; cls: string }> = {
@@ -14,25 +13,16 @@ const ACTION_LABELS: Record<string, { label: string; cls: string }> = {
 }
 
 export default function AuditLogPage() {
-  const [logs, setLogs] = useState<AuditLog[]>([])
-  const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
   const [actionFilter, setActionFilter] = useState('')
   const [entityFilter, setEntityFilter] = useState('')
   const [detail, setDetail] = useState<AuditLog | null>(null)
 
-  const loadData = async () => {
-    setLoading(true)
-    try {
-      const res = await getAuditLogs({ action: actionFilter, entityType: entityFilter, page })
-      setLogs(res.data as AuditLog[])
-      setTotalPages(res.totalPages)
-    } catch { toast.error('فشل تحميل سجل التدقيق') }
-    finally { setLoading(false) }
-  }
-
-  useEffect(() => { loadData() }, [page, actionFilter, entityFilter])
+  const { data: result, isLoading: loading } = useAuditLogs({
+    action: actionFilter, entityType: entityFilter, page,
+  })
+  const logs = (result?.data as AuditLog[]) || []
+  const totalPages = result?.totalPages || 1
 
   const formatDate = (d: string) => {
     const date = new Date(d)

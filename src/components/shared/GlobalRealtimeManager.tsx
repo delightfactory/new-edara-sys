@@ -31,6 +31,10 @@ const TABLE_QUERY_MAP: Record<string, string[]> = {
   vault_transactions:   ['vault-transactions', 'vaults'],
   custody_accounts:     ['custody-accounts'],
   custody_transactions: ['custody-transactions', 'custody-accounts'],
+  journal_entries:      ['journal-entries'],
+  journal_entry_lines:  ['journal-entries'],
+  customer_ledger:      ['customer-ledger'],
+  supplier_ledger:      ['supplier-ledger'],
 
   // ─── المخزون ───
   stock:               ['stock', 'stock-movements'],
@@ -41,7 +45,11 @@ const TABLE_QUERY_MAP: Record<string, string[]> = {
   // ─── البيانات الأساسية ───
   customers:           ['customers'],
   products:            ['products'],
+  suppliers:           ['suppliers'],
   warehouses:          ['warehouses', 'my-warehouses'],
+  profiles:            ['profiles-active'],
+  product_categories:  ['product-categories'],
+  brands:              ['brands'],
 }
 
 const DEBOUNCE_MS = 500 // تأخير نصف ثانية لتجميع bulk operations

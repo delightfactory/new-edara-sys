@@ -32,7 +32,7 @@ export async function getProducts(params?: {
       category:product_categories(id, name),
       brand:brands(id, name),
       base_unit:units!products_base_unit_id_fkey(id, name, symbol)
-    `, { count: 'exact' })
+    `, { count: 'estimated' })
     .order('created_at', { ascending: false })
     .range(from, to)
 
@@ -138,20 +138,13 @@ export async function getProductUnits(productId: string) {
  * حفظ وحدات المنتج (حذف القديمة + إضافة الجديدة)
  */
 export async function saveProductUnits(productId: string, units: ProductUnitInput[]) {
-  // حذف الوحدات القديمة
-  const { error: delErr } = await supabase
-    .from('product_units')
-    .delete()
-    .eq('product_id', productId)
-  if (delErr) throw delErr
-
-  // إضافة الجديدة
-  if (units.length > 0) {
-    const { error: insErr } = await supabase
-      .from('product_units')
-      .insert(units.map(u => ({ ...u, product_id: productId })))
-    if (insErr) throw insErr
-  }
+  const userId = (await supabase.auth.getUser()).data.user?.id
+  const { error } = await supabase.rpc('save_product_units_atomic', {
+    p_product_id: productId,
+    p_units: units,
+    p_user_id: userId,
+  })
+  if (error) throw error
 }
 
 // ============================================================
@@ -284,6 +277,7 @@ export async function getBundles() {
       )
     `)
     .order('created_at', { ascending: false })
+    .limit(100)
   if (error) throw error
   return data as ProductBundle[]
 }
@@ -314,20 +308,15 @@ export async function updateBundle(
   bundle: { name?: string; sku?: string; price?: number; is_active?: boolean },
   items?: { product_id: string; unit_id: string; quantity: number }[]
 ) {
-  const { error } = await supabase
-    .from('product_bundles')
-    .update(bundle)
-    .eq('id', id)
+  const userId = (await supabase.auth.getUser()).data.user?.id
+  const { error } = await supabase.rpc('update_bundle_atomic', {
+    p_bundle_id: id,
+    p_name: bundle.name ?? null,
+    p_sku: bundle.sku ?? null,
+    p_price: bundle.price ?? null,
+    p_is_active: bundle.is_active ?? null,
+    p_items: items ?? null,
+    p_user_id: userId,
+  })
   if (error) throw error
-
-  if (items) {
-    // حذف البنود القديمة وإضافة الجديدة
-    await supabase.from('product_bundle_items').delete().eq('bundle_id', id)
-    if (items.length > 0) {
-      const { error: itemErr } = await supabase
-        .from('product_bundle_items')
-        .insert(items.map(i => ({ ...i, bundle_id: id })))
-      if (itemErr) throw itemErr
-    }
-  }
 }

@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
-import { toast } from 'sonner'
+import { useState, useMemo } from 'react'
 import { GitBranchPlus, ChevronDown, ChevronLeft } from 'lucide-react'
-import { getChartOfAccounts, buildAccountTree } from '@/lib/services/finance'
+import { buildAccountTree } from '@/lib/services/finance'
+import { useChartOfAccounts } from '@/hooks/useQueryHooks'
 import type { ChartOfAccount } from '@/lib/types/master-data'
 import PageHeader from '@/components/shared/PageHeader'
 import Badge from '@/components/ui/Badge'
@@ -45,19 +45,8 @@ function AccountNode({ account, depth = 0 }: { account: ChartOfAccount; depth?: 
 }
 
 export default function ChartOfAccountsPage() {
-  const [accounts, setAccounts] = useState<ChartOfAccount[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const flat = await getChartOfAccounts()
-        setAccounts(buildAccountTree(flat))
-      } catch { toast.error('فشل تحميل شجرة الحسابات') }
-      finally { setLoading(false) }
-    }
-    load()
-  }, [])
+  const { data: flat = [], isLoading: loading } = useChartOfAccounts()
+  const accounts = useMemo(() => buildAccountTree(flat), [flat])
 
   return (
     <div className="page-container animate-enter">

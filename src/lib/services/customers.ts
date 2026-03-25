@@ -33,7 +33,7 @@ export async function getCustomers(params?: {
       governorate:governorates(id, name),
       city:cities(id, name),
       assigned_rep:profiles!customers_assigned_rep_id_fkey(id, full_name)
-    `, { count: 'exact' })
+    `, { count: 'estimated' })
     .order('created_at', { ascending: false })
     .range(from, to)
 
@@ -252,6 +252,7 @@ export async function getCreditHistory(customerId: string) {
     .select('*, changed_by_profile:profiles!customer_credit_history_changed_by_fkey(id, full_name)')
     .eq('customer_id', customerId)
     .order('created_at', { ascending: false })
+    .limit(50)
   if (error) throw error
   return data as CustomerCreditHistory[]
 }

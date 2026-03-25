@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQueryClient, useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Plus, Shield, Trash2, Users, Edit3, Lock } from 'lucide-react'
-import { getRoles, deleteRole, getRoleUserCounts } from '@/lib/services/users'
+import { deleteRole, getRoleUserCounts } from '@/lib/services/users'
+import { useRoles } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
 import { supabase } from '@/lib/supabase/client'
 import type { Role } from '@/lib/types/auth'
@@ -10,19 +12,17 @@ import type { Role } from '@/lib/types/auth'
 export default function RolesPage() {
   const navigate = useNavigate()
   const can = useAuthStore(s => s.can)
-  const [roles, setRoles] = useState<Role[]>([])
-  const [counts, setCounts] = useState<Record<string, number>>({})
-  const [permCounts, setPermCounts] = useState<Record<string, number>>({})
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
 
-  const loadData = async () => {
-    setLoading(true)
-    try {
-      const [rolesRes, countsRes] = await Promise.all([getRoles(), getRoleUserCounts()])
-      setRoles(rolesRes)
-      setCounts(countsRes)
-
-      // جلب عدد صلاحيات كل دور
+  const { data: roles = [], isLoading: loading } = useRoles()
+  const { data: counts = {} } = useQuery({
+    queryKey: ['role-user-counts'],
+    queryFn: getRoleUserCounts,
+    staleTime: 5 * 60 * 1000,
+  })
+  const { data: permCounts = {} } = useQuery({
+    queryKey: ['role-perm-counts'],
+    queryFn: async () => {
       const { data: allPerms } = await supabase
         .from('role_permissions')
         .select('role_id')
@@ -30,12 +30,16 @@ export default function RolesPage() {
       for (const rp of allPerms || []) {
         pc[rp.role_id] = (pc[rp.role_id] || 0) + 1
       }
-      setPermCounts(pc)
-    } catch { toast.error('فشل تحميل الأدوار') }
-    finally { setLoading(false) }
-  }
+      return pc
+    },
+    staleTime: 5 * 60 * 1000,
+  })
 
-  useEffect(() => { loadData() }, [])
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ['roles'] })
+    queryClient.invalidateQueries({ queryKey: ['role-user-counts'] })
+    queryClient.invalidateQueries({ queryKey: ['role-perm-counts'] })
+  }
 
   const handleDelete = async (role: Role) => {
     if (role.is_system) { toast.error('لا يمكن حذف دور نظامي'); return }
@@ -47,7 +51,7 @@ export default function RolesPage() {
     try {
       await deleteRole(role.id)
       toast.success('تم حذف الدور')
-      loadData()
+      invalidate()
     } catch { toast.error('فشل الحذف') }
   }
 

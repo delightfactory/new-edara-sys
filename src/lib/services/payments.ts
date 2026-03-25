@@ -33,7 +33,7 @@ export async function getPaymentReceipts(params?: {
       collected_by_profile:profiles!payment_receipts_collected_by_fkey(id, full_name),
       reviewed_by_profile:profiles!payment_receipts_reviewed_by_fkey(id, full_name),
       created_by_profile:profiles!payment_receipts_created_by_fkey(id, full_name)
-    `, { count: 'exact' })
+    `, { count: 'estimated' })
     .order('created_at', { ascending: false })
     .range(from, to)
 
@@ -231,7 +231,7 @@ export async function getExpenses(params?: {
       branch:branches(id, name),
       approved_by_profile:profiles!expenses_approved_by_fkey(id, full_name),
       created_by_profile:profiles!expenses_created_by_fkey(id, full_name)
-    `, { count: 'exact' })
+    `, { count: 'estimated' })
     .order('created_at', { ascending: false })
     .range(from, to)
 

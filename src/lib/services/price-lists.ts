@@ -94,7 +94,7 @@ export async function getPriceListItems(priceListId: string, params?: {
       *,
       product:products(id, name, sku),
       unit:units(id, name, symbol)
-    `, { count: 'exact' })
+    `, { count: 'estimated' })
     .eq('price_list_id', priceListId)
     .order('created_at', { ascending: false })
     .range(from, to)
