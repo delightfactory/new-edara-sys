@@ -198,3 +198,25 @@ export async function addVaultOpeningBalance(
   if (error) throw error
   return data as string
 }
+
+/**
+ * تحويل بين خزنتين — ذري (atomic)
+ * RPC: transfer_between_vaults
+ */
+export async function transferBetweenVaults(
+  fromVaultId: string,
+  toVaultId: string,
+  amount: number,
+  description: string,
+) {
+  const userId = (await supabase.auth.getUser()).data.user?.id
+  const { data, error } = await supabase.rpc('transfer_between_vaults', {
+    p_from_vault_id: fromVaultId,
+    p_to_vault_id: toVaultId,
+    p_amount: amount,
+    p_description: description,
+    p_user_id: userId,
+  })
+  if (error) throw error
+  return data as string
+}

@@ -237,8 +237,8 @@ export async function getJournalEntry(id: string) {
 }
 
 /**
- * إنشاء قيد محاسبي يدوي
- * يجب أن total_debit = total_credit وإلا ستفشل الـ CHECK constraint
+ * إنشاء قيد محاسبي يدوي — عبر RPC ذرية (atomic)
+ * يجب أن total_debit = total_credit وإلا ستفشل الدالة
  */
 export async function createManualJournalEntry(
   entry: JournalEntryInput,
@@ -246,7 +246,7 @@ export async function createManualJournalEntry(
 ) {
   const userId = (await supabase.auth.getUser()).data.user?.id
 
-  // 1. حساب المجاميع
+  // Client-side fast-fail validation
   const totalDebit = lines.reduce((sum, l) => sum + l.debit, 0)
   const totalCredit = lines.reduce((sum, l) => sum + l.credit, 0)
 
@@ -254,54 +254,30 @@ export async function createManualJournalEntry(
     throw new Error(`القيد غير متوازن: مدين ${totalDebit} ≠ دائن ${totalCredit}`)
   }
 
-  // 2. جلب معرّفات الحسابات من الأكواد
-  const codes = [...new Set(lines.map(l => l.account_code))]
-  const { data: accounts, error: accError } = await supabase
-    .from('chart_of_accounts')
-    .select('id, code')
-    .in('code', codes)
-  if (accError) throw accError
-
-  const codeToId = new Map(accounts.map(a => [a.code, a.id]))
-  for (const code of codes) {
-    if (!codeToId.has(code)) {
-      throw new Error(`حساب غير موجود: ${code}`)
-    }
+  if (lines.length < 2) {
+    throw new Error('القيد يجب أن يحتوي على سطرين على الأقل')
   }
 
-  // 3. إنشاء القيد
-  const { data: je, error: jeError } = await supabase
-    .from('journal_entries')
-    .insert({
-      source_type: entry.source_type || 'manual',
-      source_id: entry.source_id || null,
-      description: entry.description,
-      entry_date: entry.entry_date || new Date().toISOString().split('T')[0],
-      is_auto: false,
-      status: 'posted',
-      total_debit: totalDebit,
-      total_credit: totalCredit,
-      created_by: userId,
-    })
-    .select()
-    .single()
-  if (jeError) throw jeError
-
-  // 4. إنشاء السطور
-  const lineInserts = lines.map(l => ({
-    entry_id: je.id,
-    account_id: codeToId.get(l.account_code)!,
+  // Convert lines to JSONB format for RPC
+  const linesJson = lines.map(l => ({
+    account_code: l.account_code,
     debit: l.debit,
     credit: l.credit,
     description: l.description || null,
   }))
 
-  const { error: linesError } = await supabase
-    .from('journal_entry_lines')
-    .insert(lineInserts)
-  if (linesError) throw linesError
+  const { data, error } = await supabase.rpc('create_manual_journal_entry', {
+    p_description: entry.description,
+    p_entry_date: entry.entry_date || new Date().toISOString().split('T')[0],
+    p_source_type: entry.source_type || 'manual',
+    p_source_id: entry.source_id || null,
+    p_lines: linesJson,
+    p_user_id: userId,
+  })
+  if (error) throw error
 
-  return je as JournalEntry
+  // Fetch the created entry to return full data
+  return await getJournalEntry(data as string)
 }
 
 // ============================================================

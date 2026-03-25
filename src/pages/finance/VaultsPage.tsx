@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'sonner'
-import { Landmark, Plus, Edit, ArrowDownToLine, ArrowUpFromLine, Eye, Building2, Wallet } from 'lucide-react'
-import { getVaults, createVault, updateVault, getVaultTransactions, addVaultDeposit, addVaultWithdrawal, addVaultOpeningBalance } from '@/lib/services/vaults'
+import { Landmark, Plus, Edit, ArrowDownToLine, ArrowUpFromLine, Eye, Building2, Wallet, ArrowLeftRight } from 'lucide-react'
+import { getVaults, createVault, updateVault, getVaultTransactions, addVaultDeposit, addVaultWithdrawal, addVaultOpeningBalance, transferBetweenVaults } from '@/lib/services/vaults'
 import { getBranches } from '@/lib/services/geography'
 import { useAuthStore } from '@/stores/auth-store'
 import type { Vault, VaultInput, VaultTransaction, Branch, VaultType } from '@/lib/types/master-data'
@@ -52,6 +52,14 @@ export default function VaultsPage() {
   const [stmtPage, setStmtPage] = useState(1)
   const [stmtTotal, setStmtTotal] = useState(0)
   const [stmtTotalPages, setStmtTotalPages] = useState(0)
+
+  // Transfer modal
+  const [transferOpen, setTransferOpen] = useState(false)
+  const [transferFrom, setTransferFrom] = useState('')
+  const [transferTo, setTransferTo] = useState('')
+  const [transferAmount, setTransferAmount] = useState('')
+  const [transferDesc, setTransferDesc] = useState('')
+  const [transferSaving, setTransferSaving] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -142,6 +150,32 @@ export default function VaultsPage() {
     }
   }
 
+  // ── Transfer handler ──
+  const openTransfer = () => {
+    setTransferFrom(''); setTransferTo(''); setTransferAmount(''); setTransferDesc('')
+    setTransferOpen(true)
+  }
+
+  const handleTransfer = async () => {
+    if (!transferFrom) { toast.error('اختر خزنة المصدر'); return }
+    if (!transferTo) { toast.error('اختر خزنة الوجهة'); return }
+    if (transferFrom === transferTo) { toast.error('لا يمكن التحويل من وإلى نفس الخزنة'); return }
+    const amt = parseFloat(transferAmount)
+    if (!amt || amt <= 0) { toast.error('المبلغ يجب أن يكون أكبر من صفر'); return }
+    if (!transferDesc.trim()) { toast.error('الوصف مطلوب'); return }
+    setTransferSaving(true)
+    try {
+      await transferBetweenVaults(transferFrom, transferTo, amt, transferDesc)
+      toast.success('تم التحويل بنجاح')
+      setTransferOpen(false)
+      load()
+    } catch (err: any) {
+      toast.error(err.message || 'فشل التحويل')
+    } finally {
+      setTransferSaving(false)
+    }
+  }
+
   // ── Statement ──
   const openStatement = async (vault: Vault) => {
     setStmtVault(vault)
@@ -188,9 +222,14 @@ export default function VaultsPage() {
         title="الخزائن"
         subtitle={loading ? '...' : `${vaults.length} خزنة`}
         actions={
-          can('finance.vaults.create')
-            ? <Button icon={<Plus size={16} />} onClick={openCreate}>خزنة جديدة</Button>
-            : undefined
+          <div className="flex gap-2">
+            {can('finance.vaults.transact') && vaults.filter(v => v.is_active).length >= 2 && (
+              <Button variant="secondary" icon={<ArrowLeftRight size={16} />} onClick={openTransfer}>تحويل بين الخزائن</Button>
+            )}
+            {can('finance.vaults.create') && (
+              <Button icon={<Plus size={16} />} onClick={openCreate}>خزنة جديدة</Button>
+            )}
+          </div>
         }
       />
 
@@ -376,6 +415,56 @@ export default function VaultsPage() {
           totalCount={stmtTotal}
           onPageChange={loadStmtPage}
         />
+      </Modal>
+
+      {/* ── Transfer Modal ── */}
+      <Modal
+        open={transferOpen}
+        onClose={() => setTransferOpen(false)}
+        title="تحويل بين الخزائن"
+        size="sm"
+        disableOverlayClose
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setTransferOpen(false)}>إلغاء</Button>
+            <Button onClick={handleTransfer} loading={transferSaving} icon={<ArrowLeftRight size={16} />}>تأكيد التحويل</Button>
+          </>
+        }
+      >
+        <div className="flex-col gap-4">
+          <div className="form-group">
+            <label className="form-label required">من خزنة</label>
+            <select className="form-select" value={transferFrom} onChange={e => { setTransferFrom(e.target.value); if (e.target.value === transferTo) setTransferTo('') }}>
+              <option value="">— اختر خزنة المصدر —</option>
+              {vaults.filter(v => v.is_active).map(v => (
+                <option key={v.id} value={v.id}>{v.name} ({formatCurrency(v.current_balance)})</option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label required">إلى خزنة</label>
+            <select className="form-select" value={transferTo} onChange={e => setTransferTo(e.target.value)}>
+              <option value="">— اختر خزنة الوجهة —</option>
+              {vaults.filter(v => v.is_active && v.id !== transferFrom).map(v => (
+                <option key={v.id} value={v.id}>{v.name} ({formatCurrency(v.current_balance)})</option>
+              ))}
+            </select>
+          </div>
+          {transferFrom && (
+            <div className="info-box">
+              <span className="info-box-label">رصيد خزنة المصدر</span>
+              <span className="info-box-value">{formatCurrency(vaults.find(v => v.id === transferFrom)?.current_balance || 0)}</span>
+            </div>
+          )}
+          <div className="form-group">
+            <label className="form-label required">المبلغ</label>
+            <input className="form-input" type="number" min="0.01" step="0.01" value={transferAmount} onChange={e => setTransferAmount(e.target.value)} placeholder="0.00" />
+          </div>
+          <div className="form-group">
+            <label className="form-label required">الوصف</label>
+            <input className="form-input" value={transferDesc} onChange={e => setTransferDesc(e.target.value)} placeholder="مثال: تحويل نقدي لصندوق الفرع" />
+          </div>
+        </div>
       </Modal>
 
     </div>
