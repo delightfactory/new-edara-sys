@@ -45,6 +45,16 @@ const BrandsPage = lazy(() => import('@/pages/products/BrandsPage'))
 const StockMovementsPage = lazy(() => import('@/pages/inventory/StockMovementsPage'))
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'))
 
+// Finance Pages — lazy loaded
+const VaultsPage = lazy(() => import('@/pages/finance/VaultsPage'))
+const CustodyPage = lazy(() => import('@/pages/finance/CustodyPage'))
+const PaymentsPage = lazy(() => import('@/pages/finance/PaymentsPage'))
+const ExpensesPage = lazy(() => import('@/pages/finance/ExpensesPage'))
+const ChartOfAccountsPage = lazy(() => import('@/pages/finance/ChartOfAccountsPage'))
+const JournalsPage = lazy(() => import('@/pages/finance/JournalsPage'))
+const LedgerPage = lazy(() => import('@/pages/finance/LedgerPage'))
+const ApprovalRulesPage = lazy(() => import('@/pages/finance/ApprovalRulesPage'))
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -158,6 +168,32 @@ export default function App() {
               } />
               <Route path="inventory/movements" element={
                 <ProtectedRoute permission="inventory.read"><Suspense fallback={<LazyFallback />}><StockMovementsPage /></Suspense></ProtectedRoute>
+              } />
+
+              {/* Finance */}
+              <Route path="finance/vaults" element={
+                <ProtectedRoute permission="finance.vaults.read"><Suspense fallback={<LazyFallback />}><VaultsPage /></Suspense></ProtectedRoute>
+              } />
+              <Route path="finance/custody" element={
+                <ProtectedRoute permission="finance.custody.read"><Suspense fallback={<LazyFallback />}><CustodyPage /></Suspense></ProtectedRoute>
+              } />
+              <Route path="finance/payments" element={
+                <ProtectedRoute permission="finance.payments.read"><Suspense fallback={<LazyFallback />}><PaymentsPage /></Suspense></ProtectedRoute>
+              } />
+              <Route path="finance/expenses" element={
+                <ProtectedRoute permission="finance.expenses.read"><Suspense fallback={<LazyFallback />}><ExpensesPage /></Suspense></ProtectedRoute>
+              } />
+              <Route path="finance/accounts" element={
+                <ProtectedRoute permission="finance.journal.read"><Suspense fallback={<LazyFallback />}><ChartOfAccountsPage /></Suspense></ProtectedRoute>
+              } />
+              <Route path="finance/journals" element={
+                <ProtectedRoute permission="finance.journal.read"><Suspense fallback={<LazyFallback />}><JournalsPage /></Suspense></ProtectedRoute>
+              } />
+              <Route path="finance/ledger" element={
+                <ProtectedRoute permission="finance.ledger.read"><Suspense fallback={<LazyFallback />}><LedgerPage /></Suspense></ProtectedRoute>
+              } />
+              <Route path="finance/approval-rules" element={
+                <ProtectedRoute permission="settings.update"><Suspense fallback={<LazyFallback />}><ApprovalRulesPage /></Suspense></ProtectedRoute>
               } />
 
               {/* Branches */}

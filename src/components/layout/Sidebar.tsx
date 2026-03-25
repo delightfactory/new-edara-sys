@@ -62,10 +62,16 @@ const navItems: NavItem[] = [
   { id: 'purchases', label: 'المشتريات', icon: Package, permission: PERMISSIONS.PURCHASES_ORDERS_READ, path: '/purchases/orders', comingSoon: true },
   {
     id: 'finance', label: 'المالية', icon: DollarSign,
-    permission: PERMISSIONS.FINANCE_VAULTS_READ, comingSoon: true,
+    permission: PERMISSIONS.FINANCE_VAULTS_READ,
     children: [
       { label: 'الخزائن', path: '/finance/vaults', permission: PERMISSIONS.FINANCE_VAULTS_READ },
+      { label: 'العُهد', path: '/finance/custody', permission: PERMISSIONS.FINANCE_CUSTODY_READ },
+      { label: 'إيصالات الدفع', path: '/finance/payments', permission: PERMISSIONS.FINANCE_PAYMENTS_READ },
       { label: 'المصروفات', path: '/finance/expenses', permission: PERMISSIONS.FINANCE_EXPENSES_READ },
+      { label: 'شجرة الحسابات', path: '/finance/accounts', permission: PERMISSIONS.FINANCE_JOURNAL_READ },
+      { label: 'القيود المحاسبية', path: '/finance/journals', permission: PERMISSIONS.FINANCE_JOURNAL_READ },
+      { label: 'دفتر الحسابات', path: '/finance/ledger', permission: PERMISSIONS.FINANCE_LEDGER_READ },
+      { label: 'قواعد الموافقات', path: '/finance/approval-rules', permission: PERMISSIONS.SETTINGS_UPDATE },
     ],
   },
   { id: 'targets', label: 'الأهداف', icon: Target, permission: PERMISSIONS.TARGETS_READ_OWN, path: '/targets', comingSoon: true },

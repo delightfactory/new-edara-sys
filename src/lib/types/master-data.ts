@@ -543,3 +543,343 @@ export interface StockAdjustmentItem {
   // joined
   product?: Pick<Product, 'id' | 'name' | 'sku'>
 }
+
+// ============================================================
+// Phase 3 — Financial Infrastructure
+// Maps to: supabase/migrations/03_financial_infrastructure.sql
+// ============================================================
+
+// ----- CHART OF ACCOUNTS -----
+
+export type AccountType = 'asset' | 'liability' | 'equity' | 'revenue' | 'expense'
+
+export interface ChartOfAccount {
+  id: string
+  code: string
+  name: string
+  name_en: string | null
+  type: AccountType
+  parent_id: string | null
+  is_active: boolean
+  sort_order: number
+  created_at: string
+  // client-side tree
+  children?: ChartOfAccount[]
+}
+
+// ----- CUSTOMER LEDGER -----
+
+export type LedgerEntryType = 'debit' | 'credit'
+export type CustomerLedgerSource = 'sales_order' | 'sales_return' | 'payment' | 'opening_balance' | 'adjustment'
+export type SupplierLedgerSource = 'purchase_order' | 'purchase_return' | 'payment' | 'opening_balance' | 'adjustment'
+
+export interface CustomerLedgerEntry {
+  id: string
+  customer_id: string
+  type: LedgerEntryType
+  amount: number
+  source_type: CustomerLedgerSource
+  source_id: string | null
+  description: string | null
+  created_by: string | null
+  created_at: string
+  // joined
+  customer?: Pick<Customer, 'id' | 'name' | 'code'>
+  created_by_profile?: { id: string; full_name: string }
+}
+
+export interface CustomerBalance {
+  customer_id: string
+  balance: number
+  transaction_count: number
+  last_transaction_at: string | null
+}
+
+// ----- SUPPLIER LEDGER -----
+
+export interface SupplierLedgerEntry {
+  id: string
+  supplier_id: string
+  type: LedgerEntryType
+  amount: number
+  source_type: SupplierLedgerSource
+  source_id: string | null
+  description: string | null
+  created_by: string | null
+  created_at: string
+  // joined
+  supplier?: Pick<Supplier, 'id' | 'name' | 'code'>
+  created_by_profile?: { id: string; full_name: string }
+}
+
+export interface SupplierBalance {
+  supplier_id: string
+  balance: number
+  transaction_count: number
+  last_transaction_at: string | null
+}
+
+// ----- VAULTS -----
+
+export type VaultType = 'cash' | 'bank' | 'mobile_wallet'
+
+export interface Vault {
+  id: string
+  name: string
+  type: VaultType
+  account_number: string | null
+  bank_name: string | null
+  responsible_id: string | null
+  branch_id: string | null
+  current_balance: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  // joined
+  responsible?: { id: string; full_name: string }
+  branch?: Pick<Branch, 'id' | 'name'>
+}
+
+export interface VaultInput {
+  name: string
+  type: VaultType
+  account_number?: string | null
+  bank_name?: string | null
+  responsible_id?: string | null
+  branch_id?: string | null
+  is_active?: boolean
+}
+
+export type VaultTransactionType =
+  | 'deposit' | 'withdrawal'
+  | 'transfer_in' | 'transfer_out'
+  | 'collection' | 'expense'
+  | 'custody_load' | 'custody_return'
+  | 'opening_balance'
+
+export interface VaultTransaction {
+  id: string
+  vault_id: string
+  type: VaultTransactionType
+  amount: number
+  balance_after: number
+  reference_type: string | null
+  reference_id: string | null
+  description: string | null
+  created_by: string | null
+  created_at: string
+  // joined
+  created_by_profile?: { id: string; full_name: string }
+}
+
+// ----- CUSTODY ACCOUNTS -----
+
+export interface CustodyAccount {
+  id: string
+  employee_id: string
+  max_balance: number
+  current_balance: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  // joined
+  employee?: { id: string; full_name: string }
+}
+
+export interface CustodyAccountInput {
+  employee_id: string
+  max_balance?: number
+  is_active?: boolean
+}
+
+export type CustodyTransactionType = 'load' | 'collection' | 'expense' | 'settlement' | 'return'
+
+export interface CustodyTransaction {
+  id: string
+  custody_id: string
+  type: CustodyTransactionType
+  amount: number
+  balance_after: number
+  vault_id: string | null
+  reference_type: string | null
+  reference_id: string | null
+  description: string | null
+  created_by: string | null
+  created_at: string
+  // joined
+  vault?: Pick<Vault, 'id' | 'name' | 'type'>
+  created_by_profile?: { id: string; full_name: string }
+}
+
+// ----- PAYMENT RECEIPTS -----
+
+export type PaymentMethod = 'cash' | 'bank_transfer' | 'instapay' | 'check' | 'mobile_wallet'
+export type PaymentReceiptStatus = 'pending' | 'confirmed' | 'rejected'
+
+export interface PaymentReceipt {
+  id: string
+  number: string
+  customer_id: string
+  amount: number
+  payment_method: PaymentMethod
+  status: PaymentReceiptStatus
+  vault_id: string | null
+  custody_id: string | null
+  branch_id: string | null
+  proof_url: string | null
+  bank_reference: string | null
+  check_number: string | null
+  check_date: string | null
+  notes: string | null
+  collected_by: string | null
+  reviewed_by: string | null
+  reviewed_at: string | null
+  rejection_reason: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+  // joined
+  customer?: Pick<Customer, 'id' | 'name' | 'code'>
+  vault?: Pick<Vault, 'id' | 'name' | 'type'>
+  custody?: CustodyAccount
+  branch?: Pick<Branch, 'id' | 'name'>
+  collected_by_profile?: { id: string; full_name: string }
+  reviewed_by_profile?: { id: string; full_name: string }
+  created_by_profile?: { id: string; full_name: string }
+}
+
+export interface PaymentReceiptInput {
+  customer_id: string
+  amount: number
+  payment_method: PaymentMethod
+  custody_id?: string | null
+  branch_id?: string | null
+  proof_url?: string | null
+  bank_reference?: string | null
+  check_number?: string | null
+  check_date?: string | null
+  notes?: string | null
+  collected_by?: string | null
+}
+
+// ----- EXPENSES -----
+
+export interface ExpenseCategory {
+  id: string
+  name: string
+  parent_id: string | null
+  is_active: boolean
+  created_at: string
+  // client-side tree
+  children?: ExpenseCategory[]
+}
+
+export type ExpenseStatus = 'draft' | 'pending_approval' | 'approved' | 'rejected'
+export type PaymentSource = 'vault' | 'custody'
+
+export interface Expense {
+  id: string
+  number: string
+  category_id: string | null
+  amount: number
+  description: string
+  expense_date: string
+  status: ExpenseStatus
+  payment_source: PaymentSource | null
+  vault_id: string | null
+  custody_id: string | null
+  receipt_url: string | null
+  branch_id: string | null
+  approved_by: string | null
+  approved_at: string | null
+  rejection_reason: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+  // joined
+  category?: Pick<ExpenseCategory, 'id' | 'name'>
+  vault?: Pick<Vault, 'id' | 'name' | 'type'>
+  custody?: CustodyAccount
+  branch?: Pick<Branch, 'id' | 'name'>
+  approved_by_profile?: { id: string; full_name: string }
+  created_by_profile?: { id: string; full_name: string }
+}
+
+export interface ExpenseInput {
+  category_id?: string | null
+  amount: number
+  description: string
+  expense_date?: string
+  payment_source: PaymentSource
+  vault_id?: string | null
+  custody_id?: string | null
+  receipt_url?: string | null
+  branch_id?: string | null
+}
+
+// ----- APPROVAL RULES -----
+
+export type ApprovalType = 'expense' | 'purchase_order' | 'sales_discount'
+
+export interface ApprovalRule {
+  id: string
+  type: ApprovalType
+  role_id: string
+  max_amount: number
+  sort_order: number
+  is_active: boolean
+  created_at: string
+  // joined
+  role?: { id: string; name: string; name_ar: string; color: string }
+}
+
+// ----- JOURNAL ENTRIES -----
+
+export type JournalSourceType =
+  | 'sales_order' | 'sales_return' | 'payment'
+  | 'purchase_order' | 'purchase_return'
+  | 'expense' | 'custody' | 'transfer' | 'manual'
+export type JournalStatus = 'draft' | 'posted'
+
+export interface JournalEntry {
+  id: string
+  number: string
+  entry_date: string
+  source_type: JournalSourceType
+  source_id: string | null
+  description: string | null
+  is_auto: boolean
+  status: JournalStatus
+  total_debit: number
+  total_credit: number
+  created_by: string | null
+  created_at: string
+  // joined
+  lines?: JournalEntryLine[]
+  created_by_profile?: { id: string; full_name: string }
+}
+
+export interface JournalEntryLine {
+  id: string
+  entry_id: string
+  account_id: string
+  debit: number
+  credit: number
+  description: string | null
+  // joined
+  account?: Pick<ChartOfAccount, 'id' | 'code' | 'name'>
+}
+
+export interface JournalEntryInput {
+  entry_date?: string
+  source_type: JournalSourceType
+  source_id?: string | null
+  description: string
+}
+
+export interface JournalEntryLineInput {
+  account_code: string
+  debit: number
+  credit: number
+  description?: string | null
+}
