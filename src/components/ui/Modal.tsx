@@ -9,6 +9,8 @@ interface ModalProps {
   size?: 'sm' | 'md' | 'lg'
   children: ReactNode
   footer?: ReactNode
+  /** منع الإغلاق عند الضغط على الخلفية (للنماذج المعقدة) */
+  disableOverlayClose?: boolean
 }
 
 /**
@@ -16,7 +18,7 @@ interface ModalProps {
  * يغلف modal-overlay + modal-box + modal-header + modal-body + modal-footer
  * يغلق بـ Escape أو الضغط على الخلفية
  */
-export default function Modal({ open, onClose, title, size = 'md', children, footer }: ModalProps) {
+export default function Modal({ open, onClose, title, size = 'md', children, footer, disableOverlayClose = false }: ModalProps) {
   // إغلاق بمفتاح Escape
   useEffect(() => {
     if (!open) return
@@ -38,7 +40,7 @@ export default function Modal({ open, onClose, title, size = 'md', children, foo
   if (!open) return null
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={disableOverlayClose ? undefined : onClose}>
       <div
         className={cn('modal-box', `modal-${size}`)}
         onClick={e => e.stopPropagation()}

@@ -359,7 +359,7 @@ export default function AdjustmentsPage() {
       </div>
 
       {/* Create Modal */}
-      <Modal open={createModal} onClose={() => setCreateModal(false)} title="تسوية جديدة" size="lg"
+      <Modal open={createModal} onClose={() => setCreateModal(false)} title="تسوية جديدة" size="lg" disableOverlayClose
         footer={
           <div className="flex gap-2 justify-end" style={{ width: '100%' }}>
             <Button variant="secondary" onClick={() => setCreateModal(false)}>إلغاء</Button>

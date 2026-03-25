@@ -88,6 +88,21 @@ Deno.serve(async (req: Request) => {
       )
     }
 
+    // التحقق من هرمية الأدوار — لا يمكن إعادة تعيين كلمة مرور لمستخدم بدور أعلى أو مساوٍ
+    const { data: callerGrade } = await adminClient.rpc('get_user_max_grade', {
+      p_user_id: caller.id,
+    })
+    const { data: targetGrade } = await adminClient.rpc('get_user_max_grade', {
+      p_user_id: userId,
+    })
+
+    if ((targetGrade ?? 0) >= (callerGrade ?? 0)) {
+      return Response.json(
+        { error: 'لا يمكنك إعادة تعيين كلمة مرور مستخدم بمستوى يساوي أو يفوق مستواك' },
+        { status: 403, headers: corsHeaders }
+      )
+    }
+
     // إعادة تعيين كلمة المرور
     const { error: resetError } = await adminClient.auth.admin.updateUserById(userId, {
       password: newPassword,

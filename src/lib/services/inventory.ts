@@ -189,6 +189,44 @@ export async function getStock(params?: {
   const from = (page - 1) * pageSize
   const to = from + pageSize - 1
 
+  // فلتر المخزون المنخفض — يستخدم RPC على مستوى DB لتجنب كسر الـ Pagination
+  if (params?.lowStockOnly) {
+    const { data, error } = await supabase.rpc('get_low_stock', {
+      p_warehouse_id: params?.warehouseId || null,
+      p_offset: from,
+      p_limit: pageSize,
+    })
+    if (error) throw error
+    const rows = (data || []) as any[]
+    const totalCount = rows.length > 0 ? Number(rows[0].total_count) : 0
+    // تحويل الهيكل ليتوافق مع Stock type
+    const results = rows.map((r: any) => ({
+      id: r.id,
+      warehouse_id: r.warehouse_id,
+      product_id: r.product_id,
+      quantity: r.quantity,
+      reserved_quantity: r.reserved_quantity,
+      available_quantity: r.available_quantity,
+      wac: r.wac,
+      total_cost_value: r.total_cost_value,
+      created_at: '',
+      updated_at: '',
+      warehouse: { id: r.warehouse_id, name: r.warehouse_name, type: 'main' as const },
+      product: {
+        id: r.product_id, name: r.product_name, sku: r.product_sku,
+        min_stock_level: r.min_stock_level,
+        base_unit: { name: r.unit_name, symbol: r.unit_symbol },
+      },
+    })) as unknown as Stock[]
+    return {
+      data: results,
+      count: totalCount,
+      page,
+      pageSize,
+      totalPages: Math.ceil(totalCount / pageSize),
+    }
+  }
+
   let query = supabase
     .from('stock')
     .select(`
@@ -209,18 +247,8 @@ export async function getStock(params?: {
   const { data, error, count } = await query
   if (error) throw error
 
-  let results = data as Stock[]
-
-  // فلتر المخزون المنخفض على العميل (لأنه يحتاج join data)
-  if (params?.lowStockOnly) {
-    results = results.filter(s => {
-      const minLevel = (s.product as any)?.min_stock_level || 0
-      return s.available_quantity <= minLevel
-    })
-  }
-
   return {
-    data: results,
+    data: data as Stock[],
     count: count || 0,
     page,
     pageSize,

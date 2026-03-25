@@ -99,8 +99,25 @@ Deno.serve(async (req: Request) => {
       })
       .eq('id', newUserId)
 
-    // 7. تعيين الأدوار
+    // 7. تعيين الأدوار (مع فحص هرمية الأدوار)
     if (Array.isArray(role_ids) && role_ids.length > 0) {
+      // فحص: هل المستدعي يملك grade أعلى من كل الأدوار المطلوبة؟
+      const { data: callerGrade } = await adminClient.rpc('get_user_max_grade', {
+        p_user_id: caller.id,
+      })
+      const { data: targetGrade } = await adminClient.rpc('get_roles_max_grade', {
+        p_role_ids: role_ids,
+      })
+
+      if ((targetGrade ?? 0) >= (callerGrade ?? 0)) {
+        // حذف المستخدم الذي تم إنشاؤه لأن الأدوار غير مسموحة
+        await adminClient.auth.admin.deleteUser(newUserId)
+        return Response.json(
+          { error: 'لا يمكنك تعيين دور بمستوى يساوي أو يفوق مستواك' },
+          { status: 403, headers: corsHeaders }
+        )
+      }
+
       const { error: rolesErr } = await adminClient
         .from('user_roles')
         .insert(
