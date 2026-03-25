@@ -151,7 +151,7 @@ export default function TransferDetailPage() {
       </div>
 
       {/* Summary Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
         {/* من مخزن */}
         <div className="edara-card" style={{ padding: 'var(--space-4)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
@@ -200,11 +200,11 @@ export default function TransferDetailPage() {
       </div>
 
       {/* Content Grid: Info + Timeline */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
+      <div className="detail-grid" style={{ marginBottom: 'var(--space-4)' }}>
         {/* Info Card */}
         <div className="edara-card" style={{ padding: 'var(--space-5)' }}>
           <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 700, marginBottom: 'var(--space-4)' }}>معلومات التحويل</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-3)' }}>
             <InfoRow icon={User} label="طالب التحويل" value={(transfer as any).requested_by_profile?.full_name} />
             <InfoRow icon={Calendar} label="تاريخ الإنشاء" value={formatDateShort(transfer.created_at)} />
             <InfoRow icon={ArrowLeftRight} label="الاتجاه" value={dir.label} />
@@ -293,8 +293,8 @@ export default function TransferDetailPage() {
             <tr>
               <th style={{ width: 40 }}>#</th>
               <th>المنتج</th>
-              <th>SKU</th>
-              <th>الوحدة</th>
+              <th className="hide-mobile">SKU</th>
+              <th className="hide-mobile">الوحدة</th>
               <th>الكمية</th>
               {canViewCosts && <th>تكلفة الوحدة (WAC)</th>}
               {canViewCosts && <th>الإجمالي</th>}
@@ -305,8 +305,8 @@ export default function TransferDetailPage() {
               <tr key={item.id}>
                 <td style={{ color: 'var(--text-muted)' }}>{idx + 1}</td>
                 <td style={{ fontWeight: 500 }}>{item.product?.name || item.product_id}</td>
-                <td dir="ltr" style={{ fontFamily: 'monospace', fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{item.product?.sku || '—'}</td>
-                <td>{item.unit?.name || '—'}</td>
+                <td className="hide-mobile" dir="ltr" style={{ fontFamily: 'monospace', fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{item.product?.sku || '—'}</td>
+                <td className="hide-mobile">{item.unit?.name || '—'}</td>
                 <td style={{ fontWeight: 600 }}>{formatNumber(item.quantity)}</td>
                 {canViewCosts && <td>{item.unit_cost ? formatNumber(item.unit_cost) : '—'}</td>}
                 {canViewCosts && <td style={{ fontWeight: 600 }}>{item.unit_cost ? formatNumber(item.quantity * item.unit_cost) : '—'}</td>}
@@ -316,7 +316,7 @@ export default function TransferDetailPage() {
           {canViewCosts && transfer.items && transfer.items.length > 0 && (
             <tfoot>
               <tr>
-                <td colSpan={5} />
+                <td colSpan={3} className="hide-mobile" /><td colSpan={2} />
                 <td style={{ fontWeight: 700 }}>الإجمالي</td>
                 <td style={{ fontWeight: 700 }}>
                   {formatNumber(transfer.items.reduce((sum: number, it: any) => sum + (it.quantity * (it.unit_cost || 0)), 0))}

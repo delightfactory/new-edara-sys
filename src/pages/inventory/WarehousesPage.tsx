@@ -179,14 +179,14 @@ export default function WarehousesPage() {
             <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 'var(--space-4)' }}>لا يوجد مديرون معينون</p>
           ) : (
             <table className="data-table">
-              <thead><tr><th>المستخدم</th><th>أساسي</th><th>صلاحية استلام</th><th>تاريخ التعيين</th><th style={{ width: 60 }}></th></tr></thead>
+              <thead><tr><th>المستخدم</th><th>أساسي</th><th>صلاحية استلام</th><th className="hide-mobile">تاريخ التعيين</th><th style={{ width: 60 }}></th></tr></thead>
               <tbody>
                 {managers.map(m => (
                   <tr key={m.id}>
                     <td>{m.profile?.full_name || m.profile_id.substring(0, 8)}</td>
                     <td>{m.is_primary ? <Badge variant="primary">أساسي</Badge> : '—'}</td>
                     <td>{m.can_approve_receipts ? <Badge variant="success">نعم</Badge> : '—'}</td>
-                    <td style={{ fontSize: 'var(--text-xs)' }}>{formatDateShort(m.created_at)}</td>
+                    <td className="hide-mobile" style={{ fontSize: 'var(--text-xs)' }}>{formatDateShort(m.created_at)}</td>
                     <td>
                       {can('inventory.create') && (
                         <Button variant="danger" size="sm" onClick={() => setRemoveTarget(m)}>

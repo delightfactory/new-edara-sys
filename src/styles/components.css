@@ -424,9 +424,71 @@
   .pagination-btn { min-width: 28px; height: 28px; font-size: var(--text-xs); }
 }
 
-/* Desktop-only */
+/* ======= Responsive Layout Helpers ======= */
+/* Two-column content+sidebar grid (e.g., info + timeline) */
+.detail-grid {
+  display: grid;
+  gap: var(--space-4);
+}
+.detail-grid-sidebar {
+  display: grid;
+  gap: var(--space-4);
+}
+/* GPS capture row */
+.gps-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  justify-content: space-between;
+  padding: var(--space-3);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+}
+/* Settings list (replaces table on mobile) */
+.settings-list {
+  display: none;
+}
+/* Desktop column sizes */
 @media (min-width: 769px) {
+  .detail-grid { grid-template-columns: 1fr 280px; }
+  .detail-grid-sidebar { grid-template-columns: 320px 1fr; }
   .show-mobile { display: none !important; }
+}
+
+@media (max-width: 768px) {
+  .detail-grid { grid-template-columns: 1fr; }
+  .detail-grid-sidebar { grid-template-columns: 1fr; }
+  
+  /* GPS row — stack vertically */
+  .gps-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+  .gps-row .btn { align-self: stretch; justify-content: center; }
+  
+  /* Company settings — show card list, hide table */
+  .settings-table-desktop { display: none !important; }
+  .settings-list { display: block !important; }
+  .settings-list-item {
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--divider);
+  }
+  .settings-list-item:last-child { border-bottom: none; }
+  .settings-list-label {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-1);
+  }
+  .settings-list-key {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    font-family: monospace;
+    direction: ltr;
+    display: block;
+    margin-bottom: var(--space-2);
+  }
 }
 
 /* ======= Toggle Switch ======= */

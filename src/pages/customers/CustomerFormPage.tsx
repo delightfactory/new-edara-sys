@@ -449,7 +449,7 @@ export default function CustomerFormPage() {
               <textarea className="form-textarea" rows={2} value={form.address || ''} onChange={e => updateForm('address', e.target.value)} placeholder="الشارع، رقم المبنى، الطابق..." />
             </div>
             {/* GPS Location */}
-            <div style={{ marginTop: 'var(--space-4)', padding: 'var(--space-3)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', justifyContent: 'space-between' }}>
+            <div className="gps-row" style={{ marginTop: 'var(--space-4)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                 <MapPin size={16} style={{ color: 'var(--color-primary)' }} />
                 {location.lat ? (

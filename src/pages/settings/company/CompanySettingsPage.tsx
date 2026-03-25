@@ -126,7 +126,8 @@ export default function CompanySettingsPage() {
 
       {/* Settings */}
       <div className="edara-card" style={{ overflow: 'hidden' }}>
-        <table className="data-table">
+        {/* Desktop table view */}
+        <table className="data-table settings-table-desktop">
           <thead>
             <tr>
               <th style={{ width: '40%' }}>الإعداد</th>
@@ -152,6 +153,16 @@ export default function CompanySettingsPage() {
             ))}
           </tbody>
         </table>
+        {/* Mobile list view */}
+        <div className="settings-list">
+          {filtered.map(setting => (
+            <div key={setting.key} className="settings-list-item">
+              <div className="settings-list-label">{setting.description}</div>
+              <span className="settings-list-key">{setting.key}</span>
+              {renderInput(setting)}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )

@@ -131,7 +131,7 @@ export default function AdjustmentDetailPage() {
       </div>
 
       {/* Summary Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
         {/* المخزن */}
         <div className="edara-card" style={{ padding: 'var(--space-4)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
@@ -184,7 +184,7 @@ export default function AdjustmentDetailPage() {
       {/* Content Grid: Info */}
       <div className="edara-card" style={{ padding: 'var(--space-5)', marginBottom: 'var(--space-4)' }}>
         <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 700, marginBottom: 'var(--space-4)' }}>معلومات التسوية</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 'var(--space-3)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-3)' }}>
           <InfoRow icon={User} label="أنشأ بواسطة" value={(adjustment as any).created_by_profile?.full_name} />
           <InfoRow icon={Calendar} label="تاريخ الإنشاء" value={formatDateShort(adjustment.created_at)} />
           <InfoRow icon={ClipboardMinus} label="النوع" value={tp.label} />
@@ -215,13 +215,13 @@ export default function AdjustmentDetailPage() {
             <tr>
               <th style={{ width: 40 }}>#</th>
               <th>المنتج</th>
-              <th>SKU</th>
-              <th>كمية النظام</th>
+              <th className="hide-mobile">SKU</th>
+              <th className="hide-mobile">كمية النظام</th>
               <th>الكمية الفعلية</th>
               <th>الفرق</th>
               {canViewCosts && <th>تكلفة الوحدة</th>}
               {canViewCosts && <th>قيمة الفرق</th>}
-              <th>ملاحظات</th>
+              <th className="hide-mobile">ملاحظات</th>
             </tr>
           </thead>
           <tbody>
@@ -231,8 +231,8 @@ export default function AdjustmentDetailPage() {
                 <tr key={item.id}>
                   <td style={{ color: 'var(--text-muted)' }}>{idx + 1}</td>
                   <td style={{ fontWeight: 500 }}>{item.product?.name || item.product_id}</td>
-                  <td dir="ltr" style={{ fontFamily: 'monospace', fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{item.product?.sku || '—'}</td>
-                  <td>{formatNumber(item.system_qty)}</td>
+                  <td className="hide-mobile" dir="ltr" style={{ fontFamily: 'monospace', fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{item.product?.sku || '—'}</td>
+                  <td className="hide-mobile">{formatNumber(item.system_qty)}</td>
                   <td style={{ fontWeight: 600 }}>{formatNumber(item.actual_qty)}</td>
                   <td style={{
                     fontWeight: 700,
@@ -249,7 +249,7 @@ export default function AdjustmentDetailPage() {
                       {item.unit_cost && diff !== 0 ? `${diff > 0 ? '+' : ''}${formatNumber(diff * item.unit_cost)}` : '—'}
                     </td>
                   )}
-                  <td style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{item.notes || '—'}</td>
+                  <td className="hide-mobile" style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{item.notes || '—'}</td>
                 </tr>
               )
             })}
@@ -257,7 +257,7 @@ export default function AdjustmentDetailPage() {
           {canViewCosts && adjustment.items && adjustment.items.length > 0 && (
             <tfoot>
               <tr>
-                <td colSpan={6} />
+                <td colSpan={4} className="hide-mobile" /><td colSpan={2} />
                 <td style={{ fontWeight: 700 }}>الإجمالي</td>
                 <td style={{ fontWeight: 700 }}>
                   {(() => {

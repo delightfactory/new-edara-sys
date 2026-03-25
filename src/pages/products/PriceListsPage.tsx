@@ -207,7 +207,7 @@ export default function PriceListsPage() {
         )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: selected ? '320px 1fr' : '1fr', gap: 'var(--space-4)' }}>
+      <div className="detail-grid-sidebar">
         {/* Price Lists sidebar */}
         <div className="edara-card">
           {loading ? (

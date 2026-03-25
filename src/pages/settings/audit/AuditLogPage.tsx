@@ -88,8 +88,8 @@ export default function AuditLogPage() {
               <tr>
                 <th>المستخدم</th>
                 <th>الإجراء</th>
-                <th>الجدول</th>
-                <th>التاريخ</th>
+                <th className="hide-mobile">الجدول</th>
+                <th className="hide-mobile">التاريخ</th>
                 <th style={{ width: 60 }}>تفاصيل</th>
               </tr>
             </thead>
@@ -104,8 +104,8 @@ export default function AuditLogPage() {
                       </span>
                     </td>
                     <td><span className={`badge ${action.cls}`}>{action.label}</span></td>
-                    <td><span style={{ fontSize: 'var(--text-xs)', fontFamily: 'monospace' }}>{log.entity_type}</span></td>
-                    <td><span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{formatDate(log.created_at)}</span></td>
+                    <td className="hide-mobile"><span style={{ fontSize: 'var(--text-xs)', fontFamily: 'monospace' }}>{log.entity_type}</span></td>
+                    <td className="hide-mobile"><span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{formatDate(log.created_at)}</span></td>
                     <td>
                       {(log.old_data || log.new_data) && (
                         <button className="btn btn-ghost btn-sm" onClick={() => setDetail(log)}>

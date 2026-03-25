@@ -269,7 +269,7 @@ export default function RoleFormPage() {
                   {isExpanded && (
                     <div style={{
                       padding: '0 var(--space-4) var(--space-4)',
-                      display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                      display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
                       gap: 'var(--space-2)',
                     }}>
                       {group.permissions.map(perm => {
@@ -305,6 +305,7 @@ export default function RoleFormPage() {
           bottom: 0, padding: 'var(--space-4) 0',
           background: 'var(--bg-app)',
           borderTop: '1px solid var(--border-primary)',
+          flexWrap: 'wrap',
         }}>
           <button type="button" className="btn btn-secondary" onClick={() => navigate('/settings/roles')}>إلغاء</button>
           <button type="submit" className="btn btn-primary btn-lg" disabled={saving}>

@@ -160,7 +160,7 @@ export default function CustomerDetailPage() {
 
       {/* ═══════ TAB: INFO ═══════ */}
       {tab === 'info' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-4)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
           {/* Contact Info */}
           <div className="edara-card" style={{ padding: 'var(--space-5)' }}>
             <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 'var(--space-3)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
