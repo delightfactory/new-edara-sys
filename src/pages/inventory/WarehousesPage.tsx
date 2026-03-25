@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { Plus, Warehouse as WarehouseIcon, Edit, UserPlus, UserMinus } from 'lucide-react'
-import { getWarehouses, createWarehouse, updateWarehouse, getWarehouseManagers, addWarehouseManager, removeWarehouseManager } from '@/lib/services/inventory'
-import { getBranches } from '@/lib/services/geography'
+import { createWarehouse, updateWarehouse, getWarehouseManagers, addWarehouseManager, removeWarehouseManager } from '@/lib/services/inventory'
+import { useWarehouses, useBranches, useProfiles, useInvalidate } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
-import type { Warehouse, WarehouseType, WarehouseManager, Branch } from '@/lib/types/master-data'
+import type { Warehouse, WarehouseType, WarehouseManager } from '@/lib/types/master-data'
 import { formatDateShort } from '@/lib/utils/format'
 import PageHeader from '@/components/shared/PageHeader'
 import EmptyState from '@/components/shared/EmptyState'
@@ -23,38 +23,22 @@ interface WhFormState {
 
 export default function WarehousesPage() {
   const can = useAuthStore(s => s.can)
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([])
-  const [loading, setLoading] = useState(true)
+  const invalidate = useInvalidate()
+
+  // React Query — cached & shared
+  const { data: warehouses = [], isLoading: loading } = useWarehouses()
+  const { data: branches = [] } = useBranches()
+  const { data: profiles = [] } = useProfiles()
+
   const [modal, setModal] = useState<{ open: boolean; editing?: Warehouse }>({ open: false })
   const [form, setForm] = useState<WhFormState>({ name: '', type: 'fixed', branch_id: null, address: '', manager_id: null })
   const [saving, setSaving] = useState(false)
   const [selectedWh, setSelectedWh] = useState<Warehouse | null>(null)
   const [managers, setManagers] = useState<WarehouseManager[]>([])
-  const [branches, setBranches] = useState<Branch[]>([])
-  const [profiles, setProfiles] = useState<{ id: string; full_name: string }[]>([])
   const [addManagerModal, setAddManagerModal] = useState(false)
   const [newManager, setNewManager] = useState({ profile_id: '', is_primary: false, can_approve_receipts: false })
   const [addingManager, setAddingManager] = useState(false)
   const [removeTarget, setRemoveTarget] = useState<WarehouseManager | null>(null)
-
-  const load = async () => {
-    setLoading(true)
-    try { setWarehouses(await getWarehouses()) }
-    catch { toast.error('فشل تحميل المخازن') }
-    finally { setLoading(false) }
-  }
-
-  useEffect(() => {
-    const init = async () => {
-      const [brs] = await Promise.all([getBranches()])
-      setBranches(brs)
-      const { data } = await (await import('@/lib/supabase/client')).supabase
-        .from('profiles').select('id, full_name').eq('status', 'active').order('full_name')
-      if (data) setProfiles(data)
-      await load()
-    }
-    init()
-  }, [])
 
   const loadManagers = async (wh: Warehouse) => {
     setSelectedWh(wh)
@@ -74,7 +58,7 @@ export default function WarehousesPage() {
         toast.success('تم الإنشاء')
       }
       setModal({ open: false })
-      load()
+      invalidate('warehouses')
     } catch { toast.error('فشلت العملية') }
     finally { setSaving(false) }
   }

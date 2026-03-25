@@ -1,11 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { toast } from 'sonner'
 import { ReceiptText, Plus, Check, XCircle, Upload, Send, Eye } from 'lucide-react'
-import { getExpenses, createExpense, submitExpenseForApproval, approveExpense, rejectExpense, getExpenseCategories, uploadExpenseReceipt } from '@/lib/services/payments'
-import { getVaults } from '@/lib/services/vaults'
-import { getCustodyAccounts } from '@/lib/services/custody'
+import { createExpense, submitExpenseForApproval, approveExpense, rejectExpense, uploadExpenseReceipt } from '@/lib/services/payments'
+import { useExpenses, useExpenseCategories, useVaults, useCustodyAccounts, useInvalidate } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
-import type { Expense, ExpenseInput, ExpenseCategory, Vault, CustodyAccount, PaymentSource } from '@/lib/types/master-data'
+import type { Expense, ExpenseInput, PaymentSource } from '@/lib/types/master-data'
 import { formatCurrency, formatDate } from '@/lib/utils/format'
 import PageHeader from '@/components/shared/PageHeader'
 import DataTable from '@/components/shared/DataTable'
@@ -23,16 +22,19 @@ const statusConfig: Record<string, { label: string; variant: 'neutral' | 'warnin
 export default function ExpensesPage() {
   const can = useAuthStore(s => s.can)
   const userId = useAuthStore(s => s.profile?.id)
+  const invalidate = useInvalidate()
 
-  const [expenses, setExpenses] = useState<Expense[]>([])
-  const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(0)
-  const [totalCount, setTotalCount] = useState(0)
   const [filterStatus, setFilterStatus] = useState('')
-  const [categories, setCategories] = useState<ExpenseCategory[]>([])
-  const [vaults, setVaults] = useState<Vault[]>([])
-  const [custodyAccounts, setCustodyAccounts] = useState<CustodyAccount[]>([])
+
+  // React Query — cached & shared
+  const { data: categories = [] } = useExpenseCategories()
+  const { data: vaults = [] } = useVaults({ isActive: true })
+  const { data: custodyAccounts = [] } = useCustodyAccounts({ isActive: true })
+  const { data: result, isLoading: loading } = useExpenses({ page, pageSize: 25, status: filterStatus || undefined })
+  const expenses = result?.data ?? []
+  const totalPages = result?.totalPages ?? 0
+  const totalCount = result?.count ?? 0
 
   // Create
   const [createOpen, setCreateOpen] = useState(false)
@@ -50,26 +52,6 @@ export default function ExpensesPage() {
   // Detail view
   const [detailExpense, setDetailExpense] = useState<Expense | null>(null)
 
-  const load = useCallback(async (p = 1) => {
-    setLoading(true)
-    try {
-      const res = await getExpenses({ page: p, pageSize: 25, status: filterStatus || undefined })
-      setExpenses(res.data); setPage(res.page); setTotalPages(res.totalPages); setTotalCount(res.count)
-    } catch { toast.error('فشل تحميل المصروفات') }
-    finally { setLoading(false) }
-  }, [filterStatus])
-
-  useEffect(() => {
-    const init = async () => {
-      const [cats, vs, custs] = await Promise.all([getExpenseCategories(), getVaults({ isActive: true }), getCustodyAccounts({ isActive: true })])
-      setCategories(cats); setVaults(vs); setCustodyAccounts(custs)
-      await load()
-    }
-    init()
-  }, [load])
-
-  useEffect(() => { load(1) }, [filterStatus, load])
-
   // ── Create ──
   const openCreate = () => {
     setForm({ amount: 0, description: '', payment_source: 'vault', expense_date: new Date().toISOString().split('T')[0] })
@@ -86,13 +68,13 @@ export default function ExpensesPage() {
       let receiptUrl: string | undefined
       if (receiptFile) receiptUrl = await uploadExpenseReceipt(receiptFile)
       await createExpense({ ...form, receipt_url: receiptUrl || null })
-      toast.success('تم إنشاء المصروف'); setCreateOpen(false); load()
+      toast.success('تم إنشاء المصروف'); setCreateOpen(false); invalidate('expenses')
     } catch (err: any) { toast.error(err.message || 'فشل الإنشاء') }
     finally { setSaving(false) }
   }
 
   const handleSubmit = async (exp: Expense) => {
-    try { await submitExpenseForApproval(exp.id); toast.success('تم تقديم المصروف للموافقة'); load() }
+    try { await submitExpenseForApproval(exp.id); toast.success('تم تقديم المصروف للموافقة'); invalidate('expenses') }
     catch (err: any) { toast.error(err.message) }
   }
 
@@ -105,7 +87,7 @@ export default function ExpensesPage() {
         if (!rejectReason.trim()) { toast.error('سبب الرفض مطلوب'); setProcessing(false); return }
         await rejectExpense(targetExpense.id, rejectReason); toast.success('تم رفض المصروف')
       }
-      setTargetExpense(null); setApproveAction(null); load()
+      setTargetExpense(null); setApproveAction(null); invalidate('expenses')
     } catch (err: any) { toast.error(err.message) }
     finally { setProcessing(false) }
   }
@@ -168,7 +150,7 @@ export default function ExpensesPage() {
           page={page}
           totalPages={totalPages}
           totalCount={totalCount}
-          onPageChange={(p) => load(p)}
+          onPageChange={setPage}
         />
       </div>
 

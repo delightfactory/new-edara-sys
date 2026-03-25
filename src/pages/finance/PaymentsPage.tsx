@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { toast } from 'sonner'
 import { Receipt, Plus, Check, XCircle, Upload } from 'lucide-react'
-import { getPaymentReceipts, createPaymentReceipt, confirmPaymentReceipt, rejectPaymentReceipt, uploadPaymentProof } from '@/lib/services/payments'
-import { getVaults } from '@/lib/services/vaults'
+import { createPaymentReceipt, confirmPaymentReceipt, rejectPaymentReceipt, uploadPaymentProof } from '@/lib/services/payments'
+import { usePaymentReceipts, useVaults, useInvalidate } from '@/hooks/useQueryHooks'
+import { supabase } from '@/lib/supabase/client'
+import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/auth-store'
-import type { PaymentReceipt, PaymentReceiptInput, PaymentMethod, Vault } from '@/lib/types/master-data'
+import type { PaymentReceipt, PaymentReceiptInput, PaymentMethod } from '@/lib/types/master-data'
 import { formatCurrency, formatDateTime } from '@/lib/utils/format'
 import PageHeader from '@/components/shared/PageHeader'
 import DataTable from '@/components/shared/DataTable'
@@ -28,15 +30,27 @@ const statusConfig: Record<string, { label: string; variant: 'warning' | 'succes
 
 export default function PaymentsPage() {
   const can = useAuthStore(s => s.can)
+  const invalidate = useInvalidate()
 
-  const [receipts, setReceipts] = useState<PaymentReceipt[]>([])
-  const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(0)
-  const [totalCount, setTotalCount] = useState(0)
   const [filterStatus, setFilterStatus] = useState('')
-  const [vaults, setVaults] = useState<Vault[]>([])
-  const [customers, setCustomers] = useState<{ id: string; name: string; code: string }[]>([])
+
+  // React Query — cached & shared
+  const { data: vaults = [] } = useVaults({ isActive: true })
+  const { data: result, isLoading: loading } = usePaymentReceipts({ page, pageSize: 25, status: filterStatus || undefined })
+  const receipts = result?.data ?? []
+  const totalPages = result?.totalPages ?? 0
+  const totalCount = result?.count ?? 0
+
+  // Customers for create modal
+  const { data: customers = [] } = useQuery({
+    queryKey: ['customers-active-list'],
+    queryFn: async () => {
+      const { data } = await supabase.from('customers').select('id, name, code').eq('is_active', true).order('name').limit(500)
+      return data as { id: string; name: string; code: string }[] || []
+    },
+    staleTime: 5 * 60 * 1000,
+  })
 
   // Create
   const [createOpen, setCreateOpen] = useState(false)
@@ -56,29 +70,6 @@ export default function PaymentsPage() {
   const [rejectReason, setRejectReason] = useState('')
   const [rejecting, setRejecting] = useState(false)
 
-  const load = useCallback(async (p = 1) => {
-    setLoading(true)
-    try {
-      const res = await getPaymentReceipts({ page: p, pageSize: 25, status: filterStatus || undefined })
-      setReceipts(res.data); setPage(res.page); setTotalPages(res.totalPages); setTotalCount(res.count)
-    } catch { toast.error('فشل تحميل الإيصالات') }
-    finally { setLoading(false) }
-  }, [filterStatus])
-
-  useEffect(() => {
-    const init = async () => {
-      const [vs] = await Promise.all([getVaults({ isActive: true })])
-      setVaults(vs)
-      const { data } = await (await import('@/lib/supabase/client')).supabase
-        .from('customers').select('id, name, code').eq('is_active', true).order('name').limit(500)
-      if (data) setCustomers(data)
-      await load()
-    }
-    init()
-  }, [load])
-
-  useEffect(() => { load(1) }, [filterStatus, load])
-
   // ── Create ──
   const openCreate = () => { setForm({ customer_id: '', amount: 0, payment_method: 'cash' }); setProofFile(null); setCustSearch(''); setCreateOpen(true) }
 
@@ -90,7 +81,7 @@ export default function PaymentsPage() {
       let proofUrl: string | undefined
       if (proofFile) proofUrl = await uploadPaymentProof(proofFile)
       await createPaymentReceipt({ ...form, proof_url: proofUrl || null })
-      toast.success('تم إنشاء الإيصال'); setCreateOpen(false); load()
+      toast.success('تم إنشاء الإيصال'); setCreateOpen(false); invalidate('payment-receipts')
     } catch (err: any) { toast.error(err.message || 'فشل الإنشاء') }
     finally { setSaving(false) }
   }
@@ -99,7 +90,7 @@ export default function PaymentsPage() {
   const handleConfirm = async () => {
     if (!confirmReceipt || !confirmVaultId) { toast.error('اختر خزنة'); return }
     setConfirming(true)
-    try { await confirmPaymentReceipt(confirmReceipt.id, confirmVaultId); toast.success('تم تأكيد الإيصال'); setConfirmReceipt(null); load() }
+    try { await confirmPaymentReceipt(confirmReceipt.id, confirmVaultId); toast.success('تم تأكيد الإيصال'); setConfirmReceipt(null); invalidate('payment-receipts') }
     catch (err: any) { toast.error(err.message) }
     finally { setConfirming(false) }
   }
@@ -108,7 +99,7 @@ export default function PaymentsPage() {
   const handleReject = async () => {
     if (!rejectReceipt || !rejectReason.trim()) { toast.error('سبب الرفض مطلوب'); return }
     setRejecting(true)
-    try { await rejectPaymentReceipt(rejectReceipt.id, rejectReason); toast.success('تم رفض الإيصال'); setRejectReceipt(null); load() }
+    try { await rejectPaymentReceipt(rejectReceipt.id, rejectReason); toast.success('تم رفض الإيصال'); setRejectReceipt(null); invalidate('payment-receipts') }
     catch (err: any) { toast.error(err.message) }
     finally { setRejecting(false) }
   }
@@ -172,7 +163,7 @@ export default function PaymentsPage() {
           page={page}
           totalPages={totalPages}
           totalCount={totalCount}
-          onPageChange={(p) => load(p)}
+          onPageChange={setPage}
         />
       </div>
 

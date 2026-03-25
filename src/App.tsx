@@ -6,6 +6,7 @@ import { lazy, Suspense } from 'react'
 import { AuthProvider } from '@/components/layout/AuthProvider'
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute'
 import ErrorBoundary from '@/components/shared/ErrorBoundary'
+import GlobalRealtimeManager from '@/components/shared/GlobalRealtimeManager'
 import AppLayout from '@/components/layout/AppLayout'
 
 // Auth Pages
@@ -74,6 +75,7 @@ const LazyFallback = () => (
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      <GlobalRealtimeManager />
       <BrowserRouter>
         <AuthProvider>
         <ErrorBoundary>

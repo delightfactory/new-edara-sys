@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Plus, Users, ToggleLeft, ToggleRight, Eye } from 'lucide-react'
-import { getCustomers, toggleCustomerActive } from '@/lib/services/customers'
-import { getGovernorates, getCities } from '@/lib/services/geography'
-import { supabase } from '@/lib/supabase/client'
+import { toggleCustomerActive } from '@/lib/services/customers'
+import { getCities } from '@/lib/services/geography'
+import { useCustomers, useGovernorates, useProfiles, useInvalidate } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
-import type { Customer, Governorate, City } from '@/lib/types/master-data'
+import type { Customer, City } from '@/lib/types/master-data'
 import { formatNumber } from '@/lib/utils/format'
 import PageHeader from '@/components/shared/PageHeader'
 import SearchInput from '@/components/shared/SearchInput'
@@ -18,11 +18,8 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog'
 export default function CustomersPage() {
   const navigate = useNavigate()
   const can = useAuthStore(s => s.can)
-  const [customers, setCustomers] = useState<Customer[]>([])
-  const [governorates, setGovernorates] = useState<Governorate[]>([])
+  const invalidate = useInvalidate()
   const [cities, setCities] = useState<City[]>([])
-  const [reps, setReps] = useState<{ id: string; full_name: string }[]>([])
-  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
   const [govFilter, setGovFilter] = useState('')
@@ -30,45 +27,29 @@ export default function CustomersPage() {
   const [repFilter, setRepFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [totalCount, setTotalCount] = useState(0)
   const [confirmTarget, setConfirmTarget] = useState<Customer | null>(null)
 
-  const loadData = async () => {
-    setLoading(true)
-    try {
-      const [res, govs] = await Promise.all([
-        getCustomers({
-          search, type: typeFilter, governorateId: govFilter, cityId: cityFilter,
-          repId: repFilter,
-          isActive: statusFilter === '' ? undefined : statusFilter === 'active',
-          page, pageSize: 25,
-        }),
-        governorates.length ? Promise.resolve(governorates) : getGovernorates(),
-      ])
-      setCustomers(res.data)
-      setTotalPages(res.totalPages)
-      setTotalCount(res.count)
-      if (!governorates.length) setGovernorates(govs as Governorate[])
-    } catch { toast.error('فشل تحميل العملاء') }
-    finally { setLoading(false) }
+  // React Query — cached & shared
+  const { data: governorates = [] } = useGovernorates()
+  const { data: reps = [] } = useProfiles()
+
+  const queryParams = useMemo(() => ({
+    search, type: typeFilter, governorateId: govFilter, cityId: cityFilter,
+    repId: repFilter,
+    isActive: statusFilter === '' ? undefined : statusFilter === 'active',
+    page, pageSize: 25,
+  }), [search, typeFilter, govFilter, cityFilter, repFilter, statusFilter, page])
+
+  const { data: result, isLoading: loading } = useCustomers(queryParams)
+  const customers = result?.data ?? []
+  const totalPages = result?.totalPages ?? 1
+  const totalCount = result?.count ?? 0
+
+  // Fetch cities when governorate changes (lightweight dependent query)
+  const handleGovChange = async (govId: string) => {
+    setGovFilter(govId); setCityFilter(''); setPage(1)
+    setCities(govId ? await getCities(govId) : [])
   }
-
-  useEffect(() => {
-    supabase.from('profiles').select('id, full_name').eq('status', 'active').order('full_name')
-      .then(({ data }) => { if (data) setReps(data) })
-  }, [])
-
-  useEffect(() => {
-    if (govFilter) {
-      getCities(govFilter).then(setCities).catch(() => {})
-    } else {
-      setCities([])
-      setCityFilter('')
-    }
-  }, [govFilter])
-
-  useEffect(() => { loadData() }, [search, typeFilter, govFilter, cityFilter, repFilter, statusFilter, page])
 
   const handleToggle = (c: Customer) => setConfirmTarget(c)
   const executeToggle = async () => {
@@ -77,7 +58,7 @@ export default function CustomersPage() {
     try {
       await toggleCustomerActive(confirmTarget.id, next)
       toast.success(`تم ${next ? 'تفعيل' : 'إلغاء تفعيل'} العميل`)
-      loadData()
+      invalidate('customers')
     } catch { toast.error('فشلت العملية') }
     finally { setConfirmTarget(null) }
   }
@@ -117,7 +98,7 @@ export default function CustomersPage() {
             <option value="distributor">موزع</option>
           </select>
           <select className="form-select" style={{ width: 140 }} value={govFilter}
-            onChange={e => { setGovFilter(e.target.value); setCityFilter(''); setPage(1) }}>
+            onChange={e => handleGovChange(e.target.value)}>
             <option value="">كل المحافظات</option>
             {governorates.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
           </select>

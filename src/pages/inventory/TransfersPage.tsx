@@ -1,4 +1,4 @@
-import { useState, useEffect, Fragment } from 'react'
+import { useState, Fragment, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
@@ -6,11 +6,13 @@ import {
   Truck, PackageCheck, X as XIcon, Send, Download
 } from 'lucide-react'
 import {
-  getTransfers, createTransfer, shipTransfer,
+  createTransfer, shipTransfer,
   approveAndShipTransfer, receiveTransfer, cancelTransfer,
-  getWarehouses, getAvailableStock, getMyWarehouses
+  getAvailableStock, getMyWarehouses
 } from '@/lib/services/inventory'
 import { getProducts, getProductUnits } from '@/lib/services/products'
+import { useTransfers, useWarehouses, useInvalidate } from '@/hooks/useQueryHooks'
+import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/auth-store'
 import type { StockTransfer, Warehouse, TransferStatus, Product } from '@/lib/types/master-data'
 import { formatNumber, formatCurrency, formatDateShort } from '@/lib/utils/format'
@@ -23,17 +25,31 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog'
 export default function TransfersPage() {
   const can = useAuthStore(s => s.can)
   const navigate = useNavigate()
-  const [transfers, setTransfers] = useState<StockTransfer[]>([])
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([])
-  const [myWarehouses, setMyWarehouses] = useState<Warehouse[]>([])
-  const [loading, setLoading] = useState(true)
+  const invalidate = useInvalidate()
   const [statusFilter, setStatusFilter] = useState('')
   const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [totalCount, setTotalCount] = useState(0)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const isAdmin = can('inventory.read_all')
   const canViewCosts = can('finance.view_costs')
+
+  // React Query — cached & shared
+  const { data: warehouses = [] } = useWarehouses()
+  const { data: myWarehousesData = [] } = useQuery({
+    queryKey: ['my-warehouses'],
+    queryFn: () => getMyWarehouses(),
+    staleTime: 5 * 60 * 1000,
+  })
+  const myWarehouses = myWarehousesData as Warehouse[]
+
+  const queryParams = useMemo(() => ({
+    status: (statusFilter || undefined) as TransferStatus | undefined,
+    page, pageSize: 25,
+  }), [statusFilter, page])
+
+  const { data: result, isLoading: loading } = useTransfers(queryParams)
+  const transfers = result?.data ?? []
+  const totalPages = result?.totalPages ?? 1
+  const totalCount = result?.count ?? 0
 
   // Create modal
   const [createModal, setCreateModal] = useState(false)
@@ -52,27 +68,6 @@ export default function TransfersPage() {
   } | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
 
-  const load = async () => {
-    setLoading(true)
-    try {
-      const [res, whs, myWhs] = await Promise.all([
-        getTransfers({
-          status: (statusFilter || undefined) as TransferStatus | undefined,
-          page, pageSize: 25,
-        }),
-        warehouses.length ? Promise.resolve(warehouses) : getWarehouses(),
-        myWarehouses.length ? Promise.resolve(myWarehouses) : getMyWarehouses(),
-      ])
-      setTransfers(res.data)
-      setTotalPages(res.totalPages)
-      setTotalCount(res.count)
-      if (!warehouses.length) setWarehouses(whs as Warehouse[])
-      if (!myWarehouses.length) setMyWarehouses(myWhs)
-    } catch { toast.error('فشل تحميل التحويلات') }
-    finally { setLoading(false) }
-  }
-
-  useEffect(() => { load() }, [statusFilter, page])
 
   // ─── Create Modal Helpers ───
   const myWhId = myWarehouses.length === 1 ? myWarehouses[0].id : ''
@@ -182,7 +177,7 @@ export default function TransfersPage() {
       )
       toast.success(direction === 'push' ? 'تم إنشاء التحويل وحجز الكميات' : 'تم إرسال طلب التحويل')
       setCreateModal(false)
-      load()
+      invalidate('transfers')
     } catch (e: any) { toast.error(e?.message || 'فشلت العملية') }
     finally { setCreateSaving(false) }
   }
@@ -203,7 +198,7 @@ export default function TransfersPage() {
         confirmAction.action === 'approve_ship' ? 'تمت الموافقة والشحن' :
         confirmAction.action === 'receive' ? 'تم تأكيد الاستلام' : 'تم الإلغاء'
       )
-      load()
+      invalidate('transfers')
     } catch (e: any) { toast.error(e?.message || 'فشلت العملية') }
     finally { setActionLoading(false); setConfirmAction(null) }
   }

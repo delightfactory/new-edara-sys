@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Plus, BoxesIcon, ToggleLeft, ToggleRight, Edit } from 'lucide-react'
-import { getProducts, toggleProductActive } from '@/lib/services/products'
-import { getCategories, getBrands } from '@/lib/services/products'
+import { toggleProductActive } from '@/lib/services/products'
+import { useProducts, useCategories, useBrands, useInvalidate } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
-import type { Product, ProductCategory, Brand } from '@/lib/types/master-data'
+import type { Product } from '@/lib/types/master-data'
 import { formatCurrency } from '@/lib/utils/format'
 import PageHeader from '@/components/shared/PageHeader'
 import SearchInput from '@/components/shared/SearchInput'
@@ -17,42 +17,28 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog'
 export default function ProductsPage() {
   const navigate = useNavigate()
   const can = useAuthStore(s => s.can)
-  const [products, setProducts] = useState<Product[]>([])
-  const [categories, setCategories] = useState<ProductCategory[]>([])
-  const [brands, setBrands] = useState<Brand[]>([])
-  const [loading, setLoading] = useState(true)
+  const invalidate = useInvalidate()
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
   const [brandFilter, setBrandFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [totalCount, setTotalCount] = useState(0)
-  // ConfirmDialog state
   const [confirmTarget, setConfirmTarget] = useState<Product | null>(null)
 
-  const loadData = async () => {
-    setLoading(true)
-    try {
-      const [res, cats, brds] = await Promise.all([
-        getProducts({
-          search, categoryId: categoryFilter, brandId: brandFilter,
-          isActive: statusFilter === '' ? undefined : statusFilter === 'active',
-          page, pageSize: 25,
-        }),
-        categories.length ? Promise.resolve(categories) : getCategories(),
-        brands.length ? Promise.resolve(brands) : getBrands(),
-      ])
-      setProducts(res.data)
-      setTotalPages(res.totalPages)
-      setTotalCount(res.count)
-      if (!categories.length) setCategories(cats as ProductCategory[])
-      if (!brands.length) setBrands(brds as Brand[])
-    } catch { toast.error('فشل تحميل المنتجات') }
-    finally { setLoading(false) }
-  }
+  // React Query — cached & shared
+  const { data: categories = [] } = useCategories()
+  const { data: brands = [] } = useBrands()
 
-  useEffect(() => { loadData() }, [search, categoryFilter, brandFilter, statusFilter, page])
+  const queryParams = useMemo(() => ({
+    search, categoryId: categoryFilter, brandId: brandFilter,
+    isActive: statusFilter === '' ? undefined : statusFilter === 'active',
+    page, pageSize: 25,
+  }), [search, categoryFilter, brandFilter, statusFilter, page])
+
+  const { data: result, isLoading: loading } = useProducts(queryParams)
+  const products = result?.data ?? []
+  const totalPages = result?.totalPages ?? 1
+  const totalCount = result?.count ?? 0
 
   const handleToggle = async (p: Product) => {
     setConfirmTarget(p)
@@ -64,7 +50,7 @@ export default function ProductsPage() {
     try {
       await toggleProductActive(confirmTarget.id, next)
       toast.success(`تم ${next ? 'تفعيل' : 'تعطيل'} المنتج`)
-      loadData()
+      invalidate('products')
     } catch { toast.error('فشلت العملية') }
     finally { setConfirmTarget(null) }
   }

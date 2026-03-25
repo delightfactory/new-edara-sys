@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react'
-import { toast } from 'sonner'
+import { useState, useMemo } from 'react'
 import { PackageSearch, AlertTriangle } from 'lucide-react'
-import { getStock, getWarehouses } from '@/lib/services/inventory'
+import { useStock, useWarehouses } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
-import type { Stock, Warehouse } from '@/lib/types/master-data'
+import type { Stock } from '@/lib/types/master-data'
 import { formatNumber, formatCurrency } from '@/lib/utils/format'
 import PageHeader from '@/components/shared/PageHeader'
 import SearchInput from '@/components/shared/SearchInput'
@@ -13,34 +12,22 @@ import Badge from '@/components/ui/Badge'
 export default function StockPage() {
   const can = useAuthStore(s => s.can)
   const canViewCosts = can('finance.view_costs')
-  const [stock, setStock] = useState<Stock[]>([])
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([])
-  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [whFilter, setWhFilter] = useState('')
   const [lowStockOnly, setLowStockOnly] = useState(false)
   const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [totalCount, setTotalCount] = useState(0)
 
-  const loadData = async () => {
-    setLoading(true)
-    try {
-      const [res, whs] = await Promise.all([
-        getStock({
-          search, warehouseId: whFilter, lowStockOnly, page, pageSize: 25,
-        }),
-        warehouses.length ? Promise.resolve(warehouses) : getWarehouses(),
-      ])
-      setStock(res.data)
-      setTotalPages(res.totalPages)
-      setTotalCount(res.count)
-      if (!warehouses.length) setWarehouses(whs as Warehouse[])
-    } catch { toast.error('فشل تحميل أرصدة المخزون') }
-    finally { setLoading(false) }
-  }
+  // React Query — cached & shared
+  const { data: warehouses = [] } = useWarehouses()
 
-  useEffect(() => { loadData() }, [search, whFilter, lowStockOnly, page])
+  const queryParams = useMemo(() => ({
+    search, warehouseId: whFilter, lowStockOnly, page, pageSize: 25,
+  }), [search, whFilter, lowStockOnly, page])
+
+  const { data: result, isLoading: loading } = useStock(queryParams)
+  const stock = result?.data ?? []
+  const totalPages = result?.totalPages ?? 1
+  const totalCount = result?.count ?? 0
 
   return (
     <div className="page-container animate-enter">

@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react'
-import { toast } from 'sonner'
+import { useState, useMemo } from 'react'
 import { Activity } from 'lucide-react'
-import { getStockMovements, getWarehouses } from '@/lib/services/inventory'
+import { useStockMovements, useWarehouses } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
-import type { StockMovement, Warehouse } from '@/lib/types/master-data'
+import type { StockMovement } from '@/lib/types/master-data'
 import { formatNumber, formatCurrency, formatDateShort } from '@/lib/utils/format'
 import PageHeader from '@/components/shared/PageHeader'
 import Badge from '@/components/ui/Badge'
@@ -22,35 +21,23 @@ const typeLabels: Record<string, { label: string; variant: 'success' | 'danger' 
 export default function StockMovementsPage() {
   const can = useAuthStore(s => s.can)
   const canViewCosts = can('finance.view_costs')
-  const [movements, setMovements] = useState<StockMovement[]>([])
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([])
-  const [loading, setLoading] = useState(true)
   const [whFilter, setWhFilter] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
   const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [totalCount, setTotalCount] = useState(0)
 
-  const load = async () => {
-    setLoading(true)
-    try {
-      const [res, whs] = await Promise.all([
-        getStockMovements({
-          warehouseId: whFilter || undefined,
-          type: typeFilter || undefined,
-          page, pageSize: 50,
-        }),
-        warehouses.length ? Promise.resolve(warehouses) : getWarehouses(),
-      ])
-      setMovements(res.data)
-      setTotalPages(res.totalPages)
-      setTotalCount(res.count)
-      if (!warehouses.length) setWarehouses(whs as Warehouse[])
-    } catch { toast.error('فشل تحميل حركات المخزون') }
-    finally { setLoading(false) }
-  }
+  // React Query — cached & shared
+  const { data: warehouses = [] } = useWarehouses()
 
-  useEffect(() => { load() }, [whFilter, typeFilter, page])
+  const queryParams = useMemo(() => ({
+    warehouseId: whFilter || undefined,
+    type: typeFilter || undefined,
+    page, pageSize: 50,
+  }), [whFilter, typeFilter, page])
+
+  const { data: result, isLoading: loading } = useStockMovements(queryParams)
+  const movements = result?.data ?? []
+  const totalPages = result?.totalPages ?? 1
+  const totalCount = result?.count ?? 0
 
   return (
     <div className="page-container animate-enter">

@@ -1,13 +1,15 @@
-import { useState, useEffect, Fragment } from 'react'
+import { useState, Fragment, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { ClipboardMinus, Check, X as XIcon, Plus, ChevronDown, ChevronUp } from 'lucide-react'
 import {
-  getAdjustments, createAdjustment, approveAdjustment, rejectAdjustment,
-  getWarehouses, getMyWarehouses, getAvailableStock
+  createAdjustment, approveAdjustment, rejectAdjustment,
+  getMyWarehouses, getAvailableStock
 } from '@/lib/services/inventory'
 import { getProducts } from '@/lib/services/products'
 import { getStock } from '@/lib/services/inventory'
+import { useAdjustments, useWarehouses, useInvalidate } from '@/hooks/useQueryHooks'
+import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/auth-store'
 import type { StockAdjustment, Warehouse, AdjustmentType, Product } from '@/lib/types/master-data'
 import { formatNumber, formatDateShort } from '@/lib/utils/format'
@@ -20,20 +22,32 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog'
 export default function AdjustmentsPage() {
   const can = useAuthStore(s => s.can)
   const navigate = useNavigate()
+  const invalidate = useInvalidate()
   const canViewCosts = can('finance.view_costs')
   const isAdmin = can('inventory.read_all')
-  const [adjustments, setAdjustments] = useState<StockAdjustment[]>([])
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([])
-  const [myWarehouses, setMyWarehouses] = useState<Warehouse[]>([])
-  const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('')
   const [whFilter, setWhFilter] = useState('')
   const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [totalCount, setTotalCount] = useState(0)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [rejectReason, setRejectReason] = useState('')
 
+  // React Query — cached & shared
+  const { data: warehouses = [] } = useWarehouses()
+  const { data: myWarehousesData = [] } = useQuery({
+    queryKey: ['my-warehouses'],
+    queryFn: () => getMyWarehouses(),
+    staleTime: 5 * 60 * 1000,
+  })
+  const myWarehouses = myWarehousesData as Warehouse[]
+
+  const queryParams = useMemo(() => ({
+    status: statusFilter || undefined, warehouseId: whFilter || undefined, page, pageSize: 25,
+  }), [statusFilter, whFilter, page])
+
+  const { data: result, isLoading: loading } = useAdjustments(queryParams)
+  const adjustments = result?.data ?? []
+  const totalPages = result?.totalPages ?? 1
+  const totalCount = result?.count ?? 0
   // Create modal
   const [createModal, setCreateModal] = useState(false)
   const [createForm, setCreateForm] = useState({ warehouse_id: '', type: 'count' as AdjustmentType, reason: '' })
@@ -48,24 +62,6 @@ export default function AdjustmentsPage() {
   const [actionLoading, setActionLoading] = useState(false)
   const [rejectModal, setRejectModal] = useState<StockAdjustment | null>(null)
 
-  const load = async () => {
-    setLoading(true)
-    try {
-      const [res, whs, myWhs] = await Promise.all([
-        getAdjustments({ status: statusFilter || undefined, warehouseId: whFilter || undefined, page, pageSize: 25 }),
-        warehouses.length ? Promise.resolve(warehouses) : getWarehouses(),
-        myWarehouses.length ? Promise.resolve(myWarehouses) : getMyWarehouses(),
-      ])
-      setAdjustments(res.data)
-      setTotalPages(res.totalPages)
-      setTotalCount(res.count)
-      if (!warehouses.length) setWarehouses(whs as Warehouse[])
-      if (!myWarehouses.length) setMyWarehouses(myWhs as Warehouse[])
-    } catch { toast.error('فشل تحميل التسويات') }
-    finally { setLoading(false) }
-  }
-
-  useEffect(() => { load() }, [statusFilter, whFilter, page])
 
   const openCreate = async () => {
     setCreateForm({ warehouse_id: '', type: 'count', reason: '' })
@@ -170,7 +166,7 @@ export default function AdjustmentsPage() {
       await createAdjustment(createForm, apiItems)
       toast.success('تم إنشاء التسوية')
       setCreateModal(false)
-      load()
+      invalidate('adjustments')
     } catch (e: any) { toast.error(e?.message || 'فشلت العملية') }
     finally { setCreateSaving(false) }
   }
@@ -183,7 +179,7 @@ export default function AdjustmentsPage() {
         await approveAdjustment(confirmTarget.adj.id)
         toast.success('تم اعتماد التسوية وتطبيق الفروق على المخزون')
       }
-      load()
+      invalidate('adjustments')
     } catch (e: any) { toast.error(e?.message || 'فشلت العملية') }
     finally { setActionLoading(false); setConfirmTarget(null) }
   }
@@ -196,7 +192,7 @@ export default function AdjustmentsPage() {
       toast.success('تم رفض التسوية')
       setRejectReason('')
       setRejectModal(null)
-      load()
+      invalidate('adjustments')
     } catch (e: any) { toast.error(e?.message || 'فشلت العملية') }
     finally { setActionLoading(false) }
   }

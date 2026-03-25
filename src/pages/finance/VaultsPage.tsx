@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { toast } from 'sonner'
 import { Landmark, Plus, Edit, ArrowDownToLine, ArrowUpFromLine, Eye, Building2, Wallet, ArrowLeftRight } from 'lucide-react'
-import { getVaults, createVault, updateVault, getVaultTransactions, addVaultDeposit, addVaultWithdrawal, addVaultOpeningBalance, transferBetweenVaults } from '@/lib/services/vaults'
-import { getBranches } from '@/lib/services/geography'
+import { createVault, updateVault, getVaultTransactions, addVaultDeposit, addVaultWithdrawal, addVaultOpeningBalance, transferBetweenVaults } from '@/lib/services/vaults'
+import { useVaults, useBranches, useProfiles, useInvalidate } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
-import type { Vault, VaultInput, VaultTransaction, Branch, VaultType } from '@/lib/types/master-data'
+import type { Vault, VaultInput, VaultTransaction, VaultType } from '@/lib/types/master-data'
 import { formatCurrency, formatDateTime } from '@/lib/utils/format'
 import PageHeader from '@/components/shared/PageHeader'
 import DataTable from '@/components/shared/DataTable'
@@ -26,12 +26,12 @@ const vaultTypeBadge = (t: VaultType): 'primary' | 'success' | 'info' => {
 
 export default function VaultsPage() {
   const can = useAuthStore(s => s.can)
+  const invalidate = useInvalidate()
 
-  const [vaults, setVaults] = useState<Vault[]>([])
-  const [loading, setLoading] = useState(true)
-  const [branches, setBranches] = useState<Branch[]>([])
-  const [profiles, setProfiles] = useState<{ id: string; full_name: string }[]>([])
-
+  // React Query — cached & shared
+  const { data: vaults = [], isLoading: loading } = useVaults()
+  const { data: branches = [] } = useBranches()
+  const { data: profiles = [] } = useProfiles()
   // Form modal
   const [formOpen, setFormOpen] = useState(false)
   const [editingVault, setEditingVault] = useState<Vault | null>(null)
@@ -61,24 +61,6 @@ export default function VaultsPage() {
   const [transferDesc, setTransferDesc] = useState('')
   const [transferSaving, setTransferSaving] = useState(false)
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    try { setVaults(await getVaults()) }
-    catch { toast.error('فشل تحميل الخزائن') }
-    finally { setLoading(false) }
-  }, [])
-
-  useEffect(() => {
-    const init = async () => {
-      const [brs] = await Promise.all([getBranches()])
-      setBranches(brs)
-      const { data } = await (await import('@/lib/supabase/client')).supabase
-        .from('profiles').select('id, full_name').eq('status', 'active').order('full_name')
-      if (data) setProfiles(data)
-      await load()
-    }
-    init()
-  }, [load])
 
   // ── Form handlers ──
   const openCreate = () => {
@@ -113,7 +95,7 @@ export default function VaultsPage() {
         toast.success('تم إنشاء الخزنة')
       }
       setFormOpen(false)
-      load()
+      invalidate('vaults')
     } catch (err: any) {
       toast.error(err.message || 'فشل الحفظ')
     } finally {
@@ -142,7 +124,7 @@ export default function VaultsPage() {
 
       toast.success(txMode === 'deposit' ? 'تم الإيداع بنجاح' : txMode === 'withdrawal' ? 'تم السحب بنجاح' : 'تم إضافة الرصيد الافتتاحي')
       setTxMode(null)
-      load()
+      invalidate('vaults')
     } catch (err: any) {
       toast.error(err.message || 'فشلت العملية')
     } finally {
@@ -168,7 +150,7 @@ export default function VaultsPage() {
       await transferBetweenVaults(transferFrom, transferTo, amt, transferDesc)
       toast.success('تم التحويل بنجاح')
       setTransferOpen(false)
-      load()
+      invalidate('vaults')
     } catch (err: any) {
       toast.error(err.message || 'فشل التحويل')
     } finally {

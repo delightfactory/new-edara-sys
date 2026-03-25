@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Plus, Truck, ToggleLeft, ToggleRight, Eye } from 'lucide-react'
 import { getSuppliers, toggleSupplierActive } from '@/lib/services/suppliers'
-import { getGovernorates } from '@/lib/services/geography'
+import { useGovernorates, useInvalidate } from '@/hooks/useQueryHooks'
+import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/auth-store'
-import type { Supplier, Governorate } from '@/lib/types/master-data'
+import type { Supplier } from '@/lib/types/master-data'
 import { formatNumber } from '@/lib/utils/format'
 import PageHeader from '@/components/shared/PageHeader'
 import SearchInput from '@/components/shared/SearchInput'
@@ -17,37 +18,29 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog'
 export default function SuppliersPage() {
   const navigate = useNavigate()
   const can = useAuthStore(s => s.can)
-  const [suppliers, setSuppliers] = useState<Supplier[]>([])
-  const [governorates, setGovernorates] = useState<Governorate[]>([])
-  const [loading, setLoading] = useState(true)
+  const invalidate = useInvalidate()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [govFilter, setGovFilter] = useState('')
   const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [totalCount, setTotalCount] = useState(0)
   const [confirmTarget, setConfirmTarget] = useState<Supplier | null>(null)
 
-  const loadData = async () => {
-    setLoading(true)
-    try {
-      const [res, govs] = await Promise.all([
-        getSuppliers({
-          search,
-          isActive: statusFilter === '' ? undefined : statusFilter === 'active',
-          page, pageSize: 25,
-        }),
-        governorates.length ? Promise.resolve(governorates) : getGovernorates(),
-      ])
-      setSuppliers(res.data)
-      setTotalPages(res.totalPages)
-      setTotalCount(res.count)
-      if (!governorates.length) setGovernorates(govs as Governorate[])
-    } catch { toast.error('فشل تحميل الموردين') }
-    finally { setLoading(false) }
-  }
+  // React Query — cached & shared
+  const { data: governorates = [] } = useGovernorates()
 
-  useEffect(() => { loadData() }, [search, statusFilter, govFilter, page])
+  const queryParams = useMemo(() => ({
+    search,
+    isActive: statusFilter === '' ? undefined : statusFilter === 'active',
+    page, pageSize: 25,
+  }), [search, statusFilter, govFilter, page])
+
+  const { data: result, isLoading: loading } = useQuery({
+    queryKey: ['suppliers', queryParams],
+    queryFn: () => getSuppliers(queryParams),
+  })
+  const suppliers = result?.data ?? []
+  const totalPages = result?.totalPages ?? 1
+  const totalCount = result?.count ?? 0
 
   const handleToggle = (s: Supplier) => setConfirmTarget(s)
   const executeToggle = async () => {
@@ -56,7 +49,7 @@ export default function SuppliersPage() {
     try {
       await toggleSupplierActive(confirmTarget.id, next)
       toast.success(`تم ${next ? 'تفعيل' : 'تعطيل'} المورد`)
-      loadData()
+      invalidate('suppliers')
     } catch { toast.error('فشلت العملية') }
     finally { setConfirmTarget(null) }
   }

@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { ShieldCheck, Plus, Edit, ArrowDownToLine, ArrowUpFromLine, Eye } from 'lucide-react'
-import { getCustodyAccounts, createCustodyAccount, updateCustodyAccount, getCustodyTransactions, loadCustodyFromVault, settleCustodyToVault } from '@/lib/services/custody'
-import { getVaults } from '@/lib/services/vaults'
+import { createCustodyAccount, updateCustodyAccount, getCustodyTransactions, loadCustodyFromVault, settleCustodyToVault } from '@/lib/services/custody'
+import { useCustodyAccounts, useVaults, useProfiles, useInvalidate } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
-import type { CustodyAccount, CustodyTransaction, Vault } from '@/lib/types/master-data'
+import type { CustodyAccount, CustodyTransaction } from '@/lib/types/master-data'
 import { formatCurrency, formatDateTime } from '@/lib/utils/format'
 import PageHeader from '@/components/shared/PageHeader'
 import DataTable from '@/components/shared/DataTable'
@@ -14,12 +14,12 @@ import Modal from '@/components/ui/Modal'
 
 export default function CustodyPage() {
   const can = useAuthStore(s => s.can)
+  const invalidate = useInvalidate()
 
-  const [accounts, setAccounts] = useState<CustodyAccount[]>([])
-  const [loading, setLoading] = useState(true)
-  const [vaults, setVaults] = useState<Vault[]>([])
-  const [profiles, setProfiles] = useState<{ id: string; full_name: string }[]>([])
-
+  // React Query — cached & shared
+  const { data: accounts = [], isLoading: loading } = useCustodyAccounts()
+  const { data: vaults = [] } = useVaults({ isActive: true })
+  const { data: profiles = [] } = useProfiles()
   // Form
   const [formOpen, setFormOpen] = useState(false)
   const [editingAccount, setEditingAccount] = useState<CustodyAccount | null>(null)
@@ -43,24 +43,6 @@ export default function CustodyPage() {
   const [stmtTotal, setStmtTotal] = useState(0)
   const [stmtTotalPages, setStmtTotalPages] = useState(0)
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    try { setAccounts(await getCustodyAccounts()) }
-    catch { toast.error('فشل تحميل العُهد') }
-    finally { setLoading(false) }
-  }, [])
-
-  useEffect(() => {
-    const init = async () => {
-      const [vs] = await Promise.all([getVaults({ isActive: true })])
-      setVaults(vs)
-      const { data } = await (await import('@/lib/supabase/client')).supabase
-        .from('profiles').select('id, full_name').eq('status', 'active').order('full_name')
-      if (data) setProfiles(data)
-      await load()
-    }
-    init()
-  }, [load])
 
   // ── Form ──
   const openCreate = () => { setEditingAccount(null); setFormEmployee(''); setFormMaxBalance('5000'); setFormActive(true); setFormOpen(true) }
@@ -70,13 +52,13 @@ export default function CustodyPage() {
     const maxBal = parseFloat(formMaxBalance)
     if (editingAccount) {
       setSaving(true)
-      try { await updateCustodyAccount(editingAccount.id, { max_balance: maxBal, is_active: formActive }); toast.success('تم التعديل'); setFormOpen(false); load() }
+      try { await updateCustodyAccount(editingAccount.id, { max_balance: maxBal, is_active: formActive }); toast.success('تم التعديل'); setFormOpen(false); invalidate('custody-accounts') }
       catch (err: any) { toast.error(err.message) }
       finally { setSaving(false) }
     } else {
       if (!formEmployee) { toast.error('الموظف مطلوب'); return }
       setSaving(true)
-      try { await createCustodyAccount({ employee_id: formEmployee, max_balance: maxBal }); toast.success('تم إنشاء العهدة'); setFormOpen(false); load() }
+      try { await createCustodyAccount({ employee_id: formEmployee, max_balance: maxBal }); toast.success('تم إنشاء العهدة'); setFormOpen(false); invalidate('custody-accounts') }
       catch (err: any) { toast.error(err.message) }
       finally { setSaving(false) }
     }
@@ -94,7 +76,7 @@ export default function CustodyPage() {
       if (opMode === 'load') await loadCustodyFromVault(opAccount.id, opVaultId, amt)
       else await settleCustodyToVault(opAccount.id, opVaultId, amt)
       toast.success(opMode === 'load' ? 'تم تحميل العهدة' : 'تم التسوية')
-      setOpMode(null); load()
+      setOpMode(null); invalidate('custody-accounts', 'vaults')
     } catch (err: any) { toast.error(err.message || 'فشلت العملية') }
     finally { setOpSaving(false) }
   }
