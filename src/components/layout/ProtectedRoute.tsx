@@ -3,18 +3,20 @@ import { useAuthStore } from '@/stores/auth-store'
 
 interface Props {
   children: React.ReactNode
-  permission?: string
+  permission?: string | string[]
 }
 
 /**
  * ProtectedRoute — حارس المسارات
  * إذا لم يكن مسجلاً → Login
  * إذا لا يملك الصلاحية → Unauthorized
+ * يدعم صلاحية واحدة (string) أو مصفوفة (string[]) بتقييم OR
  */
 export function ProtectedRoute({ children, permission }: Props) {
   const profile = useAuthStore(s => s.profile)
   const isInitialized = useAuthStore(s => s.isInitialized)
   const can = useAuthStore(s => s.can)
+  const canAny = useAuthStore(s => s.canAny)
   const location = useLocation()
 
   // انتظار التهيئة
@@ -35,8 +37,9 @@ export function ProtectedRoute({ children, permission }: Props) {
   }
 
   // مسجل لكن بدون صلاحية
-  if (permission && !can(permission)) {
-    return <Navigate to="/unauthorized" replace />
+  if (permission) {
+    const hasAccess = Array.isArray(permission) ? canAny(permission) : can(permission)
+    if (!hasAccess) return <Navigate to="/unauthorized" replace />
   }
 
   return <>{children}</>

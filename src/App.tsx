@@ -95,7 +95,7 @@ export default function App() {
 
               {/* Products */}
               <Route path="products" element={
-                <ProtectedRoute permission="products.read"><Suspense fallback={<LazyFallback />}><ProductsPage /></Suspense></ProtectedRoute>
+                <ProtectedRoute permission={['products.read', 'products.create']}><Suspense fallback={<LazyFallback />}><ProductsPage /></Suspense></ProtectedRoute>
               } />
               <Route path="products/new" element={
                 <ProtectedRoute permission="products.create"><Suspense fallback={<LazyFallback />}><ProductFormPage /></Suspense></ProtectedRoute>
@@ -121,7 +121,7 @@ export default function App() {
 
               {/* Customers */}
               <Route path="customers" element={
-                <ProtectedRoute permission="customers.read"><Suspense fallback={<LazyFallback />}><CustomersPage /></Suspense></ProtectedRoute>
+                <ProtectedRoute permission={['customers.read', 'customers.create']}><Suspense fallback={<LazyFallback />}><CustomersPage /></Suspense></ProtectedRoute>
               } />
               <Route path="customers/new" element={
                 <ProtectedRoute permission="customers.create"><Suspense fallback={<LazyFallback />}><CustomerFormPage /></Suspense></ProtectedRoute>
@@ -135,7 +135,7 @@ export default function App() {
 
               {/* Suppliers */}
               <Route path="suppliers" element={
-                <ProtectedRoute permission="suppliers.read"><Suspense fallback={<LazyFallback />}><SuppliersPage /></Suspense></ProtectedRoute>
+                <ProtectedRoute permission={['suppliers.read', 'suppliers.create']}><Suspense fallback={<LazyFallback />}><SuppliersPage /></Suspense></ProtectedRoute>
               } />
               <Route path="suppliers/new" element={
                 <ProtectedRoute permission="suppliers.create"><Suspense fallback={<LazyFallback />}><SupplierFormPage /></Suspense></ProtectedRoute>
@@ -155,13 +155,13 @@ export default function App() {
                 <ProtectedRoute permission="inventory.read"><Suspense fallback={<LazyFallback />}><StockPage /></Suspense></ProtectedRoute>
               } />
               <Route path="inventory/transfers" element={
-                <ProtectedRoute permission="inventory.transfers.read"><Suspense fallback={<LazyFallback />}><TransfersPage /></Suspense></ProtectedRoute>
+                <ProtectedRoute permission={['inventory.transfers.read', 'inventory.transfers.create']}><Suspense fallback={<LazyFallback />}><TransfersPage /></Suspense></ProtectedRoute>
               } />
               <Route path="inventory/transfers/:id" element={
                 <ProtectedRoute permission="inventory.transfers.read"><Suspense fallback={<LazyFallback />}><TransferDetailPage /></Suspense></ProtectedRoute>
               } />
               <Route path="inventory/adjustments" element={
-                <ProtectedRoute permission="inventory.adjustments.read"><Suspense fallback={<LazyFallback />}><AdjustmentsPage /></Suspense></ProtectedRoute>
+                <ProtectedRoute permission={['inventory.adjustments.read', 'inventory.adjustments.create']}><Suspense fallback={<LazyFallback />}><AdjustmentsPage /></Suspense></ProtectedRoute>
               } />
               <Route path="inventory/adjustments/:id" element={
                 <ProtectedRoute permission="inventory.adjustments.read"><Suspense fallback={<LazyFallback />}><AdjustmentDetailPage /></Suspense></ProtectedRoute>
@@ -175,13 +175,13 @@ export default function App() {
                 <ProtectedRoute permission="finance.vaults.read"><Suspense fallback={<LazyFallback />}><VaultsPage /></Suspense></ProtectedRoute>
               } />
               <Route path="finance/custody" element={
-                <ProtectedRoute permission="finance.custody.read"><Suspense fallback={<LazyFallback />}><CustodyPage /></Suspense></ProtectedRoute>
+                <ProtectedRoute permission={['finance.custody.read', 'finance.custody.create']}><Suspense fallback={<LazyFallback />}><CustodyPage /></Suspense></ProtectedRoute>
               } />
               <Route path="finance/payments" element={
-                <ProtectedRoute permission="finance.payments.read"><Suspense fallback={<LazyFallback />}><PaymentsPage /></Suspense></ProtectedRoute>
+                <ProtectedRoute permission={['finance.payments.read', 'finance.payments.create']}><Suspense fallback={<LazyFallback />}><PaymentsPage /></Suspense></ProtectedRoute>
               } />
               <Route path="finance/expenses" element={
-                <ProtectedRoute permission="finance.expenses.read"><Suspense fallback={<LazyFallback />}><ExpensesPage /></Suspense></ProtectedRoute>
+                <ProtectedRoute permission={['finance.expenses.read', 'finance.expenses.create']}><Suspense fallback={<LazyFallback />}><ExpensesPage /></Suspense></ProtectedRoute>
               } />
               <Route path="finance/accounts" element={
                 <ProtectedRoute permission="finance.journal.read"><Suspense fallback={<LazyFallback />}><ChartOfAccountsPage /></Suspense></ProtectedRoute>

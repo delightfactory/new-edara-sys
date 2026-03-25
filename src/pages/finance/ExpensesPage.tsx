@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { toast } from 'sonner'
-import { ReceiptText, Plus, Check, XCircle, Upload, Send } from 'lucide-react'
+import { ReceiptText, Plus, Check, XCircle, Upload, Send, Eye } from 'lucide-react'
 import { getExpenses, createExpense, submitExpenseForApproval, approveExpense, rejectExpense, getExpenseCategories, uploadExpenseReceipt } from '@/lib/services/payments'
 import { getVaults } from '@/lib/services/vaults'
 import { getCustodyAccounts } from '@/lib/services/custody'
@@ -46,6 +46,9 @@ export default function ExpensesPage() {
   const [approveAction, setApproveAction] = useState<'approve' | 'reject' | null>(null)
   const [rejectReason, setRejectReason] = useState('')
   const [processing, setProcessing] = useState(false)
+
+  // Detail view
+  const [detailExpense, setDetailExpense] = useState<Expense | null>(null)
 
   const load = useCallback(async (p = 1) => {
     setLoading(true)
@@ -142,8 +145,9 @@ export default function ExpensesPage() {
               const sc = statusConfig[e.status]; return sc ? <Badge variant={sc.variant}>{sc.label}</Badge> : <Badge>{e.status}</Badge>
             }},
             { key: 'expense_date', label: 'التاريخ', hideOnMobile: true, render: (e) => formatDate(e.expense_date) },
-            { key: 'actions', label: 'إجراءات', width: 120, render: (e) => (
+            { key: 'actions', label: 'إجراءات', width: 160, render: (e) => (
               <div className="action-group" onClick={ev => ev.stopPropagation()}>
+                <Button variant="ghost" size="sm" title="عرض التفاصيل" onClick={() => setDetailExpense(e)}><Eye size={14} /></Button>
                 {e.status === 'draft' && e.created_by === userId && (
                   <Button variant="primary" size="sm" title="تقديم للموافقة" onClick={() => handleSubmit(e)}><Send size={14} /></Button>
                 )}
@@ -231,7 +235,7 @@ export default function ExpensesPage() {
 
       {/* ── Approve/Reject Modal ── */}
       <Modal open={!!targetExpense && !!approveAction} onClose={() => { setTargetExpense(null); setApproveAction(null) }}
-        title={approveAction === 'approve' ? 'اعتماد المصروف' : 'رفض المصروف'} size="sm"
+        title={approveAction === 'approve' ? 'اعتماد المصروف' : 'رفض المصروف'} size="md"
         footer={
           <>
             <Button variant="ghost" onClick={() => { setTargetExpense(null); setApproveAction(null) }}>إلغاء</Button>
@@ -243,15 +247,199 @@ export default function ExpensesPage() {
       >
         {targetExpense && (
           <div className="flex-col gap-4">
-            <div className="info-box">
-              <span className="info-box-label">{targetExpense.number}</span>
-              <span className="info-box-value">{formatCurrency(targetExpense.amount)}</span>
-              <span className="info-box-label">{targetExpense.description}</span>
+            {/* بيانات المصروف */}
+            <div style={{
+              display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)',
+              background: 'var(--bg-surface-2)', padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)',
+            }}>
+              <div>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>الرقم</span>
+                <div style={{ fontWeight: 700, fontFamily: 'monospace', fontSize: 'var(--text-sm)' }}>{targetExpense.number}</div>
+              </div>
+              <div>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>المبلغ</span>
+                <div style={{ fontWeight: 700, fontSize: 'var(--text-lg)', color: 'var(--color-primary)' }}>{formatCurrency(targetExpense.amount)}</div>
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>الوصف</span>
+                <div style={{ fontSize: 'var(--text-sm)' }}>{targetExpense.description}</div>
+              </div>
+              <div>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>التاريخ</span>
+                <div style={{ fontSize: 'var(--text-sm)' }}>{formatDate(targetExpense.expense_date)}</div>
+              </div>
+              <div>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>التصنيف</span>
+                <div style={{ fontSize: 'var(--text-sm)' }}>{targetExpense.category?.name || '—'}</div>
+              </div>
+              <div>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>مصدر الدفع</span>
+                <div style={{ fontSize: 'var(--text-sm)' }}>
+                  {targetExpense.payment_source === 'vault' ? `خزنة: ${targetExpense.vault?.name || '—'}` : targetExpense.payment_source === 'custody' ? `عهدة: ${targetExpense.custody?.employee?.full_name || '—'}` : '—'}
+                </div>
+              </div>
+              <div>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>المُنشئ</span>
+                <div style={{ fontSize: 'var(--text-sm)' }}>{targetExpense.created_by_profile?.full_name || '—'}</div>
+              </div>
             </div>
+
+            {/* إثبات المصروف (الإيصال) */}
+            {targetExpense.receipt_url ? (
+              <div style={{
+                border: '1px solid var(--border-primary)', borderRadius: 'var(--radius-lg)',
+                overflow: 'hidden', background: 'var(--bg-surface-2)',
+              }}>
+                <div style={{ padding: 'var(--space-2) var(--space-3)', borderBottom: '1px solid var(--border-primary)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-muted)' }}>📎 إثبات المصروف</span>
+                  <a href={targetExpense.receipt_url} target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize: 'var(--text-xs)', color: 'var(--color-primary)', textDecoration: 'none' }}>
+                    فتح في نافذة جديدة ↗
+                  </a>
+                </div>
+                {targetExpense.receipt_url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i) ? (
+                  <a href={targetExpense.receipt_url} target="_blank" rel="noopener noreferrer">
+                    <img
+                      src={targetExpense.receipt_url}
+                      alt="إثبات المصروف"
+                      style={{
+                        display: 'block', width: '100%', maxHeight: 400,
+                        objectFit: 'contain', cursor: 'zoom-in',
+                        background: 'var(--bg-app)', padding: 'var(--space-2)',
+                      }}
+                    />
+                  </a>
+                ) : (
+                  <div style={{ padding: 'var(--space-4)', textAlign: 'center' }}>
+                    <a href={targetExpense.receipt_url} target="_blank" rel="noopener noreferrer"
+                      style={{ color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'none' }}>
+                      📄 عرض الملف المرفق
+                    </a>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{
+                padding: 'var(--space-4)', textAlign: 'center',
+                background: 'var(--bg-surface-2)', borderRadius: 'var(--radius-lg)',
+                color: 'var(--text-muted)', fontSize: 'var(--text-sm)',
+              }}>
+                لا يوجد إثبات مرفق
+              </div>
+            )}
+
             {approveAction === 'reject' && (
               <div className="form-group">
                 <label className="form-label required">سبب الرفض</label>
                 <textarea className="form-textarea" rows={3} value={rejectReason} onChange={e => setRejectReason(e.target.value)} placeholder="اذكر سبب الرفض..." />
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
+
+      {/* ── Detail View Modal ── */}
+      <Modal open={!!detailExpense} onClose={() => setDetailExpense(null)}
+        title="تفاصيل المصروف" size="md"
+        footer={<Button variant="ghost" onClick={() => setDetailExpense(null)}>إغلاق</Button>}
+      >
+        {detailExpense && (
+          <div className="flex-col gap-4">
+            <div style={{
+              display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)',
+              background: 'var(--bg-surface-2)', padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)',
+            }}>
+              <div>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>الرقم</span>
+                <div style={{ fontWeight: 700, fontFamily: 'monospace', fontSize: 'var(--text-sm)' }}>{detailExpense.number}</div>
+              </div>
+              <div>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>المبلغ</span>
+                <div style={{ fontWeight: 700, fontSize: 'var(--text-lg)', color: 'var(--color-primary)' }}>{formatCurrency(detailExpense.amount)}</div>
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>الوصف</span>
+                <div style={{ fontSize: 'var(--text-sm)' }}>{detailExpense.description}</div>
+              </div>
+              <div>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>التاريخ</span>
+                <div style={{ fontSize: 'var(--text-sm)' }}>{formatDate(detailExpense.expense_date)}</div>
+              </div>
+              <div>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>التصنيف</span>
+                <div style={{ fontSize: 'var(--text-sm)' }}>{detailExpense.category?.name || '—'}</div>
+              </div>
+              <div>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>مصدر الدفع</span>
+                <div style={{ fontSize: 'var(--text-sm)' }}>
+                  {detailExpense.payment_source === 'vault' ? `خزنة: ${detailExpense.vault?.name || '—'}` : detailExpense.payment_source === 'custody' ? `عهدة: ${detailExpense.custody?.employee?.full_name || '—'}` : '—'}
+                </div>
+              </div>
+              <div>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>المُنشئ</span>
+                <div style={{ fontSize: 'var(--text-sm)' }}>{detailExpense.created_by_profile?.full_name || '—'}</div>
+              </div>
+              <div>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>الحالة</span>
+                <div style={{ fontSize: 'var(--text-sm)' }}>
+                  {(() => { const sc = statusConfig[detailExpense.status]; return sc ? <Badge variant={sc.variant}>{sc.label}</Badge> : <Badge>{detailExpense.status}</Badge> })()}
+                </div>
+              </div>
+              {detailExpense.approved_by_profile && (
+                <div>
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>المُعتمد</span>
+                  <div style={{ fontSize: 'var(--text-sm)' }}>{detailExpense.approved_by_profile.full_name}</div>
+                </div>
+              )}
+              {detailExpense.rejection_reason && (
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger)' }}>سبب الرفض</span>
+                  <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-danger)' }}>{detailExpense.rejection_reason}</div>
+                </div>
+              )}
+            </div>
+
+            {/* إثبات المصروف */}
+            {detailExpense.receipt_url ? (
+              <div style={{
+                border: '1px solid var(--border-primary)', borderRadius: 'var(--radius-lg)',
+                overflow: 'hidden', background: 'var(--bg-surface-2)',
+              }}>
+                <div style={{ padding: 'var(--space-2) var(--space-3)', borderBottom: '1px solid var(--border-primary)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-muted)' }}>📎 إثبات المصروف</span>
+                  <a href={detailExpense.receipt_url} target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize: 'var(--text-xs)', color: 'var(--color-primary)', textDecoration: 'none' }}>
+                    فتح في نافذة جديدة ↗
+                  </a>
+                </div>
+                {detailExpense.receipt_url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i) ? (
+                  <a href={detailExpense.receipt_url} target="_blank" rel="noopener noreferrer">
+                    <img
+                      src={detailExpense.receipt_url}
+                      alt="إثبات المصروف"
+                      style={{
+                        display: 'block', width: '100%', maxHeight: 400,
+                        objectFit: 'contain', cursor: 'zoom-in',
+                        background: 'var(--bg-app)', padding: 'var(--space-2)',
+                      }}
+                    />
+                  </a>
+                ) : (
+                  <div style={{ padding: 'var(--space-4)', textAlign: 'center' }}>
+                    <a href={detailExpense.receipt_url} target="_blank" rel="noopener noreferrer"
+                      style={{ color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'none' }}>
+                      📄 عرض الملف المرفق
+                    </a>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{
+                padding: 'var(--space-4)', textAlign: 'center',
+                background: 'var(--bg-surface-2)', borderRadius: 'var(--radius-lg)',
+                color: 'var(--text-muted)', fontSize: 'var(--text-sm)',
+              }}>
+                لا يوجد إثبات مرفق
               </div>
             )}
           </div>

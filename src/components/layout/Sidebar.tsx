@@ -16,58 +16,55 @@ interface NavItem {
   label: string
   icon: React.ElementType
   path?: string
-  permission?: string
+  permission?: string | string[]
   comingSoon?: boolean
-  children?: { label: string; path: string; permission?: string }[]
+  children?: { label: string; path: string; permission?: string | string[] }[]
 }
 
 const navItems: NavItem[] = [
   { id: 'dashboard', label: 'الرئيسية', icon: LayoutDashboard, path: '/' },
   {
     id: 'products', label: 'المنتجات', icon: BoxesIcon,
-    permission: PERMISSIONS.PRODUCTS_READ,
     children: [
-      { label: 'قائمة المنتجات', path: '/products', permission: PERMISSIONS.PRODUCTS_READ },
+      { label: 'قائمة المنتجات', path: '/products', permission: [PERMISSIONS.PRODUCTS_READ, PERMISSIONS.PRODUCTS_CREATE] },
       { label: 'التصنيفات', path: '/products/categories', permission: PERMISSIONS.CATEGORIES_CREATE },
       { label: 'قوائم الأسعار', path: '/products/price-lists', permission: PERMISSIONS.PRICE_LISTS_READ },
       { label: 'الباقات', path: '/products/bundles', permission: PERMISSIONS.PRODUCTS_READ },
       { label: 'العلامات التجارية', path: '/products/brands', permission: PERMISSIONS.PRODUCTS_READ },
     ],
   },
-  { id: 'customers', label: 'العملاء', icon: Users, permission: PERMISSIONS.CUSTOMERS_READ, path: '/customers' },
+  { id: 'customers', label: 'العملاء', icon: Users, permission: [PERMISSIONS.CUSTOMERS_READ, PERMISSIONS.CUSTOMERS_CREATE], path: '/customers' },
   {
     id: 'suppliers', label: 'الموردين', icon: Truck,
-    permission: PERMISSIONS.SUPPLIERS_READ, path: '/suppliers',
+    permission: [PERMISSIONS.SUPPLIERS_READ, PERMISSIONS.SUPPLIERS_CREATE], path: '/suppliers',
   },
   {
     id: 'inventory', label: 'المخزون', icon: Warehouse,
-    permission: PERMISSIONS.INVENTORY_READ,
     children: [
-      { label: 'المخازن', path: '/inventory/warehouses' },
-      { label: 'أرصدة المخزون', path: '/inventory/stock' },
-      { label: 'التحويلات', path: '/inventory/transfers', permission: PERMISSIONS.INVENTORY_TRANSFERS_READ },
-      { label: 'التسويات', path: '/inventory/adjustments', permission: PERMISSIONS.INVENTORY_ADJUSTMENTS_READ },
+      { label: 'المخازن', path: '/inventory/warehouses', permission: PERMISSIONS.INVENTORY_READ },
+      { label: 'أرصدة المخزون', path: '/inventory/stock', permission: PERMISSIONS.INVENTORY_READ },
+      { label: 'التحويلات', path: '/inventory/transfers', permission: [PERMISSIONS.INVENTORY_TRANSFERS_READ, PERMISSIONS.INVENTORY_TRANSFERS_CREATE] },
+      { label: 'التسويات', path: '/inventory/adjustments', permission: [PERMISSIONS.INVENTORY_ADJUSTMENTS_READ, PERMISSIONS.INVENTORY_ADJUSTMENTS_CREATE] },
       { label: 'حركات المخزون', path: '/inventory/movements', permission: PERMISSIONS.INVENTORY_READ },
     ],
   },
   { id: 'branches', label: 'الفروع', icon: Building2, permission: PERMISSIONS.BRANCHES_READ, path: '/branches' },
   {
     id: 'sales', label: 'المبيعات', icon: ShoppingCart,
-    permission: PERMISSIONS.SALES_ORDERS_READ, comingSoon: true,
+    comingSoon: true,
     children: [
-      { label: 'طلبات البيع', path: '/sales/orders', permission: PERMISSIONS.SALES_ORDERS_READ },
-      { label: 'المرتجعات', path: '/sales/returns', permission: PERMISSIONS.SALES_RETURNS_READ },
+      { label: 'طلبات البيع', path: '/sales/orders', permission: [PERMISSIONS.SALES_ORDERS_READ, PERMISSIONS.SALES_ORDERS_CREATE] },
+      { label: 'المرتجعات', path: '/sales/returns', permission: [PERMISSIONS.SALES_RETURNS_READ, PERMISSIONS.SALES_RETURNS_CREATE] },
     ],
   },
-  { id: 'purchases', label: 'المشتريات', icon: Package, permission: PERMISSIONS.PURCHASES_ORDERS_READ, path: '/purchases/orders', comingSoon: true },
+  { id: 'purchases', label: 'المشتريات', icon: Package, permission: [PERMISSIONS.PURCHASES_ORDERS_READ, PERMISSIONS.PURCHASES_ORDERS_CREATE], path: '/purchases/orders', comingSoon: true },
   {
     id: 'finance', label: 'المالية', icon: DollarSign,
-    permission: PERMISSIONS.FINANCE_VAULTS_READ,
     children: [
       { label: 'الخزائن', path: '/finance/vaults', permission: PERMISSIONS.FINANCE_VAULTS_READ },
-      { label: 'العُهد', path: '/finance/custody', permission: PERMISSIONS.FINANCE_CUSTODY_READ },
-      { label: 'إيصالات الدفع', path: '/finance/payments', permission: PERMISSIONS.FINANCE_PAYMENTS_READ },
-      { label: 'المصروفات', path: '/finance/expenses', permission: PERMISSIONS.FINANCE_EXPENSES_READ },
+      { label: 'العُهد', path: '/finance/custody', permission: [PERMISSIONS.FINANCE_CUSTODY_READ, PERMISSIONS.FINANCE_CUSTODY_CREATE] },
+      { label: 'إيصالات الدفع', path: '/finance/payments', permission: [PERMISSIONS.FINANCE_PAYMENTS_READ, PERMISSIONS.FINANCE_PAYMENTS_CREATE] },
+      { label: 'المصروفات', path: '/finance/expenses', permission: [PERMISSIONS.FINANCE_EXPENSES_READ, PERMISSIONS.FINANCE_EXPENSES_CREATE] },
       { label: 'شجرة الحسابات', path: '/finance/accounts', permission: PERMISSIONS.FINANCE_JOURNAL_READ },
       { label: 'القيود المحاسبية', path: '/finance/journals', permission: PERMISSIONS.FINANCE_JOURNAL_READ },
       { label: 'دفتر الحسابات', path: '/finance/ledger', permission: PERMISSIONS.FINANCE_LEDGER_READ },
@@ -79,7 +76,6 @@ const navItems: NavItem[] = [
   { id: 'hr', label: 'الموارد البشرية', icon: ClipboardList, permission: PERMISSIONS.HR_EMPLOYEES_READ, path: '/hr', comingSoon: true },
   {
     id: 'settings', label: 'الإعدادات', icon: Settings,
-    permission: PERMISSIONS.AUTH_USERS_READ,
     children: [
       { label: 'المستخدمون', path: '/settings/users', permission: PERMISSIONS.AUTH_USERS_READ },
       { label: 'الأدوار', path: '/settings/roles', permission: PERMISSIONS.AUTH_ROLES_READ },
@@ -91,6 +87,7 @@ const navItems: NavItem[] = [
 
 export default function Sidebar() {
   const can = useAuthStore(s => s.can)
+  const canAny = useAuthStore(s => s.canAny)
   const profile = useAuthStore(s => s.profile)
   const { theme, toggleTheme, sidebarOpen, setSidebarOpen } = useUiStore()
   const navigate = useNavigate()
@@ -117,9 +114,19 @@ export default function Sidebar() {
     navigate('/login', { replace: true })
   }
 
-  const visibleItems = navItems.filter(item =>
-    !item.permission || can(item.permission)
-  )
+  // دالة فحص مرنة تدعم الصلاحية الواحدة والمصفوفة
+  const canAccess = (perm?: string | string[]) => {
+    if (!perm) return true
+    return Array.isArray(perm) ? canAny(perm) : can(perm)
+  }
+
+  const visibleItems = navItems.filter(item => {
+    if (item.children) {
+      // الأب يظهر فقط إذا كان هناك ابن واحد على الأقل مسموح به
+      return item.children.some(c => canAccess(c.permission))
+    }
+    return canAccess(item.permission)
+  })
 
   const toggleExpand = (id: string) => {
     setExpanded(prev => prev === id ? null : id)
@@ -156,7 +163,7 @@ export default function Sidebar() {
             const hasChildren = item.children && item.children.length > 0
             const isExpanded = expanded === item.id
             const visibleChildren = hasChildren
-              ? item.children!.filter(c => !c.permission || can(c.permission))
+              ? item.children!.filter(c => canAccess(c.permission))
               : []
 
             if (hasChildren && visibleChildren.length === 0) return null

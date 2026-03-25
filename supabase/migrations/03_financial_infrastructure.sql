@@ -462,7 +462,7 @@ INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_typ
 VALUES (
   'payment-proofs',
   'payment-proofs',
-  false,                                -- ليس عاماً — يحتاج مصادقة
+  true,                                 -- عام — يُعرض بـ getPublicUrl
   5242880,                              -- 5MB حد أقصى
   ARRAY['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
 ) ON CONFLICT (id) DO NOTHING;
@@ -472,7 +472,7 @@ INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_typ
 VALUES (
   'expense-receipts',
   'expense-receipts',
-  false,
+  true,                                 -- عام — يُعرض بـ getPublicUrl
   5242880,
   ARRAY['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
 ) ON CONFLICT (id) DO NOTHING;
