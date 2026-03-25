@@ -112,25 +112,17 @@ export async function getPriceListItems(priceListId: string, params?: {
 }
 
 /**
- * حفظ بنود قائمة أسعار (upsert)
+ * حفظ بنود قائمة أسعار (ذري — delete + insert في transaction واحد)
  */
 export async function savePriceListItems(
   priceListId: string,
   items: { product_id: string; unit_id: string; price: number; min_qty?: number; max_qty?: number | null }[]
 ) {
-  // حذف البنود القديمة لهذه القائمة
-  const { error: delErr } = await supabase
-    .from('price_list_items')
-    .delete()
-    .eq('price_list_id', priceListId)
-  if (delErr) throw delErr
-
-  if (items.length > 0) {
-    const { error: insErr } = await supabase
-      .from('price_list_items')
-      .insert(items.map(i => ({ ...i, price_list_id: priceListId })))
-    if (insErr) throw insErr
-  }
+  const { error } = await supabase.rpc('save_price_list_items_atomic', {
+    p_price_list_id: priceListId,
+    p_items: items,
+  })
+  if (error) throw error
 }
 
 /**
