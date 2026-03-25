@@ -1,0 +1,122 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap');
+
+:root {
+  /* ======= Font ======= */
+  --font-sans: 'Cairo', system-ui, -apple-system, sans-serif;
+
+  /* ======= Colors — Light Mode ======= */
+  --bg-app:       #f0f2f5;
+  --bg-surface:   #ffffff;
+  --bg-surface-2: #f8f9fc;
+  --bg-input:     #f7f8fb;
+  --bg-hover:     rgba(0,0,0,0.04);
+  --bg-active:    rgba(37,99,235,0.08);
+  --bg-accent:    rgba(37,99,235,0.04);
+  --bg-secondary: #f1f3f9;
+
+  --text-primary:   #111827;
+  --text-secondary: #6b7280;
+  --text-muted:     #9ca3af;
+  --text-inverse:   #ffffff;
+  --text-link:      var(--color-primary);
+
+  --border-primary: #e5e7eb;
+  --border-focus:   var(--color-primary);
+  --divider:        #f3f4f6;
+
+  /* ======= Brand ======= */
+  --color-primary:       #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-light: rgba(37,99,235,0.1);
+  --color-primary-dark:  #1e40af;
+
+  --color-success:       #16a34a;
+  --color-success-light: rgba(22,163,74,0.1);
+  --color-warning:       #d97706;
+  --color-warning-light: rgba(217,119,6,0.1);
+  --color-danger:        #dc2626;
+  --color-danger-light:  rgba(220,38,38,0.1);
+  --color-info:          #0284c7;
+  --color-info-light:    rgba(2,132,199,0.1);
+
+  /* ======= Sidebar ======= */
+  --sidebar-bg:          #ffffff;
+  --sidebar-width:       260px;
+  --sidebar-collapsed-width: 64px;
+  --sidebar-text:        #6b7280;
+  --sidebar-text-active: #111827;
+  --sidebar-item-hover:  rgba(0,0,0,0.04);
+  --sidebar-item-active: rgba(37,99,235,0.1);
+  --sidebar-border:      #e5e7eb;
+  --sidebar-logo-color:  #111827;
+  --header-height:       60px;
+
+  /* ======= Overlay / Modal ======= */
+  --overlay-bg:         rgba(0,0,0,0.4);
+  --modal-bg:           #ffffff;
+
+  /* ======= Spacing ======= */
+  --space-1: 0.25rem;  --space-2: 0.5rem;
+  --space-3: 0.75rem;  --space-4: 1rem;
+  --space-5: 1.25rem;  --space-6: 1.5rem;
+  --space-8: 2rem;     --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* ======= Typography ======= */
+  --text-xs:   0.75rem;   --text-sm:   0.875rem;
+  --text-base: 0.9375rem; --text-lg:   1.0625rem;
+  --text-xl:   1.25rem;   --text-2xl:  1.5rem;
+  --text-3xl:  1.875rem;
+
+  /* ======= Radius ======= */
+  --radius-sm:   6px;   --radius-md:   10px;
+  --radius-lg:   14px;  --radius-xl:   20px;
+  --radius-full: 9999px;
+
+  /* ======= Shadows ======= */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.06);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.08);
+  --shadow-focus: 0 0 0 3px var(--color-primary-light);
+
+  /* ======= Transitions ======= */
+  --transition-fast:   0.15s ease;
+  --transition-base:   0.2s ease;
+  --transition-slow:   0.3s ease;
+
+  /* ======= Z-index ======= */
+  --z-dropdown: 100;  --z-modal: 200;
+  --z-toast:    300;  --z-tooltip: 400;
+}
+
+[data-theme="dark"] {
+  --bg-app:       #0d1117;
+  --bg-surface:   #161b22;
+  --bg-surface-2: #1c2128;
+  --bg-input:     #0d1117;
+  --bg-hover:     rgba(255,255,255,0.06);
+  --bg-active:    rgba(37,99,235,0.15);
+  --bg-accent:    rgba(37,99,235,0.08);
+  --bg-secondary: #1c2128;
+  --text-primary:   #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted:     #6e7681;
+  --border-primary: #30363d;
+  --divider:        #21262d;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.5);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.6);
+
+  /* Sidebar — Dark */
+  --sidebar-bg:          #0d1117;
+  --sidebar-text:        rgba(255,255,255,0.65);
+  --sidebar-text-active: #ffffff;
+  --sidebar-item-hover:  rgba(255,255,255,0.07);
+  --sidebar-item-active: rgba(37,99,235,0.25);
+  --sidebar-border:      #21262d;
+  --sidebar-logo-color:  #ffffff;
+
+  /* Overlay — Dark */
+  --overlay-bg:         rgba(0,0,0,0.65);
+  --modal-bg:           #161b22;
+}
