@@ -5,7 +5,7 @@ import {
   ArrowRight, ArrowLeftRight, Warehouse, User, Calendar, Hash,
   FileText, Check, XIcon, Truck, Package, Clock
 } from 'lucide-react'
-import { getTransfer, getMyWarehouses, approveAndShipTransfer, receiveTransfer, cancelTransfer } from '@/lib/services/inventory'
+import { getTransfer, getMyWarehouses, shipTransfer, approveAndShipTransfer, receiveTransfer, cancelTransfer } from '@/lib/services/inventory'
 import { useAuthStore } from '@/stores/auth-store'
 import { formatNumber, formatDateShort } from '@/lib/utils/format'
 import type { StockTransfer } from '@/lib/types/master-data'
@@ -23,7 +23,7 @@ export default function TransferDetailPage() {
   const [loading, setLoading] = useState(true)
   const [transfer, setTransfer] = useState<StockTransfer | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
-  const [confirmAction, setConfirmAction] = useState<{ type: 'approve' | 'receive' | 'cancel' } | null>(null)
+  const [confirmAction, setConfirmAction] = useState<{ type: 'ship' | 'approve' | 'receive' | 'cancel' } | null>(null)
   const [myWarehouses, setMyWarehouses] = useState<any[]>([])
 
   const load = async () => {
@@ -48,7 +48,10 @@ export default function TransferDetailPage() {
     if (!confirmAction || !transfer) return
     setActionLoading(true)
     try {
-      if (confirmAction.type === 'approve') {
+      if (confirmAction.type === 'ship') {
+        await shipTransfer(transfer.id)
+        toast.success('تم الشحن بنجاح')
+      } else if (confirmAction.type === 'approve') {
         await approveAndShipTransfer(transfer.id)
         toast.success('تمت الموافقة والشحن')
       } else if (confirmAction.type === 'receive') {
@@ -124,7 +127,12 @@ export default function TransferDetailPage() {
           <p className="page-subtitle">{dir.icon} {dir.label}</p>
         </div>
         <div className="page-actions" style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-          {(canApprove || canShip) && (
+          {canShip && (
+            <Button variant="primary" icon={<Truck size={14} />} onClick={() => setConfirmAction({ type: 'ship' })}>
+              شحن
+            </Button>
+          )}
+          {canApprove && (
             <Button variant="primary" icon={<Truck size={14} />} onClick={() => setConfirmAction({ type: 'approve' })}>
               موافقة وشحن
             </Button>
@@ -324,11 +332,14 @@ export default function TransferDetailPage() {
         <ConfirmDialog
           open={true}
           title={
+            confirmAction.type === 'ship' ? 'تأكيد الشحن' :
             confirmAction.type === 'approve' ? 'موافقة وشحن' :
             confirmAction.type === 'receive' ? 'تأكيد الاستلام' : 'إلغاء التحويل'
           }
           message={
-            confirmAction.type === 'approve'
+            confirmAction.type === 'ship'
+              ? `سيتم شحن التحويل ${transfer.number || ''} وخصم الكميات من المخزن المُرسل.`
+              : confirmAction.type === 'approve'
               ? `سيتم الموافقة على التحويل ${transfer.number || ''} وشحنه. سيتم حجز الكميات من المخزن المُرسل.`
               : confirmAction.type === 'receive'
               ? `سيتم تأكيد استلام التحويل ${transfer.number || ''} وإضافة الكميات للمخزن المُستلم.`
@@ -336,6 +347,7 @@ export default function TransferDetailPage() {
           }
           variant={confirmAction.type === 'cancel' ? 'danger' : 'info'}
           confirmText={
+            confirmAction.type === 'ship' ? 'شحن' :
             confirmAction.type === 'approve' ? 'موافقة وشحن' :
             confirmAction.type === 'receive' ? 'تأكيد الاستلام' : 'إلغاء'
           }
