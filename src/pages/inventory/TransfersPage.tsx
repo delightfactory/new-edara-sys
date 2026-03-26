@@ -1,9 +1,9 @@
-import { useState, Fragment, useMemo } from 'react'
+import { useState, Fragment, useMemo, useRef, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   ArrowLeftRight, Plus, ChevronDown, ChevronUp,
-  Truck, PackageCheck, X as XIcon, Send, Download
+  Truck, PackageCheck, X as XIcon, Send, Download, Search
 } from 'lucide-react'
 import {
   createTransfer, shipTransfer,
@@ -14,13 +14,127 @@ import { getProducts, getProductUnits } from '@/lib/services/products'
 import { useTransfers, useWarehouses, useInvalidate } from '@/hooks/useQueryHooks'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/auth-store'
-import type { StockTransfer, Warehouse, TransferStatus, Product } from '@/lib/types/master-data'
+import type { StockTransfer, Warehouse, TransferStatus } from '@/lib/types/master-data'
 import { formatNumber, formatCurrency, formatDateShort } from '@/lib/utils/format'
 import PageHeader from '@/components/shared/PageHeader'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
+
+// ─── Inline Product Search Combobox ───
+function ProductSearchCombo({ value, productName, onSelect, onClear, disabled }: {
+  value: string; productName: string;
+  onSelect: (p: { id: string; name: string; sku: string }) => void;
+  onClear: () => void; disabled?: boolean;
+}) {
+  const [q, setQ] = useState('')
+  const [open, setOpen] = useState(false)
+  const [results, setResults] = useState<{ id: string; name: string; sku: string }[]>([])
+  const [searching, setSearching] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const timer = useRef<ReturnType<typeof setTimeout>>()
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const doSearch = useCallback(async (term: string) => {
+    if (term.length < 1) { setResults([]); return }
+    setSearching(true)
+    try {
+      const res = await getProducts({ search: term, pageSize: 15, isActive: true })
+      setResults(res.data.map(p => ({ id: p.id, name: p.name, sku: p.sku })))
+    } catch { setResults([]) }
+    finally { setSearching(false) }
+  }, [])
+
+  const handleInput = (v: string) => {
+    setQ(v)
+    setOpen(v.length > 0)
+    if (timer.current) clearTimeout(timer.current)
+    timer.current = setTimeout(() => doSearch(v), 250)
+  }
+
+  // Selected state
+  if (value && productName) {
+    return (
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '6px 10px', minHeight: 38,
+        background: 'var(--color-primary-light, rgba(37,99,235,0.07))',
+        border: '1.5px solid var(--color-primary)',
+        borderRadius: 8,
+      }}>
+        <span style={{ flex: 1, fontWeight: 600, fontSize: 'var(--text-sm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {productName}
+        </span>
+        <button type="button" onClick={onClear} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 2, display: 'flex' }}>
+          <XIcon size={14} />
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <div style={{ position: 'relative' }}>
+        <Search size={14} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+        <input
+          className="form-input"
+          style={{ paddingRight: 32 }}
+          placeholder="ابحث عن منتج..."
+          value={q}
+          onChange={e => handleInput(e.target.value)}
+          onFocus={() => { if (q.length > 0) setOpen(true) }}
+          autoComplete="off"
+          disabled={disabled}
+        />
+      </div>
+      {open && results.length > 0 && (
+        <div style={{
+          position: 'absolute', zIndex: 999, top: 'calc(100% + 4px)',
+          left: 0, right: 0,
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-color)',
+          borderRadius: 10,
+          boxShadow: '0 12px 40px rgba(0,0,0,0.15)',
+          maxHeight: 240, overflowY: 'auto',
+        }}>
+          {results.map((p, i) => (
+            <div
+              key={p.id}
+              onMouseDown={e => { e.preventDefault(); onSelect(p); setQ(''); setOpen(false) }}
+              style={{
+                padding: '8px 12px', cursor: 'pointer',
+                borderBottom: i < results.length - 1 ? '1px solid var(--border-color)' : 'none',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+              onMouseLeave={e => (e.currentTarget.style.background = '')}
+            >
+              <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{p.name}</div>
+              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontFamily: 'monospace' }}>{p.sku}</div>
+            </div>
+          ))}
+        </div>
+      )}
+      {open && q.length > 0 && results.length === 0 && !searching && (
+        <div style={{
+          position: 'absolute', zIndex: 999, top: 'calc(100% + 4px)',
+          left: 0, right: 0, padding: '12px 16px', textAlign: 'center',
+          background: 'var(--bg-surface)', border: '1px solid var(--border-color)',
+          borderRadius: 10, fontSize: 'var(--text-sm)', color: 'var(--text-muted)',
+        }}>
+          لا توجد نتائج
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function TransfersPage() {
   const can = useAuthStore(s => s.can)
@@ -58,7 +172,7 @@ export default function TransfersPage() {
   const [createItems, setCreateItems] = useState<{
     product_id: string; unit_id: string; quantity: number; available: number | null
   }[]>([])
-  const [products, setProducts] = useState<Product[]>([])
+  const [productNames, setProductNames] = useState<Record<string, string>>({})
   const [productUnitsMap, setProductUnitsMap] = useState<Record<string, { id: string; name: string; symbol: string }[]>>({})
   const [createSaving, setCreateSaving] = useState(false)
 
@@ -82,10 +196,7 @@ export default function TransfersPage() {
     })
     setCreateItems([{ product_id: '', unit_id: '', quantity: 1, available: null }])
     setDirection(defaultDir)
-    if (!products.length) {
-      const p = await getProducts({ pageSize: 500 })
-      setProducts(p.data)
-    }
+    setProductNames({})
     setCreateModal(true)
   }
 
@@ -107,31 +218,37 @@ export default function TransfersPage() {
     setCreateItems(items => items.map((item, j) => j === idx ? { ...item, [key]: val } : item))
 
   // عند اختيار منتج: جلب الوحدات + الكمية المتاحة
-  const handleProductChange = async (idx: number, productId: string) => {
-    const sourceWh = direction === 'push' ? createForm.from_warehouse_id : createForm.from_warehouse_id
+  const handleProductSelect = async (idx: number, product: { id: string; name: string; sku: string }) => {
+    const productId = product.id
+    const sourceWh = createForm.from_warehouse_id
     setCreateItems(items => items.map((item, j) => j === idx ? { ...item, product_id: productId, unit_id: '', available: null } : item))
+    setProductNames(m => ({ ...m, [productId]: product.name }))
 
-    if (productId) {
-      // جلب الوحدات
-      if (!productUnitsMap[productId]) {
-        try {
-          const pUnits = await getProductUnits(productId)
-          const product = products.find(p => p.id === productId)
-          const unitsList: { id: string; name: string; symbol: string }[] = []
-          if (product?.base_unit) unitsList.push({ id: product.base_unit.id, name: product.base_unit.name, symbol: product.base_unit.symbol })
-          pUnits.forEach(pu => { if (pu.unit && !unitsList.some(u => u.id === pu.unit!.id)) unitsList.push({ id: pu.unit!.id, name: pu.unit!.name, symbol: pu.unit!.symbol }) })
-          setProductUnitsMap(m => ({ ...m, [productId]: unitsList }))
-        } catch { /* ignore */ }
-      }
-
-      // جلب الكمية المتاحة من المخزن المصدر
-      if (sourceWh) {
-        try {
-          const avail = await getAvailableStock(sourceWh, productId)
-          setCreateItems(items => items.map((item, j) => j === idx ? { ...item, available: avail } : item))
-        } catch { /* ignore */ }
-      }
+    // جلب الوحدات
+    if (!productUnitsMap[productId]) {
+      try {
+        const pUnits = await getProductUnits(productId)
+        // جلب المنتج لمعرفة الوحدة الأساسية
+        const { getProduct } = await import('@/lib/services/products')
+        const fullProduct = await getProduct(productId)
+        const unitsList: { id: string; name: string; symbol: string }[] = []
+        if (fullProduct?.base_unit) unitsList.push({ id: fullProduct.base_unit.id, name: fullProduct.base_unit.name, symbol: fullProduct.base_unit.symbol })
+        pUnits.forEach(pu => { if (pu.unit && !unitsList.some(u => u.id === pu.unit!.id)) unitsList.push({ id: pu.unit!.id, name: pu.unit!.name, symbol: pu.unit!.symbol }) })
+        setProductUnitsMap(m => ({ ...m, [productId]: unitsList }))
+      } catch { /* ignore */ }
     }
+
+    // جلب الكمية المتاحة من المخزن المصدر
+    if (sourceWh) {
+      try {
+        const avail = await getAvailableStock(sourceWh, productId)
+        setCreateItems(items => items.map((item, j) => j === idx ? { ...item, available: avail } : item))
+      } catch { /* ignore */ }
+    }
+  }
+
+  const handleProductClear = (idx: number) => {
+    setCreateItems(items => items.map((item, j) => j === idx ? { ...item, product_id: '', unit_id: '', available: null } : item))
   }
 
   // تحديث الكمية المتاحة عند تغيير المخزن المصدر
@@ -163,7 +280,7 @@ export default function TransfersPage() {
     // فحص الكميات مقابل المتاح
     for (const item of validItems) {
       if (item.available !== null && item.quantity > item.available) {
-        const pName = products.find(p => p.id === item.product_id)?.name || ''
+        const pName = productNames[item.product_id] || ''
         toast.error(`الكمية المطلوبة من "${pName}" أكبر من المتاح (${item.available})`)
         return
       }
@@ -313,8 +430,8 @@ export default function TransfersPage() {
                                 <Truck size={12} /> موافقة وشحن
                               </Button>
                             )}
-                            {/* in_transit → استلام: مدير المخزن المستلم فقط */}
-                            {t.status === 'in_transit' && iManageDest && (
+                            {/* in_transit → استلام: مدير المخزن المستلم فقط (ليس نفس الشخص الذي شحن) */}
+                            {t.status === 'in_transit' && iManageDest && t.approved_by !== userId && (
                               <Button variant="success" size="sm" onClick={() => setConfirmAction({ transfer: t, action: 'receive' })}>
                                 <PackageCheck size={12} /> استلام
                               </Button>
@@ -444,12 +561,14 @@ export default function TransfersPage() {
           <h3 style={{ fontWeight: 700, fontSize: 'var(--text-sm)' }}>بنود التحويل</h3>
           {createItems.map((item, idx) => (
             <div key={idx} style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'end', flexWrap: 'wrap' }}>
-              <div className="form-group" style={{ flex: 2, minWidth: 160 }}>
+              <div className="form-group" style={{ flex: 2, minWidth: 200 }}>
                 <label className="form-label">المنتج</label>
-                <select className="form-select" value={item.product_id} onChange={e => handleProductChange(idx, e.target.value)}>
-                  <option value="">اختر</option>
-                  {products.map(p => <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>)}
-                </select>
+                <ProductSearchCombo
+                  value={item.product_id}
+                  productName={productNames[item.product_id] || ''}
+                  onSelect={p => handleProductSelect(idx, p)}
+                  onClear={() => handleProductClear(idx)}
+                />
               </div>
               <div className="form-group" style={{ flex: 1, minWidth: 100 }}>
                 <label className="form-label">الوحدة</label>

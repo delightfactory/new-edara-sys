@@ -965,7 +965,20 @@ CREATE POLICY "customer_branches_read" ON customer_branches FOR SELECT
     )
   );
 DROP POLICY IF EXISTS "customer_branches_write" ON customer_branches;
-CREATE POLICY "customer_branches_write" ON customer_branches FOR ALL
+
+DROP POLICY IF EXISTS "customer_branches_insert" ON customer_branches;
+CREATE POLICY "customer_branches_insert" ON customer_branches FOR INSERT
+  WITH CHECK (
+    check_permission(auth.uid(), 'customers.create')
+    OR check_permission(auth.uid(), 'customers.update')
+  );
+
+DROP POLICY IF EXISTS "customer_branches_modify" ON customer_branches;
+CREATE POLICY "customer_branches_modify" ON customer_branches FOR UPDATE
+  USING (check_permission(auth.uid(), 'customers.update'));
+
+DROP POLICY IF EXISTS "customer_branches_delete" ON customer_branches;
+CREATE POLICY "customer_branches_delete" ON customer_branches FOR DELETE
   USING (check_permission(auth.uid(), 'customers.update'));
 
 DROP POLICY IF EXISTS "customer_contacts_read" ON customer_contacts;

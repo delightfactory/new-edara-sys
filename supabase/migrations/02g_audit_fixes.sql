@@ -309,3 +309,10 @@ CREATE INDEX IF NOT EXISTS idx_stock_movements_ref
 
 ALTER TABLE stock_transfers
   ADD COLUMN IF NOT EXISTS cancellation_reason TEXT;
+
+
+
+
+-- 1. إسقاط التريجرات القديمة المسؤولة عن المضاعفة (التي كانت تضع الرصيد يدوياً)
+DROP TRIGGER IF EXISTS trg_customer_init_balance ON customers;
+DROP TRIGGER IF EXISTS trg_supplier_init_balance ON suppliers;

@@ -278,6 +278,52 @@ export function useSuppliers(params?: Parameters<typeof getSuppliers>[0]) {
 }
 
 // ════════════════════════════════════════════
+// 8. SALES — المبيعات
+// ════════════════════════════════════════════
+
+import {
+  getSalesOrders, getSalesReturns, getShippingCompanies, getSalesStats, getSalesSettings
+} from '@/lib/services/sales'
+
+export function useSalesOrders(params?: Parameters<typeof getSalesOrders>[0]) {
+  return useQuery({
+    queryKey: ['sales-orders', params],
+    queryFn: () => getSalesOrders(params),
+  })
+}
+
+export function useSalesReturns(params?: Parameters<typeof getSalesReturns>[0]) {
+  return useQuery({
+    queryKey: ['sales-returns', params],
+    queryFn: () => getSalesReturns(params),
+  })
+}
+
+export function useShippingCompanies(onlyActive = false) {
+  return useQuery({
+    queryKey: ['shipping-companies', onlyActive],
+    queryFn: () => getShippingCompanies(onlyActive),
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+export function useSalesStats() {
+  return useQuery({
+    queryKey: ['sales-stats'],
+    queryFn: getSalesStats,
+    staleTime: 60 * 1000, // 1 min
+  })
+}
+
+export function useSalesSettings() {
+  return useQuery({
+    queryKey: ['sales-settings'],
+    queryFn: getSalesSettings,
+    staleTime: REF_STALE,
+  })
+}
+
+// ════════════════════════════════════════════
 // 6. MUTATION HELPERS — مساعدات الكتابة
 //    لإبطال الـ cache بعد عمليات الإضافة/التعديل/الحذف
 //

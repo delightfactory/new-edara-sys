@@ -56,6 +56,15 @@ const JournalsPage = lazy(() => import('@/pages/finance/JournalsPage'))
 const LedgerPage = lazy(() => import('@/pages/finance/LedgerPage'))
 const ApprovalRulesPage = lazy(() => import('@/pages/finance/ApprovalRulesPage'))
 
+// Sales Pages — lazy loaded
+const SalesOrdersPage = lazy(() => import('@/pages/sales/SalesOrdersPage'))
+const SalesOrderForm = lazy(() => import('@/pages/sales/SalesOrderForm'))
+const SalesOrderDetail = lazy(() => import('@/pages/sales/SalesOrderDetail'))
+const SalesReturnsPage = lazy(() => import('@/pages/sales/SalesReturnsPage'))
+const SalesReturnForm = lazy(() => import('@/pages/sales/SalesReturnForm'))
+const SalesReturnDetail = lazy(() => import('@/pages/sales/SalesReturnDetail'))
+const ShippingCompaniesPage = lazy(() => import('@/pages/sales/ShippingCompaniesPage'))
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -172,7 +181,31 @@ export default function App() {
                 <ProtectedRoute permission="inventory.read"><Suspense fallback={<LazyFallback />}><StockMovementsPage /></Suspense></ProtectedRoute>
               } />
 
-              {/* Finance */}
+              {/* Sales */}
+              <Route path="sales/orders" element={
+                <ProtectedRoute permission={['sales.orders.read', 'sales.orders.create']}><Suspense fallback={<LazyFallback />}><SalesOrdersPage /></Suspense></ProtectedRoute>
+              } />
+              <Route path="sales/orders/new" element={
+                <ProtectedRoute permission="sales.orders.create"><Suspense fallback={<LazyFallback />}><SalesOrderForm /></Suspense></ProtectedRoute>
+              } />
+              <Route path="sales/orders/:id" element={
+                <ProtectedRoute permission="sales.orders.read"><Suspense fallback={<LazyFallback />}><SalesOrderDetail /></Suspense></ProtectedRoute>
+              } />
+              <Route path="sales/orders/:id/edit" element={
+                <ProtectedRoute permission="sales.orders.create"><Suspense fallback={<LazyFallback />}><SalesOrderForm /></Suspense></ProtectedRoute>
+              } />
+              <Route path="sales/returns" element={
+                <ProtectedRoute permission={['sales.returns.read', 'sales.returns.create']}><Suspense fallback={<LazyFallback />}><SalesReturnsPage /></Suspense></ProtectedRoute>
+              } />
+              <Route path="sales/returns/new" element={
+                <ProtectedRoute permission="sales.returns.create"><Suspense fallback={<LazyFallback />}><SalesReturnForm /></Suspense></ProtectedRoute>
+              } />
+              <Route path="sales/returns/:id" element={
+                <ProtectedRoute permission="sales.returns.read"><Suspense fallback={<LazyFallback />}><SalesReturnDetail /></Suspense></ProtectedRoute>
+              } />
+              <Route path="sales/shipping" element={
+                <ProtectedRoute permission="sales.shipping.manage"><Suspense fallback={<LazyFallback />}><ShippingCompaniesPage /></Suspense></ProtectedRoute>
+              } />
               <Route path="finance/vaults" element={
                 <ProtectedRoute permission="finance.vaults.read"><Suspense fallback={<LazyFallback />}><VaultsPage /></Suspense></ProtectedRoute>
               } />

@@ -19,6 +19,7 @@ export default function TransferDetailPage() {
   const can = useAuthStore(s => s.can)
   const canViewCosts = can('finance.view_costs')
   const isAdmin = can('inventory.read_all')
+  const userId = useAuthStore(s => s.profile?.id)
 
   const [loading, setLoading] = useState(true)
   const [transfer, setTransfer] = useState<StockTransfer | null>(null)
@@ -97,9 +98,11 @@ export default function TransferDetailPage() {
   const st = statusMap[transfer.status] || { label: transfer.status, variant: 'neutral' as const }
   const dir = directionMap[transfer.direction] || { label: transfer.direction, icon: '↔' }
 
+  // منع نفس الشخص من الشحن والاستلام — فصل المهام
+  const shippedByMe = transfer.approved_by === userId
   const canApprove = transfer.status === 'pending' && transfer.direction === 'pull' && isMyWarehouse(transfer.from_warehouse_id)
   const canShip = transfer.status === 'pending' && transfer.direction === 'push' && isMyWarehouse(transfer.from_warehouse_id)
-  const canReceive = transfer.status === 'in_transit' && isMyWarehouse(transfer.to_warehouse_id)
+  const canReceive = transfer.status === 'in_transit' && isMyWarehouse(transfer.to_warehouse_id) && !shippedByMe
   const canCancel = (transfer.status === 'pending' || transfer.status === 'in_transit') && (
     isMyWarehouse(transfer.from_warehouse_id) ||
     (transfer.status === 'pending' && transfer.direction === 'pull' && isMyWarehouse(transfer.to_warehouse_id))
@@ -149,6 +152,22 @@ export default function TransferDetailPage() {
           )}
         </div>
       </div>
+
+      {/* رسالة حالة لحظية */}
+      {transfer.status === 'in_transit' && shippedByMe && (
+        <div style={{
+          padding: 'var(--space-3) var(--space-4)',
+          marginBottom: 'var(--space-4)',
+          background: 'var(--color-info-light)',
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid var(--color-info)',
+          display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
+          fontSize: 'var(--text-sm)', fontWeight: 500,
+        }}>
+          <Clock size={16} style={{ color: 'var(--color-info)', flexShrink: 0 }} />
+          <span>في انتظار تأكيد الاستلام من مدير مخزن «{(transfer as any).to_warehouse?.name || 'المستلم'}»</span>
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>

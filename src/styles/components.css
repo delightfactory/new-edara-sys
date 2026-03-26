@@ -522,7 +522,7 @@
 
   /* ===== Utility ===== */
   .hide-mobile { display: none !important; }
-  .show-mobile { display: flex !important; }
+  .show-mobile { display: block !important; }
 
   /* ===== Form Rows & Stats ===== */
   .form-row { grid-template-columns: 1fr; }

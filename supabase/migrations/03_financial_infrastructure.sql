@@ -41,6 +41,7 @@ INSERT INTO chart_of_accounts (code, name, name_en, type, sort_order) VALUES
   ('1400', 'العُهد',                  'Custody Accounts',    'asset',     8),
   ('2000', 'الالتزامات',              'Liabilities',         'liability', 10),
   ('2100', 'ذمم دائنة (موردين)',      'Accounts Payable',    'liability', 11),
+  ('2200', 'ضريبة القيمة المضافة',     'VAT Payable',         'liability', 12),
   ('3000', 'حقوق الملكية',            'Equity',              'equity',    20),
   ('3100', 'رأس المال',               'Capital',             'equity',    21),
   ('4000', 'الإيرادات',               'Revenue',             'revenue',   30),
@@ -61,7 +62,7 @@ WHERE code IN ('1100','1200','1300','1400') AND parent_id IS NULL;
 UPDATE chart_of_accounts SET parent_id = (SELECT id FROM chart_of_accounts WHERE code = '1100')
 WHERE code IN ('1110','1120','1130') AND parent_id IS NULL;
 UPDATE chart_of_accounts SET parent_id = (SELECT id FROM chart_of_accounts WHERE code = '2000')
-WHERE code IN ('2100') AND parent_id IS NULL;
+WHERE code IN ('2100','2200') AND parent_id IS NULL;
 UPDATE chart_of_accounts SET parent_id = (SELECT id FROM chart_of_accounts WHERE code = '3000')
 WHERE code IN ('3100') AND parent_id IS NULL;
 UPDATE chart_of_accounts SET parent_id = (SELECT id FROM chart_of_accounts WHERE code = '4000')

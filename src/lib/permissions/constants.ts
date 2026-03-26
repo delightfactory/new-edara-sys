@@ -30,6 +30,10 @@ export const PERMISSIONS = {
   SALES_RETURNS_CREATE:     'sales.returns.create',
   SALES_RETURNS_CONFIRM:    'sales.returns.confirm',
   SALES_DISCOUNTS_OVERRIDE: 'sales.discounts.override',
+  SALES_ORDERS_EDIT_PRICE:   'sales.orders.edit_price',
+  SALES_ORDERS_OVERRIDE_CREDIT: 'sales.orders.override_credit',
+  SALES_ORDERS_EDIT_CONFIRMED:  'sales.orders.edit_confirmed',
+  SALES_SHIPPING_MANAGE:     'sales.shipping.manage',
 
   // Products & Categories
   PRODUCTS_READ:     'products.read',
@@ -204,6 +208,10 @@ export const PERMISSION_GROUPS = [
       { key: PERMISSIONS.SALES_RETURNS_CREATE,     label: 'إنشاء مرتجع' },
       { key: PERMISSIONS.SALES_RETURNS_CONFIRM,    label: 'تأكيد مرتجع' },
       { key: PERMISSIONS.SALES_DISCOUNTS_OVERRIDE, label: 'تجاوز حد الخصم' },
+      { key: PERMISSIONS.SALES_ORDERS_EDIT_PRICE,   label: 'تعديل سعر البيع' },
+      { key: PERMISSIONS.SALES_ORDERS_OVERRIDE_CREDIT, label: 'تخطي سياسة الائتمان' },
+      { key: PERMISSIONS.SALES_ORDERS_EDIT_CONFIRMED,  label: 'تعديل طلب مؤكد' },
+      { key: PERMISSIONS.SALES_SHIPPING_MANAGE,     label: 'إدارة شركات الشحن' },
     ]
   },
   {

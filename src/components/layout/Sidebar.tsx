@@ -51,10 +51,10 @@ const navItems: NavItem[] = [
   { id: 'branches', label: 'الفروع', icon: Building2, permission: PERMISSIONS.BRANCHES_READ, path: '/branches' },
   {
     id: 'sales', label: 'المبيعات', icon: ShoppingCart,
-    comingSoon: true,
     children: [
       { label: 'طلبات البيع', path: '/sales/orders', permission: [PERMISSIONS.SALES_ORDERS_READ, PERMISSIONS.SALES_ORDERS_CREATE] },
       { label: 'المرتجعات', path: '/sales/returns', permission: [PERMISSIONS.SALES_RETURNS_READ, PERMISSIONS.SALES_RETURNS_CREATE] },
+      { label: 'شركات الشحن', path: '/sales/shipping', permission: PERMISSIONS.SALES_SHIPPING_MANAGE },
     ],
   },
   { id: 'purchases', label: 'المشتريات', icon: Package, permission: [PERMISSIONS.PURCHASES_ORDERS_READ, PERMISSIONS.PURCHASES_ORDERS_CREATE], path: '/purchases/orders', comingSoon: true },

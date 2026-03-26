@@ -222,6 +222,7 @@ export interface PriceListAssignment {
 export type CustomerType = 'retail' | 'wholesale' | 'distributor'
 export type PaymentTerms = 'cash' | 'credit' | 'mixed'
 
+
 export interface Customer {
   id: string
   code: string          // Auto-generated: CUS-00001
@@ -713,7 +714,7 @@ export interface CustodyTransaction {
 
 // ----- PAYMENT RECEIPTS -----
 
-export type PaymentMethod = 'cash' | 'bank_transfer' | 'instapay' | 'check' | 'mobile_wallet'
+export type PaymentMethod = 'cash' | 'bank_transfer' | 'instapay' | 'cheque' | 'wallet'
 export type PaymentReceiptStatus = 'pending' | 'confirmed' | 'rejected'
 
 export interface PaymentReceipt {
@@ -760,6 +761,7 @@ export interface PaymentReceiptInput {
   check_date?: string | null
   notes?: string | null
   collected_by?: string | null
+  sales_order_id?: string | null
 }
 
 // ----- EXPENSES -----
@@ -882,4 +884,246 @@ export interface JournalEntryLineInput {
   debit: number
   credit: number
   description?: string | null
+}
+
+// ============================================================
+// Phase 4 — Sales System
+// Maps to: supabase/migrations/04_sales_system.sql
+// ============================================================
+
+// ----- SHIPPING COMPANIES -----
+
+export interface ShippingCompany {
+  id: string
+  name: string
+  phone: string | null
+  email: string | null
+  notes: string | null
+  is_active: boolean
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ShippingCompanyInput {
+  name: string
+  phone?: string | null
+  email?: string | null
+  notes?: string | null
+  is_active?: boolean
+}
+
+// ----- SALES ORDERS -----
+
+export type SalesOrderStatus =
+  | 'draft' | 'confirmed' | 'partially_delivered'
+  | 'delivered' | 'completed' | 'cancelled'
+
+export type SalesReturnStatus = 'draft' | 'confirmed' | 'cancelled'
+
+export type DeliveryMethod = 'direct' | 'shipping' | 'pickup'
+
+export interface SalesOrder {
+  id: string
+  order_number: string
+
+  // الأطراف
+  customer_id: string
+  rep_id: string | null
+  created_by_id: string
+  branch_id: string | null
+
+  // الحالة
+  status: SalesOrderStatus
+  order_date: string
+  expected_delivery: string | null
+
+  // التسليم
+  delivery_method: DeliveryMethod
+  warehouse_id: string | null
+  shipping_company_id: string | null
+  tracking_number: string | null
+  shipping_cost: number
+  shipping_on_customer: boolean
+  delivery_address_id: string | null
+
+  // الدفع
+  payment_terms: PaymentTerms | null
+  payment_method: PaymentMethod | null
+  vault_id: string | null
+  custody_id: string | null
+  cash_amount: number
+  credit_amount: number
+
+  // الإجماليات
+  subtotal: number
+  discount_amount: number
+  tax_amount: number
+  total_amount: number
+  paid_amount: number
+  returned_amount: number
+
+  // فحص الائتمان
+  credit_check_passed: boolean | null
+  credit_override: boolean
+  credit_override_by: string | null
+
+  // التدقيق
+  confirmed_by: string | null
+  confirmed_at: string | null
+  delivered_by: string | null
+  delivered_at: string | null
+  cancelled_by: string | null
+  cancelled_at: string | null
+  cancel_reason: string | null
+
+  due_date: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+
+  // joined
+  customer?: Pick<Customer, 'id' | 'name' | 'code' | 'phone' | 'payment_terms' | 'credit_limit' | 'credit_days'>
+  rep?: { id: string; full_name: string }
+  created_by_profile?: { id: string; full_name: string }
+  branch?: Pick<Branch, 'id' | 'name'>
+  warehouse?: Pick<Warehouse, 'id' | 'name'>
+  shipping_company?: Pick<ShippingCompany, 'id' | 'name'>
+  delivery_address?: Pick<CustomerBranch, 'id' | 'name' | 'address'>
+  vault?: Pick<Vault, 'id' | 'name' | 'type'>
+  custody?: Pick<CustodyAccount, 'id' | 'current_balance'> & { employee?: { id: string; full_name: string } }
+  items?: SalesOrderItem[]
+  returns?: SalesReturn[]
+}
+
+export interface SalesOrderInput {
+  customer_id: string
+  rep_id?: string | null
+  branch_id?: string | null
+  order_date?: string
+  expected_delivery?: string | null
+  delivery_method?: DeliveryMethod
+  warehouse_id?: string | null
+  shipping_company_id?: string | null
+  tracking_number?: string | null
+  shipping_cost?: number
+  shipping_on_customer?: boolean
+  delivery_address_id?: string | null
+  notes?: string | null
+}
+
+// ----- SALES ORDER ITEMS -----
+
+export interface SalesOrderItem {
+  id: string
+  order_id: string
+  product_id: string
+  unit_id: string
+  conversion_factor: number
+  quantity: number
+  base_quantity: number
+  delivered_quantity: number
+  returned_quantity: number
+  unit_price: number
+  discount_percent: number
+  discount_amount: number
+  tax_rate: number
+  tax_amount: number
+  line_total: number
+  unit_cost_at_sale: number
+  // joined
+  product?: Pick<Product, 'id' | 'name' | 'sku' | 'selling_price' | 'tax_rate'> & {
+    base_unit?: Pick<Unit, 'id' | 'name' | 'symbol'>
+  }
+  unit?: Pick<Unit, 'id' | 'name' | 'symbol'>
+}
+
+export interface SalesOrderItemInput {
+  product_id: string
+  unit_id: string
+  conversion_factor?: number
+  quantity: number
+  base_quantity: number
+  unit_price: number
+  discount_percent?: number
+  discount_amount?: number
+  tax_rate?: number
+  tax_amount?: number
+  line_total?: number
+}
+
+// ----- SALES RETURNS -----
+
+export interface SalesReturn {
+  id: string
+  return_number: string
+  order_id: string
+  customer_id: string
+  warehouse_id: string | null
+  status: SalesReturnStatus
+  return_date: string
+  total_amount: number
+  reason: string | null
+  notes: string | null
+  confirmed_by: string | null
+  confirmed_at: string | null
+  cancelled_by: string | null
+  cancelled_at: string | null
+  created_by: string
+  created_at: string
+  updated_at: string
+  // joined
+  order?: Pick<SalesOrder, 'id' | 'order_number' | 'payment_terms' | 'total_amount'>
+  customer?: Pick<Customer, 'id' | 'name' | 'code'>
+  warehouse?: Pick<Warehouse, 'id' | 'name'>
+  confirmed_by_profile?: { id: string; full_name: string }
+  created_by_profile?: { id: string; full_name: string }
+  items?: SalesReturnItem[]
+}
+
+export interface SalesReturnInput {
+  order_id: string
+  customer_id: string
+  warehouse_id?: string | null
+  return_date?: string
+  reason?: string | null
+  notes?: string | null
+}
+
+export interface SalesReturnItem {
+  id: string
+  return_id: string
+  order_item_id: string
+  product_id: string
+  unit_id: string
+  conversion_factor: number
+  quantity: number
+  base_quantity: number
+  unit_price: number
+  line_total: number
+  unit_cost_at_sale: number
+  // joined
+  product?: Pick<Product, 'id' | 'name' | 'sku'>
+  unit?: Pick<Unit, 'id' | 'name' | 'symbol'>
+  order_item?: Pick<SalesOrderItem, 'id' | 'delivered_quantity' | 'returned_quantity'>
+}
+
+export interface SalesReturnItemInput {
+  order_item_id: string
+  product_id: string
+  unit_id: string
+  conversion_factor?: number
+  quantity: number
+  base_quantity: number
+  unit_price: number
+  line_total?: number
+}
+
+// ----- SALES SETTINGS -----
+
+export interface SalesSettings {
+  maxDiscountPercent: number
+  minOrderAmount: number
+  taxEnabled: boolean
+  defaultTaxRate: number
 }

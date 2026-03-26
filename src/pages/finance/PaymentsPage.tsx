@@ -18,8 +18,8 @@ const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
   { value: 'cash', label: 'نقدي' },
   { value: 'bank_transfer', label: 'تحويل بنكي' },
   { value: 'instapay', label: 'إنستاباي' },
-  { value: 'check', label: 'شيك' },
-  { value: 'mobile_wallet', label: 'محفظة إلكترونية' },
+  { value: 'cheque', label: 'شيك' },
+  { value: 'wallet', label: 'محفظة إلكترونية' },
 ]
 
 const statusConfig: Record<string, { label: string; variant: 'warning' | 'success' | 'danger' }> = {
@@ -207,7 +207,7 @@ export default function PaymentsPage() {
               <input className="form-input" value={form.bank_reference || ''} onChange={e => setForm(f => ({ ...f, bank_reference: e.target.value || null }))} />
             </div>
           )}
-          {form.payment_method === 'check' && (
+          {form.payment_method === 'cheque' && (
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">رقم الشيك</label>
