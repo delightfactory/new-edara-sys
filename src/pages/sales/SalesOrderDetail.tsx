@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
@@ -6,7 +6,7 @@ import {
   RotateCcw, FileText, Clock, User, CreditCard,
   Package, Building2, Banknote, Warehouse, AlertTriangle,
   TrendingUp, TrendingDown, Info, Copy, ChevronDown, Receipt,
-  CheckCircle2, XOctagon, AlertCircle,
+  CheckCircle2, XOctagon, AlertCircle, Upload, X, ImageIcon,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import { useWarehouses, useInvalidate } from '@/hooks/useQueryHooks'
@@ -20,6 +20,7 @@ import {
   checkCustomerCredit,
   getUserPaymentOptions,
 } from '@/lib/services/sales'
+import { uploadPaymentProof } from '@/lib/services/payments'
 import type { CustomerCreditInfo, UserPaymentOptions } from '@/lib/services/sales'
 import { formatNumber } from '@/lib/utils/format'
 import type { SalesOrder, PaymentTerms, SalesOrderStatus } from '@/lib/types/master-data'
@@ -71,6 +72,9 @@ const defaultDeliverForm = (remaining: number): DeliverFormState => ({
   bankReference: '', checkNumber: '', checkDate: '',
 })
 
+// طرق الدفع التي تستلزم إثبات إجباري
+const PROOF_REQUIRED_METHODS = ['bank_transfer', 'instapay', 'mobile_wallet', 'cheque']
+
 // ── Main Component ──────────────────────────────────────────────
 export default function SalesOrderDetail() {
   const { id } = useParams<{ id: string }>()
@@ -93,6 +97,8 @@ export default function SalesOrderDetail() {
   const [creditInfo, setCreditInfo] = useState<CustomerCreditInfo | null>(null)
   const [paymentOptions, setPaymentOptions] = useState<UserPaymentOptions | null>(null)
   const [deliverForm, setDeliverForm] = useState<DeliverFormState>(defaultDeliverForm(0))
+  const [proofFile, setProofFile] = useState<File | null>(null)
+  const proofFileRef = useRef<HTMLInputElement>(null)
 
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
@@ -120,11 +126,15 @@ export default function SalesOrderDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('payment_receipts')
-        .select('id, number, amount, payment_method, status, created_at')
+        .select('id, number, amount, payment_method, status, created_at, proof_url, bank_reference, check_number, check_date')
         .eq('sales_order_id', id!)
         .order('created_at', { ascending: false })
       if (error) return []
-      return data as { id: string; number: string; amount: number; payment_method: string; status: string; created_at: string }[]
+      return data as {
+        id: string; number: string; amount: number; payment_method: string
+        status: string; created_at: string; proof_url: string | null
+        bank_reference: string | null; check_number: string | null; check_date: string | null
+      }[]
     },
     enabled: !!id && !!order && order.status !== 'draft' && order.status !== 'cancelled',
   })
@@ -139,6 +149,7 @@ export default function SalesOrderDetail() {
     setShowDeliverModal(true)
     setDeliverLoading(true)
     setDeliverForm(defaultDeliverForm(remaining))
+    setProofFile(null)
     try {
       const [credit, opts] = await Promise.all([
         checkCustomerCredit(order.customer_id, remaining),
@@ -198,6 +209,8 @@ export default function SalesOrderDetail() {
 
   // هل طريقة الدفع المختارة نقدية فورية؟
   const isCashNow = COLLECT_METHODS.find(m => m.value === deliverForm.paymentMethod)?.isCash ?? true
+  // هل الطريقة الحالية تتطلب إثبات إجباري؟
+  const isProofRequired = PROOF_REQUIRED_METHODS.includes(deliverForm.paymentMethod)
 
   // التحقق من جاهزية التسليم
   const canDeliverAction = (
@@ -209,6 +222,9 @@ export default function SalesOrderDetail() {
     !isCashNow ||
     // نقدي → يحتاج عهدة أو خزينة
     !!(deliverForm.custodyId || deliverForm.vaultId)
+  ) && (
+    // إثبات الدفع إجباري لغير النقدي
+    !isProofRequired || !!proofFile
   )
 
   // ── Handle Deliver ───────────────────────────────────────────
@@ -219,9 +235,20 @@ export default function SalesOrderDetail() {
     if (deliverForm.paymentTerms !== 'credit' && isCashNow && !deliverForm.custodyId && !deliverForm.vaultId) {
       toast.error('يجب تحديد العهدة أو الخزينة لاستقبال المبلغ النقدي'); return
     }
+    // إثبات الدفع إجباري للتحويلات والشيكات
+    if (isProofRequired && !proofFile) {
+      toast.error('إثبات الدفع مطلوب لهذه الطريقة — يرجى رفع صورة أو ملف')
+      return
+    }
 
     setActionLoading(true)
     try {
+      // رفع الإثبات (إن وُجد) قبل الاتصال بالـ RPC
+      let proofUrl: string | undefined
+      if (proofFile) {
+        proofUrl = await uploadPaymentProof(proofFile)
+      }
+
       await deliverSalesOrder(id!, {
         paymentTerms: deliverForm.paymentTerms,
         cashAmount: deliverForm.paymentTerms === 'credit' ? 0 : deliverForm.cashAmount,
@@ -232,6 +259,7 @@ export default function SalesOrderDetail() {
         bankReference: deliverForm.bankReference || null,
         checkNumber: deliverForm.checkNumber || null,
         checkDate: deliverForm.checkDate || null,
+        proofUrl: proofUrl || null,
       })
 
       const msg = isCashNow
@@ -403,7 +431,7 @@ export default function SalesOrderDetail() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px 16px' }}>
             <InfoPair icon={<User size={12} />} label="العميل" value={order.customer?.name} />
             <InfoPair icon={<User size={12} />} label="المندوب" value={order.rep?.full_name || '—'} />
-            <InfoPair icon={<Clock size={12} />} label="تاريخ الطلب" value={new Date(order.order_date).toLocaleDateString('ar-EG')} />
+            <InfoPair icon={<Clock size={12} />} label="تاريخ الطلب" value={new Date(order.order_date).toLocaleDateString('ar-EG-u-nu-latn')} />
             <InfoPair icon={<Building2 size={12} />} label="الفرع" value={order.branch?.name || '—'} />
             <InfoPair icon={<Warehouse size={12} />} label="المخزن"
               value={order.warehouse?.name || (order.status === 'draft' ? 'يُحدَّد عند التأكيد' : '—')}
@@ -412,7 +440,7 @@ export default function SalesOrderDetail() {
               value={termLabels[order.payment_terms || ''] || order.payment_terms || '—'} />
             {order.due_date && (
               <InfoPair icon={<Clock size={12} />} label="الاستحقاق"
-                value={new Date(order.due_date).toLocaleDateString('ar-EG')} />
+                value={new Date(order.due_date).toLocaleDateString('ar-EG-u-nu-latn')} />
             )}
           </div>
         </div>
@@ -453,28 +481,55 @@ export default function SalesOrderDetail() {
         {order.status !== 'draft' && order.status !== 'cancelled' && orderReceipts.length > 0 && (
           <div style={card}>
             <SectionHead icon={<Receipt size={14} />} title={`إيصالات الدفع (${orderReceipts.length})`} />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {orderReceipts.map(r => {
                 const sBg = r.status === 'confirmed' ? '#f0fdf4' : r.status === 'pending' ? '#fffbeb' : '#fef2f2'
                 const sColor = r.status === 'confirmed' ? '#16a34a' : r.status === 'pending' ? '#d97706' : '#dc2626'
                 const sLabel = r.status === 'confirmed' ? 'مؤكد' : r.status === 'pending' ? 'معلق' : 'مرفوض'
-                const mLabel: Record<string, string> = { cash: 'نقدي', bank_transfer: 'تحويل', instapay: 'إنستاباي', cheque: 'شيك', wallet: 'محفظة' }
+                const mIcon: Record<string, string> = { cash: '💵', bank_transfer: '🏦', instapay: '⚡', cheque: '📋', mobile_wallet: '📱' }
+                const mLabel: Record<string, string> = { cash: 'نقدي', bank_transfer: 'تحويل بنكي', instapay: 'إنستاباي', cheque: 'شيك', mobile_wallet: 'محفظة' }
                 return (
-                  <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', borderRadius: 8, background: 'var(--bg-surface-2)' }}>
-                    <div>
-                      <div style={{ fontSize: 12, fontWeight: 600 }}>#{r.number}</div>
-                      <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
-                        {mLabel[r.payment_method] || r.payment_method} • {new Date(r.created_at).toLocaleDateString('ar-EG')}
+                  <div key={r.id} style={{
+                    borderRadius: 10, border: '1px solid var(--border-primary)',
+                    overflow: 'hidden', background: 'var(--bg-surface-2)',
+                  }}>
+                    {/* Header row */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span>{mIcon[r.payment_method] || '💳'}</span>
+                        <div>
+                          <div style={{ fontSize: 12, fontWeight: 700, direction: 'ltr', display: 'inline-block' }}>#{r.number}</div>
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>
+                            {mLabel[r.payment_method] || r.payment_method} • {new Date(r.created_at).toLocaleDateString('ar-EG-u-nu-latn')}
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontWeight: 700, fontSize: 14, fontVariantNumeric: 'tabular-nums', color: 'var(--color-primary)' }}>
+                          {formatNumber(r.amount)} ج.م
+                        </span>
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 99, background: sBg, color: sColor }}>
+                          {sLabel}
+                        </span>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontWeight: 700, fontSize: 13, fontVariantNumeric: 'tabular-nums', color: 'var(--color-primary)' }}>
-                        {formatNumber(r.amount)} ج.م
-                      </span>
-                      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: sBg, color: sColor }}>
-                        {sLabel}
-                      </span>
-                    </div>
+                    {/* Reference / cheque details */}
+                    {(r.bank_reference || r.check_number) && (
+                      <div style={{ padding: '4px 12px 6px', fontSize: 10, color: 'var(--text-muted)', fontFamily: 'monospace', direction: 'ltr', textAlign: 'start', borderTop: '1px solid var(--border-primary)' }}>
+                        {r.bank_reference && <span>Ref: {r.bank_reference}</span>}
+                        {r.check_number && <span>  شيك #{r.check_number}{r.check_date ? ` | ${r.check_date}` : ''}</span>}
+                      </div>
+                    )}
+                    {/* Proof image */}
+                    {r.proof_url && (
+                      <div style={{ padding: '6px 12px 8px', borderTop: '1px solid var(--border-primary)' }}>
+                        <a href={r.proof_url} target="_blank" rel="noreferrer"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 600 }}>
+                          <ImageIcon size={12} />
+                          عرض إثبات الدفع
+                        </a>
+                      </div>
+                    )}
                   </div>
                 )
               })}
@@ -778,7 +833,7 @@ export default function SalesOrderDetail() {
                       <label className="form-label" style={{ fontSize: 11 }}>
                         رقم المرجع {deliverForm.paymentMethod === 'instapay' ? '(إنستاباي)' : deliverForm.paymentMethod === 'mobile_wallet' ? '(المحفظة)' : '(التحويل البنكي)'}
                       </label>
-                      <input className="form-input" style={{ fontSize: 12 }}
+                      <input className="form-input" style={{ fontSize: 12 }} dir="ltr"
                         placeholder="أدخل رقم المرجع أو الحوالة..."
                         value={deliverForm.bankReference}
                         onChange={e => setDeliverForm(f => ({ ...f, bankReference: e.target.value }))} />
@@ -789,17 +844,49 @@ export default function SalesOrderDetail() {
                     <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                       <div style={{ flex: 1 }}>
                         <label className="form-label" style={{ fontSize: 11 }}>رقم الشيك</label>
-                        <input className="form-input" style={{ fontSize: 12 }}
+                        <input className="form-input" style={{ fontSize: 12 }} dir="ltr"
                           placeholder="رقم الشيك..."
                           value={deliverForm.checkNumber}
                           onChange={e => setDeliverForm(f => ({ ...f, checkNumber: e.target.value }))} />
                       </div>
                       <div style={{ flex: 1 }}>
                         <label className="form-label" style={{ fontSize: 11 }}>تاريخ الاستحقاق</label>
-                        <input className="form-input" type="date" style={{ fontSize: 12 }}
+                        <input className="form-input" type="date" style={{ fontSize: 12 }} dir="ltr"
                           value={deliverForm.checkDate}
                           onChange={e => setDeliverForm(f => ({ ...f, checkDate: e.target.value }))} />
                       </div>
+                    </div>
+                  )}
+
+                  {/* ── إثبات الدفع (إجباري للتحويلات والشيكات) ── */}
+                  {isProofRequired && (
+                    <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 8, border: `1px solid ${proofFile ? 'var(--color-success)' : 'color-mix(in srgb, var(--color-danger) 40%, transparent)'}`, background: proofFile ? 'color-mix(in srgb, var(--color-success) 6%, transparent)' : 'color-mix(in srgb, var(--color-danger) 5%, transparent)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <label style={{ fontSize: 12, fontWeight: 700, color: proofFile ? 'var(--color-success)' : 'var(--color-danger)', display: 'flex', alignItems: 'center', gap: 5 }}>
+                          <ImageIcon size={13} />
+                          إثبات الدفع <span style={{ fontWeight: 400, fontSize: 10 }}>(إجباري)</span>
+                        </label>
+                        {proofFile && (
+                          <button type="button" onClick={() => { setProofFile(null); if (proofFileRef.current) proofFileRef.current.value = '' }}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 2 }}>
+                            <X size={13} />
+                          </button>
+                        )}
+                      </div>
+                      <input ref={proofFileRef} type="file" accept="image/*,.pdf" style={{ display: 'none' }}
+                        onChange={e => setProofFile(e.target.files?.[0] || null)} />
+                      {proofFile ? (
+                        <div style={{ fontSize: 11, color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: 5 }}>
+                          <CheckCircle2 size={12} /> {proofFile.name}
+                        </div>
+                      ) : (
+                        <button type="button"
+                          onClick={() => proofFileRef.current?.click()}
+                          style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: 'var(--color-danger)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                          <Upload size={13} /> اختر صورة أو ملف PDF
+                        </button>
+                      )}
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>صور أو PDF — بحد أقصى 5MB</div>
                     </div>
                   )}
                 </div>

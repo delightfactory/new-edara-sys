@@ -345,11 +345,11 @@ export default function CustomerFormPage() {
               <span className={`badge ${customerData.is_active ? 'badge-success' : 'badge-danger'}`}>{customerData.is_active ? 'نشط' : 'معطل'}</span>
               <span className={`badge ${customerData.payment_terms === 'credit' ? 'badge-warning' : 'badge-success'}`}>{paymentLabels[customerData.payment_terms]}</span>
               {customerData.credit_limit > 0 && (
-                <span className="badge badge-neutral">حد ائتمان: {customerData.credit_limit.toLocaleString('ar-EG')}</span>
+                <span className="badge badge-neutral">حد ائتمان: {customerData.credit_limit.toLocaleString('ar-EG-u-nu-latn')}</span>
               )}
             </div>
             <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', textAlign: 'end' }}>
-              <div>أُنشئ: {new Date(customerData.created_at).toLocaleDateString('ar-EG')}</div>
+              <div>أُنشئ: {new Date(customerData.created_at).toLocaleDateString('ar-EG-u-nu-latn')}</div>
               {customerData.assigned_rep && <div>المندوب: {customerData.assigned_rep.full_name}</div>}
             </div>
           </div>
@@ -457,7 +457,7 @@ export default function CustomerFormPage() {
                     <span style={{ fontWeight: 600 }}>الموقع GPS:</span>{' '}
                     <span dir="ltr">{location.lat?.toFixed(6)}, {location.lng?.toFixed(6)}</span>
                     {location.accuracy && <span style={{ color: 'var(--text-muted)' }}> (دقة: {location.accuracy.toFixed(0)}م)</span>}
-                    {location.updatedAt && <span style={{ color: 'var(--text-muted)' }}> — {new Date(location.updatedAt).toLocaleDateString('ar-EG')}</span>}
+                    {location.updatedAt && <span style={{ color: 'var(--text-muted)' }}> — {new Date(location.updatedAt).toLocaleDateString('ar-EG-u-nu-latn')}</span>}
                   </div>
                 ) : (
                   <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>لم يتم تحديد الموقع بعد</span>
@@ -721,14 +721,14 @@ export default function CustomerFormPage() {
                   return (
                     <tr key={h.id}>
                       <td style={{ fontSize: 'var(--text-xs)', whiteSpace: 'nowrap' }}>
-                        {new Date(h.created_at).toLocaleDateString('ar-EG')}
-                        <div style={{ color: 'var(--text-muted)' }}>{new Date(h.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</div>
+                        {new Date(h.created_at).toLocaleDateString('ar-EG-u-nu-latn')}
+                        <div style={{ color: 'var(--text-muted)' }}>{new Date(h.created_at).toLocaleTimeString('ar-EG-u-nu-latn', { hour: '2-digit', minute: '2-digit' })}</div>
                       </td>
-                      <td style={{ fontVariantNumeric: 'tabular-nums' }}>{h.limit_before.toLocaleString('ar-EG')}</td>
-                      <td style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{h.limit_after.toLocaleString('ar-EG')}</td>
+                      <td style={{ fontVariantNumeric: 'tabular-nums' }}>{h.limit_before.toLocaleString('ar-EG-u-nu-latn')}</td>
+                      <td style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{h.limit_after.toLocaleString('ar-EG-u-nu-latn')}</td>
                       <td>
                         <span style={{ color: diff > 0 ? 'var(--color-success)' : diff < 0 ? 'var(--color-danger)' : 'var(--text-muted)', fontWeight: 600 }}>
-                          {diff > 0 ? '+' : ''}{diff.toLocaleString('ar-EG')}
+                          {diff > 0 ? '+' : ''}{diff.toLocaleString('ar-EG-u-nu-latn')}
                         </span>
                       </td>
                       <td>{h.changed_by_profile?.full_name || '—'}</td>

@@ -242,7 +242,7 @@ export default function PriceListsPage() {
                   {l.description && <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{l.description}</div>}
                   {(l.valid_from || l.valid_to) && (
                     <div style={{ fontSize: 'var(--text-xs)', color: isExpired(l) ? 'var(--color-danger)' : 'var(--text-muted)', marginTop: 2 }}>
-                      📅 {l.valid_from ? new Date(l.valid_from).toLocaleDateString('ar-EG') : '∞'} — {l.valid_to ? new Date(l.valid_to).toLocaleDateString('ar-EG') : '∞'}
+                      📅 {l.valid_from ? new Date(l.valid_from).toLocaleDateString('ar-EG-u-nu-latn') : '∞'} — {l.valid_to ? new Date(l.valid_to).toLocaleDateString('ar-EG-u-nu-latn') : '∞'}
                       {isExpired(l) && ' (منتهية)'}
                     </div>
                   )}
@@ -304,7 +304,7 @@ export default function PriceListsPage() {
                 {isExpired(selected) && <span className="badge badge-danger">منتهية الصلاحية</span>}
                 {(selected.valid_from || selected.valid_to) && (
                   <span className="badge badge-neutral">
-                    📅 {selected.valid_from ? new Date(selected.valid_from).toLocaleDateString('ar-EG') : '∞'} — {selected.valid_to ? new Date(selected.valid_to).toLocaleDateString('ar-EG') : '∞'}
+                    📅 {selected.valid_from ? new Date(selected.valid_from).toLocaleDateString('ar-EG-u-nu-latn') : '∞'} — {selected.valid_to ? new Date(selected.valid_to).toLocaleDateString('ar-EG-u-nu-latn') : '∞'}
                   </span>
                 )}
               </div>

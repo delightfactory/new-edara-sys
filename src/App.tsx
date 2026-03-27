@@ -50,6 +50,7 @@ const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'))
 const VaultsPage = lazy(() => import('@/pages/finance/VaultsPage'))
 const CustodyPage = lazy(() => import('@/pages/finance/CustodyPage'))
 const PaymentsPage = lazy(() => import('@/pages/finance/PaymentsPage'))
+const PaymentReceiptDetail = lazy(() => import('@/pages/finance/PaymentReceiptDetail'))
 const ExpensesPage = lazy(() => import('@/pages/finance/ExpensesPage'))
 const ChartOfAccountsPage = lazy(() => import('@/pages/finance/ChartOfAccountsPage'))
 const JournalsPage = lazy(() => import('@/pages/finance/JournalsPage'))
@@ -214,6 +215,9 @@ export default function App() {
               } />
               <Route path="finance/payments" element={
                 <ProtectedRoute permission={['finance.payments.read', 'finance.payments.create']}><Suspense fallback={<LazyFallback />}><PaymentsPage /></Suspense></ProtectedRoute>
+              } />
+              <Route path="finance/payments/:id" element={
+                <ProtectedRoute permission="finance.payments.read"><Suspense fallback={<LazyFallback />}><PaymentReceiptDetail /></Suspense></ProtectedRoute>
               } />
               <Route path="finance/expenses" element={
                 <ProtectedRoute permission={['finance.expenses.read', 'finance.expenses.create']}><Suspense fallback={<LazyFallback />}><ExpensesPage /></Suspense></ProtectedRoute>

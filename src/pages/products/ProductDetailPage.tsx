@@ -97,14 +97,14 @@ export default function ProductDetailPage() {
         <div className="stat-card">
           <div className="stat-card-label">سعر البيع</div>
           <div className="stat-card-value" style={{ fontSize: 'var(--text-xl)', color: 'var(--color-primary)' }}>
-            {product.selling_price.toLocaleString('ar-EG')}
+            {product.selling_price.toLocaleString('ar-EG-u-nu-latn')}
           </div>
         </div>
         {canViewCosts && (
           <div className="stat-card">
             <div className="stat-card-label">سعر التكلفة</div>
             <div className="stat-card-value" style={{ fontSize: 'var(--text-xl)' }}>
-              {product.cost_price.toLocaleString('ar-EG')}
+              {product.cost_price.toLocaleString('ar-EG-u-nu-latn')}
             </div>
           </div>
         )}
@@ -174,7 +174,7 @@ export default function ProductDetailPage() {
                 <div style={{ fontWeight: 700, fontSize: 'var(--text-sm)' }}>{product.base_unit?.name}</div>
               </div>
               <div style={{ textAlign: 'left', fontSize: 'var(--text-sm)', fontWeight: 600 }}>
-                {product.selling_price.toLocaleString('ar-EG')}
+                {product.selling_price.toLocaleString('ar-EG-u-nu-latn')}
               </div>
             </div>
           </div>
@@ -192,7 +192,7 @@ export default function ProductDetailPage() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-1)' }}>
                     <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{u.unit?.name}</div>
                     <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-primary)' }}>
-                      {(u.selling_price ?? product.selling_price * u.conversion_factor).toLocaleString('ar-EG')}
+                      {(u.selling_price ?? product.selling_price * u.conversion_factor).toLocaleString('ar-EG-u-nu-latn')}
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>

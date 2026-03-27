@@ -26,7 +26,7 @@ export default function AuditLogPage() {
 
   const formatDate = (d: string) => {
     const date = new Date(d)
-    return date.toLocaleDateString('ar-EG') + ' ' + date.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
+    return date.toLocaleDateString('ar-EG-u-nu-latn') + ' ' + date.toLocaleTimeString('ar-EG-u-nu-latn', { hour: '2-digit', minute: '2-digit' })
   }
 
   return (

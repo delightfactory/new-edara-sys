@@ -114,7 +114,7 @@ export default function CustomerDetailPage() {
         <div className="stat-card">
           <div className="stat-card-label">حد الائتمان</div>
           <div className="stat-card-value" style={{ fontSize: 'var(--text-xl)' }}>
-            {customer.credit_limit > 0 ? customer.credit_limit.toLocaleString('ar-EG') : '—'}
+            {customer.credit_limit > 0 ? customer.credit_limit.toLocaleString('ar-EG-u-nu-latn') : '—'}
           </div>
         </div>
         <div className="stat-card">
@@ -191,7 +191,7 @@ export default function CustomerDetailPage() {
             <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 'var(--space-3)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
               <Wallet size={16} style={{ color: 'var(--color-primary)' }} /> البيانات المالية
             </h3>
-            <InfoItem icon={CreditCard} label="حد الائتمان" value={customer.credit_limit > 0 ? customer.credit_limit.toLocaleString('ar-EG') : '—'} />
+            <InfoItem icon={CreditCard} label="حد الائتمان" value={customer.credit_limit > 0 ? customer.credit_limit.toLocaleString('ar-EG-u-nu-latn') : '—'} />
             <InfoItem icon={Calendar} label="أيام السداد" value={customer.credit_days > 0 ? `${customer.credit_days} يوم` : '—'} />
             <InfoItem icon={Wallet} label="الرصيد الافتتاحي" value={customer.opening_balance !== 0 ? customer.opening_balance.toLocaleString('ar-EG', { minimumFractionDigits: 2 }) : '0.00'} />
             <InfoItem icon={Tag} label="قائمة الأسعار" value={customer.price_list?.name} />
@@ -296,10 +296,10 @@ export default function CustomerDetailPage() {
               <tbody>
                 {creditHistory.map(h => (
                   <tr key={h.id}>
-                    <td style={{ fontSize: 'var(--text-xs)' }}>{new Date(h.created_at).toLocaleDateString('ar-EG')}</td>
-                    <td style={{ fontWeight: 600 }}>{h.limit_before.toLocaleString('ar-EG')}</td>
+                    <td style={{ fontSize: 'var(--text-xs)' }}>{new Date(h.created_at).toLocaleDateString('ar-EG-u-nu-latn')}</td>
+                    <td style={{ fontWeight: 600 }}>{h.limit_before.toLocaleString('ar-EG-u-nu-latn')}</td>
                     <td style={{ fontWeight: 600, color: h.limit_after > h.limit_before ? 'var(--color-success)' : 'var(--color-danger)' }}>
-                      {h.limit_after.toLocaleString('ar-EG')}
+                      {h.limit_after.toLocaleString('ar-EG-u-nu-latn')}
                     </td>
                     <td className="hide-mobile" style={{ fontSize: 'var(--text-xs)' }}>{h.changed_by_profile?.full_name || '—'}</td>
                     <td className="hide-mobile" style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{h.reason || '—'}</td>

@@ -164,7 +164,7 @@ export default function UsersPage() {
                   <td>{statusBadge(user.status)}</td>
                   <td className="hide-mobile" style={{ color: 'var(--text-muted)', fontSize: 'var(--text-xs)' }}>
                     {user.last_login_at
-                      ? new Date(user.last_login_at).toLocaleDateString('ar-EG')
+                      ? new Date(user.last_login_at).toLocaleDateString('ar-EG-u-nu-latn')
                       : 'لم يسجل دخول'}
                   </td>
                   <td>

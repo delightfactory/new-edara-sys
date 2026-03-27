@@ -134,7 +134,7 @@ export default function SalesOrdersPage() {
                 <>
                   <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', fontFamily: 'monospace' }} dir="ltr">{o.order_number}</div>
                   <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                    {new Date(o.order_date).toLocaleDateString('ar-EG')}
+                    {new Date(o.order_date).toLocaleDateString('ar-EG-u-nu-latn')}
                   </div>
                 </>
               ),

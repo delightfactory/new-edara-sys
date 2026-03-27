@@ -336,8 +336,10 @@ export async function deliverSalesOrder(orderId: string, params: {
   bankReference?: string | null   // مرجع التحويل البنكي/إنستاباي
   checkNumber?: string | null     // رقم الشيك
   checkDate?: string | null       // تاريخ استحقاق الشيك (YYYY-MM-DD)
+  proofUrl?: string | null        // رابط إثبات الدفع (صورة/PDF)
 }) {
   const userId = await getUserId()
+  // نُحدّث proof_url في إيصال الدفع المُنشأ تلقائياً بعد التسليم
   const { error } = await supabase.rpc('deliver_sales_order', {
     p_order_id: orderId,
     p_user_id: userId,
@@ -352,6 +354,16 @@ export async function deliverSalesOrder(orderId: string, params: {
     p_check_date: params.checkDate || null,
   })
   if (error) throw error
+
+  // إذا كان هناك إثبات دفع، نُحدّث الإيصال المُنشأ تلقائياً
+  if (params.proofUrl) {
+    await supabase
+      .from('payment_receipts')
+      .update({ proof_url: params.proofUrl })
+      .eq('sales_order_id', orderId)
+      .in('status', ['pending', 'confirmed'])
+      .is('proof_url', null)
+  }
 }
 
 /**

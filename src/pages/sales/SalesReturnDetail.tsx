@@ -148,7 +148,7 @@ export default function SalesReturnDetail() {
           </h3>
           <div style={{ display: 'grid', gap: 'var(--space-3)' }}>
             <InfoRow icon={<RotateCcw size={14} />} label="رقم المرتجع" value={ret.return_number} />
-            <InfoRow icon={<Clock size={14} />} label="التاريخ" value={new Date(ret.return_date).toLocaleDateString('ar-EG')} />
+            <InfoRow icon={<Clock size={14} />} label="التاريخ" value={new Date(ret.return_date).toLocaleDateString('ar-EG-u-nu-latn')} />
             <InfoRow icon={<User size={14} />} label="العميل" value={ret.customer?.name} />
             <InfoRow icon={<Package size={14} />} label="المخزن" value={ret.warehouse?.name || 'مخزن الفاتورة'} />
             <InfoRow icon={<FileText size={14} />} label="الفاتورة الأصلية"

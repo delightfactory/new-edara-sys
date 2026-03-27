@@ -174,7 +174,7 @@ export default function SupplierFormPage() {
           {(form.credit_limit || 0) > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: 'var(--space-2) var(--space-3)', background: 'var(--bg-surface-2)', borderRadius: 'var(--radius-md)' }}>
               <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>حد الائتمان</span>
-              <span style={{ fontWeight: 700, fontSize: 'var(--text-sm)' }}>{(form.credit_limit || 0).toLocaleString('ar-EG')}</span>
+              <span style={{ fontWeight: 700, fontSize: 'var(--text-sm)' }}>{(form.credit_limit || 0).toLocaleString('ar-EG-u-nu-latn')}</span>
             </div>
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: 'var(--space-2) var(--space-3)', background: 'var(--bg-surface-2)', borderRadius: 'var(--radius-md)' }}>
@@ -327,8 +327,8 @@ export default function SupplierFormPage() {
               <tbody>
                 {reminders.map(r => (
                   <tr key={r.id}>
-                    <td>{new Date(r.due_date).toLocaleDateString('ar-EG')}</td>
-                    <td style={{ fontWeight: 600 }}>{r.amount.toLocaleString('ar-EG')}</td>
+                    <td>{new Date(r.due_date).toLocaleDateString('ar-EG-u-nu-latn')}</td>
+                    <td style={{ fontWeight: 600 }}>{r.amount.toLocaleString('ar-EG-u-nu-latn')}</td>
                     <td>{r.invoice_ref || '—'}</td>
                     <td><span className={`badge ${statusLabels[r.status]?.cls || 'badge-neutral'}`}>{statusLabels[r.status]?.label || r.status}</span></td>
                     <td>

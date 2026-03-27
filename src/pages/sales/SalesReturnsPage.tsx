@@ -74,7 +74,7 @@ export default function SalesReturnsPage() {
                 <>
                   <div style={{ fontWeight: 600, fontFamily: 'monospace' }} dir="ltr">{r.return_number}</div>
                   <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                    {new Date(r.return_date).toLocaleDateString('ar-EG')}
+                    {new Date(r.return_date).toLocaleDateString('ar-EG-u-nu-latn')}
                   </div>
                 </>
               ),

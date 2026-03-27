@@ -107,7 +107,7 @@ export default function SupplierDetailPage() {
         <div className="stat-card">
           <div className="stat-card-label">حد الائتمان</div>
           <div className="stat-card-value" style={{ fontSize: 'var(--text-xl)' }}>
-            {supplier.credit_limit > 0 ? supplier.credit_limit.toLocaleString('ar-EG') : '—'}
+            {supplier.credit_limit > 0 ? supplier.credit_limit.toLocaleString('ar-EG-u-nu-latn') : '—'}
           </div>
         </div>
         <div className="stat-card">
@@ -172,7 +172,7 @@ export default function SupplierDetailPage() {
             <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 'var(--space-3)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
               <Wallet size={16} style={{ color: 'var(--color-primary)' }} /> البيانات المالية
             </h3>
-            <InfoItem icon={CreditCard} label="حد الائتمان" value={supplier.credit_limit > 0 ? supplier.credit_limit.toLocaleString('ar-EG') : '—'} />
+            <InfoItem icon={CreditCard} label="حد الائتمان" value={supplier.credit_limit > 0 ? supplier.credit_limit.toLocaleString('ar-EG-u-nu-latn') : '—'} />
             <InfoItem icon={Calendar} label="أيام السداد" value={supplier.credit_days > 0 ? `${supplier.credit_days} يوم` : '—'} />
             <InfoItem icon={Wallet} label="الرصيد الافتتاحي" value={supplier.opening_balance !== 0 ? supplier.opening_balance.toLocaleString('ar-EG', { minimumFractionDigits: 2 }) : '0.00'} />
             <InfoItem icon={CreditCard} label="الحساب البنكي" value={supplier.bank_account} dir="ltr" />
@@ -225,8 +225,8 @@ export default function SupplierDetailPage() {
               <tbody>
                 {reminders.map(r => (
                   <tr key={r.id}>
-                    <td style={{ fontSize: 'var(--text-xs)' }}>{new Date(r.due_date).toLocaleDateString('ar-EG')}</td>
-                    <td style={{ fontWeight: 600 }}>{r.amount.toLocaleString('ar-EG')}</td>
+                    <td style={{ fontSize: 'var(--text-xs)' }}>{new Date(r.due_date).toLocaleDateString('ar-EG-u-nu-latn')}</td>
+                    <td style={{ fontWeight: 600 }}>{r.amount.toLocaleString('ar-EG-u-nu-latn')}</td>
                     <td className="hide-mobile" style={{ fontSize: 'var(--text-xs)' }}>{r.invoice_ref || '—'}</td>
                     <td><span className={`badge ${statusLabels[r.status]?.cls || 'badge-neutral'}`}>{statusLabels[r.status]?.label || r.status}</span></td>
                   </tr>
