@@ -333,6 +333,9 @@ export async function deliverSalesOrder(orderId: string, params: {
   vaultId?: string | null
   custodyId?: string | null
   overrideCredit?: boolean
+  bankReference?: string | null   // مرجع التحويل البنكي/إنستاباي
+  checkNumber?: string | null     // رقم الشيك
+  checkDate?: string | null       // تاريخ استحقاق الشيك (YYYY-MM-DD)
 }) {
   const userId = await getUserId()
   const { error } = await supabase.rpc('deliver_sales_order', {
@@ -344,6 +347,9 @@ export async function deliverSalesOrder(orderId: string, params: {
     p_vault_id: params.vaultId || null,
     p_custody_id: params.custodyId || null,
     p_override_credit: params.overrideCredit || false,
+    p_bank_reference: params.bankReference || null,
+    p_check_number: params.checkNumber || null,
+    p_check_date: params.checkDate || null,
   })
   if (error) throw error
 }

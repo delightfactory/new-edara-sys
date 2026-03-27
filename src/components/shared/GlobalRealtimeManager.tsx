@@ -97,7 +97,17 @@ export default function GlobalRealtimeManager() {
       )
     })
 
-    channel.subscribe()
+    channel.subscribe((status, err) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('[Realtime] ✅ Connected — listening to', tables.length, 'tables')
+      } else if (status === 'TIMED_OUT') {
+        console.warn('[Realtime] ⏱ Connection timed out — will retry')
+      } else if (status === 'CHANNEL_ERROR') {
+        console.error('[Realtime] ❌ Channel error:', err)
+      } else if (status === 'CLOSED') {
+        console.warn('[Realtime] 🔌 Connection closed')
+      }
+    })
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)

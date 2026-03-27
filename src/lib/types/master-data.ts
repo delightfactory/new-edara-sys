@@ -714,7 +714,7 @@ export interface CustodyTransaction {
 
 // ----- PAYMENT RECEIPTS -----
 
-export type PaymentMethod = 'cash' | 'bank_transfer' | 'instapay' | 'cheque' | 'wallet'
+export type PaymentMethod = 'cash' | 'bank_transfer' | 'instapay' | 'cheque' | 'mobile_wallet'
 export type PaymentReceiptStatus = 'pending' | 'confirmed' | 'rejected'
 
 export interface PaymentReceipt {
@@ -736,6 +736,7 @@ export interface PaymentReceipt {
   reviewed_by: string | null
   reviewed_at: string | null
   rejection_reason: string | null
+  sales_order_id: string | null
   created_by: string | null
   created_at: string
   updated_at: string
@@ -744,6 +745,7 @@ export interface PaymentReceipt {
   vault?: Pick<Vault, 'id' | 'name' | 'type'>
   custody?: CustodyAccount
   branch?: Pick<Branch, 'id' | 'name'>
+  sales_order?: Pick<SalesOrder, 'id' | 'order_number'> | null
   collected_by_profile?: { id: string; full_name: string }
   reviewed_by_profile?: { id: string; full_name: string }
   created_by_profile?: { id: string; full_name: string }

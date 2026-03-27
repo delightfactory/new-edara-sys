@@ -15,6 +15,8 @@ export async function getPaymentReceipts(params?: {
   status?: string
   customerId?: string
   branchId?: string
+  dateFrom?: string
+  dateTo?: string
   page?: number
   pageSize?: number
 }) {
@@ -30,6 +32,7 @@ export async function getPaymentReceipts(params?: {
       customer:customers(id, name, code),
       vault:vaults(id, name, type),
       branch:branches(id, name),
+      sales_order:sales_orders(id, order_number),
       collected_by_profile:profiles!payment_receipts_collected_by_fkey(id, full_name),
       reviewed_by_profile:profiles!payment_receipts_reviewed_by_fkey(id, full_name),
       created_by_profile:profiles!payment_receipts_created_by_fkey(id, full_name)
@@ -45,6 +48,12 @@ export async function getPaymentReceipts(params?: {
   }
   if (params?.branchId) {
     query = query.eq('branch_id', params.branchId)
+  }
+  if (params?.dateFrom) {
+    query = query.gte('created_at', params.dateFrom)
+  }
+  if (params?.dateTo) {
+    query = query.lte('created_at', params.dateTo + 'T23:59:59')
   }
 
   const { data, error, count } = await query
@@ -70,6 +79,7 @@ export async function getPaymentReceipt(id: string) {
       customer:customers(id, name, code),
       vault:vaults(id, name, type),
       branch:branches(id, name),
+      sales_order:sales_orders(id, order_number),
       collected_by_profile:profiles!payment_receipts_collected_by_fkey(id, full_name),
       reviewed_by_profile:profiles!payment_receipts_reviewed_by_fkey(id, full_name),
       created_by_profile:profiles!payment_receipts_created_by_fkey(id, full_name)
@@ -102,8 +112,9 @@ export async function createPaymentReceipt(input: PaymentReceiptInput) {
 /**
  * تأكيد إيصال دفع
  * RPC: confirm_payment_receipt(action='confirm')
+ * vaultId: مطلوب للنقد/البنك/المحفظة — null للشيكات
  */
-export async function confirmPaymentReceipt(receiptId: string, vaultId: string) {
+export async function confirmPaymentReceipt(receiptId: string, vaultId: string | null) {
   const userId = (await supabase.auth.getUser()).data.user?.id
   const { error } = await supabase.rpc('confirm_payment_receipt', {
     p_receipt_id: receiptId,
@@ -113,6 +124,23 @@ export async function confirmPaymentReceipt(receiptId: string, vaultId: string) 
     p_user_id: userId,
   })
   if (error) throw error
+}
+
+/**
+ * جلب الطلبات المفتوحة (غير مسددة بالكامل) لعميل محدد
+ * تُستخدم في نموذج إنشاء الإيصال لربطه بفاتورة
+ */
+export async function getOpenOrdersForCustomer(customerId: string) {
+  const { data, error } = await supabase
+    .from('sales_orders')
+    .select('id, order_number, total_amount, paid_amount, status, order_date')
+    .eq('customer_id', customerId)
+    .eq('status', 'delivered')   // completed = paid in full by definition
+    .order('order_date', { ascending: true })
+    .limit(50)
+  if (error) throw error
+  // فلترة إضافية: فقط ما لم يُسدد بالكامل (احتياطي)
+  return (data || []).filter(o => (o.paid_amount ?? 0) < o.total_amount)
 }
 
 /**

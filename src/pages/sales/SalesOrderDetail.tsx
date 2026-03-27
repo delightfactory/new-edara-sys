@@ -42,18 +42,33 @@ const statusColors: Record<SalesOrderStatus, { bg: string; color: string }> = {
 }
 const termLabels: Record<string, string> = { cash: 'نقدي', credit: 'آجل', mixed: 'مختلط' }
 
-// ── Deliver Form (مبسّط: نقدي / آجل / مختلط فقط) ───────────────
+// طرق الدفع الفورية (نقدي فعلي) مقابل المؤجلة (تنتظر تأكيد المحاسب)
+const COLLECT_METHODS = [
+  { value: 'cash',          label: 'نقدي',             isCash: true  },
+  { value: 'bank_transfer', label: 'تحويل بنكي',       isCash: false },
+  { value: 'instapay',      label: 'إنستاباي',         isCash: false },
+  { value: 'mobile_wallet', label: 'محفظة إلكترونية', isCash: false },
+  { value: 'cheque',        label: 'شيك بنكي',      isCash: false },
+]
+
+// ── Deliver Form ────────────────────────────────────────────
 interface DeliverFormState {
   paymentTerms: PaymentTerms
   cashAmount: number
+  paymentMethod: string     // 'cash' | 'bank_transfer' | 'instapay' | 'mobile_wallet' | 'cheque'
   vaultId: string
   custodyId: string
   overrideCredit: boolean
+  bankReference: string     // مرجع التحويل البنكي / إنستاباي
+  checkNumber: string       // رقم الشيك
+  checkDate: string         // تاريخ استحقاق الشيك
 }
 
 const defaultDeliverForm = (remaining: number): DeliverFormState => ({
   paymentTerms: 'cash', cashAmount: remaining,
+  paymentMethod: 'cash',
   vaultId: '', custodyId: '', overrideCredit: false,
+  bankReference: '', checkNumber: '', checkDate: '',
 })
 
 // ── Main Component ──────────────────────────────────────────────
@@ -177,26 +192,31 @@ export default function SalesOrderDetail() {
   const creditAmount = deliverForm.paymentTerms === 'credit' ? remaining
     : deliverForm.paymentTerms === 'mixed' ? Math.max(remaining - deliverForm.cashAmount, 0) : 0
 
-  // يسمح بالتسليم إذا: لا يوجد ائتمان، أو الائتمان كافٍ، أو الجزء الآجل فقط ≤ المتاح، أو تم التجاوز يدوياً
   const canDeliverCredit = !creditInfo || creditInfo.credit_ok || deliverForm.overrideCredit
     || (creditInfo.can_use_credit && creditAmount <= creditInfo.available_credit)
   const minCash = creditInfo ? Math.max(0, remaining - creditInfo.available_credit) : 0
+
+  // هل طريقة الدفع المختارة نقدية فورية؟
+  const isCashNow = COLLECT_METHODS.find(m => m.value === deliverForm.paymentMethod)?.isCash ?? true
 
   // التحقق من جاهزية التسليم
   const canDeliverAction = (
     deliverForm.paymentTerms === 'cash' || canDeliverCredit
   ) && (
-    // النقدي/المختلط يحتاج وجهة تحصيل — الآجل لا يحتاج
+    // الآجل الصريح لا يحتاج وجهة
     deliverForm.paymentTerms === 'credit' ||
+    // غير نقدي (تحويل/إنستاباي/محفظة) → pending receipt، لا يحتاج خزنة الآن
+    !isCashNow ||
+    // نقدي → يحتاج عهدة أو خزينة
     !!(deliverForm.custodyId || deliverForm.vaultId)
   )
 
-  // ── Handle Deliver ──────────────────────────────────────────
+  // ── Handle Deliver ───────────────────────────────────────────
   const handleDeliver = async () => {
     if (!order) return
 
-    // التحقق من وجود وجهة تحصيل للنقدي
-    if (deliverForm.paymentTerms !== 'credit' && !deliverForm.custodyId && !deliverForm.vaultId) {
+    // النقدي الفوري يحتاج وجهة تحصيل
+    if (deliverForm.paymentTerms !== 'credit' && isCashNow && !deliverForm.custodyId && !deliverForm.vaultId) {
       toast.error('يجب تحديد العهدة أو الخزينة لاستقبال المبلغ النقدي'); return
     }
 
@@ -205,15 +225,21 @@ export default function SalesOrderDetail() {
       await deliverSalesOrder(id!, {
         paymentTerms: deliverForm.paymentTerms,
         cashAmount: deliverForm.paymentTerms === 'credit' ? 0 : deliverForm.cashAmount,
-        paymentMethod: deliverForm.paymentTerms === 'credit' ? null : 'cash',
-        vaultId: deliverForm.vaultId || null,
-        custodyId: deliverForm.custodyId || null,
+        paymentMethod: deliverForm.paymentTerms === 'credit' ? null : deliverForm.paymentMethod as any,
+        vaultId: isCashNow ? (deliverForm.vaultId || null) : null,
+        custodyId: isCashNow ? (deliverForm.custodyId || null) : null,
         overrideCredit: deliverForm.overrideCredit,
+        bankReference: deliverForm.bankReference || null,
+        checkNumber: deliverForm.checkNumber || null,
+        checkDate: deliverForm.checkDate || null,
       })
 
-      toast.success('تم التسليم بنجاح ✓')
+      const msg = isCashNow
+        ? 'تم التسليم وتسجيل التحصيل بنجاح ✓'
+        : 'تم التسليم — الإيصال بانتظار مراجعة المحاسب المالي ✓'
+      toast.success(msg)
       setShowDeliverModal(false)
-      invalidate('sales-orders', 'sales-stats', 'stock', 'vaults', 'custody-accounts')
+      invalidate('sales-orders', 'sales-stats', 'stock', 'vaults', 'custody-accounts', 'payment-receipts')
       await loadOrder()
     } catch (e: any) { toast.error(e.message || 'فشل التسليم') }
     finally { setActionLoading(false) }
@@ -453,6 +479,24 @@ export default function SalesOrderDetail() {
                 )
               })}
             </div>
+
+            {/* ⚠️ تحذير: مرتجع نقدي مقابل شيك/تحويل قيد التأكيد */}
+            {orderReceipts.some(r =>
+              (r.payment_method === 'cheque' || r.payment_method === 'bank_transfer' || r.payment_method === 'instapay')
+              && r.status !== 'rejected'
+            ) && (
+              <div style={{
+                marginTop: 8, padding: '8px 10px', borderRadius: 8, fontSize: 11,
+                background: '#fffbeb', border: '1px solid #fde68a',
+                color: '#92400e', display: 'flex', gap: 6, alignItems: 'flex-start',
+              }}>
+                <AlertTriangle size={12} style={{ flexShrink: 0, marginTop: 1 }} />
+                <span>
+                  <strong>تنبيه مالي:</strong> بعض إيصالات هذا الطلب بشيكات أو تحويلات بنكية.
+                  تأكّد من تحصيلها فعلياً قبل صرف أي مرتجع نقدي.
+                </span>
+              </div>
+            )}
           </div>
         )}
 
@@ -694,8 +738,75 @@ export default function SalesOrderDetail() {
                 </div>
               )}
 
-              {/* Destination — only for cash/mixed */}
-              {deliverForm.paymentTerms !== 'credit' && paymentOptions && (
+              {/* ── Payment Method Selector: كيف استلمت المبلغ؟ ── */}
+              {deliverForm.paymentTerms !== 'credit' && (
+                <div>
+                  <label className="form-label" style={{ fontSize: 12 }}>طريقة الاستلام</label>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {COLLECT_METHODS.map(m => (
+                      <button key={m.value} type="button"
+                        onClick={() => setDeliverForm(f => ({ ...f, paymentMethod: m.value }))}
+                        style={{
+                          flex: 1, minWidth: 80, padding: '7px 8px', borderRadius: 8,
+                          fontSize: 11, cursor: 'pointer', transition: 'all 0.15s',
+                          fontWeight: deliverForm.paymentMethod === m.value ? 700 : 400,
+                          background: deliverForm.paymentMethod === m.value
+                            ? (m.isCash ? 'var(--color-success)' : 'var(--color-primary)')
+                            : 'var(--bg-hover)',
+                          color: deliverForm.paymentMethod === m.value ? '#fff' : 'var(--text-secondary)',
+                          border: `2px solid ${deliverForm.paymentMethod === m.value
+                            ? (m.isCash ? 'var(--color-success)' : 'var(--color-primary)')
+                            : 'var(--border-primary)'}`,
+                        }}>
+                        {m.label}
+                      </button>
+                    ))}
+                  </div>
+                  {!isCashNow && (
+                    <div style={{ fontSize: 11, marginTop: 6, padding: '6px 10px', borderRadius: 6,
+                      background: 'var(--color-info-light, #eff6ff)', color: 'var(--color-info, #2563eb)',
+                      display: 'flex', gap: 5, alignItems: 'center' }}>
+                      سيُنشأ إيصال بانتظار مراجعة المحاسب المالي — لن يُحدَّث رصيد الفاتورة إلا بعد التأكيد
+                    </div>
+                  )}
+
+                  {/* ── حقول المرجع حسب الطريقة ── */}
+                  {(deliverForm.paymentMethod === 'bank_transfer' ||
+                    deliverForm.paymentMethod === 'instapay' ||
+                    deliverForm.paymentMethod === 'mobile_wallet') && (
+                    <div style={{ marginTop: 8 }}>
+                      <label className="form-label" style={{ fontSize: 11 }}>
+                        رقم المرجع {deliverForm.paymentMethod === 'instapay' ? '(إنستاباي)' : deliverForm.paymentMethod === 'mobile_wallet' ? '(المحفظة)' : '(التحويل البنكي)'}
+                      </label>
+                      <input className="form-input" style={{ fontSize: 12 }}
+                        placeholder="أدخل رقم المرجع أو الحوالة..."
+                        value={deliverForm.bankReference}
+                        onChange={e => setDeliverForm(f => ({ ...f, bankReference: e.target.value }))} />
+                    </div>
+                  )}
+
+                  {deliverForm.paymentMethod === 'cheque' && (
+                    <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                      <div style={{ flex: 1 }}>
+                        <label className="form-label" style={{ fontSize: 11 }}>رقم الشيك</label>
+                        <input className="form-input" style={{ fontSize: 12 }}
+                          placeholder="رقم الشيك..."
+                          value={deliverForm.checkNumber}
+                          onChange={e => setDeliverForm(f => ({ ...f, checkNumber: e.target.value }))} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label className="form-label" style={{ fontSize: 11 }}>تاريخ الاستحقاق</label>
+                        <input className="form-input" type="date" style={{ fontSize: 12 }}
+                          value={deliverForm.checkDate}
+                          onChange={e => setDeliverForm(f => ({ ...f, checkDate: e.target.value }))} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── Destination — for CASH ONLY (تحويل/إنستاباي لا يحتاجها الآن) ── */}
+              {deliverForm.paymentTerms !== 'credit' && isCashNow && paymentOptions && (
                 <div style={{ borderRadius: 8, border: '1px solid var(--border-primary)', padding: '10px 12px' }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>وجهة التحصيل النقدي</div>
                   {paymentOptions.cash_destination === null ? (
