@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { toast } from 'sonner'
-import { ReceiptText, Plus, Check, XCircle, Upload, Send, Eye } from 'lucide-react'
+import { ReceiptText, Plus, Check, XCircle, Upload, Send, Eye, TrendingDown } from 'lucide-react'
 import { createExpense, submitExpenseForApproval, approveExpense, rejectExpense, uploadExpenseReceipt } from '@/lib/services/payments'
 import { useExpenses, useExpenseCategories, useVaults, useCustodyAccounts, useInvalidate } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
@@ -11,6 +11,7 @@ import DataTable from '@/components/shared/DataTable'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
+import ResponsiveModal from '@/components/ui/ResponsiveModal'
 
 const statusConfig: Record<string, { label: string; variant: 'neutral' | 'warning' | 'success' | 'danger' }> = {
   draft: { label: 'مسودة', variant: 'neutral' },
@@ -97,7 +98,11 @@ export default function ExpensesPage() {
       <PageHeader
         title="المصروفات"
         subtitle={loading ? '...' : `${totalCount} مصروف`}
-        actions={can('finance.expenses.create') ? <Button icon={<Plus size={16} />} onClick={openCreate}>مصروف جديد</Button> : undefined}
+        actions={can('finance.expenses.create') ? (
+          <Button icon={<Plus size={16} />} onClick={openCreate} className="desktop-only-btn">
+            مصروف جديد
+          </Button>
+        ) : undefined}
       />
 
       {/* Filters */}
@@ -113,15 +118,15 @@ export default function ExpensesPage() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="edara-card" style={{ overflow: 'auto' }}>
+      {/* ── DESKTOP: DataTable ── */}
+      <div className="exp-table-view edara-card" style={{ overflow: 'auto' }}>
         <DataTable<Expense>
           columns={[
             { key: 'number', label: 'الرقم', render: (e) => <span style={{ fontWeight: 600, fontFamily: 'monospace' }}>{e.number}</span> },
             { key: 'description', label: 'الوصف', render: (e) => (
               <div style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.description}</div>
             )},
-            { key: 'amount', label: 'المبلغ', render: (e) => <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(e.amount)}</span> },
+            { key: 'amount', label: 'المبلغ', render: (e) => <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--color-danger)' }}>{formatCurrency(e.amount)}</span> },
             { key: 'category', label: 'التصنيف', hideOnMobile: true, render: (e) => e.category?.name || <span style={{ color: 'var(--text-muted)' }}>—</span> },
             { key: 'status', label: 'الحالة', render: (e) => {
               const sc = statusConfig[e.status]; return sc ? <Badge variant={sc.variant}>{sc.label}</Badge> : <Badge>{e.status}</Badge>
@@ -154,8 +159,78 @@ export default function ExpensesPage() {
         />
       </div>
 
-      {/* ── Create Modal ── */}
-      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="مصروف جديد" size="md" disableOverlayClose
+      {/* ── MOBILE: Expense Card List ── */}
+      <div className="exp-card-view">
+        {loading ? (
+          <div className="mobile-card-list">
+            {[1,2,3].map(i => <div key={i} className="edara-card" style={{ height: 96 }}><div className="skeleton" style={{ height: '100%' }} /></div>)}
+          </div>
+        ) : expenses.length === 0 ? (
+          <div className="edara-card" style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <ReceiptText size={40} style={{ margin: '0 auto 12px', display: 'block', opacity: 0.3 }} />
+            <p>لا توجد مصروفات</p>
+          </div>
+        ) : (
+          <div className="mobile-card-list">
+            {expenses.map((e: Expense) => {
+              const sc = statusConfig[e.status]
+              return (
+                <div key={e.id} className="edara-card exp-mobile-card" onClick={() => setDetailExpense(e)}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-md)', background: 'rgba(239,68,68,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <TrendingDown size={16} style={{ color: 'var(--color-danger)' }} />
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 'var(--text-sm)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.description}</div>
+                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontFamily: 'monospace' }}>{e.number}</div>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'left', flexShrink: 0 }}>
+                      <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--color-danger)', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(e.amount)}</div>
+                      <div style={{ textAlign: 'left', marginTop: 4 }}>{sc ? <Badge variant={sc.variant}>{sc.label}</Badge> : <Badge>{e.status}</Badge>}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                    <span>{e.category?.name || '—'}</span>
+                    <span>{formatDate(e.expense_date)}</span>
+                  </div>
+                  {(e.status === 'draft' && e.created_by === userId) && (
+                    <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border-color)' }} onClick={ev => ev.stopPropagation()}>
+                      <Button variant="primary" size="sm" icon={<Send size={13} />} style={{ width: '100%', justifyContent: 'center' }} onClick={() => handleSubmit(e)}>
+                        تقديم للموافقة
+                      </Button>
+                    </div>
+                  )}
+                  {(e.status === 'pending_approval' && can('finance.expenses.approve')) && (
+                    <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border-color)', display: 'flex', gap: 8 }} onClick={ev => ev.stopPropagation()}>
+                      <Button variant="success" size="sm" icon={<Check size={13} />} style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setTargetExpense(e); setApproveAction('approve') }}>موافقة</Button>
+                      <Button variant="danger" size="sm" icon={<XCircle size={13} />} style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setTargetExpense(e); setApproveAction('reject'); setRejectReason('') }}>رفض</Button>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+        {totalPages > 1 && (
+          <div className="mobile-pagination">
+            <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>السابق</Button>
+            <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>{page} / {totalPages}</span>
+            <Button variant="ghost" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>التالي</Button>
+          </div>
+        )}
+      </div>
+
+      {/* FAB for mobile */}
+      {can('finance.expenses.create') && (
+        <button className="mobile-fab" onClick={openCreate} aria-label="مصروف جديد">
+          <Plus size={24} />
+        </button>
+      )}
+
+      {/* ── Create: ResponsiveModal (Bottom Sheet on mobile) ── */}
+      <ResponsiveModal open={createOpen} onClose={() => setCreateOpen(false)} title="مصروف جديد"
         footer={<><Button variant="ghost" onClick={() => setCreateOpen(false)}>إلغاء</Button><Button onClick={handleCreate} loading={saving}>حفظ</Button></>}
       >
         <div className="flex-col gap-4">
@@ -166,7 +241,7 @@ export default function ExpensesPage() {
           <div className="form-row">
             <div className="form-group">
               <label className="form-label required">المبلغ</label>
-              <input className="form-input" type="number" min="0.01" step="0.01" value={form.amount || ''} onChange={e => setForm(f => ({ ...f, amount: parseFloat(e.target.value) || 0 }))} placeholder="0.00" />
+            <input className="form-input" type="number" inputMode="decimal" enterKeyHint="next" min="0.01" step="0.01" value={form.amount || ''} onChange={e => setForm(f => ({ ...f, amount: parseFloat(e.target.value) || 0 }))} placeholder="0.00" />
             </div>
             <div className="form-group">
               <label className="form-label">تاريخ المصروف</label>
@@ -213,7 +288,7 @@ export default function ExpensesPage() {
             <Button variant="ghost" onClick={() => fileRef.current?.click()} icon={<Upload size={14} />}>{receiptFile ? receiptFile.name : 'رفع ملف'}</Button>
           </div>
         </div>
-      </Modal>
+      </ResponsiveModal>
 
       {/* ── Approve/Reject Modal ── */}
       <Modal open={!!targetExpense && !!approveAction} onClose={() => { setTargetExpense(null); setApproveAction(null) }}
@@ -428,6 +503,30 @@ export default function ExpensesPage() {
         )}
       </Modal>
 
+      {/* Scoped CSS */}
+      <style>{`
+        .exp-table-view { display: block; }
+        .exp-card-view  { display: none; }
+        .exp-mobile-card { padding: var(--space-4); cursor: pointer; transition: background 0.12s; }
+        .exp-mobile-card:hover { background: var(--bg-hover); }
+        .mobile-card-list { display: flex; flex-direction: column; gap: var(--space-3); }
+        .mobile-pagination { display: flex; align-items: center; justify-content: center; gap: var(--space-4); padding: var(--space-4) 0; }
+        .mobile-fab {
+          position: fixed; bottom: calc(70px + var(--space-4)); left: var(--space-4);
+          width: 56px; height: 56px; border-radius: 50%;
+          background: var(--color-danger); color: #fff;
+          border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 4px 20px rgba(239,68,68,0.4);
+          z-index: var(--z-modal, 400); transition: transform 0.15s;
+        }
+        .mobile-fab:hover { transform: scale(1.06); }
+        @media (max-width: 768px) {
+          .desktop-only-btn { display: none !important; }
+          .exp-table-view { display: none; }
+          .exp-card-view  { display: block; }
+        }
+        @media (min-width: 769px) { .mobile-fab { display: none; } }
+      `}</style>
     </div>
   )
 }

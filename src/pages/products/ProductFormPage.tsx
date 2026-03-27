@@ -160,24 +160,24 @@ export default function ProductFormPage() {
           <div className="grid grid-3 gap-4">
             <div className="form-group">
               <label className="form-label required">سعر البيع</label>
-              <input type="number" className="form-input" dir="ltr" min={0} step="0.01"
+              <input type="number" inputMode="decimal" enterKeyHint="next" className="form-input" dir="ltr" min={0} step="0.01"
                 value={form.selling_price} onChange={e => updateForm('selling_price', +e.target.value)} />
             </div>
             {canViewCosts && (
               <div className="form-group">
                 <label className="form-label required">سعر التكلفة</label>
-                <input type="number" className="form-input" dir="ltr" min={0} step="0.01"
+                <input type="number" inputMode="decimal" enterKeyHint="next" className="form-input" dir="ltr" min={0} step="0.01"
                   value={form.cost_price} onChange={e => updateForm('cost_price', +e.target.value)} />
               </div>
             )}
             <div className="form-group">
               <label className="form-label">نسبة الضريبة %</label>
-              <input type="number" className="form-input" dir="ltr" min={0} max={100}
+              <input type="number" inputMode="decimal" enterKeyHint="next" className="form-input" dir="ltr" min={0} max={100}
                 value={form.tax_rate} onChange={e => updateForm('tax_rate', +e.target.value)} />
             </div>
             <div className="form-group">
               <label className="form-label">حد المخزون الأدنى</label>
-              <input type="number" className="form-input" dir="ltr" min={0}
+              <input type="number" inputMode="decimal" enterKeyHint="done" className="form-input" dir="ltr" min={0}
                 value={form.min_stock_level} onChange={e => updateForm('min_stock_level', +e.target.value)} />
             </div>
           </div>
@@ -207,12 +207,12 @@ export default function ProductFormPage() {
                     </div>
                     <div className="form-group">
                       <label className="form-label">معامل التحويل</label>
-                      <input type="number" className="form-input" dir="ltr" min={1} value={pu.conversion_factor}
-                        onChange={e => updateUnit(i, 'conversion_factor', +e.target.value)} />
+                      <input type="number" inputMode="decimal" enterKeyHint="next" className="form-input" dir="ltr" min={1}
+                        value={pu.conversion_factor} onChange={e => updateUnit(i, 'conversion_factor', +e.target.value)} />
                     </div>
                     <div className="form-group">
                       <label className="form-label">سعر البيع</label>
-                      <input type="number" className="form-input" dir="ltr" min={0} step="0.01"
+                      <input type="number" inputMode="decimal" enterKeyHint="done" className="form-input" dir="ltr" min={0} step="0.01"
                         value={pu.selling_price ?? ''} onChange={e => updateUnit(i, 'selling_price', e.target.value ? +e.target.value : null)} />
                     </div>
                     <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>

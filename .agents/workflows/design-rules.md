@@ -234,3 +234,98 @@ The sidebar and available features MUST adapt to the user's role:
 
 The sidebar should show ONLY the sections the user has permissions to access.
 No need to show "Coming Soon" items — just hide what's not permitted.
+
+---
+
+## 11. PWA & Mobile-First Architecture
+
+EDARA v2 is a Progressive Web App. Mobile experience has the SAME priority as desktop.
+
+### App Bar (Mobile Top Bar)
+```
+┌─────────────────────────┐
+│  [Page Title]   🔔  │  ← height: var(--app-bar-height) = 56px
+└─────────────────────────┘
+```
+- Sticky `position: fixed; top: 0`
+- Background: `var(--app-bar-bg)` + `backdrop-filter: var(--app-bar-blur)`
+- Z-index: `var(--z-app-bar)` = 140
+- Title: injected via `PageTitleContext` (each page sets its own title)
+- NO hamburger icon — menu access is via BottomNav "القائمة" tab
+
+### Bottom Navigation (Mobile)
+```
+┌─────────────────────────┐
+│ 🏠 | 🛒 | 👥 | ☰     │  ← height: var(--bottom-nav-height) = 64px
+│ Home Sales Cust Menu  │
+└─────────────────────────┘
+```
+- `position: fixed; bottom: 0; left: 0; right: 0`
+- Z-index: `var(--z-bottom-nav)` = 150
+- Background: `var(--bottom-nav-bg)` + `backdrop-filter: var(--bottom-nav-blur)`
+- Active tab indicator: 2px top border + primary-colored icon
+- Each tab: min 44px × 64px
+
+### Thumb Zone
+Primary actions (FAB, BottomNav) are placed in the thumb-reachable zone (bottom 40% of screen). Secondary actions can be in the App Bar.
+
+---
+
+## 12. Data Cards (Mobile Transformation Pattern)
+
+Every data table row MUST become a card on mobile:
+
+```
+┌─────────────────────────┐
+│ [Icon] Title       [Badge] │  ← Primary info row
+│        subtitle    Value   │  ← Secondary detail
+│ [Action 1]  [Action 2]     │  ← Quick actions (44px tap)
+└─────────────────────────┘
+```
+- Use `@media (max-width: 768px)` to switch from `.data-table` to `.mobile-card-list`
+- Always show: status badge, primary identifier, date, amount
+- Quick actions: max 2 buttons, 44px tall, clearly labeled
+
+---
+
+## 13. PermissionGuard Pattern
+
+```tsx
+// Mode: "hide" (default) — element disappears if no permission
+<PermissionGuard permission="procurement.invoices.bill">
+  <Button>إنشاء فاتورة دفع</Button>
+</PermissionGuard>
+
+// Mode: "disable" — grayed-out + lock icon + accessible tooltip
+<PermissionGuard permission="sales.orders.delete" mode="disable">
+  <Button variant="danger">حذف الطلب</Button>
+</PermissionGuard>
+```
+
+**Rules:**
+- `permission` can be `string | string[]` (array = any-of logic)
+- `mode="hide"` renders `null` — element is invisible
+- `mode="disable"` wraps in a div with `aria-disabled="true"` + `title="ليس لديك صلاحية"` + lock icon overlay
+- NEVER show an interactive element that, when clicked, shows "ليس لديك صلاحية" — guard it first
+
+---
+
+## 14. FAB (Floating Action Button)
+
+- **Mobile only** (`display: none` on ≥769px)
+- Size: `var(--fab-size)` = 56px × 56px
+- Position: `fixed; bottom: calc(var(--bottom-nav-height) + var(--space-4)); inset-inline-end: var(--space-4)`
+- Z-index: `var(--z-fab)` = 160
+- Context-aware: reads current route and maps to primary create action
+- Shows only if user has `create` permission for that route
+- Animation: scale-in `transform: scale(0) → scale(1)` on mount
+- Icon: `Plus` by default, route-specific icon optionally
+
+| Route | FAB Label | Permission |
+|-------|-----------|------------|
+| `/sales/orders` | + طلب بيع | `sales.orders.create` |
+| `/customers` | + عميل | `customers.create` |
+| `/purchases/invoices` | + فاتورة | `procurement.invoices.create` |
+| `/inventory/transfers` | + تحويل | `inventory.transfers.create` |
+| `/finance/expenses` | + مصروف | `finance.expenses.create` |
+| Other routes | hidden | — |

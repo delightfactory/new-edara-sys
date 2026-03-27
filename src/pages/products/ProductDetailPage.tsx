@@ -3,7 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   ArrowRight, Edit, Package, Tag, Barcode, Hash, DollarSign, Percent,
-  Layers, Box, ShoppingBag, Truck as TruckIcon, AlertTriangle, FileText
+  Layers, Box, ShoppingBag, Truck as TruckIcon, AlertTriangle, FileText,
+  Warehouse as WarehouseIcon,
 } from 'lucide-react'
 import { getProduct, getProductUnits } from '@/lib/services/products'
 import { useAuthStore } from '@/stores/auth-store'
@@ -17,15 +18,13 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true)
   const [product, setProduct] = useState<Product | null>(null)
   const [units, setUnits] = useState<ProductUnit[]>([])
+  const [tab, setTab] = useState<'info' | 'pricing' | 'units' | 'desc'>('info')
 
   useEffect(() => {
     if (!id) return
     const load = async () => {
       try {
-        const [p, u] = await Promise.all([
-          getProduct(id),
-          getProductUnits(id),
-        ])
+        const [p, u] = await Promise.all([getProduct(id), getProductUnits(id)])
         setProduct(p)
         setUnits(u)
       } catch { toast.error('فشل تحميل بيانات المنتج') }
@@ -50,171 +49,229 @@ export default function ProductDetailPage() {
     </div>
   )
 
-  const InfoItem = ({ icon: Icon, label, value, dir, highlight }: { icon: any; label: string; value: string | number | null | undefined; dir?: string; highlight?: boolean }) => (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)', padding: 'var(--space-3) 0', borderBottom: '1px solid var(--border-secondary)' }}>
-      <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-md)', background: 'var(--bg-surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <Icon size={14} style={{ color: 'var(--color-primary)' }} />
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 2 }}>{label}</div>
-        <div style={{
-          fontSize: highlight ? 'var(--text-base)' : 'var(--text-sm)',
-          fontWeight: highlight ? 700 : 500,
-          color: value ? 'var(--text-primary)' : 'var(--text-muted)',
-        }} dir={dir}>{value || '—'}</div>
-      </div>
-    </div>
-  )
-
   const canViewCosts = can('finance.view_costs')
-
   const margin = canViewCosts && product.selling_price > 0 && product.cost_price > 0
     ? ((product.selling_price - product.cost_price) / product.selling_price * 100).toFixed(1)
     : null
 
+  // Build tab list dynamically
+  const tabs: { key: typeof tab; label: string; icon: any }[] = [
+    { key: 'info', label: 'المعلومات', icon: Package },
+    { key: 'pricing', label: 'الأسعار', icon: DollarSign },
+    { key: 'units', label: 'الوحدات', icon: Layers },
+    ...(product.description ? [{ key: 'desc' as const, label: 'الوصف', icon: FileText }] : []),
+  ]
+
   return (
-    <div className="page-container animate-enter">
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-info">
-          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/products')} style={{ marginBottom: 'var(--space-2)' }}>
-            <ArrowRight size={14} /> العودة للمنتجات
+    <div style={{ maxWidth: 900, margin: '0 auto', paddingBottom: 80 }}>
+
+      {/* ══ Sticky Hero ══ */}
+      <div style={{
+        position: 'sticky', top: 0, zIndex: 10,
+        background: 'var(--bg-surface)',
+        borderBottom: '2px solid var(--color-primary)',
+        backdropFilter: 'blur(12px)',
+        padding: '14px 16px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button onClick={() => navigate('/products')}
+            style={{ background: 'var(--bg-surface-2)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: '7px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: 'var(--text-secondary)', flexShrink: 0 }}>
+            <ArrowRight size={14} /> رجوع
           </button>
-          <h1 className="page-title">{product.name}</h1>
-          <p className="page-subtitle" dir="ltr" style={{ fontFamily: 'monospace' }}>{product.sku}</p>
-        </div>
-        <div className="page-actions">
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <h1 style={{ fontSize: 17, fontWeight: 800, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 260 }}>
+                {product.name}
+              </h1>
+              <span className={`badge ${product.is_active ? 'badge-success' : 'badge-danger'}`}>
+                {product.is_active ? 'نشط' : 'معطل'}
+              </span>
+              {product.category && (
+                <span className="badge badge-info">{product.category.name}</span>
+              )}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2, fontFamily: 'monospace' }} dir="ltr">
+              {product.sku}
+              {product.barcode && <span style={{ marginRight: 10, opacity: 0.7 }}>| {product.barcode}</span>}
+            </div>
+          </div>
           {can('products.update') && (
-            <button className="btn btn-primary" onClick={() => navigate(`/products/${id}/edit`)}>
-              <Edit size={16} /> تعديل
+            <button className="btn btn-primary btn-sm"
+              onClick={() => navigate(`/products/${id}/edit`)}
+              style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+              <Edit size={14} /> تعديل
             </button>
+          )}
+        </div>
+
+        {/* KPI pills */}
+        <div style={{ display: 'flex', gap: 10, marginTop: 12, flexWrap: 'wrap' }}>
+          <div style={{
+            background: 'color-mix(in srgb, var(--color-primary) 10%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--color-primary) 25%, transparent)',
+            borderRadius: 8, padding: '6px 12px', fontSize: 13,
+          }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>سعر البيع  </span>
+            <span style={{ fontWeight: 700, color: 'var(--color-primary)' }}>
+              {product.selling_price.toLocaleString('ar-EG-u-nu-latn')} ج.م
+            </span>
+          </div>
+          {canViewCosts && product.cost_price > 0 && (
+            <div style={{
+              background: 'var(--bg-surface-2)', border: '1px solid var(--border-primary)',
+              borderRadius: 8, padding: '6px 12px', fontSize: 13,
+            }}>
+              <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>التكلفة  </span>
+              <span style={{ fontWeight: 700 }}>{product.cost_price.toLocaleString('ar-EG-u-nu-latn')}</span>
+            </div>
+          )}
+          {margin && (
+            <div style={{
+              background: 'color-mix(in srgb, var(--color-success) 10%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--color-success) 25%, transparent)',
+              borderRadius: 8, padding: '6px 12px', fontSize: 13,
+            }}>
+              <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>هامش  </span>
+              <span style={{ fontWeight: 700, color: 'var(--color-success)' }}>%{margin}</span>
+            </div>
+          )}
+          {product.min_stock_level > 0 && (
+            <div style={{
+              background: 'color-mix(in srgb, var(--color-warning) 10%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--color-warning) 25%, transparent)',
+              borderRadius: 8, padding: '6px 12px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 5,
+            }}>
+              <AlertTriangle size={12} style={{ color: 'var(--color-warning)' }} />
+              <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>الحد الأدنى  </span>
+              <span style={{ fontWeight: 700, color: 'var(--color-warning)' }}>{product.min_stock_level}</span>
+            </div>
           )}
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
-        <div className="stat-card">
-          <div className="stat-card-label">سعر البيع</div>
-          <div className="stat-card-value" style={{ fontSize: 'var(--text-xl)', color: 'var(--color-primary)' }}>
-            {product.selling_price.toLocaleString('ar-EG-u-nu-latn')}
-          </div>
-        </div>
-        {canViewCosts && (
-          <div className="stat-card">
-            <div className="stat-card-label">سعر التكلفة</div>
-            <div className="stat-card-value" style={{ fontSize: 'var(--text-xl)' }}>
-              {product.cost_price.toLocaleString('ar-EG-u-nu-latn')}
-            </div>
-          </div>
-        )}
-        {canViewCosts && margin && (
-          <div className="stat-card">
-            <div className="stat-card-label">هامش الربح</div>
-            <div className="stat-card-value" style={{ fontSize: 'var(--text-xl)', color: 'var(--color-success)' }}>
-              %{margin}
-            </div>
-          </div>
-        )}
-        <div className="stat-card">
-          <div className="stat-card-label">التصنيف</div>
-          <span className="badge badge-info" style={{ alignSelf: 'flex-start' }}>
-            {product.category?.name || 'بدون'}
-          </span>
-        </div>
-        <div className="stat-card">
-          <div className="stat-card-label">الحالة</div>
-          <span className={`badge ${product.is_active ? 'badge-success' : 'badge-danger'}`} style={{ alignSelf: 'flex-start' }}>
-            {product.is_active ? 'نشط' : 'معطل'}
-          </span>
-        </div>
+      {/* ══ Tabs — scrollable on mobile ══ */}
+      <div className="tabs" style={{ overflowX: 'auto', scrollbarWidth: 'none', flexWrap: 'nowrap', padding: '0 12px', marginTop: 8 }}>
+        {tabs.map(t => (
+          <button key={t.key}
+            className={`tab ${tab === t.key ? 'active' : ''}`}
+            onClick={() => setTab(t.key)}
+            style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+            <t.icon size={13} /> {t.label}
+          </button>
+        ))}
       </div>
 
-      {/* Content */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
-        {/* Product Info */}
-        <div className="edara-card" style={{ padding: 'var(--space-5)' }}>
-          <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 'var(--space-3)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-            <Package size={16} style={{ color: 'var(--color-primary)' }} /> معلومات المنتج
-          </h3>
-          <InfoItem icon={Hash} label="كود المنتج (SKU)" value={product.sku} dir="ltr" />
-          <InfoItem icon={Barcode} label="الباركود" value={product.barcode} dir="ltr" />
-          <InfoItem icon={Tag} label="التصنيف" value={product.category?.name} />
-          <InfoItem icon={Tag} label="العلامة التجارية" value={product.brand?.name} />
-          <InfoItem icon={Box} label="الوحدة الأساسية" value={product.base_unit?.name} />
-          <InfoItem icon={AlertTriangle} label="الحد الأدنى للمخزون" value={product.min_stock_level > 0 ? product.min_stock_level.toString() : '—'} />
-        </div>
+      <div style={{ padding: '12px 12px 0' }}>
 
-        {/* Pricing */}
-        <div className="edara-card" style={{ padding: 'var(--space-5)' }}>
-          <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 'var(--space-3)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-            <DollarSign size={16} style={{ color: 'var(--color-primary)' }} /> الأسعار
-          </h3>
-          <InfoItem icon={DollarSign} label="سعر البيع" value={product.selling_price.toLocaleString('ar-EG', { minimumFractionDigits: 2 })} highlight />
-          {canViewCosts && <InfoItem icon={DollarSign} label="سعر التكلفة" value={product.cost_price.toLocaleString('ar-EG', { minimumFractionDigits: 2 })} />}
-          <InfoItem icon={Percent} label="نسبة الضريبة" value={product.tax_rate > 0 ? `%${product.tax_rate}` : 'معفى'} />
-          {canViewCosts && margin && <InfoItem icon={Percent} label="هامش الربح" value={`%${margin}`} />}
-        </div>
+        {/* ══ TAB: Info ══ */}
+        {tab === 'info' && (
+          <div className="edara-card" style={{ padding: 'var(--space-5)' }}>
+            <InfoRow icon={Hash} label="كود المنتج (SKU)" value={product.sku} dir="ltr" />
+            <InfoRow icon={Barcode} label="الباركود" value={product.barcode} dir="ltr" />
+            <InfoRow icon={Tag} label="التصنيف" value={product.category?.name} />
+            <InfoRow icon={Tag} label="العلامة التجارية" value={product.brand?.name} />
+            <InfoRow icon={Box} label="الوحدة الأساسية" value={product.base_unit?.name} />
+            {product.min_stock_level > 0 && (
+              <InfoRow icon={AlertTriangle} label="الحد الأدنى للمخزون" value={String(product.min_stock_level)} />
+            )}
+          </div>
+        )}
 
-        {/* Units */}
-        <div className="edara-card" style={{ padding: 'var(--space-5)' }}>
-          <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 'var(--space-3)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-            <Layers size={16} style={{ color: 'var(--color-primary)' }} /> وحدات القياس
-          </h3>
+        {/* ══ TAB: Pricing ══ */}
+        {tab === 'pricing' && (
+          <div className="edara-card" style={{ padding: 'var(--space-5)' }}>
+            <InfoRow icon={DollarSign} label="سعر البيع" value={product.selling_price.toLocaleString('ar-EG', { minimumFractionDigits: 2 })} highlight />
+            {canViewCosts && <InfoRow icon={DollarSign} label="سعر التكلفة" value={product.cost_price.toLocaleString('ar-EG', { minimumFractionDigits: 2 })} />}
+            <InfoRow icon={Percent} label="نسبة الضريبة" value={product.tax_rate > 0 ? `%${product.tax_rate}` : 'معفى'} />
+            {canViewCosts && margin && <InfoRow icon={Percent} label="هامش الربح" value={`%${margin}`} highlight />}
+          </div>
+        )}
 
-          {/* Base unit */}
-          <div style={{
-            background: 'var(--bg-surface-2)', borderRadius: 'var(--radius-md)',
-            padding: 'var(--space-3)', border: '1px solid var(--border-primary)',
-            marginBottom: 'var(--space-3)',
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        {/* ══ TAB: Units ══ */}
+        {tab === 'units' && (
+          <div className="edara-card" style={{ padding: 'var(--space-5)' }}>
+            {/* Base unit */}
+            <div style={{
+              background: 'color-mix(in srgb, var(--color-primary) 8%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--color-primary) 25%, transparent)',
+              borderRadius: 10, padding: 12, marginBottom: 12,
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            }}>
               <div>
                 <span className="badge badge-primary" style={{ marginBottom: 4 }}>الوحدة الأساسية</span>
                 <div style={{ fontWeight: 700, fontSize: 'var(--text-sm)' }}>{product.base_unit?.name}</div>
               </div>
-              <div style={{ textAlign: 'left', fontSize: 'var(--text-sm)', fontWeight: 600 }}>
+              <div style={{ fontWeight: 700, fontSize: 15, fontVariantNumeric: 'tabular-nums' }}>
                 {product.selling_price.toLocaleString('ar-EG-u-nu-latn')}
               </div>
             </div>
-          </div>
 
-          {/* Additional units */}
-          {units.length === 0 ? (
-            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', textAlign: 'center', padding: 'var(--space-3)' }}>لا يوجد وحدات إضافية</p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-              {units.map(u => (
-                <div key={u.id} style={{
-                  background: 'var(--bg-surface-2)', borderRadius: 'var(--radius-md)',
-                  padding: 'var(--space-3)', border: '1px solid var(--border-secondary)',
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-1)' }}>
-                    <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{u.unit?.name}</div>
-                    <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-primary)' }}>
+            {/* Additional units */}
+            {units.length === 0 ? (
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', textAlign: 'center', padding: 'var(--space-4 0)' }}>لا يوجد وحدات إضافية</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {units.map(u => (
+                  <div key={u.id} style={{
+                    background: 'var(--bg-surface-2)', borderRadius: 10,
+                    padding: 12, border: '1px solid var(--border-secondary)',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  }}>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 14 }}>{u.unit?.name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        <span>= {u.conversion_factor} {product.base_unit?.name}</span>
+                        {u.is_sales_unit && <span className="badge badge-success" style={{ fontSize: '0.6rem' }}><ShoppingBag size={8} /> بيع</span>}
+                        {u.is_purchase_unit && <span className="badge badge-info" style={{ fontSize: '0.6rem' }}><TruckIcon size={8} /> شراء</span>}
+                      </div>
+                    </div>
+                    <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--color-primary)', fontVariantNumeric: 'tabular-nums' }}>
                       {(u.selling_price ?? product.selling_price * u.conversion_factor).toLocaleString('ar-EG-u-nu-latn')}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                    <span>= {u.conversion_factor} {product.base_unit?.name}</span>
-                    {u.is_sales_unit && <span className="badge badge-success" style={{ fontSize: '0.6rem' }}><ShoppingBag size={8} /> بيع</span>}
-                    {u.is_purchase_unit && <span className="badge badge-info" style={{ fontSize: '0.6rem' }}><TruckIcon size={8} /> شراء</span>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Description */}
-        {product.description && (
-          <div className="edara-card" style={{ padding: 'var(--space-5)' }}>
-            <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 'var(--space-3)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-              <FileText size={16} style={{ color: 'var(--color-primary)' }} /> الوصف
-            </h3>
-            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{product.description}</p>
+                ))}
+              </div>
+            )}
           </div>
         )}
+
+        {/* ══ TAB: Description ══ */}
+        {tab === 'desc' && product.description && (
+          <div className="edara-card" style={{ padding: 'var(--space-5)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <WarehouseIcon size={16} style={{ color: 'var(--color-primary)' }} />
+              <span style={{ fontWeight: 700 }}>الوصف</span>
+            </div>
+            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', lineHeight: 1.7, whiteSpace: 'pre-wrap', margin: 0 }}>
+              {product.description}
+            </p>
+          </div>
+        )}
+
+      </div>
+    </div>
+  )
+}
+
+/* ── helpers ── */
+function InfoRow({ icon: Icon, label, value, dir, highlight }: {
+  icon: any; label: string; value?: string | number | null; dir?: string; highlight?: boolean
+}) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border-secondary)' }}>
+      <div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--bg-surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <Icon size={13} style={{ color: 'var(--color-primary)' }} />
+      </div>
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{label}</span>
+        <span style={{
+          fontSize: highlight ? 'var(--text-base)' : 'var(--text-sm)',
+          fontWeight: highlight ? 700 : 500,
+          color: value ? 'var(--text-primary)' : 'var(--text-muted)',
+          fontFamily: dir === 'ltr' ? 'monospace' : 'inherit',
+          direction: dir as 'ltr' | 'rtl' | undefined,
+          textAlign: 'left',
+        }}>{value ?? '—'}</span>
       </div>
     </div>
   )

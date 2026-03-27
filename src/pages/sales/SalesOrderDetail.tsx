@@ -26,7 +26,7 @@ import { formatNumber } from '@/lib/utils/format'
 import type { SalesOrder, PaymentTerms, SalesOrderStatus } from '@/lib/types/master-data'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
-import Modal from '@/components/ui/Modal'
+import ResponsiveModal from '@/components/ui/ResponsiveModal'
 
 // ── Labels ─────────────────────────────────────────────────────
 const statusLabels: Record<SalesOrderStatus, string> = {
@@ -611,7 +611,7 @@ export default function SalesOrderDetail() {
       </div>
 
       {/* ══════════════════════════════════════════ CONFIRM MODAL */}
-      <Modal open={showConfirmModal} onClose={() => { setShowConfirmModal(false); setStockAvailability([]) }} title="تأكيد الطلب" size="sm">
+      <ResponsiveModal open={showConfirmModal} onClose={() => { setShowConfirmModal(false); setStockAvailability([]) }} title="تأكيد الطلب">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ padding: '10px 12px', background: 'var(--color-info-light, #eff6ff)', borderRadius: 8, fontSize: 13, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
             <Info size={15} style={{ color: 'var(--color-info, var(--color-primary))', flexShrink: 0, marginTop: 1 }} />
@@ -663,11 +663,11 @@ export default function SalesOrderDetail() {
             </button>
           </div>
         </div>
-      </Modal>
+      </ResponsiveModal>
 
       {/* ══════════════════════════════════════════ DELIVER MODAL */}
-      <Modal open={showDeliverModal} onClose={() => setShowDeliverModal(false)}
-        title={`تسليم #${order.order_number}`} size="md">
+      <ResponsiveModal open={showDeliverModal} onClose={() => setShowDeliverModal(false)}
+        title={`تسليم #${order.order_number}`}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
           {deliverLoading && (
@@ -775,7 +775,7 @@ export default function SalesOrderDetail() {
                     </>
                   ) : (
                     <>
-                      <input className="form-input" type="number" min={minCash} max={remaining} step="0.01"
+                      <input className="form-input" type="number" inputMode="decimal" min={minCash} max={remaining} step="0.01"
                         value={deliverForm.cashAmount}
                         onChange={e => onChangeCashAmount(Number(e.target.value))} />
                       {creditAmount > 0 && (
@@ -939,10 +939,10 @@ export default function SalesOrderDetail() {
             </>
           )}
         </div>
-      </Modal>
+      </ResponsiveModal>
 
       {/* ══════════════════════════════════════════ CANCEL MODAL */}
-      <Modal open={showCancelModal} onClose={() => setShowCancelModal(false)} title="إلغاء الطلب" size="sm">
+      <ResponsiveModal open={showCancelModal} onClose={() => setShowCancelModal(false)} title="إلغاء الطلب">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <p style={{ color: 'var(--color-danger)', fontSize: 13, margin: 0 }}>
             سيتم إلغاء الطلب وإعادة المخزون المحجوز. هذا الإجراء لا يمكن التراجع عنه.
@@ -960,7 +960,7 @@ export default function SalesOrderDetail() {
             </button>
           </div>
         </div>
-      </Modal>
+      </ResponsiveModal>
     </div>
   )
 }

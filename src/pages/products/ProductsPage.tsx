@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Plus, BoxesIcon, ToggleLeft, ToggleRight, Edit } from 'lucide-react'
+import { Plus, BoxesIcon, ToggleLeft, ToggleRight, Edit, Tag, DollarSign } from 'lucide-react'
 import { toggleProductActive } from '@/lib/services/products'
 import { useProducts, useCategories, useBrands, useInvalidate } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
@@ -10,9 +10,10 @@ import { formatCurrency } from '@/lib/utils/format'
 import PageHeader from '@/components/shared/PageHeader'
 import SearchInput from '@/components/shared/SearchInput'
 import DataTable from '@/components/shared/DataTable'
+import DataCard from '@/components/ui/DataCard'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
-import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import ResponsiveModal from '@/components/ui/ResponsiveModal'
 
 export default function ProductsPage() {
   const navigate = useNavigate()
@@ -24,8 +25,8 @@ export default function ProductsPage() {
   const [statusFilter, setStatusFilter] = useState('')
   const [page, setPage] = useState(1)
   const [confirmTarget, setConfirmTarget] = useState<Product | null>(null)
+  const [toggling, setToggling] = useState(false)
 
-  // React Query — cached & shared
   const { data: categories = [] } = useCategories()
   const { data: brands = [] } = useBrands()
 
@@ -40,19 +41,17 @@ export default function ProductsPage() {
   const totalPages = result?.totalPages ?? 1
   const totalCount = result?.count ?? 0
 
-  const handleToggle = async (p: Product) => {
-    setConfirmTarget(p)
-  }
-
+  const handleToggle = (p: Product) => setConfirmTarget(p)
   const executeToggle = async () => {
     if (!confirmTarget) return
     const next = !confirmTarget.is_active
+    setToggling(true)
     try {
       await toggleProductActive(confirmTarget.id, next)
       toast.success(`تم ${next ? 'تفعيل' : 'تعطيل'} المنتج`)
       invalidate('products')
     } catch { toast.error('فشلت العملية') }
-    finally { setConfirmTarget(null) }
+    finally { setToggling(false); setConfirmTarget(null) }
   }
 
   return (
@@ -61,43 +60,41 @@ export default function ProductsPage() {
         title="المنتجات"
         subtitle={loading ? '...' : `${totalCount} منتج`}
         actions={can('products.create') ? (
-          <Button icon={<Plus size={16} />} onClick={() => navigate('/products/new')}>
+          <Button icon={<Plus size={16} />} onClick={() => navigate('/products/new')}
+            className="desktop-only-btn">
             إضافة منتج
           </Button>
         ) : undefined}
       />
 
-      {/* Filters */}
+      {/* ── Filters ─────────────────────────────────────────── */}
       <div className="edara-card" style={{ padding: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
-        <div className="flex gap-4" style={{ flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: 200 }}>
-            <SearchInput
-              value={search}
-              onChange={val => { setSearch(val); setPage(1) }}
-              placeholder="بحث بالاسم أو الكود أو الباركود..."
-            />
+        <div className="products-filter-row">
+          <div style={{ flex: 2, minWidth: 180 }}>
+            <SearchInput value={search} onChange={val => { setSearch(val); setPage(1) }}
+              placeholder="بحث بالاسم أو الكود أو الباركود..." />
           </div>
-          <select className="form-select" style={{ width: 160 }} value={categoryFilter}
+          <select className="form-select filter-select" value={categoryFilter}
             onChange={e => { setCategoryFilter(e.target.value); setPage(1) }}>
             <option value="">كل التصنيفات</option>
             {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
-          <select className="form-select" style={{ width: 150 }} value={brandFilter}
+          <select className="form-select filter-select" value={brandFilter}
             onChange={e => { setBrandFilter(e.target.value); setPage(1) }}>
             <option value="">كل العلامات</option>
             {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
           </select>
-          <select className="form-select" style={{ width: 120 }} value={statusFilter}
+          <select className="form-select filter-select" value={statusFilter}
             onChange={e => { setStatusFilter(e.target.value); setPage(1) }}>
-            <option value="">الكل</option>
+            <option value="">الحالة</option>
             <option value="active">نشط</option>
             <option value="inactive">معطل</option>
           </select>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="edara-card" style={{ overflow: 'auto' }}>
+      {/* ── DESKTOP: Data Table ──────────────────────────────── */}
+      <div className="products-table-view edara-card" style={{ overflow: 'auto' }}>
         <DataTable<Product>
           columns={[
             {
@@ -125,11 +122,9 @@ export default function ProductsPage() {
                     </Button>
                   )}
                   {can('products.update') && (
-                    <Button
-                      variant={p.is_active ? 'danger' : 'success'} size="sm"
+                    <Button variant={p.is_active ? 'danger' : 'success'} size="sm"
                       title={p.is_active ? 'تعطيل' : 'تفعيل'}
-                      onClick={() => handleToggle(p)}
-                    >
+                      onClick={() => handleToggle(p)}>
                       {p.is_active ? <ToggleLeft size={14} /> : <ToggleRight size={14} />}
                     </Button>
                   )}
@@ -154,16 +149,139 @@ export default function ProductsPage() {
         />
       </div>
 
-      {/* Confirm Toggle Dialog */}
-      <ConfirmDialog
+      {/* ── MOBILE: DataCard list ────────────────────────────── */}
+      <div className="products-card-view">
+        {loading ? (
+          <div className="mobile-card-list">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="edara-card" style={{ padding: 'var(--space-4)' }}>
+                <div className="skeleton" style={{ height: 16, width: '55%', marginBottom: 8 }} />
+                <div className="skeleton" style={{ height: 12, width: '35%', marginBottom: 12 }} />
+                <div className="skeleton" style={{ height: 12, width: '75%' }} />
+              </div>
+            ))}
+          </div>
+        ) : products.length === 0 ? (
+          <div className="empty-state" style={{ padding: 'var(--space-8)' }}>
+            <BoxesIcon size={40} className="empty-state-icon" />
+            <p className="empty-state-title">لا يوجد منتجات</p>
+            <p className="empty-state-text">لم يتم العثور على منتجات مطابقة للبحث</p>
+          </div>
+        ) : (
+          <div className="mobile-card-list">
+            {products.map(p => (
+              <DataCard
+                key={p.id}
+                title={p.name}
+                subtitle={
+                  <span dir="ltr" style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                    {p.sku}
+                  </span>
+                }
+                badge={<Badge variant={p.is_active ? 'success' : 'danger'}>{p.is_active ? 'نشط' : 'معطل'}</Badge>}
+                leading={
+                  <div style={{
+                    width: 40, height: 40, borderRadius: 'var(--radius-md)',
+                    background: 'var(--bg-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    <Tag size={18} style={{ color: 'var(--color-primary)' }} />
+                  </div>
+                }
+                metadata={[
+                  { label: 'سعر البيع', value: formatCurrency(p.selling_price), highlight: true },
+                  ...(p.category?.name ? [{ label: 'التصنيف', value: p.category.name }] : []),
+                  ...(p.brand?.name ? [{ label: 'العلامة', value: p.brand.name }] : []),
+                  ...(can('finance.view_costs') ? [{ label: 'التكلفة', value: formatCurrency(p.cost_price) }] : []),
+                ]}
+                actions={
+                  <div className="flex gap-2" style={{ width: '100%' }}>
+                    {can('products.update') && (
+                      <Button variant="secondary" size="sm" onClick={() => navigate(`/products/${p.id}/edit`)}
+                        style={{ flex: 1, justifyContent: 'center' }}>
+                        <Edit size={14} /> تعديل
+                      </Button>
+                    )}
+                    {can('products.update') && (
+                      <Button variant={p.is_active ? 'danger' : 'success'} size="sm"
+                        onClick={() => handleToggle(p)}
+                        style={{ flex: 1, justifyContent: 'center' }}>
+                        {p.is_active ? <><ToggleLeft size={14} /> تعطيل</> : <><ToggleRight size={14} /> تفعيل</>}
+                      </Button>
+                    )}
+                  </div>
+                }
+                onClick={() => navigate(`/products/${p.id}`)}
+              />
+            ))}
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div className="mobile-pagination">
+            <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>السابق</Button>
+            <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>
+              {page} / {totalPages}
+            </span>
+            <Button variant="ghost" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>التالي</Button>
+          </div>
+        )}
+      </div>
+
+      {/* ── Responsive Confirm Modal ─────────────────────────── */}
+      <ResponsiveModal
         open={!!confirmTarget}
+        onClose={() => setConfirmTarget(null)}
         title={confirmTarget?.is_active ? 'تعطيل المنتج' : 'تفعيل المنتج'}
-        message={`هل تريد ${confirmTarget?.is_active ? 'تعطيل' : 'تفعيل'} المنتج "${confirmTarget?.name}"؟`}
-        variant={confirmTarget?.is_active ? 'danger' : 'info'}
-        confirmText={confirmTarget?.is_active ? 'تعطيل' : 'تفعيل'}
-        onConfirm={executeToggle}
-        onCancel={() => setConfirmTarget(null)}
-      />
+        disableOverlayClose={toggling}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setConfirmTarget(null)} disabled={toggling}>إلغاء</Button>
+            <Button variant={confirmTarget?.is_active ? 'danger' : 'success'}
+              onClick={executeToggle} disabled={toggling}>
+              {toggling ? 'جاري التنفيذ...' : confirmTarget?.is_active ? 'تعطيل' : 'تفعيل'}
+            </Button>
+          </>
+        }
+      >
+        <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', lineHeight: 1.7 }}>
+          هل تريد {confirmTarget?.is_active ? 'تعطيل' : 'تفعيل'} المنتج{' '}
+          <strong style={{ color: 'var(--text-primary)' }}>"{confirmTarget?.name}"</strong>؟
+        </p>
+      </ResponsiveModal>
+
+      <style>{`
+        .products-filter-row {
+          display: flex;
+          gap: var(--space-3);
+          flex-wrap: wrap;
+          align-items: flex-end;
+        }
+        .filter-select { min-width: 100px; flex: 1; }
+
+        .products-table-view { display: block; }
+        .products-card-view  { display: none; }
+
+        @media (max-width: 768px) {
+          .products-table-view { display: none; }
+          .products-card-view  { display: block; }
+          .desktop-only-btn    { display: none; }
+          .filter-select { font-size: var(--text-xs); }
+        }
+
+        .mobile-card-list {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-3);
+          padding: 0 0 var(--space-2);
+        }
+        .mobile-pagination {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: var(--space-4);
+          padding: var(--space-4) 0;
+        }
+      `}</style>
     </div>
   )
 }

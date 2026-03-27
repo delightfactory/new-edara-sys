@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Plus, Users, ToggleLeft, ToggleRight, Eye } from 'lucide-react'
+import { Plus, Users, ToggleLeft, ToggleRight, Eye, Phone } from 'lucide-react'
 import { toggleCustomerActive } from '@/lib/services/customers'
 import { getCities } from '@/lib/services/geography'
 import { useCustomers, useGovernorates, useProfiles, useInvalidate } from '@/hooks/useQueryHooks'
@@ -11,9 +11,15 @@ import { formatNumber } from '@/lib/utils/format'
 import PageHeader from '@/components/shared/PageHeader'
 import SearchInput from '@/components/shared/SearchInput'
 import DataTable from '@/components/shared/DataTable'
+import DataCard from '@/components/ui/DataCard'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
-import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import ResponsiveModal from '@/components/ui/ResponsiveModal'
+
+const typeLabels: Record<string, string> = { retail: 'تجزئة', wholesale: 'جملة', distributor: 'موزع' }
+const typeBadge: Record<string, 'neutral' | 'info' | 'primary'> = { retail: 'neutral', wholesale: 'info', distributor: 'primary' }
+const paymentLabels: Record<string, string> = { cash: 'نقدي', credit: 'آجل', mixed: 'مختلط' }
+const paymentBadge: Record<string, 'success' | 'warning' | 'info'> = { cash: 'success', credit: 'warning', mixed: 'info' }
 
 export default function CustomersPage() {
   const navigate = useNavigate()
@@ -28,8 +34,8 @@ export default function CustomersPage() {
   const [statusFilter, setStatusFilter] = useState('')
   const [page, setPage] = useState(1)
   const [confirmTarget, setConfirmTarget] = useState<Customer | null>(null)
+  const [toggling, setToggling] = useState(false)
 
-  // React Query — cached & shared
   const { data: governorates = [] } = useGovernorates()
   const { data: reps = [] } = useProfiles()
 
@@ -45,7 +51,6 @@ export default function CustomersPage() {
   const totalPages = result?.totalPages ?? 1
   const totalCount = result?.count ?? 0
 
-  // Fetch cities when governorate changes (lightweight dependent query)
   const handleGovChange = async (govId: string) => {
     setGovFilter(govId); setCityFilter(''); setPage(1)
     setCities(govId ? await getCities(govId) : [])
@@ -55,18 +60,14 @@ export default function CustomersPage() {
   const executeToggle = async () => {
     if (!confirmTarget) return
     const next = !confirmTarget.is_active
+    setToggling(true)
     try {
       await toggleCustomerActive(confirmTarget.id, next)
       toast.success(`تم ${next ? 'تفعيل' : 'إلغاء تفعيل'} العميل`)
       invalidate('customers')
     } catch { toast.error('فشلت العملية') }
-    finally { setConfirmTarget(null) }
+    finally { setToggling(false); setConfirmTarget(null) }
   }
-
-  const typeLabels: Record<string, string> = { retail: 'تجزئة', wholesale: 'جملة', distributor: 'موزع' }
-  const typeBadge: Record<string, 'neutral' | 'info' | 'primary'> = { retail: 'neutral', wholesale: 'info', distributor: 'primary' }
-  const paymentLabels: Record<string, string> = { cash: 'نقدي', credit: 'آجل', mixed: 'مختلط' }
-  const paymentBadge: Record<string, 'success' | 'warning' | 'info'> = { cash: 'success', credit: 'warning', mixed: 'info' }
 
   return (
     <div className="page-container animate-enter">
@@ -74,47 +75,45 @@ export default function CustomersPage() {
         title="العملاء"
         subtitle={loading ? '...' : `${totalCount} عميل`}
         actions={can('customers.create') ? (
-          <Button icon={<Plus size={16} />} onClick={() => navigate('/customers/new')}>
+          <Button icon={<Plus size={16} />} onClick={() => navigate('/customers/new')}
+            className="desktop-only-btn">
             إضافة عميل
           </Button>
         ) : undefined}
       />
 
-      {/* Filters */}
+      {/* ── Filters ──────────────────────────────────────── */}
       <div className="edara-card" style={{ padding: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
-        <div className="flex gap-3" style={{ flexWrap: 'wrap' }}>
-          <div style={{ flex: 2, minWidth: 200 }}>
-            <SearchInput
-              value={search}
-              onChange={val => { setSearch(val); setPage(1) }}
-              placeholder="بحث بالاسم أو الكود أو الهاتف..."
-            />
+        <div className="customers-filter-row">
+          <div style={{ flex: 2, minWidth: 180 }}>
+            <SearchInput value={search} onChange={val => { setSearch(val); setPage(1) }}
+              placeholder="بحث بالاسم أو الكود أو الهاتف..." />
           </div>
-          <select className="form-select" style={{ width: 110 }} value={typeFilter}
+          <select className="form-select filter-select" value={typeFilter}
             onChange={e => { setTypeFilter(e.target.value); setPage(1) }}>
             <option value="">كل الأنواع</option>
             <option value="retail">تجزئة</option>
             <option value="wholesale">جملة</option>
             <option value="distributor">موزع</option>
           </select>
-          <select className="form-select" style={{ width: 140 }} value={govFilter}
+          <select className="form-select filter-select" value={govFilter}
             onChange={e => handleGovChange(e.target.value)}>
             <option value="">كل المحافظات</option>
             {governorates.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
           </select>
           {govFilter && cities.length > 0 && (
-            <select className="form-select" style={{ width: 140 }} value={cityFilter}
+            <select className="form-select filter-select" value={cityFilter}
               onChange={e => { setCityFilter(e.target.value); setPage(1) }}>
               <option value="">كل المدن</option>
               {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           )}
-          <select className="form-select" style={{ width: 140 }} value={repFilter}
+          <select className="form-select filter-select" value={repFilter}
             onChange={e => { setRepFilter(e.target.value); setPage(1) }}>
             <option value="">كل المناديب</option>
             {reps.map(r => <option key={r.id} value={r.id}>{r.full_name}</option>)}
           </select>
-          <select className="form-select" style={{ width: 100 }} value={statusFilter}
+          <select className="form-select filter-select" value={statusFilter}
             onChange={e => { setStatusFilter(e.target.value); setPage(1) }}>
             <option value="">الحالة</option>
             <option value="active">نشط</option>
@@ -123,8 +122,8 @@ export default function CustomersPage() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="edara-card" style={{ overflow: 'auto' }}>
+      {/* ── DESKTOP: Data Table ───────────────────────────── */}
+      <div className="customers-table-view edara-card" style={{ overflow: 'auto' }}>
         <DataTable<Customer>
           columns={[
             {
@@ -187,15 +186,139 @@ export default function CustomersPage() {
         />
       </div>
 
-      <ConfirmDialog
+      {/* ── MOBILE: DataCard list ──────────────────────────── */}
+      <div className="customers-card-view">
+        {loading ? (
+          <div className="mobile-card-list">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="edara-card" style={{ padding: 'var(--space-4)' }}>
+                <div className="skeleton" style={{ height: 16, width: '60%', marginBottom: 8 }} />
+                <div className="skeleton" style={{ height: 12, width: '40%', marginBottom: 12 }} />
+                <div className="skeleton" style={{ height: 12, width: '80%' }} />
+              </div>
+            ))}
+          </div>
+        ) : customers.length === 0 ? (
+          <div className="empty-state" style={{ padding: 'var(--space-8)' }}>
+            <Users size={40} className="empty-state-icon" />
+            <p className="empty-state-title">لا يوجد عملاء</p>
+            <p className="empty-state-text">لم يتم العثور على عملاء مطابقين للبحث</p>
+          </div>
+        ) : (
+          <div className="mobile-card-list">
+            {customers.map(c => (
+              <DataCard
+                key={c.id}
+                title={c.name}
+                subtitle={
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
+                    <span dir="ltr" style={{ fontFamily: 'monospace', fontSize: '0.7rem' }}>{c.code}</span>
+                    {c.mobile && (
+                      <>
+                        <span>•</span>
+                        <Phone size={11} />
+                        <span dir="ltr">{c.mobile}</span>
+                      </>
+                    )}
+                  </span>
+                }
+                badge={<Badge variant={c.is_active ? 'success' : 'danger'}>{c.is_active ? 'نشط' : 'معطل'}</Badge>}
+                metadata={[
+                  { label: 'نوع العميل', value: typeLabels[c.type] || c.type },
+                  { label: 'طريقة الدفع', value: paymentLabels[c.payment_terms] || c.payment_terms },
+                  ...(c.credit_limit > 0 ? [{ label: 'حد الائتمان', value: formatNumber(c.credit_limit), highlight: true }] : []),
+                  ...(c.governorate?.name ? [{ label: 'المحافظة', value: c.governorate.name }] : []),
+                ]}
+                actions={
+                  <div className="flex gap-2" style={{ width: '100%' }}>
+                    <Button variant="secondary" size="sm" onClick={() => navigate(`/customers/${c.id}`)}
+                      style={{ flex: 1, justifyContent: 'center' }}>
+                      <Eye size={14} /> عرض
+                    </Button>
+                    {can('customers.update') && (
+                      <Button variant={c.is_active ? 'danger' : 'success'} size="sm"
+                        onClick={() => handleToggle(c)}
+                        style={{ flex: 1, justifyContent: 'center' }}>
+                        {c.is_active ? <><ToggleLeft size={14} /> تعطيل</> : <><ToggleRight size={14} /> تفعيل</>}
+                      </Button>
+                    )}
+                  </div>
+                }
+                onClick={() => navigate(`/customers/${c.id}`)}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Pagination on mobile */}
+        {totalPages > 1 && (
+          <div className="mobile-pagination">
+            <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>السابق</Button>
+            <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>
+              {page} / {totalPages}
+            </span>
+            <Button variant="ghost" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>التالي</Button>
+          </div>
+        )}
+      </div>
+
+      {/* ── Responsive Confirm Modal ──────────────────────── */}
+      <ResponsiveModal
         open={!!confirmTarget}
+        onClose={() => setConfirmTarget(null)}
         title={confirmTarget?.is_active ? 'تعطيل العميل' : 'تفعيل العميل'}
-        message={`هل تريد ${confirmTarget?.is_active ? 'تعطيل' : 'تفعيل'} العميل "${confirmTarget?.name}"؟`}
-        variant={confirmTarget?.is_active ? 'danger' : 'info'}
-        confirmText={confirmTarget?.is_active ? 'تعطيل' : 'تفعيل'}
-        onConfirm={executeToggle}
-        onCancel={() => setConfirmTarget(null)}
-      />
+        disableOverlayClose={toggling}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setConfirmTarget(null)} disabled={toggling}>إلغاء</Button>
+            <Button variant={confirmTarget?.is_active ? 'danger' : 'success'}
+              onClick={executeToggle} disabled={toggling}>
+              {toggling ? 'جاري التنفيذ...' : confirmTarget?.is_active ? 'تعطيل' : 'تفعيل'}
+            </Button>
+          </>
+        }
+      >
+        <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', lineHeight: 1.7 }}>
+          هل تريد {confirmTarget?.is_active ? 'تعطيل' : 'تفعيل'} العميل{' '}
+          <strong style={{ color: 'var(--text-primary)' }}>"{confirmTarget?.name}"</strong>؟
+        </p>
+      </ResponsiveModal>
+
+      <style>{`
+        .customers-filter-row {
+          display: flex;
+          gap: var(--space-3);
+          flex-wrap: wrap;
+          align-items: flex-end;
+        }
+        .filter-select { min-width: 100px; flex: 1; }
+
+        /* ── Desktop shows table, Mobile shows cards ── */
+        .customers-table-view { display: block; }
+        .customers-card-view  { display: none; }
+
+        @media (max-width: 768px) {
+          .customers-table-view { display: none; }
+          .customers-card-view  { display: block; }
+          .desktop-only-btn     { display: none; }
+          .filter-select { font-size: var(--text-xs); }
+        }
+
+        .mobile-card-list {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-3);
+          padding: 0 0 var(--space-2);
+        }
+
+        .mobile-pagination {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: var(--space-4);
+          padding: var(--space-4) 0;
+        }
+      `}</style>
     </div>
   )
 }

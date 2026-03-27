@@ -2,12 +2,15 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Plus, Search, UserCog, KeyRound, Ban, CheckCircle, Loader2 } from 'lucide-react'
+import { Plus, Search, UserCog, KeyRound, Ban, CheckCircle } from 'lucide-react'
 import { toggleUserStatus } from '@/lib/services/users'
 import { adminResetPassword } from '@/lib/services/auth'
 import { useUsers, useRoles } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
 import type { UserWithRoles } from '@/lib/types/auth'
+import ResponsiveModal from '@/components/ui/ResponsiveModal'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import Button from '@/components/ui/Button'
 
 export default function UsersPage() {
   const navigate = useNavigate()
@@ -21,6 +24,8 @@ export default function UsersPage() {
   const [resetModal, setResetModal] = useState<string | null>(null)
   const [newPassword, setNewPassword] = useState('')
   const [resetting, setResetting] = useState(false)
+  const [confirmToggle, setConfirmToggle] = useState<UserWithRoles | null>(null)
+  const [toggling, setToggling] = useState(false)
 
   const { data: usersResult, isLoading: loading } = useUsers({ search, status: statusFilter, role: roleFilter, page })
   const users = usersResult?.data || []
@@ -30,13 +35,19 @@ export default function UsersPage() {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['users'] })
 
   const handleToggleStatus = async (user: UserWithRoles) => {
-    const newStatus = user.status === 'active' ? 'inactive' : 'active'
-    if (!confirm(`هل تريد ${newStatus === 'active' ? 'تفعيل' : 'تعطيل'} المستخدم "${user.full_name}"؟`)) return
+    setConfirmToggle(user)
+  }
+
+  const executeToggle = async () => {
+    if (!confirmToggle) return
+    const newStatus = confirmToggle.status === 'active' ? 'inactive' : 'active'
+    setToggling(true)
     try {
-      await toggleUserStatus(user.id, newStatus)
+      await toggleUserStatus(confirmToggle.id, newStatus)
       toast.success(`تم ${newStatus === 'active' ? 'تفعيل' : 'تعطيل'} المستخدم`)
       invalidate()
     } catch { toast.error('فشلت العملية') }
+    finally { setToggling(false); setConfirmToggle(null) }
   }
 
   const handleResetPassword = async () => {
@@ -210,36 +221,45 @@ export default function UsersPage() {
         )}
       </div>
 
-      {/* Reset Password Modal */}
-      {resetModal && (
-        <div className="modal-overlay" onClick={() => setResetModal(null)}>
-          <div className="modal-box modal-sm" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <span className="modal-title">إعادة تعيين كلمة المرور</span>
-              <button className="btn btn-ghost btn-icon" onClick={() => setResetModal(null)}>✕</button>
-            </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label className="form-label required">كلمة المرور الجديدة</label>
-                <input
-                  type="password" dir="ltr" className="form-input"
-                  placeholder="8 أحرف على الأقل"
-                  value={newPassword}
-                  onChange={e => setNewPassword(e.target.value)}
-                  autoFocus
-                />
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setResetModal(null)}>إلغاء</button>
-              <button className="btn btn-primary" onClick={handleResetPassword} disabled={resetting}>
-                {resetting ? <Loader2 size={14} className="animate-spin" /> : <KeyRound size={14} />}
-                تأكيد
-              </button>
-            </div>
+      {/* ── Reset Password — ResponsiveModal (bottom-sheet on mobile) ── */}
+      <ResponsiveModal
+        open={!!resetModal}
+        onClose={() => { setResetModal(null); setNewPassword('') }}
+        title="إعادة تعيين كلمة المرور"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <div className="form-group">
+            <label className="form-label required">كلمة المرور الجديدة</label>
+            <input
+              type="password" dir="ltr" className="form-input"
+              placeholder="8 أحرف على الأقل"
+              value={newPassword}
+              onChange={e => setNewPassword(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 4 }}>
+            <Button onClick={handleResetPassword} loading={resetting} style={{ width: '100%', justifyContent: 'center' }}>
+              <KeyRound size={14} /> تأكيد
+            </Button>
+            <Button variant="ghost" onClick={() => { setResetModal(null); setNewPassword('') }} style={{ width: '100%', justifyContent: 'center' }}>
+              إلغاء
+            </Button>
           </div>
         </div>
-      )}
+      </ResponsiveModal>
+
+      {/* ── Toggle Status Confirm ── */}
+      <ConfirmDialog
+        open={!!confirmToggle}
+        title={confirmToggle?.status === 'active' ? 'تعطيل المستخدم' : 'تفعيل المستخدم'}
+        message={`هل تريد ${confirmToggle?.status === 'active' ? 'تعطيل' : 'تفعيل'} المستخدم "${confirmToggle?.full_name}"؟`}
+        variant={confirmToggle?.status === 'active' ? 'danger' : 'info'}
+        confirmText={confirmToggle?.status === 'active' ? 'تعطيل' : 'تفعيل'}
+        loading={toggling}
+        onConfirm={executeToggle}
+        onCancel={() => setConfirmToggle(null)}
+      />
     </div>
   )
 }

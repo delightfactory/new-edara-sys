@@ -11,7 +11,7 @@ import { useVaults, useInvalidate } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
 import { formatCurrency, formatDateTime } from '@/lib/utils/format'
 import Button from '@/components/ui/Button'
-import Modal from '@/components/ui/Modal'
+import ResponsiveModal from '@/components/ui/ResponsiveModal'
 import Badge from '@/components/ui/Badge'
 import { useState } from 'react'
 
@@ -412,17 +412,10 @@ export default function PaymentReceiptDetail() {
 
       {/* ════════════════════════════════════════════════════════════ */}
       {/* ── نافذة تأكيد الإيصال ── */}
-      <Modal
+      <ResponsiveModal
         open={confirmOpen}
         onClose={() => setConfirmOpen(false)}
         title="تأكيد استلام الإيصال"
-        size="sm"
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setConfirmOpen(false)} disabled={confirming}>إلغاء</Button>
-            <Button onClick={handleConfirm} loading={confirming}>تأكيد الاستلام</Button>
-          </>
-        }
       >
         <div className="flex-col gap-3">
           <div style={{
@@ -466,24 +459,19 @@ export default function PaymentReceiptDetail() {
               )}
             </div>
           )}
+
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 8 }}>
+            <Button variant="ghost" onClick={() => setConfirmOpen(false)} disabled={confirming}>إلغاء</Button>
+            <Button onClick={handleConfirm} loading={confirming}>تأكيد الاستلام</Button>
+          </div>
         </div>
-      </Modal>
+      </ResponsiveModal>
 
       {/* ── نافذة رفض الإيصال ── */}
-      <Modal
+      <ResponsiveModal
         open={rejectOpen}
         onClose={() => setRejectOpen(false)}
         title="رفض الإيصال"
-        size="sm"
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setRejectOpen(false)} disabled={rejecting}>إلغاء</Button>
-            <Button variant="danger" onClick={handleReject} loading={rejecting}
-              icon={<XCircle size={14} />}>
-              تأكيد الرفض
-            </Button>
-          </>
-        }
       >
         <div className="flex-col gap-3">
           <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
@@ -496,8 +484,14 @@ export default function PaymentReceiptDetail() {
               onChange={e => setRejectReason(e.target.value)}
               placeholder="اذكر سبب الرفض بوضوح..." style={{ resize: 'vertical' }} />
           </div>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 4 }}>
+            <Button variant="ghost" onClick={() => setRejectOpen(false)} disabled={rejecting}>إلغاء</Button>
+            <Button variant="danger" onClick={handleReject} loading={rejecting} icon={<XCircle size={14} />}>
+              تأكيد الرفض
+            </Button>
+          </div>
         </div>
-      </Modal>
+      </ResponsiveModal>
 
     </div>
   )

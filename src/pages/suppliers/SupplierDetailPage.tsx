@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
@@ -64,7 +64,7 @@ export default function SupplierDetailPage() {
     </div>
   )
 
-  const InfoItem = ({ icon: Icon, label, value, dir }: { icon: any; label: string; value: string | number | null | undefined; dir?: string }) => (
+  const InfoItem = ({ icon: Icon, label, value, dir }: { icon: any; label: string; value?: ReactNode; dir?: string }) => (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)', padding: 'var(--space-3) 0', borderBottom: '1px solid var(--border-secondary)' }}>
       <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-md)', background: 'var(--bg-surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
         <Icon size={14} style={{ color: 'var(--color-primary)' }} />
@@ -77,27 +77,48 @@ export default function SupplierDetailPage() {
   )
 
   return (
-    <div className="page-container animate-enter">
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-info">
-          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/suppliers')} style={{ marginBottom: 'var(--space-2)' }}>
-            <ArrowRight size={14} /> العودة للموردين
+    <div style={{ maxWidth: 900, margin: '0 auto', paddingBottom: 80 }}>
+
+      {/* ══ Sticky Mobile Hero Card ══ */}
+      <div style={{
+        position: 'sticky', top: 0, zIndex: 10,
+        background: 'var(--bg-surface)',
+        borderBottom: '1px solid var(--border-primary)',
+        backdropFilter: 'blur(12px)',
+        padding: '14px 16px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button onClick={() => navigate('/suppliers')}
+            style={{ background: 'var(--bg-surface-2)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: '7px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: 'var(--text-secondary)', flexShrink: 0 }}>
+            <ArrowRight size={14} /> رجوع
           </button>
-          <h1 className="page-title">{supplier.name}</h1>
-          <p className="page-subtitle" dir="ltr" style={{ fontFamily: 'monospace' }}>{supplier.code}</p>
-        </div>
-        <div className="page-actions">
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <h1 style={{ fontSize: 17, fontWeight: 800, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {supplier.name}
+              </h1>
+              <span className={`badge ${paymentBadge[supplier.payment_terms || 'cash'] || 'badge-neutral'}`}>
+                {paymentLabels[supplier.payment_terms || 'cash'] || supplier.payment_terms}
+              </span>
+              <span className={`badge ${supplier.is_active ? 'badge-success' : 'badge-danger'}`}>
+                {supplier.is_active ? 'نشط' : 'معطل'}
+              </span>
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, fontFamily: 'monospace', direction: 'ltr', display: 'inline-block' }}>
+              {supplier.code}
+            </div>
+          </div>
           {can('suppliers.update') && (
-            <button className="btn btn-primary" onClick={() => navigate(`/suppliers/${id}/edit`)}>
-              <Edit size={16} /> تعديل
+            <button onClick={() => navigate(`/suppliers/${id}/edit`)}
+              style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 10, padding: '8px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, fontWeight: 600, flexShrink: 0 }}>
+              <Edit size={14} /> تعديل
             </button>
           )}
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+      {/* Stats Row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--space-3)', margin: '0 12px var(--space-4)' }}>
         <div className="stat-card">
           <div className="stat-card-label">طريقة الدفع</div>
           <span className={`badge ${paymentBadge[supplier.payment_terms || 'cash'] || 'badge-neutral'}`} style={{ alignSelf: 'flex-start' }}>
@@ -132,8 +153,8 @@ export default function SupplierDetailPage() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="tabs">
+      {/* Tabs — scrollable on mobile */}
+      <div className="tabs" style={{ overflowX: 'auto', scrollbarWidth: 'none', flexWrap: 'nowrap', padding: '0 12px' }}>
         <button className={`tab ${tab === 'info' ? 'active' : ''}`} onClick={() => setTab('info')}>
           <Building size={14} /> المعلومات
         </button>
@@ -149,12 +170,16 @@ export default function SupplierDetailPage() {
 
       {/* ═══════ TAB: INFO ═══════ */}
       {tab === 'info' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-4)', padding: '0 12px' }}>
           <div className="edara-card" style={{ padding: 'var(--space-5)' }}>
             <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 'var(--space-3)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
               <Phone size={16} style={{ color: 'var(--color-primary)' }} /> بيانات الاتصال
             </h3>
-            <InfoItem icon={Phone} label="الهاتف" value={supplier.phone} dir="ltr" />
+            {supplier.phone && (
+              <InfoItem icon={Phone} label="الهاتف" dir="ltr"
+                value={<a href={`tel:${supplier.phone}`} style={{ color: 'var(--color-primary)', textDecoration: 'none', fontFamily: 'monospace' }}>{supplier.phone}</a>} />
+            )}
+            {!supplier.phone && <InfoItem icon={Phone} label="الهاتف" value="—" />}
             <InfoItem icon={Mail} label="البريد" value={supplier.email} dir="ltr" />
             <InfoItem icon={FileText} label="الرقم الضريبي" value={supplier.tax_number} dir="ltr" />
             <InfoItem icon={Building} label="النوع" value={supplier.type} />
@@ -182,7 +207,7 @@ export default function SupplierDetailPage() {
 
       {/* ═══════ TAB: CONTACTS ═══════ */}
       {tab === 'contacts' && (
-        <div className="edara-card" style={{ padding: 'var(--space-5)' }}>
+        <div className="edara-card" style={{ padding: 'var(--space-5)', margin: '0 12px' }}>
           <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 700, marginBottom: 'var(--space-4)' }}>جهات الاتصال</h3>
           {contacts.length === 0 ? (
             <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 'var(--space-6)' }}>لا يوجد جهات اتصال</p>
@@ -206,7 +231,7 @@ export default function SupplierDetailPage() {
 
       {/* ═══════ TAB: REMINDERS ═══════ */}
       {tab === 'reminders' && (
-        <div className="edara-card" style={{ overflow: 'auto' }}>
+        <div className="edara-card" style={{ overflow: 'auto', margin: '0 12px' }}>
           <div style={{ padding: 'var(--space-5) var(--space-5) 0' }}>
             <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 700, marginBottom: 'var(--space-4)' }}>تذكيرات السداد</h3>
           </div>

@@ -8,6 +8,8 @@ import { getPriceLists } from '@/lib/services/price-lists'
 import { supabase } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
 import type { Customer, CustomerInput, CustomerBranch, CustomerContact, CustomerCreditHistory, Governorate, City, Area, PriceList } from '@/lib/types/master-data'
+import PermissionGuard from '@/components/shared/PermissionGuard'
+import ResponsiveModal from '@/components/ui/ResponsiveModal'
 
 export default function CustomerFormPage() {
   const { id } = useParams()
@@ -64,6 +66,9 @@ export default function CustomerFormPage() {
   const [contactForm, setContactForm] = useState({ name: '', role: '', phone: '', email: '', is_primary: false })
   const [modalSaving, setModalSaving] = useState(false)
   const [branchGpsLoading, setBranchGpsLoading] = useState(false)
+  // Delete confirm modal
+  const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'branch' | 'contact'; id: string; label: string } | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -274,10 +279,22 @@ export default function CustomerFormPage() {
     } catch { toast.error('فشلت العملية') }
     finally { setModalSaving(false) }
   }
-  const deleteBranch = async (bid: string) => {
-    if (!confirm('حذف هذا الفرع؟')) return
-    try { await deleteCustomerBranch(bid); toast.success('تم الحذف'); await refreshBranches() }
-    catch { toast.error('فشل الحذف') }
+  const deleteBranch = (bid: string, label: string) => setDeleteConfirm({ type: 'branch', id: bid, label })
+  const executeDelete = async () => {
+    if (!deleteConfirm) return
+    setDeleteLoading(true)
+    try {
+      if (deleteConfirm.type === 'branch') {
+        await deleteCustomerBranch(deleteConfirm.id)
+        toast.success('تم حذف الفرع')
+        await refreshBranches()
+      } else {
+        await deleteCustomerContact(deleteConfirm.id)
+        toast.success('تم حذف جهة الاتصال')
+        await refreshContacts()
+      }
+    } catch { toast.error('فشل الحذف') }
+    finally { setDeleteLoading(false); setDeleteConfirm(null) }
   }
 
   // Contact CRUD
@@ -294,11 +311,7 @@ export default function CustomerFormPage() {
     } catch { toast.error('فشلت العملية') }
     finally { setModalSaving(false) }
   }
-  const deleteContact = async (cid: string) => {
-    if (!confirm('حذف جهة الاتصال؟')) return
-    try { await deleteCustomerContact(cid); toast.success('تم الحذف'); await refreshContacts() }
-    catch { toast.error('فشل الحذف') }
-  }
+  const deleteContact = (cid: string, label: string) => setDeleteConfirm({ type: 'contact', id: cid, label })
 
   const typeLabels: Record<string, string> = { retail: 'تجزئة', wholesale: 'جملة', distributor: 'موزع' }
   const typeBadge: Record<string, string> = { retail: 'badge-neutral', wholesale: 'badge-info', distributor: 'badge-primary' }
@@ -399,15 +412,18 @@ export default function CustomerFormPage() {
               </div>
               <div className="form-group">
                 <label className="form-label">الهاتف</label>
-                <input className="form-input" dir="ltr" value={form.phone || ''} onChange={e => updateForm('phone', e.target.value)} placeholder="الهاتف الأرضي" />
+                <input className="form-input" type="tel" inputMode="tel" dir="ltr" enterKeyHint="next"
+                  value={form.phone || ''} onChange={e => updateForm('phone', e.target.value)} placeholder="الهاتف الأرضي" />
               </div>
               <div className="form-group">
                 <label className="form-label">الجوال</label>
-                <input className="form-input" dir="ltr" value={form.mobile || ''} onChange={e => updateForm('mobile', e.target.value)} placeholder="رقم الجوال" />
+                <input className="form-input" type="tel" inputMode="tel" dir="ltr" enterKeyHint="next"
+                  value={form.mobile || ''} onChange={e => updateForm('mobile', e.target.value)} placeholder="رقم الجوال" />
               </div>
               <div className="form-group">
                 <label className="form-label">البريد الإلكتروني</label>
-                <input type="email" className="form-input" dir="ltr" value={form.email || ''} onChange={e => updateForm('email', e.target.value)} placeholder="email@example.com" />
+                <input type="email" inputMode="email" className="form-input" dir="ltr" enterKeyHint="next"
+                  value={form.email || ''} onChange={e => updateForm('email', e.target.value)} placeholder="email@example.com" />
               </div>
               <div className="form-group">
                 <label className="form-label">الرقم الضريبي</label>
@@ -484,17 +500,23 @@ export default function CustomerFormPage() {
                   <option value="mixed">مختلط</option>
                 </select>
               </div>
-              <div className="form-group">
-                <label className="form-label">حد الائتمان</label>
-                <input type="number" className="form-input" dir="ltr" min={0} step={100} value={form.credit_limit} onChange={e => updateForm('credit_limit', +e.target.value)} />
-              </div>
+              <PermissionGuard permission="finance.credit.manage" mode="disable"
+                disabledTitle="فقط مدير المالية يمكنه تعديل حد الائتمان">
+                <div className="form-group">
+                  <label className="form-label">حد الائتمان</label>
+                  <input type="number" inputMode="decimal" enterKeyHint="next" className="form-input" dir="ltr"
+                    min={0} step={100} value={form.credit_limit} onChange={e => updateForm('credit_limit', +e.target.value)} />
+                </div>
+              </PermissionGuard>
               <div className="form-group">
                 <label className="form-label">أيام السداد</label>
-                <input type="number" className="form-input" dir="ltr" min={0} value={form.credit_days} onChange={e => updateForm('credit_days', +e.target.value)} />
+                <input type="number" inputMode="decimal" enterKeyHint="next" className="form-input" dir="ltr"
+                  min={0} value={form.credit_days} onChange={e => updateForm('credit_days', +e.target.value)} />
               </div>
               <div className="form-group">
                 <label className="form-label">الرصيد الافتتاحي</label>
-                <input type="number" className="form-input" dir="ltr" step={0.01} value={form.opening_balance} onChange={e => updateForm('opening_balance', +e.target.value)} />
+                <input type="number" inputMode="decimal" enterKeyHint="done" className="form-input" dir="ltr"
+                  step={0.01} value={form.opening_balance} onChange={e => updateForm('opening_balance', +e.target.value)} />
               </div>
             </div>
             <div className="grid grid-2 gap-4" style={{ marginTop: 'var(--space-4)' }}>
@@ -639,7 +661,7 @@ export default function CustomerFormPage() {
                   {can('customers.update') && (
                     <div className="flex gap-1" style={{ marginTop: 'var(--space-3)' }}>
                       <button className="btn btn-ghost btn-sm" onClick={() => openBranchEdit(b)}><Edit size={12} /> تعديل</button>
-                      <button className="btn btn-danger btn-sm" onClick={() => deleteBranch(b.id)}><Trash2 size={12} /></button>
+                      <button className="btn btn-danger btn-sm" onClick={() => deleteBranch(b.id, b.name)}><Trash2 size={12} /></button>
                     </div>
                   )}
                 </div>
@@ -681,7 +703,7 @@ export default function CustomerFormPage() {
                   {can('customers.update') && (
                     <div className="flex gap-1" style={{ marginTop: 'var(--space-3)' }}>
                       <button className="btn btn-ghost btn-sm" onClick={() => openContactEdit(c)}><Edit size={12} /> تعديل</button>
-                      <button className="btn btn-danger btn-sm" onClick={() => deleteContact(c.id)}><Trash2 size={12} /></button>
+                      <button className="btn btn-danger btn-sm" onClick={() => deleteContact(c.id, c.name)}><Trash2 size={12} /></button>
                     </div>
                   )}
                 </div>
@@ -742,118 +764,136 @@ export default function CustomerFormPage() {
         </div>
       )}
 
-      {/* ═══════ MODAL: Branch ═══════ */}
-      {branchModal.open && (
-        <div className="modal-overlay" onClick={() => setBranchModal({ open: false })}>
-          <div className="modal-box modal-md" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <span className="modal-title">{branchModal.editing ? 'تعديل فرع' : 'إضافة فرع'}</span>
-              <button className="btn btn-ghost btn-icon" onClick={() => setBranchModal({ open: false })}>✕</button>
+      {/* ═══════ MODAL: Branch (Responsive) ═══════ */}
+      <ResponsiveModal
+        open={branchModal.open}
+        onClose={() => setBranchModal({ open: false })}
+        title={branchModal.editing ? 'تعديل فرع' : 'إضافة فرع'}
+        disableOverlayClose={modalSaving}
+        footer={
+          <>
+            <button className="btn btn-secondary" onClick={() => setBranchModal({ open: false })}>إلغاء</button>
+            <button className="btn btn-primary" onClick={saveBranch} disabled={modalSaving}>
+              {modalSaving && <Loader2 size={14} className="animate-spin" />} {branchModal.editing ? 'تحديث' : 'إضافة'}
+            </button>
+          </>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <div className="grid grid-2 gap-4">
+            <div className="form-group">
+              <label className="form-label required">اسم الفرع</label>
+              <input className="form-input" value={branchForm.name} onChange={e => setBranchForm(f => ({ ...f, name: e.target.value }))} autoFocus />
             </div>
-            <div className="modal-body">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                <div className="grid grid-2 gap-4">
-                  <div className="form-group">
-                    <label className="form-label required">اسم الفرع</label>
-                    <input className="form-input" value={branchForm.name} onChange={e => setBranchForm(f => ({ ...f, name: e.target.value }))} autoFocus />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">جهة الاتصال</label>
-                    <input className="form-input" value={branchForm.contact_name} onChange={e => setBranchForm(f => ({ ...f, contact_name: e.target.value }))} />
-                  </div>
-                </div>
-                <div className="grid grid-2 gap-4">
-                  <div className="form-group">
-                    <label className="form-label">العنوان</label>
-                    <input className="form-input" value={branchForm.address} onChange={e => setBranchForm(f => ({ ...f, address: e.target.value }))} />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">الهاتف</label>
-                    <input className="form-input" dir="ltr" value={branchForm.phone} onChange={e => setBranchForm(f => ({ ...f, phone: e.target.value }))} />
-                  </div>
-                </div>
-                <div className="grid grid-2 gap-4">
-                  <div className="form-group">
-                    <label className="form-label">خط العرض (Latitude)</label>
-                    <input type="number" step="any" className="form-input" dir="ltr" value={branchForm.latitude} onChange={e => setBranchForm(f => ({ ...f, latitude: e.target.value }))} placeholder="30.0444" />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">خط الطول (Longitude)</label>
-                    <input type="number" step="any" className="form-input" dir="ltr" value={branchForm.longitude} onChange={e => setBranchForm(f => ({ ...f, longitude: e.target.value }))} placeholder="31.2357" />
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                  <button type="button" className="btn btn-sm btn-primary" onClick={captureBranchGPS} disabled={branchGpsLoading}>
-                    {branchGpsLoading ? <Loader2 size={14} className="animate-spin" /> : <Navigation size={14} />}
-                    {branchGpsLoading ? 'جاري السحب...' : 'سحب الموقع الحالي'}
-                  </button>
-                  {branchForm.latitude && branchForm.longitude && (
-                    <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }} dir="ltr">
-                      📍 {Number(branchForm.latitude).toFixed(5)}, {Number(branchForm.longitude).toFixed(5)}
-                    </span>
-                  )}
-                </div>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={branchForm.is_primary} onChange={e => setBranchForm(f => ({ ...f, is_primary: e.target.checked }))} />
-                  فرع أساسي
-                </label>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setBranchModal({ open: false })}>إلغاء</button>
-              <button className="btn btn-primary" onClick={saveBranch} disabled={modalSaving}>
-                {modalSaving && <Loader2 size={14} className="animate-spin" />} {branchModal.editing ? 'تحديث' : 'إضافة'}
-              </button>
+            <div className="form-group">
+              <label className="form-label">جهة الاتصال</label>
+              <input className="form-input" value={branchForm.contact_name} onChange={e => setBranchForm(f => ({ ...f, contact_name: e.target.value }))} />
             </div>
           </div>
+          <div className="grid grid-2 gap-4">
+            <div className="form-group">
+              <label className="form-label">العنوان</label>
+              <input className="form-input" value={branchForm.address} onChange={e => setBranchForm(f => ({ ...f, address: e.target.value }))} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">الهاتف</label>
+              <input className="form-input" type="tel" inputMode="tel" dir="ltr" value={branchForm.phone} onChange={e => setBranchForm(f => ({ ...f, phone: e.target.value }))} />
+            </div>
+          </div>
+          <div className="grid grid-2 gap-4">
+            <div className="form-group">
+              <label className="form-label">خط العرض (Latitude)</label>
+              <input type="number" inputMode="decimal" step="any" className="form-input" dir="ltr" value={branchForm.latitude} onChange={e => setBranchForm(f => ({ ...f, latitude: e.target.value }))} placeholder="30.0444" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">خط الطول (Longitude)</label>
+              <input type="number" inputMode="decimal" step="any" className="form-input" dir="ltr" value={branchForm.longitude} onChange={e => setBranchForm(f => ({ ...f, longitude: e.target.value }))} placeholder="31.2357" />
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+            <button type="button" className="btn btn-sm btn-primary" onClick={captureBranchGPS} disabled={branchGpsLoading}>
+              {branchGpsLoading ? <Loader2 size={14} className="animate-spin" /> : <Navigation size={14} />}
+              {branchGpsLoading ? 'جاري السحب...' : 'سحب الموقع الحالي'}
+            </button>
+            {branchForm.latitude && branchForm.longitude && (
+              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }} dir="ltr">
+                📍 {Number(branchForm.latitude).toFixed(5)}, {Number(branchForm.longitude).toFixed(5)}
+              </span>
+            )}
+          </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer' }}>
+            <input type="checkbox" checked={branchForm.is_primary} onChange={e => setBranchForm(f => ({ ...f, is_primary: e.target.checked }))} />
+            فرع أساسي
+          </label>
         </div>
-      )}
+      </ResponsiveModal>
 
-      {/* ═══════ MODAL: Contact ═══════ */}
-      {contactModal.open && (
-        <div className="modal-overlay" onClick={() => setContactModal({ open: false })}>
-          <div className="modal-box modal-md" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <span className="modal-title">{contactModal.editing ? 'تعديل جهة اتصال' : 'إضافة جهة اتصال'}</span>
-              <button className="btn btn-ghost btn-icon" onClick={() => setContactModal({ open: false })}>✕</button>
+      {/* ═══════ MODAL: Contact (Responsive) ═══════ */}
+      <ResponsiveModal
+        open={contactModal.open}
+        onClose={() => setContactModal({ open: false })}
+        title={contactModal.editing ? 'تعديل جهة اتصال' : 'إضافة جهة اتصال'}
+        disableOverlayClose={modalSaving}
+        footer={
+          <>
+            <button className="btn btn-secondary" onClick={() => setContactModal({ open: false })}>إلغاء</button>
+            <button className="btn btn-primary" onClick={saveContact} disabled={modalSaving}>
+              {modalSaving && <Loader2 size={14} className="animate-spin" />} {contactModal.editing ? 'تحديث' : 'إضافة'}
+            </button>
+          </>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <div className="grid grid-2 gap-4">
+            <div className="form-group">
+              <label className="form-label required">الاسم</label>
+              <input className="form-input" value={contactForm.name} onChange={e => setContactForm(f => ({ ...f, name: e.target.value }))} autoFocus />
             </div>
-            <div className="modal-body">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                <div className="grid grid-2 gap-4">
-                  <div className="form-group">
-                    <label className="form-label required">الاسم</label>
-                    <input className="form-input" value={contactForm.name} onChange={e => setContactForm(f => ({ ...f, name: e.target.value }))} autoFocus />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">الوظيفة</label>
-                    <input className="form-input" value={contactForm.role} onChange={e => setContactForm(f => ({ ...f, role: e.target.value }))} placeholder="مثال: مدير المشتريات" />
-                  </div>
-                </div>
-                <div className="grid grid-2 gap-4">
-                  <div className="form-group">
-                    <label className="form-label">الهاتف</label>
-                    <input className="form-input" dir="ltr" value={contactForm.phone} onChange={e => setContactForm(f => ({ ...f, phone: e.target.value }))} />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">البريد</label>
-                    <input className="form-input" dir="ltr" value={contactForm.email} onChange={e => setContactForm(f => ({ ...f, email: e.target.value }))} />
-                  </div>
-                </div>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={contactForm.is_primary} onChange={e => setContactForm(f => ({ ...f, is_primary: e.target.checked }))} />
-                  جهة اتصال أساسية
-                </label>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setContactModal({ open: false })}>إلغاء</button>
-              <button className="btn btn-primary" onClick={saveContact} disabled={modalSaving}>
-                {modalSaving && <Loader2 size={14} className="animate-spin" />} {contactModal.editing ? 'تحديث' : 'إضافة'}
-              </button>
+            <div className="form-group">
+              <label className="form-label">الوظيفة</label>
+              <input className="form-input" value={contactForm.role} onChange={e => setContactForm(f => ({ ...f, role: e.target.value }))} placeholder="مثال: مدير المشتريات" />
             </div>
           </div>
+          <div className="grid grid-2 gap-4">
+            <div className="form-group">
+              <label className="form-label">الهاتف</label>
+              <input className="form-input" type="tel" inputMode="tel" dir="ltr" value={contactForm.phone} onChange={e => setContactForm(f => ({ ...f, phone: e.target.value }))} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">البريد</label>
+              <input className="form-input" type="email" inputMode="email" dir="ltr" value={contactForm.email} onChange={e => setContactForm(f => ({ ...f, email: e.target.value }))} />
+            </div>
+          </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer' }}>
+            <input type="checkbox" checked={contactForm.is_primary} onChange={e => setContactForm(f => ({ ...f, is_primary: e.target.checked }))} />
+            جهة اتصال أساسية
+          </label>
         </div>
-      )}
+      </ResponsiveModal>
+
+      {/* ═══════ MODAL: Delete Confirm (Responsive) ═══════ */}
+      <ResponsiveModal
+        open={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        title="تأكيد الحذف"
+        disableOverlayClose={deleteLoading}
+        size="sm"
+        footer={
+          <>
+            <button className="btn btn-secondary" onClick={() => setDeleteConfirm(null)} disabled={deleteLoading}>إلغاء</button>
+            <button className="btn btn-danger" onClick={executeDelete} disabled={deleteLoading}>
+              {deleteLoading && <Loader2 size={14} className="animate-spin" />} حذف
+            </button>
+          </>
+        }
+      >
+        <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', lineHeight: 1.7 }}>
+          هل تريد حذف{' '}
+          <strong style={{ color: 'var(--text-primary)' }}>"{deleteConfirm?.label}"</strong>؟
+          <br />
+          <span style={{ color: 'var(--color-danger)', fontSize: 'var(--text-xs)' }}>هذا الإجراء لا يمكن التراجع عنه.</span>
+        </p>
+      </ResponsiveModal>
     </div>
   )
 }

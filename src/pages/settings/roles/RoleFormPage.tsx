@@ -267,24 +267,25 @@ export default function RoleFormPage() {
 
                   {/* Group Permissions */}
                   {isExpanded && (
-                    <div style={{
-                      padding: '0 var(--space-4) var(--space-4)',
-                      display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-                      gap: 'var(--space-2)',
-                    }}>
+                    <div
+                      className="perm-grid"
+                      style={{
+                        padding: '0 var(--space-4) var(--space-4)',
+                        '--perm-active-color': color,
+                      } as React.CSSProperties}
+                    >
                       {group.permissions.map(perm => {
                         const isSelected = selectedPerms.has(perm.key)
                         return (
-                          <label key={perm.key} className="flex items-center gap-2" style={{
-                            cursor: 'pointer', fontSize: 'var(--text-xs)',
-                            padding: 'var(--space-2) var(--space-3)',
-                            borderRadius: 'var(--radius-sm)',
-                            border: `1px solid ${isSelected ? `${color}30` : 'transparent'}`,
-                            background: isSelected ? `${color}08` : 'var(--bg-surface-2)',
-                            transition: 'all 0.15s ease',
-                            fontWeight: isSelected ? 600 : 400,
-                            color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)',
-                          }}>
+                          <label key={perm.key}
+                            className="perm-checkbox-label"
+                            style={{
+                              border: `1px solid ${isSelected ? `${color}30` : 'transparent'}`,
+                              background: isSelected ? `${color}08` : 'var(--bg-surface-2)',
+                              fontWeight: isSelected ? 600 : 400,
+                              color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)',
+                            }}
+                          >
                             <input type="checkbox" checked={isSelected} onChange={() => togglePerm(perm.key)}
                               style={{ accentColor: color }} />
                             <span>{perm.label}</span>
@@ -321,8 +322,79 @@ export default function RoleFormPage() {
       </form>
 
       <style>{`
+        /* ── Permission Group Layout ─────────────────────── */
+
+        /* Desktop: current grid approach (unchanged) */
+        .perm-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+          gap: var(--space-2);
+        }
+        .perm-checkbox-label {
+          display: flex; align-items: center; gap: 8px;
+          cursor: pointer; font-size: var(--text-xs);
+          padding: var(--space-2) var(--space-3);
+          border-radius: var(--radius-sm);
+          transition: all 0.15s ease;
+        }
+
+        /* Mobile: Switch to native-feel toggle list */
         @media (max-width: 768px) {
           .form-group .grid-2 { grid-template-columns: 1fr; }
+
+          /* Override grid → vertical list */
+          .perm-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+          }
+
+          .perm-checkbox-label {
+            justify-content: space-between;
+            flex-direction: row-reverse;
+            padding: 11px var(--space-4);
+            border-radius: 0;
+            border-bottom: 1px solid var(--border-primary);
+            font-size: var(--text-sm);
+            font-weight: 500;
+          }
+          .perm-checkbox-label:last-child {
+            border-bottom: none;
+          }
+
+          /* Hide the checkbox, show a toggle switch */
+          .perm-checkbox-label input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 42px;
+            height: 24px;
+            border-radius: 12px;
+            background: var(--bg-surface-2);
+            border: 1.5px solid var(--border-primary);
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+            transition: background 0.2s ease, border-color 0.2s ease;
+          }
+          .perm-checkbox-label input[type="checkbox"]::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+          }
+          .perm-checkbox-label input[type="checkbox"]:checked {
+            background: var(--perm-active-color, var(--color-primary));
+            border-color: transparent;
+          }
+          .perm-checkbox-label input[type="checkbox"]:checked::after {
+            transform: translateX(-18px);
+          }
         }
       `}</style>
     </div>

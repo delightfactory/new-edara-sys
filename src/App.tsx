@@ -8,6 +8,7 @@ import { ProtectedRoute } from '@/components/layout/ProtectedRoute'
 import ErrorBoundary from '@/components/shared/ErrorBoundary'
 import GlobalRealtimeManager from '@/components/shared/GlobalRealtimeManager'
 import AppLayout from '@/components/layout/AppLayout'
+import PWAUpdateBanner from '@/components/pwa/PWAUpdateBanner'
 
 // Auth Pages
 import LoginPage from '@/pages/auth/LoginPage'
@@ -299,6 +300,9 @@ export default function App() {
               } />
           </Routes>
           </ErrorBoundary>
+
+          {/* PWA: update available / offline ready banner */}
+          <PWAUpdateBanner />
 
           <Toaster
             position="top-center"

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { toast } from 'sonner'
 import {
   Receipt, Plus, Check, XCircle, Upload, Search,
@@ -19,9 +19,11 @@ import DataTable from '@/components/shared/DataTable'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
+import ResponsiveModal from '@/components/ui/ResponsiveModal'
 import AsyncCombobox from '@/components/ui/AsyncCombobox'
 import type { ComboboxOption } from '@/components/ui/AsyncCombobox'
 import { Link, useNavigate } from 'react-router-dom'
+import { useIsAnyModalOpen } from '@/hooks/useModalStack'
 
 // ════════════════════════════════════════════════════════════
 // Types & Constants
@@ -162,6 +164,20 @@ export default function PaymentsPage() {
   const profile  = useAuthStore(s => s.profile)
   const navigate = useNavigate()
   const invalidate = useInvalidate()
+  const isAnyModalOpen = useIsAnyModalOpen()
+
+  // Scroll-direction FAB hide
+  const [scrollHidden, setScrollHidden] = useState(false)
+  const lastScrollFabY = useRef(0)
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY
+      setScrollHidden(y > lastScrollFabY.current && y > 100)
+      lastScrollFabY.current = y
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   // ── Filters & Pagination ──
   const [page, setPage]                     = useState(1)
@@ -457,8 +473,8 @@ export default function PaymentsPage() {
         </div>
       </div>
 
-      {/* ── الجدول ── */}
-      <div className="edara-card" style={{ overflow: 'hidden' }}>
+      {/* ── DESKTOP: DataTable ─────────────────────────── */}
+      <div className="pay-table-view edara-card" style={{ overflow: 'hidden' }}>
         <DataTable<PaymentReceipt>
           onRowClick={r => navigate(`/finance/payments/${r.id}`)}
           columns={[
@@ -607,24 +623,80 @@ export default function PaymentsPage() {
         />
       </div>
 
-      {/* ════════════════════════════════════════════════════════════ */}
-      {/* ── نافذة إنشاء إيصال جديد ── */}
-      {/* ════════════════════════════════════════════════════════════ */}
-      <Modal
+      {/* ── MOBILE: Payment Receipt Cards ───────────────────── */}
+      <div className="pay-card-view">
+        {loading ? (
+          <div className="mobile-card-list">
+            {[1,2,3].map(i => <div key={i} className="edara-card" style={{ height: 100 }}><div className="skeleton" style={{ height: '100%' }} /></div>)}
+          </div>
+        ) : receipts.length === 0 ? (
+          <div className="edara-card" style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <Receipt size={40} style={{ margin: '0 auto 12px', display: 'block', opacity: 0.3 }} />
+            <p>لا توجد إيصالات</p>
+          </div>
+        ) : (
+          <div className="mobile-card-list">
+            {receipts.map((r: PaymentReceipt) => {
+              const sc = STATUS_CONFIG[r.status]
+              return (
+                <div key={r.id} className="edara-card pay-mobile-card"
+                  onClick={() => navigate(`/finance/payments/${r.id}`)}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                    <div>
+                      <div style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--color-primary)' }} dir="ltr">{r.number}</div>
+                      <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, marginTop: 2 }}>{r.customer?.name || '—'}</div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                      {sc && <Badge variant={sc.variant}>{sc.label}</Badge>}
+                      <span style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--color-success)', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(r.amount)}</span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: r.status === 'pending' && can('finance.payments.confirm') ? 10 : 0 }}>
+                    <span>{getMethodIcon(r.payment_method)} {getMethodLabel(r.payment_method)}</span>
+                    <span style={{ marginRight: 'auto' }}>{formatDateTime(r.created_at).split(' ')[0]}</span>
+                  </div>
+                  {r.status === 'pending' && can('finance.payments.confirm') && (
+                    <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
+                      <Button variant="success" size="sm" icon={<Check size={12} />} onClick={() => openConfirm(r)}>تأكيد</Button>
+                      <Button variant="danger" size="sm" icon={<XCircle size={12} />} onClick={() => { setRejectReceipt(r); setRejectReason('') }}>رفض</Button>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+        <div className="mobile-pagination">
+          <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>السابق</Button>
+          <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>{page} / {Math.max(1, totalPages)}</span>
+          <Button variant="ghost" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>التالي</Button>
+        </div>
+      </div>
+
+      {/* Smart local FAB for Payments */}
+      {can('finance.payments.create') && (
+        <button
+          className={`pay-fab${isAnyModalOpen || scrollHidden ? ' pay-fab--hidden' : ''}`}
+          onClick={openCreate}
+          aria-label="إيصال جديد"
+          aria-hidden={isAnyModalOpen || scrollHidden}
+        >
+          <Plus size={22} />
+          <span style={{ fontSize: 'var(--text-sm)', fontWeight: 700 }}>إيصال +</span>
+        </button>
+      )}
+
+      {/* Create Receipt → ResponsiveModal */}
+      <ResponsiveModal
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         title="إيصال دفع جديد"
-        size="md"
         disableOverlayClose
         footer={
-          <>
-            <Button variant="ghost" onClick={() => setCreateOpen(false)} disabled={saving}>
-              إلغاء
-            </Button>
-            <Button onClick={handleCreate} loading={saving}>
-              حفظ الإيصال
-            </Button>
-          </>
+          <div style={{ display: 'flex', gap: 'var(--space-3)', width: '100%', justifyContent: 'flex-end' }}>
+            <Button variant="ghost" onClick={() => setCreateOpen(false)} disabled={saving}>إلغاء</Button>
+            <Button onClick={handleCreate} loading={saving}>حفظ الإيصال</Button>
+          </div>
         }
       >
         <div className="flex-col gap-4">
@@ -847,25 +919,18 @@ export default function PaymentsPage() {
             />
           </div>
         </div>
-      </Modal>
+      </ResponsiveModal>
 
-      {/* ════════════════════════════════════════════════════════════ */}
-      {/* ── نافذة تأكيد الإيصال ── */}
-      {/* ════════════════════════════════════════════════════════════ */}
-      <Modal
+      {/* Confirm Receipt → ResponsiveModal */}
+      <ResponsiveModal
         open={!!confirmReceipt}
         onClose={() => setConfirmReceipt(null)}
         title="تأكيد استلام الإيصال"
-        size="sm"
         footer={
-          <>
-            <Button variant="ghost" onClick={() => setConfirmReceipt(null)} disabled={confirming}>
-              إلغاء
-            </Button>
-            <Button onClick={handleConfirm} loading={confirming}>
-              تأكيد الاستلام
-            </Button>
-          </>
+          <div style={{ display: 'flex', gap: 'var(--space-3)', width: '100%', justifyContent: 'flex-end' }}>
+            <Button variant="ghost" onClick={() => setConfirmReceipt(null)} disabled={confirming}>إلغاء</Button>
+            <Button onClick={handleConfirm} loading={confirming}>تأكيد الاستلام</Button>
+          </div>
         }
       >
         {confirmReceipt && (
@@ -1026,61 +1091,73 @@ export default function PaymentsPage() {
             )}
           </div>
         )}
-      </Modal>
+      </ResponsiveModal>
 
-      {/* ════════════════════════════════════════════════════════════ */}
-      {/* ── نافذة رفض الإيصال ── */}
-      {/* ════════════════════════════════════════════════════════════ */}
-      <Modal
+      {/* Reject Receipt → ResponsiveModal */}
+      <ResponsiveModal
         open={!!rejectReceipt}
         onClose={() => setRejectReceipt(null)}
         title="رفض الإيصال"
-        size="sm"
         footer={
-          <>
-            <Button variant="ghost" onClick={() => setRejectReceipt(null)} disabled={rejecting}>
-              إلغاء
-            </Button>
-            <Button variant="danger" onClick={handleReject} loading={rejecting}
-              icon={<XCircle size={15} />}>
-              تأكيد الرفض
-            </Button>
-          </>
+          <div style={{ display: 'flex', gap: 'var(--space-3)', width: '100%', justifyContent: 'flex-end' }}>
+            <Button variant="ghost" onClick={() => setRejectReceipt(null)} disabled={rejecting}>إلغاء</Button>
+            <Button variant="danger" onClick={handleReject} loading={rejecting} icon={<XCircle size={15} />}>تأكيد الرفض</Button>
+          </div>
         }
       >
         {rejectReceipt && (
-          <div className="flex-col gap-3">
-            {/* معلومات الإيصال المراد رفضه */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
             <InfoCard rows={[
               { label: 'العميل', value: rejectReceipt.customer?.name || '—' },
-              {
-                label: 'المبلغ',
-                value: (
-                  <span style={{ color: 'var(--color-danger)' }}>
-                    {formatCurrency(rejectReceipt.amount)}
-                  </span>
-                ),
-              },
-              {
-                label: 'الطريقة',
-                value: `${getMethodIcon(rejectReceipt.payment_method)} ${getMethodLabel(rejectReceipt.payment_method)}`,
-              },
+              { label: 'المبلغ', value: <span style={{ color: 'var(--color-danger)' }}>{formatCurrency(rejectReceipt.amount)}</span> },
+              { label: 'الطريقة', value: `${getMethodIcon(rejectReceipt.payment_method)} ${getMethodLabel(rejectReceipt.payment_method)}` },
             ]} />
-
             <div className="form-group" style={{ margin: 0 }}>
               <label className="form-label required">سبب الرفض</label>
-              <textarea
-                className="form-textarea"
-                rows={3}
-                value={rejectReason}
+              <textarea className="form-textarea" rows={3} value={rejectReason}
                 onChange={e => setRejectReason(e.target.value)}
-                placeholder="اذكر سبب رفض هذا الإيصال بوضوح..."
-                style={{ resize: 'vertical' }}
-              />
+                placeholder="اذكر سبب رفض هذا الإيصال بوضوح..." style={{ resize: 'vertical' }} />
             </div>
           </div>
         )}
-      </Modal>
+      </ResponsiveModal>
+
+      <style>{`
+        .pay-table-view { display: block; }
+        .pay-card-view  { display: none; }
+        .pay-mobile-card { padding: var(--space-4); cursor: pointer; transition: background 0.12s; }
+        .pay-mobile-card:hover { background: var(--bg-hover); }
+        .mobile-card-list { display: flex; flex-direction: column; gap: var(--space-3); }
+        .mobile-pagination { display: flex; align-items: center; justify-content: center; gap: var(--space-4); padding: var(--space-4) 0; }
+        .flex-col { display: flex; flex-direction: column; }
+        .gap-4 { gap: var(--space-4); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+        .form-textarea { width: 100%; padding: var(--space-3) var(--space-4); resize: vertical; min-height: 80px; }
+        @media (max-width: 768px) {
+          .desktop-only-btn { display: none !important; }
+          .pay-table-view { display: none; }
+          .pay-card-view  { display: block; }
+          .form-row { grid-template-columns: 1fr; }
+          .pay-fab {
+            display: flex; align-items: center; gap: var(--space-2);
+            position: fixed;
+            bottom: calc(var(--bottom-nav-height, 64px) + var(--space-4));
+            inset-inline-end: var(--space-4);
+            z-index: var(--z-fab, 300);
+            height: var(--fab-size, 48px);
+            padding: 0 var(--space-4);
+            border-radius: var(--radius-full);
+            background: var(--color-primary); color: white;
+            border: none; cursor: pointer;
+            font-family: var(--font-sans);
+            box-shadow: var(--shadow-lg);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            -webkit-tap-highlight-color: transparent;
+          }
+          .pay-fab--hidden { opacity: 0; transform: translateY(16px) scale(0.92); pointer-events: none; }
+          .pay-fab:active { transform: scale(0.95); }
+        }
+      `}</style>
 
     </div>
   )

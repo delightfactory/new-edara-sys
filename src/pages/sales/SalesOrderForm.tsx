@@ -1,11 +1,11 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   ArrowRight, Plus, Trash2, Save, ChevronDown, X,
   User, MapPin, Package, Truck, AlertTriangle, Search,
-  Calculator,
+  Calculator, CheckCircle, ChevronLeft,
 } from 'lucide-react'
 import {
   useWarehouses, useShippingCompanies, useProfiles, useSalesSettings,
@@ -24,6 +24,16 @@ import type {
 } from '@/lib/types/master-data'
 import PageHeader from '@/components/shared/PageHeader'
 import Button from '@/components/ui/Button'
+import ResponsiveModal from '@/components/ui/ResponsiveModal'
+import PermissionGuard from '@/components/shared/PermissionGuard'
+
+// ── Step definitions ──────────────────────────────────────────────
+const STEPS = [
+  { label: 'بيانات الطلب',  icon: <User size={14} /> },
+  { label: 'المنتجات',      icon: <Package size={14} /> },
+  { label: 'التوصيل',       icon: <Truck size={14} /> },
+  { label: 'المراجعة',      icon: <CheckCircle size={14} /> },
+]
 
 // ─────────────────────────────────────────────
 // Types
@@ -226,6 +236,52 @@ export default function SalesOrderForm() {
 
   const [saving, setSaving] = useState(false)
   const [formLoading, setFormLoading] = useState(isEdit)
+
+  // ── Stepper state ──────────────────────────────────────────────
+  const [step, setStep] = useState(0)
+
+  // ── Mobile item-add sheet ──────────────────────────────────────
+  const [itemSheet, setItemSheet] = useState(false)
+  const [sheetQuery, setSheetQuery] = useState('')
+  const [sheetResults, setSheetResults] = useState<any[]>([])
+  const [sheetLine, setSheetLine] = useState<LineItem | null>(null) // staging
+
+  const searchSheetProducts = useCallback(async (q: string) => {
+    if (q.length < 2) { setSheetResults([]); return }
+    const { data, error } = await supabase.rpc('search_products_with_stock', { p_query: q, p_limit: 10 })
+    if (!error) setSheetResults(data || [])
+  }, [])
+
+  const selectSheetProduct = (p: any) => {
+    const taxRate = settings?.taxEnabled ? (p.tax_rate ?? settings?.defaultTaxRate ?? 0) : 0
+    const allUnits: ProductUnit[] = []
+    if (p.base_unit) allUnits.push({ id: '__base__', product_id: p.id, unit_id: p.base_unit_id, conversion_factor: 1, selling_price: p.selling_price, is_purchase_unit: true, is_sales_unit: true, created_at: '', unit: p.base_unit })
+    for (const pu of (p.product_units || [])) { if (pu.unit_id !== p.base_unit_id) allUnits.push(pu) }
+    const def = allUnits[0]
+    setSheetLine(calcLine({
+      ...newLine(),
+      product_id: p.id, productName: p.name, productSku: p.sku,
+      unit_id: def?.unit_id || p.base_unit_id,
+      unitLabel: def?.unit?.symbol || def?.unit?.name || '',
+      available_units: allUnits,
+      base_unit_id: p.base_unit_id,
+      base_unit_label: p.base_unit?.symbol || p.base_unit?.name || '',
+      conversion_factor: def?.conversion_factor || 1,
+      unit_price: def?.selling_price ?? p.selling_price ?? 0,
+      tax_rate: taxRate,
+      availableQty: typeof p.available_qty === 'number' ? p.available_qty : Infinity,
+    }))
+    setSheetQuery('')
+    setSheetResults([])
+  }
+
+  const confirmSheetLine = () => {
+    if (!sheetLine || !sheetLine.product_id) return
+    setLines(p => [...p.filter(l => l.product_id), calcLine(sheetLine)])
+    setSheetLine(null)
+    setSheetQuery('')
+    setItemSheet(false)
+  }
 
   // Customer
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
@@ -572,6 +628,17 @@ export default function SalesOrderForm() {
     }
   }
 
+  // ── Step validation ────────────────────────────────────────────
+  const canProceedStep0 = !!form.customer_id
+  const canProceedStep1 = validLines.length > 0
+  const canProceedStep2 = true // delivery is optional
+
+  const goNext = () => {
+    if (step === 0 && !canProceedStep0) { toast.error('يرجى اختيار العميل أولاً'); return }
+    if (step === 1 && !canProceedStep1) { toast.error('يرجى إضافة منتج واحد على الأقل'); return }
+    setStep(s => Math.min(s + 1, STEPS.length - 1))
+  }
+
   if (formLoading) return (
     <div className="page-container animate-enter">
       <div className="edara-card" style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>
@@ -595,8 +662,37 @@ export default function SalesOrderForm() {
         }
       />
 
-      {/* ══════ Section 1: Customer & Header ══════ */}
-      <section style={sCard}>
+      {/* ══════ STEPPER BAR ══════ */}
+      <div className="stepper-bar edara-card" style={{ padding: 'var(--space-3) var(--space-4)', marginBottom: 'var(--space-4)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+          {STEPS.map((s, i) => (
+            <React.Fragment key={i}>
+              <button
+                onClick={() => { if (i < step || (i === 0) || (i === 1 && canProceedStep0) || (i === 2 && canProceedStep0 && canProceedStep1)) setStep(i) }}
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                  padding: '6px 12px', borderRadius: 'var(--radius-md)',
+                  border: 'none', cursor: 'pointer',
+                  background: i === step ? 'var(--color-primary)' : i < step ? 'var(--bg-accent)' : 'transparent',
+                  color: i === step ? '#fff' : i < step ? 'var(--color-primary)' : 'var(--text-muted)',
+                  transition: 'all 0.2s', flex: 1, minWidth: 0,
+                }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontWeight: i === step ? 700 : 500, fontSize: 'var(--text-xs)', whiteSpace: 'nowrap' }}>
+                  {i < step ? <CheckCircle size={13} /> : s.icon}
+                  <span className="stepper-label">{s.label}</span>
+                </span>
+              </button>
+              {i < STEPS.length - 1 && (
+                <div style={{ flex: '0 0 20px', height: 2, background: i < step ? 'var(--color-primary)' : 'var(--border-color)', transition: 'background 0.3s' }} />
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+
+      {/* ══════ STEP 0: Customer & Header ══════ */}
+      {step === 0 && <section style={sCard}>
         <SectionHead icon={<User size={16} />} title="بيانات الطلب" />
 
         <div style={grid2}>
@@ -692,13 +788,12 @@ export default function SalesOrderForm() {
             </div>
           )}
         </div>
-      </section>
+      </section>}
 
-      {/* ══════ Section 2: Delivery ══════ */}
-      <section style={sCard}>
+      {/* ══════ STEP 2 (Delivery) moved below items ══════ */}
+      {step === 2 && <section style={sCard}>
         <SectionHead icon={<Truck size={16} />} title="طريقة التوصيل" />
 
-        {/* Toggle buttons: direct / shipping / pickup */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
           {([
             { v: 'direct', label: 'توصيل مباشر' },
@@ -734,7 +829,7 @@ export default function SalesOrderForm() {
             </div>
             <div>
               <FieldLabel>تكلفة الشحن (ج.م)</FieldLabel>
-              <input className="form-input" type="number" min={0} step="0.01"
+              <input className="form-input" type="number" inputMode="decimal" min={0} step="0.01"
                 value={form.shipping_cost || 0}
                 onChange={e => setForm(f => ({ ...f, shipping_cost: Number(e.target.value) }))} />
             </div>
@@ -748,10 +843,10 @@ export default function SalesOrderForm() {
             </div>
           </div>
         )}
-      </section>
+      </section>}
 
-      {/* ══════ Section 3: Items ══════ */}
-      <section style={{ ...sCard, padding: 0, overflow: 'hidden' }}>
+      {/* ══════ STEP 1: Items ══════ */}
+      {step === 1 && <section style={{ ...sCard, padding: 0, overflow: 'hidden' }}>
         {/* Header */}
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -762,8 +857,16 @@ export default function SalesOrderForm() {
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
               {validLines.length} منتج
             </span>
-            <Button variant="ghost" size="sm" icon={<Plus size={14} />} onClick={addLine}>
+            {/* Desktop: add inline row */}
+            <Button variant="ghost" size="sm" icon={<Plus size={14} />} onClick={addLine}
+              className="desktop-only-btn">
               إضافة بند
+            </Button>
+            {/* Mobile: open bottom sheet */}
+            <Button variant="primary" size="sm" icon={<Plus size={14} />}
+              onClick={() => { setSheetLine(null); setSheetQuery(''); setSheetResults([]); setItemSheet(true) }}
+              className="mobile-only-btn">
+              إضافة منتج
             </Button>
           </div>
         </div>
@@ -1032,61 +1135,214 @@ export default function SalesOrderForm() {
             <Plus size={16} /> إضافة بند آخر
           </button>
         </div>
-      </section>
+      </section>}
 
-      {/* ══════ Section 4: Notes ══════ */}
-      <section style={sCard}>
+      {/* ══════ STEP 2: Notes (inside delivery step) ══════ */}
+      {step === 2 && <section style={sCard}>
         <FieldLabel>ملاحظات</FieldLabel>
         <textarea className="form-input" rows={2} value={form.notes || ''}
           onChange={e => setForm(f => ({ ...f, notes: e.target.value || null }))}
           placeholder="ملاحظات إضافية على الطلب..." />
-      </section>
+      </section>}
 
-      {/* ══════ Section 5: Totals & Actions ══════ */}
-      <section style={sCard}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 24 }}>
-          {/* Totals */}
-          <div style={{ minWidth: 260, maxWidth: 360, flex: 1 }}>
-            <SectionHead icon={<Calculator size={16} />} title="الإجمالي" />
-            <TotalRow label="المجموع" value={totals.subtotal} />
-            {totals.discount > 0 && <TotalRow label="إجمالي الخصومات" value={totals.discount} minus />}
-            {totals.tax > 0 && <TotalRow label="الضريبة" value={totals.tax} />}
-            {totals.shipping > 0 && <TotalRow label="الشحن" value={totals.shipping} />}
-            <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 12, marginTop: 8, borderTop: '2px solid var(--border-color)' }}>
-              <span style={{ fontWeight: 700, fontSize: '1.0625rem' }}>الإجمالي الكلي</span>
-              <span style={{ fontWeight: 800, fontSize: '1.125rem', fontVariantNumeric: 'tabular-nums', color: 'var(--color-primary)' }}>
-                {formatNumber(totals.total)} ج.م
-              </span>
+      {/* ══════ STEP 3: Review & Submit ══════ */}
+      {step === 3 && <section style={sCard}>
+        <SectionHead icon={<Calculator size={16} />} title="مراجعة الطلب" />
+
+        {/* Customer summary */}
+        {selectedCustomer && (
+          <div style={{ padding: '12px 16px', borderRadius: 8, background: 'var(--bg-accent)', marginBottom: 16, display: 'flex', gap: 12, alignItems: 'center' }}>
+            <User size={18} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
+            <div>
+              <div style={{ fontWeight: 700 }}>{selectedCustomer.name}</div>
+              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }} dir="ltr">{selectedCustomer.code}</div>
             </div>
           </div>
+        )}
 
-          {/* Actions */}
-          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', gap: 12, minWidth: 200 }}>
-            {isUnderMin && (
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                padding: '8px 12px', borderRadius: 8,
-                background: 'rgba(217,119,6,0.08)', border: '1px solid rgba(217,119,6,0.2)',
-                color: 'var(--color-warning)', fontSize: '0.875rem',
-              }}>
-                <AlertTriangle size={14} />
-                <span>الحد الأدنى {formatNumber(minOrder)} ج.م</span>
+        {/* Items summary */}
+        <div style={{ marginBottom: 16 }}>
+          {validLines.map((l, i) => (
+            <div key={l._key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border-color)', fontSize: 'var(--text-sm)' }}>
+              <div>
+                <span style={{ fontWeight: 600 }}>{l.productName}</span>
+                <span style={{ color: 'var(--text-muted)', marginRight: 8 }}>× {l.quantity} {l.unitLabel}</span>
               </div>
-            )}
-            <div style={{ display: 'flex', gap: 10 }}>
-              <Button variant="ghost" onClick={() => navigate(-1)} style={{ flex: '0 0 auto' }}>إلغاء</Button>
-              <Button
-                icon={<Save size={15} />}
-                onClick={handleSave}
-                disabled={saving || !form.customer_id || validLines.length === 0 || isUnderMin}
-                style={{ flex: 1 }}
-              >
-                {saving ? 'جاري الحفظ...' : isEdit ? 'حفظ التعديلات' : 'حفظ المسودة'}
-              </Button>
+              <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{formatNumber(l.line_total)} ج.م</span>
             </div>
+          ))}
+        </div>
+
+        {/* Totals */}
+        <div style={{ minWidth: 260, maxWidth: 380 }}>
+          <TotalRow label="المجموع" value={totals.subtotal} />
+          {totals.discount > 0 && <TotalRow label="إجمالي الخصومات" value={totals.discount} minus />}
+          {totals.tax > 0 && <TotalRow label="الضريبة" value={totals.tax} />}
+          {totals.shipping > 0 && <TotalRow label="الشحن" value={totals.shipping} />}
+          <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 12, marginTop: 8, borderTop: '2px solid var(--border-color)' }}>
+            <span style={{ fontWeight: 700, fontSize: '1.0625rem' }}>الإجمالي الكلي</span>
+            <span style={{ fontWeight: 800, fontSize: '1.125rem', fontVariantNumeric: 'tabular-nums', color: 'var(--color-primary)' }}>
+              {formatNumber(totals.total)} ج.م
+            </span>
           </div>
         </div>
-      </section>
+
+        {isUnderMin && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 8, background: 'rgba(217,119,6,0.08)', border: '1px solid rgba(217,119,6,0.2)', color: 'var(--color-warning)', fontSize: '0.875rem', marginTop: 12 }}>
+            <AlertTriangle size={14} />
+            <span>الحد الأدنى {formatNumber(minOrder)} ج.م</span>
+          </div>
+        )}
+      </section>}
+
+      {/* ══════ Step Navigation Bar ══════ */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginTop: 8, paddingBottom: 'var(--space-6)' }}>
+        <Button variant="ghost" onClick={step === 0 ? () => navigate(-1) : () => setStep(s => s - 1)}>
+          {step === 0 ? 'إلغاء' : <><ChevronLeft size={16} /> السابق</>}
+        </Button>
+        {step < STEPS.length - 1 ? (
+          <Button onClick={goNext} style={{ minWidth: 140 }}>
+            التالي <ChevronLeft size={16} style={{ transform: 'rotate(180deg)' }} />
+          </Button>
+        ) : (
+          <Button
+            icon={<Save size={15} />}
+            onClick={handleSave}
+            disabled={saving || !form.customer_id || validLines.length === 0 || isUnderMin}
+            style={{ minWidth: 160 }}
+          >
+            {saving ? 'جاري الحفظ...' : isEdit ? 'حفظ التعديلات' : 'حفظ المسودة'}
+          </Button>
+        )}
+      </div>
+
+      {/* ══════ MOBILE: Add-Item Bottom Sheet ══════ */}
+      <ResponsiveModal
+        open={itemSheet}
+        onClose={() => { setItemSheet(false); setSheetLine(null); setSheetQuery('') }}
+        title="إضافة منتج"
+        footer={
+          sheetLine ? (
+            <>
+              <Button variant="secondary" onClick={() => setSheetLine(null)}>تغيير المنتج</Button>
+              <Button onClick={confirmSheetLine}>إضافة للطلب</Button>
+            </>
+          ) : undefined
+        }
+      >
+        {!sheetLine ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            <div style={{ position: 'relative' }}>
+              <Search size={14} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+              <input
+                className="form-input" placeholder="ابحث عن منتج بالاسم أو الكود..."
+                value={sheetQuery} autoFocus
+                style={{ paddingRight: 32 }}
+                onChange={e => { setSheetQuery(e.target.value); searchSheetProducts(e.target.value) }}
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', maxHeight: 320, overflowY: 'auto' }}>
+              {sheetResults.map(p => {
+                const isOut = p.stock_status === 'out'
+                const isLow = p.stock_status === 'low'
+                const dot = isOut ? '🔴' : isLow ? '🟡' : '🟢'
+                return (
+                  <button key={p.id} disabled={isOut} onClick={() => selectSheetProduct(p)}
+                    style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '12px 14px', borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--border-color)', cursor: isOut ? 'not-allowed' : 'pointer',
+                      background: 'var(--bg-surface)', opacity: isOut ? 0.5 : 1, textAlign: 'right',
+                      gap: 12,
+                    }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{dot} {p.name}</div>
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontFamily: 'monospace' }}>{p.sku}</div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, flexShrink: 0 }}>
+                      <span style={{ fontWeight: 700, color: 'var(--color-primary)', fontSize: 'var(--text-sm)' }}>{formatNumber(p.selling_price)} ج.م</span>
+                      <span style={{ fontSize: '0.7rem', color: isOut ? 'var(--color-danger)' : isLow ? 'var(--color-warning)' : 'var(--color-success)' }}>
+                        {isOut ? 'نفذ' : `متاح: ${formatNumber(p.available_qty)}`}
+                      </span>
+                    </div>
+                  </button>
+                )
+              })}
+              {sheetQuery.length >= 2 && sheetResults.length === 0 && (
+                <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)', padding: 'var(--space-4)' }}>لا توجد نتائج</p>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+            <div style={{ padding: '12px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-accent)' }}>
+              <div style={{ fontWeight: 700 }}>{sheetLine.productName}</div>
+              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }} dir="ltr">{sheetLine.productSku}</div>
+            </div>
+            {sheetLine.available_units.length > 1 && (
+              <div className="form-group">
+                <label className="form-label">الوحدة</label>
+                <select className="form-select" value={sheetLine.unit_id}
+                  onChange={e => {
+                    const pu = sheetLine.available_units.find(u => u.unit_id === e.target.value)
+                    if (pu) setSheetLine(calcLine({ ...sheetLine, unit_id: e.target.value, unitLabel: pu.unit?.symbol || pu.unit?.name || '', conversion_factor: pu.conversion_factor, unit_price: pu.selling_price ?? sheetLine.unit_price }))
+                  }}>
+                  {sheetLine.available_units.map(u => (
+                    <option key={u.unit_id} value={u.unit_id}>{u.unit?.symbol || u.unit?.name}{u.conversion_factor !== 1 ? ` ×${u.conversion_factor}` : ''}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div className="grid grid-2 gap-4">
+              <div className="form-group">
+                <label className="form-label">الكمية</label>
+                <input type="number" inputMode="decimal" enterKeyHint="next" className="form-input" min={0.01} step={1}
+                  value={sheetLine.quantity}
+                  style={isFinite(sheetLine.availableQty) && sheetLine.quantity > sheetLine.availableQty ? { borderColor: 'var(--color-danger)' } : undefined}
+                  onChange={e => setSheetLine(calcLine({ ...sheetLine, quantity: Number(e.target.value) }))} />
+                {isFinite(sheetLine.availableQty) && sheetLine.quantity > sheetLine.availableQty && (
+                  <div style={{ fontSize: '0.7rem', color: 'var(--color-danger)', marginTop: 4 }}>⚠️ متاح: {formatNumber(sheetLine.availableQty)}</div>
+                )}
+              </div>
+              <div className="form-group">
+                <label className="form-label">السعر (ج.م)</label>
+                <input type="number" inputMode="decimal" enterKeyHint="next" className="form-input" min={0} step={0.01}
+                  disabled={!canEditPrice}
+                  value={sheetLine.unit_price}
+                  onChange={e => setSheetLine(calcLine({ ...sheetLine, unit_price: Number(e.target.value) }))} />
+              </div>
+            </div>
+            <PermissionGuard permission="sales.discounts.override" mode="disable" disabledTitle={`الحد الأقصى للخصم ${maxDiscount}%`}>
+              <div className="form-group">
+                <label className="form-label">خصم %</label>
+                <input type="number" inputMode="decimal" enterKeyHint="done" className="form-input" min={0}
+                  max={canOverrideDiscount ? 100 : maxDiscount}
+                  value={sheetLine.discount_percent}
+                  onChange={e => {
+                    const v = Number(e.target.value)
+                    if (v > maxDiscount && !canOverrideDiscount) { toast.error(`الحد الأقصى ${maxDiscount}%`); return }
+                    setSheetLine(calcLine({ ...sheetLine, discount_percent: v }))
+                  }} />
+              </div>
+            </PermissionGuard>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-accent)', fontWeight: 700 }}>
+              <span>الإجمالي</span>
+              <span style={{ color: 'var(--color-primary)', fontVariantNumeric: 'tabular-nums' }}>{formatNumber(sheetLine.line_total)} ج.م</span>
+            </div>
+          </div>
+        )}
+      </ResponsiveModal>
+
+      <style>{`
+        @media (max-width: 768px) {
+          .desktop-only-btn { display: none !important; }
+          .mobile-only-btn  { display: inline-flex !important; }
+          .stepper-label    { display: none; }
+        }
+        @media (min-width: 769px) {
+          .mobile-only-btn  { display: none !important; }
+        }
+      `}</style>
     </div>
   )
 }

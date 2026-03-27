@@ -40,20 +40,33 @@
   --color-info-light:    rgba(2,132,199,0.1);
 
   /* ======= Sidebar ======= */
-  --sidebar-bg:          #ffffff;
-  --sidebar-width:       260px;
+  --sidebar-bg:              #ffffff;
+  --sidebar-width:           260px;
   --sidebar-collapsed-width: 64px;
-  --sidebar-text:        #6b7280;
-  --sidebar-text-active: #111827;
-  --sidebar-item-hover:  rgba(0,0,0,0.04);
-  --sidebar-item-active: rgba(37,99,235,0.1);
-  --sidebar-border:      #e5e7eb;
-  --sidebar-logo-color:  #111827;
-  --header-height:       60px;
+  --sidebar-text:            #6b7280;
+  --sidebar-text-active:     #111827;
+  --sidebar-item-hover:      rgba(0,0,0,0.04);
+  --sidebar-item-active:     rgba(37,99,235,0.1);
+  --sidebar-border:          #e5e7eb;
+  --sidebar-logo-color:      #111827;
+
+  /* ======= PWA / Mobile Shell (NEW) ======= */
+  --app-bar-height:    56px;
+  --app-bar-bg:        rgba(255,255,255,0.85);
+  --app-bar-blur:      blur(12px);
+  --bottom-nav-height: 64px;
+  --bottom-nav-bg:     rgba(255,255,255,0.92);
+  --bottom-nav-blur:   blur(16px);
+  --fab-size:          56px;
+  --touch-target:      44px;
 
   /* ======= Overlay / Modal ======= */
-  --overlay-bg:         rgba(0,0,0,0.4);
-  --modal-bg:           #ffffff;
+  --overlay-bg:        rgba(0,0,0,0.4);
+  --modal-bg:          #ffffff;
+
+  /* ======= Bottom Sheet (NEW) ======= */
+  --sheet-radius:       20px 20px 0 0;
+  --sheet-handle-color: var(--border-primary);
 
   /* ======= Spacing ======= */
   --space-1: 0.25rem;  --space-2: 0.5rem;
@@ -74,19 +87,38 @@
   --radius-full: 9999px;
 
   /* ======= Shadows ======= */
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md: 0 4px 16px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.06);
-  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.08);
+  --shadow-sm:    0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:    0 4px 16px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.06);
+  --shadow-lg:    0 8px 32px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.08);
+  --shadow-xl:    0 20px 60px rgba(0,0,0,0.18), 0 8px 20px rgba(0,0,0,0.10);
   --shadow-focus: 0 0 0 3px var(--color-primary-light);
 
   /* ======= Transitions ======= */
-  --transition-fast:   0.15s ease;
-  --transition-base:   0.2s ease;
-  --transition-slow:   0.3s ease;
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.2s ease;
+  --transition-slow: 0.3s ease;
 
-  /* ======= Z-index ======= */
-  --z-dropdown: 100;  --z-modal: 200;
-  --z-toast:    300;  --z-tooltip: 400;
+  /* ======= Z-Index Layers (restructured — no z-index wars) ======= */
+  /* 1 - Sticky headers/table columns */
+  --z-sticky:     10;
+  /* 2 - Floating dropdowns, combobox lists */
+  --z-dropdown:   100;
+  /* 3 - App Bar (glassmorphism top bar on mobile) */
+  --z-app-bar:    140;
+  /* 4 - Bottom Navigation bar */
+  --z-bottom-nav: 150;
+  /* 5 - FAB — floats above bottom nav */
+  --z-fab:        160;
+  /* 6 - Overlay backdrops */
+  --z-overlay:    190;
+  /* 7 - Modals, Bottom Sheets, Sidebar Drawer */
+  --z-modal:      200;
+  --z-sheet:      200;
+  --z-sidebar:    200;
+  /* 8 - Toasts / Snackbars */
+  --z-toast:      300;
+  /* 9 - Tooltips (highest) */
+  --z-tooltip:    400;
 }
 
 [data-theme="dark"] {
@@ -106,6 +138,7 @@
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
   --shadow-md: 0 4px 16px rgba(0,0,0,0.5);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.6);
+  --shadow-xl: 0 20px 60px rgba(0,0,0,0.7);
 
   /* Sidebar — Dark */
   --sidebar-bg:          #0d1117;
@@ -116,7 +149,11 @@
   --sidebar-border:      #21262d;
   --sidebar-logo-color:  #ffffff;
 
+  /* PWA Shell — Dark */
+  --app-bar-bg:    rgba(22,27,34,0.88);
+  --bottom-nav-bg: rgba(22,27,34,0.94);
+
   /* Overlay — Dark */
-  --overlay-bg:         rgba(0,0,0,0.65);
-  --modal-bg:           #161b22;
+  --overlay-bg: rgba(0,0,0,0.65);
+  --modal-bg:   #161b22;
 }

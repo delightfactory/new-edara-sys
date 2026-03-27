@@ -11,8 +11,7 @@ import { formatNumber, formatDateShort } from '@/lib/utils/format'
 import type { StockAdjustment } from '@/lib/types/master-data'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
-import Modal from '@/components/ui/Modal'
-import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import ResponsiveModal from '@/components/ui/ResponsiveModal'
 
 export default function AdjustmentDetailPage() {
   const { id } = useParams()
@@ -102,36 +101,50 @@ export default function AdjustmentDetailPage() {
     else if (diff < 0) totalDecrease += Math.abs(diff)
   })
 
+  const statusColors: Record<string, string> = {
+    draft: '#6b7280', pending: '#f59e0b', approved: '#16a34a', rejected: '#dc2626',
+  }
+  const sc = statusColors[adjustment.status] || '#6b7280'
+
   return (
-    <div className="page-container animate-enter">
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-info">
-          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/inventory/adjustments')} style={{ marginBottom: 'var(--space-2)' }}>
-            <ArrowRight size={14} /> العودة للتسويات
+    <div style={{ maxWidth: 900, margin: '0 auto', paddingBottom: 120 }}>
+
+      {/* ══ Sticky Mobile Hero ══ */}
+      <div style={{
+        position: 'sticky', top: 0, zIndex: 10,
+        background: `linear-gradient(135deg, ${sc}12, ${sc}06)`,
+        borderBottom: `3px solid ${sc}30`,
+        backdropFilter: 'blur(12px)',
+        padding: '14px 16px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button onClick={() => navigate('/inventory/adjustments')}
+            style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: '7px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: 'var(--text-secondary)', flexShrink: 0 }}>
+            <ArrowRight size={14} /> رجوع
           </button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-            <h1 className="page-title">تسوية {adjustment.number || ''}</h1>
-            <Badge variant={st.variant}>{st.label}</Badge>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <h1 style={{ fontSize: 17, fontWeight: 800, margin: 0 }}>تسوية {adjustment.number || ''}</h1>
+              <Badge variant={st.variant}>{st.label}</Badge>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+              {tp.icon} {tp.label}
+              {totalIncrease > 0 && <span style={{ marginRight: 8, color: 'var(--color-success)' }}> ⬆ +{formatNumber(totalIncrease)}</span>}
+              {totalDecrease > 0 && <span style={{ color: 'var(--color-danger)' }}> ⬇ -{formatNumber(totalDecrease)}</span>}
+            </div>
           </div>
-          <p className="page-subtitle">{tp.icon} {tp.label}</p>
-        </div>
-        <div className="page-actions" style={{ display: 'flex', gap: 'var(--space-2)' }}>
+          {/* Desktop actions */}
           {adjustment.status === 'pending' && can('inventory.update') && (
-            <>
-              <Button variant="success" icon={<Check size={14} />} onClick={() => setApproveConfirm(true)}>
-                اعتماد
-              </Button>
-              <Button variant="danger" icon={<XIcon size={14} />} onClick={() => { setRejectReason(''); setRejectModal(true) }}>
-                رفض
-              </Button>
-            </>
+            <div className="adj-desktop-actions" style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+              <Button variant="success" icon={<Check size={14} />} onClick={() => setApproveConfirm(true)}>اعتماد</Button>
+              <Button variant="danger" icon={<XIcon size={14} />} onClick={() => { setRejectReason(''); setRejectModal(true) }}>رفض</Button>
+            </div>
           )}
         </div>
       </div>
 
       {/* Summary Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--space-3)', margin: '12px 12px', marginBottom: 'var(--space-4)' }}>
         {/* المخزن */}
         <div className="edara-card" style={{ padding: 'var(--space-4)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
@@ -279,42 +292,88 @@ export default function AdjustmentDetailPage() {
         </table>
       </div>
 
-      {/* Approve Confirm */}
-      {approveConfirm && (
-        <ConfirmDialog
-          open={true}
-          title="اعتماد التسوية"
-          message={`سيتم تطبيق فروق التسوية ${adjustment.number} على المخزون.\n\n📦 ${adjustment.items?.length || 0} بند${totalIncrease > 0 ? ` | ⬆ زيادة: ${totalIncrease}` : ''}${totalDecrease > 0 ? ` | ⬇ نقص: ${totalDecrease}` : ''}\n\nملاحظة: سيتم إعادة حساب الفروق مع المخزون الحالي لحظة الاعتماد.`}
-          variant="info"
-          confirmText="اعتماد"
-          loading={actionLoading}
-          onConfirm={handleApprove}
-          onCancel={() => setApproveConfirm(false)}
-        />
+      {/* ══ Mobile Action Bar ══ */}
+      {adjustment.status === 'pending' && can('inventory.update') && (
+        <div className="adj-action-bar">
+          <button type="button" className="btn btn-success"
+            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            onClick={() => setApproveConfirm(true)}>
+            <Check size={15} /> اعتماد التسوية
+          </button>
+          <button type="button" className="btn btn-danger"
+            style={{ flex: '0 0 auto', paddingInline: 16, display: 'flex', alignItems: 'center', gap: 5 }}
+            onClick={() => { setRejectReason(''); setRejectModal(true) }}>
+            <XIcon size={15} /> رفض
+          </button>
+        </div>
       )}
 
-      {/* Reject Modal */}
-      {rejectModal && (
-        <Modal open={true} onClose={() => setRejectModal(false)} title="رفض التسوية" size="sm"
-          footer={
-            <div className="flex gap-2 justify-end" style={{ width: '100%' }}>
-              <Button variant="secondary" onClick={() => setRejectModal(false)}>إلغاء</Button>
-              <Button variant="danger" loading={actionLoading} onClick={handleReject}>رفض التسوية</Button>
-            </div>
-          }
-        >
-          <div className="form-group">
+      {/* ══ Approve Confirm Modal ══ */}
+      <ResponsiveModal open={approveConfirm} onClose={() => setApproveConfirm(false)} title="اعتماد التسوية">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{
+            padding: '12px 14px', borderRadius: 10,
+            background: 'var(--color-info-light, #eff6ff)',
+            border: '1px solid var(--color-info, #3b82f6)', fontSize: 13,
+          }}>
+            سيتم تطبيق فروق التسوية {adjustment.number} على المخزون.
+            <br />
+            📦 {adjustment.items?.length || 0} بند
+            {totalIncrease > 0 && ` | ⬆ زيادة: ${totalIncrease}`}
+            {totalDecrease > 0 && ` | ⬇ نقص: ${totalDecrease}`}
+          </div>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>
+            سيتم إعادة حساب الفروق مع المخزون الحالي لحظة الاعتماد.
+          </p>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+            <button type="button" className="btn btn-secondary" onClick={() => setApproveConfirm(false)} disabled={actionLoading}>إلغاء</button>
+            <button type="button" className="btn btn-success" onClick={handleApprove} disabled={actionLoading}
+              style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Check size={14} /> {actionLoading ? 'جاري...' : 'اعتماد'}
+            </button>
+          </div>
+        </div>
+      </ResponsiveModal>
+
+      {/* ══ Reject Modal ══ */}
+      <ResponsiveModal open={rejectModal} onClose={() => setRejectModal(false)} title="رفض التسوية">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div className="form-group" style={{ margin: 0 }}>
             <label className="form-label">سبب الرفض (اختياري)</label>
             <textarea className="form-input" rows={3} value={rejectReason}
               onChange={e => setRejectReason(e.target.value)}
               placeholder="اكتب سبب الرفض..."
             />
           </div>
-          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 'var(--space-2)' }}>
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', margin: 0 }}>
             سيتم رفض التسوية {adjustment.number} بدون تطبيق أي تغييرات على المخزون.
           </p>
-        </Modal>
-      )}
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+            <button type="button" className="btn btn-secondary" onClick={() => setRejectModal(false)} disabled={actionLoading}>إلغاء</button>
+            <Button variant="danger" loading={actionLoading} onClick={handleReject}>رفض التسوية</Button>
+          </div>
+        </div>
+      </ResponsiveModal>
+
+      <style>{`
+        .adj-desktop-actions { display: flex !important; }
+        .adj-action-bar { display: none; }
+        @media (max-width: 768px) {
+          .adj-desktop-actions { display: none !important; }
+          .adj-action-bar {
+            display: flex;
+            gap: 8px;
+            position: fixed;
+            bottom: calc(var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px) + 8px);
+            left: 0; right: 0;
+            z-index: 200;
+            padding: 10px 16px;
+            background: var(--bg-surface);
+            border-top: 1px solid var(--border-primary);
+            box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
+          }
+        }
+      `}</style>
     </div>
   )
 }

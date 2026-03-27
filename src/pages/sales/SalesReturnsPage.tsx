@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { RotateCcw, Eye, Plus } from 'lucide-react'
+import { RotateCcw, Eye, Plus, User, CalendarDays } from 'lucide-react'
 import { useSalesReturns } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
 import type { SalesReturn, SalesReturnStatus } from '@/lib/types/master-data'
@@ -28,8 +28,7 @@ export default function SalesReturnsPage() {
   const queryParams = useMemo(() => ({
     search: search || undefined,
     status: statusFilter || undefined,
-    page,
-    pageSize: 25,
+    page, pageSize: 25,
   }), [search, statusFilter, page])
 
   const { data: result, isLoading: loading } = useSalesReturns(queryParams)
@@ -43,19 +42,20 @@ export default function SalesReturnsPage() {
         title="مرتجعات المبيعات"
         subtitle={loading ? '...' : `${totalCount} مرتجع`}
         actions={can('sales.returns.create') ? (
-          <Button icon={<Plus size={16} />} onClick={() => navigate('/sales/returns/new')}>
+          <Button icon={<Plus size={16} />} onClick={() => navigate('/sales/returns/new')} className="desktop-only-btn">
             مرتجع جديد
           </Button>
         ) : undefined}
       />
 
+      {/* Filters */}
       <div className="edara-card" style={{ padding: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
-        <div className="flex gap-3" style={{ flexWrap: 'wrap' }}>
-          <div style={{ flex: 2, minWidth: 200 }}>
+        <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+          <div style={{ flex: 2, minWidth: 180 }}>
             <SearchInput value={search} onChange={val => { setSearch(val); setPage(1) }}
-              placeholder="بحث برقم المرتجع..." />
+              placeholder="بحث برقم المرتجع أو العميل..." />
           </div>
-          <select className="form-select" style={{ width: 130 }} value={statusFilter}
+          <select className="form-select" style={{ width: 140 }} value={statusFilter}
             onChange={e => { setStatusFilter(e.target.value as any); setPage(1) }}>
             <option value="">كل الحالات</option>
             <option value="draft">مسودة</option>
@@ -65,7 +65,8 @@ export default function SalesReturnsPage() {
         </div>
       </div>
 
-      <div className="edara-card" style={{ overflow: 'auto' }}>
+      {/* ── DESKTOP: DataTable ─────────────────────── */}
+      <div className="ret-table-view edara-card" style={{ overflow: 'auto' }}>
         <DataTable<SalesReturn>
           columns={[
             {
@@ -88,10 +89,7 @@ export default function SalesReturnsPage() {
                 </span>
               ),
             },
-            {
-              key: 'customer', label: 'العميل',
-              render: r => r.customer?.name || '—',
-            },
+            { key: 'customer', label: 'العميل', render: r => r.customer?.name || '—' },
             {
               key: 'total', label: 'الإجمالي', hideOnMobile: true,
               render: r => (
@@ -135,6 +133,98 @@ export default function SalesReturnsPage() {
           onPageChange={setPage}
         />
       </div>
+
+      {/* ── MOBILE: Return Card List ─────────────────── */}
+      <div className="ret-card-view">
+        {loading ? (
+          <div className="mobile-card-list">
+            {[1, 2, 3].map(i => <div key={i} className="edara-card" style={{ height: 96 }}><div className="skeleton" style={{ height: '100%' }} /></div>)}
+          </div>
+        ) : returns.length === 0 ? (
+          <div className="edara-card" style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <RotateCcw size={40} style={{ margin: '0 auto 12px', display: 'block', opacity: 0.3 }} />
+            <p>لا توجد مرتجعات</p>
+          </div>
+        ) : (
+          <div className="mobile-card-list">
+            {returns.map((r: SalesReturn) => (
+              <div key={r.id} className="edara-card ret-mobile-card" onClick={() => navigate(`/sales/returns/${r.id}`)}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontFamily: 'monospace', fontSize: 'var(--text-sm)' }} dir="ltr">
+                      {r.return_number}
+                    </div>
+                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-primary)', marginTop: 2, cursor: 'pointer' }}
+                      onClick={e => { e.stopPropagation(); navigate(`/sales/orders/${r.order_id}`) }}>
+                      ← {r.order?.order_number || '—'}
+                    </div>
+                  </div>
+                  <Badge variant={statusVariants[r.status]}>{statusLabels[r.status]}</Badge>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: 'var(--space-3)', fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                    {r.customer?.name && (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                        <User size={10} /> {r.customer.name}
+                      </span>
+                    )}
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                      <CalendarDays size={10} />
+                      {new Date(r.return_date).toLocaleDateString('ar-EG-u-nu-latn')}
+                    </span>
+                  </div>
+                  <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--color-danger)', fontVariantNumeric: 'tabular-nums' }}>
+                    {formatNumber(r.total_amount)} ج.م
+                  </div>
+                </div>
+                {r.reason && (
+                  <div style={{ marginTop: 6, fontSize: 'var(--text-xs)', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {r.reason}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        {totalPages > 1 && (
+          <div className="mobile-pagination">
+            <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>السابق</Button>
+            <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>{page} / {totalPages}</span>
+            <Button variant="ghost" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>التالي</Button>
+          </div>
+        )}
+      </div>
+
+      {/* Mobile FAB */}
+      {can('sales.returns.create') && (
+        <button className="ret-fab" onClick={() => navigate('/sales/returns/new')} aria-label="مرتجع جديد">
+          <Plus size={24} />
+        </button>
+      )}
+
+      <style>{`
+        .ret-table-view { display: block; }
+        .ret-card-view  { display: none; }
+        .ret-mobile-card { padding: var(--space-4); cursor: pointer; transition: background 0.12s; }
+        .ret-mobile-card:hover { background: var(--bg-hover); }
+        .mobile-card-list { display: flex; flex-direction: column; gap: var(--space-3); }
+        .mobile-pagination { display: flex; align-items: center; justify-content: center; gap: var(--space-4); padding: var(--space-4) 0; }
+        .ret-fab {
+          position: fixed; bottom: calc(70px + var(--space-4)); left: var(--space-4);
+          width: 56px; height: 56px; border-radius: 50%;
+          background: var(--color-danger); color: #fff;
+          border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 4px 20px rgba(239,68,68,0.35);
+          z-index: var(--z-modal, 400); transition: transform 0.15s;
+        }
+        .ret-fab:hover { transform: scale(1.06); }
+        @media (max-width: 768px) {
+          .desktop-only-btn { display: none !important; }
+          .ret-table-view { display: none; }
+          .ret-card-view  { display: block; }
+        }
+        @media (min-width: 769px) { .ret-fab { display: none; } }
+      `}</style>
     </div>
   )
 }

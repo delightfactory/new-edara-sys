@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <!-- Gold gradient — warm metallic -->
+    <linearGradient id="goldBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#d4a84b"/>
+      <stop offset="35%"  stop-color="#f0cc6a"/>
+      <stop offset="65%"  stop-color="#c89a3a"/>
+      <stop offset="100%" stop-color="#a87c28"/>
+    </linearGradient>
+    <!-- Subtle highlight for 3D feel -->
+    <linearGradient id="goldHighlight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="rgba(255,255,255,0.22)"/>
+      <stop offset="50%"  stop-color="rgba(255,255,255,0)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0.12)"/>
+    </linearGradient>
+    <!-- Drop shadow filter -->
+    <filter id="innerShadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="rgba(100,70,0,0.4)"/>
+    </filter>
+    <!-- Text shadow for depth -->
+    <filter id="textShadow">
+      <feDropShadow dx="2" dy="3" stdDeviation="3" flood-color="rgba(100,70,0,0.5)"/>
+    </filter>
+  </defs>
+
+  <!-- Rounded square background — gold metallic -->
+  <rect x="0" y="0" width="512" height="512" rx="90" ry="90" fill="url(#goldBg)"/>
+  <!-- Highlight overlay for metallic shine -->
+  <rect x="0" y="0" width="512" height="512" rx="90" ry="90" fill="url(#goldHighlight)"/>
+
+  <!-- ═══ D letter ═══ -->
+  <!-- D vertical stem -->
+  <rect x="70" y="130" width="52" height="252" rx="8" fill="#f5f0e0" filter="url(#textShadow)"/>
+  <!-- D curved body (approximated with arc path) -->
+  <path d="M 118 130 Q 280 130 280 256 Q 280 382 118 382 Z"
+        fill="#f5f0e0" filter="url(#textShadow)"/>
+  <!-- D inner cutout (gold colored) -->
+  <path d="M 130 172 Q 236 172 236 256 Q 236 340 130 340 Z"
+        fill="#c89a3a"/>
+
+  <!-- ═══ Three horizontal bars (≡) — stylized "E" ═══ -->
+  <!-- Top bar -->
+  <path d="M 300 142 L 430 142 Q 442 142 442 162 L 442 175 Q 442 175 430 182 L 300 182 Z"
+        rx="10" fill="#f5f0e0" filter="url(#textShadow)"/>
+  <!-- Fix: use rect with border-radius approximation -->
+  <rect x="300" y="142" width="135" height="44" rx="10" fill="#f5f0e0" filter="url(#textShadow)"/>
+  <!-- Angled right edge top bar -->
+  <polygon points="415,142 450,142 435,186 400,186" fill="#f5f0e0"/>
+
+  <!-- Middle bar -->
+  <rect x="300" y="218" width="125" height="44" rx="10" fill="#f5f0e0" filter="url(#textShadow)"/>
+  <polygon points="405,218 440,218 425,262 390,262" fill="#f5f0e0"/>
+
+  <!-- Bottom bar -->
+  <rect x="300" y="294" width="130" height="44" rx="10" fill="#f5f0e0" filter="url(#textShadow)"/>
+  <polygon points="410,294 445,294 430,338 395,338" fill="#f5f0e0"/>
+
+  <!-- Gold separator between D and bars -->
+  <rect x="270" y="130" width="3" height="252" rx="2" fill="rgba(100,70,0,0.3)"/>
+</svg>

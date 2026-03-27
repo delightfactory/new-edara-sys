@@ -3,6 +3,8 @@ import { toast } from 'sonner'
 import { FolderTree, Plus, Edit, Loader2 } from 'lucide-react'
 import { getCategories, buildCategoryTree, createCategory, updateCategory } from '@/lib/services/products'
 import type { ProductCategory } from '@/lib/types/master-data'
+import ResponsiveModal from '@/components/ui/ResponsiveModal'
+import Button from '@/components/ui/Button'
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<ProductCategory[]>([])
@@ -62,6 +64,7 @@ export default function CategoriesPage() {
           borderBottom: '1px solid var(--divider)',
           transition: 'background 0.15s',
           cursor: 'default',
+          minHeight: 52, // generous touch target
         }}
         onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
         onMouseLeave={e => (e.currentTarget.style.background = '')}
@@ -124,49 +127,45 @@ export default function CategoriesPage() {
         )}
       </div>
 
-      {/* Modal */}
-      {modal.open && (
-        <div className="modal-overlay" onClick={() => setModal({ open: false })}>
-          <div className="modal-box modal-sm" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <span className="modal-title">{modal.editing ? 'تعديل التصنيف' : 'تصنيف جديد'}</span>
-              <button className="btn btn-ghost btn-icon" onClick={() => setModal({ open: false })}>✕</button>
+      {/* ── Bottom-sheet form (ResponsiveModal) ── */}
+      <ResponsiveModal
+        open={modal.open}
+        onClose={() => setModal({ open: false })}
+        title={modal.editing ? 'تعديل التصنيف' : 'تصنيف جديد'}
+      >
+        <div className="flex-col gap-4" style={{ display: 'flex' }}>
+          <div className="form-group">
+            <label className="form-label required">اسم التصنيف</label>
+            <input className="form-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} autoFocus />
+          </div>
+          <div className="form-group">
+            <label className="form-label">التصنيف الأب</label>
+            <select className="form-select" value={form.parent_id || ''} onChange={e => setForm(f => ({ ...f, parent_id: e.target.value || null }))}>
+              <option value="">بدون (تصنيف رئيسي)</option>
+              {categories.filter(c => c.id !== modal.editing?.id).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+          <div className="grid grid-2 gap-4">
+            <div className="form-group">
+              <label className="form-label">أيقونة (Emoji)</label>
+              <input className="form-input" value={form.icon} onChange={e => setForm(f => ({ ...f, icon: e.target.value }))} placeholder="📦" />
             </div>
-            <div className="modal-body">
-              <div className="flex-col gap-4" style={{ display: 'flex' }}>
-                <div className="form-group">
-                  <label className="form-label required">اسم التصنيف</label>
-                  <input className="form-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} autoFocus />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">التصنيف الأب</label>
-                  <select className="form-select" value={form.parent_id || ''} onChange={e => setForm(f => ({ ...f, parent_id: e.target.value || null }))}>
-                    <option value="">بدون (تصنيف رئيسي)</option>
-                    {categories.filter(c => c.id !== modal.editing?.id).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </div>
-                <div className="grid grid-2 gap-4">
-                  <div className="form-group">
-                    <label className="form-label">أيقونة (Emoji)</label>
-                    <input className="form-input" value={form.icon} onChange={e => setForm(f => ({ ...f, icon: e.target.value }))} placeholder="📦" />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">الترتيب</label>
-                    <input type="number" className="form-input" value={form.sort_order} onChange={e => setForm(f => ({ ...f, sort_order: +e.target.value }))} />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setModal({ open: false })}>إلغاء</button>
-              <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-                {saving ? <Loader2 size={14} className="animate-spin" /> : null}
-                {modal.editing ? 'تحديث' : 'إنشاء'}
-              </button>
+            <div className="form-group">
+              <label className="form-label">الترتيب</label>
+              <input type="number" className="form-input" value={form.sort_order} onChange={e => setForm(f => ({ ...f, sort_order: +e.target.value }))} />
             </div>
           </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 4 }}>
+            <Button onClick={handleSave} loading={saving} style={{ width: '100%', justifyContent: 'center' }}>
+              {modal.editing ? 'تحديث' : 'إنشاء'}
+            </Button>
+            <Button variant="ghost" onClick={() => setModal({ open: false })} style={{ width: '100%', justifyContent: 'center' }}>
+              إلغاء
+            </Button>
+          </div>
         </div>
-      )}
+      </ResponsiveModal>
     </div>
   )
 }

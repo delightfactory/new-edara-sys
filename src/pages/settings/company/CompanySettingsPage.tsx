@@ -114,11 +114,14 @@ export default function CompanySettingsPage() {
         )}
       </div>
 
-      {/* Tabs */}
-      <div className="tabs">
+      {/* Tabs — scrollable on mobile */}
+      <div className="tabs" style={{ overflowX: 'auto', scrollbarWidth: 'none', flexWrap: 'nowrap', WebkitOverflowScrolling: 'touch' }}>
         {categories.map(cat => (
-          <button key={cat} className={`tab ${activeTab === cat ? 'active' : ''}`}
-            onClick={() => setActiveTab(cat)}>
+          <button key={cat}
+            className={`tab ${activeTab === cat ? 'active' : ''}`}
+            onClick={() => setActiveTab(cat)}
+            style={{ flexShrink: 0 }}
+          >
             {CATEGORY_LABELS[cat] || cat}
           </button>
         ))}

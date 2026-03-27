@@ -1,7 +1,7 @@
 import { useState, Fragment, useMemo, useRef, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ClipboardMinus, Check, X as XIcon, Plus, ChevronDown, ChevronUp, Search } from 'lucide-react'
+import { ClipboardMinus, Check, X as XIcon, Plus, ChevronDown, ChevronUp, Search, Warehouse as WarehouseIcon, TrendingUp, TrendingDown } from 'lucide-react'
 import {
   createAdjustment, approveAdjustment, rejectAdjustment,
   getMyWarehouses, getAvailableStock
@@ -365,8 +365,8 @@ export default function AdjustmentsPage() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="edara-card" style={{ overflow: 'auto' }}>
+      {/* ── DESKTOP: Adjustments Table ─────────────────────── */}
+      <div className="adj-table-view edara-card" style={{ overflow: 'auto' }}>
         {loading ? (
           <div style={{ padding: 'var(--space-6)' }}>
             {[1,2,3,4,5].map(i => <div key={i} className="skeleton skeleton-row" />)}
@@ -466,6 +466,84 @@ export default function AdjustmentsPage() {
               <button className="pagination-btn" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>‹</button>
               <button className="pagination-btn" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>›</button>
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── MOBILE: Adjustment Cards ──────────────────────── */}
+      <div className="adj-card-view">
+        {loading ? (
+          <div className="mobile-card-list">
+            {[1,2,3].map(i => <div key={i} className="edara-card" style={{ height: 110 }}><div className="skeleton" style={{ height: '100%' }} /></div>)}
+          </div>
+        ) : adjustments.length === 0 ? (
+          <div className="edara-card" style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <ClipboardMinus size={40} style={{ margin: '0 auto 12px', display: 'block', opacity: 0.3 }} />
+            <p>لا يوجد تسويات</p>
+          </div>
+        ) : (
+          <div className="mobile-card-list">
+            {adjustments.map(a => {
+              const sm = statusMap[a.status] || { label: a.status, variant: 'neutral' as const }
+              const tm = typeMap[a.type] || a.type
+              const impact = getImpactSummary(a)
+              return (
+                <div key={a.id} className="edara-card adj-mobile-card">
+                  {/* Header */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ width: 38, height: 38, borderRadius: 'var(--radius-md)', background: 'rgba(37,99,235,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <ClipboardMinus size={17} style={{ color: 'var(--color-primary)' }} />
+                      </div>
+                      <div>
+                        <span dir="ltr" style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--color-primary)', cursor: 'pointer', textDecoration: 'underline' }}
+                          onClick={() => navigate(`/inventory/adjustments/${a.id}`)}>{a.number}</span>
+                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 2 }}>{formatDateShort(a.created_at)}</div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                      <Badge variant={sm.variant}>{sm.label}</Badge>
+                      <Badge variant="info">{tm}</Badge>
+                    </div>
+                  </div>
+
+                  {/* Meta */}
+                  <div style={{ display: 'flex', gap: 'var(--space-3)', fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginBottom: 8, flexWrap: 'wrap' }}>
+                    {a.warehouse?.name && (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <WarehouseIcon size={10} /> {a.warehouse.name}
+                      </span>
+                    )}
+                    {impact && impact.increases > 0 && (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--color-success)' }}>
+                        <TrendingUp size={10} /> +{impact.increases}
+                      </span>
+                    )}
+                    {impact && impact.decreases > 0 && (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--color-danger)' }}>
+                        <TrendingDown size={10} /> -{impact.decreases}
+                      </span>
+                    )}
+                    {impact && <span style={{ color: 'var(--text-muted)' }}>{impact.count} بند</span>}
+                  </div>
+
+                  {/* Actions */}
+                  {a.status === 'pending' && can('inventory.update') && (
+                    <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
+                      <Button variant="success" size="sm" icon={<Check size={12} />} onClick={() => setConfirmTarget({ adj: a, action: 'approve' })}>اعتماد</Button>
+                      <Button variant="danger" size="sm" icon={<XIcon size={12} />} onClick={() => { setRejectReason(''); setRejectModal(a) }}>رفض</Button>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+        {totalPages > 1 && (
+          <div className="mobile-pagination">
+            <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>السابق</Button>
+            <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>{page} / {totalPages}</span>
+            <Button variant="ghost" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>التالي</Button>
           </div>
         )}
       </div>
@@ -646,6 +724,18 @@ export default function AdjustmentsPage() {
           </p>
         </Modal>
       )}
+
+      <style>{`
+        .adj-table-view { display: block; }
+        .adj-card-view  { display: none; }
+        .adj-mobile-card { padding: var(--space-4); }
+        .mobile-card-list { display: flex; flex-direction: column; gap: var(--space-3); }
+        .mobile-pagination { display: flex; align-items: center; justify-content: center; gap: var(--space-4); padding: var(--space-4) 0; }
+        @media (max-width: 768px) {
+          .adj-table-view { display: none; }
+          .adj-card-view  { display: block; }
+        }
+      `}</style>
     </div>
   )
 }

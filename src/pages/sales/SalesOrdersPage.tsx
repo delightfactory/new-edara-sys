@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ShoppingCart, Plus, Eye, FileText, TrendingUp,
-  CheckCircle, Truck, XCircle, Clock
+  CheckCircle, Truck, XCircle, Clock, Calendar
 } from 'lucide-react'
 import { useSalesOrders, useSalesStats, useProfiles } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
@@ -11,6 +11,7 @@ import { formatNumber } from '@/lib/utils/format'
 import PageHeader from '@/components/shared/PageHeader'
 import SearchInput from '@/components/shared/SearchInput'
 import DataTable from '@/components/shared/DataTable'
+import DataCard from '@/components/ui/DataCard'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 
@@ -63,51 +64,36 @@ export default function SalesOrdersPage() {
         title="أوامر البيع"
         subtitle={loading ? '...' : `${totalCount} طلب`}
         actions={can('sales.orders.create') ? (
-          <Button icon={<Plus size={16} />} onClick={() => navigate('/sales/orders/new')}>
+          <Button icon={<Plus size={16} />} onClick={() => navigate('/sales/orders/new')}
+            className="desktop-only-btn">
             طلب جديد
           </Button>
         ) : undefined}
       />
 
-      {/* Stat Cards */}
+      {/* ── Stat Cards ──────────────────────────────── */}
       {statCards && (
-        <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-          gap: 'var(--space-4)', marginBottom: 'var(--space-4)',
-        }}>
+        <div className="stat-cards-grid">
           {statCards.map((s, i) => (
-            <div key={i} className="edara-card" style={{
-              padding: 'var(--space-4)',
-              display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
-            }}>
-              <div style={{
-                width: 40, height: 40, borderRadius: 'var(--radius-lg)',
-                background: 'var(--color-primary-light)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: 'var(--color-primary)',
-              }}>
-                {s.icon}
-              </div>
+            <div key={i} className="edara-card stat-card">
+              <div className="stat-card-icon">{s.icon}</div>
               <div>
-                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{s.label}</div>
-                <div style={{ fontSize: 'var(--text-lg)', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{s.value}</div>
+                <div className="stat-card-label">{s.label}</div>
+                <div className="stat-card-value">{s.value}</div>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Filters */}
+      {/* ── Filters ─────────────────────────────────── */}
       <div className="edara-card" style={{ padding: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
-        <div className="flex gap-3" style={{ flexWrap: 'wrap' }}>
-          <div style={{ flex: 2, minWidth: 200 }}>
-            <SearchInput
-              value={search}
-              onChange={val => { setSearch(val); setPage(1) }}
-              placeholder="بحث برقم الطلب أو اسم العميل..."
-            />
+        <div className="sales-filter-row">
+          <div style={{ flex: 2, minWidth: 180 }}>
+            <SearchInput value={search} onChange={val => { setSearch(val); setPage(1) }}
+              placeholder="بحث برقم الطلب أو اسم العميل..." />
           </div>
-          <select className="form-select" style={{ width: 130 }} value={statusFilter}
+          <select className="form-select filter-select" value={statusFilter}
             onChange={e => { setStatusFilter(e.target.value as any); setPage(1) }}>
             <option value="">كل الحالات</option>
             <option value="draft">مسودة</option>
@@ -116,7 +102,7 @@ export default function SalesOrdersPage() {
             <option value="completed">مكتمل</option>
             <option value="cancelled">ملغي</option>
           </select>
-          <select className="form-select" style={{ width: 140 }} value={repFilter}
+          <select className="form-select filter-select" value={repFilter}
             onChange={e => { setRepFilter(e.target.value); setPage(1) }}>
             <option value="">كل المناديب</option>
             {reps.map(r => <option key={r.id} value={r.id}>{r.full_name}</option>)}
@@ -124,8 +110,8 @@ export default function SalesOrdersPage() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="edara-card" style={{ overflow: 'auto' }}>
+      {/* ── DESKTOP: DataTable ───────────────────────── */}
+      <div className="sales-table-view edara-card" style={{ overflow: 'auto' }}>
         <DataTable<SalesOrder>
           columns={[
             {
@@ -214,6 +200,136 @@ export default function SalesOrdersPage() {
           onPageChange={setPage}
         />
       </div>
+
+      {/* ── MOBILE: DataCard list ────────────────────── */}
+      <div className="sales-card-view">
+        {loading ? (
+          <div className="mobile-card-list">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="edara-card" style={{ padding: 'var(--space-4)' }}>
+                <div className="skeleton" style={{ height: 16, width: '55%', marginBottom: 8 }} />
+                <div className="skeleton" style={{ height: 12, width: '35%', marginBottom: 12 }} />
+                <div className="skeleton" style={{ height: 12, width: '80%' }} />
+              </div>
+            ))}
+          </div>
+        ) : orders.length === 0 ? (
+          <div className="empty-state" style={{ padding: 'var(--space-8)' }}>
+            <ShoppingCart size={40} className="empty-state-icon" />
+            <p className="empty-state-title">لا توجد أوامر بيع</p>
+            <p className="empty-state-text">ابدأ بإنشاء أول أمر بيع للعملاء</p>
+          </div>
+        ) : (
+          <div className="mobile-card-list">
+            {orders.map(o => {
+              const paidRatio = o.total_amount > 0 ? ((o.paid_amount + o.returned_amount) / o.total_amount) : 0
+              return (
+                <DataCard
+                  key={o.id}
+                  title={o.customer?.name || '—'}
+                  subtitle={
+                    <span dir="ltr" style={{ fontFamily: 'monospace', fontSize: '0.7rem' }}>
+                      {o.order_number}
+                    </span>
+                  }
+                  badge={<Badge variant={statusVariants[o.status]}>{statusLabels[o.status]}</Badge>}
+                  leading={
+                    <div style={{
+                      width: 40, height: 40, borderRadius: 'var(--radius-md)',
+                      background: 'var(--bg-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <ShoppingCart size={18} style={{ color: 'var(--color-primary)' }} />
+                    </div>
+                  }
+                  metadata={[
+                    {
+                      label: 'التاريخ',
+                      value: new Date(o.order_date).toLocaleDateString('ar-EG-u-nu-latn'),
+                    },
+                    {
+                      label: 'الإجمالي',
+                      value: `${formatNumber(o.total_amount)} ج.م`,
+                      highlight: true,
+                    },
+                    {
+                      label: 'المدفوع',
+                      value: `${formatNumber(o.paid_amount)} ج.م`,
+                    },
+                    ...(o.payment_terms ? [{
+                      label: 'الدفع',
+                      value: paymentLabels[o.payment_terms] || o.payment_terms,
+                    }] : []),
+                  ]}
+                  actions={
+                    <Button variant="secondary" size="sm" style={{ width: '100%', justifyContent: 'center' }}
+                      onClick={() => navigate(`/sales/orders/${o.id}`)}>
+                      <Eye size={14} /> عرض التفاصيل
+                    </Button>
+                  }
+                  onClick={() => navigate(`/sales/orders/${o.id}`)}
+                />
+              )
+            })}
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div className="mobile-pagination">
+            <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>السابق</Button>
+            <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>{page} / {totalPages}</span>
+            <Button variant="ghost" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>التالي</Button>
+          </div>
+        )}
+      </div>
+
+      <style>{`
+        .stat-cards-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+          gap: var(--space-4);
+          margin-bottom: var(--space-4);
+        }
+        .stat-card {
+          padding: var(--space-4);
+          display: flex;
+          align-items: center;
+          gap: var(--space-3);
+        }
+        .stat-card-icon {
+          width: 40px; height: 40px;
+          border-radius: var(--radius-lg);
+          background: var(--bg-accent);
+          display: flex; align-items: center; justify-content: center;
+          color: var(--color-primary);
+          flex-shrink: 0;
+        }
+        .stat-card-label { font-size: var(--text-xs); color: var(--text-muted); }
+        .stat-card-value { font-size: var(--text-lg); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+        .sales-filter-row {
+          display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: flex-end;
+        }
+        .filter-select { min-width: 100px; flex: 1; }
+
+        .sales-table-view { display: block; }
+        .sales-card-view  { display: none; }
+
+        @media (max-width: 768px) {
+          .sales-table-view { display: none; }
+          .sales-card-view  { display: block; }
+          .desktop-only-btn { display: none; }
+          .stat-cards-grid  { grid-template-columns: 1fr 1fr; }
+          .filter-select { font-size: var(--text-xs); }
+        }
+
+        .mobile-card-list {
+          display: flex; flex-direction: column; gap: var(--space-3); padding: 0 0 var(--space-2);
+        }
+        .mobile-pagination {
+          display: flex; align-items: center; justify-content: center;
+          gap: var(--space-4); padding: var(--space-4) 0;
+        }
+      `}</style>
     </div>
   )
 }

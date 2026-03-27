@@ -1,21 +1,28 @@
 import { useState, useMemo } from 'react'
-import { Activity } from 'lucide-react'
+import { Activity, Clock, Package, ArrowUpDown } from 'lucide-react'
 import { useStockMovements, useWarehouses } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
 import type { StockMovement } from '@/lib/types/master-data'
 import { formatNumber, formatCurrency, formatDateShort } from '@/lib/utils/format'
 import PageHeader from '@/components/shared/PageHeader'
 import Badge from '@/components/ui/Badge'
+import Button from '@/components/ui/Button'
 
-const typeLabels: Record<string, { label: string; variant: 'success' | 'danger' | 'info' | 'warning' | 'primary' }> = {
-  in: { label: 'وارد', variant: 'success' },
-  out: { label: 'صادر', variant: 'danger' },
-  transfer_in: { label: 'تحويل وارد', variant: 'info' },
-  transfer_out: { label: 'تحويل صادر', variant: 'warning' },
-  adjustment_add: { label: 'تسوية +', variant: 'primary' },
-  adjustment_remove: { label: 'تسوية −', variant: 'danger' },
-  return_in: { label: 'مرتجع وارد', variant: 'info' },
-  return_out: { label: 'مرتجع صادر', variant: 'warning' },
+const typeLabels: Record<string, { label: string; variant: 'success' | 'danger' | 'info' | 'warning' | 'primary'; dot: string }> = {
+  in:               { label: 'وارد',          variant: 'success',  dot: '#22c55e' },
+  out:              { label: 'صادر',          variant: 'danger',   dot: '#ef4444' },
+  transfer_in:      { label: 'تحويل وارد',   variant: 'info',     dot: '#3b82f6' },
+  transfer_out:     { label: 'تحويل صادر',   variant: 'warning',  dot: '#f59e0b' },
+  adjustment_add:   { label: 'تسوية +',      variant: 'primary',  dot: '#8b5cf6' },
+  adjustment_remove:{ label: 'تسوية −',      variant: 'danger',   dot: '#ef4444' },
+  return_in:        { label: 'مرتجع وارد',   variant: 'info',     dot: '#06b6d4' },
+  return_out:       { label: 'مرتجع صادر',   variant: 'warning',  dot: '#f97316' },
+}
+
+function isIncoming(type: string) { return type.includes('in') || type.includes('add') }
+
+function sameDay(a: string, b: string) {
+  return new Date(a).toDateString() === new Date(b).toDateString()
 }
 
 export default function StockMovementsPage() {
@@ -25,7 +32,6 @@ export default function StockMovementsPage() {
   const [typeFilter, setTypeFilter] = useState('')
   const [page, setPage] = useState(1)
 
-  // React Query — cached & shared
   const { data: warehouses = [] } = useWarehouses()
 
   const queryParams = useMemo(() => ({
@@ -46,6 +52,7 @@ export default function StockMovementsPage() {
         subtitle={loading ? '...' : `${totalCount} حركة`}
       />
 
+      {/* Filters */}
       <div className="edara-card" style={{ padding: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
         <div className="flex gap-4" style={{ flexWrap: 'wrap' }}>
           <select className="form-select" style={{ width: 160 }} value={whFilter}
@@ -61,7 +68,8 @@ export default function StockMovementsPage() {
         </div>
       </div>
 
-      <div className="edara-card" style={{ overflow: 'auto' }}>
+      {/* ── DESKTOP: Table ────────────────────────────────── */}
+      <div className="sm-table-view edara-card" style={{ overflow: 'auto' }}>
         {loading ? (
           <div style={{ padding: 'var(--space-6)' }}>
             {[1,2,3,4,5,6,7,8].map(i => <div key={i} className="skeleton skeleton-row" />)}
@@ -104,8 +112,8 @@ export default function StockMovementsPage() {
                   <td>
                     <Badge variant={typeLabels[m.type]?.variant || 'neutral'}>{typeLabels[m.type]?.label || m.type}</Badge>
                   </td>
-                  <td style={{ fontWeight: 700, color: m.type.includes('in') || m.type.includes('add') ? 'var(--color-success)' : 'var(--color-danger)' }}>
-                    {m.type.includes('in') || m.type.includes('add') ? '+' : '−'}{formatNumber(Math.abs(m.quantity))}
+                  <td style={{ fontWeight: 700, color: isIncoming(m.type) ? 'var(--color-success)' : 'var(--color-danger)' }}>
+                    {isIncoming(m.type) ? '+' : '−'}{formatNumber(Math.abs(m.quantity))}
                   </td>
                   {canViewCosts && <td className="hide-mobile">{formatCurrency(m.unit_cost)}</td>}
                   {canViewCosts && <td className="hide-mobile">{formatCurrency(m.wac_before)}</td>}
@@ -132,6 +140,128 @@ export default function StockMovementsPage() {
           </div>
         )}
       </div>
+
+      {/* ── MOBILE: Timeline View ─────────────────────────── */}
+      <div className="sm-timeline-view">
+        {loading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: 80, borderRadius: 12 }} />)}
+          </div>
+        ) : movements.length === 0 ? (
+          <div className="edara-card" style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <Activity size={40} style={{ margin: '0 auto 12px', display: 'block', opacity: 0.3 }} />
+            <p>لا يوجد حركات</p>
+          </div>
+        ) : (
+          <div className="sm-timeline">
+            {movements.map((m, idx) => {
+              const cfg = typeLabels[m.type] || { label: m.type, variant: 'neutral' as any, dot: '#94a3b8' }
+              const incoming = isIncoming(m.type)
+              const date = new Date(m.created_at)
+              const dateStr = formatDateShort(m.created_at)
+              const timeStr = date.toLocaleTimeString('ar-EG-u-nu-latn', { hour: '2-digit', minute: '2-digit' })
+              const showDateSep = idx === 0 || !sameDay(m.created_at, movements[idx - 1].created_at)
+
+              return (
+                <div key={m.id}>
+                  {showDateSep && (
+                    <div className="al-date-sep"><span>{dateStr}</span></div>
+                  )}
+                  <div className="al-timeline-item">
+                    {/* Spine dot with movement-type color */}
+                    <div className="al-dot" style={{ background: cfg.dot }} />
+                    {/* Card */}
+                    <div className="al-item-card edara-card">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <Badge variant={cfg.variant}>{cfg.label}</Badge>
+                        </div>
+                        <span style={{
+                          fontWeight: 800, fontSize: 15, fontVariantNumeric: 'tabular-nums',
+                          color: incoming ? 'var(--color-success)' : 'var(--color-danger)',
+                        }}>
+                          {incoming ? '+' : '−'}{formatNumber(Math.abs(m.quantity))}
+                        </span>
+                      </div>
+                      <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600 }}>
+                          <Package size={12} style={{ color: 'var(--text-muted)' }} />
+                          {m.product?.name || '—'}
+                          {m.product?.sku && (
+                            <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }} dir="ltr">
+                              {m.product.sku}
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: 'var(--text-secondary)' }}>
+                          <span>{m.warehouse?.name}</span>
+                          {m.before_qty != null && m.after_qty != null && (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <ArrowUpDown size={10} />
+                              {formatNumber(m.before_qty)} → {formatNumber(m.after_qty)}
+                            </span>
+                          )}
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 3, marginRight: 'auto' }}>
+                            <Clock size={9} /> {timeStr}
+                          </span>
+                        </div>
+                        {m.reference_type && (
+                          <div style={{ fontSize: 11 }}>
+                            <Badge variant="neutral">{m.reference_type}</Badge>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-4)', padding: 'var(--space-4) 0' }}>
+            <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>السابق</Button>
+            <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>{page} / {totalPages}</span>
+            <Button variant="ghost" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>التالي</Button>
+          </div>
+        )}
+      </div>
+
+      <style>{`
+        .sm-table-view   { display: block; }
+        .sm-timeline-view { display: none; }
+
+        /* Timeline — same pattern as AuditLog / Ledger */
+        .sm-timeline { display: flex; flex-direction: column; padding-bottom: var(--space-4); }
+        .al-date-sep {
+          display: flex; align-items: center; gap: var(--space-3);
+          margin: var(--space-3) 0; font-size: 11px; font-weight: 600;
+          color: var(--text-muted); letter-spacing: 0.06em;
+        }
+        .al-date-sep::before, .al-date-sep::after {
+          content: ''; flex: 1; height: 1px; background: var(--border-primary);
+        }
+        .al-timeline-item {
+          display: flex; align-items: flex-start; gap: 12px;
+          padding: 0 0 var(--space-3) 4px; position: relative;
+        }
+        .al-timeline-item::after {
+          content: ''; position: absolute; right: 7px; top: 18px;
+          width: 1px; bottom: 0; background: var(--border-primary);
+        }
+        .al-dot {
+          width: 14px; height: 14px; border-radius: 50%;
+          flex-shrink: 0; margin-top: 6px; position: relative; z-index: 1;
+          box-shadow: 0 0 0 3px var(--bg-base);
+        }
+        .al-item-card {
+          flex: 1; padding: var(--space-3) var(--space-4);
+        }
+        @media (max-width: 768px) {
+          .sm-table-view   { display: none; }
+          .sm-timeline-view { display: block; }
+        }
+      `}</style>
     </div>
   )
 }

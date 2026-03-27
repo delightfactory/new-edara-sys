@@ -89,6 +89,42 @@ Arabic-first, RTL, multi-role, designed for 5,000+ customers and 50,000+ orders.
 - Vault/custody balance updates are ATOMIC with their source operation
 - `approval_rules` are enforced in DB `approve_expense()` function — not just UI
 
+### 9. UX Constitution (ABSOLUTE — No Exceptions)
+
+These rules apply to EVERY component, EVERY screen. Non-negotiable.
+
+#### 9.1 Mobile-First & Native-Feel
+- **Bottom Navigation** is the primary routing mechanism on mobile (≤768px) — NEVER hamburger+drawer as primary nav
+- **Bottom Sheets** for mobile modals/filters (slide from bottom, swipe to close) — NEVER centered modals on mobile
+- All interactive elements (buttons, inputs, tabs) MUST have a minimum touch target of **44px height** (`--touch-target`)
+- Mobile App Bar: glassmorphism sticky top bar showing page title + bell — no hamburger
+
+#### 9.2 Data Presentation
+- **Desktop**: Advanced Data Tables with sortable columns, row actions
+- **Mobile**: Transform every table row into a **Data Card** with status badge, key fields, and swipe actions
+- Use `var(--bottom-nav-height)` padding-bottom on all mobile pages to prevent BottomNav overlap
+
+#### 9.3 Data Entry & Forms
+- Long forms (≥4 sections) MUST use a **Stepper/Wizard** pattern with a step indicator
+- Numeric inputs MUST use `inputmode="decimal"` and `enterkeyhint="done"` or `"next"`
+- Phone inputs: `type="tel"` + `inputmode="numeric"` + `dir="ltr"`
+
+#### 9.4 Micro-interactions
+- **Skeleton Loaders** during all fetch states — NEVER blank screens or spinners alone
+- **Empty States** with icon + Arabic message + CTA button — NEVER blank lists
+- **Toasts** (sonner) for all feedback — position `top-center`, never blocking alerts
+
+#### 9.5 Permission-Driven UI
+- Use `<PermissionGuard>` wrapper for ANY action that requires a permission
+- `mode="hide"` → renders null if no permission (default)
+- `mode="disable"` → renders grayed-out element with lock icon + aria-disabled + tooltip
+- Frontend permission checks are UX ONLY — DB is always the real guard
+
+#### 9.6 Settings-Driven UI
+- Components MUST react to `company_settings` dynamically
+- Example: if `sales.tax_enabled === false` → hide tax fields entirely
+- Load settings once at app start via `useCompanySettings()` hook — never refetch per component
+
 ---
 
 ## 📁 Project Architecture

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import { Landmark, Plus, Edit, ArrowDownToLine, ArrowUpFromLine, Eye, Building2, Wallet, ArrowLeftRight } from 'lucide-react'
 import { createVault, updateVault, getVaultTransactions, addVaultDeposit, addVaultWithdrawal, addVaultOpeningBalance, transferBetweenVaults } from '@/lib/services/vaults'
@@ -11,6 +11,8 @@ import DataTable from '@/components/shared/DataTable'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
+import ResponsiveModal from '@/components/ui/ResponsiveModal'
+import { useIsAnyModalOpen } from '@/hooks/useModalStack'
 
 const VAULT_TYPES: { value: VaultType; label: string }[] = [
   { value: 'cash', label: 'نقدي' },
@@ -27,6 +29,20 @@ const vaultTypeBadge = (t: VaultType): 'primary' | 'success' | 'info' => {
 export default function VaultsPage() {
   const can = useAuthStore(s => s.can)
   const invalidate = useInvalidate()
+  const isAnyModalOpen = useIsAnyModalOpen()
+
+  // Scroll-direction FAB hide
+  const [scrollHidden, setScrollHidden] = useState(false)
+  const lastScrollY = useRef(0)
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY
+      setScrollHidden(y > lastScrollY.current && y > 100)
+      lastScrollY.current = y
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   // React Query — cached & shared
   const { data: vaults = [], isLoading: loading } = useVaults()
@@ -231,8 +247,8 @@ export default function VaultsPage() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="edara-card" style={{ overflow: 'auto' }}>
+      {/* ── DESKTOP: DataTable ─────────────────────────── */}
+      <div className="vault-table-view edara-card" style={{ overflow: 'auto' }}>
         <DataTable<Vault>
           columns={[
             { key: 'name', label: 'اسم الخزنة', render: (v) => (
@@ -274,20 +290,89 @@ export default function VaultsPage() {
         />
       </div>
 
-      {/* ── Form Modal ── */}
-      <Modal
+      {/* ── MOBILE: Vault Cards ───────────────────────────── */}
+      <div className="vault-card-view">
+        {loading ? (
+          <div className="mobile-card-list">
+            {[1,2,3].map(i => <div key={i} className="edara-card" style={{ height: 120 }}><div className="skeleton" style={{ height: '100%' }} /></div>)}
+          </div>
+        ) : vaults.length === 0 ? (
+          <div className="edara-card" style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <Landmark size={40} style={{ margin: '0 auto 12px', display: 'block', opacity: 0.3 }} />
+            <p>لا توجد خزائن</p>
+          </div>
+        ) : (
+          <div className="mobile-card-list">
+            {vaults.map((v: Vault) => {
+              const VaultIcon = v.type === 'cash' ? Wallet : v.type === 'bank' ? Building2 : Landmark
+              return (
+                <div key={v.id} className="edara-card vault-mobile-card">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-md)', background: 'rgba(37,99,235,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <VaultIcon size={18} style={{ color: 'var(--color-primary)' }} />
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 'var(--text-sm)' }}>{v.name}</div>
+                        <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                          <Badge variant={vaultTypeBadge(v.type)}>{vaultTypeLabel(v.type)}</Badge>
+                          <Badge variant={v.is_active ? 'success' : 'neutral'}>{v.is_active ? 'نشطة' : 'معطلة'}</Badge>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'end' }}>
+                      <div style={{ fontWeight: 800, fontSize: '1.1rem', color: v.current_balance >= 0 ? 'var(--color-success)' : 'var(--color-danger)', fontVariantNumeric: 'tabular-nums' }}>
+                        {formatCurrency(v.current_balance)}
+                      </div>
+                      {v.branch?.name && <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{v.branch.name}</div>}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <Button variant="ghost" size="sm" icon={<Eye size={12} />} onClick={() => openStatement(v)}>كشف</Button>
+                    {can('finance.vaults.transact') && (
+                      <>
+                        <Button variant="success" size="sm" icon={<ArrowDownToLine size={12} />} onClick={() => openTx(v, 'deposit')}>إيداع</Button>
+                        <Button variant="danger" size="sm" icon={<ArrowUpFromLine size={12} />} onClick={() => openTx(v, 'withdrawal')}>سحب</Button>
+                      </>
+                    )}
+                    {can('finance.vaults.update') && (
+                      <Button variant="ghost" size="sm" icon={<Edit size={12} />} onClick={() => openEdit(v)}>تعديل</Button>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Smart local FAB — hides when any modal is open or scrolling down */}
+      {can('finance.vaults.create') && (
+        <button
+          className={`vault-fab${isAnyModalOpen || scrollHidden ? ' vault-fab--hidden' : ''}`}
+          onClick={openCreate}
+          aria-label="خزنة جديدة"
+          aria-hidden={isAnyModalOpen || scrollHidden}
+        >
+          <Plus size={22} />
+          <span style={{ fontSize: 'var(--text-sm)', fontWeight: 700 }}>خزنة +</span>
+        </button>
+      )}
+
+      {/* ── Form Modal (Responsive: bottom-sheet on mobile) ── */}
+      <ResponsiveModal
         open={formOpen}
         onClose={() => setFormOpen(false)}
         title={editingVault ? 'تعديل الخزنة' : 'خزنة جديدة'}
         size="md"
         footer={
-          <>
+          <div style={{ display: 'flex', gap: 'var(--space-3)', width: '100%', justifyContent: 'flex-end' }}>
             <Button variant="ghost" onClick={() => setFormOpen(false)}>إلغاء</Button>
             <Button onClick={handleSave} loading={saving}>حفظ</Button>
-          </>
+          </div>
         }
       >
-        <div className="flex-col gap-4">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
           <div className="form-group">
             <label className="form-label required">الاسم</label>
             <input className="form-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="مثال: الخزنة الرئيسية" />
@@ -333,16 +418,16 @@ export default function VaultsPage() {
             </div>
           )}
         </div>
-      </Modal>
+      </ResponsiveModal>
 
-      {/* ── Transaction Modal ── */}
-      <Modal
+      {/* ── Transaction Modal (Responsive: bottom-sheet on mobile) ── */}
+      <ResponsiveModal
         open={!!txMode}
         onClose={() => setTxMode(null)}
         title={txMode === 'deposit' ? `إيداع في: ${txVault?.name}` : txMode === 'withdrawal' ? `سحب من: ${txVault?.name}` : `رصيد افتتاحي: ${txVault?.name}`}
         size="sm"
         footer={
-          <>
+          <div style={{ display: 'flex', gap: 'var(--space-3)', width: '100%', justifyContent: 'flex-end' }}>
             <Button variant="ghost" onClick={() => setTxMode(null)}>إلغاء</Button>
             <Button
               onClick={handleTx}
@@ -351,10 +436,10 @@ export default function VaultsPage() {
             >
               {txMode === 'deposit' ? 'تأكيد الإيداع' : txMode === 'withdrawal' ? 'تأكيد السحب' : 'تأكيد'}
             </Button>
-          </>
+          </div>
         }
       >
-        <div className="flex-col gap-4">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
           {txVault && (
             <div className="info-box">
               <span className="info-box-label">الرصيد الحالي</span>
@@ -372,7 +457,7 @@ export default function VaultsPage() {
             </div>
           )}
         </div>
-      </Modal>
+      </ResponsiveModal>
 
       {/* ── Statement Modal ── */}
       <Modal
@@ -449,6 +534,43 @@ export default function VaultsPage() {
         </div>
       </Modal>
 
+      <style>{`
+        .vault-table-view { display: block; }
+        .vault-card-view  { display: none; }
+        .vault-mobile-card { padding: var(--space-4); }
+        .mobile-card-list { display: flex; flex-direction: column; gap: var(--space-3); }
+        @media (max-width: 768px) {
+          .vault-table-view { display: none; }
+          .vault-card-view  { display: block; }
+          .vault-fab {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            position: fixed;
+            bottom: calc(var(--bottom-nav-height, 64px) + var(--space-4));
+            inset-inline-end: var(--space-4);
+            z-index: var(--z-fab, 300);
+            height: var(--fab-size, 48px);
+            padding: 0 var(--space-4);
+            border-radius: var(--radius-full);
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-family: var(--font-sans);
+            box-shadow: var(--shadow-lg);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            -webkit-tap-highlight-color: transparent;
+          }
+          .vault-fab--hidden {
+            opacity: 0;
+            transform: translateY(16px) scale(0.92);
+            pointer-events: none;
+          }
+          .vault-fab:hover { background: var(--color-primary-hover); }
+          .vault-fab:active { transform: scale(0.95); }
+        }
+      `}</style>
     </div>
   )
 }

@@ -1,34 +1,28 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { RotateCcw, Plus, Search } from 'lucide-react'
+import { RotateCcw, Search, TrendingDown, Building2, Package } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import { getPurchaseReturns } from '@/lib/services/purchase-returns'
-import { formatNumber } from '@/lib/utils/format'
+import { formatCurrency } from '@/lib/utils/format'
 import type { PurchaseReturnStatus } from '@/lib/types/master-data'
 import PageHeader from '@/components/shared/PageHeader'
+import DataTable from '@/components/shared/DataTable'
+import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 
-function StatusBadge({ status }: { status: PurchaseReturnStatus }) {
-  const map = {
-    draft:     { label: 'مسودة', color: '#92400e', bg: '#fef3c7' },
-    confirmed: { label: 'مؤكد',  color: '#166534', bg: '#dcfce7' },
-  }
-  const { label, color, bg } = map[status]
-  return (
-    <span style={{ padding: '2px 10px', borderRadius: 99, fontSize: '0.75rem', fontWeight: 700, color, background: bg }}>
-      {label}
-    </span>
-  )
+const STATUS_MAP: Record<string, { label: string; variant: 'neutral' | 'success' | 'warning' | 'danger' }> = {
+  draft:     { label: 'مسودة', variant: 'neutral'  },
+  confirmed: { label: 'مؤكد',  variant: 'success'  },
 }
 
 export default function PurchaseReturnsPage() {
   const navigate = useNavigate()
   const can      = useAuthStore(s => s.can)
 
-  const [search, setSearch]   = useState('')
-  const [status, setStatus]   = useState<PurchaseReturnStatus | ''>('')
-  const [page, setPage]       = useState(1)
+  const [search, setSearch] = useState('')
+  const [status, setStatus] = useState<PurchaseReturnStatus | ''>('')
+  const [page, setPage]     = useState(1)
   const pageSize = 25
 
   const { data, isLoading } = useQuery({
@@ -42,19 +36,16 @@ export default function PurchaseReturnsPage() {
 
   const returns    = data?.data    || []
   const totalPages = data?.totalPages || 1
+  const totalCount = data?.count ?? returns.length
 
   return (
-    <div style={{ padding: 'var(--space-4)', maxWidth: 1200, margin: '0 auto', animation: 'fade-in 0.3s ease' }}>
+    <div className="page-container animate-enter">
       <PageHeader
         title="مرتجعات المشتريات"
-        subtitle="إدارة مرتجعات البضاعة المُعادة للموردين"
+        subtitle={isLoading ? '...' : `${totalCount} مرتجع`}
         actions={
           can('procurement.returns.create') ? (
-            <Button
-              variant="primary"
-              icon={<Plus size={16} />}
-              onClick={() => navigate('/purchases/returns/new')}
-            >
+            <Button icon={<RotateCcw size={16} />} onClick={() => navigate('/purchases/returns/new')}>
               مرتجع جديد
             </Button>
           ) : undefined
@@ -62,108 +53,141 @@ export default function PurchaseReturnsPage() {
       />
 
       {/* ── Filters ─────────────────────────────────────────── */}
-      <div style={{
-        display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap',
-        background: 'var(--bg-surface)', border: '1px solid var(--border-color)',
-        borderRadius: 'var(--radius-lg)', padding: '12px 16px',
-      }}>
-        <div style={{ position: 'relative', flex: '1 1 200px', minWidth: 180 }}>
-          <Search size={14} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
-          <input
-            className="form-input"
-            style={{ paddingRight: 32 }}
-            placeholder="بحث بالرقم..."
-            value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1) }}
-          />
+      <div className="edara-card" style={{ padding: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
+        <div className="flex gap-4" style={{ flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative', flex: '1 1 200px', minWidth: 180 }}>
+            <Search size={14} style={{ position: 'absolute', insetInlineEnd: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+            <input
+              className="form-input"
+              style={{ paddingInlineEnd: 32 }}
+              placeholder="بحث بالرقم..."
+              value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1) }}
+            />
+          </div>
+          <select
+            className="form-select"
+            style={{ width: 140 }}
+            value={status}
+            onChange={e => { setStatus(e.target.value as PurchaseReturnStatus | ''); setPage(1) }}
+          >
+            <option value="">كل الحالات</option>
+            <option value="draft">مسودة</option>
+            <option value="confirmed">مؤكد</option>
+          </select>
         </div>
-        <select
-          className="form-input"
-          style={{ width: 140 }}
-          value={status}
-          onChange={e => { setStatus(e.target.value as PurchaseReturnStatus | ''); setPage(1) }}
-        >
-          <option value="">كل الحالات</option>
-          <option value="draft">مسودة</option>
-          <option value="confirmed">مؤكد</option>
-        </select>
       </div>
 
-      {/* ── Table ───────────────────────────────────────────── */}
-      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+      {/* ── DESKTOP: DataTable ─────────────────────────────── */}
+      <div className="pret-table-view edara-card" style={{ overflow: 'auto' }}>
+        <DataTable<any>
+          columns={[
+            { key: 'number',      label: 'الرقم',      render: r => <span style={{ fontWeight: 700, fontFamily: 'monospace', color: 'var(--color-primary)', direction: 'ltr', display: 'inline-block' }}>{r.number}</span> },
+            { key: 'supplier',    label: 'المورد',     render: r => r.supplier?.name || '—' },
+            { key: 'warehouse',   label: 'المخزن',     hideOnMobile: true, render: r => r.warehouse?.name || '—' },
+            { key: 'return_date', label: 'التاريخ',    hideOnMobile: true, render: r => r.return_date },
+            { key: 'total_amount',label: 'الإجمالي',   render: r => (
+                <span style={{ fontWeight: 700, color: 'var(--color-danger)', fontVariantNumeric: 'tabular-nums' }}>
+                  {formatCurrency(r.total_amount)}
+                </span>
+              )
+            },
+            { key: 'status', label: 'الحالة', render: r => {
+                const cfg = STATUS_MAP[r.status]
+                return cfg ? <Badge variant={cfg.variant}>{cfg.label}</Badge> : <Badge>{r.status}</Badge>
+              }
+            },
+          ]}
+          data={returns}
+          loading={isLoading}
+          onRowClick={r => navigate(`/purchases/returns/${r.id}`)}
+          emptyIcon={<RotateCcw size={48} />}
+          emptyTitle="لا توجد مرتجعات"
+          emptyText='اضغط "+ مرتجع" لإنشاء أول مرتجع مشتريات'
+          page={page}
+          totalPages={totalPages}
+          totalCount={totalCount}
+          onPageChange={setPage}
+        />
+      </div>
+
+      {/* ── MOBILE: Return Cards ──────────────────────────── */}
+      <div className="pret-card-view">
         {isLoading ? (
-          <div style={{ padding: 'var(--space-6)' }}>
-            {[1,2,3,4,5].map(i => <div key={i} className="skeleton skeleton-row" style={{ marginBottom: 8, height: 44 }} />)}
+          <div className="mobile-card-list">
+            {[1,2,3].map(i => <div key={i} className="edara-card" style={{ height: 100 }}><div className="skeleton" style={{ height: '100%' }} /></div>)}
           </div>
         ) : returns.length === 0 ? (
-          <div style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--text-muted)' }}>
-            <RotateCcw size={40} style={{ opacity: 0.3, marginBottom: 12 }} />
-            <div style={{ fontWeight: 600, marginBottom: 4 }}>لا توجد مرتجعات</div>
-            <div style={{ fontSize: '0.85rem' }}>اضغط "مرتجع جديد" لإنشاء أول مرتجع مشتريات</div>
+          <div className="edara-card" style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <RotateCcw size={40} style={{ margin: '0 auto 12px', display: 'block', opacity: 0.3 }} />
+            <p>لا توجد مرتجعات</p>
           </div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-            <thead>
-              <tr style={{ background: 'var(--bg-surface-2)', borderBottom: '2px solid var(--border-color)' }}>
-                {['رقم المرتجع', 'المورد', 'المخزن', 'تاريخ المرتجع', 'الإجمالي', 'الحالة', 'إجراء'].map(h => (
-                  <th key={h} style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 600, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {returns.map((ret, idx) => (
-                <tr
-                  key={ret.id}
-                  style={{ borderBottom: '1px solid var(--border-color)', background: idx % 2 === 1 ? 'var(--bg-surface-2)' : 'var(--bg-surface)', cursor: 'pointer', transition: 'background 0.15s' }}
-                  onClick={() => navigate(`/purchases/returns/${ret.id}`)}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = idx % 2 === 1 ? 'var(--bg-surface-2)' : 'var(--bg-surface)')}
+          <div className="mobile-card-list">
+            {returns.map((r: any) => {
+              const cfg = STATUS_MAP[r.status]
+              return (
+                <div
+                  key={r.id}
+                  className="edara-card pret-mobile-card"
+                  onClick={() => navigate(`/purchases/returns/${r.id}`)}
                 >
-                  <td style={{ padding: '10px 14px', fontWeight: 700, color: 'var(--color-primary)', direction: 'ltr', textAlign: 'right' }}>
-                    {ret.number}
-                  </td>
-                  <td style={{ padding: '10px 14px' }}>{(ret as any).supplier?.name || '—'}</td>
-                  <td style={{ padding: '10px 14px' }}>{(ret as any).warehouse?.name || '—'}</td>
-                  <td style={{ padding: '10px 14px', direction: 'ltr', textAlign: 'right' }}>{ret.return_date}</td>
-                  <td style={{ padding: '10px 14px', fontWeight: 600 }}>{formatNumber(ret.total_amount)} ج.م</td>
-                  <td style={{ padding: '10px 14px' }}><StatusBadge status={ret.status} /></td>
-                  <td style={{ padding: '10px 14px' }}>
-                    <button
-                      type="button"
-                      onClick={e => { e.stopPropagation(); navigate(`/purchases/returns/${ret.id}`) }}
-                      style={{ fontSize: '0.8rem', color: 'var(--color-primary)', cursor: 'pointer', background: 'none', border: '1px solid var(--color-primary)', borderRadius: 6, padding: '3px 10px' }}
-                    >
-                      عرض
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  {/* Header row */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-md)', background: 'rgba(239,68,68,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <TrendingDown size={16} style={{ color: 'var(--color-danger)' }} />
+                      </div>
+                      <div>
+                        <div style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--color-primary)' }} dir="ltr">{r.number}</div>
+                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 2 }}>{r.return_date}</div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                      {cfg && <Badge variant={cfg.variant}>{cfg.label}</Badge>}
+                      <span style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--color-danger)', fontVariantNumeric: 'tabular-nums' }}>
+                        {formatCurrency(r.total_amount)}
+                      </span>
+                    </div>
+                  </div>
+                  {/* Meta */}
+                  <div style={{ display: 'flex', gap: 12, fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
+                    {r.supplier?.name && (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <Building2 size={10} /> {r.supplier.name}
+                      </span>
+                    )}
+                    {r.warehouse?.name && (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <Package size={10} /> {r.warehouse.name}
+                      </span>
+                    )}
+                    <span style={{ marginInlineStart: 'auto', color: 'var(--color-primary)', fontSize: '10px' }}>عرض التفاصيل ›</span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         )}
-
-        {/* Pagination */}
         {totalPages > 1 && (
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, padding: '12px 16px', borderTop: '1px solid var(--border-color)' }}>
-            <button
-              className="btn btn-ghost btn-sm"
-              disabled={page === 1}
-              onClick={() => setPage(p => p - 1)}
-            >السابق</button>
-            <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>صفحة {page} / {totalPages}</span>
-            <button
-              className="btn btn-ghost btn-sm"
-              disabled={page === totalPages}
-              onClick={() => setPage(p => p + 1)}
-            >التالي</button>
+          <div className="mobile-pagination">
+            <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>السابق</Button>
+            <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>{page} / {totalPages}</span>
+            <Button variant="ghost" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>التالي</Button>
           </div>
         )}
       </div>
 
       <style>{`
-        @keyframes fade-in {
-          from { opacity: 0; transform: translateY(8px); }
-          to   { opacity: 1; transform: translateY(0); }
+        .pret-table-view { display: block; }
+        .pret-card-view  { display: none; }
+        .pret-mobile-card { padding: var(--space-4); cursor: pointer; transition: background 0.12s; }
+        .pret-mobile-card:hover { background: var(--bg-hover); }
+        .mobile-card-list { display: flex; flex-direction: column; gap: var(--space-3); }
+        .mobile-pagination { display: flex; align-items: center; justify-content: center; gap: var(--space-4); padding: var(--space-4) 0; }
+        @media (max-width: 768px) {
+          .pret-table-view { display: none; }
+          .pret-card-view  { display: block; }
         }
       `}</style>
     </div>

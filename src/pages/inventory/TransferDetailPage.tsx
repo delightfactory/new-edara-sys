@@ -11,7 +11,7 @@ import { formatNumber, formatDateShort } from '@/lib/utils/format'
 import type { StockTransfer } from '@/lib/types/master-data'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
-import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import ResponsiveModal from '@/components/ui/ResponsiveModal'
 
 export default function TransferDetailPage() {
   const { id } = useParams()
@@ -115,49 +115,49 @@ export default function TransferDetailPage() {
     { label: 'تم الاستلام', date: transfer.status === 'received' ? transfer.updated_at : null, icon: Check, active: transfer.status === 'received' },
   ]
 
+  const statusColors: Record<string, string> = {
+    pending: '#f59e0b', in_transit: '#3b82f6', received: '#16a34a', cancelled: '#dc2626',
+  }
+  const sc = statusColors[transfer.status] || '#6b7280'
+
   return (
-    <div className="page-container animate-enter">
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-info">
-          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/inventory/transfers')} style={{ marginBottom: 'var(--space-2)' }}>
-            <ArrowRight size={14} /> العودة للتحويلات
+    <div style={{ maxWidth: 900, margin: '0 auto', paddingBottom: 120 }}>
+
+      {/* ══ Sticky Mobile Hero ══ */}
+      <div style={{
+        position: 'sticky', top: 0, zIndex: 10,
+        background: `linear-gradient(135deg, ${sc}12, ${sc}06)`,
+        borderBottom: `3px solid ${sc}30`,
+        backdropFilter: 'blur(12px)',
+        padding: '14px 16px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button onClick={() => navigate('/inventory/transfers')}
+            style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: '7px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: 'var(--text-secondary)', flexShrink: 0 }}>
+            <ArrowRight size={14} /> رجوع
           </button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-            <h1 className="page-title">تحويل {transfer.number || ''}</h1>
-            <Badge variant={st.variant}>{st.label}</Badge>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <h1 style={{ fontSize: 17, fontWeight: 800, margin: 0 }}>تحويل {transfer.number || ''}</h1>
+              <Badge variant={st.variant}>{st.label}</Badge>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{dir.icon} {dir.label}</div>
           </div>
-          <p className="page-subtitle">{dir.icon} {dir.label}</p>
-        </div>
-        <div className="page-actions" style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-          {canShip && (
-            <Button variant="primary" icon={<Truck size={14} />} onClick={() => setConfirmAction({ type: 'ship' })}>
-              شحن
-            </Button>
-          )}
-          {canApprove && (
-            <Button variant="primary" icon={<Truck size={14} />} onClick={() => setConfirmAction({ type: 'approve' })}>
-              موافقة وشحن
-            </Button>
-          )}
-          {canReceive && (
-            <Button variant="success" icon={<Check size={14} />} onClick={() => setConfirmAction({ type: 'receive' })}>
-              تأكيد الاستلام
-            </Button>
-          )}
-          {canCancel && (
-            <Button variant="danger" icon={<XIcon size={14} />} onClick={() => setConfirmAction({ type: 'cancel' })}>
-              إلغاء
-            </Button>
-          )}
+          {/* Desktop actions */}
+          <div className="trns-desktop-actions" style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            {canShip && <Button variant="primary" icon={<Truck size={14} />} onClick={() => setConfirmAction({ type: 'ship' })}>شحن</Button>}
+            {canApprove && <Button variant="primary" icon={<Truck size={14} />} onClick={() => setConfirmAction({ type: 'approve' })}>موافقة وشحن</Button>}
+            {canReceive && <Button variant="success" icon={<Check size={14} />} onClick={() => setConfirmAction({ type: 'receive' })}>تأكيد الاستلام</Button>}
+            {canCancel && <Button variant="danger" icon={<XIcon size={14} />} onClick={() => setConfirmAction({ type: 'cancel' })}>إلغاء</Button>}
+          </div>
         </div>
       </div>
 
-      {/* رسالة حالة لحظية */}
+      {/* Status notice */}
       {transfer.status === 'in_transit' && shippedByMe && (
         <div style={{
+          margin: '0 12px 12px',
           padding: 'var(--space-3) var(--space-4)',
-          marginBottom: 'var(--space-4)',
           background: 'var(--color-info-light)',
           borderRadius: 'var(--radius-md)',
           border: '1px solid var(--color-info)',
@@ -170,7 +170,7 @@ export default function TransferDetailPage() {
       )}
 
       {/* Summary Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--space-3)', margin: '12px 12px', marginBottom: 'var(--space-4)' }}>
         {/* من مخزن */}
         <div className="edara-card" style={{ padding: 'var(--space-4)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
@@ -302,79 +302,176 @@ export default function TransferDetailPage() {
         </div>
       </div>
 
-      {/* Items Table */}
-      <div className="edara-card" style={{ overflow: 'auto' }}>
-        <div style={{ padding: 'var(--space-4) var(--space-5)', borderBottom: '1px solid var(--border-primary)' }}>
-          <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 700 }}>بنود التحويل</h2>
-        </div>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th style={{ width: 40 }}>#</th>
-              <th>المنتج</th>
-              <th className="hide-mobile">SKU</th>
-              <th className="hide-mobile">الوحدة</th>
-              <th>الكمية</th>
-              {canViewCosts && <th>تكلفة الوحدة (WAC)</th>}
-              {canViewCosts && <th>الإجمالي</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {transfer.items?.map((item: any, idx: number) => (
-              <tr key={item.id}>
-                <td style={{ color: 'var(--text-muted)' }}>{idx + 1}</td>
-                <td style={{ fontWeight: 500 }}>{item.product?.name || item.product_id}</td>
-                <td className="hide-mobile" dir="ltr" style={{ fontFamily: 'monospace', fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{item.product?.sku || '—'}</td>
-                <td className="hide-mobile">{item.unit?.name || '—'}</td>
-                <td style={{ fontWeight: 600 }}>{formatNumber(item.quantity)}</td>
-                {canViewCosts && <td>{item.unit_cost ? formatNumber(item.unit_cost) : '—'}</td>}
-                {canViewCosts && <td style={{ fontWeight: 600 }}>{item.unit_cost ? formatNumber(item.quantity * item.unit_cost) : '—'}</td>}
-              </tr>
-            ))}
-          </tbody>
-          {canViewCosts && transfer.items && transfer.items.length > 0 && (
-            <tfoot>
+      {/* Items — desktop table / mobile cards */}
+      <div style={{ padding: '0 12px' }}>
+        <div className="trns-table-view edara-card" style={{ overflow: 'auto' }}>
+          <div style={{ padding: 'var(--space-4) var(--space-5)', borderBottom: '1px solid var(--border-primary)' }}>
+            <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 700 }}>بنود التحويل</h2>
+          </div>
+          <table className="data-table">
+            <thead>
               <tr>
-                <td colSpan={3} className="hide-mobile" /><td colSpan={2} />
-                <td style={{ fontWeight: 700 }}>الإجمالي</td>
-                <td style={{ fontWeight: 700 }}>
-                  {formatNumber(transfer.items.reduce((sum: number, it: any) => sum + (it.quantity * (it.unit_cost || 0)), 0))}
-                </td>
+                <th style={{ width: 40 }}>#</th>
+                <th>المنتج</th>
+                <th className="hide-mobile">SKU</th>
+                <th className="hide-mobile">الوحدة</th>
+                <th>الكمية</th>
+                {canViewCosts && <th>تكلفة الوحدة (WAC)</th>}
+                {canViewCosts && <th>الإجمالي</th>}
               </tr>
-            </tfoot>
-          )}
-        </table>
+            </thead>
+            <tbody>
+              {transfer.items?.map((item: any, idx: number) => (
+                <tr key={item.id}>
+                  <td style={{ color: 'var(--text-muted)' }}>{idx + 1}</td>
+                  <td style={{ fontWeight: 500 }}>{item.product?.name || item.product_id}</td>
+                  <td className="hide-mobile" dir="ltr" style={{ fontFamily: 'monospace', fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{item.product?.sku || '—'}</td>
+                  <td className="hide-mobile">{item.unit?.name || '—'}</td>
+                  <td style={{ fontWeight: 600 }}>{formatNumber(item.quantity)}</td>
+                  {canViewCosts && <td>{item.unit_cost ? formatNumber(item.unit_cost) : '—'}</td>}
+                  {canViewCosts && <td style={{ fontWeight: 600 }}>{item.unit_cost ? formatNumber(item.quantity * item.unit_cost) : '—'}</td>}
+                </tr>
+              ))}
+            </tbody>
+            {canViewCosts && transfer.items && transfer.items.length > 0 && (
+              <tfoot>
+                <tr>
+                  <td colSpan={3} className="hide-mobile" /><td colSpan={2} />
+                  <td style={{ fontWeight: 700 }}>الإجمالي</td>
+                  <td style={{ fontWeight: 700 }}>
+                    {formatNumber(transfer.items.reduce((sum: number, it: any) => sum + (it.quantity * (it.unit_cost || 0)), 0))}
+                  </td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
+
+        {/* Mobile item cards */}
+        <div className="trns-card-view">
+          <div style={{ fontWeight: 700, fontSize: 13, padding: '0 4px 10px', color: 'var(--text-secondary)' }}>
+            البنود ({transfer.items?.length || 0})
+          </div>
+          {transfer.items?.map((item: any, idx: number) => (
+            <div key={item.id} style={{
+              background: 'var(--bg-surface)', border: '1px solid var(--border-primary)',
+              borderRadius: 10, padding: 12, marginBottom: 8,
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600, fontSize: 13 }}>{item.product?.name}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace', marginTop: 2 }}>{item.product?.sku}</div>
+                {item.unit?.name && <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>{item.unit.name}</div>}
+              </div>
+              <div style={{ textAlign: 'left', flexShrink: 0 }}>
+                <div style={{ fontWeight: 800, fontSize: 15, fontVariantNumeric: 'tabular-nums' }}>{formatNumber(item.quantity)}</div>
+                {canViewCosts && item.unit_cost && (
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+                    {formatNumber(item.quantity * item.unit_cost)} ج.م
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Confirm Dialogs */}
-      {confirmAction && (
-        <ConfirmDialog
-          open={true}
-          title={
-            confirmAction.type === 'ship' ? 'تأكيد الشحن' :
-            confirmAction.type === 'approve' ? 'موافقة وشحن' :
-            confirmAction.type === 'receive' ? 'تأكيد الاستلام' : 'إلغاء التحويل'
-          }
-          message={
-            confirmAction.type === 'ship'
+      {/* ══ Mobile Action Bar ══ */}
+      {(canShip || canApprove || canReceive || canCancel) && (
+        <div className="trns-action-bar">
+          {canShip && (
+            <button type="button" className="btn btn-primary"
+              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
+              onClick={() => setConfirmAction({ type: 'ship' })}>
+              <Truck size={15} /> شحن
+            </button>
+          )}
+          {canApprove && (
+            <button type="button" className="btn btn-primary"
+              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
+              onClick={() => setConfirmAction({ type: 'approve' })}>
+              <Truck size={15} /> موافقة &amp; شحن
+            </button>
+          )}
+          {canReceive && (
+            <button type="button" className="btn btn-success"
+              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
+              onClick={() => setConfirmAction({ type: 'receive' })}>
+              <Check size={15} /> تأكيد الاستلام
+            </button>
+          )}
+          {canCancel && (
+            <button type="button" className="btn btn-danger"
+              style={{ flex: '0 0 auto', paddingInline: 16, display: 'flex', alignItems: 'center', gap: 5 }}
+              onClick={() => setConfirmAction({ type: 'cancel' })}>
+              <XIcon size={15} /> إلغاء
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ══ Action Confirm Modal (ResponsiveModal = bottom-sheet) ══ */}
+      <ResponsiveModal
+        open={!!confirmAction}
+        onClose={() => setConfirmAction(null)}
+        title={
+          confirmAction?.type === 'ship' ? 'تأكيد الشحن' :
+          confirmAction?.type === 'approve' ? 'موافقة وشحن' :
+          confirmAction?.type === 'receive' ? 'تأكيد الاستلام' : 'إلغاء التحويل'
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
+            {confirmAction?.type === 'ship'
               ? `سيتم شحن التحويل ${transfer.number || ''} وخصم الكميات من المخزن المُرسل.`
-              : confirmAction.type === 'approve'
+              : confirmAction?.type === 'approve'
               ? `سيتم الموافقة على التحويل ${transfer.number || ''} وشحنه. سيتم حجز الكميات من المخزن المُرسل.`
-              : confirmAction.type === 'receive'
+              : confirmAction?.type === 'receive'
               ? `سيتم تأكيد استلام التحويل ${transfer.number || ''} وإضافة الكميات للمخزن المُستلم.`
               : `سيتم إلغاء التحويل ${transfer.number || ''} وإلغاء حجز الكميات.`
+            }
+          </p>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+            <button type="button" className="btn btn-secondary" onClick={() => setConfirmAction(null)} disabled={actionLoading}>
+              تراجع
+            </button>
+            <button type="button"
+              className={`btn ${confirmAction?.type === 'cancel' ? 'btn-danger' : confirmAction?.type === 'receive' ? 'btn-success' : 'btn-primary'}`}
+              onClick={handleAction} disabled={actionLoading}
+              style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {actionLoading ? 'جاري...' :
+                confirmAction?.type === 'ship' ? 'شحن' :
+                confirmAction?.type === 'approve' ? 'موافقة وشحن' :
+                confirmAction?.type === 'receive' ? 'تأكيد الاستلام' : 'تأكيد الإلغاء'
+              }
+            </button>
+          </div>
+        </div>
+      </ResponsiveModal>
+
+      <style>{`
+        .trns-table-view { display: block; }
+        .trns-card-view  { display: none; }
+        .trns-desktop-actions { display: flex !important; }
+        .trns-action-bar { display: none; }
+        @media (max-width: 768px) {
+          .trns-table-view { display: none; }
+          .trns-card-view  { display: block; }
+          .trns-desktop-actions { display: none !important; }
+          .trns-action-bar {
+            display: flex;
+            gap: 8px;
+            position: fixed;
+            bottom: calc(var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px) + 8px);
+            left: 0; right: 0;
+            z-index: 200;
+            padding: 10px 16px;
+            background: var(--bg-surface);
+            border-top: 1px solid var(--border-primary);
+            box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
           }
-          variant={confirmAction.type === 'cancel' ? 'danger' : 'info'}
-          confirmText={
-            confirmAction.type === 'ship' ? 'شحن' :
-            confirmAction.type === 'approve' ? 'موافقة وشحن' :
-            confirmAction.type === 'receive' ? 'تأكيد الاستلام' : 'إلغاء'
-          }
-          loading={actionLoading}
-          onConfirm={handleAction}
-          onCancel={() => setConfirmAction(null)}
-        />
-      )}
+        }
+      `}</style>
     </div>
   )
 }

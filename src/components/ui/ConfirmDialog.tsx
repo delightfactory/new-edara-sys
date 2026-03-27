@@ -1,5 +1,5 @@
 import { AlertTriangle, Trash2, Info } from 'lucide-react'
-import Modal from './Modal'
+import ResponsiveModal from './ResponsiveModal'
 import Button from './Button'
 
 interface ConfirmDialogProps {
@@ -15,13 +15,20 @@ interface ConfirmDialogProps {
 }
 
 const icons = {
-  danger: <Trash2 size={24} style={{ color: 'var(--color-danger)' }} />,
-  warning: <AlertTriangle size={24} style={{ color: 'var(--color-warning)' }} />,
-  info: <Info size={24} style={{ color: 'var(--color-info)' }} />,
+  danger:  <Trash2 size={22} style={{ color: 'var(--color-danger)' }} />,
+  warning: <AlertTriangle size={22} style={{ color: 'var(--color-warning)' }} />,
+  info:    <Info size={22} style={{ color: 'var(--color-info)' }} />,
+}
+
+const iconBg = {
+  danger:  'color-mix(in srgb, var(--color-danger) 12%, transparent)',
+  warning: 'color-mix(in srgb, var(--color-warning) 12%, transparent)',
+  info:    'color-mix(in srgb, var(--color-info) 12%, transparent)',
 }
 
 /**
  * ConfirmDialog — مربع تأكيد للعمليات الخطرة
+ * يُعرض كـ Bottom Sheet على الموبايل (ResponsiveModal)
  * بديل لـ window.confirm() مع تصميم احترافي
  */
 export default function ConfirmDialog({
@@ -36,35 +43,48 @@ export default function ConfirmDialog({
   loading = false,
 }: ConfirmDialogProps) {
   return (
-    <Modal open={open} onClose={onCancel} size="sm">
-      <div style={{ textAlign: 'center', padding: 'var(--space-4) 0' }}>
+    <ResponsiveModal open={open} onClose={onCancel} title="">
+      <div style={{ textAlign: 'center', paddingBottom: 8 }}>
+        {/* Icon badge */}
         <div style={{
-          width: 56, height: 56, borderRadius: 'var(--radius-full)',
-          background: variant === 'danger' ? 'var(--color-danger-light)' :
-                      variant === 'warning' ? 'var(--color-warning-light)' : 'var(--color-info-light)',
+          width: 52, height: 52, borderRadius: '50%',
+          background: iconBg[variant],
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          margin: '0 auto var(--space-4)',
+          margin: '0 auto 14px',
         }}>
           {icons[variant]}
         </div>
-        <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 700, marginBottom: 'var(--space-2)' }}>
+
+        <h3 style={{ fontSize: 17, fontWeight: 700, marginBottom: 8, margin: '0 0 8px' }}>
           {title}
         </h3>
-        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+        <p style={{
+          fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.65,
+          margin: '0 0 20px', whiteSpace: 'pre-line',
+        }}>
           {message}
         </p>
+
+        {/* Action buttons — full-width stacked on mobile */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <Button
+            variant={variant === 'info' ? 'primary' : 'danger'}
+            onClick={onConfirm}
+            loading={loading}
+            style={{ width: '100%', justifyContent: 'center', padding: '12px 16px', fontSize: 15 }}
+          >
+            {confirmText}
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={onCancel}
+            disabled={loading}
+            style={{ width: '100%', justifyContent: 'center', padding: '11px 16px', fontSize: 14 }}
+          >
+            {cancelText}
+          </Button>
+        </div>
       </div>
-      <div style={{
-        display: 'flex', gap: 'var(--space-3)', justifyContent: 'center',
-        paddingTop: 'var(--space-4)', borderTop: '1px solid var(--border-primary)',
-      }}>
-        <Button variant="secondary" onClick={onCancel} disabled={loading}>
-          {cancelText}
-        </Button>
-        <Button variant={variant === 'info' ? 'primary' : 'danger'} onClick={onConfirm} loading={loading}>
-          {confirmText}
-        </Button>
-      </div>
-    </Modal>
+    </ResponsiveModal>
   )
 }

@@ -278,7 +278,7 @@ export default function Sidebar() {
           .sidebar {
             width: var(--sidebar-width);
             height: 100vh; position: fixed;
-            top: 0; right: 0; z-index: 50;
+            top: 0; right: 0; z-index: var(--z-sidebar);
             background: var(--sidebar-bg);
             display: flex; flex-direction: column;
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
@@ -420,7 +420,7 @@ export default function Sidebar() {
           @media (max-width: 768px) {
             .sidebar-overlay {
               display: block;
-              position: fixed; inset: 0; z-index: 49;
+              position: fixed; inset: 0; z-index: var(--z-overlay);
               background: var(--overlay-bg);
               backdrop-filter: blur(2px);
               animation: fadeIn 0.2s ease;

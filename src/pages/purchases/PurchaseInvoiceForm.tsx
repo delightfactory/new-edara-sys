@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
@@ -32,6 +32,15 @@ import type {
 } from '@/lib/types/master-data'
 import PageHeader from '@/components/shared/PageHeader'
 import Button from '@/components/ui/Button'
+import ResponsiveModal from '@/components/ui/ResponsiveModal'
+
+// ── Step definitions (new/draft mode only) ─────────────────────────
+const STEPS = [
+  { label: 'المورد واللوجستيات', icon: <Building2 size={14} /> },
+  { label: 'المنتجات المستلمة',  icon: <Package size={14} /> },
+  { label: 'التكاليف والضرائب', icon: <DollarSign size={14} /> },
+  { label: 'مراجعة وحفظ',    icon: <CheckCircle size={14} /> },
+]
 
 // ─────────────────────────────────────────────
 // Small UI helpers
@@ -257,6 +266,59 @@ export default function PurchaseInvoiceForm() {
   const [saving, setSaving] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [invoice, setInvoice] = useState<PurchaseInvoice | null>(null)
+
+  // ── Stepper state (only active in new/draft mode) ───────────────────
+  const [step, setStep] = useState(0)
+
+  // ── Mobile item-add sheet ─────────────────────────────────────
+  const [itemSheet, setItemSheet] = useState(false)
+  const [sheetQuery, setSheetQuery] = useState('')
+  const [sheetResults, setSheetResults] = useState<any[]>([])
+  const [sheetDraftLine, setSheetDraftLine] = useState<DraftLine | null>(null)
+
+  const searchSheetProducts = useCallback(async (q: string) => {
+    if (q.length < 2) { setSheetResults([]); return }
+    const { data } = await supabase
+      .from('products')
+      .select(`id, name, sku, last_purchase_price, cost_price, tax_rate,
+        base_unit_id,
+        base_unit:units!products_base_unit_id_fkey(id, name, symbol),
+        product_units(id, unit_id, conversion_factor, selling_price, is_purchase_unit, unit:units(id, name, symbol))`)
+      .eq('is_active', true)
+      .or(`name.ilike.%${q}%,sku.ilike.%${q}%`)
+      .limit(10)
+    setSheetResults(data || [])
+  }, [])
+
+  const selectSheetProduct = (p: any) => {
+    const baseUnitId = p.base_unit_id || ''
+    const baseSymbol = p.base_unit?.symbol || p.base_unit?.name || ''
+    const basePrice  = p.last_purchase_price ?? p.cost_price ?? 0
+    const allUnits: AvailableUnit[] = []
+    if (p.base_unit_id) allUnits.push({ unit_id: p.base_unit_id, unit_name: p.base_unit?.name || '', unit_symbol: baseSymbol, conversion_factor: 1, purchase_price: null })
+    for (const pu of (p.product_units || [])) {
+      if (pu.unit_id === p.base_unit_id) continue
+      allUnits.push({ unit_id: pu.unit_id, unit_name: pu.unit?.name || '', unit_symbol: pu.unit?.symbol || pu.unit?.name || '', conversion_factor: pu.conversion_factor || 1, purchase_price: pu.selling_price ?? null })
+    }
+    setSheetDraftLine(calcDraftLine({
+      ...newDraftLine(),
+      product_id: p.id, productName: p.name, productSku: p.sku,
+      unit_id: baseUnitId || null, unitLabel: baseSymbol,
+      available_units: allUnits, base_unit_id: baseUnitId,
+      conversion_factor: 1, base_last_purchase_price: basePrice,
+      unit_price: basePrice, tax_rate: p.tax_rate || 0,
+    }))
+    setSheetQuery('')
+    setSheetResults([])
+  }
+
+  const confirmSheetLine = () => {
+    if (!sheetDraftLine || !sheetDraftLine.product_id) return
+    setDraftLines(prev => [...prev.filter(l => l.product_id), calcDraftLine(sheetDraftLine)])
+    setSheetDraftLine(null)
+    setSheetQuery('')
+    setItemSheet(false)
+  }
 
   // ─── Vault list (for bill/pay panels) ──────────────────────────────
   const [vaults, setVaults] = useState<Vault[]>([])
@@ -602,6 +664,16 @@ export default function PurchaseInvoiceForm() {
     }
   }
 
+  // ── Step helpers ────────────────────────────────────────────────
+  const canProceedStep0 = !!supplierId && !!warehouseId
+  const canProceedStep1 = validDraftLines.length > 0
+
+  const goNext = () => {
+    if (step === 0 && !canProceedStep0) { toast.error('يرجى اختيار المورد والمخزن أولاً'); return }
+    if (step === 1 && !canProceedStep1) { toast.error('يرجى إضافة منتج واحد على الأقل'); return }
+    setStep(s => Math.min(s + 1, STEPS.length - 1))
+  }
+
   // ─── Loading ────────────────────────────────────────────────────────
   if (loading) {
     return (
@@ -644,8 +716,39 @@ export default function PurchaseInvoiceForm() {
         }
       />
 
-      {/* ══════ Section 1: Header ══════ */}
-      <section style={sCard}>
+      {/* ══════ STEPPER BAR (only in new/draft mode) ══════ */}
+      {(mode === 'new' || (mode === 'draft' && !showReceivePanel)) && (
+        <div className="edara-card" style={{ padding: 'var(--space-3) var(--space-4)', marginBottom: 'var(--space-4)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+            {STEPS.map((s, i) => (
+              <React.Fragment key={i}>
+                <button
+                  onClick={() => { if (i < step || i === 0 || (i === 1 && canProceedStep0) || (i === 2 && canProceedStep0 && canProceedStep1)) setStep(i) }}
+                  style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                    padding: '6px 12px', borderRadius: 'var(--radius-md)',
+                    border: 'none', cursor: 'pointer', flex: 1, minWidth: 0,
+                    background: i === step ? 'var(--color-primary)' : i < step ? 'var(--bg-accent)' : 'transparent',
+                    color: i === step ? '#fff' : i < step ? 'var(--color-primary)' : 'var(--text-muted)',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontWeight: i === step ? 700 : 500, fontSize: 'var(--text-xs)', whiteSpace: 'nowrap' }}>
+                    {i < step ? <CheckCircle size={13} /> : s.icon}
+                    <span className="stepper-label">{s.label}</span>
+                  </span>
+                </button>
+                {i < STEPS.length - 1 && (
+                  <div style={{ flex: '0 0 16px', height: 2, background: i < step ? 'var(--color-primary)' : 'var(--border-color)', transition: 'background 0.3s' }} />
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ══════ STEP 0 / always-visible: Supplier & Header ══════ */}
+      {(mode === 'bill' || mode === 'readonly' || step === 0 || showReceivePanel) && <section style={sCard}>
         <SectionHead icon={<FileText size={16} />} title="بيانات الفاتورة" />
         <div style={grid2}>
           {/* Supplier */}
@@ -708,7 +811,7 @@ export default function PurchaseInvoiceForm() {
             <div>
               <FieldLabel>مصاريف الشحن / الجمارك (ج.م)</FieldLabel>
               <input
-                className="form-input" type="number" min={0} step="0.01"
+                className="form-input" type="number" min={0} step="0.01" inputMode="decimal"
                 value={landedCosts}
                 onChange={e => setLandedCosts(Number(e.target.value))}
                 disabled={mode !== 'draft'}
@@ -730,10 +833,10 @@ export default function PurchaseInvoiceForm() {
             />
           </div>
         </div>
-      </section>
+      </section>}
 
-      {/* ══════ Section 2: Items Grid ══════ */}
-      <section style={{ ...sCard, padding: 0, overflow: 'hidden' }}>
+      {/* ══════ STEP 1: Items ══════ */}
+      {(mode === 'bill' || mode === 'readonly' || step === 1 || showReceivePanel) && <section style={{ ...sCard, padding: 0, overflow: 'hidden' }}>
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           padding: '14px 20px',
@@ -756,9 +859,19 @@ export default function PurchaseInvoiceForm() {
             </div>
           </div>
           {(mode === 'new' || (mode === 'draft' && !showReceivePanel)) && (
-            <Button variant="ghost" size="sm" icon={<Plus size={14} />} onClick={addDraftLine}>
-              إضافة بند
-            </Button>
+            <>
+              {/* Desktop: inline row */}
+              <Button variant="ghost" size="sm" icon={<Plus size={14} />} onClick={addDraftLine}
+                className="desktop-only-btn">
+                إضافة بند
+              </Button>
+              {/* Mobile: open bottom sheet */}
+              <Button variant="primary" size="sm" icon={<Plus size={14} />}
+                onClick={() => { setSheetDraftLine(null); setSheetQuery(''); setSheetResults([]); setItemSheet(true) }}
+                className="mobile-only-btn">
+                إضافة منتج
+              </Button>
+            </>
           )}
         </div>
 
@@ -1096,9 +1209,237 @@ export default function PurchaseInvoiceForm() {
             </span>
           </div>
         </div>
-      </section>
+      </section>}
 
-      {/* ══════ Section 3: Financial Settlement Panel (Mode: bill) ══════ */}
+      {/* ══════ STEP 2: Financials & Landed Costs ══════ */}
+      {(mode === 'new' || mode === 'draft') && step === 2 && !showReceivePanel && <section style={sCard}>
+        <SectionHead icon={<DollarSign size={16} />} title="التكاليف والضرائب" />
+
+        <div style={grid2}>
+          <div>
+            <FieldLabel>مصاريف الشحن / الجمارك (ج.م)</FieldLabel>
+            <input className="form-input" type="number" inputMode="decimal" min={0} step="0.01"
+              value={landedCosts}
+              onChange={e => setLandedCosts(Number(e.target.value))}
+              placeholder="0.00" />
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 4 }}>
+              تُضاف إلى تكلفة المخزون (حساب التكلفة المرجحة)
+            </div>
+          </div>
+          <div>
+            <FieldLabel>ملاحظات</FieldLabel>
+            <textarea className="form-input" rows={2} value={notes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="ملاحظات اختيارية..." />
+          </div>
+        </div>
+
+        {/* Financial preview */}
+        <div style={{ marginTop: 16, padding: '14px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-accent)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-sm)' }}>
+            <span style={{ color: 'var(--text-muted)' }}>إجمالي البنود</span>
+            <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatNumber(draftTotals.subtotal)} ج.م</span>
+          </div>
+          {draftTotals.discount > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-sm)' }}>
+            <span style={{ color: 'var(--color-danger)' }}>إجمالي الخصومات</span>
+            <span style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--color-danger)' }}>- {formatNumber(draftTotals.discount)} ج.م</span>
+          </div>}
+          {draftTotals.tax > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-sm)' }}>
+            <span style={{ color: 'var(--text-muted)' }}>الضرائب</span>
+            <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatNumber(draftTotals.tax)} ج.م</span>
+          </div>}
+          {landedCosts > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-sm)' }}>
+            <span style={{ color: 'var(--text-muted)' }}>مصاريف الشحن / الجمارك</span>
+            <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatNumber(landedCosts)} ج.م</span>
+          </div>}
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-sm)', fontWeight: 800, borderTop: '1px solid var(--border-color)', paddingTop: 8, marginTop: 4, color: 'var(--color-primary)' }}>
+            <span>الإجمالي الكلي</span>
+            <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatNumber(draftTotals.total + landedCosts)} ج.م</span>
+          </div>
+        </div>
+      </section>}
+
+      {/* ══════ STEP 3: Review & Save ══════ */}
+      {(mode === 'new' || mode === 'draft') && step === 3 && !showReceivePanel && <section style={sCard}>
+        <SectionHead icon={<CheckCircle size={16} />} title="مراجعة الفاتورة" />
+
+        {/* Supplier + warehouse summary */}
+        <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+          {selectedSupplier && (
+            <div style={{ flex: 1, minWidth: 160, padding: '10px 14px', borderRadius: 'var(--radius-md)', background: 'var(--bg-accent)' }}>
+              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 2 }}>المورد</div>
+              <div style={{ fontWeight: 700 }}>{selectedSupplier.name}</div>
+            </div>
+          )}
+          <div style={{ flex: 1, minWidth: 120, padding: '10px 14px', borderRadius: 'var(--radius-md)', background: 'var(--bg-accent)' }}>
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 2 }}>التاريخ</div>
+            <div style={{ fontWeight: 600 }}>{new Date(invoiceDate).toLocaleDateString('ar-EG-u-nu-latn')}</div>
+          </div>
+        </div>
+
+        {/* Items summary */}
+        <div style={{ marginBottom: 16 }}>
+          {validDraftLines.map(l => (
+            <div key={l._key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border-color)', fontSize: 'var(--text-sm)' }}>
+              <div>
+                <span style={{ fontWeight: 600 }}>{l.productName}</span>
+                <span style={{ color: 'var(--text-muted)', marginRight: 8 }}>× {l.ordered_quantity} {l.unitLabel}</span>
+              </div>
+              <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{formatNumber(l.lineTotal)} ج.م</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Totals */}
+        <div style={{ padding: '14px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-accent)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-sm)' }}>
+            <span style={{ color: 'var(--text-muted)' }}>إجمالي البنود</span>
+            <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatNumber(draftTotals.subtotal)} ج.م</span>
+          </div>
+          {draftTotals.discount > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-sm)' }}>
+            <span style={{ color: 'var(--color-danger)' }}>خصومات</span>
+            <span style={{ color: 'var(--color-danger)', fontVariantNumeric: 'tabular-nums' }}>- {formatNumber(draftTotals.discount)} ج.م</span>
+          </div>}
+          {draftTotals.tax > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-sm)' }}>
+            <span style={{ color: 'var(--text-muted)' }}>ضرائب</span>
+            <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatNumber(draftTotals.tax)} ج.م</span>
+          </div>}
+          {landedCosts > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-sm)' }}>
+            <span style={{ color: 'var(--text-muted)' }}>مصاريف شحن / جمارك</span>
+            <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatNumber(landedCosts)} ج.م</span>
+          </div>}
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: '1.05rem', borderTop: '1.5px solid var(--border-color)', paddingTop: 8, marginTop: 4, color: 'var(--color-primary)' }}>
+            <span>الإجمالي الكلي</span>
+            <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatNumber(draftTotals.total + landedCosts)} ج.م</span>
+          </div>
+        </div>
+      </section>}
+
+      {/* ══════ Step Navigation Bar (new/draft only) ══════ */}
+      {(mode === 'new' || (mode === 'draft' && !showReceivePanel)) && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 'var(--space-4)' }}>
+          <Button variant="ghost" onClick={step === 0 ? () => navigate('/purchases/invoices') : () => setStep(s => s - 1)}>
+            {step === 0 ? 'إلغاء' : <>‹ السابق</>}
+          </Button>
+          {step < STEPS.length - 1 ? (
+            <Button onClick={goNext} style={{ minWidth: 140 }}>{'التالي ›'}</Button>
+          ) : (
+            <Button icon={<Save size={15} />} onClick={handleSaveDraft}
+              disabled={saving || !supplierId || !warehouseId || validDraftLines.length === 0}
+              style={{ minWidth: 160 }}>
+              {saving ? 'جاري الحفظ...' : isNew ? 'حفظ المسودة' : 'تحديث المسودة'}
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* ══════ MOBILE: Add-Item Bottom Sheet ══════ */}
+      <ResponsiveModal
+        open={itemSheet}
+        onClose={() => { setItemSheet(false); setSheetDraftLine(null); setSheetQuery('') }}
+        title="إضافة منتج مستلم"
+        footer={
+          sheetDraftLine ? (
+            <>
+              <Button variant="secondary" onClick={() => setSheetDraftLine(null)}>تغيير المنتج</Button>
+              <Button onClick={confirmSheetLine}>إضافة للفاتورة</Button>
+            </>
+          ) : undefined
+        }
+      >
+        {!sheetDraftLine ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            <div style={{ position: 'relative' }}>
+              <Search size={14} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+              <input className="form-input" placeholder="ابحث عن منتج بالاسم أو الكود..." value={sheetQuery} autoFocus
+                style={{ paddingRight: 32 }}
+                onChange={e => { setSheetQuery(e.target.value); searchSheetProducts(e.target.value) }} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', maxHeight: 340, overflowY: 'auto' }}>
+              {sheetResults.map(p => (
+                <button key={p.id} onClick={() => selectSheetProduct(p)}
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', cursor: 'pointer', background: 'var(--bg-surface)', textAlign: 'right', gap: 12 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{p.name}</div>
+                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontFamily: 'monospace' }}>{p.sku}</div>
+                  </div>
+                  <div style={{ flexShrink: 0, fontWeight: 700, color: 'var(--color-primary)', fontSize: 'var(--text-sm)', fontVariantNumeric: 'tabular-nums' }}>
+                    {formatNumber(p.last_purchase_price ?? p.cost_price ?? 0)} ج.م
+                  </div>
+                </button>
+              ))}
+              {sheetQuery.length >= 2 && sheetResults.length === 0 && (
+                <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)', padding: 'var(--space-4)' }}>لا توجد نتائج</p>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+            <div style={{ padding: '12px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-accent)' }}>
+              <div style={{ fontWeight: 700 }}>{sheetDraftLine.productName}</div>
+              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }} dir="ltr">{sheetDraftLine.productSku}</div>
+            </div>
+
+            {sheetDraftLine.available_units.length > 1 && (
+              <div className="form-group">
+                <label className="form-label">الوحدة</label>
+                <select className="form-select" value={sheetDraftLine.unit_id || ''}
+                  onChange={e => {
+                    const u = sheetDraftLine.available_units.find(u => u.unit_id === e.target.value)
+                    if (u) setSheetDraftLine(calcDraftLine({ ...sheetDraftLine, unit_id: e.target.value, unitLabel: u.unit_symbol, conversion_factor: u.conversion_factor, unit_price: u.purchase_price ?? Math.round(sheetDraftLine.base_last_purchase_price * u.conversion_factor * 1000) / 1000 }))
+                  }}>
+                  {sheetDraftLine.available_units.map(u => (
+                    <option key={u.unit_id} value={u.unit_id}>{u.unit_symbol}{u.conversion_factor !== 1 ? ` ×${u.conversion_factor}` : ''}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+              <div className="form-group">
+                <label className="form-label">الكمية المطلوبة</label>
+                <input type="number" inputMode="decimal" enterKeyHint="next" className="form-input" min={0.01} step={1}
+                  value={sheetDraftLine.ordered_quantity}
+                  onChange={e => setSheetDraftLine(calcDraftLine({ ...sheetDraftLine, ordered_quantity: Number(e.target.value) }))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">سعر الشراء (ج.م)</label>
+                <input type="number" inputMode="decimal" enterKeyHint="next" className="form-input" min={0} step={0.001}
+                  value={sheetDraftLine.unit_price}
+                  onChange={e => setSheetDraftLine(calcDraftLine({ ...sheetDraftLine, unit_price: Number(e.target.value) }))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">خصم %</label>
+                <input type="number" inputMode="decimal" enterKeyHint="next" className="form-input" min={0} max={100} step={0.5}
+                  value={sheetDraftLine.discount_rate}
+                  onChange={e => setSheetDraftLine(calcDraftLine({ ...sheetDraftLine, discount_rate: Number(e.target.value) }))} />
+              </div>
+              {sheetDraftLine.tax_rate > 0 && <div className="form-group">
+                <label className="form-label">ضريبة %</label>
+                <input type="number" inputMode="decimal" enterKeyHint="done" className="form-input" min={0} max={100} step={0.5}
+                  value={sheetDraftLine.tax_rate}
+                  onChange={e => setSheetDraftLine(calcDraftLine({ ...sheetDraftLine, tax_rate: Number(e.target.value) }))} />
+              </div>}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-accent)', fontWeight: 700 }}>
+              <span>صافي البند</span>
+              <span style={{ color: 'var(--color-primary)', fontVariantNumeric: 'tabular-nums' }}>{formatNumber(sheetDraftLine.lineTotal)} ج.م</span>
+            </div>
+          </div>
+        )}
+      </ResponsiveModal>
+
+      <style>{`
+        @media (max-width: 768px) {
+          .desktop-only-btn { display: none !important; }
+          .mobile-only-btn  { display: inline-flex !important; }
+          .stepper-label    { display: none; }
+        }
+        @media (min-width: 769px) {
+          .mobile-only-btn  { display: none !important; }
+        }
+      `}</style>
       {mode === 'bill' && (
         <section style={{ ...sCard, border: '2px solid var(--color-primary)' }}>
           <SectionHead icon={<DollarSign size={16} />} title="التسوية المالية — اعتماد الفاتورة" />

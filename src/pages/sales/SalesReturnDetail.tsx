@@ -10,16 +10,18 @@ import { useVaults, useCustodyAccounts, useInvalidate } from '@/hooks/useQueryHo
 import { getSalesReturn, confirmSalesReturn } from '@/lib/services/sales'
 import { formatNumber } from '@/lib/utils/format'
 import type { SalesReturn, SalesReturnStatus } from '@/lib/types/master-data'
-import PageHeader from '@/components/shared/PageHeader'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
-import Modal from '@/components/ui/Modal'
+import ResponsiveModal from '@/components/ui/ResponsiveModal'
 
 const statusLabels: Record<SalesReturnStatus, string> = {
   draft: 'مسودة', confirmed: 'مؤكد', cancelled: 'ملغي',
 }
 const statusVariants: Record<SalesReturnStatus, 'neutral' | 'success' | 'danger'> = {
   draft: 'neutral', confirmed: 'success', cancelled: 'danger',
+}
+const statusColors: Record<SalesReturnStatus, string> = {
+  draft: '#6b7280', confirmed: '#16a34a', cancelled: '#dc2626',
 }
 
 export default function SalesReturnDetail() {
@@ -111,145 +113,213 @@ export default function SalesReturnDetail() {
     </div>
   }
 
-  return (
-    <div className="page-container animate-enter">
-      <PageHeader
-        title={`مرتجع #${ret.return_number}`}
-        subtitle={statusLabels[ret.status]}
-        actions={
-          <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => navigate('/sales/returns')}>
-              <ArrowRight size={16} /> رجوع
-            </Button>
+  const sc = statusColors[ret.status]
 
+  return (
+    <div style={{ maxWidth: 800, margin: '0 auto', padding: '0 0 140px' }}>
+
+      {/* ══ Sticky Hero Header ══ */}
+      <div style={{
+        position: 'sticky', top: 0, zIndex: 10,
+        background: `linear-gradient(135deg, ${sc}12, ${sc}06)`,
+        borderBottom: `3px solid ${sc}30`,
+        backdropFilter: 'blur(12px)',
+        padding: '14px 16px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button onClick={() => navigate('/sales/returns')}
+            style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: '7px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: 'var(--text-secondary)', flexShrink: 0 }}>
+            <ArrowRight size={14} /> رجوع
+          </button>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <h1 style={{ fontSize: 18, fontWeight: 800, margin: 0, whiteSpace: 'nowrap' }}>
+                مرتجع #{ret.return_number}
+              </h1>
+              <span style={{
+                fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 99,
+                background: ret.status === 'confirmed' ? 'var(--color-success-light, #f0fdf4)' : ret.status === 'cancelled' ? 'var(--color-danger-light, #fef2f2)' : 'var(--bg-secondary)',
+                color: ret.status === 'confirmed' ? 'var(--color-success)' : ret.status === 'cancelled' ? 'var(--color-danger)' : 'var(--text-muted)',
+              }}>
+                {statusLabels[ret.status]}
+              </span>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+              {ret.customer?.name} • {formatNumber(ret.total_amount)} ج.م
+            </div>
+          </div>
+          {/* Desktop action buttons — shown only on desktop */}
+          <div className="rtn-desktop-actions">
             {ret.status === 'draft' && can('sales.returns.confirm') && (
-              <Button icon={<CheckCircle size={16} />}
-                onClick={() => setShowConfirm(true)} disabled={actionLoading}>
-                تأكيد المرتجع
+              <Button icon={<CheckCircle size={16} />} onClick={() => setShowConfirm(true)} disabled={actionLoading}>
+                تأكيد
               </Button>
             )}
-
             {ret.status === 'draft' && (
-              <Button variant="danger" icon={<XCircle size={16} />}
-                onClick={() => setShowCancel(true)} disabled={actionLoading}>
+              <Button variant="danger" icon={<XCircle size={16} />} onClick={() => setShowCancel(true)} disabled={actionLoading}>
                 إلغاء
               </Button>
             )}
           </div>
-        }
-      />
-
-      {/* Info Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
-        {/* Details */}
-        <div className="edara-card" style={{ padding: 'var(--space-5)' }}>
-          <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-            <FileText size={18} /> بيانات المرتجع
-          </h3>
-          <div style={{ display: 'grid', gap: 'var(--space-3)' }}>
-            <InfoRow icon={<RotateCcw size={14} />} label="رقم المرتجع" value={ret.return_number} />
-            <InfoRow icon={<Clock size={14} />} label="التاريخ" value={new Date(ret.return_date).toLocaleDateString('ar-EG-u-nu-latn')} />
-            <InfoRow icon={<User size={14} />} label="العميل" value={ret.customer?.name} />
-            <InfoRow icon={<Package size={14} />} label="المخزن" value={ret.warehouse?.name || 'مخزن الفاتورة'} />
-            <InfoRow icon={<FileText size={14} />} label="الفاتورة الأصلية"
-              value={ret.order?.order_number}
-              onClick={() => navigate(`/sales/orders/${ret.order_id}`)} />
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>الحالة</span>
-              <Badge variant={statusVariants[ret.status]}>{statusLabels[ret.status]}</Badge>
-            </div>
-            {ret.reason && <InfoRow label="السبب" value={ret.reason} />}
-            {ret.confirmed_by_profile && (
-              <InfoRow icon={<User size={14} />} label="أكّده" value={ret.confirmed_by_profile.full_name} />
-            )}
-            {ret.confirmed_at && (
-              <InfoRow icon={<Clock size={14} />} label="تاريخ التأكيد"
-                value={new Date(ret.confirmed_at).toLocaleDateString('ar-EG', { hour: '2-digit', minute: '2-digit' })} />
-            )}
-          </div>
         </div>
+      </div>
 
-        {/* Financial */}
-        <div className="edara-card" style={{ padding: 'var(--space-5)' }}>
-          <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-            <CreditCard size={18} /> الملخص المالي
-          </h3>
-          <div style={{ display: 'grid', gap: 'var(--space-3)' }}>
-            <div style={{ borderBottom: '2px solid var(--border-color)', paddingBottom: 'var(--space-3)', display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ fontWeight: 700, fontSize: 'var(--text-lg)' }}>إجمالي المرتجع</span>
-              <span style={{ fontWeight: 700, fontSize: 'var(--text-lg)', color: 'var(--color-primary)', fontVariantNumeric: 'tabular-nums' }}>
-                {formatNumber(ret.total_amount)} ج.م
-              </span>
+      {/* ══ Cards Grid ══ */}
+      <div style={{ padding: '12px 12px 0' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
+          {/* Details */}
+          <div className="edara-card" style={{ padding: 'var(--space-5)' }}>
+            <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+              <FileText size={18} /> بيانات المرتجع
+            </h3>
+            <div style={{ display: 'grid', gap: 'var(--space-3)' }}>
+              <InfoRow icon={<RotateCcw size={14} />} label="رقم المرتجع" value={ret.return_number} />
+              <InfoRow icon={<Clock size={14} />} label="التاريخ" value={new Date(ret.return_date).toLocaleDateString('ar-EG-u-nu-latn')} />
+              <InfoRow icon={<User size={14} />} label="العميل" value={ret.customer?.name} />
+              <InfoRow icon={<Package size={14} />} label="المخزن" value={ret.warehouse?.name || 'مخزن الفاتورة'} />
+              <InfoRow icon={<FileText size={14} />} label="الفاتورة الأصلية"
+                value={ret.order?.order_number}
+                onClick={() => navigate(`/sales/orders/${ret.order_id}`)} />
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>الحالة</span>
+                <Badge variant={statusVariants[ret.status]}>{statusLabels[ret.status]}</Badge>
+              </div>
+              {ret.reason && <InfoRow label="السبب" value={ret.reason} />}
+              {ret.confirmed_by_profile && (
+                <InfoRow icon={<User size={14} />} label="أكّده" value={ret.confirmed_by_profile.full_name} />
+              )}
+              {ret.confirmed_at && (
+                <InfoRow icon={<Clock size={14} />} label="تاريخ التأكيد"
+                  value={new Date(ret.confirmed_at).toLocaleDateString('ar-EG', { hour: '2-digit', minute: '2-digit' })} />
+              )}
             </div>
-            <InfoRow icon={<Banknote size={14} />} label="طريقة الدفع الأصلية"
-              value={ret.order?.payment_terms === 'cash' ? 'نقدي' : ret.order?.payment_terms === 'credit' ? 'آجل' : 'مختلط'} />
-            <InfoRow label="إجمالي الفاتورة الأصلية" value={`${formatNumber(ret.order?.total_amount || 0)} ج.م`} />
-            {isCashReturn && ret.status === 'draft' && (
-              <div style={{
-                padding: 'var(--space-3)', borderRadius: 'var(--radius-md)',
-                background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.2)',
-                fontSize: 'var(--text-xs)', color: 'var(--color-warning)',
-              }}>
-                ⚠️ مرتجع نقدي — يتطلب تحديد خزينة أو عهدة للرد عند التأكيد
+          </div>
+
+          {/* Financial */}
+          <div className="edara-card" style={{ padding: 'var(--space-5)' }}>
+            <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+              <CreditCard size={18} /> الملخص المالي
+            </h3>
+            <div style={{ display: 'grid', gap: 'var(--space-3)' }}>
+              <div style={{ borderBottom: '2px solid var(--border-color)', paddingBottom: 'var(--space-3)', display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontWeight: 700, fontSize: 'var(--text-lg)' }}>إجمالي المرتجع</span>
+                <span style={{ fontWeight: 700, fontSize: 'var(--text-lg)', color: 'var(--color-primary)', fontVariantNumeric: 'tabular-nums' }}>
+                  {formatNumber(ret.total_amount)} ج.م
+                </span>
               </div>
-            )}
-            {!isCashReturn && ret.status === 'draft' && (
-              <div style={{
-                padding: 'var(--space-3)', borderRadius: 'var(--radius-md)',
-                background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.2)',
-                fontSize: 'var(--text-xs)', color: 'var(--color-info)',
-              }}>
-                ℹ️ مرتجع آجل — سيُخصم المبلغ من مديونية العميل تلقائياً
-              </div>
-            )}
+              <InfoRow icon={<Banknote size={14} />} label="طريقة الدفع الأصلية"
+                value={ret.order?.payment_terms === 'cash' ? 'نقدي' : ret.order?.payment_terms === 'credit' ? 'آجل' : 'مختلط'} />
+              <InfoRow label="إجمالي الفاتورة الأصلية" value={`${formatNumber(ret.order?.total_amount || 0)} ج.م`} />
+              {isCashReturn && ret.status === 'draft' && (
+                <div style={{
+                  padding: 'var(--space-3)', borderRadius: 'var(--radius-md)',
+                  background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.2)',
+                  fontSize: 'var(--text-xs)', color: 'var(--color-warning)',
+                }}>
+                  ⚠️ مرتجع نقدي — يتطلب تحديد خزينة أو عهدة للرد عند التأكيد
+                </div>
+              )}
+              {!isCashReturn && ret.status === 'draft' && (
+                <div style={{
+                  padding: 'var(--space-3)', borderRadius: 'var(--radius-md)',
+                  background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.2)',
+                  fontSize: 'var(--text-xs)', color: 'var(--color-info)',
+                }}>
+                  ℹ️ مرتجع آجل — سيُخصم المبلغ من مديونية العميل تلقائياً
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Items */}
-      <div className="edara-card" style={{ padding: 'var(--space-5)', overflow: 'auto' }}>
-        <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, marginBottom: 'var(--space-4)' }}>
-          بنود المرتجع ({ret.items?.length || 0})
-        </h3>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
-          <thead>
-            <tr style={{ borderBottom: '2px solid var(--border-color)', textAlign: 'right' }}>
-              <th style={{ padding: 'var(--space-2)' }}>المنتج</th>
-              <th style={{ padding: 'var(--space-2)' }}>الوحدة</th>
-              <th style={{ padding: 'var(--space-2)' }}>الكمية</th>
-              <th style={{ padding: 'var(--space-2)' }}>الكمية الأساسية</th>
-              <th style={{ padding: 'var(--space-2)' }}>السعر</th>
-              <th style={{ padding: 'var(--space-2)' }}>الإجمالي</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(ret.items || []).map(item => (
-              <tr key={item.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                <td style={{ padding: 'var(--space-2)' }}>
-                  <div style={{ fontWeight: 500 }}>{item.product?.name}</div>
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontFamily: 'monospace' }}>{item.product?.sku}</div>
-                </td>
-                <td style={{ padding: 'var(--space-2)' }}>{item.unit?.symbol || item.unit?.name || '—'}</td>
-                <td style={{ padding: 'var(--space-2)', fontVariantNumeric: 'tabular-nums' }}>{item.quantity}</td>
-                <td style={{ padding: 'var(--space-2)', fontVariantNumeric: 'tabular-nums', color: 'var(--text-muted)' }}>{item.base_quantity}</td>
-                <td style={{ padding: 'var(--space-2)', fontVariantNumeric: 'tabular-nums' }}>{formatNumber(item.unit_price)}</td>
-                <td style={{ padding: 'var(--space-2)', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{formatNumber(item.line_total)}</td>
+      {/* ══ Items — desktop table / mobile cards ══ */}
+      <div style={{ padding: '0 12px' }}>
+        <div className="rtn-table-view edara-card" style={{ padding: 'var(--space-5)', overflow: 'auto' }}>
+          <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, marginBottom: 'var(--space-4)' }}>
+            بنود المرتجع ({ret.items?.length || 0})
+          </h3>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid var(--border-color)', textAlign: 'right' }}>
+                <th style={{ padding: 'var(--space-2)' }}>المنتج</th>
+                <th style={{ padding: 'var(--space-2)' }}>الكمية</th>
+                <th style={{ padding: 'var(--space-2)' }}>السعر</th>
+                <th style={{ padding: 'var(--space-2)' }}>الإجمالي</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {(ret.items || []).map(item => (
+                <tr key={item.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                  <td style={{ padding: 'var(--space-2)' }}>
+                    <div style={{ fontWeight: 500 }}>{item.product?.name}</div>
+                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontFamily: 'monospace' }}>{item.product?.sku}</div>
+                  </td>
+                  <td style={{ padding: 'var(--space-2)', fontVariantNumeric: 'tabular-nums' }}>{item.quantity} {item.unit?.symbol || item.unit?.name || ''}</td>
+                  <td style={{ padding: 'var(--space-2)', fontVariantNumeric: 'tabular-nums' }}>{formatNumber(item.unit_price)} ج.م</td>
+                  <td style={{ padding: 'var(--space-2)', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{formatNumber(item.line_total)} ج.م</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile item cards */}
+        <div className="rtn-card-view">
+          <div style={{ fontWeight: 700, fontSize: 13, padding: '0 4px 10px', color: 'var(--text-secondary)' }}>
+            البنود ({ret.items?.length || 0})
+          </div>
+          {(ret.items || []).map(item => (
+            <div key={item.id} style={{
+              background: 'var(--bg-surface)', border: '1px solid var(--border-primary)',
+              borderRadius: 10, padding: 12, marginBottom: 8,
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600, fontSize: 13 }}>{item.product?.name}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace', marginTop: 2 }}>{item.product?.sku}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
+                  {item.quantity} {item.unit?.symbol || item.unit?.name || ''} × {formatNumber(item.unit_price)} ج.م
+                </div>
+              </div>
+              <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--color-danger)', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>
+                {formatNumber(item.line_total)} ج.م
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Notes */}
       {ret.notes && (
-        <div className="edara-card" style={{ padding: 'var(--space-5)', marginTop: 'var(--space-4)' }}>
-          <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, marginBottom: 'var(--space-3)' }}>ملاحظات</h3>
-          <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>{ret.notes}</p>
+        <div style={{ padding: '12px 12px 0' }}>
+          <div className="edara-card" style={{ padding: 'var(--space-5)' }}>
+            <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, marginBottom: 'var(--space-3)' }}>ملاحظات</h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>{ret.notes}</p>
+          </div>
         </div>
       )}
 
-      {/* ═══════ Confirm Modal ═══════ */}
-      <Modal open={showConfirm} onClose={() => setShowConfirm(false)} title="تأكيد المرتجع" size="md">
+      {/* ══ Sticky Mobile Action Bar — only on draft status ══ */}
+      {ret.status === 'draft' && (
+        <div className="rtn-action-bar">
+          {can('sales.returns.confirm') && (
+            <button type="button" className="btn btn-primary"
+              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+              onClick={() => setShowConfirm(true)} disabled={actionLoading}>
+              <CheckCircle size={16} /> تأكيد المرتجع
+            </button>
+          )}
+          <button type="button" className="btn btn-danger"
+            style={{ flex: can('sales.returns.confirm') ? '0 0 auto' : 1, paddingInline: 20, display: 'flex', alignItems: 'center', gap: 6 }}
+            onClick={() => setShowCancel(true)} disabled={actionLoading}>
+            <XCircle size={16} /> إلغاء
+          </button>
+        </div>
+      )}
+
+      {/* ═══════ Confirm Modal (ResponsiveModal = bottom-sheet on mobile) ═══════ */}
+      <ResponsiveModal open={showConfirm} onClose={() => setShowConfirm(false)} title="تأكيد المرتجع">
         <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
           <div style={{
             padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', textAlign: 'center',
@@ -309,10 +379,10 @@ export default function SalesReturnDetail() {
             </Button>
           </div>
         </div>
-      </Modal>
+      </ResponsiveModal>
 
       {/* ═══════ Cancel Modal ═══════ */}
-      <Modal open={showCancel} onClose={() => setShowCancel(false)} title="إلغاء المرتجع" size="sm">
+      <ResponsiveModal open={showCancel} onClose={() => setShowCancel(false)} title="إلغاء المرتجع">
         <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
           <p style={{ color: 'var(--color-danger)', fontSize: 'var(--text-sm)' }}>
             سيتم إلغاء المرتجع. هذا الإجراء لا يمكن التراجع عنه.
@@ -325,7 +395,31 @@ export default function SalesReturnDetail() {
             </Button>
           </div>
         </div>
-      </Modal>
+      </ResponsiveModal>
+
+      <style>{`
+        .rtn-table-view { display: block; }
+        .rtn-card-view  { display: none; }
+        .rtn-desktop-actions { display: flex; gap: 8px; }
+        .rtn-action-bar { display: none; }
+        @media (max-width: 768px) {
+          .rtn-table-view { display: none; }
+          .rtn-card-view  { display: block; }
+          .rtn-desktop-actions { display: none; }
+          .rtn-action-bar {
+            display: flex;
+            gap: 8px;
+            position: fixed;
+            bottom: calc(var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px) + 8px);
+            left: 0; right: 0;
+            z-index: 200;
+            padding: 10px 16px;
+            background: var(--bg-surface);
+            border-top: 1px solid var(--border-primary);
+            box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
+          }
+        }
+      `}</style>
     </div>
   )
 }

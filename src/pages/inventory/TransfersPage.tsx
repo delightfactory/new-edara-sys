@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   ArrowLeftRight, Plus, ChevronDown, ChevronUp,
-  Truck, PackageCheck, X as XIcon, Send, Download, Search
+  Truck, PackageCheck, X as XIcon, Send, Download, Search, Warehouse as WarehouseIcon
 } from 'lucide-react'
 import {
   createTransfer, shipTransfer,
@@ -20,6 +20,7 @@ import PageHeader from '@/components/shared/PageHeader'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
+import ResponsiveModal from '@/components/ui/ResponsiveModal'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 // ─── Inline Product Search Combobox ───
@@ -343,7 +344,7 @@ export default function TransfersPage() {
         title="تحويلات المخزون"
         subtitle={loading ? '...' : `${totalCount} تحويل`}
         actions={can('inventory.transfers.create') ? (
-          <Button icon={<Plus size={16} />} onClick={openCreate}>تحويل جديد</Button>
+          <Button icon={<Plus size={16} />} onClick={openCreate} className="desktop-only-btn">تحويل جديد</Button>
         ) : undefined}
       />
 
@@ -356,8 +357,8 @@ export default function TransfersPage() {
         </select>
       </div>
 
-      {/* Table */}
-      <div className="edara-card" style={{ overflow: 'auto' }}>
+      {/* ── DESKTOP: transfers table ─────────────────────────── */}
+      <div className="tr-table-view edara-card" style={{ overflow: 'auto' }}>
         {loading ? (
           <div style={{ padding: 'var(--space-6)' }}>
             {[1,2,3,4,5].map(i => <div key={i} className="skeleton skeleton-row" />)}
@@ -406,54 +407,33 @@ export default function TransfersPage() {
                     <td><Badge variant={statusMap[t.status]?.variant || 'neutral'}>{statusMap[t.status]?.label || t.status}</Badge></td>
                     <td>
                       {(() => {
-                        // مجموعة معرفات مخازني
                         const myWhIds = new Set(myWarehouses.map(w => w.id))
                         const userId = useAuthStore.getState().profile?.id
-                        // هل أنا مدير المخزن المرسل؟
                         const iManageSource = isAdmin || myWhIds.has(t.from_warehouse_id)
-                        // هل أنا مدير المخزن المستلم؟
                         const iManageDest = isAdmin || myWhIds.has(t.to_warehouse_id)
-                        // هل أنا من أنشأ هذا التحويل؟
                         const iAmCreator = isAdmin || t.requested_by === userId
-
                         return (
                           <div className="flex gap-1" style={{ flexWrap: 'wrap' }}>
-                            {/* Push + pending → شحن: مدير المخزن المرسل فقط */}
                             {t.status === 'pending' && t.direction === 'push' && iManageSource && (
-                              <Button variant="primary" size="sm" onClick={() => setConfirmAction({ transfer: t, action: 'ship' })}>
-                                <Truck size={12} /> شحن
-                              </Button>
+                              <Button variant="primary" size="sm" onClick={() => setConfirmAction({ transfer: t, action: 'ship' })}><Truck size={12} /> شحن</Button>
                             )}
-                            {/* Pull + pending → موافقة وشحن: مدير المخزن المصدر (المطلوب منه) فقط */}
                             {t.status === 'pending' && t.direction === 'pull' && iManageSource && (
-                              <Button variant="primary" size="sm" onClick={() => setConfirmAction({ transfer: t, action: 'approve_ship' })}>
-                                <Truck size={12} /> موافقة وشحن
-                              </Button>
+                              <Button variant="primary" size="sm" onClick={() => setConfirmAction({ transfer: t, action: 'approve_ship' })}><Truck size={12} /> موافقة وشحن</Button>
                             )}
-                            {/* in_transit → استلام: مدير المخزن المستلم فقط (ليس نفس الشخص الذي شحن) */}
                             {t.status === 'in_transit' && iManageDest && t.approved_by !== userId && (
-                              <Button variant="success" size="sm" onClick={() => setConfirmAction({ transfer: t, action: 'receive' })}>
-                                <PackageCheck size={12} /> استلام
-                              </Button>
+                              <Button variant="success" size="sm" onClick={() => setConfirmAction({ transfer: t, action: 'receive' })}><PackageCheck size={12} /> استلام</Button>
                             )}
-                            {/* pending → إلغاء: المنشئ أو مدير المصدر */}
                             {t.status === 'pending' && iAmCreator && (
-                              <Button variant="danger" size="sm" onClick={() => setConfirmAction({ transfer: t, action: 'cancel' })}>
-                                <XIcon size={12} />
-                              </Button>
+                              <Button variant="danger" size="sm" onClick={() => setConfirmAction({ transfer: t, action: 'cancel' })}><XIcon size={12} /></Button>
                             )}
-                            {/* in_transit → إلغاء: مدير المخزن المصدر فقط */}
                             {t.status === 'in_transit' && iManageSource && (
-                              <Button variant="danger" size="sm" onClick={() => setConfirmAction({ transfer: t, action: 'cancel' })}>
-                                <XIcon size={12} />
-                              </Button>
+                              <Button variant="danger" size="sm" onClick={() => setConfirmAction({ transfer: t, action: 'cancel' })}><XIcon size={12} /></Button>
                             )}
                           </div>
                         )
                       })()}
                     </td>
                   </tr>
-                  {/* Expanded items */}
                   {expandedId === t.id && t.items && t.items.length > 0 && (
                     <tr>
                       <td colSpan={8} style={{ padding: 'var(--space-3) var(--space-6)', background: 'var(--bg-secondary)' }}>
@@ -494,8 +474,92 @@ export default function TransfersPage() {
         )}
       </div>
 
-      {/* Create Modal */}
-      <Modal open={createModal} onClose={() => setCreateModal(false)} title="تحويل جديد" size="lg" disableOverlayClose
+      {/* ── MOBILE: Transfer Card List ───────────────────────────── */}
+      <div className="tr-card-view">
+        {loading ? (
+          <div className="mobile-card-list">
+            {[1,2,3].map(i => <div key={i} className="edara-card" style={{ height: 104 }}><div className="skeleton" style={{ height: '100%' }} /></div>)}
+          </div>
+        ) : transfers.length === 0 ? (
+          <div className="edara-card" style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <ArrowLeftRight size={40} style={{ margin: '0 auto 12px', display: 'block', opacity: 0.3 }} />
+            <p>لا يوجد تحويلات</p>
+          </div>
+        ) : (
+          <div className="mobile-card-list">
+            {transfers.map((t: StockTransfer) => {
+              const st = statusMap[t.status]
+              const myWhIds = new Set(myWarehouses.map(w => w.id))
+              const userId = useAuthStore.getState().profile?.id
+              const iManageSource = isAdmin || myWhIds.has(t.from_warehouse_id)
+              const iManageDest   = isAdmin || myWhIds.has(t.to_warehouse_id)
+              const iAmCreator    = isAdmin || t.requested_by === userId
+              return (
+                <div key={t.id} className="edara-card tr-mobile-card" onClick={() => navigate(`/inventory/transfers/${t.id}`)}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--color-primary)' }} dir="ltr">{t.number}</span>
+                        <Badge variant={t.direction === 'push' ? 'primary' : 'info'}>
+                          {t.direction === 'push' ? <><Send size={9} /> إرسال</> : <><Download size={9} /> طلب</>}
+                        </Badge>
+                      </div>
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 3 }}>{formatDateShort(t.created_at)}</div>
+                    </div>
+                    <Badge variant={st?.variant || 'neutral'}>{st?.label || t.status}</Badge>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 8 }}>
+                    <WarehouseIcon size={11} />
+                    <span>{t.from_warehouse?.name || '—'}</span>
+                    <ArrowLeftRight size={10} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
+                    <span>{t.to_warehouse?.name || '—'}</span>
+                  </div>
+                  {/* Action buttons inline in card */}
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }} onClick={e => e.stopPropagation()}>
+                    {t.status === 'pending' && t.direction === 'push' && iManageSource && (
+                      <Button variant="primary" size="sm" icon={<Truck size={12} />}
+                        onClick={() => setConfirmAction({ transfer: t, action: 'ship' })}>شحن</Button>
+                    )}
+                    {t.status === 'pending' && t.direction === 'pull' && iManageSource && (
+                      <Button variant="primary" size="sm" icon={<Truck size={12} />}
+                        onClick={() => setConfirmAction({ transfer: t, action: 'approve_ship' })}>موافقة وشحن</Button>
+                    )}
+                    {t.status === 'in_transit' && iManageDest && t.approved_by !== userId && (
+                      <Button variant="success" size="sm" icon={<PackageCheck size={12} />}
+                        onClick={() => setConfirmAction({ transfer: t, action: 'receive' })}>استلام</Button>
+                    )}
+                    {(t.status === 'pending' && iAmCreator) && (
+                      <Button variant="danger" size="sm" icon={<XIcon size={12} />}
+                        onClick={() => setConfirmAction({ transfer: t, action: 'cancel' })}>إلغاء</Button>
+                    )}
+                    {t.status === 'in_transit' && iManageSource && (
+                      <Button variant="danger" size="sm" icon={<XIcon size={12} />}
+                        onClick={() => setConfirmAction({ transfer: t, action: 'cancel' })}>إلغاء</Button>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+        {totalPages > 1 && (
+          <div className="mobile-pagination">
+            <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>السابق</Button>
+            <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>{page} / {totalPages}</span>
+            <Button variant="ghost" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>التالي</Button>
+          </div>
+        )}
+      </div>
+
+      {/* Mobile FAB */}
+      {can('inventory.transfers.create') && (
+        <button className="tr-fab" onClick={openCreate} aria-label="تحويل جديد">
+          <Plus size={24} />
+        </button>
+      )}
+
+      {/* Create Modal → ResponsiveModal (Bottom Sheet on mobile) */}
+      <ResponsiveModal open={createModal} onClose={() => setCreateModal(false)} title="تحويل جديد"
         footer={
           <div className="flex gap-2 justify-end" style={{ width: '100%' }}>
             <Button variant="secondary" onClick={() => setCreateModal(false)}>إلغاء</Button>
@@ -604,7 +668,7 @@ export default function TransfersPage() {
             <Plus size={14} /> بند إضافي
           </Button>
         </div>
-      </Modal>
+      </ResponsiveModal>
 
       {/* Confirm Dialog */}
       {confirmAction && confirmConfig && (
@@ -619,6 +683,30 @@ export default function TransfersPage() {
           onCancel={() => setConfirmAction(null)}
         />
       )}
+
+      <style>{`
+        .tr-table-view { display: block; }
+        .tr-card-view  { display: none; }
+        .tr-mobile-card { padding: var(--space-4); cursor: pointer; transition: background 0.12s; }
+        .tr-mobile-card:hover { background: var(--bg-hover); }
+        .mobile-card-list { display: flex; flex-direction: column; gap: var(--space-3); }
+        .mobile-pagination { display: flex; align-items: center; justify-content: center; gap: var(--space-4); padding: var(--space-4) 0; }
+        .tr-fab {
+          position: fixed; bottom: calc(70px + var(--space-4)); left: var(--space-4);
+          width: 56px; height: 56px; border-radius: 50%;
+          background: var(--color-primary); color: #fff;
+          border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 4px 20px rgba(37,99,235,0.35);
+          z-index: var(--z-modal, 400); transition: transform 0.15s;
+        }
+        .tr-fab:hover { transform: scale(1.06); }
+        @media (max-width: 768px) {
+          .desktop-only-btn { display: none !important; }
+          .tr-table-view { display: none; }
+          .tr-card-view  { display: block; }
+        }
+        @media (min-width: 769px) { .tr-fab { display: none; } }
+      `}</style>
     </div>
   )
 }

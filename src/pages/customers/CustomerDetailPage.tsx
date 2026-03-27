@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   ArrowRight, Edit, MapPin, Phone, Mail, Building, CreditCard, Users,
   Star, Clock, FileText, Hash, Globe, Tag, Wallet, Calendar, Navigation,
-  Plus, Trash2, Check, AlertTriangle, Eye
+  Plus, Trash2, Check, AlertTriangle, Eye, ExternalLink
 } from 'lucide-react'
 import {
   getCustomer, getCustomerBranches, getCustomerContacts, getCreditHistory
@@ -65,40 +65,61 @@ export default function CustomerDetailPage() {
     </div>
   )
 
-  const InfoItem = ({ icon: Icon, label, value, dir }: { icon: any; label: string; value: string | number | null | undefined; dir?: string }) => (
+  const InfoItem = ({ icon: Icon, label, value, dir }: { icon: any; label: string; value?: ReactNode; dir?: string }) => (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)', padding: 'var(--space-3) 0', borderBottom: '1px solid var(--border-secondary)' }}>
       <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-md)', background: 'var(--bg-surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
         <Icon size={14} style={{ color: 'var(--color-primary)' }} />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 2 }}>{label}</div>
-        <div style={{ fontSize: 'var(--text-sm)', fontWeight: 500, color: value ? 'var(--text-primary)' : 'var(--text-muted)' }} dir={dir}>{value || '—'}</div>
+        <div style={{ fontSize: 'var(--text-sm)', fontWeight: 500, color: value ? 'var(--text-primary)' : 'var(--text-muted)' }} dir={dir}>{value ?? '—'}</div>
       </div>
     </div>
   )
 
   return (
-    <div className="page-container animate-enter">
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-info">
-          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/customers')} style={{ marginBottom: 'var(--space-2)' }}>
-            <ArrowRight size={14} /> العودة للعملاء
+    <div style={{ maxWidth: 900, margin: '0 auto', paddingBottom: 80 }}>
+
+      {/* ══ Sticky Mobile Hero Card ══ */}
+      <div style={{
+        position: 'sticky', top: 0, zIndex: 10,
+        background: 'var(--bg-surface)',
+        borderBottom: '1px solid var(--border-primary)',
+        backdropFilter: 'blur(12px)',
+        padding: '14px 16px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button onClick={() => navigate('/customers')}
+            style={{ background: 'var(--bg-surface-2)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: '7px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: 'var(--text-secondary)', flexShrink: 0 }}>
+            <ArrowRight size={14} /> رجوع
           </button>
-          <h1 className="page-title">{customer.name}</h1>
-          <p className="page-subtitle" dir="ltr" style={{ fontFamily: 'monospace' }}>{customer.code}</p>
-        </div>
-        <div className="page-actions">
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <h1 style={{ fontSize: 17, fontWeight: 800, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {customer.name}
+              </h1>
+              <span className={`badge ${paymentBadge[customer.payment_terms] || 'badge-neutral'}`}>
+                {paymentLabels[customer.payment_terms] || customer.payment_terms}
+              </span>
+              <span className={`badge ${customer.is_active ? 'badge-success' : 'badge-danger'}`}>
+                {customer.is_active ? 'نشط' : 'معطل'}
+              </span>
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, fontFamily: 'monospace', direction: 'ltr', display: 'inline-block' }}>
+              {customer.code}
+            </div>
+          </div>
           {can('customers.update') && (
-            <button className="btn btn-primary" onClick={() => navigate(`/customers/${id}/edit`)}>
-              <Edit size={16} /> تعديل
+            <button onClick={() => navigate(`/customers/${id}/edit`)}
+              style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 10, padding: '8px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, fontWeight: 600, flexShrink: 0 }}>
+              <Edit size={14} /> تعديل
             </button>
           )}
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+      {/* Stats Row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--space-3)', margin: '0 12px var(--space-4)' }}>
         <div className="stat-card">
           <div className="stat-card-label">النوع</div>
           <span className={`badge ${typeBadge[customer.type] || 'badge-neutral'}`} style={{ alignSelf: 'flex-start' }}>
@@ -139,8 +160,8 @@ export default function CustomerDetailPage() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="tabs">
+      {/* Tabs — scrollable on mobile */}
+      <div className="tabs" style={{ overflowX: 'auto', scrollbarWidth: 'none', flexWrap: 'nowrap', padding: '0 12px' }}>
         <button className={`tab ${tab === 'info' ? 'active' : ''}`} onClick={() => setTab('info')}>
           <Building size={14} /> المعلومات
         </button>
@@ -160,14 +181,22 @@ export default function CustomerDetailPage() {
 
       {/* ═══════ TAB: INFO ═══════ */}
       {tab === 'info' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-4)', padding: '0 12px' }}>
           {/* Contact Info */}
           <div className="edara-card" style={{ padding: 'var(--space-5)' }}>
             <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 'var(--space-3)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
               <Phone size={16} style={{ color: 'var(--color-primary)' }} /> بيانات الاتصال
             </h3>
-            <InfoItem icon={Phone} label="الهاتف" value={customer.phone} dir="ltr" />
-            <InfoItem icon={Phone} label="الجوال" value={customer.mobile} dir="ltr" />
+            {customer.phone && (
+              <InfoItem icon={Phone} label="الهاتف" dir="ltr"
+                value={<a href={`tel:${customer.phone}`} style={{ color: 'var(--color-primary)', textDecoration: 'none', fontFamily: 'monospace' }}>{customer.phone}</a>} />
+            )}
+            {!customer.phone && <InfoItem icon={Phone} label="الهاتف" value={null} />}
+            {customer.mobile && (
+              <InfoItem icon={Phone} label="الجوال" dir="ltr"
+                value={<a href={`tel:${customer.mobile}`} style={{ color: 'var(--color-primary)', textDecoration: 'none', fontFamily: 'monospace' }}>{customer.mobile}</a>} />
+            )}
+            {!customer.mobile && <InfoItem icon={Phone} label="الجوال" value={null} />}
             <InfoItem icon={Mail} label="البريد" value={customer.email} dir="ltr" />
             <InfoItem icon={FileText} label="الرقم الضريبي" value={customer.tax_number} dir="ltr" />
           </div>
@@ -182,7 +211,28 @@ export default function CustomerDetailPage() {
             <InfoItem icon={MapPin} label="المنطقة" value={customer.area?.name} />
             <InfoItem icon={Navigation} label="العنوان" value={customer.address} />
             {customer.latitude && customer.longitude && (
-              <InfoItem icon={Navigation} label="الموقع GPS" value={`${customer.latitude.toFixed(6)}, ${customer.longitude.toFixed(6)}`} dir="ltr" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-3) 0', borderBottom: '1px solid var(--border-secondary)' }}>
+                <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-md)', background: 'var(--color-success-light, #f0fdf4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Navigation size={14} style={{ color: 'var(--color-success)' }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 2 }}>الموقع GPS</div>
+                  <a
+                    href={`geo:${customer.latitude},${customer.longitude}?q=${customer.latitude},${customer.longitude}(${encodeURIComponent(customer.name)})`}
+                    onClick={e => {
+                      // Fallback to Google Maps URL on desktop
+                      if (!/Android|iPhone|iPad/i.test(navigator.userAgent)) {
+                        e.preventDefault()
+                        window.open(`https://maps.google.com/?q=${customer.latitude},${customer.longitude}`, '_blank')
+                      }
+                    }}
+                    style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-success)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}
+                  >
+                    <ExternalLink size={12} />
+                    {customer.latitude.toFixed(5)}, {customer.longitude.toFixed(5)}
+                  </a>
+                </div>
+              </div>
             )}
           </div>
 
@@ -212,7 +262,7 @@ export default function CustomerDetailPage() {
 
       {/* ═══════ TAB: BRANCHES ═══════ */}
       {tab === 'branches' && (
-        <div className="edara-card" style={{ padding: 'var(--space-5)' }}>
+        <div className="edara-card" style={{ padding: 'var(--space-5)', margin: '0 12px' }}>
           <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-4)' }}>
             <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 700 }}>الفروع</h3>
           </div>
@@ -244,7 +294,7 @@ export default function CustomerDetailPage() {
 
       {/* ═══════ TAB: CONTACTS ═══════ */}
       {tab === 'contacts' && (
-        <div className="edara-card" style={{ padding: 'var(--space-5)' }}>
+        <div className="edara-card" style={{ padding: 'var(--space-5)', margin: '0 12px' }}>
           <div className="flex items-center justify-between" style={{ marginBottom: 'var(--space-4)' }}>
             <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 700 }}>جهات الاتصال</h3>
           </div>
@@ -276,7 +326,7 @@ export default function CustomerDetailPage() {
 
       {/* ═══════ TAB: CREDIT HISTORY ═══════ */}
       {tab === 'credit' && (
-        <div className="edara-card" style={{ overflow: 'auto' }}>
+        <div className="edara-card" style={{ overflow: 'auto', margin: '0 12px' }}>
           <div className="flex items-center justify-between" style={{ padding: 'var(--space-5) var(--space-5) 0' }}>
             <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 700 }}>سجل تغييرات الائتمان</h3>
           </div>

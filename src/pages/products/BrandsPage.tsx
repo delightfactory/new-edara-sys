@@ -4,6 +4,8 @@ import { Plus, Tag, Edit, Loader2, ToggleLeft, ToggleRight } from 'lucide-react'
 import { getBrands, createBrand, updateBrand } from '@/lib/services/products'
 import { useAuthStore } from '@/stores/auth-store'
 import type { Brand } from '@/lib/types/master-data'
+import ResponsiveModal from '@/components/ui/ResponsiveModal'
+import Button from '@/components/ui/Button'
 
 export default function BrandsPage() {
   const can = useAuthStore(s => s.can)
@@ -104,34 +106,31 @@ export default function BrandsPage() {
         </div>
       )}
 
-      {modal.open && (
-        <div className="modal-overlay" onClick={() => setModal({ open: false })}>
-          <div className="modal-box modal-sm" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <span className="modal-title">{modal.editing ? 'تعديل علامة' : 'علامة جديدة'}</span>
-              <button className="btn btn-ghost btn-icon" onClick={() => setModal({ open: false })}>✕</button>
-            </div>
-            <div className="modal-body">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                <div className="form-group">
-                  <label className="form-label required">الاسم</label>
-                  <input className="form-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} autoFocus />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">رابط الشعار</label>
-                  <input className="form-input" dir="ltr" placeholder="https://..." value={form.logo_url} onChange={e => setForm(f => ({ ...f, logo_url: e.target.value }))} />
-                </div>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setModal({ open: false })}>إلغاء</button>
-              <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-                {saving && <Loader2 size={14} className="animate-spin" />} {modal.editing ? 'تحديث' : 'إنشاء'}
-              </button>
-            </div>
+      {/* ── Bottom-sheet form (ResponsiveModal) ── */}
+      <ResponsiveModal
+        open={modal.open}
+        onClose={() => setModal({ open: false })}
+        title={modal.editing ? 'تعديل علامة' : 'علامة جديدة'}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <div className="form-group">
+            <label className="form-label required">الاسم</label>
+            <input className="form-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} autoFocus />
+          </div>
+          <div className="form-group">
+            <label className="form-label">رابط الشعار</label>
+            <input className="form-input" dir="ltr" placeholder="https://..." value={form.logo_url} onChange={e => setForm(f => ({ ...f, logo_url: e.target.value }))} />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 4 }}>
+            <Button onClick={handleSave} loading={saving} style={{ width: '100%', justifyContent: 'center' }}>
+              {modal.editing ? 'تحديث' : 'إنشاء'}
+            </Button>
+            <Button variant="ghost" onClick={() => setModal({ open: false })} style={{ width: '100%', justifyContent: 'center' }}>
+              إلغاء
+            </Button>
           </div>
         </div>
-      )}
+      </ResponsiveModal>
     </div>
   )
 }
