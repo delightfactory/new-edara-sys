@@ -57,7 +57,13 @@ const navItems: NavItem[] = [
       { label: 'شركات الشحن', path: '/sales/shipping', permission: PERMISSIONS.SALES_SHIPPING_MANAGE },
     ],
   },
-  { id: 'purchases', label: 'المشتريات', icon: Package, permission: [PERMISSIONS.PURCHASES_ORDERS_READ, PERMISSIONS.PURCHASES_ORDERS_CREATE], path: '/purchases/orders', comingSoon: true },
+  {
+    id: 'purchases', label: 'المشتريات', icon: Package,
+    children: [
+      { label: 'فواتير الشراء',   path: '/purchases/invoices', permission: PERMISSIONS.PURCHASES_ORDERS_READ },
+      { label: 'مرتجعات المشتريات', path: '/purchases/returns', permission: 'procurement.returns.read' },
+    ],
+  },
   {
     id: 'finance', label: 'المالية', icon: DollarSign,
     children: [

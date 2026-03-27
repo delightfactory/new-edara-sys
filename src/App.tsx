@@ -66,6 +66,12 @@ const SalesReturnForm = lazy(() => import('@/pages/sales/SalesReturnForm'))
 const SalesReturnDetail = lazy(() => import('@/pages/sales/SalesReturnDetail'))
 const ShippingCompaniesPage = lazy(() => import('@/pages/sales/ShippingCompaniesPage'))
 
+// Procurement Pages — lazy loaded
+const PurchaseInvoicesPage = lazy(() => import('@/pages/purchases/PurchaseInvoicesPage'))
+const PurchaseInvoiceForm  = lazy(() => import('@/pages/purchases/PurchaseInvoiceForm'))
+const PurchaseReturnForm   = lazy(() => import('@/pages/purchases/PurchaseReturnForm'))
+const PurchaseReturnsPage  = lazy(() => import('@/pages/purchases/PurchaseReturnsPage'))
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -206,6 +212,26 @@ export default function App() {
               } />
               <Route path="sales/shipping" element={
                 <ProtectedRoute permission="sales.shipping.manage"><Suspense fallback={<LazyFallback />}><ShippingCompaniesPage /></Suspense></ProtectedRoute>
+              } />
+
+              {/* Purchases */}
+              <Route path="purchases/invoices" element={
+                <ProtectedRoute permission={['procurement.invoices.read', 'procurement.invoices.create']}><Suspense fallback={<LazyFallback />}><PurchaseInvoicesPage /></Suspense></ProtectedRoute>
+              } />
+              <Route path="purchases/invoices/new" element={
+                <ProtectedRoute permission="procurement.invoices.create"><Suspense fallback={<LazyFallback />}><PurchaseInvoiceForm /></Suspense></ProtectedRoute>
+              } />
+              <Route path="purchases/invoices/:id" element={
+                <ProtectedRoute permission="procurement.invoices.read"><Suspense fallback={<LazyFallback />}><PurchaseInvoiceForm /></Suspense></ProtectedRoute>
+              } />
+              <Route path="purchases/returns" element={
+                <ProtectedRoute permission="procurement.returns.read"><Suspense fallback={<LazyFallback />}><PurchaseReturnsPage /></Suspense></ProtectedRoute>
+              } />
+              <Route path="purchases/returns/new" element={
+                <ProtectedRoute permission="procurement.returns.create"><Suspense fallback={<LazyFallback />}><PurchaseReturnForm /></Suspense></ProtectedRoute>
+              } />
+              <Route path="purchases/returns/:id" element={
+                <ProtectedRoute permission="procurement.returns.read"><Suspense fallback={<LazyFallback />}><PurchaseReturnForm /></Suspense></ProtectedRoute>
               } />
               <Route path="finance/vaults" element={
                 <ProtectedRoute permission="finance.vaults.read"><Suspense fallback={<LazyFallback />}><VaultsPage /></Suspense></ProtectedRoute>

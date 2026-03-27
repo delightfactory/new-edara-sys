@@ -656,7 +656,7 @@ export type VaultTransactionType =
   | 'transfer_in' | 'transfer_out'
   | 'collection' | 'expense'
   | 'custody_load' | 'custody_return'
-  | 'opening_balance'
+  | 'opening_balance' | 'vendor_payment'
 
 export interface VaultTransaction {
   id: string
@@ -1128,4 +1128,166 @@ export interface SalesSettings {
   minOrderAmount: number
   taxEnabled: boolean
   defaultTaxRate: number
+}
+
+// ============================================================
+// Phase 5 — Procurement Module
+// Maps to: supabase/migrations/14_procurement_schema_and_coa.sql
+// ============================================================
+
+export type PurchaseInvoiceStatus = 'draft' | 'received' | 'billed' | 'paid' | 'cancelled'
+export type PurchasePaymentMethod = 'cash' | 'bank_transfer' | 'cheque' | 'instapay' | 'mobile_wallet'
+
+export interface PurchaseInvoiceItem {
+  id: string
+  invoice_id: string
+  product_id: string
+  unit_id: string | null
+  ordered_quantity: number
+  received_quantity: number
+  unit_price: number
+  discount_rate: number   // 0–100 percent
+  tax_rate: number        // 0–100 percent
+  // computed by receive_purchase_invoice RPC
+  net_cost: number
+  landed_cost_share: number
+  true_net_cost: number
+  created_at: string
+  // joined
+  product?: Pick<Product, 'id' | 'name' | 'sku'> & {
+    base_unit?: Pick<Unit, 'id' | 'name' | 'symbol'>
+  }
+  unit?: Pick<Unit, 'id' | 'name' | 'symbol'>
+}
+
+export interface PurchaseInvoice {
+  id: string
+  number: string          // Auto-generated: PIN-YYYYMMDD-XXXX
+  supplier_id: string
+  warehouse_id: string
+  status: PurchaseInvoiceStatus
+  invoice_date: string
+  supplier_invoice_ref: string | null
+  due_date: string | null
+  // financials
+  subtotal: number
+  discount_amount: number
+  tax_amount: number
+  landed_costs: number
+  total_amount: number
+  paid_amount: number
+  // payment (immediate only)
+  vault_id: string | null
+  payment_method: PurchasePaymentMethod | null
+  bank_reference: string | null
+  check_number: string | null
+  check_date: string | null
+  notes: string | null
+  // audit
+  received_by: string | null
+  received_at: string | null
+  billed_by: string | null
+  billed_at: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+  // joined
+  supplier?: Pick<Supplier, 'id' | 'name' | 'code'>
+  warehouse?: Pick<Warehouse, 'id' | 'name'>
+  vault?: Pick<Vault, 'id' | 'name' | 'type'>
+  items?: PurchaseInvoiceItem[]
+}
+
+// ----- INPUT TYPES -----
+
+export interface PurchaseInvoiceItemInput {
+  product_id: string
+  unit_id?: string | null
+  ordered_quantity: number
+  received_quantity?: number
+  unit_price: number
+  discount_rate?: number
+  tax_rate?: number
+}
+
+export interface PurchaseInvoiceInput {
+  supplier_id: string
+  warehouse_id: string
+  invoice_date?: string
+  supplier_invoice_ref?: string | null
+  due_date?: string | null
+  landed_costs?: number
+  notes?: string | null
+}
+
+
+// ============================================================
+// Phase 6 — Procurement Returns & Cancellations
+// ============================================================
+
+export type PurchaseReturnStatus = 'draft' | 'confirmed'
+
+export interface PurchaseReturnItem {
+  id: string
+  return_id: string
+  product_id: string
+  unit_id: string | null
+  quantity: number
+  unit_price: number
+  discount_rate: number
+  tax_rate: number
+  ap_line_gross: number
+  ap_line_discount: number
+  ap_line_net: number
+  ap_line_tax: number
+  ap_line_total: number
+  cogs_value: number
+  wac_variance: number
+  line_total: number
+  created_at: string
+  product?: Pick<Product, 'id' | 'name' | 'sku'> & { base_unit?: Pick<Unit, 'id' | 'name' | 'symbol'> }
+  unit?: Pick<Unit, 'id' | 'name' | 'symbol'>
+}
+
+export interface PurchaseReturn {
+  id: string
+  number: string
+  supplier_id: string
+  warehouse_id: string
+  original_invoice_id: string | null
+  status: PurchaseReturnStatus
+  return_date: string
+  notes: string | null
+  subtotal: number
+  discount_amount: number
+  tax_amount: number
+  total_amount: number
+  refunded_amount: number
+  confirmed_by: string | null
+  confirmed_at: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+  supplier?: Pick<Supplier, 'id' | 'name' | 'code'>
+  warehouse?: Pick<Warehouse, 'id' | 'name'>
+  original_invoice?: Pick<PurchaseInvoice, 'id' | 'number'> | null
+  confirmed_by_profile?: { id: string; full_name: string }
+  items?: PurchaseReturnItem[]
+}
+
+export interface PurchaseReturnItemInput {
+  product_id: string
+  unit_id?: string | null
+  quantity: number
+  unit_price: number
+  discount_rate?: number
+  tax_rate?: number
+}
+
+export interface PurchaseReturnInput {
+  supplier_id: string
+  warehouse_id: string
+  original_invoice_id?: string | null
+  return_date?: string
+  notes?: string | null
 }
