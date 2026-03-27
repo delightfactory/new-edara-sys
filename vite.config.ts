@@ -16,11 +16,9 @@ export default defineConfig({
       registerType: 'prompt',
       injectRegister: 'auto',
 
-      // Enable SW in dev for testing
+      // SW only active in production — enabling in dev causes duplicate React instances
       devOptions: {
-        enabled: true,
-        type: 'module',
-        navigateFallback: 'index.html',
+        enabled: false,
       },
 
       includeAssets: [

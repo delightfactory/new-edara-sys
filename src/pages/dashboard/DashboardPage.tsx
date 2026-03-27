@@ -34,7 +34,7 @@ async function fetchOverviewStats(): Promise<OverviewStats> {
     supabase.from('products').select('id', { count: 'estimated', head: true }).eq('is_active', true),
     supabase.from('warehouses').select('id', { count: 'estimated', head: true }).eq('is_active', true),
     supabase.from('stock').select('id', { count: 'estimated', head: true }),
-    supabase.from('sales_orders').select('id', { count: 'estimated', head: true }).in('status', ['confirmed', 'processing']),
+    supabase.from('sales_orders').select('id', { count: 'estimated', head: true }).in('status', ['confirmed', 'partially_delivered']),
     supabase.from('purchase_invoices').select('id', { count: 'estimated', head: true }).eq('status', 'pending'),
     supabase.from('stock').select('id', { count: 'estimated', head: true }).lt('quantity', 10).gt('quantity', 0),
   ])
@@ -56,7 +56,7 @@ async function fetchSalesStats(): Promise<SalesStats> {
   const [todayOrders, monthOrders, pendingOrders, deliveredToday] = await Promise.all([
     supabase.from('sales_orders').select('total_amount').gte('created_at', today).eq('status', 'delivered'),
     supabase.from('sales_orders').select('total_amount').gte('created_at', monthStart).eq('status', 'delivered'),
-    supabase.from('sales_orders').select('id', { count: 'estimated', head: true }).in('status', ['confirmed', 'processing']),
+    supabase.from('sales_orders').select('id', { count: 'estimated', head: true }).in('status', ['confirmed', 'partially_delivered']),
     supabase.from('sales_orders').select('id', { count: 'estimated', head: true }).gte('created_at', today).eq('status', 'delivered'),
   ])
 
