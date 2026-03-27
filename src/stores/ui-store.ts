@@ -18,7 +18,7 @@ export const useUiStore = create<UiState>()(
   persist(
     (set, get) => ({
       theme: 'light',
-      sidebarOpen: true,
+      sidebarOpen: false,   // ← Fixed: was true — caused force-open on mobile refresh
       sidebarCollapsed: false,
 
       setTheme: (theme) => {
@@ -37,12 +37,12 @@ export const useUiStore = create<UiState>()(
     }),
     {
       name: 'edara-ui',
+      // sidebarOpen intentionally NOT persisted — always starts closed on mobile
       partialize: (state) => ({
         theme: state.theme,
         sidebarCollapsed: state.sidebarCollapsed,
       }),
       onRehydrateStorage: () => (state) => {
-        // Apply saved theme on load
         if (state?.theme) {
           document.documentElement.setAttribute('data-theme', state.theme)
         }

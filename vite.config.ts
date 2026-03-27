@@ -12,7 +12,7 @@ export default defineConfig({
       srcDir: 'src',
       filename: 'sw.ts',
 
-      // prompt = we control when the update activates (no surprise reloads)
+      // prompt = we control timing; SW notifies via BroadcastChannel, auto-reloads between pages
       registerType: 'prompt',
       injectRegister: 'auto',
 
@@ -42,6 +42,10 @@ export default defineConfig({
         lang: 'ar',
         start_url: '/?source=pwa',
         scope: '/',
+        // ── Manifest identity (W3C + Chrome best practice for WebAPK) ──
+        id: '/',                              // Stable identity — never changes even if start_url changes
+        prefer_related_applications: false,   // Always prefer PWA over any native app
+
         categories: ['business', 'productivity'],
         icons: [
           {

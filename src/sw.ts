@@ -14,10 +14,18 @@ import { CacheableResponsePlugin } from 'workbox-cacheable-response'
 
 declare let self: ServiceWorkerGlobalScope
 
-// ── 1. Claim clients immediately after user triggers update ──
-// Cast required: ServiceWorkerGlobalScope typings may not expose skipWaiting directly
-;(self as unknown as { skipWaiting: () => void }).skipWaiting()
+// ── 1. Smart update strategy for ERP: notify clients, they apply on next navigation ──
+// Do NOT skipWaiting immediately — wait for PWAUpdateBanner user confirmation
+// OR apply automatically when user navigates between pages (safe for data integrity)
 clientsClaim()
+
+// Listen for SKIP_WAITING message from PWAUpdateBanner or auto-apply logic
+;(self as unknown as EventTarget).addEventListener('message', (e: Event) => {
+  const event = e as MessageEvent
+  if (event.data?.type === 'SKIP_WAITING') {
+    ;(self as unknown as { skipWaiting: () => void }).skipWaiting()
+  }
+})
 
 // ── 2. Precache all build assets + cleanup old caches ──
 cleanupOutdatedCaches()
