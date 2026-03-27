@@ -422,7 +422,7 @@ export default function SalesOrderForm() {
           setCustomerBranches(branches)
         }
         if (order.items?.length) {
-          setLines(order.items.map(i => calcLine({
+          const initialLines = order.items.map(i => calcLine({
             _key: i.id,
             product_id: i.product_id,
             productName: i.product?.name || '',
@@ -441,8 +441,32 @@ export default function SalesOrderForm() {
             tax_rate: i.tax_rate,
             tax_amount: i.tax_amount,
             line_total: i.line_total,
-            availableQty: Infinity, // يُحدّد عند البحث لاحقاً
-          })))
+            availableQty: Infinity, // [FE-01] سيُحدَّث أدناه إذا كان المخزن محدداً
+          }))
+          setLines(initialLines)
+
+          // [FE-01] جلب الكمية المتاحة الفعلية من المخزن لكل منتج
+          // نفحص فقط إذا كان warehouse_id محدداً (قد يكون null في مسودة لم تؤكد)
+          if (order.warehouse_id) {
+            const stockChecks = order.items.map(i =>
+              supabase.rpc('get_available_stock', {
+                p_warehouse_id: order.warehouse_id,
+                p_product_id: i.product_id,
+              }).then(({ data }) => ({
+                product_id: i.product_id,
+                qty: typeof data === 'number' ? data : Infinity,
+              }))
+            )
+            const results = await Promise.allSettled(stockChecks)
+            setLines(prev => prev.map(line => {
+              const hit = results.find(
+                r => r.status === 'fulfilled' && r.value.product_id === line.product_id
+              )
+              return hit && hit.status === 'fulfilled'
+                ? { ...line, availableQty: hit.value.qty }
+                : line
+            }))
+          }
         }
       } catch { toast.error('فشل تحميل الطلب') }
       finally { setFormLoading(false) }
