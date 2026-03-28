@@ -4,6 +4,8 @@ import Sidebar from './Sidebar'
 import BottomNav from './BottomNav'
 import FAB from './FAB'
 import PageTitleContext, { PageTitleProvider } from './PageTitleContext'
+import OfflineDetector from '@/components/pwa/OfflineDetector'
+import InstallBanner from '@/components/pwa/InstallBanner'
 import { useContext } from 'react'
 
 function AppBarTitle() {
@@ -48,6 +50,10 @@ export default function AppLayout() {
         {/* ── Mobile Shell ─────────────────────────────── */}
         <FAB />
         <BottomNav />
+
+        {/* ── PWA Utilities ─────────────────────────────── */}
+        <OfflineDetector />
+        <InstallBanner />
 
         <style>{`
           /* ── Layout Shell ──────────────────────────── */
