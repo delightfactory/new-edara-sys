@@ -139,7 +139,7 @@ BEGIN
   FOR v_item IN
     SELECT * FROM purchase_invoice_items
     WHERE invoice_id = p_invoice_id
-    ORDER BY id
+    ORDER BY product_id ASC  -- [DEADLOCK FIX] ترتيب ثابت لمنع الاختناق
   LOOP
     IF v_item.received_quantity <= 0 THEN CONTINUE; END IF;
 
@@ -525,6 +525,9 @@ DECLARE
 
   -- [Fix-2] UUID حركة الخزينة للتوحيد مع دفتر الموردين
   v_txn_id          UUID;
+
+  -- [AUDIT FIX] فرق التقريب عند إغلاق الفاتورة بالسماحية
+  v_rounding_diff   NUMERIC;
 BEGIN
   -- ══════════════════════════════════════════════════════════
   -- [SECURITY GUARD]
@@ -662,6 +665,45 @@ BEGIN
     updated_at = now()
   WHERE id = p_invoice_id;
 
+  -- ══════════════════════════════════════════════════════════
+  -- [AUDIT FIX] 7. تسوية فروق التقريب تلقائياً
+  --    عند إغلاق فاتورة بالسماحية (مثلاً دفع 999.99 من 1000.00)
+  --    نُنشئ قيد بالفارق (0.01) لحساب فروق التقريب (5900)
+  --    لمنع تراكم أرصدة وهمية في حساب ذمم الموردين (2100)
+  -- ══════════════════════════════════════════════════════════
+  v_rounding_diff := v_invoice.total_amount - (COALESCE(v_invoice.paid_amount, 0) + p_amount);
+
+  IF v_rounding_diff > 0 AND v_rounding_diff <= 0.01 THEN
+    -- سداد فارق التقريب تلقائياً في دفتر الأستاذ
+    PERFORM create_manual_journal_entry(
+      'تسوية فروق تقريب — فاتورة ' || COALESCE(v_invoice.number, ''),
+      CURRENT_DATE, 'purchase_order', p_invoice_id,
+      jsonb_build_array(
+        jsonb_build_object(
+          'account_code', '2100',
+          'debit', ROUND(v_rounding_diff, 2), 'credit', 0,
+          'description', 'تسوية فرق تقريب — ذمم مورد / ' || COALESCE(v_supplier_name, '')
+        ),
+        jsonb_build_object(
+          'account_code', '5900',
+          'debit', 0, 'credit', ROUND(v_rounding_diff, 2),
+          'description', 'فروق تقريب — سداد مورد / ' || COALESCE(v_invoice.number, '')
+        )
+      ),
+      p_user_id
+    );
+
+    -- تحديث دفتر الموردين بالفارق
+    INSERT INTO supplier_ledger (
+      supplier_id, type, amount, source_type, source_id, description, created_by
+    ) VALUES (
+      v_invoice.supplier_id, 'debit', ROUND(v_rounding_diff, 2),
+      'adjustment', gen_random_uuid(),
+      'تسوية فرق تقريب — ' || COALESCE(v_invoice.number, ''),
+      p_user_id
+    );
+  END IF;
+
 END; $$;
 
 GRANT EXECUTE ON FUNCTION pay_supplier(UUID, UUID, NUMERIC, TEXT, UUID, TEXT) TO authenticated;
@@ -678,3 +720,18 @@ ALTER TABLE products
 
 COMMENT ON COLUMN products.last_purchase_price
   IS 'آخر سعر شراء تجاري صافٍ (بدون landed costs) — يُحدَّث تلقائياً عند كل استلام';
+
+
+-- ============================================================
+-- [AUDIT FIX] — حساب فروق التقريب
+-- يُستخدم لتسوية الكسور العشرية في سداد الموردين والرواتب
+-- ============================================================
+
+INSERT INTO chart_of_accounts (code, name, name_en, type, sort_order)
+VALUES ('5900', 'فروق تقريب', 'Rounding Differences', 'expense', 99)
+ON CONFLICT (code) DO NOTHING;
+
+-- ربط الأب (5000 مصروفات)
+UPDATE chart_of_accounts
+SET parent_id = (SELECT id FROM chart_of_accounts WHERE code = '5000')
+WHERE code = '5900' AND parent_id IS NULL;

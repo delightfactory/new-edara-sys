@@ -580,6 +580,65 @@ BEGIN
   FROM hr_payroll_lines
   WHERE payroll_run_id = p_run_id;
 
+  -- ══════════════════════════════════════════════════════════
+  -- [AUDIT FIX] C-03: إعادة تحقق من أقساط السلف قبل الاعتماد
+  -- يمنع الخصم المضاعف إذا سدد الموظف السلفة نقداً أثناء المراجعة
+  -- ══════════════════════════════════════════════════════════
+  DECLARE
+    v_line           RECORD;
+    v_actual_advance NUMERIC;
+    v_diff_advance   NUMERIC;
+  BEGIN
+    FOR v_line IN
+      SELECT pl.id, pl.employee_id, pl.advance_deduction, pl.net_salary
+      FROM hr_payroll_lines pl
+      WHERE pl.payroll_run_id = p_run_id
+        AND pl.advance_deduction > 0
+      FOR UPDATE  -- قفل أسطر المسير لمنع أي تعديل متزامن
+    LOOP
+      -- قراءة الأقساط المعلقة فعلياً الآن (مع قفل)
+      SELECT COALESCE(SUM(ai.amount), 0) INTO v_actual_advance
+      FROM hr_advance_installments ai
+      JOIN hr_advances adv ON adv.id = ai.advance_id
+      WHERE adv.employee_id = v_line.employee_id
+        AND ai.due_year  = v_period.year
+        AND ai.due_month = v_period.month
+        AND ai.status    = 'pending'
+      FOR UPDATE;
+
+      v_diff_advance := v_line.advance_deduction - v_actual_advance;
+
+      -- إذا وُجد فرق (مثلاً: السلفة سُددت نقداً بين الحساب والاعتماد)
+      IF v_diff_advance > 0.001 THEN
+        UPDATE hr_payroll_lines
+        SET advance_deduction = v_actual_advance,
+            total_deductions  = total_deductions - v_diff_advance,
+            net_salary        = net_salary + v_diff_advance
+        WHERE id = v_line.id;
+      END IF;
+    END LOOP;
+
+    -- إعادة جلب المجاميع بعد التصحيح
+    SELECT
+      COALESCE(SUM(gross_earned - absence_deduction - penalty_deduction), 0),
+      COALESCE(SUM(overtime_amount), 0),
+      COALESCE(SUM(commission_amount), 0),
+      COALESCE(SUM(net_salary), 0),
+      COALESCE(SUM(advance_deduction), 0),
+      COALESCE(SUM(social_insurance + health_insurance), 0),
+      COALESCE(SUM(income_tax), 0)
+    INTO
+      v_total_salary_expense,
+      v_total_overtime,
+      v_total_commission,
+      v_total_net,
+      v_total_advance,
+      v_total_insurance,
+      v_total_tax
+    FROM hr_payroll_lines
+    WHERE payroll_run_id = p_run_id;
+  END;
+
   -- ─── إجماليات للتحقق (Dr = Cr دائماً) ───
   v_total_debit  := v_total_salary_expense + v_total_overtime + v_total_commission;
   v_total_credit := v_total_net + v_total_advance + v_total_insurance + v_total_tax;
@@ -600,8 +659,9 @@ BEGIN
   -- ─── التحقق من التوازن (Dr = Cr) ───
   -- Dr = salary_expense + overtime + commission
   -- Cr = net + advance + insurance + tax
-  -- الفرق <= 1 مقبول لتقريب الأعشار
-  IF ABS(v_total_debit - v_total_credit) > 1 THEN
+  -- [AUDIT FIX] تقليل السماحية من 1.0 إلى 0.50
+  -- مع حقن فارق التقريب تلقائياً في حساب 5900 (فروق تقريب)
+  IF ABS(v_total_debit - v_total_credit) > 0.50 THEN
     RAISE EXCEPTION
       'القيد المحاسبي غير متوازن: مدين=% دائن=% (فرق=%). راجع بيانات المسير.',
       v_total_debit,
@@ -609,12 +669,21 @@ BEGIN
       ABS(v_total_debit - v_total_credit);
   END IF;
 
+  -- [AUDIT FIX] حقن فارق التقريب تلقائياً لضمان توازن مطلق
+  IF ABS(v_total_debit - v_total_credit) > 0.001 THEN
+    IF v_total_debit > v_total_credit THEN
+      v_total_credit := v_total_debit;  -- تصحيح الإجمالي الدائن
+    ELSE
+      v_total_debit := v_total_credit;   -- تصحيح الإجمالي المدين
+    END IF;
+  END IF;
+
   -- ─── إنشاء رأس القيد المحاسبي ───
   INSERT INTO journal_entries (
     source_type, source_id, description, entry_date,
     is_auto, status, total_debit, total_credit, created_by
   ) VALUES (
-    'manual', p_run_id,
+    'hr_payroll', p_run_id,
     'مسير رواتب ' || v_period.name,
     v_period.end_date,
     true, 'posted',
@@ -674,6 +743,30 @@ BEGIN
             'ضريبة كسب العمل مستقطعة');
   END IF;
 
+  -- [AUDIT FIX] 5900: فروق تقريب — يمتص الفارق العشري لضمان توازن مطلق
+  DECLARE
+    v_coa_rounding UUID;
+    v_rd NUMERIC;
+  BEGIN
+    -- حساب الفرق من السطور الفعلية المدرجة
+    SELECT COALESCE(SUM(debit), 0) - COALESCE(SUM(credit), 0)
+    INTO v_rd
+    FROM journal_entry_lines WHERE entry_id = v_je_id;
+
+    IF ABS(v_rd) > 0.001 THEN
+      SELECT id INTO v_coa_rounding FROM chart_of_accounts WHERE code = '5900' AND is_active = true;
+      IF v_coa_rounding IS NOT NULL THEN
+        INSERT INTO journal_entry_lines (entry_id, account_id, debit, credit, description)
+        VALUES (
+          v_je_id, v_coa_rounding,
+          CASE WHEN v_rd < 0 THEN ROUND(ABS(v_rd), 2) ELSE 0 END,
+          CASE WHEN v_rd > 0 THEN ROUND(v_rd, 2) ELSE 0 END,
+          'فروق تقريب — مسير ' || v_period.name
+        );
+      END IF;
+    END IF;
+  END;
+
   -- ─── تحديث المسير ───
   UPDATE hr_payroll_runs
   SET
@@ -681,6 +774,9 @@ BEGIN
     approved_by      = p_user_id,
     approved_at      = now(),
     journal_entry_id = v_je_id,
+    -- [AUDIT FIX] إعادة حساب الإجماليات بعد تصحيح السلف
+    total_net        = (SELECT COALESCE(SUM(net_salary), 0) FROM hr_payroll_lines WHERE payroll_run_id = p_run_id),
+    total_deductions = (SELECT COALESCE(SUM(total_deductions), 0) FROM hr_payroll_lines WHERE payroll_run_id = p_run_id),
     updated_at       = now()
   WHERE id = p_run_id;
 

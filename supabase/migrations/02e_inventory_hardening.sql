@@ -397,9 +397,11 @@ BEGIN
     RAISE EXCEPTION 'التحويل غير موجود';
   END IF;
 
-  -- لا يمكن الإلغاء بعد الاستلام
-  IF v_transfer.status = 'received' THEN
-    RAISE EXCEPTION 'لا يمكن إلغاء تحويل تم استلامه';
+  -- لا يمكن الإلغاء بعد الشحن أو الاستلام
+  -- [AUDIT FIX] in_transit: البضاعة خُصمت فعلياً من المخزن المُرسل
+  -- إلغاءها بدون إعادة الكمية يُفقد البضاعة من النظام
+  IF v_transfer.status IN ('in_transit', 'received') THEN
+    RAISE EXCEPTION 'لا يمكن إلغاء تحويل تم شحنه أو استلامه — استخدم تحويل عكسي';
   END IF;
 
   IF v_transfer.status = 'cancelled' THEN
@@ -442,8 +444,9 @@ BEGIN
     END IF;
   END IF;
 
-  -- إلغاء الحجز
-  IF NOT (v_transfer.direction = 'pull' AND v_transfer.status = 'pending') THEN
+  -- إلغاء الحجز (push + pending فقط — وهي الحالة الوحيدة التي يوجد فيها حجز فعلي)
+  -- [AUDIT FIX] pull/pending لا يوجد حجز | in_transit/received محظوران أعلاه
+  IF v_transfer.direction = 'push' AND v_transfer.status = 'pending' THEN
     FOR v_item IN
       SELECT * FROM stock_transfer_items WHERE transfer_id = p_transfer_id
     LOOP

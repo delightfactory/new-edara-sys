@@ -291,7 +291,7 @@ CREATE INDEX IF NOT EXISTS idx_hr_leave_pending ON hr_leave_requests(supervisor_
 CREATE INDEX IF NOT EXISTS idx_hr_leave_hr      ON hr_leave_requests(hr_manager_id, status)
   WHERE status = 'pending_hr';
 
--- Trigger: عند اعتماد الطلب نهائياً → خصم من الرصيد
+-- Trigger: عند اعتماد الطلب نهائياً → خصم من الرصيد + ملء حقول Audit
 CREATE OR REPLACE FUNCTION handle_leave_approval()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = public
@@ -303,6 +303,33 @@ BEGIN
   SELECT approval_levels INTO v_approval_levels
   FROM hr_leave_types WHERE id = NEW.leave_type_id;
 
+  -- ══════════════════════════════════════════════════════════
+  -- [P1-1] ملء حقول Audit قبل تحويل الحالة
+  -- ══════════════════════════════════════════════════════════
+
+  -- المشرف وافق (approved_supervisor من pending_supervisor)
+  IF NEW.status = 'approved_supervisor' AND OLD.status = 'pending_supervisor' THEN
+    NEW.supervisor_action_at := COALESCE(NEW.supervisor_action_at, now());
+  END IF;
+
+  -- HR وافق (approved من pending_hr)
+  IF NEW.status = 'approved' AND OLD.status = 'pending_hr' THEN
+    NEW.hr_action_at := COALESCE(NEW.hr_action_at, now());
+  END IF;
+
+  -- رفض من أي مرحلة
+  IF NEW.status = 'rejected' AND OLD.status <> 'rejected' THEN
+    NEW.rejected_at := COALESCE(NEW.rejected_at, now());
+    IF NEW.rejected_by IS NULL THEN
+      SELECT id INTO NEW.rejected_by
+      FROM hr_employees WHERE user_id = auth.uid() LIMIT 1;
+    END IF;
+  END IF;
+
+  -- ══════════════════════════════════════════════════════════
+  -- تحويل الحالات (State Machine)
+  -- ══════════════════════════════════════════════════════════
+
   -- المشرف وافق + النوع يحتاج مستوى واحد فقط → اعتماد نهائي
   IF NEW.status = 'approved_supervisor' AND v_approval_levels = 1 THEN
     NEW.status := 'approved';
@@ -313,9 +340,12 @@ BEGIN
     NEW.status := 'pending_hr';
   END IF;
 
+  -- ══════════════════════════════════════════════════════════
+  -- عمليات الرصيد
+  -- ══════════════════════════════════════════════════════════
+
   -- عند الاعتماد النهائي → خصم من الرصيد
   IF NEW.status = 'approved' AND OLD.status <> 'approved' THEN
-    -- خصم المعلق وإضافة للمستهلك
     UPDATE hr_leave_balances
     SET
       used_days    = used_days + NEW.days_count,
@@ -326,8 +356,10 @@ BEGIN
       AND year          = EXTRACT(YEAR FROM NEW.start_date)::INTEGER;
   END IF;
 
-  -- عند الإلغاء أو الرفض → إعادة الأيام المعلقة
-  IF NEW.status IN ('rejected', 'cancelled') AND OLD.status = 'pending_supervisor' THEN
+  -- [CODEX FIX] عند الإلغاء أو الرفض → إعادة الأيام المعلقة
+  IF NEW.status IN ('rejected', 'cancelled')
+     AND OLD.status IN ('pending_supervisor', 'approved_supervisor', 'pending_hr')
+  THEN
     UPDATE hr_leave_balances
     SET
       pending_days = GREATEST(0, pending_days - NEW.days_count),

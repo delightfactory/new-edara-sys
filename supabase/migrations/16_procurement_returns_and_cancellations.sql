@@ -1,4 +1,4 @@
-﻿-- ============================================================
+-- ============================================================
 -- 16_procurement_returns_and_cancellations.sql  [v3 — FINAL]
 -- EDARA v2 — محرك الإلغاءات والمرتجعات للمشتريات
 -- Idempotent: آمن للتشغيل أكثر من مرة
@@ -380,7 +380,7 @@ BEGIN
     FROM purchase_invoice_items pii
     WHERE pii.invoice_id = p_invoice_id
       AND pii.received_quantity > 0
-    ORDER BY pii.id
+    ORDER BY pii.product_id ASC  -- [DEADLOCK FIX]
   LOOP
     v_base_qty := CASE
       WHEN v_item.unit_id IS NOT NULL
@@ -414,7 +414,7 @@ BEGIN
     FROM purchase_invoice_items pii
     WHERE pii.invoice_id = p_invoice_id
       AND pii.received_quantity > 0
-    ORDER BY pii.id
+    ORDER BY pii.product_id ASC  -- [DEADLOCK FIX]
   LOOP
     v_base_qty := CASE
       WHEN v_item.unit_id IS NOT NULL
@@ -639,7 +639,7 @@ BEGIN
   FOR v_item IN
     SELECT pri.* FROM purchase_return_items pri
     WHERE pri.return_id = p_return_id
-    ORDER BY pri.id
+    ORDER BY pri.product_id ASC  -- [DEADLOCK FIX]
   LOOP
     v_base_qty := CASE
       WHEN v_item.unit_id IS NOT NULL

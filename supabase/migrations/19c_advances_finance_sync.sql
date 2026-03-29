@@ -252,8 +252,17 @@ DECLARE
   v_txn_id        UUID;
   v_description   TEXT;
 BEGIN
-  IF NOT check_permission(p_finance_user_id, 'hr.advances.approve') THEN
+  -- [v3-FINAL] Anti-spoofing: يمنع تمرير UUID لمستخدم آخر
+  IF p_finance_user_id IS DISTINCT FROM auth.uid() THEN
+    RAISE EXCEPTION 'انتحال هوية مرفوض: p_finance_user_id يجب أن يساوي المستخدم المصادق الحالي';
+  END IF;
+
+  IF NOT check_permission(auth.uid(), 'hr.advances.approve') THEN
     RAISE EXCEPTION 'صلاحية مرفوضة: hr.advances.approve مطلوب';
+  END IF;
+
+  IF NOT check_permission(auth.uid(), 'finance.payments.create') THEN
+    RAISE EXCEPTION 'صلاحية مرفوضة: finance.payments.create مطلوب — فقط المحاسب يصرف السلف';
   END IF;
 
   SELECT * INTO v_advance FROM hr_advances WHERE id = p_advance_id FOR UPDATE;

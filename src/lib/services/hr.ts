@@ -989,17 +989,9 @@ export async function requestAdvance(input: HRAdvanceInput): Promise<AdvanceRequ
   return result
 }
 
-export async function approveAdvance(id: string) {
-  const userId = await getCurrentUserId()
-  const { data, error } = await supabase
-    .from('hr_advances')
-    .update({ status: 'approved', approved_by: userId, approved_at: new Date().toISOString() })
-    .eq('id', id)
-    .select('*')
-    .single()
-  if (error) throw error
-  return data as HRAdvance
-}
+// [REMOVED] approveAdvance — كود ميت وخطر أمني
+// الموافقة على السلف تتم حصراً عبر disburse_employee_advance RPC
+// التي تضمن: سحب من الخزنة + قيد محاسبي + تحديث الحالة ذرياً
 
 export async function rejectAdvance(id: string, reason: string) {
   const { data, error } = await supabase
@@ -1058,19 +1050,19 @@ export async function disburseAdvance(
 
 /**
  * FIX-05: تحديث حالة السلفة مع حماية State Machine
- * التحويلات المسموحة:
+ * التحويلات المسموحة يدوياً:
  *   pending_supervisor → pending_hr | rejected
  *   pending_hr         → pending_finance | rejected
- *   pending_finance    → approved | rejected
- *   approved           → paid | cancelled
- *   paid               → fully_repaid
+ *   pending_finance    → rejected  (approved يتم فقط عبر RPC)
+ *   approved           → (لا تحويل يدوي — fully_repaid يتم تلقائياً عبر trigger الأقساط)
+ *   paid               → fully_repaid (fallback لبيانات قديمة)
  */
 const VALID_ADVANCE_TRANSITIONS: Record<string, string[]> = {
   pending_supervisor: ['pending_hr', 'rejected'],
   pending_hr:         ['pending_finance', 'rejected'],
-  pending_finance:    ['approved', 'rejected'],
-  approved:           ['paid', 'cancelled'],
-  paid:               ['fully_repaid'],
+  pending_finance:    ['rejected'],  // approved يتم فقط عبر disburse_employee_advance RPC
+  // approved: لا تحويلات يدوية — fully_repaid يتم تلقائياً عبر trigger خصم الأقساط
+  paid:               ['fully_repaid'],  // fallback لبيانات قديمة
 }
 
 export async function updateAdvanceStatus(
