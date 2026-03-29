@@ -341,3 +341,418 @@ export function useInvalidate() {
     keys.forEach(key => queryClient.invalidateQueries({ queryKey: [key] }))
   }
 }
+
+// ════════════════════════════════════════════
+// 9. HR MODULE — الموارد البشرية
+// ════════════════════════════════════════════
+
+import {
+  getEmployees, getEmployee, getCurrentEmployeeRecord,
+  getDepartments, getPositions,
+  getWorkLocations,
+  getLeaveTypes, getLeaveBalances, getLeaveRequests,
+  createLeaveRequest, updateLeaveRequestStatus,
+  getAdvances, requestAdvance, disburseAdvance, updateAdvanceStatus,
+  getPayrollRuns, getPayrollLines, getPayrollPeriods,
+  createPayrollPeriod, createPayrollRun, calculateEmployeePayroll, approvePayrollRun,
+  getPenaltyInstances, getPenaltyRules, overridePenalty,
+  getCommissionRecords, getCommissionTargets, createCommissionTarget,
+  getPublicHolidays,
+  getAttendanceDays, upsertAttendanceDay,
+  getMonthlyAttendanceSummary,
+  createEmployee, updateEmployee,
+  createDepartment, createPosition,
+  getPermissionRequests, createPermissionRequest, approvePermissionRequest, rejectPermissionRequest,
+  getEmployeeSalaryHistory, createContract, getContracts,
+} from '@/lib/services/hr'
+import type {
+  HREmployeeInput, HRDepartmentInput, HRPositionInput,
+  HRLeaveRequestInput,
+  HRAdvanceInput, HRAdvanceStatus,
+  HRPayrollPeriodInput, HRPayrollRunInput,
+  HRPermissionRequestInput,
+  HRContractInput,
+  HRCommissionTargetInput,
+  HRAttendanceDayInput,
+} from '@/lib/types/hr'
+import { useMutation } from '@tanstack/react-query'
+
+// ── Reference data (staleTime: 10 min) ───────────────────────
+
+export function useHRDepartments(onlyActive = true) {
+  return useQuery({
+    queryKey: ['hr-departments', onlyActive],
+    queryFn: () => getDepartments(onlyActive),
+    staleTime: REF_STALE,
+  })
+}
+
+export function useHRPositions(departmentId?: string) {
+  return useQuery({
+    queryKey: ['hr-positions', departmentId],
+    queryFn: () => getPositions(departmentId),
+    staleTime: REF_STALE,
+  })
+}
+
+export function useHRWorkLocations() {
+  return useQuery({
+    queryKey: ['hr-work-locations'],
+    queryFn: getWorkLocations,
+    staleTime: REF_STALE,
+  })
+}
+
+export function useHRLeaveTypes() {
+  return useQuery({
+    queryKey: ['hr-leave-types'],
+    queryFn: () => getLeaveTypes(true),
+    staleTime: REF_STALE,
+  })
+}
+
+export function useHRPublicHolidays(year?: number) {
+  return useQuery({
+    queryKey: ['hr-public-holidays', year],
+    queryFn: () => getPublicHolidays(year),
+    staleTime: REF_STALE,
+  })
+}
+
+/**
+ * الموظف المرتبط بالمستخدم الحالي — لشاشات الخدمة الذاتية
+ * يُعيد null إذا لم يكن المستخدم الحالي موظفاً مسجلاً في HR
+ * staleTime عالٍ: سجل الموظف نادراً ما يتغير
+ */
+export function useCurrentEmployee() {
+  return useQuery({
+    queryKey: ['hr-current-employee'],
+    queryFn: getCurrentEmployeeRecord,
+    staleTime: 5 * 60 * 1000, // 5 دقائق
+    retry: 1,
+  })
+}
+
+// ── List pages (staleTime: 30s default) ──────────────────────
+
+export function useHREmployees(params?: Parameters<typeof getEmployees>[0]) {
+  return useQuery({
+    queryKey: ['hr-employees', params],
+    queryFn: () => getEmployees(params),
+  })
+}
+
+export function useHREmployee(id: string | null | undefined) {
+  return useQuery({
+    queryKey: ['hr-employee', id],
+    queryFn: () => getEmployee(id!),
+    enabled: !!id,
+  })
+}
+
+export function useHRLeaveRequests(params?: Parameters<typeof getLeaveRequests>[0]) {
+  return useQuery({
+    queryKey: ['hr-leave-requests', params],
+    queryFn: () => getLeaveRequests(params),
+  })
+}
+
+export function useHRLeaveBalances(employeeId: string | null | undefined, year?: number) {
+  return useQuery({
+    queryKey: ['hr-leave-balances', employeeId, year],
+    queryFn: () => getLeaveBalances(employeeId!, year),
+    enabled: !!employeeId,
+  })
+}
+
+export function useHRAdvances(params?: Parameters<typeof getAdvances>[0]) {
+  return useQuery({
+    queryKey: ['hr-advances', params],
+    queryFn: () => getAdvances(params),
+  })
+}
+
+export function useHRPayrollPeriods() {
+  return useQuery({
+    queryKey: ['hr-payroll-periods'],
+    queryFn: getPayrollPeriods,
+  })
+}
+
+export function useHRPayrollRuns(params?: Parameters<typeof getPayrollRuns>[0]) {
+  return useQuery({
+    queryKey: ['hr-payroll-runs', params],
+    queryFn: () => getPayrollRuns(params),
+  })
+}
+
+export function useHRPayrollLines(runId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['hr-payroll-lines', runId],
+    queryFn: () => getPayrollLines(runId!),
+    enabled: !!runId,
+  })
+}
+
+export function useHRAttendanceDays(params: Parameters<typeof getAttendanceDays>[0]) {
+  return useQuery({
+    queryKey: ['hr-attendance-days', params],
+    queryFn: () => getAttendanceDays(params),
+    enabled: !!(params.dateFrom && params.dateTo),
+  })
+}
+
+export function useHRMonthlyAttendanceSummary(
+  employeeId: string | null | undefined,
+  year: number,
+  month: number
+) {
+  return useQuery({
+    queryKey: ['hr-attendance-summary', employeeId, year, month],
+    queryFn: () => getMonthlyAttendanceSummary(employeeId!, year, month),
+    enabled: !!employeeId,
+  })
+}
+
+export function useHRPenaltyInstances(params?: Parameters<typeof getPenaltyInstances>[0]) {
+  return useQuery({
+    queryKey: ['hr-penalty-instances', params],
+    queryFn: () => getPenaltyInstances(params ?? {}),
+    enabled: !!(params?.employeeId || params?.payrollRunId),
+  })
+}
+
+export function useHRCommissionRecords(params?: Parameters<typeof getCommissionRecords>[0]) {
+  return useQuery({
+    queryKey: ['hr-commission-records', params],
+    queryFn: () => getCommissionRecords(params),
+  })
+}
+
+// ── Mutations ─────────────────────────────────────────────────
+
+/**
+ * إنشاء موظف جديد
+ * الـ invalidate يُعيد تحميل القائمة تلقائياً
+ */
+export function useCreateEmployee() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: HREmployeeInput) => createEmployee(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hr-employees'] })
+    },
+  })
+}
+
+/**
+ * تعديل بيانات موظف
+ */
+export function useUpdateEmployee() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: Partial<HREmployeeInput> }) =>
+      updateEmployee(id, input),
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['hr-employees'] })
+      queryClient.invalidateQueries({ queryKey: ['hr-employee', vars.id] })
+    },
+  })
+}
+
+/**
+ * إنشاء قسم جديد
+ */
+export function useCreateDepartment() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: HRDepartmentInput) => createDepartment(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hr-departments'] })
+    },
+  })
+}
+
+/**
+ * إنشاء مسمى وظيفي جديد
+ */
+export function useCreatePosition() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: HRPositionInput) => createPosition(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hr-positions'] })
+    },
+  })
+}
+
+/**
+ * تقديم طلب إجازة
+ * على الـ Trigger في DB أن يُفشل العملية إذا كان الرصيد غير كافٍ
+ */
+export function useCreateLeaveRequest() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: HRLeaveRequestInput) => createLeaveRequest(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hr-leave-requests'] })
+      queryClient.invalidateQueries({ queryKey: ['hr-leave-balances'] })
+    },
+  })
+}
+
+/**
+ * تحديث حالة طلب إجازة (قبول / رفض)
+ * يُستخدم من مدير الموارد البشرية أو المشرف المباشر
+ */
+export function useUpdateLeaveRequestStatus() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      id,
+      status,
+      notes,
+      rejectionReason,
+    }: {
+      id: string
+      status: string
+      notes?: string | null
+      rejectionReason?: string | null
+    }) => updateLeaveRequestStatus(id, status, notes, rejectionReason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hr-leave-requests'] })
+      queryClient.invalidateQueries({ queryKey: ['hr-leave-balances'] })
+    },
+  })
+}
+
+// ────────────────────────────────────────────────────────
+// ADVANCES MUTATIONS — السلف والأقساط
+// ────────────────────────────────────────────────────────
+
+/**
+ * تقديم طلب سلفة عبر RPC request_advance
+ * يتحقق من الحد الأقصى ومن عدم وجود سلفة نشطة
+ */
+export function useRequestAdvance() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: HRAdvanceInput) => requestAdvance(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hr-advances'] })
+    },
+  })
+}
+
+/**
+ * صرف السلفة — نقطة التقاطع المالي
+ * يُرسل vault_id مع تحويل الحالة → approved
+ * الـ Trigger في DB يُولِّد الأقساط تلقائياً
+ */
+export function useDisburseAdvance() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, vaultId, notes }: { id: string; vaultId: string; notes?: string | null }) =>
+      disburseAdvance(id, vaultId, notes),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hr-advances'] })
+    },
+  })
+}
+
+/**
+ * تحديث حالة السلفة من قِبَل المشرف أو مدير الموارد البشرية
+ */
+export function useUpdateAdvanceStatus() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      id, status, notes, rejectionReason,
+    }: {
+      id: string
+      status: HRAdvanceStatus
+      notes?: string | null
+      rejectionReason?: string | null
+    }) => updateAdvanceStatus(id, status, notes, rejectionReason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hr-advances'] })
+    },
+  })
+}
+
+// ────────────────────────────────────────────────────────
+// PAYROLL MUTATIONS — مسير الرواتب
+// ────────────────────────────────────────────────────────
+
+/**
+ * إنشاء مسير رواتب جديد (سجل draft فقط)
+ * الحساب الفعلي يتم لاحقاً عبر useCalculatePayrollRun
+ */
+export function useCreatePayrollRun() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: HRPayrollRunInput) => createPayrollRun(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hr-payroll-runs'] })
+    },
+  })
+}
+
+/**
+ * حساب مسير الرواتب — يستدعي calculate_employee_payroll لكل موظف نشط
+ * الـ RPC يعمل بالموظف الواحد (p_employee_id, p_run_id)
+ * نحسب الكل عبر loop — الـ DB transaction منفصل لكل موظف (تحمل جزئي)
+ *
+ * onProgress: callback يُستدعى بعد كل موظف (للـ progress bar)
+ */
+export function useCalculatePayrollRun() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      runId,
+      onProgress,
+    }: {
+      runId: string
+      onProgress?: (done: number, total: number) => void
+    }) => {
+      // جلب كل الموظفين النشطين
+      const { data: emps } = await import('@/lib/supabase/client').then(m =>
+        m.supabase
+          .from('hr_employees')
+          .select('id')
+          .eq('status', 'active')
+      )
+      const employees = emps ?? []
+      let calculated = 0
+      let skipped = 0
+      for (let i = 0; i < employees.length; i++) {
+        try {
+          await calculateEmployeePayroll(employees[i].id, runId)
+          calculated++
+        } catch {
+          skipped++
+        }
+        onProgress?.(i + 1, employees.length)
+      }
+      return { calculated, skipped, total: employees.length }
+    },
+    onSuccess: (_, { runId }) => {
+      queryClient.invalidateQueries({ queryKey: ['hr-payroll-runs'] })
+      queryClient.invalidateQueries({ queryKey: ['hr-payroll-lines', runId] })
+    },
+  })
+}
+
+/**
+ * اعتماد مسير الرواتب + توليد القيد المحاسبي
+ * يرفض EXCEPTION إذا القيد غير متوازن
+ */
+export function useApprovePayrollRun() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (runId: string) => approvePayrollRun(runId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hr-payroll-runs'] })
+    },
+  })
+}

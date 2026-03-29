@@ -73,6 +73,22 @@ const PurchaseInvoiceForm  = lazy(() => import('@/pages/purchases/PurchaseInvoic
 const PurchaseReturnForm   = lazy(() => import('@/pages/purchases/PurchaseReturnForm'))
 const PurchaseReturnsPage  = lazy(() => import('@/pages/purchases/PurchaseReturnsPage'))
 
+// HR Pages — lazy loaded
+const HRDashboard        = lazy(() => import('@/pages/hr/HRDashboard'))
+const EmployeesPage      = lazy(() => import('@/pages/hr/employees/EmployeesPage'))
+const EmployeeProfile    = lazy(() => import('@/pages/hr/employees/EmployeeProfile'))
+const AttendanceCheckin  = lazy(() => import('@/pages/hr/attendance/AttendanceCheckin'))
+const AttendancePage     = lazy(() => import('@/pages/hr/attendance/AttendancePage'))
+const LeavesPage         = lazy(() => import('@/pages/hr/leaves/LeavesPage'))
+const AdvancesPage       = lazy(() => import('@/pages/hr/advances/AdvancesPage'))
+const PayrollPage        = lazy(() => import('@/pages/hr/payroll/PayrollPage'))
+const PayrollRunDetail   = lazy(() => import('@/pages/hr/payroll/PayrollRunDetail'))
+const HRSettingsPage     = lazy(() => import('@/pages/hr/settings/HRSettingsPage'))
+const CommissionsPage    = lazy(() => import('@/pages/hr/commissions/CommissionsPage'))
+const PermissionsPage    = lazy(() => import('@/pages/hr/permissions/PermissionsPage'))
+const DelegationsPage    = lazy(() => import('@/pages/hr/delegations/DelegationsPage'))
+const MyProfilePage      = lazy(() => import('@/pages/hr/MyProfilePage'))
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -265,6 +281,50 @@ export default function App() {
               {/* Branches */}
               <Route path="branches" element={
                 <ProtectedRoute permission="branches.read"><Suspense fallback={<LazyFallback />}><BranchesPage /></Suspense></ProtectedRoute>
+              } />
+
+              {/* HR — Dashboard (index) */}
+              <Route path="hr" element={
+                <ProtectedRoute><Suspense fallback={<LazyFallback />}><HRDashboard /></Suspense></ProtectedRoute>
+              } />
+              <Route path="hr/employees" element={
+                <ProtectedRoute permission={['hr.employees.read', 'hr.employees.create']}><Suspense fallback={<LazyFallback />}><EmployeesPage /></Suspense></ProtectedRoute>
+              } />
+              <Route path="hr/employees/:id" element={
+                <ProtectedRoute permission="hr.employees.read"><Suspense fallback={<LazyFallback />}><EmployeeProfile /></Suspense></ProtectedRoute>
+              } />
+              <Route path="hr/attendance/checkin" element={
+                <ProtectedRoute permission="hr.attendance.checkin"><Suspense fallback={<LazyFallback />}><AttendanceCheckin /></Suspense></ProtectedRoute>
+              } />
+              <Route path="hr/leaves" element={
+                <ProtectedRoute permission={['hr.leaves.request', 'hr.leaves.read', 'hr.leaves.approve', 'hr.leaves.create']}><Suspense fallback={<LazyFallback />}><LeavesPage /></Suspense></ProtectedRoute>
+              } />
+              <Route path="hr/advances" element={
+                <ProtectedRoute permission={['hr.advances.create', 'hr.advances.read', 'hr.advances.approve']}><Suspense fallback={<LazyFallback />}><AdvancesPage /></Suspense></ProtectedRoute>
+              } />
+              <Route path="hr/payroll" element={
+                <ProtectedRoute permission="hr.payroll.read"><Suspense fallback={<LazyFallback />}><PayrollPage /></Suspense></ProtectedRoute>
+              } />
+              <Route path="hr/payroll/:runId" element={
+                <ProtectedRoute permission="hr.payroll.read"><Suspense fallback={<LazyFallback />}><PayrollRunDetail /></Suspense></ProtectedRoute>
+              } />
+              <Route path="hr/attendance" element={
+                <ProtectedRoute permission="hr.employees.read"><Suspense fallback={<LazyFallback />}><AttendancePage /></Suspense></ProtectedRoute>
+              } />
+              <Route path="hr/permissions" element={
+                <ProtectedRoute permission={['hr.permissions.approve', 'hr.attendance.checkin', 'hr.leaves.create']}><Suspense fallback={<LazyFallback />}><PermissionsPage /></Suspense></ProtectedRoute>
+              } />
+              <Route path="hr/commissions" element={
+                <ProtectedRoute permission={['hr.commissions.create', 'hr.employees.read']}><Suspense fallback={<LazyFallback />}><CommissionsPage /></Suspense></ProtectedRoute>
+              } />
+              <Route path="hr/settings" element={
+                <ProtectedRoute permission="hr.settings.update"><Suspense fallback={<LazyFallback />}><HRSettingsPage /></Suspense></ProtectedRoute>
+              } />
+              <Route path="hr/delegations" element={
+                <ProtectedRoute permission={['hr.leaves.approve', 'hr.advances.approve', 'hr.attendance.approve', 'hr.permissions.approve']}><Suspense fallback={<LazyFallback />}><DelegationsPage /></Suspense></ProtectedRoute>
+              } />
+              <Route path="hr/my-profile" element={
+                <ProtectedRoute><Suspense fallback={<LazyFallback />}><MyProfilePage /></Suspense></ProtectedRoute>
               } />
 
               {/* Settings */}

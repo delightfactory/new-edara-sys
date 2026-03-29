@@ -7,7 +7,7 @@ import {
   LayoutDashboard, ShoppingCart, Package, Warehouse, DollarSign,
   Users, Settings, ClipboardList, Target, BarChart3,
   LogOut, Moon, Sun, ChevronDown, X,
-  BoxesIcon, Truck, Building2,
+  BoxesIcon, Truck, Building2, UserCog,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
@@ -108,7 +108,29 @@ const sections: NavSection[] = [
     items: [
       { id: 'targets', label: 'الأهداف', icon: Target, path: '/targets', permission: PERMISSIONS.TARGETS_READ_OWN, comingSoon: true },
       { id: 'reports', label: 'التقارير', icon: BarChart3, path: '/reports', permission: PERMISSIONS.REPORTS_SALES, comingSoon: true },
-      { id: 'hr', label: 'الموارد البشرية', icon: ClipboardList, path: '/hr', permission: PERMISSIONS.HR_EMPLOYEES_READ, comingSoon: true },
+      {
+        id: 'hr', label: 'الموارد البشرية', icon: UserCog,
+        path: '/hr',
+        // بدون permission على القسم — كل مستخدم مرتبط بموظف يدخل HR
+        // الحماية تتم على مستوى كل رابط منفرداً
+        children: [
+          { label: 'لوحة التحكم',     path: '/hr',                    permission: PERMISSIONS.HR_EMPLOYEES_READ },
+          // ── وظائف الإدارة (مديرون فقط) ──
+          { label: 'الموظفون',        path: '/hr/employees',          permission: PERMISSIONS.HR_EMPLOYEES_READ },
+          { label: 'الحضور',          path: '/hr/attendance',         permission: PERMISSIONS.HR_EMPLOYEES_READ },
+          // ── وظائف الموظف + المدير ──
+          { label: 'تسجيل الحضور',   path: '/hr/attendance/checkin', permission: 'hr.attendance.checkin' },
+          { label: 'الأذونات',        path: '/hr/permissions',        permission: ['hr.permissions.approve', 'hr.attendance.checkin', 'hr.leaves.create'] },
+          { label: 'الإجازات',        path: '/hr/leaves',             permission: ['hr.leaves.create', 'hr.leaves.read', 'hr.leaves.approve', 'hr.leaves.request'] },
+          { label: 'السلف',           path: '/hr/advances',           permission: ['hr.advances.create', 'hr.advances.read', 'hr.advances.approve'] },
+          { label: 'التفويضات',       path: '/hr/delegations',        permission: ['hr.leaves.approve', 'hr.advances.approve', 'hr.attendance.approve', 'hr.permissions.approve'] },
+          { label: 'ملفي الشخصي',     path: '/hr/my-profile' },
+          // ── وظائف مالية/إدارية متخصصة ──
+          { label: 'العمولات',        path: '/hr/commissions',        permission: ['hr.commissions.create', PERMISSIONS.HR_EMPLOYEES_READ] },
+          { label: 'مسير الرواتب',   path: '/hr/payroll',            permission: 'hr.payroll.read' },
+          { label: 'إعدادات HR',     path: '/hr/settings',           permission: 'hr.settings.update' },
+        ],
+      },
       {
         id: 'settings', label: 'الإعدادات', icon: Settings,
         children: [
