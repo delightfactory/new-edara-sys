@@ -12,6 +12,9 @@ import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
 import PermissionGuard from '@/components/shared/PermissionGuard'
+import DataTable from '@/components/shared/DataTable'
+import DataCard from '@/components/ui/DataCard'
+import StatCard from '@/components/shared/StatCard'
 import { formatNumber } from '@/lib/utils/format'
 
 const SOURCE_LABEL: Record<string, string> = {
@@ -108,28 +111,10 @@ export default function CommissionsPage() {
       />
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
-        <div className="edara-card" style={{ padding: 'var(--space-4)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-            <Target size={16} color="var(--color-primary)" />
-            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>إجمالي الأهداف</span>
-          </div>
-          <div style={{ fontSize: 'var(--text-xl)', fontWeight: 700 }}>{formatNumber(totalTargetAmount)} ج.م</div>
-        </div>
-        <div className="edara-card" style={{ padding: 'var(--space-4)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-            <TrendingUp size={16} color="var(--color-success)" />
-            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>إجمالي العمولات</span>
-          </div>
-          <div style={{ fontSize: 'var(--text-xl)', fontWeight: 700, color: 'var(--color-success)' }}>{formatNumber(totalCommission)} ج.م</div>
-        </div>
-        <div className="edara-card" style={{ padding: 'var(--space-4)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-            <Award size={16} color="var(--color-warning)" />
-            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>عدد المندوبين</span>
-          </div>
-          <div style={{ fontSize: 'var(--text-xl)', fontWeight: 700 }}>{targets.length}</div>
-        </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+        <StatCard label="إجمالي الأهداف" value={`${formatNumber(totalTargetAmount)} ج.م`} icon={<Target size={18} />} color="var(--color-primary)" loading={targetsLoading} />
+        <StatCard label="إجمالي العمولات" value={`${formatNumber(totalCommission)} ج.م`} icon={<TrendingUp size={18} />} color="var(--color-success)" loading={recordsLoading} />
+        <StatCard label="عدد المندوبين" value={targets.length} icon={<Award size={18} />} color="var(--color-warning)" loading={targetsLoading} />
       </div>
 
       {/* Tabs */}
@@ -164,31 +149,38 @@ export default function CommissionsPage() {
               <Button size="sm" icon={<Plus size={13} />} onClick={() => setFormOpen(true)} style={{ marginTop: 12 }}>هدف جديد</Button>
             </div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
-              <thead>
-                <tr style={{ background: 'var(--bg-surface-2)' }}>
-                  <th style={{ padding: 'var(--space-3)', textAlign: 'right', color: 'var(--text-muted)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-color)' }}>المندوب</th>
-                  <th style={{ padding: 'var(--space-3)', textAlign: 'right', color: 'var(--text-muted)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-color)' }}>الفترة</th>
-                  <th style={{ padding: 'var(--space-3)', textAlign: 'end',  color: 'var(--text-muted)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-color)' }}>الهدف</th>
-                  <th style={{ padding: 'var(--space-3)', textAlign: 'center',color: 'var(--text-muted)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-color)' }}>النسبة الأساسية</th>
-                  <th style={{ padding: 'var(--space-3)', textAlign: 'center',color: 'var(--text-muted)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-color)' }}>شريحة 100%</th>
-                </tr>
-              </thead>
-              <tbody>
-                {targets.map(t => (
-                  <tr key={t.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                    <td style={{ padding: 'var(--space-3)' }}>
-                      <div style={{ fontWeight: 600 }}>{t.employee?.full_name ?? '—'}</div>
-                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{t.employee?.employee_number}</div>
-                    </td>
-                    <td style={{ padding: 'var(--space-3)' }}>{t.period?.name ?? '—'}</td>
-                    <td style={{ padding: 'var(--space-3)', textAlign: 'end', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{formatNumber(t.target_amount)} ج.م</td>
-                    <td style={{ padding: 'var(--space-3)', textAlign: 'center' }}>{t.commission_rate}%</td>
-                    <td style={{ padding: 'var(--space-3)', textAlign: 'center' }}>{t.tier_100_rate != null ? `${t.tier_100_rate}%` : '—'}</td>
-                  </tr>
+            <>
+              <div className="comm-desktop-table">
+                <DataTable
+                  columns={[
+                    { key: 'emp', label: 'المندوب', render: (t: any) => <div><div style={{ fontWeight: 600 }}>{t.employee?.full_name ?? '—'}</div><div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{t.employee?.employee_number}</div></div> },
+                    { key: 'period', label: 'الفترة', render: (t: any) => t.period?.name ?? '—' },
+                    { key: 'target', label: 'الهدف', align: 'end', render: (t: any) => <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{formatNumber(t.target_amount)} ج.م</span> },
+                    { key: 'rate', label: 'النسبة الأساسية', align: 'center', render: (t: any) => `${t.commission_rate}%` },
+                    { key: 'tier', label: 'شريحة 100%', align: 'center', render: (t: any) => t.tier_100_rate != null ? `${t.tier_100_rate}%` : '—' },
+                  ]}
+                  data={targets}
+                  loading={targetsLoading}
+                  keyField="id"
+                />
+              </div>
+              <div className="comm-mobile-cards" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', padding: 'var(--space-4)' }}>
+                {targets.map((t: any) => (
+                  <DataCard
+                    key={t.id}
+                    title={t.employee?.full_name ?? '—'}
+                    subtitle={t.employee?.employee_number}
+                    badge={<Badge variant="neutral">{t.period?.name}</Badge>}
+                    leading={<div style={{ width: 40, height: 40, borderRadius: 'var(--radius-md)', background: 'color-mix(in srgb, var(--color-primary) 10%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary)' }}><Target size={16} /></div>}
+                    metadata={[
+                      { label: 'الهدف', value: `${formatNumber(t.target_amount)} ج.م`, highlight: true },
+                      { label: 'أساسية', value: `${t.commission_rate}%` },
+                      { label: 'عند 100%', value: t.tier_100_rate != null ? `${t.tier_100_rate}%` : '—' },
+                    ]}
+                  />
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </>
           )}
         </div>
       )}
@@ -203,39 +195,40 @@ export default function CommissionsPage() {
               لا توجد سجلات عمولات — تُغذَّى تلقائياً من موديول المبيعات والتحصيلات
             </div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
-              <thead>
-                <tr style={{ background: 'var(--bg-surface-2)' }}>
-                  <th style={{ padding: 'var(--space-3)', textAlign: 'right', color: 'var(--text-muted)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-color)' }}>المندوب</th>
-                  <th style={{ padding: 'var(--space-3)', textAlign: 'right', color: 'var(--text-muted)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-color)' }}>المصدر</th>
-                  <th style={{ padding: 'var(--space-3)', textAlign: 'end',  color: 'var(--text-muted)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-color)' }}>قيمة البيع</th>
-                  <th style={{ padding: 'var(--space-3)', textAlign: 'end',  color: 'var(--text-muted)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-color)' }}>المحصَّل</th>
-                  <th style={{ padding: 'var(--space-3)', textAlign: 'center',color: 'var(--text-muted)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-color)' }}>النسبة</th>
-                  <th style={{ padding: 'var(--space-3)', textAlign: 'end',  color: 'var(--text-muted)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-color)' }}>العمولة</th>
-                  <th style={{ padding: 'var(--space-3)', textAlign: 'center',color: 'var(--text-muted)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-color)' }}>مؤهل؟</th>
-                </tr>
-              </thead>
-              <tbody>
-                {records.map(r => (
-                  <tr key={r.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                    <td style={{ padding: 'var(--space-3)' }}>
-                      <div style={{ fontWeight: 600 }}>{r.employee?.full_name ?? '—'}</div>
-                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{r.employee?.employee_number}</div>
-                    </td>
-                    <td style={{ padding: 'var(--space-3)' }}>
-                      <Badge variant={SOURCE_VARIANT[r.source_type] ?? 'neutral'}>{SOURCE_LABEL[r.source_type] ?? r.source_type}</Badge>
-                    </td>
-                    <td style={{ padding: 'var(--space-3)', textAlign: 'end', fontVariantNumeric: 'tabular-nums' }}>{formatNumber(r.gross_amount)}</td>
-                    <td style={{ padding: 'var(--space-3)', textAlign: 'end', fontVariantNumeric: 'tabular-nums', color: 'var(--color-success)' }}>{formatNumber(r.collected_amount)}</td>
-                    <td style={{ padding: 'var(--space-3)', textAlign: 'center' }}>{r.commission_rate}%</td>
-                    <td style={{ padding: 'var(--space-3)', textAlign: 'end', fontWeight: 700, color: 'var(--color-primary)', fontVariantNumeric: 'tabular-nums' }}>{formatNumber(r.commission_amount)}</td>
-                    <td style={{ padding: 'var(--space-3)', textAlign: 'center' }}>
-                      {r.is_eligible ? <CheckCircle size={15} color="var(--color-success)" /> : '—'}
-                    </td>
-                  </tr>
+            <>
+              <div className="comm-desktop-table">
+                <DataTable
+                  columns={[
+                    { key: 'emp', label: 'المندوب', render: (r: any) => <div><div style={{ fontWeight: 600 }}>{r.employee?.full_name ?? '—'}</div><div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{r.employee?.employee_number}</div></div> },
+                    { key: 'src', label: 'المصدر', render: (r: any) => <Badge variant={SOURCE_VARIANT[r.source_type] ?? 'neutral'}>{SOURCE_LABEL[r.source_type] ?? r.source_type}</Badge> },
+                    { key: 'gross', label: 'المبيعات', align: 'end', render: (r: any) => <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatNumber(r.gross_amount)}</span> },
+                    { key: 'coll', label: 'المحصَّل', align: 'end', render: (r: any) => <span style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--color-success)' }}>{formatNumber(r.collected_amount)}</span> },
+                    { key: 'rate', label: 'النسبة', align: 'center', render: (r: any) => `${r.commission_rate}%` },
+                    { key: 'comm', label: 'العمولة', align: 'end', render: (r: any) => <span style={{ fontWeight: 700, color: 'var(--color-primary)', fontVariantNumeric: 'tabular-nums' }}>{formatNumber(r.commission_amount)}</span> },
+                    { key: 'elig', label: 'مؤهل؟', align: 'center', render: (r: any) => r.is_eligible ? <CheckCircle size={15} color="var(--color-success)" /> : '—' },
+                  ]}
+                  data={records}
+                  loading={recordsLoading}
+                  keyField="id"
+                />
+              </div>
+              <div className="comm-mobile-cards" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', padding: 'var(--space-4)' }}>
+                {records.map((r: any) => (
+                  <DataCard
+                    key={r.id}
+                    title={r.employee?.full_name ?? '—'}
+                    subtitle={r.employee?.employee_number}
+                    badge={<Badge variant={SOURCE_VARIANT[r.source_type] ?? 'neutral'}>{SOURCE_LABEL[r.source_type] ?? r.source_type}</Badge>}
+                    leading={<div style={{ width: 40, height: 40, borderRadius: 'var(--radius-md)', background: 'color-mix(in srgb, var(--color-success) 10%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-success)' }}><TrendingUp size={16} /></div>}
+                    metadata={[
+                      { label: 'التحصيل', value: formatNumber(r.collected_amount) },
+                      { label: 'النسبة', value: `${r.commission_rate}%` },
+                      { label: 'العمولة', value: formatNumber(r.commission_amount), highlight: true },
+                    ]}
+                  />
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </>
           )}
         </div>
       )}
@@ -320,6 +313,15 @@ export default function CommissionsPage() {
           />
         </div>
       </ResponsiveModal>
+
+      <style>{`
+        .comm-desktop-table { display: block; }
+        .comm-mobile-cards  { display: none; }
+        @media (max-width: 768px) {
+          .comm-desktop-table { display: none; }
+          .comm-mobile-cards  { display: flex; }
+        }
+      `}</style>
     </div>
   )
 }

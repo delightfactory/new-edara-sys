@@ -12,6 +12,9 @@ import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
 import PermissionGuard from '@/components/shared/PermissionGuard'
+import DataCard from '@/components/ui/DataCard'
+import StatCard from '@/components/shared/StatCard'
+import DataTable from '@/components/shared/DataTable'
 
 // ─── Status maps ──────────────────────────────────────────
 const STATUS_LABEL: Record<HRAttendanceStatus, string> = {
@@ -211,18 +214,11 @@ export default function AttendancePage() {
       />
 
       {/* FIX-08: Responsive stat cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
-        {[
-          { label: 'حاضر',   count: stats.present, color: 'var(--color-success)' },
-          { label: 'متأخر',  count: stats.late,    color: 'var(--color-warning)' },
-          { label: 'غائب',   count: stats.absent,  color: 'var(--color-danger)'  },
-          { label: 'إجازة',  count: stats.onLeave, color: 'var(--color-info)'    },
-        ].map(s => (
-          <div key={s.label} className="edara-card" style={{ padding: 'var(--space-3)', textAlign: 'center', borderTop: `3px solid ${s.color}` }}>
-            <div style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, color: s.color }}>{s.count}</div>
-            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{s.label}</div>
-          </div>
-        ))}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+        <StatCard label="حاضر"   value={stats.present} color="var(--color-success)" icon={<Check size={18} />} />
+        <StatCard label="متأخر"  value={stats.late}    color="var(--color-warning)" icon={<Clock size={18} />} />
+        <StatCard label="غائب"   value={stats.absent}  color="var(--color-danger)"  icon={<X size={18} />} />
+        <StatCard label="إجازة"  value={stats.onLeave} color="var(--color-info)"    icon={<Calendar size={18} />} />
       </div>
 
       {/* Filters */}
@@ -260,101 +256,99 @@ export default function AttendancePage() {
           </div>
         ) : (
           <>
-            {/* ─── Mobile: بطاقات للشاشات الصغيرة ─── */}
-            <div className="att-mobile-cards">
-              {filtered.map(d => (
-                <div key={d.id} style={{
-                  padding: 'var(--space-3)',
-                  borderBottom: '1px solid var(--border-color)',
-                  display: 'flex', flexDirection: 'column', gap: 'var(--space-2)',
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{d.employee?.full_name ?? '—'}</div>
-                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                        {new Date(d.shift_date).toLocaleDateString('ar-EG', { weekday: 'short', day: 'numeric', month: 'short' })}
-                      </div>
-                    </div>
-                    <Badge variant={STATUS_VARIANT[d.status]}>{STATUS_LABEL[d.status]}</Badge>
-                  </div>
-                  <div style={{ display: 'flex', gap: 'var(--space-4)', fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                    <span>حضور: <strong style={{ color: d.punch_in_time ? 'var(--color-success)' : undefined }}>{fmtTime(d.punch_in_time)}</strong></span>
-                    <span>انصراف: <strong>{fmtTime(d.punch_out_time)}</strong></span>
-                    {d.late_minutes > 0 && <span style={{ color: 'var(--color-warning)' }}>تأخير: {d.late_minutes} د</span>}
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    {d.location_in?.name
-                      ? <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={10} />{d.location_in.name}</span>
-                      : <span />
-                    }
-                    <PermissionGuard permission="hr.attendance.edit">
-                      <Button size="sm" variant="ghost" icon={<Edit2 size={12} />} onClick={() => setEditDay(d)} />
-                    </PermissionGuard>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* ─── Desktop: جدول تقليدي ─── */}
+            {/* ─── Desktop: جدول قياسي DataTable ─── */}
             <div className="att-desktop-table">
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)', minWidth: 660 }}>
-                <thead>
-                  <tr style={{ background: 'var(--bg-surface-2)' }}>
-                    {['التاريخ', 'الموظف', 'الحضور', 'الانصراف', 'تأخير', 'الحالة', 'الموقع', ''].map(h => (
-                      <th key={h} style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'right', color: 'var(--text-muted)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map(d => (
-                    <tr key={d.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                      <td style={{ padding: 'var(--space-2) var(--space-3)', whiteSpace: 'nowrap', fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                        {new Date(d.shift_date).toLocaleDateString('ar-EG', { weekday: 'short', day: 'numeric', month: 'short' })}
-                      </td>
-                      <td style={{ padding: 'var(--space-2) var(--space-3)' }}>
+              <DataTable<HRAttendanceDay>
+                data={filtered}
+                loading={isLoading}
+                columns={[
+                  {
+                    key: 'date', label: 'التاريخ',
+                    render: d => new Date(d.shift_date).toLocaleDateString('ar-EG', { weekday: 'short', day: 'numeric', month: 'short' }),
+                    width: 120,
+                  },
+                  {
+                    key: 'employee', label: 'الموظف',
+                    render: d => (
+                      <>
                         <div style={{ fontWeight: 600 }}>{d.employee?.full_name ?? '—'}</div>
                         <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{d.employee?.employee_number}</div>
-                      </td>
-                      <td style={{ padding: 'var(--space-2) var(--space-3)', fontVariantNumeric: 'tabular-nums', direction: 'ltr', textAlign: 'left' }}>
-                        <span style={{ color: d.punch_in_time ? 'var(--color-success)' : 'var(--text-muted)' }}>
-                          {fmtTime(d.punch_in_time)}
-                        </span>
-                      </td>
-                      <td style={{ padding: 'var(--space-2) var(--space-3)', direction: 'ltr', textAlign: 'left' }}>
-                        <span style={{ color: d.punch_out_time ? 'var(--text-secondary)' : 'var(--text-muted)' }}>
-                          {fmtTime(d.punch_out_time)}
-                          {d.is_auto_checkout && <span style={{ fontSize: 10, color: 'var(--color-warning)', marginRight: 4 }}>تلقائي</span>}
-                        </span>
-                      </td>
-                      <td style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'center' }}>
-                        {d.late_minutes > 0
-                          ? <span style={{ color: 'var(--color-warning)', fontWeight: 600 }}>{d.late_minutes} د</span>
-                          : <span style={{ color: 'var(--text-muted)' }}>—</span>
-                        }
-                      </td>
-                      <td style={{ padding: 'var(--space-2) var(--space-3)' }}>
-                        <Badge variant={STATUS_VARIANT[d.status]}>{STATUS_LABEL[d.status]}</Badge>
-                      </td>
-                      <td style={{ padding: 'var(--space-2) var(--space-3)', fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                        {d.location_in?.name
-                          ? <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={10} />{d.location_in.name}</span>
-                          : '—'
-                        }
-                      </td>
-                      <td style={{ padding: 'var(--space-2) var(--space-3)' }}>
-                        <PermissionGuard permission="hr.attendance.edit">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            icon={<Edit2 size={12} />}
-                            onClick={() => setEditDay(d)}
-                          />
-                        </PermissionGuard>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </>
+                    )
+                  },
+                  {
+                    key: 'punch_in', label: 'الحضور',
+                    render: d => <span style={{ color: d.punch_in_time ? 'var(--color-success)' : 'var(--text-muted)' }} dir="ltr">{fmtTime(d.punch_in_time)}</span>
+                  },
+                  {
+                    key: 'punch_out', label: 'الانصراف',
+                    render: d => (
+                      <span style={{ color: d.punch_out_time ? 'var(--text-secondary)' : 'var(--text-muted)' }} dir="ltr">
+                        {fmtTime(d.punch_out_time)}
+                        {d.is_auto_checkout && <span style={{ fontSize: 10, color: 'var(--color-warning)', marginInlineStart: 4 }}>تلقائي</span>}
+                      </span>
+                    )
+                  },
+                  {
+                    key: 'late', label: 'تأخير',
+                    render: d => d.late_minutes > 0
+                      ? <span style={{ color: 'var(--color-warning)', fontWeight: 600 }}>{d.late_minutes} د</span>
+                      : <span style={{ color: 'var(--text-muted)' }}>—</span>
+                  },
+                  {
+                    key: 'status', label: 'الحالة',
+                    render: d => <Badge variant={STATUS_VARIANT[d.status]}>{STATUS_LABEL[d.status]}</Badge>
+                  },
+                  {
+                    key: 'location', label: 'الموقع',
+                    render: d => d.location_in?.name
+                      ? <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}><MapPin size={10} />{d.location_in.name}</span>
+                      : <span style={{ color: 'var(--text-muted)' }}>—</span>
+                  },
+                  {
+                    key: 'actions', label: '', width: 50,
+                    render: d => (
+                      <PermissionGuard permission="hr.attendance.edit">
+                        <Button size="sm" variant="ghost" icon={<Edit2 size={12} />} onClick={() => setEditDay(d)} />
+                      </PermissionGuard>
+                    )
+                  }
+                ]}
+              />
+            </div>
+            
+            {/* ─── Mobile: بطاقات DataCard قياسية ─── */}
+            <div className="att-mobile-cards" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+              {filtered.map(d => (
+                <DataCard
+                  key={d.id}
+                  title={d.employee?.full_name ?? '—'}
+                  subtitle={new Date(d.shift_date).toLocaleDateString('ar-EG', { weekday: 'short', day: 'numeric', month: 'short' })}
+                  badge={<Badge variant={STATUS_VARIANT[d.status]}>{STATUS_LABEL[d.status]}</Badge>}
+                  leading={
+                    <div style={{
+                      width: 40, height: 40, borderRadius: 'var(--radius-md)',
+                      background: 'color-mix(in srgb, var(--color-primary) 10%, transparent)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary)'
+                    }}>
+                      <Clock size={18} />
+                    </div>
+                  }
+                  metadata={[
+                    { label: 'حضور', value: fmtTime(d.punch_in_time) },
+                    { label: 'انصراف', value: fmtTime(d.punch_out_time) },
+                    ...(d.late_minutes > 0 ? [{ label: 'تأخير', value: `${d.late_minutes} د`, highlight: true }] : []),
+                    ...(d.location_in?.name ? [{ label: 'موقع', value: d.location_in.name }] : []),
+                  ]}
+                  actions={
+                    <PermissionGuard permission="hr.attendance.edit">
+                      <Button size="sm" variant="secondary" style={{ width: '100%', justifyContent: 'center' }} onClick={() => setEditDay(d)}>
+                        <Edit2 size={12} style={{ marginInlineEnd: 4 }} /> تعديل
+                      </Button>
+                    </PermissionGuard>
+                  }
+                />
+              ))}
             </div>
           </>
         )}

@@ -600,7 +600,7 @@ export async function getLeaveBalances(employeeId: string, year?: number) {
 
 export async function getLeaveRequests(params?: {
   employeeId?: string
-  status?: string
+  status?: string | string[]
   page?: number
   pageSize?: number
 }) {
@@ -621,7 +621,13 @@ export async function getLeaveRequests(params?: {
     .range(from, to)
 
   if (params?.employeeId) query = query.eq('employee_id', params.employeeId)
-  if (params?.status)     query = query.eq('status', params.status)
+  if (params?.status) {
+    if (Array.isArray(params.status)) {
+      query = query.in('status', params.status)
+    } else {
+      query = query.eq('status', params.status)
+    }
+  }
 
   const { data, error, count } = await query
   if (error) throw error
@@ -920,7 +926,7 @@ export async function approvePayrollRun(runId: string): Promise<PayrollApprovalR
 
 export async function getAdvances(params?: {
   employeeId?: string
-  status?: HRAdvanceStatus
+  status?: string | string[]
   page?: number
   pageSize?: number
 }) {
@@ -940,7 +946,13 @@ export async function getAdvances(params?: {
     .range(from, to)
 
   if (params?.employeeId) query = query.eq('employee_id', params.employeeId)
-  if (params?.status)     query = query.eq('status', params.status)
+  if (params?.status) {
+    if (Array.isArray(params.status)) {
+      query = query.in('status', params.status)
+    } else {
+      query = query.eq('status', params.status)
+    }
+  }
 
   const { data, error, count } = await query
   if (error) throw error

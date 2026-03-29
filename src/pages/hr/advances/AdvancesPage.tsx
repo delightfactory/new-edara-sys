@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   Wallet, CheckCircle, XCircle, Plus, ChevronDown,
-  AlertCircle, Building2, CreditCard,
+  AlertCircle, Building2, CreditCard, DollarSign
 } from 'lucide-react'
 import {
   useHRAdvances,
@@ -21,6 +21,8 @@ import ResponsiveModal from '@/components/ui/ResponsiveModal'
 import PermissionGuard from '@/components/shared/PermissionGuard'
 import AdvanceRequestForm from './AdvanceRequestForm'
 import { toast } from 'sonner'
+import StatCard from '@/components/shared/StatCard'
+import DetailRow from '@/components/shared/DetailRow'
 
 // ─── حالات السلفة ─────────────────────────────────────
 const STATUS_LABEL: Record<HRAdvanceStatus, string> = {
@@ -335,7 +337,7 @@ export default function AdvancesPage() {
                 className="form-input"
                 value={statusFilter}
                 onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
-                style={{ paddingLeft: 'var(--space-6)', width: 'auto', minWidth: 170 }}
+                style={{ paddingInlineStart: 'var(--space-6)', width: 'auto', minWidth: 170 }}
               >
                 <option value="">كل الحالات</option>
                 {Object.entries(STATUS_LABEL).map(([k, v]) => (
@@ -343,7 +345,7 @@ export default function AdvancesPage() {
                 ))}
               </select>
               <ChevronDown size={13} style={{
-                position: 'absolute', left: 'var(--space-2)', top: '50%',
+                position: 'absolute', insetInlineStart: 'var(--space-2)', top: '50%',
                 transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-muted)',
               }} />
             </div>
@@ -454,8 +456,8 @@ export default function AdvancesPage() {
               display: 'grid', gridTemplateColumns: '1fr 1fr',
               gap: 'var(--space-3)',
             }}>
-              <StatCard label="المبلغ الكلي"  value={fmtCurrency(selected.amount)}           color="var(--color-primary)" />
-              <StatCard label="المتبقي"        value={fmtCurrency(selected.remaining_amount)}  color={selected.remaining_amount > 0 ? 'var(--color-warning)' : 'var(--color-success)'} />
+              <StatCard label="المبلغ الكلي"  value={fmtCurrency(selected.amount)}           color="var(--color-primary)" icon={<DollarSign size={18} />} />
+              <StatCard label="المتبقي"        value={fmtCurrency(selected.remaining_amount)}  color={selected.remaining_amount > 0 ? 'var(--color-warning)' : 'var(--color-success)'} icon={<CreditCard size={18} />} />
             </div>
 
             {/* تفاصيل */}
@@ -553,7 +555,7 @@ export default function AdvancesPage() {
                       value={vaultId}
                       onChange={e => setVaultId(e.target.value)}
                       disabled={disburseMutation.isPending}
-                      style={{ paddingLeft: 'var(--space-6)' }}
+                      style={{ paddingInlineStart: 'var(--space-6)' }}
                     >
                       <option value="">اختر الخزنة...</option>
                       {vaults.map(v => (
@@ -566,7 +568,7 @@ export default function AdvancesPage() {
                       ))}
                     </select>
                     <ChevronDown size={13} style={{
-                      position: 'absolute', left: 'var(--space-2)', top: '50%',
+                      position: 'absolute', insetInlineStart: 'var(--space-2)', top: '50%',
                       transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-muted)',
                     }} />
                   </div>
@@ -672,31 +674,4 @@ export default function AdvancesPage() {
 }
 
 // ─── مكونات مساعدة ───────────────────────────────────
-function StatCard({ label, value, color }: { label: string; value: string; color: string }) {
-  return (
-    <div style={{
-      padding: 'var(--space-3) var(--space-4)',
-      background: `color-mix(in srgb, ${color} 6%, transparent)`,
-      border: `1px solid color-mix(in srgb, ${color} 20%, transparent)`,
-      borderRadius: 'var(--radius-md)',
-    }}>
-      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 4 }}>{label}</div>
-      <div style={{ fontWeight: 700, fontSize: 'var(--text-base)', color, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
-    </div>
-  )
-}
-
-function DetailRow({ label, value, highlight }: { label: string; value: React.ReactNode; highlight?: boolean }) {
-  return (
-    <div style={{
-      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      padding: 'var(--space-2) 0', borderBottom: '1px solid var(--border-primary)',
-    }}>
-      <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>{label}</span>
-      <span style={{
-        fontSize: 'var(--text-sm)', fontWeight: highlight ? 700 : 500,
-        color: highlight ? 'var(--color-primary)' : 'var(--text-primary)',
-      }}>{value}</span>
-    </div>
-  )
-}
+      {/* removed helper components */}

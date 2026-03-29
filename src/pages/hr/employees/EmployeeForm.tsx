@@ -603,11 +603,8 @@ export default function EmployeeForm({ open, onClose, employee, onToast }: Props
         }
         .emp-form-grid {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
           gap: var(--space-4);
-        }
-        @media (max-width: 540px) {
-          .emp-form-grid { grid-template-columns: 1fr; }
         }
 
         /* Auth link section */

@@ -21,6 +21,8 @@ import type {
   HRPenaltyRule,
 } from '@/lib/types/hr'
 import PageHeader from '@/components/shared/PageHeader'
+import DataTable from '@/components/shared/DataTable'
+import DataCard from '@/components/ui/DataCard'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
@@ -332,21 +334,23 @@ function DepartmentsTab() {
       )}
 
       {isLoading ? <div className="settings-loading">جارٍ التحميل...</div> : (
-        <table className="settings-table">
-          <thead><tr><th>القسم</th><th>الكود</th><th>الحالة</th><th></th></tr></thead>
-          <tbody>
-            {depts.map(d => (
-              <tr key={d.id}>
-                <td><strong>{d.name}</strong>{d.name_en && <span style={{ color: 'var(--text-muted)', marginRight: 8, fontSize: 'var(--text-xs)' }}>{d.name_en}</span>}</td>
-                <td><code style={{ fontSize: 'var(--text-xs)' }}>{d.code || '—'}</code></td>
-                <td><Badge variant={d.is_active ? 'success' : 'neutral'}>{d.is_active ? 'نشط' : 'موقوف'}</Badge></td>
-                <td>
-                  <Button size="sm" variant="ghost" icon={<Edit2 size={13} />} onClick={() => startEdit(d)}>تعديل</Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <DataTable
+          columns={[
+            { key: 'dept', label: 'القسم', render: (d: any) => <div><strong>{d.name}</strong>{d.name_en && <span style={{ color: 'var(--text-muted)', marginRight: 8, fontSize: 'var(--text-xs)' }}>{d.name_en}</span>}</div> },
+            { key: 'code', label: 'الكود', render: (d: any) => <code style={{ fontSize: 'var(--text-xs)' }}>{d.code || '—'}</code> },
+            { key: 'status', label: 'الحالة', render: (d: any) => <Badge variant={d.is_active ? 'success' : 'neutral'}>{d.is_active ? 'نشط' : 'موقوف'}</Badge> },
+            { key: 'actions', label: '', align: 'end', render: (d: any) => <Button size="sm" variant="ghost" icon={<Edit2 size={13} />} onClick={() => startEdit(d)}>تعديل</Button> }
+          ]}
+          data={depts}
+          keyField="id"
+          dataCardMapping={(d: any) => ({
+            title: d.name,
+            subtitle: d.name_en,
+            badge: <Badge variant={d.is_active ? 'success' : 'neutral'}>{d.is_active ? 'نشط' : 'موقوف'}</Badge>,
+            metadata: [{ label: 'الكود', value: d.code || '—' }],
+            actions: <Button size="sm" variant="secondary" onClick={() => startEdit(d)} style={{ width: '100%', justifyContent: 'center' }}><Edit2 size={13} style={{ marginInlineEnd: 4 }} /> تعديل</Button>
+          })}
+        />
       )}
     </div>
   )
@@ -404,19 +408,22 @@ function PositionsTab() {
       )}
 
       {isLoading ? <div className="settings-loading">جارٍ التحميل...</div> : (
-        <table className="settings-table">
-          <thead><tr><th>المسمى الوظيفي</th><th>القسم</th><th>النوع</th><th>الحالة</th></tr></thead>
-          <tbody>
-            {positions.map(p => (
-              <tr key={p.id}>
-                <td><strong>{p.name}</strong>{p.name_en && <span style={{ color: 'var(--text-muted)', marginRight: 8, fontSize: 'var(--text-xs)' }}>{p.name_en}</span>}</td>
-                <td>{p.department?.name ?? '—'}</td>
-                <td><Badge variant={p.is_field ? 'info' : 'neutral'}>{p.is_field ? 'ميداني' : 'مكتبي'}</Badge></td>
-                <td><Badge variant={p.is_active ? 'success' : 'neutral'}>{p.is_active ? 'نشط' : 'موقوف'}</Badge></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <DataTable
+          columns={[
+            { key: 'pos', label: 'المسمى الوظيفي', render: (p: any) => <div><strong>{p.name}</strong>{p.name_en && <span style={{ color: 'var(--text-muted)', marginRight: 8, fontSize: 'var(--text-xs)' }}>{p.name_en}</span>}</div> },
+            { key: 'dept', label: 'القسم', render: (p: any) => p.department?.name ?? '—' },
+            { key: 'type', label: 'النوع', render: (p: any) => <Badge variant={p.is_field ? 'info' : 'neutral'}>{p.is_field ? 'ميداني' : 'مكتبي'}</Badge> },
+            { key: 'status', label: 'الحالة', render: (p: any) => <Badge variant={p.is_active ? 'success' : 'neutral'}>{p.is_active ? 'نشط' : 'موقوف'}</Badge> }
+          ]}
+          data={positions}
+          keyField="id"
+          dataCardMapping={(p: any) => ({
+            title: p.name,
+            subtitle: p.department?.name ?? 'بدون قسم',
+            badge: <Badge variant={p.is_active ? 'success' : 'neutral'}>{p.is_active ? 'نشط' : 'موقوف'}</Badge>,
+            metadata: [{ label: 'النوع', value: p.is_field ? 'ميداني' : 'مكتبي' }]
+          })}
+        />
       )}
     </div>
   )
@@ -639,23 +646,28 @@ function LocationsTab() {
       )}
 
       {isLoading ? <div className="settings-loading">جارٍ التحميل...</div> : (
-        <table className="settings-table">
-          <thead><tr><th>الموقع</th><th>الإحداثيات</th><th>النطاق</th><th>سيلفي</th><th>الحالة</th><th></th></tr></thead>
-          <tbody>
-            {locations.map(l => (
-              <tr key={l.id}>
-                <td><strong>{l.name}</strong></td>
-                <td dir="ltr" style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                  {l.latitude.toFixed(5)}, {l.longitude.toFixed(5)}
-                </td>
-                <td>{l.radius_meters} م</td>
-                <td><Badge variant={l.require_selfie ? 'info' : 'neutral'}>{l.require_selfie ? 'نعم' : 'لا'}</Badge></td>
-                <td><Badge variant={l.is_active ? 'success' : 'neutral'}>{l.is_active ? 'نشط' : 'موقوف'}</Badge></td>
-                <td><Button size="sm" variant="ghost" icon={<Edit2 size={13} />} onClick={() => startEdit(l)}>تعديل</Button></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <DataTable
+          columns={[
+            { key: 'loc', label: 'الموقع', render: (l: any) => <strong>{l.name}</strong> },
+            { key: 'coords', label: 'الإحداثيات', render: (l: any) => <span dir="ltr" style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{l.latitude.toFixed(5)}, {l.longitude.toFixed(5)}</span> },
+            { key: 'radius', label: 'النطاق', render: (l: any) => `${l.radius_meters} م` },
+            { key: 'selfie', label: 'سيلفي', render: (l: any) => <Badge variant={l.require_selfie ? 'info' : 'neutral'}>{l.require_selfie ? 'نعم' : 'لا'}</Badge> },
+            { key: 'status', label: 'الحالة', render: (l: any) => <Badge variant={l.is_active ? 'success' : 'neutral'}>{l.is_active ? 'نشط' : 'موقوف'}</Badge> },
+            { key: 'actions', label: '', align: 'end', render: (l: any) => <Button size="sm" variant="ghost" icon={<Edit2 size={13} />} onClick={() => startEdit(l)}>تعديل</Button> }
+          ]}
+          data={locations}
+          keyField="id"
+          dataCardMapping={(l: any) => ({
+            title: l.name,
+            subtitle: `${l.latitude.toFixed(5)}, ${l.longitude.toFixed(5)}`,
+            badge: <Badge variant={l.is_active ? 'success' : 'neutral'}>{l.is_active ? 'نشط' : 'موقوف'}</Badge>,
+            metadata: [
+              { label: 'النطاق', value: `${l.radius_meters} م` },
+              { label: 'سيلفي', value: l.require_selfie ? 'إلزامي' : 'لا' }
+            ],
+            actions: <Button size="sm" variant="secondary" onClick={() => startEdit(l)} style={{ width: '100%', justifyContent: 'center' }}><Edit2 size={13} style={{ marginInlineEnd: 4 }} /> تعديل</Button>
+          })}
+        />
       )}
     </div>
   )
@@ -727,30 +739,23 @@ function HolidaysTab() {
       )}
 
       {isLoading ? <div className="settings-loading">جارٍ التحميل...</div> : (
-        <table className="settings-table">
-          <thead><tr><th>العطلة</th><th>التاريخ</th><th>نوع</th><th></th></tr></thead>
-          <tbody>
-            {holidays.length === 0
-              ? <tr><td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 'var(--space-6)' }}>لا توجد عطل مسجلة لعام {selYear}</td></tr>
-              : holidays.map(h => (
-                <tr key={h.id}>
-                  <td><strong>{h.name}</strong></td>
-                  <td>{new Date(h.holiday_date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' })}</td>
-                  <td><Badge variant={h.is_recurring ? 'info' : 'neutral'}>{h.is_recurring ? 'سنوية' : 'مرة واحدة'}</Badge></td>
-                  <td>
-                    <Button
-                      size="sm" variant="ghost"
-                      icon={<Trash2 size={13} />}
-                      onClick={() => handleDelete(h)}
-                      loading={deleteMut.isPending}
-                      style={{ color: 'var(--color-danger)' }}
-                    />
-                  </td>
-                </tr>
-              ))
-            }
-          </tbody>
-        </table>
+        <DataTable
+          columns={[
+            { key: 'name', label: 'العطلة', render: (h: any) => <strong>{h.name}</strong> },
+            { key: 'date', label: 'التاريخ', render: (h: any) => new Date(h.holiday_date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' }) },
+            { key: 'type', label: 'نوع', render: (h: any) => <Badge variant={h.is_recurring ? 'info' : 'neutral'}>{h.is_recurring ? 'سنوية' : 'مرة واحدة'}</Badge> },
+            { key: 'actions', label: '', align: 'end', render: (h: any) => <Button size="sm" variant="ghost" icon={<Trash2 size={13} />} onClick={() => handleDelete(h)} loading={deleteMut.isPending} style={{ color: 'var(--color-danger)' }} /> }
+          ]}
+          data={holidays}
+          keyField="id"
+          dataCardMapping={(h: any) => ({
+            title: h.name,
+            subtitle: new Date(h.holiday_date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' }),
+            badge: <Badge variant={h.is_recurring ? 'info' : 'neutral'}>{h.is_recurring ? 'سنوية' : 'مرة واحدة'}</Badge>,
+            metadata: [],
+            actions: <Button size="sm" variant="ghost" onClick={() => handleDelete(h)} loading={deleteMut.isPending} style={{ color: 'var(--color-danger)', width: '100%', justifyContent: 'center', border: '1px solid color-mix(in srgb, var(--color-danger) 20%, transparent)' }}><Trash2 size={13} style={{ marginInlineEnd: 4 }} /> حذف</Button>
+          })}
+        />
       )}
     </div>
   )
@@ -787,33 +792,24 @@ function PenaltyRulesTab() {
       }}>
         قواعد الجزاءات تُطبَّق تلقائياً بدالة <code>process_attendance_penalties()</code>. لتعديل قاعدة، تواصل مع المدير التقني.
       </div>
-      <table className="settings-table">
-        <thead>
-          <tr>
-            <th>نوع المخالفة</th>
-            <th>النطاق الزمني (دقيقة)</th>
-            <th>الجزاء</th>
-            <th>مرات السماح/شهر</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rules.map(r => (
-            <tr key={r.id}>
-              <td><Badge variant="warning">{PENALTY_TYPE_LABEL[r.penalty_type] ?? r.penalty_type}</Badge></td>
-              <td>
-                {r.min_minutes != null ? `${r.min_minutes}` : '—'}
-                {r.max_minutes != null ? ` – ${r.max_minutes}` : '+'}
-                {' دقيقة'}
-              </td>
-              <td><strong>{DEDUCTION_LABEL[r.deduction_type] ?? r.deduction_type}</strong></td>
-              <td>{r.occurrence_from}</td>
-            </tr>
-          ))}
-          {rules.length === 0 && (
-            <tr><td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 'var(--space-6)' }}>لا توجد قواعد مسجلة</td></tr>
-          )}
-        </tbody>
-      </table>
+      <DataTable
+        columns={[
+          { key: 'type', label: 'نوع المخالفة', render: (r: any) => <Badge variant="warning">{PENALTY_TYPE_LABEL[r.penalty_type] ?? r.penalty_type}</Badge> },
+          { key: 'range', label: 'النطاق (دقيقة)', render: (r: any) => `${r.min_minutes != null ? r.min_minutes : '—'} ${r.max_minutes != null ? `– ${r.max_minutes}` : '+'} دقيقة` },
+          { key: 'ded', label: 'الجزاء', render: (r: any) => <strong>{DEDUCTION_LABEL[r.deduction_type] ?? r.deduction_type}</strong> },
+          { key: 'occ', label: 'مرات السماح/شهر', render: (r: any) => r.occurrence_from }
+        ]}
+        data={rules}
+        keyField="id"
+        dataCardMapping={(r: any) => ({
+          title: PENALTY_TYPE_LABEL[r.penalty_type] ?? r.penalty_type,
+          subtitle: `نجاوز المسموح: القطع من المرة ${r.occurrence_from}`,
+          badge: <Badge variant="warning">{DEDUCTION_LABEL[r.deduction_type] ?? r.deduction_type}</Badge>,
+          metadata: [
+            { label: 'النطاق', value: `${r.min_minutes != null ? r.min_minutes : '—'} ${r.max_minutes != null ? `– ${r.max_minutes}` : '+'} دقيقة` }
+          ]
+        })}
+      />
     </div>
   )
 }
@@ -909,22 +905,7 @@ export default function HRSettingsPage() {
           font-weight: 700; font-size: var(--text-sm);
           margin-bottom: var(--space-3); color: var(--color-primary);
         }
-        .settings-table {
-          width: 100%; border-collapse: collapse;
-          font-size: var(--text-sm);
         }
-        .settings-table th {
-          text-align: right; padding: var(--space-2) var(--space-3);
-          border-bottom: 1.5px solid var(--border-color);
-          color: var(--text-muted); font-weight: 600;
-          font-size: var(--text-xs);
-        }
-        .settings-table td {
-          padding: var(--space-3);
-          border-bottom: 1px solid var(--border-color);
-        }
-        .settings-table tr:last-child td { border-bottom: none; }
-        .settings-table tr:hover td { background: var(--bg-surface-2); }
         .settings-loading {
           text-align: center; padding: var(--space-8);
           color: var(--text-muted); font-size: var(--text-sm);

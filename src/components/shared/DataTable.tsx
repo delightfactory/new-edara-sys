@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils/helpers'
+import DataCard from '@/components/ui/DataCard'
 
 interface Column<T> {
   key: string
@@ -28,6 +29,8 @@ interface DataTableProps<T> {
   /** Row styling */
   rowClassName?: (item: T) => string | undefined
   rowStyle?: (item: T) => React.CSSProperties | undefined
+  /** Mobile DataCard rendering */
+  dataCardMapping?: (item: T) => any
 }
 
 /**
@@ -50,6 +53,7 @@ export default function DataTable<T extends Record<string, any>>({
   onPageChange,
   rowClassName,
   rowStyle,
+  dataCardMapping,
 }: DataTableProps<T>) {
   // Skeleton loading
   if (loading) {
@@ -72,49 +76,58 @@ export default function DataTable<T extends Record<string, any>>({
     )
   }
 
-  return (
-    <>
-      <table className="data-table">
-        <thead>
-          <tr>
+  const renderTable = () => (
+    <table className="data-table">
+      <thead>
+        <tr>
+          {columns.map(col => (
+            <th
+              key={col.key}
+              className={cn(col.hideOnMobile && 'hide-mobile')}
+              style={{ width: col.width, textAlign: col.align || 'start' }}
+            >
+              {col.label}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {data.map(item => (
+          <tr
+            key={item[keyField]}
+            onClick={onRowClick ? () => onRowClick(item) : undefined}
+            style={{ cursor: onRowClick ? 'pointer' : undefined, ...rowStyle?.(item) }}
+            className={rowClassName?.(item)}
+          >
             {columns.map(col => (
-              <th
+              <td
                 key={col.key}
                 className={cn(col.hideOnMobile && 'hide-mobile')}
-                style={{
-                  width: col.width,
-                  textAlign: col.align || 'start',
-                }}
+                style={{ textAlign: col.align || 'start' }}
               >
-                {col.label}
-              </th>
+                {col.render ? col.render(item) : item[col.key]}
+              </td>
             ))}
           </tr>
-        </thead>
-        <tbody>
-          {data.map(item => (
-            <tr
-              key={item[keyField]}
-              onClick={onRowClick ? () => onRowClick(item) : undefined}
-              style={{
-                cursor: onRowClick ? 'pointer' : undefined,
-                ...rowStyle?.(item),
-              }}
-              className={rowClassName?.(item)}
-            >
-              {columns.map(col => (
-                <td
-                  key={col.key}
-                  className={cn(col.hideOnMobile && 'hide-mobile')}
-                  style={{ textAlign: col.align || 'start' }}
-                >
-                  {col.render ? col.render(item) : item[col.key]}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+        ))}
+      </tbody>
+    </table>
+  )
+
+  return (
+    <>
+      {dataCardMapping ? (
+        <>
+          <div className="system-desktop-table">{renderTable()}</div>
+          <div className="system-mobile-cards" style={{ display: 'none', flexDirection: 'column', gap: 'var(--space-3)', padding: 'var(--space-4)' }}>
+            {data.map(item => (
+              <DataCard key={item[keyField]} {...dataCardMapping(item)} />
+            ))}
+          </div>
+        </>
+      ) : (
+        renderTable()
+      )}
 
       {/* Pagination */}
       {page && totalPages && totalPages > 1 && onPageChange && (
@@ -154,6 +167,15 @@ export default function DataTable<T extends Record<string, any>>({
           </div>
         </div>
       )}
+
+      <style>{`
+        .system-desktop-table { display: block; }
+        .system-mobile-cards  { display: none !important; }
+        @media (max-width: 768px) {
+          .system-desktop-table { display: none; }
+          .system-mobile-cards  { display: flex !important; }
+        }
+      `}</style>
     </>
   )
 }

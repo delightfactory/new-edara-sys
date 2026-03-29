@@ -248,6 +248,22 @@ export default function PayrollPage() {
             </PermissionGuard>
           }
           rowClassName={r => r.status === 'review' ? 'tr-pending-review' : undefined}
+          dataCardMapping={(r: HRPayrollRun) => ({
+            title: r.period?.name ?? '—',
+            subtitle: `${fmtDate(r.period?.start_date)} — ${fmtDate(r.period?.end_date)}`,
+            badge: (
+              <Badge variant={STATUS_VARIANT[r.status]}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
+                  {STATUS_ICON[r.status]} {STATUS_LABEL[r.status]}
+                </span>
+              </Badge>
+            ),
+            metadata: [
+              { label: 'موظفون', value: r.total_employees.toString() },
+              { label: 'الصافي', value: fmt(r.total_net), highlight: true },
+            ],
+            actions: <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); navigate(`/hr/payroll/${r.id}`) }} style={{ width: '100%', justifyContent: 'center' }}>عرض ومراجعة ↗</Button>
+          })}
         />
       </div>
 

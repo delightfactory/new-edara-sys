@@ -7,6 +7,8 @@ import type { HRPermissionRequestInput } from '@/lib/types/hr'
 import { useCurrentEmployee } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
 import PageHeader from '@/components/shared/PageHeader'
+import DataTable from '@/components/shared/DataTable'
+import DataCard from '@/components/ui/DataCard'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
@@ -103,6 +105,69 @@ export default function PermissionsPage() {
 
   const pendingCount = requests.filter(r => r.status === 'pending').length
 
+  // ─── Columns & DataCard Mapping ───────────────────────
+  const columns = [
+    ...(isManager ? [{
+      key: 'employee',
+      label: 'الموظف',
+      render: (r: any) => <strong>{r.employee?.full_name ?? '—'}</strong>,
+    }] : []),
+    {
+      key: 'date',
+      label: 'التاريخ',
+      render: (r: any) => <span style={{ whiteSpace: 'nowrap' }}>{fmtDate(r.permission_date)}</span>,
+    },
+    {
+      key: 'leave_time',
+      label: 'وقت الخروج',
+      render: (r: any) => <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtTime(r.leave_time)}</span>,
+    },
+    {
+      key: 'expected_return',
+      label: 'وقت العودة المتوقع',
+      render: (r: any) => <span style={{ fontVariantNumeric: 'tabular-nums' }}>{r.expected_return ? fmtTime(r.expected_return) : '—'}</span>,
+    },
+    {
+      key: 'reason',
+      label: 'السبب',
+      render: (r: any) => (
+        <div style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.reason}>
+          {r.reason}
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      label: 'الحالة',
+      render: (r: any) => <Badge variant={STATUS_VARIANT[r.status]}>{STATUS_LABEL[r.status as keyof typeof STATUS_LABEL]}</Badge>,
+    },
+    {
+      key: 'actions',
+      label: '',
+      render: (r: any) => isManager && r.status === 'pending' ? (
+        <div style={{ display: 'flex', gap: 4 }}>
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={<CheckCircle size={13} />}
+            onClick={(e) => { e.stopPropagation(); approveMut.mutate(r.id); }}
+            loading={approveMut.isPending}
+            style={{ color: 'var(--color-success)' }}
+          />
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={<XCircle size={13} />}
+            onClick={(e) => { e.stopPropagation(); setRejectId(r.id); }}
+            style={{ color: 'var(--color-danger)' }}
+          />
+        </div>
+      ) : null,
+    },
+  ]
+
+
+
   return (
     <div className="page-container animate-enter">
 
@@ -170,65 +235,59 @@ export default function PermissionsPage() {
             <Button size="sm" icon={<Plus size={13} />} onClick={openForm}>طلب إذن جديد</Button>
           </div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
-            <thead>
-              <tr style={{ background: 'var(--bg-surface-2)' }}>
-                {[
-                  ...(isManager ? ['الموظف'] : []),
-                  'التاريخ', 'وقت الخروج', 'وقت العودة المتوقع', 'السبب', 'الحالة', ''
-                ].map(h => (
-                  <th key={h} style={{
-                    padding: 'var(--space-2) var(--space-3)',
-                    textAlign: 'right', color: 'var(--text-muted)',
-                    fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-color)',
-                  }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
+          <>
+            <div className="perm-desktop-table">
+              <DataTable
+                columns={columns}
+                data={requests}
+                loading={isLoading}
+                keyField="id"
+              />
+            </div>
+            <div className="perm-mobile-cards" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', padding: 'var(--space-4)' }}>
               {requests.map(r => (
-                <tr key={r.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  {isManager && (
-                    <td style={{ padding: 'var(--space-3)' }}>
-                      <strong>{r.employee?.full_name ?? '—'}</strong>
-                    </td>
-                  )}
-                  <td style={{ padding: 'var(--space-3)', whiteSpace: 'nowrap' }}>{fmtDate(r.permission_date)}</td>
-                  <td style={{ padding: 'var(--space-3)', fontVariantNumeric: 'tabular-nums' }}>{fmtTime(r.leave_time)}</td>
-                  <td style={{ padding: 'var(--space-3)', fontVariantNumeric: 'tabular-nums' }}>
-                    {r.expected_return ? fmtTime(r.expected_return) : '—'}
-                  </td>
-                  <td style={{ padding: 'var(--space-3)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {r.reason}
-                  </td>
-                  <td style={{ padding: 'var(--space-3)' }}>
-                    <Badge variant={STATUS_VARIANT[r.status]}>{STATUS_LABEL[r.status as keyof typeof STATUS_LABEL]}</Badge>
-                  </td>
-                  <td style={{ padding: 'var(--space-3)' }}>
-                    {isManager && r.status === 'pending' && (
-                      <div style={{ display: 'flex', gap: 4 }}>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          icon={<CheckCircle size={13} />}
-                          onClick={() => approveMut.mutate(r.id)}
-                          loading={approveMut.isPending}
-                          style={{ color: 'var(--color-success)' }}
-                        />
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          icon={<XCircle size={13} />}
-                          onClick={() => setRejectId(r.id)}
-                          style={{ color: 'var(--color-danger)' }}
-                        />
-                      </div>
-                    )}
-                  </td>
-                </tr>
+                <DataCard
+                  key={r.id}
+                  title={isManager ? (r.employee?.full_name ?? 'موظف مجهول') : 'إذن انصراف'}
+                  subtitle={fmtDate(r.permission_date)}
+                  badge={<Badge variant={STATUS_VARIANT[r.status]}>{STATUS_LABEL[r.status as keyof typeof STATUS_LABEL]}</Badge>}
+                  leading={
+                    <div style={{
+                      width: 40, height: 40, borderRadius: 'var(--radius-md)',
+                      background: 'color-mix(in srgb, var(--color-primary) 10%, transparent)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary)'
+                    }}>
+                      <Clock size={16} />
+                    </div>
+                  }
+                  metadata={[
+                    { label: 'وقت الخروج', value: fmtTime(r.leave_time) },
+                    { label: 'متوقع عودة', value: r.expected_return ? fmtTime(r.expected_return) : '—' },
+                    { label: 'السبب', value: r.reason },
+                  ]}
+                  actions={isManager && r.status === 'pending' ? (
+                    <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        icon={<CheckCircle size={13} />}
+                        onClick={(e) => { e.stopPropagation(); approveMut.mutate(r.id); }}
+                        loading={approveMut.isPending}
+                        style={{ color: 'var(--color-success)', flex: 1, border: '1px solid color-mix(in srgb, var(--color-success) 30%, transparent)' }}
+                      >اعتماد</Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        icon={<XCircle size={13} />}
+                        onClick={(e) => { e.stopPropagation(); setRejectId(r.id); }}
+                        style={{ color: 'var(--color-danger)', flex: 1, border: '1px solid color-mix(in srgb, var(--color-danger) 30%, transparent)' }}
+                      >رفض</Button>
+                    </div>
+                  ) : undefined}
+                />
               ))}
-            </tbody>
-          </table>
+            </div>
+          </>
         )}
       </div>
 
@@ -302,6 +361,15 @@ export default function PermissionsPage() {
           />
         </ResponsiveModal>
       )}
+
+      <style>{`
+        .perm-desktop-table { display: block; }
+        .perm-mobile-cards  { display: none; }
+        @media (max-width: 768px) {
+          .perm-desktop-table { display: none; }
+          .perm-mobile-cards  { display: flex; }
+        }
+      `}</style>
     </div>
   )
 }

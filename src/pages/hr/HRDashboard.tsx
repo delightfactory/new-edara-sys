@@ -19,84 +19,8 @@ import { toast } from 'sonner'
 import Button from '@/components/ui/Button'
 import PermissionGuard from '@/components/shared/PermissionGuard'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
-
-// ─── StatCard ─────────────────────────────────────────
-interface StatCardProps {
-  id: string
-  label: string
-  value: string | number
-  sub?: string
-  icon: React.ReactNode
-  color: string
-  onClick?: () => void
-  loading?: boolean
-}
-
-function StatCard({ id, label, value, sub, icon, color, onClick, loading }: StatCardProps) {
-  return (
-    <button
-      id={id}
-      onClick={onClick}
-      disabled={!onClick}
-      style={{
-        display: 'flex', alignItems: 'center', gap: 'var(--space-4)',
-        padding: 'var(--space-5)',
-        background: 'var(--bg-card)',
-        border: `1px solid color-mix(in srgb, ${color} 18%, var(--border-color))`,
-        borderRadius: 'var(--radius-xl)',
-        cursor: onClick ? 'pointer' : 'default',
-        textAlign: 'right', width: '100%',
-        transition: 'all 0.18s ease',
-        position: 'relative', overflow: 'hidden',
-      }}
-      className="stat-card-btn"
-    >
-      {/* Accent stripe */}
-      <div style={{
-        position: 'absolute', top: 0, right: 0,
-        width: 4, height: '100%',
-        background: `linear-gradient(to bottom, ${color}, color-mix(in srgb, ${color} 40%, transparent))`,
-        borderRadius: '0 var(--radius-xl) var(--radius-xl) 0',
-      }} />
-
-      {/* Icon */}
-      <div style={{
-        width: 48, height: 48, borderRadius: 'var(--radius-lg)', flexShrink: 0,
-        background: `color-mix(in srgb, ${color} 12%, transparent)`,
-        color, display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        {icon}
-      </div>
-
-      {/* Text */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 2 }}>
-          {label}
-        </div>
-        {loading ? (
-          <div style={{
-            height: 24, width: 60, borderRadius: 6,
-            background: 'var(--bg-surface-2)',
-            animation: 'pulse 1.5s ease infinite',
-          }} />
-        ) : (
-          <div style={{ fontWeight: 800, fontSize: 'var(--text-xl)', color, lineHeight: 1.1 }}>
-            {value}
-          </div>
-        )}
-        {sub && (
-          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 2 }}>
-            {sub}
-          </div>
-        )}
-      </div>
-
-      {onClick && (
-        <ArrowLeft size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-      )}
-    </button>
-  )
-}
+import PageHeader from '@/components/shared/PageHeader'
+import StatCard from '@/components/shared/StatCard'
 
 // ─── QuickAction ──────────────────────────────────────
 function QuickAction({ id, label, desc, icon, color, onClick }: {
@@ -110,54 +34,38 @@ function QuickAction({ id, label, desc, icon, color, onClick }: {
       style={{
         display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
         padding: 'var(--space-4)',
-        background: `color-mix(in srgb, ${color} 5%, var(--bg-card))`,
-        border: `1px solid color-mix(in srgb, ${color} 15%, var(--border-color))`,
+        background: 'var(--bg-surface-2)',
+        border: '1px solid var(--border-primary)',
         borderRadius: 'var(--radius-lg)',
-        cursor: 'pointer', textAlign: 'right', width: '100%',
-        transition: 'all 0.18s ease',
+        cursor: 'pointer', textAlign: 'start', width: '100%',
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        position: 'relative', overflow: 'hidden',
       }}
       className="quick-action-btn"
     >
       <div style={{
-        width: 36, height: 36, borderRadius: 'var(--radius-md)', flexShrink: 0,
-        background: `color-mix(in srgb, ${color} 15%, transparent)`,
+        position: 'absolute', top: 0, insetInlineStart: 0, width: 4, height: '100%',
+        background: `linear-gradient(to bottom, ${color}, color-mix(in srgb, ${color} 40%, transparent))`
+      }} />
+      <div style={{
+        width: 44, height: 44, borderRadius: 'var(--radius-md)', flexShrink: 0,
+        background: `color-mix(in srgb, ${color} 12%, transparent)`,
         color, display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         {icon}
       </div>
-      <div style={{ flex: 1, textAlign: 'right' }}>
-        <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{label}</div>
-        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{desc}</div>
+      <div style={{ flex: 1, textAlign: 'start' }}>
+        <div style={{ fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--text-primary)' }}>{label}</div>
+        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: 2 }}>{desc}</div>
       </div>
-      <ArrowLeft size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-    </button>
-  )
-}
-
-// ─── PendingRow ───────────────────────────────────────
-function PendingRow({ label, sub, badge, badgeColor }: {
-  label: string; sub?: string; badge: string; badgeColor: string
-}) {
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: 'var(--space-3) 0',
-      borderBottom: '1px solid var(--border-color)',
-    }}>
-      <div>
-        <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{label}</div>
-        {sub && <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{sub}</div>}
-      </div>
-      <span style={{
-        padding: '2px 10px', borderRadius: 99,
-        background: `color-mix(in srgb, ${badgeColor} 12%, transparent)`,
-        color: badgeColor, fontSize: 'var(--text-xs)', fontWeight: 600,
-        border: `1px solid color-mix(in srgb, ${badgeColor} 25%, transparent)`,
-        whiteSpace: 'nowrap',
+      <div className="qa-arrow-icon" style={{ 
+        width: 28, height: 28, borderRadius: '50%',
+        background: `color-mix(in srgb, ${color} 8%, transparent)`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', color 
       }}>
-        {badge}
-      </span>
-    </div>
+        <ArrowLeft size={14} />
+      </div>
+    </button>
   )
 }
 
@@ -181,10 +89,10 @@ export default function HRDashboard() {
     useHREmployees(isManager ? { status: 'active', pageSize: 1 } : undefined)
 
   const { data: leaveData, isLoading: leaveLoading } =
-    useHRLeaveRequests(isManager ? { status: 'pending_hr', pageSize: 10 } : undefined)
+    useHRLeaveRequests(isManager ? { status: ['pending_supervisor', 'pending_hr'], pageSize: 10 } : undefined)
 
   const { data: advanceData, isLoading: advLoading } =
-    useHRAdvances(isManager ? { status: 'pending_hr', pageSize: 10 } : undefined)
+    useHRAdvances(isManager ? { status: ['pending_supervisor', 'pending_hr'], pageSize: 10 } : undefined)
 
   const { data: payrollRuns = [], isLoading: payrollLoading } =
     useHRPayrollRuns(isManager ? undefined : undefined)
@@ -197,9 +105,10 @@ export default function HRDashboard() {
     enabled: isManager,
   })
   const todayDays = todayAttendance?.data ?? []
-  const todayPresent = todayDays.filter(d => d.status === 'present' || d.status === 'late').length
+  const todayPresent = todayDays.filter(d => ['present', 'late', 'half_day'].includes(d.status)).length
   const todayLate    = todayDays.filter(d => d.status === 'late').length
-  const todayAbsent  = todayDays.filter(d => d.status === 'absent_unauthorized').length
+  const todayAbsent  = todayDays.filter(d => ['absent_unauthorized', 'absent_authorized'].includes(d.status)).length
+  const todayOnLeave = todayDays.filter(d => d.status === 'on_leave').length
 
   // الموظف العادي (بدون hr.employees.read) يُعاد توجيهه لملفه الشخصي
   // هذا الـ return يأتي بعد كل الـ Hooks
@@ -262,14 +171,10 @@ export default function HRDashboard() {
     <div className="page-container animate-enter" style={{ maxWidth: 1100 }}>
 
       {/* ── Header ── */}
-      <div style={{ marginBottom: 'var(--space-6)' }}>
-        <h1 style={{ fontWeight: 800, fontSize: 'var(--text-2xl)', marginBottom: 'var(--space-1)' }}>
-          لوحة الموارد البشرية
-        </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
-          نظرة شاملة على الموظفين، الإجازات، السلف، ومسير الرواتب
-        </p>
-      </div>
+      <PageHeader
+        title="لوحة الموارد البشرية"
+        subtitle="نظرة شاملة على الموظفين، الإجازات، السلف، ومسير الرواتب"
+      />
 
       {/* ══ Stat Cards ══ */}
       <div style={{
@@ -328,7 +233,7 @@ export default function HRDashboard() {
           id="stat-today-attendance"
           label="حاضرون اليوم"
           value={todayPresent}
-          sub={todayLate > 0 ? `${todayLate} متأخر · ${todayAbsent} غائب` : `${todayAbsent} غائب`}
+          sub={`${todayLate > 0 ? todayLate + ' متأخر · ' : ''}${todayAbsent} غائب · ${todayOnLeave} إجازة`}
           icon={<Clock size={22} />}
           color={todayAbsent > 0 ? 'var(--color-danger)' : 'var(--color-success)'}
           onClick={() => navigate('/hr/attendance')}
@@ -448,11 +353,7 @@ export default function HRDashboard() {
           {leaveLoading ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
               {[1, 2, 3].map(i => (
-                <div key={i} style={{
-                  height: 48, borderRadius: 8,
-                  background: 'var(--bg-surface-2)',
-                  animation: 'pulse 1.5s ease infinite',
-                }} />
+                <div key={i} className="skeleton" style={{ height: 48, borderRadius: 8 }} />
               ))}
             </div>
           ) : recentLeaves.length === 0 ? (
@@ -466,40 +367,50 @@ export default function HRDashboard() {
           ) : (
             recentLeaves.map(req => (
               <div key={req.id} style={{
-                padding: 'var(--space-2) 0',
-                borderBottom: '1px solid var(--border-color)',
+                padding: 'var(--space-3)',
+                background: 'var(--bg-surface-2)',
+                border: '1px solid var(--border-primary)',
+                borderRadius: 'var(--radius-md)',
+                marginBottom: 'var(--space-3)',
+                transition: 'all 0.15s ease',
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{req.employee?.full_name ?? '—'}</div>
-                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                      {`${req.leave_type?.name ?? ''} · ${fmtDate(req.start_date)} — ${fmtDate(req.end_date)}`}
+                  <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
+                    <div style={{
+                      width: 40, height: 40, borderRadius: '50%', background: 'color-mix(in srgb, var(--color-warning) 15%, transparent)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-warning)', flexShrink: 0
+                    }}>
+                      <Calendar size={18} />
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--text-primary)' }}>{req.employee?.full_name ?? '—'}</div>
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
+                        {`${req.leave_type?.name ?? ''} · ${fmtDate(req.start_date)}`}
+                      </div>
                     </div>
                   </div>
                   <span style={{
                     padding: '2px 10px', borderRadius: 99,
                     background: 'color-mix(in srgb, var(--color-warning) 12%, transparent)',
-                    color: 'var(--color-warning)', fontSize: 'var(--text-xs)', fontWeight: 600,
-                    border: '1px solid color-mix(in srgb, var(--color-warning) 25%, transparent)',
-                    whiteSpace: 'nowrap',
+                    color: 'var(--color-warning)', fontSize: 'var(--text-xs)', fontWeight: 800,
                   }}>
                     {req.days_count} يوم
                   </span>
                 </div>
                 <PermissionGuard permission="hr.leaves.approve">
-                  <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
+                  <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-3)' }}>
                     <Button
-                      size="sm" variant="ghost"
-                      icon={<Check size={12} />}
-                      style={{ flex: 1, color: 'var(--color-success)', fontSize: 'var(--text-xs)' }}
+                      size="sm" variant="secondary"
+                      icon={<Check size={14} />}
+                      style={{ flex: 1, color: 'var(--color-success)', borderColor: 'color-mix(in srgb, var(--color-success) 30%, transparent)', background: 'transparent' }}
                       onClick={() => handleQuickApproveLeave(req)}
                     >
                       موافقة
                     </Button>
                     <Button
-                      size="sm" variant="ghost"
-                      icon={<X size={12} />}
-                      style={{ flex: 1, color: 'var(--color-danger)', fontSize: 'var(--text-xs)' }}
+                      size="sm" variant="secondary"
+                      icon={<X size={14} />}
+                      style={{ flex: 1, color: 'var(--color-danger)', borderColor: 'color-mix(in srgb, var(--color-danger) 30%, transparent)', background: 'transparent' }}
                       onClick={() => { setRejectLeave(req); setRejectReason('') }}
                     >
                       رفض
@@ -532,11 +443,7 @@ export default function HRDashboard() {
           {advLoading ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
               {[1, 2, 3].map(i => (
-                <div key={i} style={{
-                  height: 48, borderRadius: 8,
-                  background: 'var(--bg-surface-2)',
-                  animation: 'pulse 1.5s ease infinite',
-                }} />
+                <div key={i} className="skeleton" style={{ height: 48, borderRadius: 8 }} />
               ))}
             </div>
           ) : recentAdvances.length === 0 ? (
@@ -550,48 +457,58 @@ export default function HRDashboard() {
           ) : (
             recentAdvances.map(adv => (
               <div key={adv.id} style={{
-                padding: 'var(--space-2) 0',
-                borderBottom: '1px solid var(--border-color)',
+                padding: 'var(--space-3)',
+                background: 'var(--bg-surface-2)',
+                border: '1px solid var(--border-primary)',
+                borderRadius: 'var(--radius-md)',
+                marginBottom: 'var(--space-3)',
+                transition: 'all 0.15s ease',
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{adv.employee?.full_name ?? '—'}</div>
-                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                      {`${adv.advance_type === 'instant' ? 'فوري' : 'مجدول'} · ${fmtDate(adv.created_at)}`}
+                  <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
+                    <div style={{
+                      width: 40, height: 40, borderRadius: '50%', background: 'color-mix(in srgb, var(--color-info) 15%, transparent)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-info)', flexShrink: 0
+                    }}>
+                      <CreditCard size={18} />
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--text-primary)' }}>{adv.employee?.full_name ?? '—'}</div>
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
+                        {`${adv.advance_type === 'instant' ? 'فوري' : 'مجدول'} · ${fmtDate(adv.created_at)}`}
+                      </div>
                     </div>
                   </div>
                   <span style={{
                     padding: '2px 10px', borderRadius: 99,
                     background: 'color-mix(in srgb, var(--color-info) 12%, transparent)',
-                    color: 'var(--color-info)', fontSize: 'var(--text-xs)', fontWeight: 600,
-                    border: '1px solid color-mix(in srgb, var(--color-info) 25%, transparent)',
-                    whiteSpace: 'nowrap',
+                    color: 'var(--color-info)', fontSize: 'var(--text-xs)', fontWeight: 800,
                   }}>
                     {fmt(adv.amount)}
                   </span>
                 </div>
                 <PermissionGuard permission="hr.advances.approve">
-                  <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
+                  <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-3)' }}>
                     <Button
-                      size="sm" variant="ghost"
-                      icon={<Check size={12} />}
-                      style={{ flex: 1, color: 'var(--color-success)', fontSize: 'var(--text-xs)' }}
+                      size="sm" variant="secondary"
+                      icon={<Check size={14} />}
+                      style={{ flex: 1, color: 'var(--color-success)', borderColor: 'color-mix(in srgb, var(--color-success) 30%, transparent)', background: 'transparent' }}
                       onClick={() => {
                         updateAdvanceStatus(adv.id, 'pending_finance')
                           .then(() => { toast.success('موافقة HR تمت'); qc.invalidateQueries({ queryKey: ['hr-advances'] }) })
-                          .catch(e => toast.error(e.message))
+                          .catch((e: any) => toast.error(e.message))
                       }}
                     >
                       موافقة HR
                     </Button>
                     <Button
-                      size="sm" variant="ghost"
-                      icon={<X size={12} />}
-                      style={{ flex: 1, color: 'var(--color-danger)', fontSize: 'var(--text-xs)' }}
+                      size="sm" variant="secondary"
+                      icon={<X size={14} />}
+                      style={{ flex: 1, color: 'var(--color-danger)', borderColor: 'color-mix(in srgb, var(--color-danger) 30%, transparent)', background: 'transparent' }}
                       onClick={() => {
                         updateAdvanceStatus(adv.id, 'rejected')
                           .then(() => { toast.success('تم رفض السلفة'); qc.invalidateQueries({ queryKey: ['hr-advances'] }) })
-                          .catch(e => toast.error(e.message))
+                          .catch((e: any) => toast.error(e.message))
                       }}
                     >
                       رفض
@@ -622,11 +539,7 @@ export default function HRDashboard() {
           </div>
 
           {payrollLoading ? (
-            <div style={{
-              height: 80, borderRadius: 8,
-              background: 'var(--bg-surface-2)',
-              animation: 'pulse 1.5s ease infinite',
-            }} />
+            <div className="skeleton" style={{ height: 80, borderRadius: 8 }} />
           ) : !lastRun ? (
             <div style={{
               textAlign: 'center', padding: 'var(--space-6)',
@@ -640,23 +553,25 @@ export default function HRDashboard() {
               {/* معلومات المسير */}
               <div style={{
                 padding: 'var(--space-4)',
-                background: 'var(--bg-surface-2)',
+                background: 'var(--bg-card)',
                 borderRadius: 'var(--radius-lg)',
+                border: '1px solid var(--border-primary)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.02)',
               }}>
-                <div style={{ fontWeight: 700, marginBottom: 'var(--space-2)' }}>
+                <div style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: 'var(--space-3)', color: 'var(--text-primary)' }}>
                   {lastRun.period?.name ?? lastRun.number ?? '—'}
                 </div>
                 <div style={{
                   display: 'grid', gridTemplateColumns: '1fr 1fr',
-                  gap: 'var(--space-2)', fontSize: 'var(--text-xs)',
+                  gap: 'var(--space-3)', fontSize: 'var(--text-sm)',
                 }}>
-                  <div>
-                    <div style={{ color: 'var(--text-muted)' }}>الموظفون</div>
-                    <div style={{ fontWeight: 600 }}>{lastRun.total_employees}</div>
+                  <div style={{ background: 'var(--bg-surface-2)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-xs)', marginBottom: 2 }}>إجمالي الموظفين</div>
+                    <div style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{lastRun.total_employees}</div>
                   </div>
-                  <div>
-                    <div style={{ color: 'var(--text-muted)' }}>الصافي</div>
-                    <div style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
+                  <div style={{ background: 'color-mix(in srgb, var(--color-primary) 5%, var(--bg-surface-2))', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
+                    <div style={{ color: 'var(--color-primary)', opacity: 0.85, fontSize: 'var(--text-xs)', marginBottom: 2 }}>الصافي النهائي</div>
+                    <div style={{ fontWeight: 800, color: 'var(--color-primary)' }}>
                       {fmt(lastRun.total_net)}
                     </div>
                   </div>
@@ -678,7 +593,7 @@ export default function HRDashboard() {
                   <PermissionGuard permission="hr.payroll.approve">
                     <Button
                       size="sm"
-                      style={{ marginRight: 'auto', fontSize: 'var(--text-xs)', padding: '2px 10px' }}
+                      style={{ marginInlineEnd: 'auto', fontSize: 'var(--text-xs)', padding: '2px 10px' }}
                       onClick={() => navigate(`/hr/payroll/${lastRun.id}`)}
                     >
                       مراجعة واعتماد
@@ -708,17 +623,19 @@ export default function HRDashboard() {
       </div>
 
       <style>{`
-        .stat-card-btn:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 24px -4px color-mix(in srgb, var(--color-primary) 15%, transparent);
-        }
         .quick-action-btn:hover {
-          transform: translateX(-2px);
-          filter: brightness(1.03);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px -2px var(--border-primary);
+          background: var(--bg-card) !important;
         }
-        @keyframes pulse {
-          0%, 100% { opacity: 0.6; }
-          50%       { opacity: 1; }
+        .qa-arrow-icon {
+          transition: transform 0.2s;
+        }
+        .quick-action-btn:hover .qa-arrow-icon {
+          transform: translateX(-3px);
+        }
+        html[dir="ltr"] .quick-action-btn:hover .qa-arrow-icon {
+          transform: translateX(3px);
         }
       `}</style>
 

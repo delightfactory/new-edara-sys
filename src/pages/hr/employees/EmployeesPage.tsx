@@ -18,6 +18,7 @@ import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import PermissionGuard from '@/components/shared/PermissionGuard'
 import EmployeeForm from './EmployeeForm'
+import StatCard from '@/components/shared/StatCard'
 
 // ─── Status maps ─────────────────────────────────────────────
 
@@ -188,7 +189,6 @@ export default function EmployeesPage() {
             <Button
               icon={<Plus size={16} />}
               onClick={openAdd}
-              className="desktop-only-btn"
             >
               موظف جديد
             </Button>
@@ -197,30 +197,11 @@ export default function EmployeesPage() {
       />
 
       {/* ── إحصائيات سريعة ── */}
-      <div className="hr-stat-grid">
-        {[
-          { label: 'نشط', value: activeCount,   icon: <CheckCircle size={16} />, variant: 'success' },
-          { label: 'في إجازة', value: onLeaveCount, icon: <Clock size={16} />, variant: 'info' },
-          { label: 'ميداني', value: fieldEmpCount, icon: <UserX size={16} />, variant: 'warning' },
-          { label: 'الإجمالي', value: totalCount, icon: <Users size={16} />, variant: 'neutral' },
-        ].map((s, i) => (
-          <div key={i} className="hr-stat-card edara-card">
-            <div className={`hr-stat-icon hr-stat-icon--${s.variant}`}>{s.icon}</div>
-            <div>
-              <div className="hr-stat-label">{s.label}</div>
-              {/* DSN-02: Skeleton أثناء تحميل الإحصائيات */}
-              {statsLoading ? (
-                <div style={{
-                  height: 22, width: 48, borderRadius: 6,
-                  background: 'var(--bg-surface-2)',
-                  animation: 'pulse 1.5s ease infinite',
-                }} />
-              ) : (
-                <div className="hr-stat-value">{s.value}</div>
-              )}
-            </div>
-          </div>
-        ))}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+        <StatCard label="نشط"      value={activeCount}   icon={<CheckCircle size={18} />} color="var(--color-success)" loading={statsLoading} />
+        <StatCard label="في إجازة" value={onLeaveCount}  icon={<Clock size={18} />}       color="var(--color-info)"    loading={statsLoading} />
+        <StatCard label="ميداني"   value={fieldEmpCount} icon={<UserX size={18} />}       color="var(--color-warning)" loading={statsLoading} />
+        <StatCard label="الإجمالي" value={totalCount}    icon={<Users size={18} />}       color="var(--color-primary)" />
       </div>
 
       {/* ── Filters ── */}
@@ -361,12 +342,6 @@ export default function EmployeesPage() {
       </div>
 
       {/* FAB للموبايل */}
-      <PermissionGuard permission="hr.employees.create">
-        <button className="hr-fab mobile-only-fab" onClick={openAdd} aria-label="إضافة موظف">
-          <Plus size={22} />
-        </button>
-      </PermissionGuard>
-
       {/* نموذج الإضافة / التعديل */}
       <EmployeeForm
         open={formOpen}
@@ -380,32 +355,6 @@ export default function EmployeesPage() {
       />
 
       <style>{`
-        /* ── Stats grid ── */
-        .hr-stat-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-          gap: var(--space-3);
-          margin-bottom: var(--space-4);
-        }
-        .hr-stat-card {
-          padding: var(--space-3) var(--space-4);
-          display: flex;
-          align-items: center;
-          gap: var(--space-3);
-        }
-        .hr-stat-icon {
-          width: 38px; height: 38px;
-          border-radius: var(--radius-lg);
-          display: flex; align-items: center; justify-content: center;
-          flex-shrink: 0;
-        }
-        .hr-stat-icon--success { background: color-mix(in srgb, var(--color-success) 12%, transparent); color: var(--color-success); }
-        .hr-stat-icon--info    { background: color-mix(in srgb, var(--color-info)    12%, transparent); color: var(--color-info); }
-        .hr-stat-icon--warning { background: color-mix(in srgb, var(--color-warning) 12%, transparent); color: var(--color-warning); }
-        .hr-stat-icon--neutral { background: var(--bg-accent); color: var(--color-primary); }
-        .hr-stat-label { font-size: var(--text-xs); color: var(--text-muted); }
-        .hr-stat-value { font-size: var(--text-xl); font-weight: 700; font-variant-numeric: tabular-nums; }
-
         /* ── Filters ── */
         .hr-filter-row {
           display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: flex-end;
@@ -418,8 +367,6 @@ export default function EmployeesPage() {
         @media (max-width: 768px) {
           .hr-table-view       { display: none; }
           .hr-card-view        { display: block; }
-          .desktop-only-btn    { display: none; }
-          .hr-stat-grid        { grid-template-columns: 1fr 1fr; }
           .filter-select       { font-size: var(--text-xs); }
         }
 
@@ -431,30 +378,6 @@ export default function EmployeesPage() {
           display: flex; align-items: center; justify-content: center;
           gap: var(--space-4); padding: var(--space-4) 0;
         }
-
-        /* ── Mobile FAB ── */
-        .hr-fab {
-          display: none;
-          position: fixed;
-          bottom: calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
-          inset-inline-end: var(--space-6);
-          z-index: 100;
-          width: 56px; height: 56px;
-          border-radius: var(--radius-full);
-          background: var(--color-primary);
-          color: white;
-          border: none;
-          cursor: pointer;
-          box-shadow: 0 4px 16px color-mix(in srgb, var(--color-primary) 40%, transparent);
-          align-items: center; justify-content: center;
-          transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-        }
-        .hr-fab:hover { transform: scale(1.05); }
-        .hr-fab:active { transform: scale(0.96); }
-        @media (max-width: 768px) {
-          .mobile-only-fab { display: flex !important; }
-        }
-
       `}</style>
     </div>
   )

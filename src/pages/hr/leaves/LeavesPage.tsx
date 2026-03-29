@@ -20,6 +20,7 @@ import PermissionGuard from '@/components/shared/PermissionGuard'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
 import LeaveRequestForm from './LeaveRequestForm'
 import { toast } from 'sonner'
+import DetailRow from '@/components/shared/DetailRow'
 
 // ─── تحويل الحالات ──────────────────────────────────────
 const STATUS_LABEL: Record<HRLeaveRequestStatus, string> = {
@@ -416,11 +417,12 @@ export default function LeavesPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
 
             {/* ملخص الطلب */}
-            <DetailRow label="نوع الإجازة"    value={selected.leave_type?.name ?? '—'} />
-            <DetailRow label="من تاريخ"       value={fmtDate(selected.start_date)} />
-            <DetailRow label="إلى تاريخ"      value={fmtDate(selected.end_date)} />
-            <DetailRow label="عدد الأيام"     value={`${selected.days_count} يوم`} highlight />
+            <DetailRow label="نوع الإجازة"    value={selected.leave_type?.name ?? '—'} icon={<Clock size={12} />} />
+            <DetailRow label="من تاريخ"       value={fmtDate(selected.start_date)} icon={<Clock size={12} />} />
+            <DetailRow label="إلى تاريخ"      value={fmtDate(selected.end_date)} icon={<Clock size={12} />} />
+            <DetailRow label="عدد الأيام"     value={`${selected.days_count} يوم`} highlight icon={<Clock size={12} />} />
             <DetailRow label="الحالة"
+              icon={<Clock size={12} />}
               value={
                 <Badge variant={STATUS_VARIANT[selected.status]}>
                   {STATUS_LABEL[selected.status]}
@@ -478,11 +480,11 @@ export default function LeavesPage() {
                   autoFocus
                 />
                 <Button
-                  variant="secondary"
+                  variant="danger"
                   onClick={() => handleReject(selected)}
                   loading={updateMutation.isPending && actionMode === 'reject'}
                   disabled={!rejectReason.trim()}
-                  style={{ marginTop: 'var(--space-2)', width: '100%', color: 'var(--color-danger)' }}
+                  style={{ marginTop: 'var(--space-2)', width: '100%' }}
                 >
                   تأكيد الرفض
                 </Button>
@@ -502,30 +504,3 @@ export default function LeavesPage() {
 }
 
 // ─── مساعد عرض حقل التفاصيل ──────────────────────────
-function DetailRow({ label, value, highlight }: {
-  label: string
-  value: React.ReactNode
-  highlight?: boolean
-}) {
-  return (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      padding: 'var(--space-2) 0',
-      borderBottom: '1px solid var(--border-primary)',
-    }}>
-      <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-        <Clock size={12} />
-        {label}
-      </span>
-      <span style={{
-        fontSize: 'var(--text-sm)',
-        fontWeight: highlight ? 700 : 500,
-        color: highlight ? 'var(--color-primary)' : 'var(--text-primary)',
-      }}>
-        {value}
-      </span>
-    </div>
-  )
-}

@@ -26,6 +26,8 @@ import type {
 } from '@/lib/types/hr'
 import { formatNumber } from '@/lib/utils/format'
 import PageHeader from '@/components/shared/PageHeader'
+import DataTable from '@/components/shared/DataTable'
+import DataCard from '@/components/ui/DataCard'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import Spinner from '@/components/ui/Spinner'
@@ -971,31 +973,26 @@ function LeavesTab({ employeeId }: { employeeId: string }) {
           <div style={{ padding: 'var(--space-6)', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>لا توجد طلبات سابقة</div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
-              <thead>
-                <tr style={{ background: 'var(--bg-surface-2)' }}>
-                  {['نوع الإجازة', 'من تاريخ', 'إلى تاريخ', 'الأيام', 'الحالة'].map(h => (
-                    <th key={h} style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'right', color: 'var(--text-muted)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {leaveRequests.map(r => {
-                  const st = LEAVE_STATUS[r.status] ?? { label: r.status, variant: 'neutral' as const }
-                  return (
-                    <tr key={r.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                      <td style={{ padding: 'var(--space-3)' }}>{r.leave_type?.name ?? '—'}</td>
-                      <td style={{ padding: 'var(--space-3)', whiteSpace: 'nowrap' }}>{fmtDate(r.start_date)}</td>
-                      <td style={{ padding: 'var(--space-3)', whiteSpace: 'nowrap' }}>{fmtDate(r.end_date)}</td>
-                      <td style={{ padding: 'var(--space-3)', textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}>{r.days_count}</td>
-                      <td style={{ padding: 'var(--space-3)' }}>
-                        <Badge variant={st.variant}>{st.label}</Badge>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+            <DataTable
+              columns={[
+                { key: 'type', label: 'نوع الإجازة', render: (r: any) => r.leave_type?.name ?? '—' },
+                { key: 'start', label: 'من تاريخ', render: (r: any) => fmtDate(r.start_date) },
+                { key: 'end', label: 'إلى تاريخ', render: (r: any) => fmtDate(r.end_date) },
+                { key: 'days', label: 'الأيام', align: 'center', render: (r: any) => r.days_count.toString() },
+                { key: 'status', label: 'الحالة', render: (r: any) => {
+                  const st = LEAVE_STATUS[r.status] ?? { label: r.status, variant: 'neutral' }
+                  return <Badge variant={st.variant}>{st.label}</Badge>
+                } }
+              ]}
+              data={leaveRequests}
+              keyField="id"
+              dataCardMapping={(r: any) => ({
+                title: r.leave_type?.name ?? '—',
+                subtitle: `${fmtDate(r.start_date)} — ${fmtDate(r.end_date)}`,
+                badge: <Badge variant={LEAVE_STATUS[r.status]?.variant ?? 'neutral'}>{LEAVE_STATUS[r.status]?.label ?? r.status}</Badge>,
+                metadata: [{ label: 'المدة', value: `${r.days_count} يوم` }]
+              })}
+            />
           </div>
         )}
       </div>
@@ -1341,27 +1338,22 @@ function ContractsTab({ employeeId }: { employeeId: string }) {
         ) : contracts.length === 0 ? (
           <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 'var(--space-4)' }}>لا توجد عقود مسجلة</div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
-            <thead>
-              <tr style={{ background: 'var(--bg-surface-2)' }}>
-                {['نوع العقد', 'تاريخ البداية', 'تاريخ النهاية', 'الراتب الأساسي'].map(h => (
-                  <th key={h} style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'right', color: 'var(--text-muted)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-color)' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {contracts.map(c => (
-                <tr key={c.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <td style={{ padding: 'var(--space-3)' }}>
-                    <Badge variant="info">{CONTRACT_TYPE_LABEL[c.contract_type]}</Badge>
-                  </td>
-                  <td style={{ padding: 'var(--space-3)' }}>{new Date(c.start_date).toLocaleDateString('ar-EG')}</td>
-                  <td style={{ padding: 'var(--space-3)' }}>{c.end_date ? new Date(c.end_date).toLocaleDateString('ar-EG') : 'مفتوح'}</td>
-                  <td style={{ padding: 'var(--space-3)', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{formatNumber(c.base_salary)} ج.م</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <DataTable
+            columns={[
+              { key: 'type', label: 'نوع العقد', render: (c: any) => <Badge variant="info">{CONTRACT_TYPE_LABEL[c.contract_type as HRContractType]}</Badge> },
+              { key: 'start', label: 'تاريخ البداية', render: (c: any) => new Date(c.start_date).toLocaleDateString('ar-EG') },
+              { key: 'end', label: 'تاريخ النهاية', render: (c: any) => c.end_date ? new Date(c.end_date).toLocaleDateString('ar-EG') : 'مفتوح' },
+              { key: 'salary', label: 'الراتب الأساسي', render: (c: any) => <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{formatNumber(c.base_salary)} ج.م</span> }
+            ]}
+            data={contracts}
+            keyField="id"
+            dataCardMapping={(c: any) => ({
+              title: CONTRACT_TYPE_LABEL[c.contract_type as HRContractType],
+              subtitle: `${new Date(c.start_date).toLocaleDateString('ar-EG')} — ${c.end_date ? new Date(c.end_date).toLocaleDateString('ar-EG') : 'مفتوح'}`,
+              badge: <Badge variant="info">{CONTRACT_TYPE_LABEL[c.contract_type as HRContractType]}</Badge>,
+              metadata: [{ label: 'الراتب', value: `${formatNumber(c.base_salary)} ج.م`, highlight: true }]
+            })}
+          />
         )}
       </div>
 
@@ -1522,71 +1514,68 @@ function AdvancesTab({ employeeId }: { employeeId: string }) {
         ) : advances.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 'var(--space-6)', color: 'var(--text-muted)' }}>لا توجد سلف</div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
-            <thead>
-              <tr style={{ background: 'var(--bg-surface-2)' }}>
-                {['رقم السلفة', 'المبلغ', 'المتبقي', 'القسط/شهر', 'الحالة', ''].map(h => (
-                  <th key={h} style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'right', color: 'var(--text-muted)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-color)' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {advances.map(a => (
-                <Fragment key={a.id}>
-                  <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                    <td style={{ padding: 'var(--space-3)' }}>
-                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontFamily: 'monospace' }}>{a.number}</div>
-                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{new Date(a.created_at).toLocaleDateString('ar-EG')}</div>
-                    </td>
-                    <td style={{ padding: 'var(--space-3)', fontVariantNumeric: 'tabular-nums' }}>{formatNumber(a.amount)}</td>
-                    <td style={{ padding: 'var(--space-3)', fontVariantNumeric: 'tabular-nums', color: (a.remaining_amount ?? 0) > 0 ? 'var(--color-warning)' : 'var(--color-success)' }}>
-                      {formatNumber(a.remaining_amount ?? 0)}
-                    </td>
-                    <td style={{ padding: 'var(--space-3)', fontVariantNumeric: 'tabular-nums' }}>{a.monthly_installment ? formatNumber(a.monthly_installment) : '—'}</td>
-                    <td style={{ padding: 'var(--space-3)' }}>
-                      <Badge variant={ADV_VARIANT[a.status] ?? 'neutral'}>{ADV_STATUS[a.status] ?? a.status}</Badge>
-                    </td>
-                    <td style={{ padding: 'var(--space-3)' }}>
-                      {['approved', 'disbursed'].includes(a.status) && (
-                        <Button size="sm" variant="ghost"
-                          onClick={() => setExpandedAdv(expandedAdv === a.id ? null : a.id)}
-                        >
-                          {expandedAdv === a.id ? 'إخفاء' : 'الأقساط'}
-                        </Button>
+          <>
+            <DataTable
+              columns={[
+                { key: 'num', label: 'رقم السلفة', render: (a: any) => <div><div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontFamily: 'monospace' }}>{a.number}</div><div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{new Date(a.created_at).toLocaleDateString('ar-EG')}</div></div> },
+                { key: 'amount', label: 'المبلغ', render: (a: any) => <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatNumber(a.amount)}</span> },
+                { key: 'rem', label: 'المتبقي', render: (a: any) => <span style={{ fontVariantNumeric: 'tabular-nums', color: (a.remaining_amount ?? 0) > 0 ? 'var(--color-warning)' : 'var(--color-success)' }}>{formatNumber(a.remaining_amount ?? 0)}</span> },
+                { key: 'inst', label: 'القسط/شهر', render: (a: any) => <span style={{ fontVariantNumeric: 'tabular-nums' }}>{a.monthly_installment ? formatNumber(a.monthly_installment) : '—'}</span> },
+                { key: 'status', label: 'الحالة', render: (a: any) => <Badge variant={ADV_VARIANT[a.status] ?? 'neutral'}>{ADV_STATUS[a.status] ?? a.status}</Badge> },
+                { key: 'actions', label: '', align: 'end', render: (a: any) => ['approved', 'disbursed'].includes(a.status) ? <Button size="sm" variant="ghost" onClick={() => setExpandedAdv(a.id)}>الأقساط</Button> : null }
+              ]}
+              data={advances}
+              keyField="id"
+              dataCardMapping={(a: any) => ({
+                title: `سلفة ${a.number}`,
+                subtitle: new Date(a.created_at).toLocaleDateString('ar-EG'),
+                badge: <Badge variant={ADV_VARIANT[a.status] ?? 'neutral'}>{ADV_STATUS[a.status] ?? a.status}</Badge>,
+                metadata: [
+                  { label: 'المبلغ', value: formatNumber(a.amount) },
+                  { label: 'المتبقي', value: formatNumber(a.remaining_amount ?? 0), highlight: (a.remaining_amount ?? 0) > 0 }
+                ],
+                actions: ['approved', 'disbursed'].includes(a.status) ? <Button size="sm" variant="secondary" onClick={() => setExpandedAdv(a.id)} style={{ width: '100%', justifyContent: 'center' }}>تفاصيل الأقساط</Button> : undefined
+              })}
+            />
+
+            <ResponsiveModal
+              open={!!expandedAdv}
+              onClose={() => setExpandedAdv(null)}
+              title="جدول الأقساط"
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                {installments.length === 0 ? (
+                  <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 'var(--space-4)' }}>لا توجد أقساط متاحة</div>
+                ) : installments.map((inst: any) => (
+                  <div key={inst.id} style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-sm)',
+                    background: 'var(--bg-surface-2)', border: '1px solid var(--border-color)',
+                    fontSize: 'var(--text-sm)',
+                  }}>
+                    <div>
+                      <div style={{ fontWeight: 600 }}>قسط {inst.installment_number}</div>
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{ARB_MONTHS[inst.due_month - 1]} {inst.due_year}</div>
+                      {inst.status === 'deferred' && inst.deferred_reason && (
+                        <div style={{ color: 'var(--color-info)', fontSize: 10 }}>{inst.deferred_reason}</div>
                       )}
-                    </td>
-                  </tr>
-                  {expandedAdv === a.id && (
-                    <tr>
-                      <td colSpan={6} style={{ padding: 'var(--space-2) var(--space-4)', background: 'var(--bg-surface-2)' }}>
-                        <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 'var(--space-2)' }}>جدول الأقساط</div>
-                        {installments.map(inst => (
-                          <div key={inst.id} style={{
-                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                            padding: 'var(--space-1) var(--space-2)', borderRadius: 'var(--radius-sm)',
-                            background: 'var(--bg-surface)', marginBottom: 2,
-                            fontSize: 'var(--text-xs)',
-                          }}>
-                            <span>قسط {inst.installment_number} — {ARB_MONTHS[inst.due_month - 1]} {inst.due_year}</span>
-                            <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>{formatNumber(inst.amount)} ج.م</span>
-                            <Badge variant={INST_VARIANT[inst.status] ?? 'neutral'}>{INST_STATUS[inst.status] ?? inst.status}</Badge>
-                            {inst.status === 'pending' && can('hr.advances.approve') && (
-                              <Button size="sm" variant="ghost" onClick={() => {
-                                setDeferTarget(inst); setDeferReason('')
-                              }}>تأجيل</Button>
-                            )}
-                            {inst.status === 'deferred' && inst.deferred_reason && (
-                              <span style={{ color: 'var(--color-info)', fontSize: 10 }}>{inst.deferred_reason}</span>
-                            )}
-                          </div>
-                        ))}
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              ))}
-            </tbody>
-          </table>
+                    </div>
+                    <div style={{ textAlign: 'left' }}>
+                      <div style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 700, marginBottom: 4 }}>{formatNumber(inst.amount)} ج.م</div>
+                      <div style={{ transform: 'scale(0.85)', transformOrigin: 'left center' }}>
+                        <Badge variant={INST_VARIANT[inst.status] ?? 'neutral'}>{INST_STATUS[inst.status] ?? inst.status}</Badge>
+                      </div>
+                      {inst.status === 'pending' && can('hr.advances.approve') && (
+                        <Button size="sm" variant="ghost" style={{ marginTop: 4, display: 'block', fontSize: 11 }} onClick={() => {
+                          setDeferTarget(inst); setDeferReason(''); setExpandedAdv(null);
+                        }}>تأجيل</Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ResponsiveModal>
+          </>
         )}
       </div>
 
@@ -1861,54 +1850,25 @@ function PenaltiesTab({ employeeId }: { employeeId: string }) {
             لا توجد جزاءات مسجلة
           </div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
-            <thead>
-              <tr style={{ background: 'var(--bg-surface-2)' }}>
-                {['القاعدة', 'التاريخ', 'الخصم', 'الحالة', ''].map(h => (
-                  <th key={h} style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'right', color: 'var(--text-muted)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-color)' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {penalties.map(p => (
-                <tr key={p.id} style={{
-                  borderBottom: '1px solid var(--border-color)',
-                  opacity: p.is_overridden ? 0.6 : 1,
-                }}>
-                  <td style={{ padding: 'var(--space-3)' }}>
-                    <div style={{ fontWeight: 600 }}>{p.penalty_rule?.name ?? '—'}</div>
-                    {/* DSN-06: يعرض تاريخ تسجيل الجزاء بدلاً من UUID */}
-                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                      {p.attendance_day_id
-                        ? `مرتبط بيوم حضور`
-                        : `تاريخ التسجيل: ${new Date(p.created_at).toLocaleDateString('ar-EG')}`
-                      }
-                    </div>
-                  </td>
-                  <td style={{ padding: 'var(--space-3)', color: 'var(--text-muted)', fontSize: 'var(--text-xs)' }}>
-                    {new Date(p.created_at).toLocaleDateString('ar-EG')}
-                  </td>
-                  <td style={{ padding: 'var(--space-3)', fontVariantNumeric: 'tabular-nums', color: p.is_overridden ? 'var(--text-muted)' : 'var(--color-danger)', textDecoration: p.is_overridden ? 'line-through' : 'none' }}>
-                    {p.deduction_days.toFixed(2)} يوم
-                  </td>
-                  <td style={{ padding: 'var(--space-3)' }}>
-                    {p.is_overridden ? (
-                      <Badge variant="success">مُعفى</Badge>
-                    ) : (
-                      <Badge variant="danger">مفعّل</Badge>
-                    )}
-                  </td>
-                  <td style={{ padding: 'var(--space-3)' }}>
-                    {!p.is_overridden && can('hr.employees.edit') && (
-                      <Button size="sm" variant="ghost" onClick={() => { setOverrideId(p.id); setOverrideReason('') }}>
-                        إعفاء
-                      </Button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <DataTable
+            columns={[
+              { key: 'rule', label: 'القاعدة / التاريخ', render: (p: any) => <div><div style={{ fontWeight: 600 }}>{p.penalty_rule?.name ?? '—'}</div><div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{p.attendance_day_id ? `مرتبط بيوم حضور` : `تاريخ التسجيل: ${new Date(p.created_at).toLocaleDateString('ar-EG')}`}</div></div> },
+              { key: 'date', label: 'التاريخ', render: (p: any) => new Date(p.created_at).toLocaleDateString('ar-EG') },
+              { key: 'ded', label: 'الخصم', render: (p: any) => <span style={{ fontVariantNumeric: 'tabular-nums', color: p.is_overridden ? 'var(--text-muted)' : 'var(--color-danger)', textDecoration: p.is_overridden ? 'line-through' : 'none' }}>{p.deduction_days.toFixed(2)} يوم</span> },
+              { key: 'status', label: 'الحالة', render: (p: any) => p.is_overridden ? <Badge variant="success">مُعفى</Badge> : <Badge variant="danger">مفعّل</Badge> },
+              { key: 'actions', label: '', align: 'end', render: (p: any) => (!p.is_overridden && can('hr.employees.edit')) ? <Button size="sm" variant="ghost" onClick={() => { setOverrideId(p.id); setOverrideReason('') }}>إعفاء</Button> : null }
+            ]}
+            data={penalties}
+            keyField="id"
+            rowStyle={(p: any) => ({ opacity: p.is_overridden ? 0.6 : 1 })}
+            dataCardMapping={(p: any) => ({
+              title: p.penalty_rule?.name ?? 'جزاء مخصص',
+              subtitle: new Date(p.created_at).toLocaleDateString('ar-EG'),
+              badge: p.is_overridden ? <Badge variant="success">مُعفى</Badge> : <Badge variant="danger">مفعّل</Badge>,
+              metadata: [{ label: 'الخصم', value: `${p.deduction_days.toFixed(2)} يوم`, highlight: !p.is_overridden }],
+              actions: (!p.is_overridden && can('hr.employees.edit')) ? <Button size="sm" variant="secondary" onClick={() => { setOverrideId(p.id); setOverrideReason('') }} style={{ width: '100%', justifyContent: 'center' }}>إعفاء من الجزاء</Button> : undefined
+            })}
+          />
         )}
       </div>
 
