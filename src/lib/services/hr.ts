@@ -9,7 +9,7 @@ import type {
   HRDelegation, HRDelegationInput,
   HRDocumentType, HREmployeeDocument, HREmployeeDocumentInput,
   HRAttendanceDay, HRAttendanceDayInput,
-  HRAttendanceLog, HRAttendanceLogInput,
+  HRAttendanceLog,
   HRPublicHoliday, HRPublicHolidayInput,
   HRLeaveType, HRLeaveBalance, HRLeaveRequest, HRLeaveRequestInput,
   HRPermissionRequest, HRPermissionRequestInput,
@@ -397,6 +397,7 @@ export async function getAttendanceDays(params: {
   employeeId?: string
   dateFrom: string
   dateTo: string
+  status?: string
   page?: number
   pageSize?: number
 }) {
@@ -419,6 +420,7 @@ export async function getAttendanceDays(params: {
     .range(from, to)
 
   if (params.employeeId) query = query.eq('employee_id', params.employeeId)
+  if (params.status) query = query.eq('status', params.status)
 
   const { data, error, count } = await query
   if (error) throw error
@@ -432,14 +434,37 @@ export async function getAttendanceDays(params: {
   }
 }
 
+/**
+ * FIX-AUDIT-07: تعديل الحضور اليدوي مع إعادة تشغيل محرك الجزاءات
+ * يستدعي RPC ذري يقوم بـ:
+ *   1. UPSERT سجل الحضور مع حساب التأخير/الأوفرتايم/الانصراف المبكر
+ *   2. حذف الجزاءات القديمة غير المتجاوزة
+ *   3. إعادة تشغيل process_attendance_penalties بالقيم الجديدة
+ */
 export async function upsertAttendanceDay(input: HRAttendanceDayInput) {
-  const { data, error } = await supabase
-    .from('hr_attendance_days')
-    .upsert(input, { onConflict: 'employee_id,shift_date' })
-    .select('*')
-    .single()
+  const userId = await getCurrentUserId()
+  const { data, error } = await supabase.rpc('upsert_attendance_and_reprocess', {
+    p_employee_id:    input.employee_id,
+    p_shift_date:     input.shift_date,
+    p_punch_in_time:  input.punch_in_time  ?? null,
+    p_punch_out_time: input.punch_out_time ?? null,
+    p_status:         input.status         ?? null,
+    p_notes:          input.notes          ?? null,
+    p_user_id:        userId,
+  })
   if (error) throw error
-  return data as HRAttendanceDay
+  const result = data as { success: boolean; attendance_day_id: string; message: string; penalties_applied: number }
+  if (!result.success) {
+    throw new Error(result.message ?? 'فشل تحديث الحضور')
+  }
+  // Re-fetch the full record for UI update
+  const { data: day, error: fetchErr } = await supabase
+    .from('hr_attendance_days')
+    .select('*')
+    .eq('id', result.attendance_day_id)
+    .single()
+  if (fetchErr) throw fetchErr
+  return day as HRAttendanceDay
 }
 
 /**
@@ -481,25 +506,6 @@ export async function recordAttendanceGPS(params: {
   })
   if (error) throw error
   return data as AttendanceGPSResult
-}
-
-/**
- * @deprecated استخدم recordAttendanceGPS بدلاً منها
- * hذه الدالة تكتب في hr_attendance_logs فقط بدون إنشاء hr_attendance_days
- */
-export async function logAttendanceGPS(input: HRAttendanceLogInput) {
-  const logEntry = {
-    ...input,
-    event_time: input.event_time ?? new Date().toISOString(),
-    synced_at:  input.is_offline_sync ? new Date().toISOString() : null,
-  }
-  const { data, error } = await supabase
-    .from('hr_attendance_logs')
-    .insert(logEntry)
-    .select('*')
-    .single()
-  if (error) throw error
-  return data as HRAttendanceLog
 }
 
 
@@ -1039,10 +1045,22 @@ export async function disburseAdvance(
 }
 
 /**
- * تحديث حالة السلفة من قِبَل المشرف أو مدير الموارد البشرية
- * pending_supervisor → approved_supervisor / rejected
- * pending_hr         → pending_finance / rejected
+ * FIX-05: تحديث حالة السلفة مع حماية State Machine
+ * التحويلات المسموحة:
+ *   pending_supervisor → pending_hr | rejected
+ *   pending_hr         → pending_finance | rejected
+ *   pending_finance    → approved | rejected
+ *   approved           → paid | cancelled
+ *   paid               → fully_repaid
  */
+const VALID_ADVANCE_TRANSITIONS: Record<string, string[]> = {
+  pending_supervisor: ['pending_hr', 'rejected'],
+  pending_hr:         ['pending_finance', 'rejected'],
+  pending_finance:    ['approved', 'rejected'],
+  approved:           ['paid', 'cancelled'],
+  paid:               ['fully_repaid'],
+}
+
 export async function updateAdvanceStatus(
   id: string,
   status: HRAdvanceStatus,
@@ -1050,6 +1068,20 @@ export async function updateAdvanceStatus(
   rejectionReason?: string | null
 ): Promise<HRAdvance> {
   const userId = await getCurrentUserId()
+
+  // ـــ جلب الحالة الحالية للتحقق من صلاحية التحويل ـــ
+  const { data: current, error: fetchErr } = await supabase
+    .from('hr_advances')
+    .select('status')
+    .eq('id', id)
+    .single()
+  if (fetchErr) throw fetchErr
+
+  const allowed = VALID_ADVANCE_TRANSITIONS[current.status] ?? []
+  if (!allowed.includes(status)) {
+    throw new Error(`لا يمكن تحويل حالة السلفة من «${current.status}» إلى «${status}»`)
+  }
+
   const { data, error } = await supabase
     .from('hr_advances')
     .update({
@@ -1058,6 +1090,7 @@ export async function updateAdvanceStatus(
       ...(rejectionReason  && { rejection_reason: rejectionReason }),
     })
     .eq('id', id)
+    .eq('status', current.status)  // Optimistic Lock — يمنع race conditions
     .select('*')
     .single()
   if (error) throw error
@@ -1382,6 +1415,9 @@ export async function updateSalaryDirectly(params: {
  *   F-E: إدخال bonus_amount و other_deductions
  *   F-F: تحديد override_net مع سبب محفوظ للتدقيق
  * محمي: لا يعمل بعد الاعتماد (status = 'approved')
+ *
+ * FIX-AUDIT-06: يستدعي RPC ذري يُعيد حساب net_salary تلقائياً
+ * بدلاً من .update() المباشر الذي كان يترك net_salary بدون تحديث
  */
 export async function updatePayrollLine(
   lineId: string,
@@ -1393,12 +1429,28 @@ export async function updatePayrollLine(
     notes?: string | null
   }
 ): Promise<HRPayrollLine> {
-  const { data, error } = await supabase
-    .from('hr_payroll_lines')
-    .update(updates)
-    .eq('id', lineId)
-    .select('*, employee:hr_employees(id, full_name, employee_number)')
-    .single()
+  const userId = await getCurrentUserId()
+  const { data, error } = await supabase.rpc('update_payroll_line_adjustments', {
+    p_line_id:          lineId,
+    p_bonus_amount:     updates.bonus_amount     ?? null,
+    p_other_deductions: updates.other_deductions ?? null,
+    p_override_net:     updates.override_net     ?? null,
+    p_override_reason:  updates.override_reason  ?? null,
+    p_notes:            updates.notes            ?? null,
+    p_user_id:          userId,
+  })
   if (error) throw error
-  return data as HRPayrollLine
+  // RPC returns JSONB — check success
+  const result = data as { success: boolean; message: string; line_id: string; net_salary: number }
+  if (!result.success) {
+    throw new Error(result.message ?? 'فشل تحديث سطر الراتب')
+  }
+  // Re-fetch the full line with employee relation for UI update
+  const { data: line, error: fetchErr } = await supabase
+    .from('hr_payroll_lines')
+    .select('*, employee:hr_employees(id, full_name, employee_number)')
+    .eq('id', lineId)
+    .single()
+  if (fetchErr) throw fetchErr
+  return line as HRPayrollLine
 }

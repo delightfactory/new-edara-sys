@@ -73,7 +73,7 @@ export default function InstallBanner() {
     return () => {
       if (timer.current) clearTimeout(timer.current)
     }
-  })
+  }, [isInstalled])  // FIX-AUDIT-05: dependency array — يمنع تشغيل الأثر بعد كل render
 
   const handleInstall = async () => {
     if (!deferredPrompt.current) return

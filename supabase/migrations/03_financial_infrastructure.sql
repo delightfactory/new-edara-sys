@@ -1322,6 +1322,11 @@ DECLARE
   v_debit_acct  UUID;
   v_credit_acct UUID;
 BEGIN
+  -- FIX-AUDIT-04: رفض مبالغ صفرية أو سالبة
+  IF p_amount IS NULL OR p_amount <= 0 THEN
+    RAISE EXCEPTION 'create_auto_journal_entry: المبلغ يجب أن يكون أكبر من صفر (القيمة: %)', COALESCE(p_amount, 0);
+  END IF;
+
   -- جلب معرّفات الحسابات من الأكواد
   SELECT id INTO v_debit_acct FROM chart_of_accounts WHERE code = p_debit_account;
   IF v_debit_acct IS NULL THEN

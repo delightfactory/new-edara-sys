@@ -52,11 +52,35 @@ function ManualEditModal({ day, onClose, onSaved }: EditModalProps) {
   const saveMut = useMutation({
     mutationFn: () => {
       if (!day) return Promise.reject(new Error('لا يوجد سجل'))
+
+      // FIX-03: حساب القيم المشتقة من الأوقات المعدلة
+      let status: HRAttendanceStatus = day.status
+      let effectiveHours: number | null = day.effective_hours
+      let dayValue = day.day_value
+
+      const punchInDate  = punchIn  ? new Date(punchIn)  : null
+      const punchOutDate = punchOut ? new Date(punchOut) : null
+
+      // إذا تم تحديد وقت حضور → اعتبره حاضراً
+      if (punchInDate) {
+        status = 'present'
+        dayValue = 1.0
+      }
+
+      // حساب effective_hours من الفرق بين الحضور والانصراف
+      if (punchInDate && punchOutDate) {
+        const diffMs = punchOutDate.getTime() - punchInDate.getTime()
+        effectiveHours = Math.min(24, Math.round((diffMs / 3600000) * 100) / 100)
+      }
+
       const input: HRAttendanceDayInput = {
-        employee_id:   day.employee_id,
-        shift_date:    day.shift_date,
-        punch_in_time:  punchIn  ? new Date(punchIn).toISOString()  : null,
-        punch_out_time: punchOut ? new Date(punchOut).toISOString() : null,
+        employee_id:    day.employee_id,
+        shift_date:     day.shift_date,
+        punch_in_time:  punchInDate  ? punchInDate.toISOString()  : null,
+        punch_out_time: punchOutDate ? punchOutDate.toISOString() : null,
+        status,
+        effective_hours: effectiveHours,
+        day_value:       dayValue,
         notes: notes || null,
       }
       return upsertAttendanceDay(input)
@@ -145,12 +169,13 @@ export default function AttendancePage() {
   // Edit state
   const [editDay, setEditDay] = useState<HRAttendanceDay | null>(null)
 
-  // Queries
+  // FIX-04: فلترة الحالة في الـ Query بدلاً من Frontend
   const { data: attendanceResult, isLoading } = useQuery({
-    queryKey: ['hr-attendance-days-admin', dateFrom, dateTo, empFilter, page],
+    queryKey: ['hr-attendance-days-admin', dateFrom, dateTo, empFilter, statusFilter, page],
     queryFn: () => getAttendanceDays({
       dateFrom, dateTo,
       employeeId: empFilter || undefined,
+      status: statusFilter || undefined,
       page,
       pageSize: 50,
     }),
@@ -163,7 +188,7 @@ export default function AttendancePage() {
   })
 
   const days = attendanceResult?.data ?? []
-  const filtered = statusFilter ? days.filter(d => d.status === statusFilter) : days
+  const filtered = days  // FIX-04: الفلترة تتم في الـ Query الآن
 
   // GAP-07: الإحصائيات من إجمالي count المرجع — تقديري بناء على الصفحة الحالية
   const stats = {
@@ -185,8 +210,8 @@ export default function AttendancePage() {
         ]}
       />
 
-      {/* Stat cards — GAP-07: من بيانات الصفحة الحالية */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+      {/* FIX-08: Responsive stat cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
         {[
           { label: 'حاضر',   count: stats.present, color: 'var(--color-success)' },
           { label: 'متأخر',  count: stats.late,    color: 'var(--color-warning)' },
@@ -196,7 +221,6 @@ export default function AttendancePage() {
           <div key={s.label} className="edara-card" style={{ padding: 'var(--space-3)', textAlign: 'center', borderTop: `3px solid ${s.color}` }}>
             <div style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, color: s.color }}>{s.count}</div>
             <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{s.label}</div>
-            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2, opacity: 0.6 }}>من الصفحة الحالية</div>
           </div>
         ))}
       </div>
@@ -216,14 +240,14 @@ export default function AttendancePage() {
           <Select
             label="الحالة"
             value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value)}
+            onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
             options={Object.entries(STATUS_LABEL).map(([k, v]) => ({ value: k, label: v }))}
             placeholder="كل الحالات"
           />
         </div>
       </div>
 
-      {/* Table */}
+      {/* FIX-09: Mobile cards + Desktop table */}
       <div className="edara-card" style={{ padding: 0, overflow: 'hidden' }}>
         {isLoading ? (
           <div style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'var(--text-muted)' }}>
@@ -235,67 +259,104 @@ export default function AttendancePage() {
             <div style={{ color: 'var(--text-muted)' }}>لا توجد سجلات في هذه الفترة</div>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)', minWidth: 660 }}>
-              <thead>
-                <tr style={{ background: 'var(--bg-surface-2)' }}>
-                  {['التاريخ', 'الموظف', 'الحضور', 'الانصراف', 'تأخير', 'الحالة', 'الموقع', ''].map(h => (
-                    <th key={h} style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'right', color: 'var(--text-muted)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(d => (
-                  <tr key={d.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                    <td style={{ padding: 'var(--space-2) var(--space-3)', whiteSpace: 'nowrap', fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                      {new Date(d.shift_date).toLocaleDateString('ar-EG', { weekday: 'short', day: 'numeric', month: 'short' })}
-                    </td>
-                    <td style={{ padding: 'var(--space-2) var(--space-3)' }}>
-                      <div style={{ fontWeight: 600 }}>{d.employee?.full_name ?? '—'}</div>
-                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{d.employee?.employee_number}</div>
-                    </td>
-                    <td style={{ padding: 'var(--space-2) var(--space-3)', fontVariantNumeric: 'tabular-nums', direction: 'ltr', textAlign: 'left' }}>
-                      <span style={{ color: d.punch_in_time ? 'var(--color-success)' : 'var(--text-muted)' }}>
-                        {fmtTime(d.punch_in_time)}
-                      </span>
-                    </td>
-                    <td style={{ padding: 'var(--space-2) var(--space-3)', direction: 'ltr', textAlign: 'left' }}>
-                      <span style={{ color: d.punch_out_time ? 'var(--text-secondary)' : 'var(--text-muted)' }}>
-                        {fmtTime(d.punch_out_time)}
-                        {d.is_auto_checkout && <span style={{ fontSize: 10, color: 'var(--color-warning)', marginRight: 4 }}>تلقائي</span>}
-                      </span>
-                    </td>
-                    <td style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'center' }}>
-                      {d.late_minutes > 0
-                        ? <span style={{ color: 'var(--color-warning)', fontWeight: 600 }}>{d.late_minutes} د</span>
-                        : <span style={{ color: 'var(--text-muted)' }}>—</span>
-                      }
-                    </td>
-                    <td style={{ padding: 'var(--space-2) var(--space-3)' }}>
-                      <Badge variant={STATUS_VARIANT[d.status]}>{STATUS_LABEL[d.status]}</Badge>
-                    </td>
-                    <td style={{ padding: 'var(--space-2) var(--space-3)', fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-                      {d.location_in?.name
-                        ? <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={10} />{d.location_in.name}</span>
-                        : '—'
-                      }
-                    </td>
-                    <td style={{ padding: 'var(--space-2) var(--space-3)' }}>
-                      {/* SEC-02: تصحيح الصلاحية — hr.attendance.edit */}
-                      <PermissionGuard permission="hr.attendance.edit">
-                        <Button
-                          size="sm"
-                           variant="ghost"
-                          icon={<Edit2 size={12} />}
-                          onClick={() => setEditDay(d)}
-                        />
-                      </PermissionGuard>
-                    </td>
+          <>
+            {/* ─── Mobile: بطاقات للشاشات الصغيرة ─── */}
+            <div className="att-mobile-cards">
+              {filtered.map(d => (
+                <div key={d.id} style={{
+                  padding: 'var(--space-3)',
+                  borderBottom: '1px solid var(--border-color)',
+                  display: 'flex', flexDirection: 'column', gap: 'var(--space-2)',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{d.employee?.full_name ?? '—'}</div>
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                        {new Date(d.shift_date).toLocaleDateString('ar-EG', { weekday: 'short', day: 'numeric', month: 'short' })}
+                      </div>
+                    </div>
+                    <Badge variant={STATUS_VARIANT[d.status]}>{STATUS_LABEL[d.status]}</Badge>
+                  </div>
+                  <div style={{ display: 'flex', gap: 'var(--space-4)', fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                    <span>حضور: <strong style={{ color: d.punch_in_time ? 'var(--color-success)' : undefined }}>{fmtTime(d.punch_in_time)}</strong></span>
+                    <span>انصراف: <strong>{fmtTime(d.punch_out_time)}</strong></span>
+                    {d.late_minutes > 0 && <span style={{ color: 'var(--color-warning)' }}>تأخير: {d.late_minutes} د</span>}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    {d.location_in?.name
+                      ? <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={10} />{d.location_in.name}</span>
+                      : <span />
+                    }
+                    <PermissionGuard permission="hr.attendance.edit">
+                      <Button size="sm" variant="ghost" icon={<Edit2 size={12} />} onClick={() => setEditDay(d)} />
+                    </PermissionGuard>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* ─── Desktop: جدول تقليدي ─── */}
+            <div className="att-desktop-table">
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)', minWidth: 660 }}>
+                <thead>
+                  <tr style={{ background: 'var(--bg-surface-2)' }}>
+                    {['التاريخ', 'الموظف', 'الحضور', 'الانصراف', 'تأخير', 'الحالة', 'الموقع', ''].map(h => (
+                      <th key={h} style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'right', color: 'var(--text-muted)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-color)', whiteSpace: 'nowrap' }}>{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filtered.map(d => (
+                    <tr key={d.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                      <td style={{ padding: 'var(--space-2) var(--space-3)', whiteSpace: 'nowrap', fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                        {new Date(d.shift_date).toLocaleDateString('ar-EG', { weekday: 'short', day: 'numeric', month: 'short' })}
+                      </td>
+                      <td style={{ padding: 'var(--space-2) var(--space-3)' }}>
+                        <div style={{ fontWeight: 600 }}>{d.employee?.full_name ?? '—'}</div>
+                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{d.employee?.employee_number}</div>
+                      </td>
+                      <td style={{ padding: 'var(--space-2) var(--space-3)', fontVariantNumeric: 'tabular-nums', direction: 'ltr', textAlign: 'left' }}>
+                        <span style={{ color: d.punch_in_time ? 'var(--color-success)' : 'var(--text-muted)' }}>
+                          {fmtTime(d.punch_in_time)}
+                        </span>
+                      </td>
+                      <td style={{ padding: 'var(--space-2) var(--space-3)', direction: 'ltr', textAlign: 'left' }}>
+                        <span style={{ color: d.punch_out_time ? 'var(--text-secondary)' : 'var(--text-muted)' }}>
+                          {fmtTime(d.punch_out_time)}
+                          {d.is_auto_checkout && <span style={{ fontSize: 10, color: 'var(--color-warning)', marginRight: 4 }}>تلقائي</span>}
+                        </span>
+                      </td>
+                      <td style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'center' }}>
+                        {d.late_minutes > 0
+                          ? <span style={{ color: 'var(--color-warning)', fontWeight: 600 }}>{d.late_minutes} د</span>
+                          : <span style={{ color: 'var(--text-muted)' }}>—</span>
+                        }
+                      </td>
+                      <td style={{ padding: 'var(--space-2) var(--space-3)' }}>
+                        <Badge variant={STATUS_VARIANT[d.status]}>{STATUS_LABEL[d.status]}</Badge>
+                      </td>
+                      <td style={{ padding: 'var(--space-2) var(--space-3)', fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                        {d.location_in?.name
+                          ? <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={10} />{d.location_in.name}</span>
+                          : '—'
+                        }
+                      </td>
+                      <td style={{ padding: 'var(--space-2) var(--space-3)' }}>
+                        <PermissionGuard permission="hr.attendance.edit">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            icon={<Edit2 size={12} />}
+                            onClick={() => setEditDay(d)}
+                          />
+                        </PermissionGuard>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
 
         {/* Pagination */}
@@ -310,6 +371,15 @@ export default function AttendancePage() {
         )}
       </div>
 
+      <style>{`
+        @media (max-width: 767px) {
+          .att-desktop-table { display: none !important; }
+        }
+        @media (min-width: 768px) {
+          .att-mobile-cards { display: none !important; }
+        }
+      `}</style>
+
       {/* Edit Modal */}
       <ManualEditModal
         day={editDay}
@@ -319,3 +389,4 @@ export default function AttendancePage() {
     </div>
   )
 }
+

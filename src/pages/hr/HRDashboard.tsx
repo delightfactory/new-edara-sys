@@ -11,9 +11,9 @@ import {
   useHRAdvances,
   useHRPayrollRuns,
 } from '@/hooks/useQueryHooks'
-import { updateLeaveRequestStatus, updateAdvanceStatus } from '@/lib/services/hr'
+import { updateLeaveRequestStatus, updateAdvanceStatus, getAttendanceDays } from '@/lib/services/hr'
 import type { HRLeaveRequest, HRLeaveRequestStatus } from '@/lib/types/hr'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/auth-store'
 import { toast } from 'sonner'
 import Button from '@/components/ui/Button'
@@ -189,6 +189,18 @@ export default function HRDashboard() {
   const { data: payrollRuns = [], isLoading: payrollLoading } =
     useHRPayrollRuns(isManager ? undefined : undefined)
 
+  // FIX-11: إحصائيات حضور اليوم
+  const todayStr = new Date().toISOString().split('T')[0]
+  const { data: todayAttendance } = useQuery({
+    queryKey: ['hr-dashboard-attendance-today', todayStr],
+    queryFn: () => getAttendanceDays({ dateFrom: todayStr, dateTo: todayStr, pageSize: 500 }),
+    enabled: isManager,
+  })
+  const todayDays = todayAttendance?.data ?? []
+  const todayPresent = todayDays.filter(d => d.status === 'present' || d.status === 'late').length
+  const todayLate    = todayDays.filter(d => d.status === 'late').length
+  const todayAbsent  = todayDays.filter(d => d.status === 'absent_unauthorized').length
+
   // الموظف العادي (بدون hr.employees.read) يُعاد توجيهه لملفه الشخصي
   // هذا الـ return يأتي بعد كل الـ Hooks
   if (!isManager) {
@@ -309,6 +321,18 @@ export default function HRDashboard() {
           color={pendingPayrolls > 0 ? 'var(--color-danger)' : 'var(--color-info)'}
           onClick={() => navigate('/hr/payroll')}
           loading={payrollLoading}
+        />
+
+        {/* FIX-11: إحصائيات حضور اليوم */}
+        <StatCard
+          id="stat-today-attendance"
+          label="حاضرون اليوم"
+          value={todayPresent}
+          sub={todayLate > 0 ? `${todayLate} متأخر · ${todayAbsent} غائب` : `${todayAbsent} غائب`}
+          icon={<Clock size={22} />}
+          color={todayAbsent > 0 ? 'var(--color-danger)' : 'var(--color-success)'}
+          onClick={() => navigate('/hr/attendance')}
+          loading={!todayAttendance}
         />
       </div>
 

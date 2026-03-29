@@ -10,7 +10,7 @@ import {
   getDepartments, createDepartment, updateDepartment,
   getPositions,   createPosition,
   getWorkLocations, createWorkLocation, updateWorkLocation,
-  getPublicHolidays, createPublicHoliday,
+  getPublicHolidays, createPublicHoliday, deletePublicHoliday,
   getPenaltyRules,
 } from '@/lib/services/hr'
 import type {
@@ -685,6 +685,18 @@ function HolidaysTab() {
     onError: (e: Error) => toast.error(e.message),
   })
 
+  // FIX-10: حذف عطلة رسمية مع تأكيد
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => deletePublicHoliday(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['hr-public-holidays'] }); toast.success('تم حذف العطلة') },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const handleDelete = (h: HRPublicHoliday) => {
+    if (!window.confirm(`هل أنت متأكد من حذف عطلة «${h.name}»؟\nسيؤثر هذا على حسابات الحضور.`)) return
+    deleteMut.mutate(h.id)
+  }
+
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
@@ -716,15 +728,24 @@ function HolidaysTab() {
 
       {isLoading ? <div className="settings-loading">جارٍ التحميل...</div> : (
         <table className="settings-table">
-          <thead><tr><th>العطلة</th><th>التاريخ</th><th>نوع</th></tr></thead>
+          <thead><tr><th>العطلة</th><th>التاريخ</th><th>نوع</th><th></th></tr></thead>
           <tbody>
             {holidays.length === 0
-              ? <tr><td colSpan={3} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 'var(--space-6)' }}>لا توجد عطل مسجلة لعام {selYear}</td></tr>
+              ? <tr><td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 'var(--space-6)' }}>لا توجد عطل مسجلة لعام {selYear}</td></tr>
               : holidays.map(h => (
                 <tr key={h.id}>
                   <td><strong>{h.name}</strong></td>
                   <td>{new Date(h.holiday_date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' })}</td>
                   <td><Badge variant={h.is_recurring ? 'info' : 'neutral'}>{h.is_recurring ? 'سنوية' : 'مرة واحدة'}</Badge></td>
+                  <td>
+                    <Button
+                      size="sm" variant="ghost"
+                      icon={<Trash2 size={13} />}
+                      onClick={() => handleDelete(h)}
+                      loading={deleteMut.isPending}
+                      style={{ color: 'var(--color-danger)' }}
+                    />
+                  </td>
                 </tr>
               ))
             }

@@ -284,6 +284,8 @@ export default function PaymentsPage() {
   }
 
   const handleCreate = async () => {
+    // FIX-AUDIT-03: Double-submit guard — يمنع الضغط المزدوج قبل تحديث React للـ UI
+    if (saving) return
     if (!form.customer_id)           { toast.error('يرجى اختيار العميل أولاً'); return }
     if (!form.amount || form.amount <= 0) { toast.error('المبلغ يجب أن يكون أكبر من صفر'); return }
     if (isProofRequired && !proofFile) {
@@ -342,6 +344,8 @@ export default function PaymentsPage() {
   }
 
   const handleConfirm = async () => {
+    // FIX-AUDIT-03: Double-submit guard
+    if (confirming) return
     if (!confirmReceipt) return
     if (!isCheque && !hasCustodyLink && !confirmVaultId) {
       toast.error('يرجى اختيار الوجهة المالية')
@@ -369,6 +373,8 @@ export default function PaymentsPage() {
   const [rejecting, setRejecting]         = useState(false)
 
   const handleReject = async () => {
+    // FIX-AUDIT-03: Double-submit guard
+    if (rejecting) return
     if (!rejectReceipt || !rejectReason.trim()) {
       toast.error('سبب الرفض مطلوب')
       return

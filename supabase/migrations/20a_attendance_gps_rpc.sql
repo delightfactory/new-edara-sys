@@ -28,6 +28,20 @@ ALTER TABLE hr_attendance_days
 
 
 -- =============================================================
+-- FIX-02: effective_hours NUMERIC(4,2) → NUMERIC(5,2) + CHECK
+-- يمنع overflow يدوي ويضمن عدم تجاوز 24 ساعة
+-- =============================================================
+ALTER TABLE hr_attendance_days
+  ALTER COLUMN effective_hours TYPE NUMERIC(5,2);
+
+DO $$ BEGIN
+  ALTER TABLE hr_attendance_days
+    ADD CONSTRAINT chk_effective_hours_range
+    CHECK (effective_hours IS NULL OR effective_hours BETWEEN 0 AND 24.00);
+EXCEPTION WHEN duplicate_object THEN NULL; END; $$;
+
+
+-- =============================================================
 -- FUNCTION: record_attendance_gps
 -- الوصف: تسجيل حضور/انصراف الموظف بشكل ذري في معاملة واحدة
 -- المدخلات:
@@ -88,6 +102,9 @@ DECLARE
   v_late_min        INTEGER;
   v_scheduled_start TIMESTAMPTZ;
 
+  -- ─── FIX-01: فترة السماح بالتأخير (من الإعدادات) ──────────
+  v_grace_min       INTEGER;
+
   -- ─── حساب الانصراف ─────────────────────────────────────────
   v_check_in_ts     TIMESTAMPTZ;
   v_eff_hours       NUMERIC;
@@ -129,6 +146,24 @@ BEGIN
 
   -- ─── 2. وقت الحدث والتاريخ ──────────────────────────────────
   v_event_time := COALESCE(p_event_time, now());
+
+  -- FIX-AUDIT-01: رفض أوقات مستقبلية أو أقدم من 24 ساعة
+  -- يمنع التلاعب بالحضور عبر إرسال p_event_time مزوّر
+  IF v_event_time > now() + INTERVAL '5 minutes' THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'code',    'FUTURE_TIME',
+      'error',   'لا يمكن تسجيل حضور في المستقبل'
+    );
+  END IF;
+  IF v_event_time < now() - INTERVAL '24 hours' THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'code',    'TOO_OLD',
+      'error',   'لا يمكن تسجيل حضور أقدم من 24 ساعة'
+    );
+  END IF;
+
   v_shift_date := (v_event_time AT TIME ZONE 'Africa/Cairo')::DATE;
 
   -- ─── 3. هل التحقق من GPS إلزامي؟ ───────────────────────────
@@ -278,6 +313,14 @@ BEGIN
   v_att_status := 'present';
 
   IF p_log_type = 'check_in' THEN
+    -- FIX-01: قراءة فترة السماح بالتأخير من إعدادات HR
+    SELECT COALESCE(value::INTEGER, 15)
+    INTO   v_grace_min
+    FROM   company_settings
+    WHERE  key = 'hr.late_grace_minutes';
+    -- احتياط: لو الإعداد غير موجود أصلاً
+    IF v_grace_min IS NULL THEN v_grace_min := 15; END IF;
+
     -- المفتاح الصحيح: hr.work_start_time (كما تحفظه صفحة إعدادات HR)
     SELECT value::TIME
     INTO   v_work_start
@@ -287,7 +330,7 @@ BEGIN
     IF v_work_start IS NOT NULL THEN
       v_scheduled_start := (v_shift_date + v_work_start) AT TIME ZONE 'Africa/Cairo';
 
-      IF v_event_time > v_scheduled_start + INTERVAL '5 minutes' THEN
+      IF v_event_time > v_scheduled_start + (v_grace_min || ' minutes')::INTERVAL THEN
         v_late_min   := EXTRACT(EPOCH FROM (v_event_time - v_scheduled_start))::INTEGER / 60;
         v_att_status := CASE
           WHEN v_late_min > 120 THEN 'half_day'::hr_attendance_status
@@ -327,10 +370,10 @@ BEGIN
   ELSE
     -- ─── 8. check_out: حساب ساعات العمل والأوفرتايم ─────────
     v_check_in_ts := v_existing_day.punch_in_time;
-    -- NUMERIC(4,2) تستوعب حتى 99.99 ساعة — نحدّد لتجنب overflow
+    -- FIX-02: NUMERIC(5,2) + CHECK <= 24.00 — يوم عمل واحد لا يتجاوز 24 ساعة
     v_eff_hours   := LEAST(
       ROUND(EXTRACT(EPOCH FROM (v_event_time - v_check_in_ts)) / 3600.0, 2),
-      99.99
+      24.00
     );
     v_ot_min      := 0;
     v_early_min   := 0;
@@ -352,7 +395,24 @@ BEGIN
       ELSIF v_event_time < v_sched_end - INTERVAL '5 minutes' THEN
         -- انصراف مبكر
         v_early_min := EXTRACT(EPOCH FROM (v_sched_end - v_event_time))::INTEGER / 60;
-        v_co_status := 'early_unauthorized';
+        -- FIX-12 + FIX-AUDIT-02: التحقق من إجازة أو إذن انصراف مبكر
+        -- يشمل: إجازة نصف يوم (hr_leave_requests) + إذن رسمي (hr_permission_requests)
+        IF EXISTS (
+          SELECT 1 FROM hr_leave_requests
+          WHERE employee_id = v_employee_id
+            AND start_date  <= v_shift_date
+            AND end_date    >= v_shift_date
+            AND status      = 'approved'
+        ) OR EXISTS (
+          SELECT 1 FROM hr_permission_requests
+          WHERE employee_id = v_employee_id
+            AND permission_date = v_shift_date
+            AND status = 'approved'
+        ) THEN
+          v_co_status := 'early_authorized';
+        ELSE
+          v_co_status := 'early_unauthorized';
+        END IF;
       END IF;
     END IF;
 
@@ -447,5 +507,7 @@ INSERT INTO company_settings (key, value, type, description, category, is_public
   ('hr.work_start_time',         '09:00', 'text',    'وقت بدء الدوام الرسمي (HH:MM)',      'hr', false),
   ('hr.work_end_time',           '17:00', 'text',    'وقت انتهاء الدوام الرسمي (HH:MM)',   'hr', false),
   -- ── إلزامية GPS ──
-  ('hr.attendance_gps_required', 'false', 'boolean', 'هل يُشترط التحقق من الموقع الجغرافي للحضور', 'hr', false)
+  ('hr.attendance_gps_required', 'false', 'boolean', 'هل يُشترط التحقق من الموقع الجغرافي للحضور', 'hr', false),
+  -- FIX-01: فترة السماح بالتأخير بالدقائق
+  ('hr.late_grace_minutes',      '15',    'number',  'فترة السماح بالتأخير بالدقائق (لا يُسجَّل تأخيراً إذا لم يتجاوزها)', 'hr', false)
 ON CONFLICT (key) DO NOTHING;
