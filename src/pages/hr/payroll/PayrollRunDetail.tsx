@@ -3,12 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   CheckCircle, ArrowRight, Users, TrendingDown,
-  TrendingUp, DollarSign, BookOpen, AlertCircle, Edit3,
+  TrendingUp, DollarSign, BookOpen, AlertCircle, Edit3, RefreshCw, Calculator,
 } from 'lucide-react'
 import {
   useHRPayrollRuns,
   useHRPayrollLines,
   useApprovePayrollRun,
+  useCalculatePayrollRun,
+  useHRAdjustments,
 } from '@/hooks/useQueryHooks'
 import { updatePayrollLine } from '@/lib/services/hr'
 import type { HRPayrollRun, HRPayrollLine, HRPayrollRunStatus } from '@/lib/types/hr'
@@ -92,17 +94,40 @@ export default function PayrollRunDetail() {
   // DSN-07: row expand لعرض التفاصيل على الموبايل
   const [expandedLine, setExpandedLine] = useState<HRPayrollLine | null>(null)
 
-  // جلب بيانات المسير
-  const { data: runs = [], isLoading: runsLoading } = useHRPayrollRuns()
+  // جلب بيانات المسير (تحديث تلقائي كل 15 ثانية)
+  const { data: runs = [], isLoading: runsLoading, dataUpdatedAt: runsUpdatedAt, refetch: refetchRuns } = useHRPayrollRuns()
   const run: HRPayrollRun | undefined = runs.find(r => r.id === runId)
 
-  // سطور الرواتب
-  const { data: lines = [], isLoading: linesLoading } = useHRPayrollLines(runId ?? null)
+  // سطور الرواتب (تحديث تلقائي كل 15 ثانية)
+  const { data: lines = [], isLoading: linesLoading, dataUpdatedAt: linesUpdatedAt, refetch: refetchLines } = useHRPayrollLines(runId ?? null)
+
+  const lastUpdate = Math.max(runsUpdatedAt || 0, linesUpdatedAt || 0)
+  const handleManualRefresh = () => { refetchRuns(); refetchLines() }
 
   // mutation الاعتماد
   const approveMutation = useApprovePayrollRun()
+  const calculateMut = useCalculatePayrollRun()
+  const [recalculating, setRecalculating] = useState(false)
+
+  // تعديلات معتمدة لم تُحتسب بعد
+  const { data: allAdjustments = [] } = useHRAdjustments({ status: 'approved' })
+  const pendingAdj = run ? allAdjustments.filter(a => a.payroll_line_id === null) : []
+  const hasPendingAdjustments = pendingAdj.length > 0
 
   const canApprove = run && ['review', 'calculating'].includes(run.status)
+
+  const handleRecalculate = async () => {
+    if (!runId) return
+    setRecalculating(true)
+    try {
+      const result = await calculateMut.mutateAsync({ runId })
+      toast.success(`✅ تم إعادة الحساب — ${result.calculated} موظف`)
+    } catch (err) {
+      toast.error(`فشل إعادة الحساب: ${err instanceof Error ? err.message : String(err)}`)
+    } finally {
+      setRecalculating(false)
+    }
+  }
 
   const handleApprove = async () => {
     if (!runId) return
@@ -242,6 +267,17 @@ export default function PayrollRunDetail() {
       ),
     },
     {
+      key: 'other_deductions',
+      label: 'خصومات يدوية',
+      align: 'end' as const,
+      hideOnMobile: true,
+      render: (r: HRPayrollLine) => (
+        <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 'var(--text-xs)', color: (r.other_deductions ?? 0) > 0 ? 'var(--color-danger)' : 'var(--text-muted)' }}>
+          {(r.other_deductions ?? 0) > 0 ? `(${fmt(r.other_deductions ?? 0)})` : '—'}
+        </span>
+      ),
+    },
+    {
       key: 'net_salary',
       label: 'الصافي',
       align: 'end' as const,
@@ -292,7 +328,26 @@ export default function PayrollRunDetail() {
           { label: run?.period?.name ?? '...' },
         ]}
         actions={
-          <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* مؤشر التحديث اللحظي */}
+            {lastUpdate > 0 && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                fontSize: 'var(--text-xs)', color: 'var(--text-muted)',
+                padding: '2px 8px', borderRadius: 'var(--radius-sm)',
+                background: 'color-mix(in srgb, var(--color-success) 8%, transparent)',
+              }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-success)', display: 'inline-block' }} />
+                تحديث تلقائي · {new Date(lastUpdate).toLocaleTimeString('ar-EG-u-nu-latn', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              </div>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={<RefreshCw size={13} />}
+              onClick={handleManualRefresh}
+              title="تحديث يدوي"
+            />
             {run && (
               <Badge variant={STATUS_VARIANT[run.status]}>
                 {STATUS_LABEL[run.status]}
@@ -345,6 +400,35 @@ export default function PayrollRunDetail() {
         </div>
       )}
 
+      {/* ── تنبيه: تعديلات غير محتسبة ── */}
+      {hasPendingAdjustments && run?.status === 'review' && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+          padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-md)',
+          background: 'color-mix(in srgb, var(--color-warning) 8%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--color-warning) 25%, transparent)',
+          marginBottom: 'var(--space-3)',
+        }}>
+          <AlertCircle size={16} style={{ color: 'var(--color-warning)', flexShrink: 0 }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--color-warning)' }}>
+              يوجد {pendingAdj.length} تعديل (مكافآت/خصومات) معتمد لم يُحتسب في المسير بعد
+            </div>
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+              اضغط "إعادة الحساب" لتضمينها في الراتب
+            </div>
+          </div>
+          <Button
+            size="sm"
+            icon={<Calculator size={14} />}
+            onClick={handleRecalculate}
+            loading={recalculating}
+          >
+            إعادة الحساب
+          </Button>
+        </div>
+      )}
+
       {/* ── شريط التعليمات عند المراجعة ── */}
       {run?.status === 'review' && (
         <div style={{
@@ -357,6 +441,18 @@ export default function PayrollRunDetail() {
         }}>
           <Edit3 size={13} style={{ color: 'var(--color-info)', flexShrink: 0 }} />
           <span>وضع المراجعة — يمكنك تعديل المكافآت والخصومات الإضافية لكل موظف قبل الاعتماد</span>
+          {!hasPendingAdjustments && (
+            <Button
+              size="sm"
+              variant="ghost"
+              icon={<Calculator size={13} />}
+              onClick={handleRecalculate}
+              loading={recalculating}
+              style={{ marginInlineStart: 'auto', flexShrink: 0 }}
+            >
+              إعادة حساب
+            </Button>
+          )}
         </div>
       )}
 
@@ -479,7 +575,10 @@ export default function PayrollRunDetail() {
               ['عمولات',      expandedLine.commission_amount > 0 ? fmt(expandedLine.commission_amount) : '—'],
               ['مكافأة',      (expandedLine.bonus_amount ?? 0) > 0 ? fmt(expandedLine.bonus_amount ?? 0) : '—'],
               ['خصم غياب',    expandedLine.absence_deduction > 0 ? `(${fmt(expandedLine.absence_deduction)})` : '—'],
+              ['خصم جزاءات',  expandedLine.penalty_deduction > 0 ? `(${fmt(expandedLine.penalty_deduction)})` : '—'],
+              ['خصومات يدوية', (expandedLine.other_deductions ?? 0) > 0 ? `(${fmt(expandedLine.other_deductions ?? 0)})` : '—'],
               ['خصم سلف',     expandedLine.advance_deduction > 0 ? `(${fmt(expandedLine.advance_deduction)})` : '—'],
+              ['إجمالي استقطاعات', expandedLine.total_deductions > 0 ? `(${fmt(expandedLine.total_deductions)})` : '—'],
               ['صافي الراتب', fmt(expandedLine.override_net ?? expandedLine.net_salary)],
             ] as [string, string][]).map(([label, value]) => (
               <div key={label} style={{

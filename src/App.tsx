@@ -87,6 +87,7 @@ const HRSettingsPage     = lazy(() => import('@/pages/hr/settings/HRSettingsPage
 const CommissionsPage    = lazy(() => import('@/pages/hr/commissions/CommissionsPage'))
 const PermissionsPage    = lazy(() => import('@/pages/hr/permissions/PermissionsPage'))
 const DelegationsPage    = lazy(() => import('@/pages/hr/delegations/DelegationsPage'))
+const HRAdjustmentsPage  = lazy(() => import('@/pages/hr/adjustments/AdjustmentsPage'))
 const MyProfilePage      = lazy(() => import('@/pages/hr/MyProfilePage'))
 
 const queryClient = new QueryClient({
@@ -322,6 +323,9 @@ export default function App() {
               } />
               <Route path="hr/delegations" element={
                 <ProtectedRoute permission={['hr.leaves.approve', 'hr.advances.approve', 'hr.attendance.approve', 'hr.permissions.approve']}><Suspense fallback={<LazyFallback />}><DelegationsPage /></Suspense></ProtectedRoute>
+              } />
+              <Route path="hr/adjustments" element={
+                <ProtectedRoute permission={['hr.payroll.read', 'hr.adjustments.read', 'hr.adjustments.create']}><Suspense fallback={<LazyFallback />}><HRAdjustmentsPage /></Suspense></ProtectedRoute>
               } />
               <Route path="hr/my-profile" element={
                 <ProtectedRoute><Suspense fallback={<LazyFallback />}><MyProfilePage /></Suspense></ProtectedRoute>

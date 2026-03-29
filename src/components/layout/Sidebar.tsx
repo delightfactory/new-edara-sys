@@ -128,6 +128,7 @@ const sections: NavSection[] = [
           // ── وظائف مالية/إدارية متخصصة ──
           { label: 'العمولات',        path: '/hr/commissions',        permission: ['hr.commissions.create', PERMISSIONS.HR_EMPLOYEES_READ] },
           { label: 'مسير الرواتب',   path: '/hr/payroll',            permission: 'hr.payroll.read' },
+          { label: 'مكافآت وخصومات', path: '/hr/adjustments',        permission: ['hr.payroll.read', 'hr.adjustments.read', 'hr.adjustments.create'] },
           { label: 'إعدادات HR',     path: '/hr/settings',           permission: 'hr.settings.update' },
         ],
       },

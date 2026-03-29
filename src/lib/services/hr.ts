@@ -19,6 +19,7 @@ import type {
   HRAdvanceStatus,
   HRCommissionTarget, HRCommissionTargetInput,
   HRCommissionRecord,
+  HRPayrollAdjustment, HRPayrollAdjustmentInput,
   LocationValidationResult, EmployeeSalaryAtDate, MonthlyAttendanceSummary,
   PayrollApprovalResult, AdvanceRequestResult,
   LinkEmployeeResult, EmployeeLiveStatement,
@@ -830,10 +831,9 @@ export async function getPayrollPeriods() {
 }
 
 export async function createPayrollPeriod(input: HRPayrollPeriodInput) {
-  const userId = await getCurrentUserId()
   const { data, error } = await supabase
     .from('hr_payroll_periods')
-    .insert({ ...input, created_by: userId })
+    .insert(input)
     .select('*')
     .single()
   if (error) throw error
@@ -1453,4 +1453,51 @@ export async function updatePayrollLine(
     .single()
   if (fetchErr) throw fetchErr
   return line as HRPayrollLine
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// PAYROLL ADJUSTMENTS — مكافآت / خصومات / جزاءات
+// ═══════════════════════════════════════════════════════════
+
+export async function getPayrollAdjustments(params?: { employee_id?: string; status?: string }) {
+  let q = supabase
+    .from('hr_payroll_adjustments')
+    .select(`
+      *,
+      employee:hr_employees(id, full_name, employee_number),
+      creator:profiles!hr_payroll_adjustments_created_by_fkey(full_name),
+      approver:profiles!hr_payroll_adjustments_approved_by_fkey(full_name)
+    `)
+    .order('effective_date', { ascending: false })
+
+  if (params?.employee_id) q = q.eq('employee_id', params.employee_id)
+  if (params?.status) q = q.eq('status', params.status)
+
+  const { data, error } = await q
+  if (error) throw error
+  return data as HRPayrollAdjustment[]
+}
+
+export async function createPayrollAdjustment(input: HRPayrollAdjustmentInput) {
+  const { data, error } = await supabase
+    .from('hr_payroll_adjustments')
+    .insert(input)
+    .select(`
+      *,
+      employee:hr_employees(id, full_name, employee_number)
+    `)
+    .single()
+  if (error) throw error
+  return data as HRPayrollAdjustment
+}
+
+export async function approvePayrollAdjustment(adjustmentId: string, action: 'approve' | 'reject') {
+  const { data, error } = await supabase
+    .rpc('approve_payroll_adjustment', {
+      p_adjustment_id: adjustmentId,
+      p_action: action,
+    })
+  if (error) throw error
+  return data
 }

@@ -1053,3 +1053,39 @@ export interface HREmployeeDocumentInput {
   file_url?: string | null
   notes?: string | null
 }
+
+// ─────────────────────────────────────────────────────────────
+// HR PAYROLL ADJUSTMENTS — مكافآت / خصومات / جزاءات يدوية
+// ─────────────────────────────────────────────────────────────
+
+export type HRAdjustmentType = 'bonus' | 'deduction' | 'penalty'
+export type HRAdjustmentStatus = 'pending' | 'approved' | 'rejected'
+
+export interface HRPayrollAdjustment {
+  id: string
+  employee_id: string
+  type: HRAdjustmentType
+  amount: number
+  reason: string
+  effective_date: string
+  status: HRAdjustmentStatus
+  created_by: string | null
+  approved_by: string | null
+  approved_at: string | null
+  rejection_reason: string | null
+  payroll_line_id: string | null
+  created_at: string
+  updated_at: string
+  // joins
+  employee?: Pick<HREmployee, 'id' | 'full_name' | 'employee_number'>
+  creator?: { full_name: string }
+  approver?: { full_name: string }
+}
+
+export interface HRPayrollAdjustmentInput {
+  employee_id: string
+  type: HRAdjustmentType
+  amount: number
+  reason: string
+  effective_date: string
+}

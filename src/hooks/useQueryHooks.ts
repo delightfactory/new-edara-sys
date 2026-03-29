@@ -364,6 +364,7 @@ import {
   createDepartment, createPosition,
   getPermissionRequests, createPermissionRequest, approvePermissionRequest, rejectPermissionRequest,
   getEmployeeSalaryHistory, createContract, getContracts,
+  getPayrollAdjustments, createPayrollAdjustment, approvePayrollAdjustment,
 } from '@/lib/services/hr'
 import type {
   HREmployeeInput, HRDepartmentInput, HRPositionInput,
@@ -374,6 +375,7 @@ import type {
   HRContractInput,
   HRCommissionTargetInput,
   HRAttendanceDayInput,
+  HRPayrollAdjustmentInput,
 } from '@/lib/types/hr'
 import { useMutation } from '@tanstack/react-query'
 
@@ -483,6 +485,8 @@ export function useHRPayrollRuns(params?: Parameters<typeof getPayrollRuns>[0]) 
   return useQuery({
     queryKey: ['hr-payroll-runs', params],
     queryFn: () => getPayrollRuns(params),
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
   })
 }
 
@@ -491,6 +495,8 @@ export function useHRPayrollLines(runId: string | null | undefined) {
     queryKey: ['hr-payroll-lines', runId],
     queryFn: () => getPayrollLines(runId!),
     enabled: !!runId,
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
   })
 }
 
@@ -739,6 +745,7 @@ export function useCalculatePayrollRun() {
     onSuccess: (_, { runId }) => {
       queryClient.invalidateQueries({ queryKey: ['hr-payroll-runs'] })
       queryClient.invalidateQueries({ queryKey: ['hr-payroll-lines', runId] })
+      queryClient.invalidateQueries({ queryKey: ['hr-adjustments'] })
     },
   })
 }
@@ -754,5 +761,33 @@ export function useApprovePayrollRun() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['hr-payroll-runs'] })
     },
+  })
+}
+
+// ═══════════════════════════════════════════════════════════
+// PAYROLL ADJUSTMENTS
+// ═══════════════════════════════════════════════════════════
+
+export function useHRAdjustments(params?: Parameters<typeof getPayrollAdjustments>[0]) {
+  return useQuery({
+    queryKey: ['hr-adjustments', params],
+    queryFn: () => getPayrollAdjustments(params),
+  })
+}
+
+export function useCreateAdjustment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: HRPayrollAdjustmentInput) => createPayrollAdjustment(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['hr-adjustments'] }),
+  })
+}
+
+export function useApproveAdjustment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, action }: { id: string; action: 'approve' | 'reject' }) =>
+      approvePayrollAdjustment(id, action),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['hr-adjustments'] }),
   })
 }

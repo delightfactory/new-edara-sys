@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Calendar, Plus } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -22,13 +22,19 @@ const MONTH_NAMES = [
 const currentYear = new Date().getFullYear()
 const currentMonth = new Date().getMonth() + 1  // 1-indexed
 
+/**
+ * حساب تاريخ أول وآخر يوم في الشهر بشكل آمن
+ * بدون استخدام toISOString() الذي يحوّل لـ UTC ويسبب خطأ ±1 يوم
+ */
 function getMonthDates(year: number, month: number) {
-  const start = new Date(year, month - 1, 1)
-  const end   = new Date(year, month, 0)   // last day of month
-  return {
-    start_date: start.toISOString().split('T')[0],
-    end_date:   end.toISOString().split('T')[0],
-  }
+  // أول يوم: YYYY-MM-01
+  const startDate = `${year}-${String(month).padStart(2, '0')}-01`
+
+  // آخر يوم: نأخذ اليوم 0 من الشهر التالي = آخر يوم من الشهر الحالي
+  const lastDay = new Date(year, month, 0).getDate()
+  const endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
+
+  return { start_date: startDate, end_date: endDate }
 }
 
 export default function PayrollPeriodModal({ open, onClose }: Props) {
@@ -36,16 +42,32 @@ export default function PayrollPeriodModal({ open, onClose }: Props) {
   const [year,  setYear]  = useState(currentYear)
   const [month, setMonth] = useState(currentMonth)
 
-  const dates = getMonthDates(year, month)
-  const name  = `${MONTH_NAMES[month - 1]} ${year}`
+  // التواريخ الافتراضية من الشهر المختار
+  const defaults = getMonthDates(year, month)
+
+  // حالة التواريخ قابلة للتعديل
+  const [startDate, setStartDate] = useState(defaults.start_date)
+  const [endDate, setEndDate]     = useState(defaults.end_date)
+
+  // عند تغيير الشهر أو السنة → تحديث التواريخ تلقائياً
+  useEffect(() => {
+    const d = getMonthDates(year, month)
+    setStartDate(d.start_date)
+    setEndDate(d.end_date)
+  }, [year, month])
+
+  const name = `${MONTH_NAMES[month - 1]} ${year}`
 
   const form: HRPayrollPeriodInput = {
     year,
     month,
     name,
-    start_date: dates.start_date,
-    end_date:   dates.end_date,
+    start_date: startDate,
+    end_date:   endDate,
   }
+
+  // التحقق من صحة التواريخ
+  const isValid = startDate && endDate && startDate <= endDate
 
   const createMut = useMutation({
     mutationFn: () => createPayrollPeriod(form),
@@ -56,6 +78,17 @@ export default function PayrollPeriodModal({ open, onClose }: Props) {
     },
     onError: (e: Error) => toast.error(e.message),
   })
+
+  // إعادة تعيين الحالة عند فتح/إغلاق
+  useEffect(() => {
+    if (open) {
+      const d = getMonthDates(currentYear, currentMonth)
+      setYear(currentYear)
+      setMonth(currentMonth)
+      setStartDate(d.start_date)
+      setEndDate(d.end_date)
+    }
+  }, [open])
 
   const yearOptions = [currentYear - 1, currentYear, currentYear + 1].map(y => ({
     value: String(y), label: String(y),
@@ -78,6 +111,7 @@ export default function PayrollPeriodModal({ open, onClose }: Props) {
             icon={<Plus size={15} />}
             onClick={() => createMut.mutate()}
             loading={createMut.isPending}
+            disabled={!isValid}
             style={{ flex: 2 }}
           >
             إنشاء الفترة
@@ -96,9 +130,10 @@ export default function PayrollPeriodModal({ open, onClose }: Props) {
           fontSize: 'var(--text-sm)', color: 'var(--text-secondary)',
         }}>
           <Calendar size={16} color="var(--color-primary)" />
-          <span>حدد الشهر والسنة لتوليد الفترة الزمنية للمسير. يمكنك إنشاء مسيرات متعددة لنفس الفترة.</span>
+          <span>حدد الشهر والسنة — التواريخ تُملأ تلقائياً ويمكنك تعديلها إذا احتجت فترة مختلفة.</span>
         </div>
 
+        {/* الشهر والسنة */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
           <Select
             label="الشهر"
@@ -114,7 +149,7 @@ export default function PayrollPeriodModal({ open, onClose }: Props) {
           />
         </div>
 
-        {/* معاينة الفترة */}
+        {/* التواريخ — قابلة للتعديل */}
         <div style={{
           padding: 'var(--space-3)',
           background: 'var(--bg-surface-2)',
@@ -124,15 +159,50 @@ export default function PayrollPeriodModal({ open, onClose }: Props) {
         }}>
           <div style={{ fontWeight: 700, marginBottom: 8, color: 'var(--color-primary)' }}>{name}</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>
-            <div>
-              <span style={{ color: 'var(--text-muted)' }}>من: </span>
-              <Input type="date" value={form.start_date} onChange={() => {}} readOnly />
-            </div>
-            <div>
-              <span style={{ color: 'var(--text-muted)' }}>إلى: </span>
-              <Input type="date" value={form.end_date} onChange={() => {}} readOnly />
-            </div>
+            <Input
+              label="بداية الفترة"
+              type="date"
+              value={startDate}
+              onChange={e => setStartDate(e.target.value)}
+            />
+            <Input
+              label="نهاية الفترة"
+              type="date"
+              value={endDate}
+              onChange={e => setEndDate(e.target.value)}
+            />
           </div>
+
+          {/* تحذير إذا التواريخ لا تتطابق مع الشهر المختار */}
+          {(startDate !== defaults.start_date || endDate !== defaults.end_date) && (
+            <div style={{
+              marginTop: 'var(--space-2)',
+              padding: 'var(--space-2) var(--space-3)',
+              background: 'color-mix(in srgb, var(--color-warning) 10%, transparent)',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid color-mix(in srgb, var(--color-warning) 30%, transparent)',
+              fontSize: 'var(--text-xs)',
+              color: 'var(--color-warning)',
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}>
+              ⚠️ التواريخ مختلفة عن الافتراضية ({defaults.start_date} → {defaults.end_date})
+            </div>
+          )}
+
+          {/* تحذير إذا التواريخ غير صحيحة */}
+          {!isValid && (
+            <div style={{
+              marginTop: 'var(--space-2)',
+              padding: 'var(--space-2) var(--space-3)',
+              background: 'color-mix(in srgb, var(--color-danger) 10%, transparent)',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid color-mix(in srgb, var(--color-danger) 30%, transparent)',
+              fontSize: 'var(--text-xs)',
+              color: 'var(--color-danger)',
+            }}>
+              ❌ تاريخ البداية يجب أن يسبق تاريخ النهاية
+            </div>
+          )}
         </div>
       </div>
     </ResponsiveModal>

@@ -234,6 +234,22 @@ DECLARE
   -- ─── الإصلاح: ساعات العمل من company_settings ───
   v_work_hours_per_day NUMERIC;
 
+  -- ─── FIX-AUDIT-08: حساب أيام العمل التقويمية ───
+  v_off_day_name     TEXT;
+  v_off_dow          INTEGER;
+  v_public_holidays  INTEGER;
+  v_d                DATE;
+  v_calendar_days    INTEGER;
+
+  -- partial month
+  v_partial_working  INTEGER;
+  v_is_partial       BOOLEAN := false;
+  v_entitled_days    INTEGER;
+
+  -- auto-absence
+  v_attended_days    NUMERIC;
+  v_auto_absent      NUMERIC;
+
   v_net              NUMERIC;
 BEGIN
   SELECT * INTO v_run    FROM hr_payroll_runs    WHERE id = p_run_id;
@@ -246,31 +262,112 @@ BEGIN
 
   v_summary := get_monthly_attendance_summary(p_employee_id, v_period.year, v_period.month);
 
-  v_working_days := (v_summary->>'working_days')::INTEGER;
-  IF v_working_days = 0 THEN v_working_days := 26; END IF;
+  -- ════════════════════════════════════════════════════════
+  -- FIX-AUDIT-08: حساب أيام العمل التقويمية
+  -- ════════════════════════════════════════════════════════
+  v_off_day_name := COALESCE(v_emp.weekly_off_day::TEXT, NULL);
+  IF v_off_day_name IS NULL THEN
+    SELECT value INTO v_off_day_name
+    FROM company_settings WHERE key = 'hr.weekly_off_day';
+  END IF;
+  v_off_day_name := COALESCE(v_off_day_name, 'friday');
+
+  v_off_dow := CASE lower(v_off_day_name)
+    WHEN 'sunday'    THEN 0
+    WHEN 'monday'    THEN 1
+    WHEN 'tuesday'   THEN 2
+    WHEN 'wednesday' THEN 3
+    WHEN 'thursday'  THEN 4
+    WHEN 'friday'    THEN 5
+    WHEN 'saturday'  THEN 6
+    ELSE 5 END;
+
+  v_calendar_days := 0;
+  v_d := v_period.start_date;
+  WHILE v_d <= v_period.end_date LOOP
+    IF EXTRACT(DOW FROM v_d)::INTEGER <> v_off_dow THEN
+      v_calendar_days := v_calendar_days + 1;
+    END IF;
+    v_d := v_d + 1;
+  END LOOP;
+
+  SELECT COUNT(*) INTO v_public_holidays
+  FROM hr_public_holidays
+  WHERE holiday_date BETWEEN v_period.start_date AND v_period.end_date
+    AND EXTRACT(DOW FROM holiday_date)::INTEGER <> v_off_dow;
+
+  v_calendar_days := v_calendar_days - COALESCE(v_public_holidays, 0);
+  IF v_calendar_days <= 0 THEN v_calendar_days := 26; END IF;
+
+  v_working_days := v_calendar_days;
 
   v_daily_rate := COALESCE(v_salary.gross_salary, 0) / v_working_days;
 
-  -- ─── قراءة ساعات العمل من الإعدادات (الإصلاح) ───
+  -- ─── قراءة ساعات العمل من الإعدادات ───
   SELECT COALESCE(value::NUMERIC, 8) INTO v_work_hours_per_day
   FROM company_settings WHERE key = 'hr.work_hours_per_day';
 
-  v_absence_deduct := COALESCE((v_summary->>'absent_unauthorized')::NUMERIC, 0) * v_daily_rate;
-  v_penalty_deduct := COALESCE((v_summary->>'penalty_deduction_days')::NUMERIC, 0) * v_daily_rate;
-
+  -- ════════════════════════════════════════════════════════
+  -- المستحق الإجمالي + Partial Month (أيام عمل فقط)
+  -- ════════════════════════════════════════════════════════
   v_gross_earned := COALESCE(v_salary.gross_salary, 0);
+  v_entitled_days := v_working_days;
+  v_is_partial := false;
 
   IF v_emp.hire_date > v_period.start_date AND v_emp.hire_date <= v_period.end_date THEN
-    v_gross_earned := v_daily_rate * (v_period.end_date - v_emp.hire_date + 1);
+    v_is_partial := true;
+    v_partial_working := 0;
+    v_d := v_emp.hire_date;
+    WHILE v_d <= v_period.end_date LOOP
+      IF EXTRACT(DOW FROM v_d)::INTEGER <> v_off_dow THEN
+        IF NOT EXISTS (SELECT 1 FROM hr_public_holidays WHERE holiday_date = v_d) THEN
+          v_partial_working := v_partial_working + 1;
+        END IF;
+      END IF;
+      v_d := v_d + 1;
+    END LOOP;
+    IF v_partial_working <= 0 THEN v_partial_working := 1; END IF;
+    v_gross_earned := v_daily_rate * v_partial_working;
+    v_entitled_days := v_partial_working;
   END IF;
 
   IF v_emp.termination_date IS NOT NULL
     AND v_emp.termination_date >= v_period.start_date
     AND v_emp.termination_date <= v_period.end_date THEN
-    v_gross_earned := v_daily_rate * (v_emp.termination_date - v_period.start_date + 1);
+    v_is_partial := true;
+    v_partial_working := 0;
+    v_d := GREATEST(v_period.start_date, v_emp.hire_date);
+    WHILE v_d <= v_emp.termination_date LOOP
+      IF EXTRACT(DOW FROM v_d)::INTEGER <> v_off_dow THEN
+        IF NOT EXISTS (SELECT 1 FROM hr_public_holidays WHERE holiday_date = v_d) THEN
+          v_partial_working := v_partial_working + 1;
+        END IF;
+      END IF;
+      v_d := v_d + 1;
+    END LOOP;
+    IF v_partial_working <= 0 THEN v_partial_working := 1; END IF;
+    v_gross_earned := v_daily_rate * v_partial_working;
+    v_entitled_days := v_partial_working;
   END IF;
 
-  -- ─── الأوفرتايم بساعات العمل الصحيحة ───
+  -- ════════════════════════════════════════════════════════
+  -- حساب الغياب التلقائي
+  -- ════════════════════════════════════════════════════════
+  SELECT COALESCE(SUM(day_value), 0) INTO v_attended_days
+  FROM hr_attendance_days
+  WHERE employee_id = p_employee_id
+    AND shift_date BETWEEN v_period.start_date AND v_period.end_date
+    AND status NOT IN ('weekly_off', 'public_holiday');
+
+  v_attended_days := v_attended_days
+    + COALESCE((v_summary->>'on_leave_days')::NUMERIC, 0)
+    + COALESCE((v_summary->>'absent_authorized')::NUMERIC, 0);
+
+  v_auto_absent := GREATEST(0, v_entitled_days - v_attended_days);
+  v_absence_deduct := v_auto_absent * v_daily_rate;
+  v_penalty_deduct := COALESCE((v_summary->>'penalty_deduction_days')::NUMERIC, 0) * v_daily_rate;
+
+  -- ─── الأوفرتايم ───
   SELECT COALESCE(value::NUMERIC, 1.5) INTO v_overtime_rate
   FROM company_settings WHERE key = 'hr.overtime_rate';
 
@@ -323,8 +420,8 @@ BEGIN
   ) VALUES (
     p_run_id, p_employee_id, v_run.period_id,
     v_working_days,
-    v_working_days - COALESCE((v_summary->>'absent_unauthorized')::NUMERIC, 0),
-    COALESCE((v_summary->>'absent_unauthorized')::NUMERIC, 0),
+    v_attended_days,
+    v_auto_absent,
     COALESCE((v_summary->>'penalty_deduction_days')::NUMERIC, 0),
     COALESCE((v_summary->>'total_overtime_minutes')::NUMERIC, 0) / 60.0,
     COALESCE(v_salary.base_salary, 0),
@@ -337,19 +434,31 @@ BEGIN
     v_absence_deduct + v_penalty_deduct + v_advance_deduct
       + v_si_deduct + v_tax_deduct + v_health_deduct,
     v_net,
-    (v_emp.hire_date > v_period.start_date
-      OR (v_emp.termination_date IS NOT NULL AND v_emp.termination_date < v_period.end_date))
+    v_is_partial
   )
   ON CONFLICT (payroll_run_id, employee_id)
   DO UPDATE SET
-    gross_earned      = EXCLUDED.gross_earned,
-    total_deductions  = EXCLUDED.total_deductions,
-    net_salary        = EXCLUDED.net_salary,
-    absence_deduction = EXCLUDED.absence_deduction,
-    penalty_deduction = EXCLUDED.penalty_deduction,
-    advance_deduction = EXCLUDED.advance_deduction,
-    commission_amount = EXCLUDED.commission_amount,
-    overtime_amount   = EXCLUDED.overtime_amount
+    total_working_days = EXCLUDED.total_working_days,
+    actual_work_days   = EXCLUDED.actual_work_days,
+    absent_days        = EXCLUDED.absent_days,
+    deducted_days      = EXCLUDED.deducted_days,
+    overtime_hours     = EXCLUDED.overtime_hours,
+    base_salary        = EXCLUDED.base_salary,
+    transport_allowance= EXCLUDED.transport_allowance,
+    housing_allowance  = EXCLUDED.housing_allowance,
+    other_allowances   = EXCLUDED.other_allowances,
+    gross_earned       = EXCLUDED.gross_earned,
+    total_deductions   = EXCLUDED.total_deductions,
+    net_salary         = EXCLUDED.net_salary,
+    absence_deduction  = EXCLUDED.absence_deduction,
+    penalty_deduction  = EXCLUDED.penalty_deduction,
+    advance_deduction  = EXCLUDED.advance_deduction,
+    commission_amount  = EXCLUDED.commission_amount,
+    overtime_amount    = EXCLUDED.overtime_amount,
+    social_insurance   = EXCLUDED.social_insurance,
+    income_tax         = EXCLUDED.income_tax,
+    health_insurance   = EXCLUDED.health_insurance,
+    is_partial_month   = EXCLUDED.is_partial_month
   RETURNING id INTO v_line_id;
 
   UPDATE hr_payroll_runs
