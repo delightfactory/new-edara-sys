@@ -297,6 +297,28 @@ export default function AdvancesPage() {
   return (
     <div className="page-container animate-enter">
 
+      {/* ★ تنبيه: لا يوجد سجل موظف مربوط */}
+      {!isManager && !currentEmployee && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+          padding: 'var(--space-4)',
+          background: 'color-mix(in srgb, var(--color-danger) 8%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--color-danger) 25%, transparent)',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: 'var(--space-4)',
+        }}>
+          <AlertCircle size={18} style={{ color: 'var(--color-danger)', flexShrink: 0 }} />
+          <div>
+            <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--color-danger)' }}>
+              حسابك غير مربوط بسجل موظف
+            </div>
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+              لن تتمكن من تقديم طلبات السلف. يرجى التواصل مع مدير الموارد البشرية لربط حسابك.
+            </div>
+          </div>
+        </div>
+      )}
+
       <PageHeader
         title="السلف والأقساط"
         subtitle={isManager ? 'إدارة طلبات السلف' : 'سلفي وأقساطي'}

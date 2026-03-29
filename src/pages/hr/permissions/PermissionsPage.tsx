@@ -61,13 +61,23 @@ export default function PermissionsPage() {
   })
 
   const createMut = useMutation({
-    mutationFn: () => createPermissionRequest(form),
+    mutationFn: () => {
+      // ★ تحقق صريح من employee_id عند الإرسال (وليس عند فتح النموذج)
+      const empId = form.employee_id || currentEmp?.id
+      if (!empId) throw new Error('تعذر تحديد الموظف — تأكد من ربط حسابك بسجل موظف')
+      if (!form.reason.trim()) throw new Error('يرجى كتابة سبب الإذن')
+      if (!form.permission_date) throw new Error('يرجى تحديد تاريخ الإذن')
+      return createPermissionRequest({ ...form, employee_id: empId })
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['hr-permission-requests'] })
-      toast.success('تم تقديم طلب الإذن')
+      toast.success('تم تقديم طلب الإذن بنجاح ✅')
       setFormOpen(false)
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => {
+      console.error('[PermissionRequest] Error:', e)
+      toast.error(`فشل تقديم الطلب: ${e.message}`)
+    },
   })
 
   const approveMut = useMutation({
@@ -95,6 +105,29 @@ export default function PermissionsPage() {
 
   return (
     <div className="page-container animate-enter">
+
+      {/* ★ تنبيه: لا يوجد سجل موظف مربوط */}
+      {!isManager && !currentEmp && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+          padding: 'var(--space-4)',
+          background: 'color-mix(in srgb, var(--color-danger) 8%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--color-danger) 25%, transparent)',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: 'var(--space-4)',
+        }}>
+          <AlertCircle size={18} style={{ color: 'var(--color-danger)', flexShrink: 0 }} />
+          <div>
+            <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--color-danger)' }}>
+              حسابك غير مربوط بسجل موظف
+            </div>
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+              لن تتمكن من تقديم طلبات. يرجى التواصل مع مدير الموارد البشرية لربط حسابك.
+            </div>
+          </div>
+        </div>
+      )}
+
       <PageHeader
         title="أذونات الانصراف"
         subtitle="طلبات الخروج المؤقت أثناء دوام العمل"

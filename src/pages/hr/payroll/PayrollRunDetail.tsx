@@ -294,6 +294,15 @@ export default function PayrollRunDetail() {
               تجاوز
             </span>
           )}
+          {(r.deficit_carryover ?? 0) > 0 && (
+            <span title={`عجز مُرحّل: ${fmt(r.deficit_carryover)}`} style={{
+              fontSize: 9, color: 'var(--color-danger)',
+              background: 'color-mix(in srgb, var(--color-danger) 15%, transparent)',
+              padding: '1px 4px', borderRadius: 4, cursor: 'help',
+            }}>
+              عجز {fmt(r.deficit_carryover)}
+            </span>
+          )}
           {isEditable && (
             <Button size="sm" variant="ghost" onClick={() => openEdit(r)} style={{ padding: '2px 4px' }}>
               <Edit3 size={11} />
@@ -591,6 +600,33 @@ export default function PayrollRunDetail() {
                 <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{value}</span>
               </div>
             ))}
+
+            {/* ★ عجز مُرحّل للشهر التالي */}
+            {(expandedLine.deficit_carryover ?? 0) > 0 && (
+              <div style={{
+                display: 'flex', flexDirection: 'column', gap: 'var(--space-2)',
+                marginTop: 'var(--space-2)',
+                padding: 'var(--space-3)',
+                background: 'color-mix(in srgb, var(--color-danger) 8%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--color-danger) 25%, transparent)',
+                borderRadius: 'var(--radius-md)',
+              }}>
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                }}>
+                  <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-danger)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <AlertCircle size={14} /> مبلغ مُرحّل للشهر التالي
+                  </span>
+                  <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--color-danger)' }}>
+                    {fmt(expandedLine.deficit_carryover)}
+                  </span>
+                </div>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                  الخصومات تجاوزت مستحقات الموظف. سيتم خصم هذا المبلغ تلقائياً من راتب الشهر التالي كتعديل مُعتمد.
+                </div>
+              </div>
+            )}
+
             {expandedLine.override_net && (
               <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-warning)', textAlign: 'center', marginTop: 4 }}>
                 ⚠ هذا السطر يستخدم صافي مُتجاوِز — لا يتبع الحساب التلقائي

@@ -411,7 +411,7 @@ export async function getAttendanceDays(params: {
     .from('hr_attendance_days')
     .select(`
       *,
-      employee:hr_employees(id, full_name, employee_number),
+      employee:hr_employees!employee_id(id, full_name, employee_number),
       location_in:hr_work_locations!hr_attendance_days_location_in_id_fkey(id, name),
       location_out:hr_work_locations!hr_attendance_days_location_out_id_fkey(id, name)
     `, { count: 'estimated' })
@@ -613,9 +613,9 @@ export async function getLeaveRequests(params?: {
     .from('hr_leave_requests')
     .select(`
       *,
-      employee:hr_employees(id, full_name, employee_number),
+      employee:hr_employees!employee_id(id, full_name, employee_number),
       leave_type:hr_leave_types(id, name, code, is_paid),
-      supervisor:hr_employees!hr_leave_requests_supervisor_id_fkey(id, full_name)
+      supervisor:hr_employees!supervisor_id(id, full_name)
     `, { count: 'estimated' })
     .order('created_at', { ascending: false })
     .range(from, to)
@@ -699,7 +699,7 @@ export async function getPermissionRequests(params?: {
     .from('hr_permission_requests')
     .select(`
       *,
-      employee:hr_employees(id, full_name)
+      employee:hr_employees!employee_id(id, full_name)
     `)
     .order('permission_date', { ascending: false })
 
@@ -782,7 +782,7 @@ export async function getPenaltyInstances(params: {
     .from('hr_penalty_instances')
     .select(`
       *,
-      employee:hr_employees(id, full_name),
+      employee:hr_employees!employee_id(id, full_name),
       penalty_rule:hr_penalty_rules(id, name, deduction_type)
     `)
     .order('created_at', { ascending: false })
@@ -873,7 +873,7 @@ export async function getPayrollLines(runId: string) {
     .from('hr_payroll_lines')
     .select(`
       *,
-      employee:hr_employees(id, full_name, employee_number)
+      employee:hr_employees!employee_id(id, full_name, employee_number)
     `)
     .eq('payroll_run_id', runId)
     .order('employee_id')
@@ -933,7 +933,7 @@ export async function getAdvances(params?: {
     .from('hr_advances')
     .select(`
       *,
-      employee:hr_employees(id, full_name, employee_number),
+      employee:hr_employees!employee_id(id, full_name, employee_number),
       installments:hr_advance_installments(*)
     `, { count: 'estimated' })
     .order('created_at', { ascending: false })
@@ -1110,7 +1110,7 @@ export async function getCommissionTargets(params?: {
     .from('hr_commission_targets')
     .select(`
       *,
-      employee:hr_employees(id, full_name, employee_number),
+      employee:hr_employees!employee_id(id, full_name, employee_number),
       period:hr_payroll_periods(id, name, year, month)
     `)
     .order('created_at', { ascending: false })
@@ -1147,7 +1147,7 @@ export async function getCommissionRecords(params?: {
     .from('hr_commission_records')
     .select(`
       *,
-      employee:hr_employees(id, full_name, employee_number),
+      employee:hr_employees!employee_id(id, full_name, employee_number),
       period:hr_payroll_periods(id, name)
     `)
     .order('created_at', { ascending: false })
@@ -1448,7 +1448,7 @@ export async function updatePayrollLine(
   // Re-fetch the full line with employee relation for UI update
   const { data: line, error: fetchErr } = await supabase
     .from('hr_payroll_lines')
-    .select('*, employee:hr_employees(id, full_name, employee_number)')
+    .select('*, employee:hr_employees!employee_id(id, full_name, employee_number)')
     .eq('id', lineId)
     .single()
   if (fetchErr) throw fetchErr
@@ -1465,7 +1465,7 @@ export async function getPayrollAdjustments(params?: { employee_id?: string; sta
     .from('hr_payroll_adjustments')
     .select(`
       *,
-      employee:hr_employees(id, full_name, employee_number),
+      employee:hr_employees!employee_id(id, full_name, employee_number),
       creator:profiles!hr_payroll_adjustments_created_by_fkey(full_name),
       approver:profiles!hr_payroll_adjustments_approved_by_fkey(full_name)
     `)
@@ -1485,7 +1485,7 @@ export async function createPayrollAdjustment(input: HRPayrollAdjustmentInput) {
     .insert(input)
     .select(`
       *,
-      employee:hr_employees(id, full_name, employee_number)
+      employee:hr_employees!employee_id(id, full_name, employee_number)
     `)
     .single()
   if (error) throw error

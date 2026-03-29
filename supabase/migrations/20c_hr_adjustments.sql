@@ -395,12 +395,53 @@ BEGIN
   v_health_deduct := CASE WHEN v_health_enabled THEN v_health_amount ELSE 0 END;
 
   -- ════════════════════════════════════════════════════════
-  -- STEP 9: الصافي (★ يشمل التعديلات)
+  -- STEP 9: الصافي (★ يشمل التعديلات + معالجة العجز)
   -- ════════════════════════════════════════════════════════
   v_net := v_gross_earned + v_overtime_amount + v_commission + v_adj_bonus
          - v_absence_deduct - v_penalty_deduct - v_advance_deduct
          - v_si_deduct - v_tax_deduct - v_health_deduct - v_adj_deduction;
-  v_net := GREATEST(0, v_net);
+
+  -- ★ STEP 9a: معالجة العجز — ترحيل الفرق للشهر التالي
+  -- عندما يكون الصافي سالباً: الموظف مدين للشركة بالفرق
+  -- الحل: إنشاء خصم تلقائي على الشهر التالي
+  DECLARE
+    v_deficit          NUMERIC := 0;
+    v_next_month_start DATE;
+  BEGIN
+    IF v_net < 0 THEN
+      v_deficit := ABS(v_net);
+      v_net     := 0;
+
+      -- حساب أول يوم في الشهر التالي
+      v_next_month_start := (v_period.end_date + INTERVAL '1 day')::DATE;
+
+      -- ① حذف أي ترحيل تلقائي سابق لنفس الموظف/الفترة (idempotency عند إعادة الحساب)
+      DELETE FROM hr_payroll_adjustments
+      WHERE employee_id = p_employee_id
+        AND reason LIKE '[ترحيل تلقائي]%'
+        AND effective_date = v_next_month_start;
+
+      -- ② إنشاء خصم تلقائي للشهر التالي
+      INSERT INTO hr_payroll_adjustments (
+        employee_id, type, amount, reason, effective_date, status, created_by
+      ) VALUES (
+        p_employee_id,
+        'deduction',
+        v_deficit,
+        format('[ترحيل تلقائي] فرق خصومات من %s/%s — الراتب لم يكفِ لتغطية كل الخصومات (عجز: %s ج.م)',
+               v_period.month, v_period.year, v_deficit),
+        v_next_month_start,
+        'approved',
+        COALESCE(auth.uid(), p_employee_id)  -- system-generated
+      );
+    ELSE
+      -- إذا لم يعد هناك عجز (مثلاً بعد إلغاء سلفة)، نحذف الترحيل السابق
+      v_next_month_start := (v_period.end_date + INTERVAL '1 day')::DATE;
+      DELETE FROM hr_payroll_adjustments
+      WHERE employee_id = p_employee_id
+        AND reason LIKE '[ترحيل تلقائي]%'
+        AND effective_date = v_next_month_start;
+    END IF;
 
   -- ════════════════════════════════════════════════════════
   -- STEP 10: حفظ النتائج
@@ -413,7 +454,7 @@ BEGIN
     overtime_amount, commission_amount, bonus_amount, gross_earned,
     absence_deduction, penalty_deduction, advance_deduction,
     social_insurance, income_tax, health_insurance, other_deductions,
-    total_deductions, net_salary, is_partial_month
+    total_deductions, net_salary, is_partial_month, deficit_carryover
   ) VALUES (
     p_run_id, p_employee_id, v_run.period_id,
     v_working_days,
@@ -431,7 +472,8 @@ BEGIN
     v_absence_deduct + v_penalty_deduct + v_advance_deduct
       + v_si_deduct + v_tax_deduct + v_health_deduct + v_adj_deduction,
     v_net,
-    v_is_partial
+    v_is_partial,
+    v_deficit
   )
   ON CONFLICT (payroll_run_id, employee_id)
   DO UPDATE SET
@@ -457,7 +499,8 @@ BEGIN
     social_insurance   = EXCLUDED.social_insurance,
     income_tax         = EXCLUDED.income_tax,
     health_insurance   = EXCLUDED.health_insurance,
-    is_partial_month   = EXCLUDED.is_partial_month
+    is_partial_month   = EXCLUDED.is_partial_month,
+    deficit_carryover  = EXCLUDED.deficit_carryover
   RETURNING id INTO v_line_id;
 
   -- ★ ربط التعديلات بسطر المسير
@@ -482,4 +525,16 @@ BEGIN
   WHERE id = p_run_id;
 
   RETURN v_line_id;
+  END; -- نهاية كتلة DECLARE الداخلية
 END; $$;
+
+-- ════════════════════════════════════════════════════════
+-- ★ إضافة عمود deficit_carryover لجدول hr_payroll_lines
+-- يُسجّل المبلغ المُرحّل للشهر التالي عند عجز الراتب
+-- ════════════════════════════════════════════════════════
+ALTER TABLE hr_payroll_lines
+  ADD COLUMN IF NOT EXISTS deficit_carryover NUMERIC(12,2) NOT NULL DEFAULT 0;
+
+COMMENT ON COLUMN hr_payroll_lines.deficit_carryover IS
+  'المبلغ المُرحّل للشهر التالي كخصم تلقائي — يُنشأ عندما تتجاوز الخصومات الإجمالية مستحقات الموظف';
+

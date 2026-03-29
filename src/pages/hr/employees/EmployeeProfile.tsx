@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, Fragment } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowRight, UserCog, User, FileText, Calendar,
@@ -1532,8 +1532,8 @@ function AdvancesTab({ employeeId }: { employeeId: string }) {
             </thead>
             <tbody>
               {advances.map(a => (
-                <>
-                  <tr key={a.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                <Fragment key={a.id}>
+                  <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
                     <td style={{ padding: 'var(--space-3)' }}>
                       <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontFamily: 'monospace' }}>{a.number}</div>
                       <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{new Date(a.created_at).toLocaleDateString('ar-EG')}</div>
@@ -1557,7 +1557,7 @@ function AdvancesTab({ employeeId }: { employeeId: string }) {
                     </td>
                   </tr>
                   {expandedAdv === a.id && (
-                    <tr key={`inst-${a.id}`}>
+                    <tr>
                       <td colSpan={6} style={{ padding: 'var(--space-2) var(--space-4)', background: 'var(--bg-surface-2)' }}>
                         <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 'var(--space-2)' }}>جدول الأقساط</div>
                         {installments.map(inst => (
@@ -1583,7 +1583,7 @@ function AdvancesTab({ employeeId }: { employeeId: string }) {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>

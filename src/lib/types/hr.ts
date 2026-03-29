@@ -711,6 +711,7 @@ export interface HRPayrollLine {
 
   // الصافي
   net_salary: number
+  deficit_carryover: number         // المبلغ المُرحّل للشهر التالي عند عجز الراتب
 
   // حالة الموظف في هذا الشهر
   is_partial_month: boolean         // انضم أو غادر في منتصف الشهر
