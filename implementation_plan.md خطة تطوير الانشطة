@@ -1,0 +1,411 @@
+# خطة تنفيذ موديول الأنشطة — النسخة النهائية v2
+**بعد تعديلات Codex | مارس 2026 | في انتظار الاعتماد النهائي**
+
+---
+
+## القرارات المُحسومة (لا خلاف عليها)
+
+| القرار | التوجيه |
+|--------|---------|
+| مسار المستخدم الأساسي | **Plan-first**: الخطة أولاً ثم النشاط من داخلها |
+| النشاط المباشر | مسار ثانوي سريع — متاح لكنه ليس محور الـ UX |
+| `/activities` | صفحة مستقلة كاملة — لا دمج في DashboardPage |
+| Reference Data | `activity_types`, `target_types`, `visit_plan_templates`, `call_plan_templates` → **قراءة فقط** في هذه المرحلة — لا CRUD UI |
+| GPS | `requires_gps=true` + غياب GPS = **منع submit** (يطابق `validate_activity_payload()`) — `distance anomaly` فقط = تحذير |
+| Mobile/Desktop | `DataTable + dataCardMapping` — لا بناء مكرر |
+| ميزات Phase 2 | `leads, complaints, campaigns, notifications, GPS map realtime` — **لا تُبنى الآن** |
+
+---
+
+## تقييم ملف constants.ts الحالي
+
+**الموجود فعلاً (صحيح لكن ناقص):**
+- `ACTIVITIES_CREATE`, `ACTIVITIES_READ_OWN` فقط ← **ناقص 20 صلاحية**
+- `TARGETS_*` موجودة لكن بدون `TARGETS_ASSIGN`
+- لا يوجد: `activities.read_team`, `activities.read_all`, `activities.update_own`
+- لا يوجد: `visit_plans.*`, `call_plans.*` بالكامل
+- لا يوجد: `reports.activities`, `reports.team_performance`, `reports.export`
+
+**الحل:** Phase 0 تُصلح هذا قبل أي شيء.
+
+---
+
+## الملفات المعدَّلة بسبب Permissions/Navigation
+
+```
+src/lib/permissions/constants.ts          [MODIFY — إضافة 22 صلاحية + مجموعة activities]
+src/App.tsx                               [MODIFY — 13 route جديدة]
+src/components/layout/AppLayout.tsx       [MODIFY — sidebar section الأنشطة]
+```
+*(بعد فحص AppLayout/Sidebar — إذا ثبت أن FAB في ملف مستقل يُعدَّل أيضاً)*
+
+---
+
+## المراحل النهائية
+
+---
+
+### Phase 0 — Frontend Permission Contract
+**الهدف:** تعريف كل صلاحيات الموديول في `constants.ts` قبل أي كود آخر.
+
+**الملف المعدَّل:** `src/lib/permissions/constants.ts`
+
+**الإضافات:**
+```typescript
+// Activities
+ACTIVITIES_READ_TEAM:   'activities.read_team',
+ACTIVITIES_READ_ALL:    'activities.read_all',
+ACTIVITIES_UPDATE_OWN:  'activities.update_own',
+ACTIVITIES_DELETE:      'activities.delete',  // عبر softDelete RPC فقط
+
+// Visit Plans
+VISIT_PLANS_CREATE:     'visit_plans.create',
+VISIT_PLANS_READ_OWN:   'visit_plans.read_own',
+VISIT_PLANS_READ_TEAM:  'visit_plans.read_team',
+VISIT_PLANS_READ_ALL:   'visit_plans.read_all',
+VISIT_PLANS_CONFIRM:    'visit_plans.confirm',
+VISIT_PLANS_CANCEL:     'visit_plans.cancel',
+
+// Call Plans
+CALL_PLANS_CREATE:      'call_plans.create',
+CALL_PLANS_READ_OWN:    'call_plans.read_own',
+CALL_PLANS_READ_TEAM:   'call_plans.read_team',
+CALL_PLANS_READ_ALL:    'call_plans.read_all',
+CALL_PLANS_CONFIRM:     'call_plans.confirm',
+CALL_PLANS_CANCEL:      'call_plans.cancel',
+
+// Targets (الإضافات)
+TARGETS_READ_TEAM:      'targets.read_team',
+TARGETS_ASSIGN:         'targets.assign',
+
+// Reports (الأنشطة)
+REPORTS_ACTIVITIES:          'reports.activities',
+REPORTS_TEAM_PERFORMANCE:    'reports.team_performance',
+REPORTS_TARGETS:             'reports.targets',
+REPORTS_EXPORT:              'reports.export',
+```
+
+**مجموعة PERMISSION_GROUPS الجديدة:**
+```typescript
+{
+  id: 'activities',
+  label: 'الأنشطة الميدانية',
+  permissions: [
+    { key: 'activities.create',          label: 'تسجيل نشاط' },
+    { key: 'activities.read_own',        label: 'عرض أنشطتي' },
+    { key: 'activities.read_team',       label: 'عرض أنشطة الفريق' },
+    { key: 'activities.read_all',        label: 'عرض كل الأنشطة' },
+    { key: 'activities.update_own',      label: 'تعديل/حذف أنشطتي (24س)' },
+    { key: 'visit_plans.create',         label: 'إنشاء خطة زيارات' },
+    { key: 'visit_plans.read_own',       label: 'عرض خطط زياراتي' },
+    { key: 'visit_plans.read_team',      label: 'عرض خطط الفريق' },
+    { key: 'visit_plans.confirm',        label: 'تأكيد خطة زيارات' },
+    { key: 'visit_plans.cancel',         label: 'إلغاء خطة زيارات' },
+    { key: 'call_plans.create',          label: 'إنشاء خطة مكالمات' },
+    { key: 'call_plans.read_own',        label: 'عرض خطط مكالماتي' },
+    { key: 'call_plans.read_team',       label: 'عرض خطط مكالمات الفريق' },
+    { key: 'call_plans.confirm',         label: 'تأكيد خطة مكالمات' },
+    { key: 'call_plans.cancel',          label: 'إلغاء خطة مكالمات' },
+    { key: 'targets.read_own',           label: 'عرض أهدافي' },
+    { key: 'targets.read_team',          label: 'عرض أهداف الفريق' },
+    { key: 'targets.read_all',           label: 'عرض كل الأهداف' },
+    { key: 'targets.assign',             label: 'إسناد/إنشاء هدف' },
+    { key: 'targets.update',             label: 'تعديل هدف (عبر RPC)' },
+    { key: 'reports.activities',         label: 'تقارير الأنشطة' },
+    { key: 'reports.team_performance',   label: 'تقرير أداء الفريق' },
+    { key: 'reports.export',             label: 'تصدير التقارير' },
+  ]
+}
+```
+
+**المخرج:** `constants.ts` مكتمل — كل `PermissionGuard` و route guard يجد مفتاحه.
+
+---
+
+### Phase 1 — Types
+
+**الملف:** `src/lib/types/activities.ts`
+
+**ما هو Read-Only Reference (لا Input type له):**
+- `ActivityType` — من `activity_types` — يُقرأ فقط للـ dropdown
+- `TargetType` — من `target_types` — يُقرأ فقط للـ dropdown
+- `VisitPlanTemplate` — من `visit_plan_templates` — يُقرأ فقط للاختيار
+- `CallPlanTemplate` — من `call_plan_templates` — يُقرأ فقط للاختيار
+
+**ما لديه Input type (كتابة مدعومة):**
+```typescript
+// Core
+ActivityInput, Activity
+CallDetailInput, CallDetail
+
+// Plans
+VisitPlanInput, VisitPlan
+VisitPlanItemInput, VisitPlanItem
+CallPlanInput, CallPlan
+CallPlanItemInput, CallPlanItem
+
+// Targets
+TargetInput, Target           // INSERT — requires targets.assign
+AdjustTargetInput             // RPC adjust_target() فقط — لا UPDATE مباشر
+TargetProgress                // قراءة فقط (يحسبه Cron)
+TargetAdjustment              // قراءة فقط (يكتبه adjust_target RPC)
+
+// View Rows (قراءة)
+RepPerformanceRow             // v_rep_performance
+PlanDailySummaryRow           // v_plan_daily_summary
+TargetStatusRow               // v_target_status
+```
+
+---
+
+### Phase 2 — Services
+
+**الملف:** `src/lib/services/activities.ts`
+
+**Reference Data (getOnly):**
+```typescript
+getActivityTypes()     // activity_types — للـ dropdown
+getTargetTypes()       // target_types — للـ dropdown
+getVisitPlanTemplates()
+getCallPlanTemplates()
+```
+
+**Activities:**
+```typescript
+getActivities(params)  // فلترة: employeeId, date, outcomeType, typeCategory
+getActivity(id)
+createActivity(input)  // created_by=uid تلقائياً
+updateActivity(id, input)
+softDeleteActivity(id) // RPC: soft_delete_activity() — لا UPDATE مباشر
+```
+
+**Visit Plans:**
+```typescript
+getVisitPlans(params)
+getVisitPlan(id)
+getVisitPlanItems(planId)
+createVisitPlan(input)
+updateVisitPlan(id, input)   // draft فقط
+confirmVisitPlan(id)          // UPDATE status→confirmed (permission: confirm)
+cancelVisitPlan(id, reason)   // UPDATE status→cancelled (permission: cancel)
+addVisitPlanItem(planId, item)
+updateVisitPlanItem(itemId, input)
+```
+
+**Call Plans:** *(نفس بنية Visit Plans)*
+
+**Targets:**
+```typescript
+getTargets(params)
+getTarget(id)
+createTarget(input)     // requires targets.assign
+adjustTarget(input)     // RPC adjust_target() — المسار الوحيد للتعديل
+```
+
+**Views:**
+```typescript
+getRepPerformance(params)     // v_rep_performance — فلتر إلزامي: month أو dateRange
+getPlanDailySummary(params)   // v_plan_daily_summary
+getTargetStatus(params)       // v_target_status
+```
+
+---
+
+### Phase 3 — Hooks
+
+**الملف:** `src/hooks/useQueryHooks.ts` ← Section 10
+
+```typescript
+// Reference (staleTime: 10min)
+useActivityTypes(), useTargetTypes()
+useVisitPlanTemplates(), useCallPlanTemplates()
+
+// Queries
+useActivities(params), useActivity(id)
+useVisitPlans(params), useVisitPlan(id), useVisitPlanItems(planId)
+useCallPlans(params), useCallPlan(id), useCallPlanItems(planId)
+useTargets(params), useTarget(id)
+useRepPerformance(params)   // enabled: !!params.month || !!params.dateFrom
+usePlanDailySummary(params)
+useTargetStatus(params)
+
+// Mutations
+useCreateActivity(), useUpdateActivity(), useSoftDeleteActivity()
+useCreateVisitPlan(), useConfirmVisitPlan(), useCancelVisitPlan()
+useAddVisitPlanItem(), useUpdateVisitPlanItem()
+useCreateCallPlan(), useConfirmCallPlan(), useCancelCallPlan()
+useAddCallPlanItem(), useUpdateCallPlanItem()
+useCreateTarget(), useAdjustTarget()
+```
+
+---
+
+### Phase 4 — Shared Components (فقط ما هو عام وقابل لإعادة الاستخدام)
+
+```
+src/components/shared/
+├── ActivityStatusBadge.tsx   ← badge لحالات النشاط/الخطة/الهدف
+├── ActivityTimeline.tsx      ← timeline أنشطة (يُستخدم في تفاصيل + dashboard)
+├── TargetProgressWidget.tsx  ← شريط تقدم هدف + trend badge
+├── PlanItemCard.tsx          ← بطاقة بند خطة (visit أو call)
+└── GPSStatusIndicator.tsx    ← مؤشر حالة GPS (requires_gps aware)
+```
+
+**منطق GPS المصحَّح في `GPSStatusIndicator`:**
+```
+requires_gps=true + لا يوجد GPS → رسالة خطأ + disable submit زر
+requires_gps=true + GPS موجود + دقة منخفضة → تحذير فقط
+requires_gps=true + GPS موجود + distance > 500م → تحذير فقط (لا منع)
+requires_gps=false → لا يظهر المؤشر أصلاً
+```
+
+---
+
+### Phase 5 — Pages
+
+**هيكل الصفحات:**
+```
+src/pages/activities/
+├── ActivitiesDashboard.tsx        ← /activities
+├── ActivitiesPage.tsx             ← /activities/list
+├── ActivityDetail.tsx             ← /activities/:id
+├── ActivityForm.tsx               ← /activities/new (Stepper)
+├── visit-plans/
+│   ├── VisitPlansPage.tsx         ← /activities/visit-plans
+│   ├── VisitPlanDetail.tsx        ← /activities/visit-plans/:id
+│   └── VisitPlanForm.tsx          ← /activities/visit-plans/new
+├── call-plans/
+│   ├── CallPlansPage.tsx          ← /activities/call-plans
+│   ├── CallPlanDetail.tsx         ← /activities/call-plans/:id
+│   └── CallPlanForm.tsx           ← /activities/call-plans/new
+└── targets/
+    ├── TargetsPage.tsx            ← /activities/targets
+    ├── TargetDetail.tsx           ← /activities/targets/:id
+    └── TargetForm.tsx             ← /activities/targets/new
+```
+
+**قواعد بناء الصفحات:**
+1. كل قائمة → `DataTable + dataCardMapping` (لا تكرار desktop/mobile)
+2. كل نموذج → `ResponsiveModal` للبسيط، Full Page للمعقد
+3. كل تأكيد تدمير → `ConfirmDialog`
+4. كل dropdown بيانات → `AsyncCombobox`
+5. كل نموذج متعدد الخطوات → `Stepper`
+
+**`ActivitiesDashboard.tsx`:**
+- للمندوب: StatCards (زيارات/مكالمات اليوم، طلبات، أهداف) + TargetProgressWidget × أهدافه + PlanDailySummary اليوم + ActivityTimeline آخر 5
+- للمشرف/المدير: جدول أداء الفريق (v_rep_performance) + تقدم الأهداف
+
+**`ActivityForm.tsx` — Stepper 4 خطوات:**
+- Step 1: نوع النشاط + التاريخ/الوقت + ربط خطة (اختياري)
+- Step 2: العميل + GPS (`requires_gps` → منع المتابعة بدون إحداثيات)
+- Step 3: النتيجة + تفاصيل + call_details إذا مكالمة
+- Step 4: مراجعة + إرسال
+
+**`VisitPlanDetail.tsx`:**
+- رأس الخطة + 4 StatCards
+- قائمة `PlanItemCard` لكل بند
+- "بدء الزيارة" → ينتقل لـ `ActivityForm` مع pre-fill (planItemId + customerId + typeId)
+- تأكيد/إلغاء عبر `PermissionGuard`
+
+---
+
+### Phase 6 — Routing + Navigation
+
+**`App.tsx`** — 13 route جديدة:
+```tsx
+/activities                    [activities.create | activities.read_team]
+/activities/list               [activities.create | activities.read_team]
+/activities/new                [activities.create]
+/activities/:id                [activities.create | activities.read_team]
+/activities/visit-plans        [visit_plans.read_own | visit_plans.read_team]
+/activities/visit-plans/new    [visit_plans.create]
+/activities/visit-plans/:id    [visit_plans.read_own | visit_plans.read_team]
+/activities/call-plans         [call_plans.read_own | call_plans.read_team]
+/activities/call-plans/new     [call_plans.create]
+/activities/call-plans/:id     [call_plans.read_own | call_plans.read_team]
+/activities/targets            [targets.read_own | targets.read_team]
+/activities/targets/new        [targets.assign]
+/activities/targets/:id        [targets.read_own | targets.read_team]
+```
+
+**Sidebar — قسم الأنشطة الميدانية:**
+```
+الأنشطة الميدانية
+├── لوحة الأداء         → /activities
+├── سجل الأنشطة        → /activities/list
+├── خطط الزيارات       → /activities/visit-plans
+├── خطط المكالمات      → /activities/call-plans
+└── الأهداف            → /activities/targets
+```
+
+**FAB — إضافة routes الجديدة:**
+```
+/activities/list         → + نشاط جديد    [activities.create]
+/activities/visit-plans  → + خطة زيارات   [visit_plans.create]
+/activities/call-plans   → + خطة مكالمات  [call_plans.create]
+/activities/targets      → + هدف جديد     [targets.assign]
+```
+
+---
+
+### Phase 7 — QA / Polish
+
+- اختبار RLS: مندوب ↔ مشرف ↔ مدير (لكل منهم ما يراه فقط)
+- اختبار GPS: `requires_gps=true` بدون إذن المتصفح → يمنع Submit
+- اختبار `adjust_target()` → يرفض بدون `targets.assign`
+- اختبار `soft_delete_activity()` → يرفض خارج نطاق الوقت أو الصلاحية
+- Skeleton في كل قائمة ← لا Spinner
+- empty states بـ CTA واضح
+- RTL كامل — tap targets ≥ 44px
+
+---
+
+## قائمة الملفات الكاملة
+
+| الملف | النوع | السبب |
+|-------|-------|-------|
+| `src/lib/permissions/constants.ts` | MODIFY | إضافة 22 صلاحية + مجموعة activities |
+| `src/lib/types/activities.ts` | NEW | أنواع TypeScript كاملة |
+| `src/lib/services/activities.ts` | NEW | طبقة الوصول إلى البيانات |
+| `src/hooks/useQueryHooks.ts` | MODIFY | Section 10 — hooks الأنشطة |
+| `src/components/shared/ActivityStatusBadge.tsx` | NEW | badge موحد |
+| `src/components/shared/ActivityTimeline.tsx` | NEW | timeline للأنشطة |
+| `src/components/shared/TargetProgressWidget.tsx` | NEW | widget الأهداف |
+| `src/components/shared/PlanItemCard.tsx` | NEW | بطاقة بند خطة |
+| `src/components/shared/GPSStatusIndicator.tsx` | NEW | مؤشر GPS |
+| `src/pages/activities/ActivitiesDashboard.tsx` | NEW | الصفحة الرئيسية |
+| `src/pages/activities/ActivitiesPage.tsx` | NEW | قائمة الأنشطة |
+| `src/pages/activities/ActivityDetail.tsx` | NEW | تفاصيل نشاط |
+| `src/pages/activities/ActivityForm.tsx` | NEW | نموذج تسجيل نشاط |
+| `src/pages/activities/visit-plans/VisitPlansPage.tsx` | NEW | قائمة خطط الزيارات |
+| `src/pages/activities/visit-plans/VisitPlanDetail.tsx` | NEW | تفاصيل خطة زيارات |
+| `src/pages/activities/visit-plans/VisitPlanForm.tsx` | NEW | نموذج خطة زيارات |
+| `src/pages/activities/call-plans/CallPlansPage.tsx` | NEW | قائمة خطط المكالمات |
+| `src/pages/activities/call-plans/CallPlanDetail.tsx` | NEW | تفاصيل خطة مكالمات |
+| `src/pages/activities/call-plans/CallPlanForm.tsx` | NEW | نموذج خطة مكالمات |
+| `src/pages/activities/targets/TargetsPage.tsx` | NEW | قائمة الأهداف |
+| `src/pages/activities/targets/TargetDetail.tsx` | NEW | تفاصيل هدف |
+| `src/pages/activities/targets/TargetForm.tsx` | NEW | نموذج إسناد هدف |
+| `src/App.tsx` | MODIFY | 13 route جديدة |
+| `src/components/layout/AppLayout.tsx` | MODIFY | sidebar section الأنشطة |
+
+**الإجمالي:** 20 ملفاً جديداً + 4 معدَّلة = **24 ملفاً**
+
+---
+
+## ما لن يُنفَّذ الآن (Phase 2)
+
+| العنصر | السبب |
+|--------|-------|
+| CRUD لـ `activity_types` / `target_types` | لا write path في RLS لعامة المستخدمين |
+| CRUD لـ `visit_plan_templates` / `call_plan_templates` | نفس السبب — read-only في هذه المرحلة |
+| خريطة GPS realtime المندوبين | غير مدعومة backend |
+| إشعارات Push لتأخر الخطط | غير مدعومة backend |
+| `leads`, `complaints`, `campaigns` | جداول غير موجودة |
+| `target_commission_links` | phase 2 |
+| تصدير PDF/Excel | ليس أولوية — يُضاف لاحقاً |
+| حساب `upgrade_value` / `category_spread` | يعيد 0 في DB — يحتاج لوجيك لاحق |
+
+---
+
+*الخطة جاهزة للاعتماد النهائي — التنفيذ يبدأ من Phase 0 فور الموافقة.*

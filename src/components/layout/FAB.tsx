@@ -2,7 +2,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import {
   Plus, ShoppingCart, UserPlus, Package, ArrowLeftRight,
-  Receipt, RotateCcw,
+  Receipt, RotateCcw, Activity, MapPin, Phone,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import { useIsAnyModalOpen } from '@/hooks/useModalStack'
@@ -16,12 +16,17 @@ interface FabConfig {
 }
 
 const FAB_MAP: FabConfig[] = [
-  { path: '/sales/orders',        label: '+ طلب بيع', icon: ShoppingCart,   navigateTo: '/sales/orders/new',        permission: 'sales.orders.create'         },
-  { path: '/customers',           label: '+ عميل',    icon: UserPlus,       navigateTo: '/customers/new',           permission: 'customers.create'            },
-  { path: '/purchases/invoices',  label: '+ فاتورة',  icon: Package,        navigateTo: '/purchases/invoices/new',  permission: 'procurement.invoices.create' },
-  { path: '/purchases/returns',   label: '+ مرتجع',   icon: RotateCcw,      navigateTo: '/purchases/returns/new',   permission: 'procurement.returns.create'  },
-  { path: '/inventory/transfers', label: '+ تحويل',   icon: ArrowLeftRight, navigateTo: '/inventory/transfers/new', permission: 'inventory.transfers.create'  },
-  { path: '/finance/expenses',    label: '+ مصروف',   icon: Receipt,        navigateTo: '/finance/expenses/new',    permission: 'finance.expenses.create'     },
+  { path: '/sales/orders',              label: '+ طلب بيع',     icon: ShoppingCart,   navigateTo: '/sales/orders/new',             permission: 'sales.orders.create'         },
+  { path: '/customers',                 label: '+ عميل',        icon: UserPlus,       navigateTo: '/customers/new',                permission: 'customers.create'            },
+  { path: '/purchases/invoices',        label: '+ فاتورة',      icon: Package,        navigateTo: '/purchases/invoices/new',       permission: 'procurement.invoices.create' },
+  { path: '/purchases/returns',         label: '+ مرتجع',       icon: RotateCcw,      navigateTo: '/purchases/returns/new',        permission: 'procurement.returns.create'  },
+  { path: '/inventory/transfers',       label: '+ تحويل',       icon: ArrowLeftRight, navigateTo: '/inventory/transfers/new',      permission: 'inventory.transfers.create'  },
+  { path: '/finance/expenses',          label: '+ مصروف',       icon: Receipt,        navigateTo: '/finance/expenses/new',         permission: 'finance.expenses.create'     },
+  // ── Activities Module ──
+  { path: '/activities',                label: '+ نشاط',        icon: Activity,       navigateTo: '/activities/new',               permission: 'activities.create'           },
+  { path: '/activities/list',           label: '+ نشاط',        icon: Activity,       navigateTo: '/activities/new',               permission: 'activities.create'           },
+  { path: '/activities/visit-plans',    label: '+ خطة زيارة',   icon: MapPin,         navigateTo: '/activities/visit-plans/new',   permission: 'visit_plans.create'          },
+  { path: '/activities/call-plans',     label: '+ خطة مكالمات', icon: Phone,          navigateTo: '/activities/call-plans/new',    permission: 'call_plans.create'           },
   // Vaults, Payments, Journals use inline modals — they have their own smart local FABs
 ]
 
@@ -65,7 +70,10 @@ export default function FAB() {
   }, [])
 
   // ── Guard 1: No matching list page or no permission
-  const config = FAB_MAP.find(c => location.pathname.startsWith(c.path))
+  // longest-prefix matching: نأخذ المسار الأطول الذي يبدأ به pathname الحالي
+  const config = FAB_MAP
+    .filter(c => location.pathname.startsWith(c.path))
+    .sort((a, b) => b.path.length - a.path.length)[0]
   if (!config || !can(config.permission)) return null
 
   // ── Guard 2: User is already on a form or detail page — unmount entirely.

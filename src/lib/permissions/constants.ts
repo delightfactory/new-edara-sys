@@ -116,21 +116,51 @@ export const PERMISSIONS = {
   HR_PAYROLL_CALCULATE: 'hr.payroll.calculate',
   HR_PAYROLL_APPROVE:   'hr.payroll.approve',
 
-  // Activities
-  ACTIVITIES_CREATE:  'activities.create',
-  ACTIVITIES_READ_OWN:'activities.read_own',
+  // Activities — مستخرجة من 21_activities_module_mvp.sql
+  // الدور sales_rep يملك: update_own + visit/call_plans.read_own
+  // الدور supervisor يملك: read_team + plans.create/confirm/cancel + targets.read_team
+  // الدور branch_manager يملك: نفس supervisor + targets.assign + reports.export
+  // الدور CEO يملك: read_all + plans.read_all + targets.assign
+  ACTIVITIES_CREATE:          'activities.create',      // alias — ممنوح ضمنياً لمن يملك update_own
+  ACTIVITIES_READ_OWN:        'activities.read_own',    // alias — يُستخدم في PermissionGuard فقط
+  ACTIVITIES_UPDATE_OWN:      'activities.update_own',  // المسار الفعلي للـ RLS (sales_rep)
+  ACTIVITIES_READ_TEAM:       'activities.read_team',   // supervisor + branch_manager
+  ACTIVITIES_READ_ALL:        'activities.read_all',    // ceo
+
+  // Visit Plans
+  VISIT_PLANS_CREATE:         'visit_plans.create',
+  VISIT_PLANS_READ_OWN:       'visit_plans.read_own',
+  VISIT_PLANS_READ_TEAM:      'visit_plans.read_team',
+  VISIT_PLANS_READ_ALL:       'visit_plans.read_all',
+  VISIT_PLANS_CONFIRM:        'visit_plans.confirm',
+  VISIT_PLANS_CANCEL:         'visit_plans.cancel',
+
+  // Call Plans
+  CALL_PLANS_CREATE:          'call_plans.create',
+  CALL_PLANS_READ_OWN:        'call_plans.read_own',
+  CALL_PLANS_READ_TEAM:       'call_plans.read_team',
+  CALL_PLANS_READ_ALL:        'call_plans.read_all',
+  CALL_PLANS_CONFIRM:         'call_plans.confirm',
+  CALL_PLANS_CANCEL:          'call_plans.cancel',
+
+  // Targets — تطبيع الأسماء:
+  // TARGETS_READ (قديم) → alias لـ TARGETS_READ_TEAM (المطابق للـ schema)
+  TARGETS_READ_OWN:           'targets.read_own',
+  TARGETS_READ_TEAM:          'targets.read_team',   // المفتاح الصحيح من الـ schema
+  TARGETS_READ:               'targets.read_team',   // alias للتوافق مع الكود القديم — لا تستخدم في كود جديد
+  TARGETS_READ_ALL:           'targets.read_all',
+  TARGETS_CREATE:             'targets.create',
+  TARGETS_UPDATE:             'targets.update',
+  TARGETS_ASSIGN:             'targets.assign',      // الصلاحية الفعلية لإسناد/تعديل الهدف
 
   // Reports
-  REPORTS_SALES:     'reports.sales',
-  REPORTS_FINANCIAL: 'reports.financial',
-  REPORTS_VIEW_ALL:  'reports.view_all',
-
-  // Targets
-  TARGETS_READ_OWN: 'targets.read_own',
-  TARGETS_READ:     'targets.read',
-  TARGETS_READ_ALL: 'targets.read_all',
-  TARGETS_CREATE:   'targets.create',
-  TARGETS_UPDATE:   'targets.update',
+  REPORTS_SALES:              'reports.sales',
+  REPORTS_FINANCIAL:          'reports.financial',
+  REPORTS_VIEW_ALL:           'reports.view_all',
+  REPORTS_ACTIVITIES:         'reports.activities',
+  REPORTS_TEAM_PERFORMANCE:   'reports.team_performance',
+  REPORTS_TARGETS:            'reports.targets',
+  REPORTS_EXPORT:             'reports.export',
 
   // Wildcard
   WILDCARD: '*',
@@ -313,14 +343,41 @@ export const PERMISSION_GROUPS = [
     ]
   },
   {
-    id: 'targets',
-    label: 'الأهداف',
+    id: 'activities',
+    label: 'الأنشطة الميدانية',
     permissions: [
-      { key: PERMISSIONS.TARGETS_READ_OWN, label: 'عرض أهدافي' },
-      { key: PERMISSIONS.TARGETS_READ,     label: 'عرض الأهداف' },
-      { key: PERMISSIONS.TARGETS_READ_ALL, label: 'عرض كل الأهداف' },
-      { key: PERMISSIONS.TARGETS_CREATE,   label: 'إنشاء هدف' },
-      { key: PERMISSIONS.TARGETS_UPDATE,   label: 'تعديل هدف' },
+      { key: PERMISSIONS.ACTIVITIES_UPDATE_OWN,    label: 'تسجيل نشاط (مندوب)' },
+      { key: PERMISSIONS.ACTIVITIES_READ_TEAM,     label: 'عرض أنشطة الفريق (مشرف)' },
+      { key: PERMISSIONS.ACTIVITIES_READ_ALL,      label: 'عرض كل الأنشطة (CEO)' },
+      { key: PERMISSIONS.VISIT_PLANS_CREATE,       label: 'إنشاء خطة زيارات' },
+      { key: PERMISSIONS.VISIT_PLANS_READ_OWN,     label: 'عرض خطط زياراتي' },
+      { key: PERMISSIONS.VISIT_PLANS_READ_TEAM,    label: 'عرض خطط الفريق' },
+      { key: PERMISSIONS.VISIT_PLANS_READ_ALL,     label: 'عرض كل خطط الزيارات' },
+      { key: PERMISSIONS.VISIT_PLANS_CONFIRM,      label: 'تأكيد خطة زيارات' },
+      { key: PERMISSIONS.VISIT_PLANS_CANCEL,       label: 'إلغاء خطة زيارات' },
+      { key: PERMISSIONS.CALL_PLANS_CREATE,        label: 'إنشاء خطة مكالمات' },
+      { key: PERMISSIONS.CALL_PLANS_READ_OWN,      label: 'عرض خطط مكالماتي' },
+      { key: PERMISSIONS.CALL_PLANS_READ_TEAM,     label: 'عرض خطط مكالمات الفريق' },
+      { key: PERMISSIONS.CALL_PLANS_READ_ALL,      label: 'عرض كل خطط المكالمات' },
+      { key: PERMISSIONS.CALL_PLANS_CONFIRM,       label: 'تأكيد خطة مكالمات' },
+      { key: PERMISSIONS.CALL_PLANS_CANCEL,        label: 'إلغاء خطة مكالمات' },
+      { key: PERMISSIONS.TARGETS_READ_OWN,         label: 'عرض أهدافي' },
+      { key: PERMISSIONS.TARGETS_READ_TEAM,        label: 'عرض أهداف الفريق' },
+      { key: PERMISSIONS.TARGETS_READ_ALL,         label: 'عرض كل الأهداف' },
+      { key: PERMISSIONS.TARGETS_ASSIGN,           label: 'إسناد/تعديل هدف (مدير)' },
+      { key: PERMISSIONS.REPORTS_ACTIVITIES,       label: 'تقارير الأنشطة' },
+      { key: PERMISSIONS.REPORTS_TEAM_PERFORMANCE, label: 'تقرير أداء الفريق' },
+      { key: PERMISSIONS.REPORTS_TARGETS,          label: 'تقارير الأهداف' },
+      { key: PERMISSIONS.REPORTS_EXPORT,           label: 'تصدير التقارير' },
+    ]
+  },
+  {
+    id: 'targets_legacy',
+    label: 'الأهداف (إرث — لا تستخدم في كود جديد)',
+    permissions: [
+      // هذه المجموعة للتوثيق فقط — TARGETS_READ = alias لـ TARGETS_READ_TEAM
+      { key: PERMISSIONS.TARGETS_CREATE,   label: 'إنشاء هدف (قديم)' },
+      { key: PERMISSIONS.TARGETS_UPDATE,   label: 'تعديل هدف (قديم)' },
     ]
   },
 ] as const

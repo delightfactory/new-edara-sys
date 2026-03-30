@@ -32,6 +32,26 @@ import { getUsers, getRoles } from '@/lib/services/users'
 import { getAuditLogs } from '@/lib/services/settings'
 import { getChartOfAccounts, getJournalEntries } from '@/lib/services/finance'
 import { getSuppliers } from '@/lib/services/suppliers'
+import {
+  getActivityTypes, getTargetTypes,
+  getVisitPlanTemplates, getCallPlanTemplates,
+  getActivities, getActivity, createActivity, updateActivity, softDeleteActivity,
+  saveCallDetail,
+  getVisitPlans, getVisitPlan, getVisitPlanItems,
+  createVisitPlan, updateVisitPlan, confirmVisitPlan, cancelVisitPlan,
+  addVisitPlanItem, updateVisitPlanItem,
+  getCallPlans, getCallPlan, getCallPlanItems,
+  createCallPlan, updateCallPlan, confirmCallPlan, cancelCallPlan,
+  addCallPlanItem, updateCallPlanItem,
+  getTargets, getTarget, createTarget, adjustTarget,
+  getRepPerformance, getPlanDailySummary, getTargetStatus,
+} from '@/lib/services/activities'
+import type {
+  ActivityInput, CallDetailInput,
+  VisitPlanInput, VisitPlanItemInput,
+  CallPlanInput, CallPlanItemInput,
+  TargetInput, AdjustTargetInput,
+} from '@/lib/types/activities'
 
 // ════════════════════════════════════════════
 // 1. REFERENCE DATA — بيانات مرجعية (staleTime: 10 min)
@@ -789,3 +809,338 @@ export function useApproveAdjustment() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['hr-adjustments'] }),
   })
 }
+
+// ════════════════════════════════════════════
+// 10. ACTIVITIES MODULE — موديول الأنشطة الميدانية
+// ════════════════════════════════════════════
+
+// ── Reference Data (staleTime: 10min) ────────────────────────
+
+export function useActivityTypes() {
+  return useQuery({ queryKey: ['activity-types'], queryFn: getActivityTypes, staleTime: REF_STALE })
+}
+
+export function useTargetTypes() {
+  return useQuery({ queryKey: ['target-types'], queryFn: getTargetTypes, staleTime: REF_STALE })
+}
+
+export function useVisitPlanTemplates() {
+  return useQuery({ queryKey: ['visit-plan-templates'], queryFn: getVisitPlanTemplates, staleTime: REF_STALE })
+}
+
+export function useCallPlanTemplates() {
+  return useQuery({ queryKey: ['call-plan-templates'], queryFn: getCallPlanTemplates, staleTime: REF_STALE })
+}
+
+// ── Activities Queries ────────────────────────────────────────
+
+export function useActivities(params?: Parameters<typeof getActivities>[0]) {
+  return useQuery({
+    queryKey: ['activities', params],
+    queryFn: () => getActivities(params),
+  })
+}
+
+export function useActivity(id: string | null | undefined) {
+  return useQuery({
+    queryKey: ['activity', id],
+    queryFn: () => getActivity(id!),
+    enabled: !!id,
+  })
+}
+
+// ── Visit Plans Queries ───────────────────────────────────────
+
+export function useVisitPlans(params?: Parameters<typeof getVisitPlans>[0]) {
+  return useQuery({
+    queryKey: ['visit-plans', params],
+    queryFn: () => getVisitPlans(params),
+  })
+}
+
+export function useVisitPlan(id: string | null | undefined) {
+  return useQuery({
+    queryKey: ['visit-plan', id],
+    queryFn: () => getVisitPlan(id!),
+    enabled: !!id,
+  })
+}
+
+export function useVisitPlanItems(planId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['visit-plan-items', planId],
+    queryFn: () => getVisitPlanItems(planId!),
+    enabled: !!planId,
+  })
+}
+
+// ── Call Plans Queries ────────────────────────────────────────
+
+export function useCallPlans(params?: Parameters<typeof getCallPlans>[0]) {
+  return useQuery({
+    queryKey: ['call-plans', params],
+    queryFn: () => getCallPlans(params),
+  })
+}
+
+export function useCallPlan(id: string | null | undefined) {
+  return useQuery({
+    queryKey: ['call-plan', id],
+    queryFn: () => getCallPlan(id!),
+    enabled: !!id,
+  })
+}
+
+export function useCallPlanItems(planId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['call-plan-items', planId],
+    queryFn: () => getCallPlanItems(planId!),
+    enabled: !!planId,
+  })
+}
+
+// ── Targets Queries ───────────────────────────────────────────
+
+export function useTargets(params?: Parameters<typeof getTargets>[0]) {
+  return useQuery({
+    queryKey: ['targets', params],
+    queryFn: () => getTargets(params),
+  })
+}
+
+export function useTarget(id: string | null | undefined) {
+  return useQuery({
+    queryKey: ['target', id],
+    queryFn: () => getTarget(id!),
+    enabled: !!id,
+  })
+}
+
+// ── Views Queries ─────────────────────────────────────────────
+
+export function useRepPerformance(params?: Parameters<typeof getRepPerformance>[0]) {
+  return useQuery({
+    queryKey: ['rep-performance', params],
+    queryFn: () => getRepPerformance(params),
+    // فلتر الشهر/السنة موصى به دائماً — لا نُعطِّل القيود
+    staleTime: 60 * 1000, // 1 دقيقة
+  })
+}
+
+export function usePlanDailySummary(params?: Parameters<typeof getPlanDailySummary>[0]) {
+  return useQuery({
+    queryKey: ['plan-daily-summary', params],
+    queryFn: () => getPlanDailySummary(params),
+    staleTime: 60 * 1000,
+  })
+}
+
+export function useTargetStatus(params?: Parameters<typeof getTargetStatus>[0]) {
+  return useQuery({
+    queryKey: ['target-status', params],
+    queryFn: () => getTargetStatus(params),
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+// ── Activity Mutations ────────────────────────────────────────
+
+export function useCreateActivity() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: ActivityInput) => createActivity(input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['activities'] })
+      qc.invalidateQueries({ queryKey: ['rep-performance'] })
+      qc.invalidateQueries({ queryKey: ['plan-daily-summary'] })
+    },
+  })
+}
+
+export function useUpdateActivity() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: Partial<ActivityInput> }) =>
+      updateActivity(id, input),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['activities'] })
+      qc.invalidateQueries({ queryKey: ['activity', vars.id] })
+    },
+  })
+}
+
+export function useSoftDeleteActivity() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (activityId: string) => softDeleteActivity(activityId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['activities'] })
+      qc.invalidateQueries({ queryKey: ['plan-daily-summary'] })
+    },
+  })
+}
+
+export function useSaveCallDetail() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ activityId, input }: { activityId: string; input: CallDetailInput }) =>
+      saveCallDetail(activityId, input),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['activity', vars.activityId] })
+    },
+  })
+}
+
+// ── Visit Plan Mutations ──────────────────────────────────────
+
+export function useCreateVisitPlan() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: VisitPlanInput) => createVisitPlan(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['visit-plans'] }),
+  })
+}
+
+export function useUpdateVisitPlan() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: Partial<VisitPlanInput> }) =>
+      updateVisitPlan(id, input),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['visit-plans'] })
+      qc.invalidateQueries({ queryKey: ['visit-plan', vars.id] })
+    },
+  })
+}
+
+export function useConfirmVisitPlan() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => confirmVisitPlan(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['visit-plans'] }),
+  })
+}
+
+export function useCancelVisitPlan() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) => cancelVisitPlan(id, reason),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['visit-plans'] }),
+  })
+}
+
+export function useAddVisitPlanItem() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ planId, item }: { planId: string; item: VisitPlanItemInput }) =>
+      addVisitPlanItem(planId, item),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['visit-plan',       vars.planId] })
+      qc.invalidateQueries({ queryKey: ['visit-plan-items', vars.planId] }) // ✅ مضاف
+    },
+  })
+}
+
+export function useUpdateVisitPlanItem() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ itemId, input, planId }: { itemId: string; input: any; planId: string }) =>
+      updateVisitPlanItem(itemId, input),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['visit-plan', vars.planId] })
+      qc.invalidateQueries({ queryKey: ['visit-plan-items', vars.planId] })
+    },
+  })
+}
+
+// ── Call Plan Mutations ───────────────────────────────────────
+
+export function useCreateCallPlan() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: CallPlanInput) => createCallPlan(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['call-plans'] }),
+  })
+}
+
+export function useUpdateCallPlan() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: Partial<CallPlanInput> }) =>
+      updateCallPlan(id, input),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['call-plans'] })
+      qc.invalidateQueries({ queryKey: ['call-plan', vars.id] })
+    },
+  })
+}
+
+export function useConfirmCallPlan() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => confirmCallPlan(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['call-plans'] }),
+  })
+}
+
+export function useCancelCallPlan() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) => cancelCallPlan(id, reason),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['call-plans'] }),
+  })
+}
+
+export function useAddCallPlanItem() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ planId, item }: { planId: string; item: CallPlanItemInput }) =>
+      addCallPlanItem(planId, item),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['call-plan',       vars.planId] })
+      qc.invalidateQueries({ queryKey: ['call-plan-items', vars.planId] }) // ✅ مضاف
+    },
+  })
+}
+
+export function useUpdateCallPlanItem() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ itemId, input, planId }: { itemId: string; input: any; planId: string }) =>
+      updateCallPlanItem(itemId, input),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['call-plan', vars.planId] })
+      qc.invalidateQueries({ queryKey: ['call-plan-items', vars.planId] })
+    },
+  })
+}
+
+// ── Target Mutations ──────────────────────────────────────────
+
+export function useCreateTarget() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: TargetInput) => createTarget(input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['targets'] })
+      qc.invalidateQueries({ queryKey: ['target-status'] })
+    },
+  })
+}
+
+/**
+ * تعديل قيمة الهدف — يستدعي adjust_target() RPC حصراً
+ * التوقيع الحقيقي: p_target_id + p_field + p_new_value (TEXT) + p_reason + p_user_id
+ */
+export function useAdjustTarget() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: AdjustTargetInput) => adjustTarget(input),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['targets'] })
+      qc.invalidateQueries({ queryKey: ['target', vars.p_target_id] })
+      qc.invalidateQueries({ queryKey: ['target-status'] })
+    },
+  })
+}
+

@@ -104,28 +104,39 @@ const sections: NavSection[] = [
     ],
   },
   {
+    label: 'الأنشطة الميدانية',
+    items: [
+      {
+        id: 'activities', label: 'الأنشطة', icon: ClipboardList,
+        path: '/activities',
+        permission: [PERMISSIONS.ACTIVITIES_READ_OWN, PERMISSIONS.ACTIVITIES_READ_TEAM, PERMISSIONS.ACTIVITIES_READ_ALL],
+        children: [
+          { label: 'لوحة الأنشطة',  path: '/activities',              permission: [PERMISSIONS.ACTIVITIES_READ_OWN, PERMISSIONS.ACTIVITIES_READ_TEAM, PERMISSIONS.ACTIVITIES_READ_ALL] },
+          { label: 'قائمة الأنشطة', path: '/activities/list',         permission: [PERMISSIONS.ACTIVITIES_READ_OWN, PERMISSIONS.ACTIVITIES_READ_TEAM, PERMISSIONS.ACTIVITIES_READ_ALL] },
+          { label: 'خطط الزيارات',   path: '/activities/visit-plans',  permission: [PERMISSIONS.VISIT_PLANS_READ_OWN, PERMISSIONS.VISIT_PLANS_READ_TEAM, PERMISSIONS.VISIT_PLANS_READ_ALL] },
+          { label: 'خطط المكالمات',  path: '/activities/call-plans',   permission: [PERMISSIONS.CALL_PLANS_READ_OWN, PERMISSIONS.CALL_PLANS_READ_TEAM, PERMISSIONS.CALL_PLANS_READ_ALL] },
+          { label: 'الأهداف',        path: '/activities/targets',      permission: [PERMISSIONS.TARGETS_READ_OWN, PERMISSIONS.TARGETS_READ_TEAM, PERMISSIONS.TARGETS_READ_ALL] },
+        ],
+      },
+    ],
+  },
+  {
     label: 'أدوات',
     items: [
-      { id: 'targets', label: 'الأهداف', icon: Target, path: '/targets', permission: PERMISSIONS.TARGETS_READ_OWN, comingSoon: true },
       { id: 'reports', label: 'التقارير', icon: BarChart3, path: '/reports', permission: PERMISSIONS.REPORTS_SALES, comingSoon: true },
       {
         id: 'hr', label: 'الموارد البشرية', icon: UserCog,
         path: '/hr',
-        // بدون permission على القسم — كل مستخدم مرتبط بموظف يدخل HR
-        // الحماية تتم على مستوى كل رابط منفرداً
         children: [
           { label: 'لوحة التحكم',     path: '/hr',                    permission: PERMISSIONS.HR_EMPLOYEES_READ },
-          // ── وظائف الإدارة (مديرون فقط) ──
           { label: 'الموظفون',        path: '/hr/employees',          permission: PERMISSIONS.HR_EMPLOYEES_READ },
           { label: 'الحضور',          path: '/hr/attendance',         permission: PERMISSIONS.HR_EMPLOYEES_READ },
-          // ── وظائف الموظف + المدير ──
           { label: 'تسجيل الحضور',   path: '/hr/attendance/checkin', permission: 'hr.attendance.checkin' },
           { label: 'الأذونات',        path: '/hr/permissions',        permission: ['hr.permissions.approve', 'hr.attendance.checkin', 'hr.leaves.create'] },
           { label: 'الإجازات',        path: '/hr/leaves',             permission: ['hr.leaves.create', 'hr.leaves.read', 'hr.leaves.approve', 'hr.leaves.request'] },
           { label: 'السلف',           path: '/hr/advances',           permission: ['hr.advances.create', 'hr.advances.read', 'hr.advances.approve'] },
           { label: 'التفويضات',       path: '/hr/delegations',        permission: ['hr.leaves.approve', 'hr.advances.approve', 'hr.attendance.approve', 'hr.permissions.approve'] },
           { label: 'ملفي الشخصي',     path: '/hr/my-profile' },
-          // ── وظائف مالية/إدارية متخصصة ──
           { label: 'العمولات',        path: '/hr/commissions',        permission: ['hr.commissions.create', PERMISSIONS.HR_EMPLOYEES_READ] },
           { label: 'مسير الرواتب',   path: '/hr/payroll',            permission: 'hr.payroll.read' },
           { label: 'مكافآت وخصومات', path: '/hr/adjustments',        permission: ['hr.payroll.read', 'hr.adjustments.read', 'hr.adjustments.create'] },
@@ -144,6 +155,7 @@ const sections: NavSection[] = [
     ],
   },
 ]
+
 
 export default function Sidebar() {
   const can = useAuthStore(s => s.can)

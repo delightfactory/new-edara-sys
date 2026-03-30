@@ -90,6 +90,21 @@ const DelegationsPage    = lazy(() => import('@/pages/hr/delegations/Delegations
 const HRAdjustmentsPage  = lazy(() => import('@/pages/hr/adjustments/AdjustmentsPage'))
 const MyProfilePage      = lazy(() => import('@/pages/hr/MyProfilePage'))
 
+// Activities Pages — lazy loaded
+const ActivitiesDashboard = lazy(() => import('@/pages/activities/ActivitiesDashboard'))
+const ActivitiesPage      = lazy(() => import('@/pages/activities/ActivitiesPage'))
+const ActivityForm        = lazy(() => import('@/pages/activities/ActivityForm'))
+const ActivityDetail      = lazy(() => import('@/pages/activities/ActivityDetail'))
+const VisitPlansPage      = lazy(() => import('@/pages/activities/VisitPlansPage'))
+const VisitPlanForm       = lazy(() => import('@/pages/activities/VisitPlanForm'))
+const VisitPlanDetail     = lazy(() => import('@/pages/activities/VisitPlanDetail'))
+const CallPlansPage       = lazy(() => import('@/pages/activities/CallPlansPage'))
+const CallPlanForm        = lazy(() => import('@/pages/activities/CallPlanForm'))
+const CallPlanDetail      = lazy(() => import('@/pages/activities/CallPlanDetail'))
+const TargetsPage         = lazy(() => import('@/pages/activities/TargetsPage'))
+const TargetForm          = lazy(() => import('@/pages/activities/TargetForm'))
+const TargetDetail        = lazy(() => import('@/pages/activities/TargetDetail'))
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -356,6 +371,88 @@ export default function App() {
               <Route path="settings/audit" element={
                 <ProtectedRoute permission="settings.audit.read"><Suspense fallback={<LazyFallback />}><AuditLogPage /></Suspense></ProtectedRoute>
               } />
+
+              {/* ── Activities Module ──────────────────────────────── */}
+              {/* Dashboard */}
+              <Route path="activities" element={
+                <ProtectedRoute permission={['activities.read_own', 'activities.read_team', 'activities.read_all']}>
+                  <Suspense fallback={<LazyFallback />}><ActivitiesDashboard /></Suspense>
+                </ProtectedRoute>
+              } />
+              {/* List */}
+              <Route path="activities/list" element={
+                <ProtectedRoute permission={['activities.read_own', 'activities.read_team', 'activities.read_all']}>
+                  <Suspense fallback={<LazyFallback />}><ActivitiesPage /></Suspense>
+                </ProtectedRoute>
+              } />
+              {/* Create */}
+              <Route path="activities/new" element={
+                <ProtectedRoute permission="activities.create">
+                  <Suspense fallback={<LazyFallback />}><ActivityForm /></Suspense>
+                </ProtectedRoute>
+              } />
+              {/* Detail */}
+              <Route path="activities/:id" element={
+                <ProtectedRoute permission={['activities.read_own', 'activities.read_team', 'activities.read_all']}>
+                  <Suspense fallback={<LazyFallback />}><ActivityDetail /></Suspense>
+                </ProtectedRoute>
+              } />
+              {/* Edit */}
+              <Route path="activities/:id/edit" element={
+                <ProtectedRoute permission="activities.update_own">
+                  <Suspense fallback={<LazyFallback />}><ActivityForm /></Suspense>
+                </ProtectedRoute>
+              } />
+              {/* ── Visit Plans ── */}
+              <Route path="activities/visit-plans" element={
+                <ProtectedRoute permission={['visit_plans.read_own', 'visit_plans.read_team', 'visit_plans.read_all']}>
+                  <Suspense fallback={<LazyFallback />}><VisitPlansPage /></Suspense>
+                </ProtectedRoute>
+              } />
+              <Route path="activities/visit-plans/new" element={
+                <ProtectedRoute permission="visit_plans.create">
+                  <Suspense fallback={<LazyFallback />}><VisitPlanForm /></Suspense>
+                </ProtectedRoute>
+              } />
+              <Route path="activities/visit-plans/:id" element={
+                <ProtectedRoute permission={['visit_plans.read_own', 'visit_plans.read_team', 'visit_plans.read_all']}>
+                  <Suspense fallback={<LazyFallback />}><VisitPlanDetail /></Suspense>
+                </ProtectedRoute>
+              } />
+              {/* ── Call Plans ── */}
+              <Route path="activities/call-plans" element={
+                <ProtectedRoute permission={['call_plans.read_own', 'call_plans.read_team', 'call_plans.read_all']}>
+                  <Suspense fallback={<LazyFallback />}><CallPlansPage /></Suspense>
+                </ProtectedRoute>
+              } />
+              <Route path="activities/call-plans/new" element={
+                <ProtectedRoute permission="call_plans.create">
+                  <Suspense fallback={<LazyFallback />}><CallPlanForm /></Suspense>
+                </ProtectedRoute>
+              } />
+              <Route path="activities/call-plans/:id" element={
+                <ProtectedRoute permission={['call_plans.read_own', 'call_plans.read_team', 'call_plans.read_all']}>
+                  <Suspense fallback={<LazyFallback />}><CallPlanDetail /></Suspense>
+                </ProtectedRoute>
+              } />
+              {/* ── Targets ── */}
+              <Route path="activities/targets" element={
+                <ProtectedRoute permission={['targets.read_own', 'targets.read_team', 'targets.read_all']}>
+                  <Suspense fallback={<LazyFallback />}><TargetsPage /></Suspense>
+                </ProtectedRoute>
+              } />
+              {/* /new: يُرندر TargetForm الحقيقي */}
+              <Route path="activities/targets/new" element={
+                <ProtectedRoute permission="targets.assign">
+                  <Suspense fallback={<LazyFallback />}><TargetForm /></Suspense>
+                </ProtectedRoute>
+              } />
+              <Route path="activities/targets/:id" element={
+                <ProtectedRoute permission={['targets.read_own', 'targets.read_team', 'targets.read_all']}>
+                  <Suspense fallback={<LazyFallback />}><TargetDetail /></Suspense>
+                </ProtectedRoute>
+              } />
+
             </Route>
 
               {/* 404 */}
