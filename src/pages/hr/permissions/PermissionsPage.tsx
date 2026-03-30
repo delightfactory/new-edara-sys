@@ -13,6 +13,7 @@ import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
+import PermissionGuard from '@/components/shared/PermissionGuard'
 
 const STATUS_LABEL = { pending: 'قيد المراجعة', approved: 'مُعتمد', rejected: 'مرفوض' }
 const STATUS_VARIANT: Record<string, 'warning' | 'success' | 'danger'> = {
@@ -29,11 +30,10 @@ const fmtTime = (t: string) => {
 
 export default function PermissionsPage() {
   const qc = useQueryClient()
-  const profile = useAuthStore(s => s.profile)
   const can     = useAuthStore(s => s.can)
   const { data: currentEmp } = useCurrentEmployee()
 
-  const isManager = can('hr.leaves.approve')
+  const isManager = can('hr.attendance.approve')
 
   // State
   const [formOpen, setFormOpen] = useState(false)
@@ -83,7 +83,7 @@ export default function PermissionsPage() {
   })
 
   const approveMut = useMutation({
-    mutationFn: (id: string) => approvePermissionRequest(id, profile?.id ?? ''),
+    mutationFn: (id: string) => approvePermissionRequest(id, currentEmp?.id ?? ''),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['hr-permission-requests'] })
       toast.success('تم اعتماد الإذن')
@@ -93,7 +93,7 @@ export default function PermissionsPage() {
 
   const rejectMut = useMutation({
     mutationFn: ({ id, reason }: { id: string; reason: string }) =>
-      rejectPermissionRequest(id, profile?.id ?? '', reason),
+      rejectPermissionRequest(id, currentEmp?.id ?? '', reason),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['hr-permission-requests'] })
       toast.success('تم رفض الطلب')
@@ -144,24 +144,26 @@ export default function PermissionsPage() {
     {
       key: 'actions',
       label: '',
-      render: (r: any) => isManager && r.status === 'pending' ? (
-        <div style={{ display: 'flex', gap: 4 }}>
-          <Button
-            size="sm"
-            variant="ghost"
-            icon={<CheckCircle size={13} />}
-            onClick={(e) => { e.stopPropagation(); approveMut.mutate(r.id); }}
-            loading={approveMut.isPending}
-            style={{ color: 'var(--color-success)' }}
-          />
-          <Button
-            size="sm"
-            variant="ghost"
-            icon={<XCircle size={13} />}
-            onClick={(e) => { e.stopPropagation(); setRejectId(r.id); }}
-            style={{ color: 'var(--color-danger)' }}
-          />
-        </div>
+      render: (r: any) => r.status === 'pending' ? (
+        <PermissionGuard permission="hr.attendance.approve">
+          <div style={{ display: 'flex', gap: 4 }}>
+            <Button
+              size="sm"
+              variant="ghost"
+              icon={<CheckCircle size={13} />}
+              onClick={(e) => { e.stopPropagation(); approveMut.mutate(r.id); }}
+              loading={approveMut.isPending}
+              style={{ color: 'var(--color-success)' }}
+            />
+            <Button
+              size="sm"
+              variant="ghost"
+              icon={<XCircle size={13} />}
+              onClick={(e) => { e.stopPropagation(); setRejectId(r.id); }}
+              style={{ color: 'var(--color-danger)' }}
+            />
+          </div>
+        </PermissionGuard>
       ) : null,
     },
   ]
@@ -265,24 +267,26 @@ export default function PermissionsPage() {
                     { label: 'متوقع عودة', value: r.expected_return ? fmtTime(r.expected_return) : '—' },
                     { label: 'السبب', value: r.reason },
                   ]}
-                  actions={isManager && r.status === 'pending' ? (
-                    <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        icon={<CheckCircle size={13} />}
-                        onClick={(e) => { e.stopPropagation(); approveMut.mutate(r.id); }}
-                        loading={approveMut.isPending}
-                        style={{ color: 'var(--color-success)', flex: 1, border: '1px solid color-mix(in srgb, var(--color-success) 30%, transparent)' }}
-                      >اعتماد</Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        icon={<XCircle size={13} />}
-                        onClick={(e) => { e.stopPropagation(); setRejectId(r.id); }}
-                        style={{ color: 'var(--color-danger)', flex: 1, border: '1px solid color-mix(in srgb, var(--color-danger) 30%, transparent)' }}
-                      >رفض</Button>
-                    </div>
+                  actions={r.status === 'pending' ? (
+                    <PermissionGuard permission="hr.attendance.approve">
+                      <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          icon={<CheckCircle size={13} />}
+                          onClick={(e) => { e.stopPropagation(); approveMut.mutate(r.id); }}
+                          loading={approveMut.isPending}
+                          style={{ color: 'var(--color-success)', flex: 1, border: '1px solid color-mix(in srgb, var(--color-success) 30%, transparent)' }}
+                        >اعتماد</Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          icon={<XCircle size={13} />}
+                          onClick={(e) => { e.stopPropagation(); setRejectId(r.id); }}
+                          style={{ color: 'var(--color-danger)', flex: 1, border: '1px solid color-mix(in srgb, var(--color-danger) 30%, transparent)' }}
+                        >رفض</Button>
+                      </div>
+                    </PermissionGuard>
                   ) : undefined}
                 />
               ))}

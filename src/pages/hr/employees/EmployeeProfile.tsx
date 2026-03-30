@@ -25,7 +25,6 @@ import type {
   HRAdvanceInstallment,
 } from '@/lib/types/hr'
 import { formatNumber } from '@/lib/utils/format'
-import PageHeader from '@/components/shared/PageHeader'
 import DataTable from '@/components/shared/DataTable'
 import DataCard from '@/components/ui/DataCard'
 import Badge from '@/components/ui/Badge'
@@ -153,118 +152,148 @@ export default function EmployeeProfile() {
 
   return (
     <div className="page-container animate-enter">
-      {/* ══ HEADER ══ */}
-      <PageHeader
-        title={emp.full_name}
-        subtitle={emp.employee_number}
-        breadcrumbs={[
-          { label: 'الموظفون', path: '/hr/employees' },
-          { label: emp.full_name },
-        ]}
-        actions={
-          <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-            <Button
-              variant="secondary"
-              size="sm"
+
+      {/* ══ HERO CARD — تصميم متجاوب جديد ══ */}
+      <div className="prof-hero-card edara-card">
+
+        {/* الشريط العلوي: رقم الموظف + أزرار */}
+        <div className="prof-hero-topbar">
+          <div className="prof-hero-breadcrumb">
+            <button
+              type="button"
+              className="prof-back-btn"
               onClick={() => navigate('/hr/employees')}
+              title="العودة للقائمة"
             >
-              <ArrowRight size={14} /> القائمة
-            </Button>
-            {/* GAP-06: طلب سلفة من ملف الموظف */}
+              <ArrowRight size={16} />
+            </button>
+            <span className="prof-emp-number">{emp.employee_number}</span>
+          </div>
+          <div className="prof-hero-actions">
             <PermissionGuard permission="hr.advances.create">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setQuickAdvOpen(true)}
-              >
+              <Button variant="secondary" size="sm" onClick={() => setQuickAdvOpen(true)}>
                 طلب سلفة
               </Button>
             </PermissionGuard>
-            {/* GAP-03: ربط حساب المستخدم للموظفين الموجودين */}
             <PermissionGuard permission="hr.employees.edit">
               {!emp.user_id && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setLinkAccountOpen(true)}
-                >
+                <Button variant="secondary" size="sm" onClick={() => setLinkAccountOpen(true)}>
                   ربط حساب
                 </Button>
               )}
             </PermissionGuard>
             <PermissionGuard permission="hr.employees.edit">
-              <Button
-                icon={<UserCog size={14} />}
-                size="sm"
-                onClick={() => setEditOpen(true)}
-              >
+              <Button icon={<UserCog size={14} />} size="sm" onClick={() => setEditOpen(true)}>
                 تعديل
               </Button>
             </PermissionGuard>
           </div>
-        }
-      />
+        </div>
 
-      {/* ══ PROFILE CARD ══ */}
-      <div className="edara-card prof-hero">
-        <Avatar name={emp.full_name} status={emp.status} />
-        <div className="prof-hero-info">
-          <div className="prof-hero-name">
-            {emp.full_name}
-            {emp.full_name_en && (
-              <span className="prof-hero-name-en">{emp.full_name_en}</span>
-            )}
+        {/* جسم البطاقة */}
+        <div className="prof-hero-body">
+          {/* أفاتار */}
+          <div className="prof-avatar-wrap">
+            <div
+              className="prof-avatar"
+              style={{
+                '--avatar-color': emp.status === 'active'
+                  ? 'var(--color-primary)'
+                  : emp.status === 'on_leave'
+                  ? 'var(--color-info)'
+                  : 'var(--text-muted)',
+              } as React.CSSProperties}
+            >
+              {emp.full_name.trim().charAt(0)}
+            </div>
+            <span
+              className="prof-avatar-status"
+              style={{
+                background: statusVariant[emp.status] === 'success' ? 'var(--color-success)'
+                  : statusVariant[emp.status] === 'info' ? 'var(--color-info)'
+                  : statusVariant[emp.status] === 'warning' ? 'var(--color-warning)'
+                  : 'var(--color-danger)',
+              }}
+            />
           </div>
-          <div className="prof-hero-meta">
-            {emp.position?.name && (
-              <span className="prof-hero-chip">
-                <Briefcase size={12} /> {emp.position.name}
-              </span>
-            )}
-            {emp.department?.name && (
-              <span className="prof-hero-chip">
-                <Building2 size={12} /> {emp.department.name}
-              </span>
-            )}
-            <Badge variant={statusVariant[emp.status]}>{statusLabel[emp.status]}</Badge>
-          </div>
-          <div className="prof-hero-sub">
-            <span><Clock size={11} /> انضم: {fmtDate(emp.hire_date)}</span>
-            {can('hr.payroll.read') && (
-              <span><TrendingUp size={11} /> الراتب: {formatNumber(emp.gross_salary)} ج.م</span>
-            )}
+
+          {/* المعلومات */}
+          <div className="prof-hero-info">
+            <div className="prof-hero-name">
+              {emp.full_name}
+              {emp.full_name_en && (
+                <span className="prof-hero-name-en">{emp.full_name_en}</span>
+              )}
+            </div>
+
+            {/* التاجات */}
+            <div className="prof-hero-tags">
+              <Badge variant={statusVariant[emp.status]}>{statusLabel[emp.status]}</Badge>
+              {emp.position?.name && (
+                <span className="prof-tag">
+                  <Briefcase size={11} /> {emp.position.name}
+                </span>
+              )}
+              {emp.department?.name && (
+                <span className="prof-tag">
+                  <Building2 size={11} /> {emp.department.name}
+                </span>
+              )}
+              {emp.is_field_employee && (
+                <span className="prof-tag prof-tag--accent">مندوب ميداني</span>
+              )}
+            </div>
+
+            {/* Stats row */}
+            <div className="prof-stats-row">
+              <div className="prof-stat">
+                <span className="prof-stat-label">تاريخ التعيين</span>
+                <span className="prof-stat-value">{fmtDate(emp.hire_date)}</span>
+              </div>
+              {can('hr.payroll.read') && emp.gross_salary > 0 && (
+                <div className="prof-stat">
+                  <span className="prof-stat-label">الراتب الإجمالي</span>
+                  <span className="prof-stat-value prof-stat-value--primary">
+                    {formatNumber(emp.gross_salary)} ج.م
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* التابات — كل تاب يظهر فقط إذا كانت لدى المستخدم صلاحيته */}
-      <div className="prof-tabs">
-        {tabs.map(t => {
-          // تحقق من الصلاحية — OR logic للمصفوفة
-          if (t.permission) {
-            const hasAccess = Array.isArray(t.permission)
-              ? t.permission.some(p => can(p))
-              : can(t.permission)
-            if (!hasAccess) return null
-          }
-          const Icon = t.icon
-          return (
-            <button
-              key={t.id}
-              type="button"
-              id={`emp-profile-tab-${t.id}`}
-              className={`prof-tab ${activeTab === t.id ? 'prof-tab--active' : ''}`}
-              onClick={() => setActiveTab(t.id)}
-            >
-              <Icon size={14} />
-              {t.label}
-            </button>
-          )
-        })}
+      {/* ══ TABS ══ */}
+      <div className="prof-tabs-wrap">
+        <div className="prof-tabs" role="tablist">
+          {tabs.map(t => {
+            if (t.permission) {
+              const hasAccess = Array.isArray(t.permission)
+                ? t.permission.some(p => can(p))
+                : can(t.permission)
+              if (!hasAccess) return null
+            }
+            const Icon = t.icon
+            return (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                id={`emp-profile-tab-${t.id}`}
+                aria-selected={activeTab === t.id}
+                className={`prof-tab ${activeTab === t.id ? 'prof-tab--active' : ''}`}
+                onClick={() => setActiveTab(t.id)}
+              >
+                <span className="prof-tab-icon"><Icon size={14} /></span>
+                <span className="prof-tab-label">{t.label}</span>
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       {/* ══ TAB CONTENT ══ */}
-      <div className="prof-content">
+      <div className="prof-panel">
         {activeTab === 'info'        && <InfoTab      emp={emp} />}
         {activeTab === 'documents'   && <DocumentsTab emp={emp} />}
         {activeTab === 'leaves'      && <LeavesTab    employeeId={emp.id} />}
@@ -294,254 +323,262 @@ export default function EmployeeProfile() {
       />
 
       <style>{`
-        /* ── Hero Card ── */
-        .prof-hero {
-          display: flex;
-          align-items: flex-start;
-          gap: var(--space-4);
-          padding: var(--space-5);
+        /* ══════════════════════════════════════════════════
+           HERO CARD
+        ══════════════════════════════════════════════════ */
+        .prof-hero-card {
+          padding: 0;
+          overflow: hidden;
           margin-bottom: var(--space-4);
-        }
-        .prof-hero-info { flex: 1; min-width: 0; }
-        .prof-hero-name {
-          font-size: var(--text-xl);
-          font-weight: 700;
-          color: var(--text-primary);
-          margin-bottom: var(--space-2);
-          display: flex;
-          align-items: baseline;
-          gap: var(--space-2);
-          flex-wrap: wrap;
-        }
-        .prof-hero-name-en {
-          font-size: var(--text-sm);
-          color: var(--text-muted);
-          font-weight: 400;
-        }
-        .prof-hero-meta {
-          display: flex;
-          align-items: center;
-          gap: var(--space-2);
-          flex-wrap: wrap;
-          margin-bottom: var(--space-2);
-        }
-        .prof-hero-chip {
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          font-size: var(--text-xs);
-          color: var(--text-secondary);
-          background: var(--bg-surface-2);
-          border: 1px solid var(--border-primary);
-          border-radius: var(--radius-full);
-          padding: 2px 8px;
-        }
-        .prof-hero-sub {
-          display: flex;
-          gap: var(--space-4);
-          font-size: var(--text-xs);
-          color: var(--text-muted);
-          align-items: center;
-          flex-wrap: wrap;
-        }
-        .prof-hero-sub span {
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
         }
 
-        /* ── Tabs ── */
-        .prof-tabs {
+        /* Topbar: رقم + أزرار */
+        .prof-hero-topbar {
           display: flex;
-          gap: var(--space-1);
-          border-bottom: 1.5px solid var(--border-primary);
+          align-items: center;
+          justify-content: space-between;
+          padding: var(--space-3) var(--space-5);
+          border-bottom: 1px solid var(--border-primary);
+          background: var(--bg-surface-2);
+          flex-wrap: wrap;
+          gap: var(--space-2);
+        }
+        .prof-hero-breadcrumb {
+          display: flex; align-items: center; gap: var(--space-2);
+        }
+        .prof-back-btn {
+          width: 32px; height: 32px;
+          border-radius: var(--radius-md);
+          border: 1px solid var(--border-primary);
+          background: var(--bg-surface);
+          color: var(--text-secondary);
+          cursor: pointer;
+          display: flex; align-items: center; justify-content: center;
+          transition: all 0.15s;
+          flex-shrink: 0;
+        }
+        .prof-back-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .prof-emp-number {
+          font-size: var(--text-xs); font-weight: 700;
+          color: var(--text-muted); font-family: monospace; letter-spacing: 0.05em;
+          background: var(--bg-surface); border: 1px solid var(--border-primary);
+          border-radius: var(--radius-full); padding: 2px 10px;
+        }
+        .prof-hero-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
+        /* Body: أفاتار + معلومات */
+        .prof-hero-body {
+          display: flex; align-items: flex-start;
+          gap: var(--space-5); padding: var(--space-5) var(--space-6);
+        }
+
+        /* أفاتار */
+        .prof-avatar-wrap { position: relative; flex-shrink: 0; }
+        .prof-avatar {
+          width: 72px; height: 72px; border-radius: 50%;
+          background: color-mix(in srgb, var(--avatar-color, var(--color-primary)) 12%, var(--bg-surface-2));
+          border: 3px solid color-mix(in srgb, var(--avatar-color, var(--color-primary)) 25%, transparent);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 1.8rem; font-weight: 800;
+          color: var(--avatar-color, var(--color-primary)); line-height: 1;
+        }
+        .prof-avatar-status {
+          position: absolute; bottom: 3px; inset-inline-end: 3px;
+          width: 14px; height: 14px; border-radius: 50%;
+          border: 2px solid var(--bg-surface);
+        }
+
+        /* معلومات */
+        .prof-hero-info { flex: 1; min-width: 0; }
+        .prof-hero-name {
+          font-size: var(--text-xl); font-weight: 800; color: var(--text-primary);
+          margin-bottom: var(--space-2); display: flex; align-items: baseline;
+          gap: var(--space-2); flex-wrap: wrap; line-height: 1.3;
+        }
+        .prof-hero-name-en { font-size: var(--text-sm); color: var(--text-muted); font-weight: 400; }
+
+        /* Tags */
+        .prof-hero-tags {
+          display: flex; flex-wrap: wrap; gap: var(--space-2);
+          align-items: center; margin-bottom: var(--space-3);
+        }
+        .prof-tag {
+          display: inline-flex; align-items: center; gap: 4px;
+          font-size: var(--text-xs); color: var(--text-secondary);
+          background: var(--bg-surface-2); border: 1px solid var(--border-primary);
+          border-radius: var(--radius-full); padding: 3px 10px; white-space: nowrap;
+        }
+        .prof-tag--accent {
+          color: var(--color-primary); background: var(--color-primary-light);
+          border-color: color-mix(in srgb, var(--color-primary) 25%, transparent); font-weight: 600;
+        }
+
+        /* Stats row */
+        .prof-stats-row { display: flex; flex-wrap: wrap; gap: var(--space-4); }
+        .prof-stat { display: flex; flex-direction: column; gap: 2px; }
+        .prof-stat-label { font-size: var(--text-xs); color: var(--text-muted); font-weight: 500; }
+        .prof-stat-value { font-size: var(--text-sm); font-weight: 700; color: var(--text-primary); }
+        .prof-stat-value--primary { color: var(--color-primary); }
+
+        /* ══════════════════════════════════════════════════
+           TABS
+        ══════════════════════════════════════════════════ */
+        .prof-tabs-wrap {
+          position: sticky;
+          top: var(--app-bar-height, 56px);
+          z-index: 10;
+          background: var(--bg-app);
           margin-bottom: var(--space-4);
-          overflow-x: auto;
-          scrollbar-width: none;
-          /* DSN-03: مؤشر تمرير بصري - shadow على يمين التابات */
-          -webkit-mask-image: linear-gradient(to left, transparent 0px, black 48px);
-          mask-image: linear-gradient(to left, transparent 0px, black 48px);
+        }
+        .prof-tabs {
+          display: flex; gap: 0;
+          border-bottom: 2px solid var(--border-primary);
+          overflow-x: auto; scrollbar-width: none;
+          -webkit-mask-image: linear-gradient(to left, transparent 0px, black 40px);
+          mask-image: linear-gradient(to left, transparent 0px, black 40px);
         }
         .prof-tabs::-webkit-scrollbar { display: none; }
         .prof-tab {
-          display: inline-flex;
-          align-items: center;
-          gap: var(--space-1);
-          padding: var(--space-2) var(--space-4);
-          font-size: var(--text-sm);
-          font-weight: 500;
-          color: var(--text-secondary);
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          border-bottom: 2.5px solid transparent;
-          margin-bottom: -1.5px;
-          white-space: nowrap;
-          transition: color var(--transition-fast), border-color var(--transition-fast);
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: var(--space-3) var(--space-4);
+          font-size: var(--text-sm); font-weight: 500;
+          color: var(--text-muted); background: transparent; border: none;
+          cursor: pointer; border-bottom: 2px solid transparent;
+          margin-bottom: -2px; white-space: nowrap;
+          transition: color 0.15s, border-color 0.15s, background 0.15s;
           font-family: var(--font-sans);
+          border-radius: var(--radius-md) var(--radius-md) 0 0;
         }
-        .prof-tab:hover { color: var(--text-primary); }
+        .prof-tab:hover { color: var(--text-primary); background: var(--bg-hover); }
         .prof-tab--active {
-          color: var(--color-primary);
-          border-bottom-color: var(--color-primary);
+          color: var(--color-primary); border-bottom-color: var(--color-primary);
+          background: color-mix(in srgb, var(--color-primary) 5%, transparent); font-weight: 600;
         }
+        .prof-tab-icon { display: flex; align-items: center; }
 
-        /* ── Content container ── */
-        .prof-content {
-          animation: animate-enter 0.2s ease;
+        /* ══════════════════════════════════════════════════
+           CONTENT PANEL
+        ══════════════════════════════════════════════════ */
+        .prof-panel { animation: fade-in-up 0.2s ease; }
+        @keyframes fade-in-up {
+          from { opacity: 0; transform: translateY(6px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
 
         /* ── InfoField ── */
         .prof-fields-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-          gap: var(--space-1);
+          grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+          gap: 0;
         }
         .prof-field {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-1);
-          padding: var(--space-3) var(--space-4);
-          border-radius: var(--radius-md);
-          transition: background var(--transition-fast);
+          display: flex; flex-direction: column; gap: var(--space-1);
+          padding: var(--space-3) var(--space-4); border-radius: var(--radius-md);
+          transition: background 0.15s;
         }
         .prof-field:hover { background: var(--bg-hover); }
         .prof-field-label {
-          display: flex;
-          align-items: center;
-          gap: var(--space-1);
-          font-size: var(--text-xs);
-          color: var(--text-muted);
-          font-weight: 500;
+          display: flex; align-items: center; gap: var(--space-1);
+          font-size: var(--text-xs); color: var(--text-muted); font-weight: 600;
+          text-transform: uppercase; letter-spacing: 0.04em;
         }
-        .prof-field-value {
-          font-size: var(--text-sm);
-          color: var(--text-primary);
-          font-weight: 500;
-        }
+        .prof-field-value { font-size: var(--text-sm); color: var(--text-primary); font-weight: 500; }
 
         /* ── Section heading ── */
         .prof-section-title {
-          font-size: var(--text-xs);
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.06em;
-          color: var(--text-muted);
+          font-size: var(--text-xs); font-weight: 700;
+          text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted);
           padding: var(--space-4) var(--space-4) var(--space-2);
-          border-bottom: 1px solid var(--border-primary);
-          margin-bottom: var(--space-1);
+          border-bottom: 1px solid var(--border-primary); margin-bottom: var(--space-1);
         }
 
         /* ── Leave balance cards ── */
         .leave-balance-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-          gap: var(--space-3);
+          display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: var(--space-3);
         }
         .leave-balance-card {
-          padding: var(--space-4);
-          border-radius: var(--radius-lg);
-          border: 1px solid var(--border-primary);
-          background: var(--bg-surface);
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-2);
+          padding: var(--space-4); border-radius: var(--radius-lg);
+          border: 1px solid var(--border-primary); background: var(--bg-surface);
+          display: flex; flex-direction: column; gap: var(--space-2);
+          transition: box-shadow 0.2s, transform 0.2s;
         }
-        .leave-balance-name {
-          font-size: var(--text-sm);
-          font-weight: 600;
-          color: var(--text-primary);
-        }
-        .leave-balance-row {
-          display: flex;
-          justify-content: space-between;
-          font-size: var(--text-xs);
-          color: var(--text-secondary);
-        }
+        .leave-balance-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+        .leave-balance-name { font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); }
+        .leave-balance-row { display: flex; justify-content: space-between; font-size: var(--text-xs); color: var(--text-secondary); }
         .leave-balance-remaining {
-          font-size: var(--text-2xl);
-          font-weight: 800;
-          color: var(--color-primary);
-          font-variant-numeric: tabular-nums;
+          font-size: var(--text-3xl); font-weight: 800; color: var(--color-primary);
+          font-variant-numeric: tabular-nums; line-height: 1;
         }
-        .leave-balance-unit { font-size: var(--text-xs); color: var(--text-muted); margin-top: -4px; }
+        .leave-balance-unit { font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px; }
 
         /* ── Statement ── */
-        .statement-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: var(--space-4);
-        }
-        @media (max-width: 640px) {
-          .statement-grid { grid-template-columns: 1fr; }
-          .prof-hero { flex-direction: column; }
-        }
-        .statement-section {
-          border: 1px solid var(--border-primary);
-          border-radius: var(--radius-lg);
-          overflow: hidden;
-        }
+        .statement-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+        .statement-section { border: 1px solid var(--border-primary); border-radius: var(--radius-lg); overflow: hidden; }
         .statement-section-header {
-          display: flex;
-          align-items: center;
-          gap: var(--space-2);
-          padding: var(--space-3) var(--space-4);
-          font-size: var(--text-sm);
-          font-weight: 700;
-          border-bottom: 1px solid var(--border-primary);
+          display: flex; align-items: center; gap: var(--space-2);
+          padding: var(--space-3) var(--space-4); font-size: var(--text-sm);
+          font-weight: 700; border-bottom: 1px solid var(--border-primary);
         }
-        .statement-section-header--debit {
-          background: color-mix(in srgb, var(--color-success) 6%, transparent);
-          color: var(--color-success);
-        }
-        .statement-section-header--credit {
-          background: color-mix(in srgb, var(--color-danger) 6%, transparent);
-          color: var(--color-danger);
-        }
+        .statement-section-header--debit { background: color-mix(in srgb, var(--color-success) 6%, transparent); color: var(--color-success); }
+        .statement-section-header--credit { background: color-mix(in srgb, var(--color-danger) 6%, transparent); color: var(--color-danger); }
         .statement-line {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: var(--space-2) var(--space-4);
-          font-size: var(--text-sm);
+          display: flex; justify-content: space-between; align-items: center;
+          padding: var(--space-2) var(--space-4); font-size: var(--text-sm);
           border-bottom: 1px solid var(--border-primary);
         }
         .statement-line:last-child { border-bottom: none; }
         .statement-line-label { color: var(--text-secondary); }
         .statement-line-value { font-weight: 600; font-variant-numeric: tabular-nums; }
         .statement-net {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
+          display: flex; align-items: center; justify-content: space-between;
           padding: var(--space-4) var(--space-5);
           background: color-mix(in srgb, var(--color-primary) 6%, transparent);
+        }
         .statement-net-label { font-size: var(--text-sm); color: var(--text-secondary); font-weight: 600; }
         .statement-net-value { font-size: var(--text-2xl); font-weight: 800; color: var(--color-primary); font-variant-numeric: tabular-nums; }
 
-        /* Documents */
+        /* ── Documents ── */
         .doc-list { display: flex; flex-direction: column; gap: var(--space-2); }
         .doc-item {
-          display: flex;
-          align-items: center;
-          gap: var(--space-3);
-          padding: var(--space-3) var(--space-4);
-          border: 1px solid var(--border-primary);
-          border-radius: var(--radius-md);
-          background: var(--bg-surface);
-          transition: background var(--transition-fast);
+          display: flex; align-items: center; gap: var(--space-3);
+          padding: var(--space-3) var(--space-4); border: 1px solid var(--border-primary);
+          border-radius: var(--radius-md); background: var(--bg-surface); transition: all 0.15s;
         }
-        .doc-item:hover { background: var(--bg-hover); }
+        .doc-item:hover { background: var(--bg-hover); box-shadow: var(--shadow-sm); }
         .doc-icon {
-          width: 36px; height: 36px;
-          border-radius: var(--radius-md);
-          background: var(--bg-accent);
+          width: 36px; height: 36px; border-radius: var(--radius-md);
+          background: color-mix(in srgb, var(--color-primary) 10%, transparent);
           display: flex; align-items: center; justify-content: center;
-          color: var(--color-primary);
-          flex-shrink: 0;
+          color: var(--color-primary); flex-shrink: 0;
         }
         .doc-info { flex: 1; min-width: 0; }
         .doc-type { font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); }
         .doc-meta { font-size: var(--text-xs); color: var(--text-muted); }
+
+        /* ══════════════════════════════════════════════════
+           RESPONSIVE — MOBILE
+        ══════════════════════════════════════════════════ */
+        @media (max-width: 640px) {
+          .prof-hero-body {
+            flex-direction: column; align-items: center;
+            text-align: center; padding: var(--space-5) var(--space-4); gap: var(--space-4);
+          }
+          .prof-hero-name { justify-content: center; }
+          .prof-hero-tags { justify-content: center; }
+          .prof-stats-row { justify-content: center; }
+          .prof-hero-topbar { padding: var(--space-2) var(--space-3); }
+          .prof-hero-actions { flex-wrap: wrap; }
+          .prof-tab { padding: var(--space-2) var(--space-3); font-size: var(--text-xs); }
+          .prof-tab-label { display: none; }
+          .prof-tab--active .prof-tab-label { display: inline; }
+          .prof-avatar { width: 60px; height: 60px; font-size: 1.5rem; }
+          .statement-grid { grid-template-columns: 1fr; }
+          .leave-balance-grid { grid-template-columns: 1fr 1fr; }
+          .prof-fields-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 400px) {
+          .leave-balance-grid { grid-template-columns: 1fr; }
+        }
       `}</style>
 
       {/* GAP-03: Modal ربط حساب المستخدم */}
@@ -561,7 +598,7 @@ export default function EmployeeProfile() {
                 if (!linkEmail.trim()) return
                 setLinking(true)
                 try {
-                  const { supabase: sb } = await import('@/lib/supabase/client')
+                  const sb = supabase
                   const { data: users, error } = await sb
                     .from('profiles')
                     .select('id, email')
@@ -825,7 +862,7 @@ function DocumentsTab({ emp }: { emp: HREmployee & { documents?: HREmployeeDocum
                   onClick={async () => {
                     try {
                       // SEC-03: Signed URL مؤقتة (60 دقيقة) بدلاً من Public URL مباشرة
-                      const { supabase: sb } = await import('@/lib/supabase/client')
+                      const sb = supabase
                       // استخراج path من URL الكامل
                       const urlPath = doc.file_url!.split('/object/public/')[1] ?? doc.file_url!
                       // تجربة توليد signed URL

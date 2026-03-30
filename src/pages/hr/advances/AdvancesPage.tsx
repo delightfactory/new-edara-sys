@@ -226,73 +226,75 @@ export default function AdvancesPage() {
         </Badge>
       ),
     },
-    ...(isManager ? [{
+    {
       key: 'actions',
-      label: 'إجراءات',
+      label: isManager ? 'إجراءات' : '',
       align: 'end' as const,
-      width: 140,
+      width: isManager ? 140 : 80,
       render: (r: HRAdvance) => {
-        if (!isPending(r.status)) return null
-        const isFinanceStep = r.status === 'pending_finance'
-        return (
-          <div style={{ display: 'flex', gap: 'var(--space-1)', justifyContent: 'flex-end' }}>
-            <Button
-              id={`approve-adv-${r.id}`}
-              size="sm"
-              variant="secondary"
-              icon={isFinanceStep ? <CreditCard size={13} /> : <CheckCircle size={13} />}
-              onClick={e => {
-                e.stopPropagation()
-                setSelected(r)
-                setActionMode(isFinanceStep ? 'disburse' : 'approve')
-                setVaultId(''); setNotes('')
-              }}
-              style={{ color: isFinanceStep ? 'var(--color-primary)' : 'var(--color-success)' }}
-            >
-              {isFinanceStep ? 'صرف' : 'موافقة'}
-            </Button>
-            <Button
-              id={`reject-adv-${r.id}`}
-              size="sm"
-              variant="ghost"
-              icon={<XCircle size={13} />}
-              onClick={e => {
-                e.stopPropagation()
-                setSelected(r)
-                setActionMode('reject')
-                setRejectReason('')
-              }}
-              style={{ color: 'var(--color-danger)' }}
-            >
-              رفض
-            </Button>
-          </div>
-        )
+        // ── أزرار الموافقة/الرفض — محمية بـ PermissionGuard ──
+        if (isPending(r.status)) {
+          const isFinanceStep = r.status === 'pending_finance'
+          return (
+            <>
+              {/* أزرار المدير/المالية */}
+              <PermissionGuard permission={['hr.advances.approve', 'finance.payments.create']}>
+                <div style={{ display: 'flex', gap: 'var(--space-1)', justifyContent: 'flex-end' }}>
+                  <Button
+                    id={`approve-adv-${r.id}`}
+                    size="sm"
+                    variant="secondary"
+                    icon={isFinanceStep ? <CreditCard size={13} /> : <CheckCircle size={13} />}
+                    onClick={e => {
+                      e.stopPropagation()
+                      setSelected(r)
+                      setActionMode(isFinanceStep ? 'disburse' : 'approve')
+                      setVaultId(''); setNotes('')
+                    }}
+                    style={{ color: isFinanceStep ? 'var(--color-primary)' : 'var(--color-success)' }}
+                  >
+                    {isFinanceStep ? 'صرف' : 'موافقة'}
+                  </Button>
+                  <Button
+                    id={`reject-adv-${r.id}`}
+                    size="sm"
+                    variant="ghost"
+                    icon={<XCircle size={13} />}
+                    onClick={e => {
+                      e.stopPropagation()
+                      setSelected(r)
+                      setActionMode('reject')
+                      setRejectReason('')
+                    }}
+                    style={{ color: 'var(--color-danger)' }}
+                  >
+                    رفض
+                  </Button>
+                </div>
+              </PermissionGuard>
+
+              {/* زر إلغاء الموظف — فقط لطلباته المعلقة (قبل المالية) */}
+              {!can('hr.advances.approve') && !can('finance.payments.create')
+                && (r.status === 'pending_supervisor' || r.status === 'pending_hr')
+                && r.employee_id === currentEmployee?.id && (
+                <Button
+                  id={`cancel-adv-${r.id}`}
+                  size="sm"
+                  variant="ghost"
+                  icon={<XCircle size={13} />}
+                  onClick={e => { e.stopPropagation(); cancelMutation.mutate(r.id) }}
+                  loading={cancelMutation.isPending}
+                  style={{ color: 'var(--color-danger)' }}
+                >
+                  إلغاء
+                </Button>
+              )}
+            </>
+          )
+        }
+        return null
       },
-    }] : [{
-      // الموظف: إلغاء طلبه فقط إذا لم يُصرف بعد
-      key: 'actions',
-      label: '',
-      align: 'end' as const,
-      width: 80,
-      render: (r: HRAdvance) => {
-        const canCancel = (r.status === 'pending_supervisor' || r.status === 'pending_hr')
-          && r.employee_id === currentEmployee?.id
-        return canCancel ? (
-          <Button
-            id={`cancel-adv-${r.id}`}
-            size="sm"
-            variant="ghost"
-            icon={<XCircle size={13} />}
-            onClick={e => { e.stopPropagation(); cancelMutation.mutate(r.id) }}
-            loading={cancelMutation.isPending}
-            style={{ color: 'var(--color-danger)' }}
-          >
-            إلغاء
-          </Button>
-        ) : null
-      },
-    }]),
+    },
   ]
 
 

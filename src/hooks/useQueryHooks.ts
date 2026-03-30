@@ -722,12 +722,10 @@ export function useCalculatePayrollRun() {
       onProgress?: (done: number, total: number) => void
     }) => {
       // جلب كل الموظفين النشطين
-      const { data: emps } = await import('@/lib/supabase/client').then(m =>
-        m.supabase
-          .from('hr_employees')
-          .select('id')
-          .eq('status', 'active')
-      )
+      const { data: emps } = await supabase
+        .from('hr_employees')
+        .select('id')
+        .eq('status', 'active')
       const employees = emps ?? []
       let calculated = 0
       let skipped = 0

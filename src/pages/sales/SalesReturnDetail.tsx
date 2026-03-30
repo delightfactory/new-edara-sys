@@ -8,6 +8,7 @@ import {
 import { useAuthStore } from '@/stores/auth-store'
 import { useVaults, useCustodyAccounts, useInvalidate } from '@/hooks/useQueryHooks'
 import { getSalesReturn, confirmSalesReturn } from '@/lib/services/sales'
+import { supabase } from '@/lib/supabase/client'
 import { formatNumber } from '@/lib/utils/format'
 import type { SalesReturn, SalesReturnStatus } from '@/lib/types/master-data'
 import Badge from '@/components/ui/Badge'
@@ -88,9 +89,10 @@ export default function SalesReturnDetail() {
   const handleCancel = async () => {
     setActionLoading(true)
     try {
-      const { error } = await (await import('@/lib/supabase/client')).supabase
+      const { data: { user } } = await supabase.auth.getUser()
+      const { error } = await supabase
         .from('sales_returns')
-        .update({ status: 'cancelled', cancelled_by: (await (await import('@/lib/supabase/client')).supabase.auth.getUser()).data.user?.id, cancelled_at: new Date().toISOString() })
+        .update({ status: 'cancelled', cancelled_by: user?.id, cancelled_at: new Date().toISOString() })
         .eq('id', id!)
         .eq('status', 'draft')
       if (error) throw error

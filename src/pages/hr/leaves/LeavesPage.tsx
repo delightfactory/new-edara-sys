@@ -185,61 +185,66 @@ export default function LeavesPage() {
         </Badge>
       ),
     },
-    ...(isManager ? [{
+    {
       key: 'actions',
-      label: 'إجراءات',
+      label: isManager ? 'إجراءات' : '',
       align: 'end' as const,
-      width: 120,
-      render: (r: HRLeaveRequest) => (
-        isPending(r.status) ? (
-          <div style={{ display: 'flex', gap: 'var(--space-1)', justifyContent: 'flex-end' }}>
-            <Button
-              id={`approve-leave-${r.id}`}
-              size="sm"
-              variant="secondary"
-              icon={<CheckCircle size={13} />}
-              onClick={e => { e.stopPropagation(); setSelected(r); setActionMode('approve') }}
-              style={{ color: 'var(--color-success)' }}
-            >
-              قبول
-            </Button>
-            <Button
-              id={`reject-leave-${r.id}`}
-              size="sm"
-              variant="ghost"
-              icon={<XCircle size={13} />}
-              onClick={e => { e.stopPropagation(); setSelected(r); setActionMode('reject'); setRejectReason('') }}
-              style={{ color: 'var(--color-danger)' }}
-            >
-              رفض
-            </Button>
-          </div>
-        ) : null
-      ),
-    }] : [{
-      // الموظف: زر إلغاء طلبه (draft / pending_supervisor فقط)
-      key: 'actions',
-      label: '',
-      align: 'end' as const,
-      width: 80,
+      width: isManager ? 120 : 80,
       render: (r: HRLeaveRequest) => {
-        const canCancel = (r.status === 'draft' || r.status === 'pending_supervisor')
-          && r.employee_id === currentEmployee?.id
-        return canCancel ? (
-          <Button
-            id={`cancel-leave-${r.id}`}
-            size="sm"
-            variant="ghost"
-            icon={<XCircle size={13} />}
-            onClick={e => { e.stopPropagation(); cancelMutation.mutate(r.id) }}
-            loading={cancelMutation.isPending}
-            style={{ color: 'var(--color-danger)' }}
-          >
-            إلغاء
-          </Button>
-        ) : null
+        const showActions = isPending(r.status) || r.status === 'draft'
+        if (showActions) {
+          return (
+            <>
+              {/* أزرار المدير — محمية بـ PermissionGuard */}
+              {isPending(r.status) && (
+                <PermissionGuard permission="hr.leaves.approve">
+                  <div style={{ display: 'flex', gap: 'var(--space-1)', justifyContent: 'flex-end' }}>
+                    <Button
+                      id={`approve-leave-${r.id}`}
+                      size="sm"
+                      variant="secondary"
+                      icon={<CheckCircle size={13} />}
+                      onClick={e => { e.stopPropagation(); setSelected(r); setActionMode('approve') }}
+                      style={{ color: 'var(--color-success)' }}
+                    >
+                      قبول
+                    </Button>
+                    <Button
+                      id={`reject-leave-${r.id}`}
+                      size="sm"
+                      variant="ghost"
+                      icon={<XCircle size={13} />}
+                      onClick={e => { e.stopPropagation(); setSelected(r); setActionMode('reject'); setRejectReason('') }}
+                      style={{ color: 'var(--color-danger)' }}
+                    >
+                      رفض
+                    </Button>
+                  </div>
+                </PermissionGuard>
+              )}
+
+              {/* زر إلغاء الموظف — فقط لطلباته في المراحل الأولى */}
+              {!can('hr.leaves.approve')
+                && (r.status === 'draft' || r.status === 'pending_supervisor')
+                && r.employee_id === currentEmployee?.id && (
+                <Button
+                  id={`cancel-leave-${r.id}`}
+                  size="sm"
+                  variant="ghost"
+                  icon={<XCircle size={13} />}
+                  onClick={e => { e.stopPropagation(); cancelMutation.mutate(r.id) }}
+                  loading={cancelMutation.isPending}
+                  style={{ color: 'var(--color-danger)' }}
+                >
+                  إلغاء
+                </Button>
+              )}
+            </>
+          )
+        }
+        return null
       },
-    }]),
+    },
   ]
 
 

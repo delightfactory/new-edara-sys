@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { BookText, Users, Truck, TrendingDown, TrendingUp, ArrowLeftRight } from 'lucide-react'
 import { getCustomerLedger, getCustomerBalance, getSupplierLedger, getSupplierBalance } from '@/lib/services/finance'
+import { supabase } from '@/lib/supabase/client'
 import type { CustomerLedgerEntry, CustomerBalance, SupplierLedgerEntry, SupplierBalance } from '@/lib/types/master-data'
 import { formatCurrency, formatDateTime } from '@/lib/utils/format'
 import PageHeader from '@/components/shared/PageHeader'
@@ -42,7 +43,6 @@ export default function LedgerPage() {
     const loadEntities = async () => {
       setEntitiesLoading(true); setSelectedId(''); setLedger([]); setBalance(null); setMobileView('list')
       try {
-        const { supabase } = await import('@/lib/supabase/client')
         const table = tab === 'customers' ? 'customers' : 'suppliers'
         const { data, error } = await supabase.from(table).select('id, name, code').eq('is_active', true).order('name').limit(500)
         if (error) throw error
