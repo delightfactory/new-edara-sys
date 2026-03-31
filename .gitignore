@@ -79,5 +79,6 @@ coverage/
 # ============================================================
 # AI / Agent Config (keep workflows, exclude internal state)
 # ============================================================
+.claude/
 .agents/skills/
 .gemini/
