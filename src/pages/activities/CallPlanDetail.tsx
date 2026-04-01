@@ -2,23 +2,30 @@ import { useParams, useNavigate } from 'react-router-dom'
 import {
   useCallPlan, useCallPlanItems,
   useConfirmCallPlan, useCancelCallPlan,
-  useAddCallPlanItem,
-  useCustomers,
+  useAddCallPlanItem, useUpdateCallPlanItem,
+  useCustomers, useCreateCallPlan,
 } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
 import { PERMISSIONS } from '@/lib/permissions/constants'
 import { toast } from 'sonner'
 import { useState } from 'react'
-import { Phone, CheckCircle, XCircle, Plus } from 'lucide-react'
+import { Phone, CheckCircle, XCircle, Plus, Archive, Copy } from 'lucide-react'
 import PageHeader from '@/components/shared/PageHeader'
 import Button from '@/components/ui/Button'
 import PlanItemCard from '@/components/shared/PlanItemCard'
 import ActivityStatusBadge from '@/components/shared/ActivityStatusBadge'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
+import { CardSkeleton } from '@/components/ui/Skeleton'
 import type { CallPlanItemInput, PlanItemPurposeType, PlanPriority } from '@/lib/types/activities'
 
 function fmtDate(d: string) {
   return new Date(d).toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' })
+}
+
+function tomorrow(): string {
+  const d = new Date()
+  d.setDate(d.getDate() + 1)
+  return d.toISOString().slice(0, 10)
 }
 
 export default function CallPlanDetail() {
@@ -45,6 +52,14 @@ export default function CallPlanDetail() {
   // toggle: عميل مسجل أم جهة خارجية
   const [useCustomer, setUseCustomer] = useState(true)
 
+  // ── Modal: Bulk Close
+  const [bulkCloseOpen, setBulkCloseOpen] = useState(false)
+  const [bulkReason,    setBulkReason]    = useState('تخطي جماعي')
+
+  // ── Modal: Clone Plan
+  const [cloneOpen, setCloneOpen] = useState(false)
+  const [cloneDate, setCloneDate] = useState(tomorrow())
+
   // Data
   const { data: plan,  isLoading: planLoading  } = useCallPlan(id)
   const { data: items = [], isLoading: itemsLoading } = useCallPlanItems(id)
@@ -55,6 +70,8 @@ export default function CallPlanDetail() {
   const confirmPlan = useConfirmCallPlan()
   const cancelPlan  = useCancelCallPlan()
   const addPlanItem = useAddCallPlanItem()
+  const updatePlanItem = useUpdateCallPlanItem()
+  const createPlan  = useCreateCallPlan()
 
   // Permissions
   const canConfirm = can(PERMISSIONS.CALL_PLANS_CONFIRM) || can(PERMISSIONS.CALL_PLANS_READ_ALL)
@@ -116,6 +133,70 @@ export default function CallPlanDetail() {
     )
   }
 
+  // ── Handler: Bulk Close
+  const pendingItems = items.filter(i => i.status === 'pending')
+  const handleBulkClose = async () => {
+    if (!id || pendingItems.length === 0) return
+    setProcessing(true)
+    let errs = 0
+    for (const item of pendingItems) {
+      try {
+        await updatePlanItem.mutateAsync({
+          itemId: item.id,
+          planId: id,
+          input: { status: 'missed', skip_reason: bulkReason }
+        })
+      } catch {
+        errs++
+      }
+    }
+    setProcessing(false)
+    setBulkCloseOpen(false)
+    if (errs > 0) toast.warning(`تم إقفال البعض، ولكن فشل ${errs} بند`)
+    else toast.success('تم إقفال اليومية بنجاح')
+  }
+
+  // ── Handler: Clone Plan
+  const handleClone = async () => {
+    if (!plan) return
+    setProcessing(true)
+    try {
+      const newPlan = await createPlan.mutateAsync({
+        employee_id: plan.employee_id,
+        plan_date: cloneDate,
+        plan_type: plan.plan_type,
+        notes: `نسخة مستنسخة من خطة اتصالات يوم ${plan.plan_date}`,
+      })
+      
+      let copied = 0
+      for (const item of items) {
+        try {
+          await addPlanItem.mutateAsync({
+            planId: newPlan.id,
+            item: {
+              customer_id: item.customer_id,
+              contact_name: item.contact_name || null,
+              phone_number: item.phone_number || null,
+              sequence: item.sequence,
+              purpose_type: item.purpose_type || null,
+              priority: item.priority,
+              planned_time: item.planned_time || null,
+              estimated_duration_min: item.estimated_duration_min || 10,
+            }
+          })
+          copied++
+        } catch { /* ignore individual errors */ }
+      }
+      
+      toast.success(`تم الاستنساخ (نسخ ${copied} مكالمة)`)
+      setCloneOpen(false)
+      navigate(`/activities/call-plans/${newPlan.id}`)
+    } catch {
+      toast.error('فشل استنساخ الخطة')
+    }
+    setProcessing(false)
+  }
+
   if (planLoading) {
     return (
       <div className="page-container animate-enter">
@@ -155,9 +236,23 @@ export default function CallPlanDetail() {
                 إضافة بند
               </Button>
             )}
-            {canConfirm && plan.status === 'draft' && (
-              <Button variant="success" icon={<CheckCircle size={16} />} onClick={() => setConfirmOpen(true)}>
-                تأكيد
+            {canConfirm && plan.status === 'draft' && items.length > 0 && (
+              <Button onClick={() => setConfirmOpen(true)} icon={<CheckCircle size={16} />}>
+                تأكيد واعتماد
+              </Button>
+            )}
+
+            {/* Bulk Close */}
+            {canConfirm && plan.status === 'in_progress' && pendingItems.length > 0 && (
+              <Button onClick={() => setBulkCloseOpen(true)} variant="secondary" icon={<Archive size={16} />} className="desktop-only-btn">
+                إنهاء اليومية المتبقية
+              </Button>
+            )}
+
+            {/* Clone Plan */}
+            {canCreate && (
+              <Button onClick={() => setCloneOpen(true)} variant="secondary" icon={<Copy size={16} />} className="desktop-only-btn">
+                استنساخ القائمة
               </Button>
             )}
             {plan.status !== 'completed' && plan.status !== 'cancelled' && (
@@ -210,12 +305,7 @@ export default function CallPlanDetail() {
       {/* Plan Items */}
       <div className="cp-items">
         {itemsLoading ? (
-          [1, 2, 3].map(i => (
-            <div key={i} className="edara-card" style={{ padding: 'var(--space-4)' }}>
-              <div className="skeleton" style={{ height: 16, width: '60%', marginBottom: 8 }} />
-              <div className="skeleton" style={{ height: 12, width: '40%' }} />
-            </div>
-          ))
+          [1, 2, 3].map(i => <CardSkeleton key={i} />)
         ) : items.length === 0 ? (
           <div className="empty-state" style={{ padding: 'var(--space-6)' }}>
             <Phone size={36} className="empty-state-icon" />
@@ -235,6 +325,7 @@ export default function CallPlanDetail() {
               onStart={canCreate ? () => navigate(
                 `/activities/new?callPlanItemId=${item.id}&customerId=${item.customer_id ?? ''}`
               ) : undefined}
+              onViewActivity={item.activity_id ? () => navigate(`/activities/${item.activity_id}`) : undefined}
             />
           ))
         )}
@@ -321,7 +412,7 @@ export default function CallPlanDetail() {
             </select>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+          <div className="grid grid-cols-2 gap-3">
             <div className="form-group">
               <label className="form-label">الأولوية</label>
               <select className="form-select" value={itemPriority} onChange={e => setItemPriority(e.target.value as PlanPriority)}>
@@ -375,6 +466,65 @@ export default function CallPlanDetail() {
             <label className="form-label">سبب الإلغاء (اختياري)</label>
             <textarea className="form-textarea" rows={2} value={cancelReason}
               onChange={e => setCancelReason(e.target.value)} placeholder="اذكر سبب الإلغاء..." />
+          </div>
+        </div>
+      </ResponsiveModal>
+
+      {/* ─── Modal: Bulk Close ─── */}
+      <ResponsiveModal
+        open={bulkCloseOpen}
+        onClose={() => setBulkCloseOpen(false)}
+        title="إنهاء يومية الاتصالات"
+        disableOverlayClose={processing}
+        footer={<>
+          <Button variant="secondary" onClick={() => setBulkCloseOpen(false)} disabled={processing}>إلغاء</Button>
+          <Button onClick={handleBulkClose} disabled={processing || !bulkReason.trim()}>
+            {processing ? 'جاري التنفيذ...' : 'تسجيل كافة المعلقات كفائتة'}
+          </Button>
+        </>}
+      >
+        <div style={{ padding: 'var(--space-2) 0' }}>
+          <p style={{ margin: '0 0 var(--space-4)', fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>
+            يوجد <strong>{pendingItems.length}</strong> مكالمة معلقة. سيتم تسجيلها جميعاً كفائتة وإغلاقها.
+          </p>
+          <div className="form-group">
+            <label className="form-label">سبب التخطي الجماعي للبنود المتبقية <span className="form-required">*</span></label>
+            <input
+              className="form-input"
+              value={bulkReason}
+              onChange={e => setBulkReason(e.target.value)}
+              placeholder="مثال: انتهاء دوام، أو طارئ..."
+            />
+          </div>
+        </div>
+      </ResponsiveModal>
+
+      {/* ─── Modal: Clone Plan ─── */}
+      <ResponsiveModal
+        open={cloneOpen}
+        onClose={() => setCloneOpen(false)}
+        title="استنساخ قائمة المكالمات"
+        disableOverlayClose={processing}
+        footer={<>
+          <Button variant="secondary" onClick={() => setCloneOpen(false)} disabled={processing}>إلغاء</Button>
+          <Button onClick={handleClone} disabled={processing || !cloneDate}>
+            {processing ? 'جاري الاستنساخ...' : 'تأكيد العملية'}
+          </Button>
+        </>}
+      >
+        <div style={{ padding: 'var(--space-2) 0' }}>
+          <p style={{ margin: '0 0 var(--space-4)', fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>
+            سيتم استنساخ هذه القائمة لتاريخ جديد كمسودة لمندوبك <strong>{plan.employee?.full_name}</strong>.
+          </p>
+          <div className="form-group">
+            <label className="form-label">تاريخ خطة المكالمات الجديدة <span className="form-required">*</span></label>
+            <input
+              type="date"
+              className="form-input"
+              value={cloneDate}
+              onChange={e => setCloneDate(e.target.value)}
+              required
+            />
           </div>
         </div>
       </ResponsiveModal>

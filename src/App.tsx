@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'sonner'
 import { lazy, Suspense } from 'react'
@@ -83,6 +83,7 @@ const LeavesPage         = lazy(() => import('@/pages/hr/leaves/LeavesPage'))
 const AdvancesPage       = lazy(() => import('@/pages/hr/advances/AdvancesPage'))
 const PayrollPage        = lazy(() => import('@/pages/hr/payroll/PayrollPage'))
 const PayrollRunDetail   = lazy(() => import('@/pages/hr/payroll/PayrollRunDetail'))
+const TargetPayoutsPage  = lazy(() => import('@/pages/hr/payroll/TargetPayoutsPage'))
 const HRSettingsPage     = lazy(() => import('@/pages/hr/settings/HRSettingsPage'))
 const CommissionsPage    = lazy(() => import('@/pages/hr/commissions/CommissionsPage'))
 const PermissionsPage    = lazy(() => import('@/pages/hr/permissions/PermissionsPage'))
@@ -98,6 +99,7 @@ const ActivityDetail      = lazy(() => import('@/pages/activities/ActivityDetail
 const VisitPlansPage      = lazy(() => import('@/pages/activities/VisitPlansPage'))
 const VisitPlanForm       = lazy(() => import('@/pages/activities/VisitPlanForm'))
 const VisitPlanDetail     = lazy(() => import('@/pages/activities/VisitPlanDetail'))
+const VisitExecutionMode  = lazy(() => import('@/pages/activities/VisitExecutionMode'))
 const CallPlansPage       = lazy(() => import('@/pages/activities/CallPlansPage'))
 const CallPlanForm        = lazy(() => import('@/pages/activities/CallPlanForm'))
 const CallPlanDetail      = lazy(() => import('@/pages/activities/CallPlanDetail'))
@@ -120,6 +122,12 @@ const LazyFallback = () => (
     {[1,2,3,4,5].map(i => <div key={i} className="skeleton skeleton-row" />)}
   </div>
 )
+
+/** Edit Mode مؤجل — يعيد التوجيه لصفحة التفاصيل ريثما يُنفَّذ لاحقاً */
+function TargetEditRedirect() {
+  const { id } = useParams<{ id: string }>()
+  return <Navigate to={`/activities/targets/${id}`} replace />
+}
 
 export default function App() {
   return (
@@ -324,6 +332,9 @@ export default function App() {
               <Route path="hr/payroll/:runId" element={
                 <ProtectedRoute permission="hr.payroll.read"><Suspense fallback={<LazyFallback />}><PayrollRunDetail /></Suspense></ProtectedRoute>
               } />
+              <Route path="hr/payroll/target-payouts" element={
+                <ProtectedRoute permission="hr.payroll.read"><Suspense fallback={<LazyFallback />}><TargetPayoutsPage /></Suspense></ProtectedRoute>
+              } />
               <Route path="hr/attendance" element={
                 <ProtectedRoute permission="hr.employees.read"><Suspense fallback={<LazyFallback />}><AttendancePage /></Suspense></ProtectedRoute>
               } />
@@ -419,6 +430,11 @@ export default function App() {
                   <Suspense fallback={<LazyFallback />}><VisitPlanDetail /></Suspense>
                 </ProtectedRoute>
               } />
+              <Route path="activities/visit-plans/:id/execute" element={
+                <ProtectedRoute permission="activities.create">
+                  <Suspense fallback={<LazyFallback />}><VisitExecutionMode /></Suspense>
+                </ProtectedRoute>
+              } />
               {/* ── Call Plans ── */}
               <Route path="activities/call-plans" element={
                 <ProtectedRoute permission={['call_plans.read_own', 'call_plans.read_team', 'call_plans.read_all']}>
@@ -445,6 +461,14 @@ export default function App() {
               <Route path="activities/targets/new" element={
                 <ProtectedRoute permission="targets.assign">
                   <Suspense fallback={<LazyFallback />}><TargetForm /></Suspense>
+                </ProtectedRoute>
+              } />
+              {/* /edit: مؤجل صراحة — TargetForm حالياً Create-only — إعادة توجيه للتفاصيل */}
+              <Route path="activities/targets/:id/edit" element={
+                <ProtectedRoute permission="targets.assign">
+                  <Suspense fallback={<LazyFallback />}>
+                    <TargetEditRedirect />
+                  </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="activities/targets/:id" element={

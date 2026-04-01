@@ -9,6 +9,7 @@ import {
 import {
   getCustomer, getCustomerBranches, getCustomerContacts, getCreditHistory
 } from '@/lib/services/customers'
+import { useActivities } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
 import type { Customer, CustomerBranch, CustomerContact, CustomerCreditHistory } from '@/lib/types/master-data'
 
@@ -19,7 +20,7 @@ export default function CustomerDetailPage() {
 
   const [loading, setLoading] = useState(true)
   const [customer, setCustomer] = useState<Customer | null>(null)
-  const [tab, setTab] = useState<'info' | 'branches' | 'contacts' | 'credit'>('info')
+  const [tab, setTab] = useState<'info' | 'branches' | 'contacts' | 'credit' | 'activities'>('info')
   const [branches, setBranches] = useState<CustomerBranch[]>([])
   const [contacts, setContacts] = useState<CustomerContact[]>([])
   const [creditHistory, setCreditHistory] = useState<CustomerCreditHistory[]>([])
@@ -176,6 +177,9 @@ export default function CustomerDetailPage() {
         <button className={`tab ${tab === 'credit' ? 'active' : ''}`} onClick={() => setTab('credit')}>
           <CreditCard size={14} /> سجل الائتمان
           {creditHistory.length > 0 && <span className="badge badge-neutral" style={{ marginRight: 'var(--space-1)' }}>{creditHistory.length}</span>}
+        </button>
+        <button className={`tab ${tab === 'activities' ? 'active' : ''}`} onClick={() => setTab('activities')}>
+          <Clock size={14} /> الأنشطة
         </button>
       </div>
 
@@ -360,6 +364,140 @@ export default function CustomerDetailPage() {
           )}
         </div>
       )}
+
+      {/* ═══════ TAB: ACTIVITIES ═══════ */}
+      {tab === 'activities' && id && <CustomerActivitiesTab customerId={id} navigate={navigate} />}
     </div>
   )
 }
+
+// ── Customer Activities Tab ─────────────────────────────────
+const OUTCOME_AR: Record<string, string> = {
+  order_placed: 'طلب مبيعات', agreed_order: 'اتفاق على طلب', collection: 'تحصيل',
+  promised_payment: 'وعد بالدفع', followup_visit: 'زيارة متابعة', followup_scheduled: 'متابعة مجدولة',
+  refused: 'رفض', not_interested: 'غير مهتم', closed: 'مغلق', promotion: 'ترويج',
+  exploratory: 'استكشافية', info_only: 'معلومات فقط', no_answer: 'لا يرد', busy: 'مشغول',
+  callback_scheduled: 'مكالمة لاحقة',
+}
+const OUTCOME_COLOR: Record<string, string> = {
+  order_placed: 'var(--color-success)', collection: 'var(--color-success)',
+  agreed_order: 'var(--color-primary)', promised_payment: 'var(--color-warning)',
+  refused: 'var(--color-danger)', not_interested: 'var(--color-danger)',
+}
+const CAT_ICON: Record<string, string> = { visit: '📍', call: '📞', task: '📋' }
+
+function CustomerActivitiesTab({ customerId, navigate }: { customerId: string; navigate: (path: string) => void }) {
+  const { data: result, isLoading } = useActivities({ customerId, pageSize: 15 })
+  const activities = result?.data ?? []
+
+  return (
+    <div style={{ padding: '0 12px' }}>
+      {/* Quick Actions */}
+      <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-4)', flexWrap: 'wrap' }}>
+        <button
+          className="btn btn-primary"
+          style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, padding: '8px 16px' }}
+          onClick={() => navigate(`/activities/new?customerId=${customerId}`)}
+        >
+          <MapPin size={14} /> تسجيل زيارة
+        </button>
+        <button
+          className="btn"
+          style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, padding: '8px 16px',
+            background: 'var(--bg-surface)', border: '1px solid var(--border-primary)', color: 'var(--text-secondary)', cursor: 'pointer' }}
+          onClick={() => navigate(`/activities/new?customerId=${customerId}`)}
+        >
+          <Phone size={14} /> تسجيل مكالمة
+        </button>
+      </div>
+
+      {isLoading ? (
+        <div className="edara-card" style={{ padding: 'var(--space-5)' }}>
+          {[1, 2, 3].map(i => (
+            <div key={i} style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+              <div className="skeleton" style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0 }} />
+              <div style={{ flex: 1 }}>
+                <div className="skeleton" style={{ height: 14, width: '60%', marginBottom: 6 }} />
+                <div className="skeleton" style={{ height: 10, width: '40%' }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : activities.length === 0 ? (
+        <div className="edara-card" style={{ padding: 'var(--space-6)', textAlign: 'center' }}>
+          <Clock size={36} style={{ color: 'var(--text-muted)', margin: '0 auto var(--space-3)' }} />
+          <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: 'var(--text-sm)' }}>
+            لا توجد أنشطة مسجلة لهذا العميل
+          </p>
+        </div>
+      ) : (
+        <div className="edara-card" style={{ padding: 'var(--space-4)' }}>
+          <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <Clock size={16} style={{ color: 'var(--color-primary)' }} /> آخر الأنشطة
+            <span className="badge badge-neutral" style={{ marginRight: 'auto' }}>{result?.count ?? 0}</span>
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            {activities.map((act, idx) => {
+              const catIcon = CAT_ICON[(act as any).type?.category ?? ''] ?? '📋'
+              const outLabel = OUTCOME_AR[act.outcome_type] ?? act.outcome_type
+              const outColor = OUTCOME_COLOR[act.outcome_type] ?? 'var(--text-secondary)'
+              const date = new Date(act.activity_date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' })
+              const time = act.start_time ? new Date(act.start_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : ''
+              return (
+                <div
+                  key={act.id}
+                  onClick={() => navigate(`/activities/${act.id}`)}
+                  style={{
+                    display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)',
+                    padding: 'var(--space-3) 0', cursor: 'pointer',
+                    borderBottom: idx < activities.length - 1 ? '1px solid var(--border-secondary)' : 'none',
+                    transition: 'background var(--transition-fast)',
+                  }}
+                >
+                  <div style={{
+                    width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                    background: 'var(--bg-surface-2)', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', fontSize: 16,
+                  }}>
+                    {catIcon}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
+                      <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--text-primary)' }}>
+                        {(act as any).type?.name ?? 'نشاط'}
+                      </span>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                        {date} {time && `• ${time}`}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 2 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: outColor }}>{outLabel}</span>
+                      {act.outcome_notes && (
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>
+                          — {act.outcome_notes}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <Eye size={14} style={{ color: 'var(--text-muted)', flexShrink: 0, marginTop: 10 }} />
+                </div>
+              )
+            })}
+          </div>
+          {(result?.count ?? 0) > 15 && (
+            <div style={{ textAlign: 'center', paddingTop: 'var(--space-3)' }}>
+              <button
+                className="btn"
+                style={{ fontSize: 12, padding: '6px 16px', background: 'var(--bg-surface-2)', border: '1px solid var(--border-primary)', borderRadius: 'var(--radius-md)', cursor: 'pointer', color: 'var(--color-primary)', fontWeight: 600 }}
+                onClick={() => navigate(`/activities/list?customerId=${customerId}`)}
+              >
+                عرض الكل ({result?.count})
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+

@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import { Phone, Plus, Eye, CheckCircle, XCircle } from 'lucide-react'
 import PageHeader from '@/components/shared/PageHeader'
 import DataTable from '@/components/shared/DataTable'
-import DataCard from '@/components/ui/DataCard'
+import PermissionGuard from '@/components/shared/PermissionGuard'
 import Button from '@/components/ui/Button'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
 import ActivityStatusBadge from '@/components/shared/ActivityStatusBadge'
@@ -74,11 +74,13 @@ export default function CallPlansPage() {
       <PageHeader
         title="خطط المكالمات"
         subtitle={loading ? '...' : `${totalCount} خطة`}
-        actions={canCreate ? (
-          <Button icon={<Plus size={16} />} onClick={() => navigate('/activities/call-plans/new')} className="desktop-only-btn">
-            خطة جديدة
-          </Button>
-        ) : undefined}
+        actions={
+          <PermissionGuard permission={PERMISSIONS.CALL_PLANS_CREATE}>
+            <Button icon={<Plus size={16} />} onClick={() => navigate('/activities/call-plans/new')} className="desktop-only-btn">
+              خطة جديدة
+            </Button>
+          </PermissionGuard>
+        }
       />
 
       <div className="edara-card" style={{ padding: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
@@ -108,8 +110,8 @@ export default function CallPlansPage() {
               key: 'plan_date', label: 'التاريخ',
               render: p => (
                 <>
-                  <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{fmtDate(p.plan_date)}</div>
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                  <div className="font-bold text-sm">{fmtDate(p.plan_date)}</div>
+                  <div className="text-xs text-muted">
                     {p.plan_type === 'daily' ? 'يومية' : p.plan_type === 'weekly' ? 'أسبوعية' : p.plan_type}
                   </div>
                 </>
@@ -121,9 +123,9 @@ export default function CallPlansPage() {
               key: 'progress', label: 'التقدم',
               render: p => (
                 <div>
-                  <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600 }}>
+                  <div className="font-bold text-sm">
                     {p.completed_count}/{p.total_calls}
-                    <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginRight: 4 }}>
+                    <span className="text-xs text-muted" style={{ marginInlineEnd: 4 }}>
                       ({p.completion_pct.toFixed(0)}%)
                     </span>
                   </div>
@@ -159,61 +161,43 @@ export default function CallPlansPage() {
           onRowClick={p => navigate(`/activities/call-plans/${p.id}`)}
           emptyIcon={<Phone size={48} />}
           emptyTitle="لا توجد خطط مكالمات"
-          emptyAction={canCreate ? (
-            <Button icon={<Plus size={16} />} onClick={() => navigate('/activities/call-plans/new')}>خطة جديدة</Button>
-          ) : undefined}
+          emptyAction={
+            <PermissionGuard permission={PERMISSIONS.CALL_PLANS_CREATE}>
+              <Button icon={<Plus size={16} />} onClick={() => navigate('/activities/call-plans/new')}>خطة جديدة</Button>
+            </PermissionGuard>
+          }
           page={page} totalPages={totalPages} totalCount={totalCount} onPageChange={setPage}
+          dataCardMapping={p => ({
+            title: fmtDate(p.plan_date),
+            subtitle: p.employee?.full_name,
+            badge: <ActivityStatusBadge planStatus={p.status} size="sm" />,
+            metadata: [
+              { label: 'التقدم', value: `${p.completed_count}/${p.total_calls} (${p.completion_pct.toFixed(0)}%)` },
+            ],
+            actions: (
+              <div className="flex gap-2" style={{ width: '100%' }}>
+                <Button variant="secondary" size="sm" onClick={() => navigate(`/activities/call-plans/${p.id}`)}
+                  style={{ flex: 1, justifyContent: 'center' }}>
+                  <Eye size={14} /> تفاصيل
+                </Button>
+                {canConfirm && p.status === 'draft' && (
+                  <Button variant="success" size="sm" onClick={() => setConfirmTarget(p)}>
+                    <CheckCircle size={14} />
+                  </Button>
+                )}
+              </div>
+            ),
+            onClick: () => navigate(`/activities/call-plans/${p.id}`),
+          })}
         />
       </div>
 
-      {/* Mobile */}
-      <div className="act-card-view">
-        {loading ? (
-          <div className="mobile-card-list">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="edara-card" style={{ padding: 'var(--space-4)' }}>
-                <div className="skeleton" style={{ height: 16, width: '50%', marginBottom: 8 }} />
-                <div className="skeleton" style={{ height: 12, width: '70%' }} />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="mobile-card-list">
-            {plans.map(p => (
-              <DataCard
-                key={p.id}
-                title={fmtDate(p.plan_date)}
-                subtitle={p.employee?.full_name}
-                badge={<ActivityStatusBadge planStatus={p.status} size="sm" />}
-                metadata={[
-                  { label: 'التقدم', value: `${p.completed_count}/${p.total_calls} (${p.completion_pct.toFixed(0)}%)` },
-                ]}
-                actions={
-                  <div className="flex gap-2" style={{ width: '100%' }}>
-                    <Button variant="secondary" size="sm" onClick={() => navigate(`/activities/call-plans/${p.id}`)}
-                      style={{ flex: 1, justifyContent: 'center' }}>
-                      <Eye size={14} /> تفاصيل
-                    </Button>
-                    {canConfirm && p.status === 'draft' && (
-                      <Button variant="success" size="sm" onClick={() => setConfirmTarget(p)}>
-                        <CheckCircle size={14} />
-                      </Button>
-                    )}
-                  </div>
-                }
-                onClick={() => navigate(`/activities/call-plans/${p.id}`)}
-              />
-            ))}
-          </div>
-        )}
-        {totalPages > 1 && (
-          <div className="mobile-pagination">
-            <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>السابق</Button>
-            <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>{page} / {totalPages}</span>
-            <Button variant="ghost" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>التالي</Button>
-          </div>
-        )}
-      </div>
+      {/* ── Mobile FAB ── */}
+      <PermissionGuard permission={PERMISSIONS.CALL_PLANS_CREATE}>
+        <button className="fab-button" onClick={() => navigate('/activities/call-plans/new')} aria-label="خطة جديدة">
+          <Plus size={24} />
+        </button>
+      </PermissionGuard>
 
       {/* Modals */}
       <ResponsiveModal open={!!confirmTarget} onClose={() => setConfirmTarget(null)} title="تأكيد خطة المكالمات"
@@ -224,7 +208,7 @@ export default function CallPlansPage() {
             {processing ? 'جاري التأكيد...' : 'تأكيد'}
           </Button>
         </>}>
-        <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', lineHeight: 1.7 }}>
+        <p className="text-secondary text-sm m-0" style={{ lineHeight: 1.7 }}>
           تأكيد خطة {confirmTarget && fmtDate(confirmTarget.plan_date)}؟
         </p>
       </ResponsiveModal>
@@ -238,7 +222,7 @@ export default function CallPlansPage() {
           </Button>
         </>}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 'var(--text-sm)' }}>
+          <p className="text-secondary text-sm m-0" style={{ lineHeight: 1.7 }}>
             إلغاء خطة {cancelTarget && fmtDate(cancelTarget.plan_date)}؟
           </p>
           <div className="form-group">
@@ -253,14 +237,19 @@ export default function CallPlansPage() {
         .act-filter-row { display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: flex-end; }
         .filter-select { min-width: 120px; flex: 1; }
         .act-table-view { display: block; }
-        .act-card-view  { display: none; }
+        .fab-button { display: none; }
         @media (max-width: 768px) {
-          .act-table-view { display: none; }
-          .act-card-view  { display: block; }
           .desktop-only-btn { display: none; }
+          .fab-button {
+            display: flex; align-items: center; justify-content: center;
+            position: fixed; bottom: calc(var(--bottom-nav-height, 64px) + var(--space-4)); inset-inline-end: var(--space-4);
+            width: 56px; height: 56px; border-radius: 28px;
+            background: var(--color-primary); color: white;
+            box-shadow: var(--shadow-lg); z-index: 160; border: none;
+            transition: transform 0.2s;
+          }
+          .fab-button:active { transform: scale(0.95); }
         }
-        .mobile-card-list { display: flex; flex-direction: column; gap: var(--space-3); padding: 0 0 var(--space-2); }
-        .mobile-pagination { display: flex; align-items: center; justify-content: center; gap: var(--space-4); padding: var(--space-4) 0; }
       `}</style>
     </div>
   )

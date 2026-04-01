@@ -9,8 +9,11 @@ import type {
   CallPlanTemplate,
   Target, TargetInput, TargetProgress, TargetAdjustment,
   TargetType, AdjustTargetInput,
+  TargetRewardTier, TargetCustomer, TargetRewardPayout,
   RepPerformanceRow, PlanDailySummaryRow, TargetStatusRow,
   PlanStatus,
+  ChecklistTemplate, ChecklistQuestion, ChecklistResponse,
+  ChecklistResponseInput,
 } from '@/lib/types/activities'
 
 // ============================================================
@@ -373,7 +376,20 @@ export async function addVisitPlanItem(
 
 export async function updateVisitPlanItem(
   itemId: string,
-  input: Partial<VisitPlanItemInput> & { status?: string; activity_id?: string | null; skip_reason?: string | null }
+  input: Partial<VisitPlanItemInput> & {
+    status?: string
+    activity_id?: string | null
+    skip_reason?: string | null
+    reschedule_to?: string | null
+    actual_start_time?: string | null
+    actual_end_time?: string | null
+    actual_arrival_time?: string | null
+    gps_lat?: number | null
+    gps_lng?: number | null
+    end_gps_lat?: number | null
+    end_gps_lng?: number | null
+    metadata?: Record<string, unknown> | null
+  }
 ): Promise<VisitPlanItem> {
   const clean = sanitize(input)
   const { data, error } = await supabase
@@ -541,12 +557,15 @@ export async function updateCallPlanItem(
   return data as CallPlanItem
 }
 
-// ============================================================
+// ──────────────────────────────────────────────────────────────
 // Targets — الأهداف
-// ============================================================
+// ★ Phase 22: تم نقل الدوال المتخصصة لذ src/lib/services/targets.ts
+// بقي هنا فقط الدوال المتوافضة مع Phase 21
+// ──────────────────────────────────────────────────────────────
 
-// ✅ targets.type_id → target_types(id)
-// ✅ targets.assigned_by → profiles(id)
+// ★ targets.type_id → target_types(id)
+// ★ targets.assigned_by → profiles(id)
+// ★ Phase 22: reward_* + auto_payout + payout_month_offset مضمنة في SELECT *
 const TARGET_SELECT = `
   *,
   target_type:target_types!targets_type_id_fkey(id, name, code, unit, category)
@@ -558,6 +577,9 @@ export async function getTargets(params?: {
   isActive?: boolean
   employeeId?: string
   branchId?: string
+  parentTargetId?: string
+  periodFrom?: string
+  periodTo?: string
   page?: number
   pageSize?: number
 }) {
@@ -573,15 +595,19 @@ export async function getTargets(params?: {
     .range(from, to)
 
   if (params?.scope)      q = q.eq('scope', params.scope)
-  if (params?.typeCode)   q = q.eq('type_code', params.typeCode)   // ✅ type_code في targets مباشرة
+  if (params?.typeCode)   q = q.eq('type_code', params.typeCode)
   if (params?.isActive !== undefined) q = q.eq('is_active', params.isActive)
-  // ✅ فلترة بـ scope_id مع scope بدلاً من scope_label
   if (params?.employeeId) {
     q = q.eq('scope_id', params.employeeId).eq('scope', 'individual')
   }
   if (params?.branchId) {
     q = q.eq('scope_id', params.branchId).eq('scope', 'branch')
   }
+  if (params?.parentTargetId) {
+    q = q.eq('parent_target_id', params.parentTargetId)
+  }
+  if (params?.periodFrom) q = q.gte('period_start', params.periodFrom)
+  if (params?.periodTo)   q = q.lte('period_end', params.periodTo)
 
   const { data, error, count } = await q
   if (error) throw error
@@ -594,11 +620,18 @@ export async function getTargets(params?: {
   }
 }
 
+/**
+ * ★ Phase 22: جلب هدف كامل مع بيانات المكافأة
+ * للتفاصيل الكاملة استخدم getTargetDetail() في targets.ts
+ */
 export async function getTarget(id: string): Promise<Target & {
   progress_history: TargetProgress[]
   adjustments: TargetAdjustment[]
+  reward_tiers: TargetRewardTier[]
+  target_customers: TargetCustomer[]
+  reward_payouts: TargetRewardPayout[]
 }> {
-  const [targetRes, progressRes, adjRes] = await Promise.all([
+  const [targetRes, progressRes, adjRes, tiersRes, customersRes, payoutsRes] = await Promise.all([
     supabase.from('targets').select(TARGET_SELECT).eq('id', id).single(),
     supabase
       .from('target_progress')
@@ -610,27 +643,73 @@ export async function getTarget(id: string): Promise<Target & {
       .from('target_adjustments')
       .select('*, adjusted_by_profile:profiles!target_adjustments_adjusted_by_fkey(id, full_name)')
       .eq('target_id', id)
-      .order('adjusted_at', { ascending: false }),   // ✅ adjusted_at (لا created_at)
+      .order('adjusted_at', { ascending: false }),
+    // ★ Phase 22: شرائح المكافأة
+    supabase
+      .from('target_reward_tiers')
+      .select('id, target_id, sequence, threshold_pct, reward_pct, label, created_at')
+      .eq('target_id', id)
+      .order('sequence'),
+    // ★ Phase 22: العملاء المستهدفون
+    supabase
+      .from('target_customers')
+      .select('*, customer:customers(id, name, code, phone)')
+      .eq('target_id', id),
+    // ★ Phase 22: استحقاقات الصرف
+    supabase
+      .from('target_reward_payouts')
+      .select('*, period:hr_payroll_periods(id, name, year, month), employee:hr_employees(id, full_name)')
+      .eq('target_id', id)
+      .order('computed_at', { ascending: false }),
   ])
   if (targetRes.error) throw targetRes.error
   return {
     ...(targetRes.data as Target),
     progress_history: (progressRes.data ?? []) as TargetProgress[],
     adjustments:      (adjRes.data   ?? []) as TargetAdjustment[],
+    reward_tiers:     (tiersRes.data ?? []) as TargetRewardTier[],       // ★ Phase 22
+    target_customers: (customersRes.data ?? []) as TargetCustomer[],    // ★ Phase 22
+    reward_payouts:   (payoutsRes.data ?? []) as TargetRewardPayout[],  // ★ Phase 22
   }
 }
 
-/** يتطلب صلاحية targets.assign */
-export async function createTarget(input: TargetInput): Promise<Target> {
-  const userId = await getUserId()
-  const clean  = sanitize(input)
+/**
+ * @deprecated
+ * ✗ الإدخال المباشر ب INSERT محظور بواسطة Trigger في 22a_target_schema.sql
+ * ✓ استخدم: createTargetWithRewards() من src/lib/services/targets.ts
+ */
+export async function createTarget(_input: TargetInput): Promise<any> {
+  throw new Error(
+    '[EDARA] createTarget() محظور. '
+    + 'استخدم createTargetWithRewards() من src/lib/services/targets.ts'
+  )
+}
+
+/** تحديث مباشر للحقول غير المحمية (target_value, min_value, notes...)
+ *  @deprecated استخدم adjustTarget() بدلاً من هذا
+ */
+export async function updateTarget(id: string, input: Partial<TargetInput>): Promise<Target> {
+  const clean = { ...input }
   const { data, error } = await supabase
     .from('targets')
-    .insert({ ...clean, assigned_by: userId })   // ✅ assigned_by (لا created_by)
+    .update({ ...clean, updated_at: new Date().toISOString() })
+    .eq('id', id)
     .select(TARGET_SELECT)
     .single()
   if (error) throw error
   return data as Target
+}
+
+/** جلب الأهداف الفرعية لهدف أب */
+export async function getTargetChildren(parentId: string): Promise<Target[]> {
+  const { data, error } = await supabase
+    .from('targets')
+    .select(TARGET_SELECT)
+    .eq('parent_target_id', parentId)
+    .order('scope')
+    .order('created_at')
+  if (error) throw error
+  return (data ?? []) as Target[]
 }
 
 /**
@@ -735,4 +814,172 @@ export async function getTargetStatus(params?: {
   const { data, error } = await q
   if (error) throw error
   return (data ?? []) as TargetStatusRow[]
+}
+
+// ============================================================
+// Visit Checklists — استبيانات الزيارات والمكالمات
+// ============================================================
+
+/**
+ * جلب قوالب الاستبيانات حسب الفئة والغرض
+ * إذا purposeType = null → يجلب القوالب العامة فقط
+ * إذا purposeType = 'sales' → يجلب العامة + المخصصة لـ sales
+ */
+export async function getChecklistTemplates(params?: {
+  category?: string
+  purposeType?: string | null
+}): Promise<ChecklistTemplate[]> {
+  let q = supabase
+    .from('visit_checklist_templates')
+    .select('*, questions:visit_checklist_questions(*)')
+    .eq('is_active', true)
+    .order('sort_order')
+
+  if (params?.category) q = q.eq('category', params.category)
+  if (params?.purposeType) {
+    // جلب القوالب العامة (purpose_type IS NULL) + المخصصة
+    q = q.or(`purpose_type.is.null,purpose_type.eq.${params.purposeType}`)
+  }
+
+  const { data, error } = await q
+  if (error) throw error
+
+  // ترتيب الأسئلة داخل كل قالب
+  return (data ?? []).map(t => ({
+    ...t,
+    questions: (t.questions ?? []).sort((a: any, b: any) => a.sort_order - b.sort_order),
+  })) as ChecklistTemplate[]
+}
+
+/**
+ * جلب أسئلة قالب استبيان محدد
+ */
+export async function getChecklistQuestions(templateId: string): Promise<ChecklistQuestion[]> {
+  const { data, error } = await supabase
+    .from('visit_checklist_questions')
+    .select('*')
+    .eq('template_id', templateId)
+    .order('sort_order')
+  if (error) throw error
+  return (data ?? []) as ChecklistQuestion[]
+}
+
+/**
+ * جلب إجابات نشاط محدد
+ */
+export async function getChecklistResponses(activityId: string): Promise<ChecklistResponse[]> {
+  const { data, error } = await supabase
+    .from('visit_checklist_responses')
+    .select(`
+      *,
+      question:visit_checklist_questions(id, question_text, question_type)
+    `)
+    .eq('activity_id', activityId)
+  if (error) throw error
+  return (data ?? []) as ChecklistResponse[]
+}
+
+/**
+ * حفظ إجابات الاستبيان لنشاط (upsert — يحدّث الموجود أو ينشئ جديد)
+ */
+export async function saveChecklistResponses(
+  responses: ChecklistResponseInput[]
+): Promise<ChecklistResponse[]> {
+  if (responses.length === 0) return []
+
+  const { data, error } = await supabase
+    .from('visit_checklist_responses')
+    .upsert(
+      responses.map(r => ({
+        activity_id: r.activity_id,
+        template_id: r.template_id,
+        question_id: r.question_id,
+        answer_value: r.answer_value ?? null,
+        answer_json: r.answer_json ?? null,
+      })),
+      { onConflict: 'activity_id,question_id' }
+    )
+    .select('*')
+  if (error) throw error
+  return (data ?? []) as ChecklistResponse[]
+}
+
+// ============================================================
+// Plan Item Management — إدارة بنود الخطط
+// ============================================================
+
+/**
+ * حذف بند من خطة الزيارات
+ */
+export async function deleteVisitPlanItem(itemId: string): Promise<void> {
+  const { error } = await supabase
+    .from('visit_plan_items')
+    .delete()
+    .eq('id', itemId)
+  if (error) throw error
+}
+
+/**
+ * حذف بند من خطة المكالمات
+ */
+export async function deleteCallPlanItem(itemId: string): Promise<void> {
+  const { error } = await supabase
+    .from('call_plan_items')
+    .delete()
+    .eq('id', itemId)
+  if (error) throw error
+}
+
+/**
+ * إعادة ترتيب بنود خطة الزيارات
+ * يقبل مصفوفة معرفات البنود بالترتيب الجديد
+ */
+export async function reorderVisitPlanItems(
+  planId: string,
+  orderedItemIds: string[]
+): Promise<void> {
+  // update sequence لكل بند — بالتتابع لتجنب UNIQUE constraint violation
+  for (let i = 0; i < orderedItemIds.length; i++) {
+    // نستخدم sequence سالب مؤقت لتجنب تعارض UNIQUE
+    const { error } = await supabase
+      .from('visit_plan_items')
+      .update({ sequence: -(i + 1) })
+      .eq('id', orderedItemIds[i])
+      .eq('plan_id', planId)
+    if (error) throw error
+  }
+  // ثم نحوّل السالب إلى موجب
+  for (let i = 0; i < orderedItemIds.length; i++) {
+    const { error } = await supabase
+      .from('visit_plan_items')
+      .update({ sequence: i + 1 })
+      .eq('id', orderedItemIds[i])
+      .eq('plan_id', planId)
+    if (error) throw error
+  }
+}
+
+/**
+ * إعادة ترتيب بنود خطة المكالمات
+ */
+export async function reorderCallPlanItems(
+  planId: string,
+  orderedItemIds: string[]
+): Promise<void> {
+  for (let i = 0; i < orderedItemIds.length; i++) {
+    const { error } = await supabase
+      .from('call_plan_items')
+      .update({ sequence: -(i + 1) })
+      .eq('id', orderedItemIds[i])
+      .eq('plan_id', planId)
+    if (error) throw error
+  }
+  for (let i = 0; i < orderedItemIds.length; i++) {
+    const { error } = await supabase
+      .from('call_plan_items')
+      .update({ sequence: i + 1 })
+      .eq('id', orderedItemIds[i])
+      .eq('plan_id', planId)
+    if (error) throw error
+  }
 }

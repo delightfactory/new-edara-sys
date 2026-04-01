@@ -5,7 +5,16 @@ import { PERMISSIONS } from '@/lib/permissions/constants'
 import PageHeader from '@/components/shared/PageHeader'
 import ActivityStatusBadge from '@/components/shared/ActivityStatusBadge'
 import Button from '@/components/ui/Button'
-import { Edit2, MapPin, Clock, User } from 'lucide-react'
+import { Edit2, MapPin, Clock, User, Phone } from 'lucide-react'
+
+const CALL_RESULT_AR: Record<string, string> = {
+  answered:           'تم الرد',
+  no_answer:          'لا يرد',
+  busy:               'مشغول',
+  callback_scheduled: 'مكالمة لاحقة مجدولة',
+  wrong_number:       'رقم خاطئ',
+  rejected:           'رُفض',
+}
 
 function fmtDate(d: string) {
   return new Date(d).toLocaleDateString('ar-EG', {
@@ -30,9 +39,9 @@ export default function ActivityDetail() {
   if (isLoading) {
     return (
       <div className="page-container animate-enter">
-        <div className="edara-card" style={{ padding: 'var(--space-6)' }}>
+        <div className="edara-card max-w-[640px] mx-auto p-6">
           {[1, 2, 3, 4].map(i => (
-            <div key={i} className="skeleton" style={{ height: 20, marginBottom: 'var(--space-3)', width: `${70 - i * 10}%` }} />
+            <div key={i} className={`skeleton h-5 mb-3 w-[${70 - i * 10}%]`} />
           ))}
         </div>
       </div>
@@ -42,7 +51,7 @@ export default function ActivityDetail() {
   if (error || !activity) {
     return (
       <div className="page-container animate-enter">
-        <div className="empty-state" style={{ padding: 'var(--space-8)' }}>
+        <div className="empty-state p-8">
           <p className="empty-state-title">لم يتم العثور على النشاط</p>
           <Button variant="secondary" onClick={() => navigate('/activities/list')}>
             العودة للقائمة
@@ -103,6 +112,16 @@ export default function ActivityDetail() {
           </div>
         )}
 
+        {/* Employee */}
+        {(activity as any).employee && (
+          <div className="act-detail-row">
+            <span className="act-detail-label">
+              <User size={14} /> الموظف
+            </span>
+            <span className="act-detail-value">{(activity as any).employee?.full_name}</span>
+          </div>
+        )}
+
         {/* Customer */}
         {activity.customer && (
           <div className="act-detail-row">
@@ -119,7 +138,7 @@ export default function ActivityDetail() {
             <span className="act-detail-label">
               <MapPin size={14} /> الموقع
             </span>
-            <span className="act-detail-value" dir="ltr" style={{ fontSize: 'var(--text-xs)', fontFamily: 'monospace' }}>
+            <span className="act-detail-value font-mono text-xs" dir="ltr">
               {activity.gps_lat.toFixed(6)}, {activity.gps_lng.toFixed(6)}
             </span>
           </div>
@@ -136,7 +155,7 @@ export default function ActivityDetail() {
         {/* Refuse Reason */}
         {activity.refuse_reason && (
           <div className="act-detail-section">
-            <div className="act-detail-section-label" style={{ color: 'var(--color-danger)' }}>سبب الرفض</div>
+            <div className="act-detail-section-label text-danger">سبب الرفض</div>
             <div className="act-detail-notes">{activity.refuse_reason}</div>
           </div>
         )}
@@ -149,7 +168,15 @@ export default function ActivityDetail() {
               {activity.call_detail.direction && (
                 <div>
                   <div className="act-detail-label">الاتجاه</div>
-                  <div>{activity.call_detail.direction === 'outbound' ? 'صادرة' : 'واردة'}</div>
+                  <div>{activity.call_detail.direction === 'outbound' ? '↗ صادرة' : '↙ واردة'}</div>
+                </div>
+              )}
+              {activity.call_detail.call_result && (
+                <div>
+                  <div className="act-detail-label">نتيجة المكالمة</div>
+                  <div className="font-semibold">
+                    {CALL_RESULT_AR[activity.call_detail.call_result] ?? activity.call_detail.call_result}
+                  </div>
                 </div>
               )}
               {activity.call_detail.attempt_count && (
@@ -162,6 +189,55 @@ export default function ActivityDetail() {
                 <div>
                   <div className="act-detail-label">الرقم</div>
                   <div dir="ltr">{activity.call_detail.phone_number}</div>
+                </div>
+              )}
+              {activity.call_detail.callback_at && (
+                <div>
+                  <div className="act-detail-label">موعد الرد</div>
+                  <div>{new Date(activity.call_detail.callback_at).toLocaleString('ar-EG')}</div>
+                </div>
+              )}
+              {activity.call_detail.call_recording_url && (
+                <div className="col-span-full">
+                  <div className="act-detail-label">تسجيل المكالمة</div>
+                  <a
+                    href={activity.call_detail.call_recording_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-primary text-sm font-medium flex items-center gap-1 mt-1 hover:underline"
+                  >
+                    <Phone size={12} />
+                    استماع للتسجيل
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Linked Entities — ربط مرئي بين النشاط والموديولات الأخرى */}
+        {(activity.visit_plan_item_id || activity.call_plan_item_id || activity.order_id || activity.collection_id) && (
+          <div className="act-detail-section">
+            <div className="act-detail-section-label">الروابط</div>
+            <div className="flex flex-col gap-2">
+              {activity.visit_plan_item_id && (
+                <div className="act-detail-link cursor-pointer text-primary font-semibold text-sm flex items-center gap-1">
+                  <MapPin size={13} /> جزء من خطة زيارات
+                </div>
+              )}
+              {activity.call_plan_item_id && (
+                <div className="act-detail-link cursor-pointer text-primary font-semibold text-sm flex items-center gap-1">
+                  <Phone size={13} /> جزء من خطة مكالمات
+                </div>
+              )}
+              {activity.order_id && (
+                <div className="act-detail-link cursor-pointer text-success font-semibold text-sm" onClick={() => navigate(`/sales/orders/${activity.order_id}`)}>
+                  🛒 عرض طلب البيع المرتبط ←
+                </div>
+              )}
+              {activity.collection_id && (
+                <div className="act-detail-link cursor-pointer text-warning font-semibold text-sm" onClick={() => navigate(`/finance/payments`)}>
+                  💰 عرض سند التحصيل المرتبط ←
                 </div>
               )}
             </div>

@@ -6,6 +6,7 @@ interface PlanItemCardProps {
   type: 'visit' | 'call'
   onStart?: () => void
   onSkip?: () => void
+  onViewActivity?: () => void
   disabled?: boolean
 }
 
@@ -41,6 +42,7 @@ export default function PlanItemCard({
   type,
   onStart,
   onSkip,
+  onViewActivity,
   disabled,
 }: PlanItemCardProps) {
   const isDone    = item.status === 'completed' || item.status === 'skipped' || item.status === 'missed'
@@ -102,6 +104,11 @@ export default function PlanItemCard({
               outcomeType={(item.activity as any).outcome_type}
               size="sm"
             />
+            {onViewActivity && (
+              <button className="btn btn--ghost btn--sm pic-view-btn" onClick={onViewActivity} type="button">
+                عرض النشاط ←
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -173,7 +180,17 @@ export default function PlanItemCard({
           margin-top: var(--space-2);
           flex-wrap: wrap;
         }
-        .pic-result { margin-top: var(--space-1); }
+        .pic-result {
+          margin-top: var(--space-1);
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+        }
+        .pic-view-btn {
+          font-size: 11px !important;
+          padding: 2px 8px !important;
+          color: var(--color-primary) !important;
+        }
       `}</style>
     </div>
   )

@@ -1,34 +1,35 @@
 /**
- * TargetForm — إنشاء هدف جديد مع دعم كامل لـ scope_id
- * يُستدعى من /activities/targets/new
- *
- * قواعد scope_id (من 21_activities_module_mvp.sql line 513):
- *   company    → scope_id = null      (لا يُحدد فرع/قسم/موظف)
- *   branch     → scope_id = branch_id  (مطلوب)
- *   department → scope_id = department_id (مطلوب)
- *   individual → scope_id = employee_id  (مطلوب)
+ * TargetForm — Wizard من 7 خطوات لإنشاء الهدف
+ * المسار الوحيد: createTargetWithRewards()
+ * الحقول المؤجلة (مُقصودًا): parent_target_id, auto_split, split_basis
  */
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
-  useCreateTarget,
+  useCreateTargetWithRewards,
   useTargetTypes,
   useBranches,
   useHRDepartments,
   useHREmployees,
+  useProducts,
+  useCategories,
+  useGovernorates,
 } from '@/hooks/useQueryHooks'
-import type { TargetInput, TargetScope, TargetPeriod } from '@/lib/types/activities'
+import { supabase } from '@/lib/supabase/client'
+import type { TargetScope, TargetPeriod, TargetType } from '@/lib/types/activities'
+import type { TierInput, TargetCustomerInput } from '@/lib/types/activities'
 import PageHeader from '@/components/shared/PageHeader'
 import Button from '@/components/ui/Button'
+import { ChevronRight, ChevronLeft, Check, Gift, Plus, Trash2, Info, Users, AlertCircle } from 'lucide-react'
 
-// ── Helpers ─────────────────────────────────────────────────────
+// ── Constants ──────────────────────────────────────────────────
 
-const SCOPE_OPTIONS: { value: TargetScope; label: string; needsScopeId: boolean }[] = [
-  { value: 'company',    label: 'الشركة كلها',  needsScopeId: false },
-  { value: 'branch',     label: 'فرع',           needsScopeId: true  },
-  { value: 'department', label: 'قسم',           needsScopeId: true  },
-  { value: 'individual', label: 'موظف بعينه',    needsScopeId: true  },
+const SCOPE_OPTIONS: { value: TargetScope; label: string; icon: string; needsId: boolean }[] = [
+  { value: 'company',    label: 'الشركة كلها',  icon: '🏢', needsId: false },
+  { value: 'branch',     label: 'فرع',           icon: '🏬', needsId: true  },
+  { value: 'department', label: 'قسم',           icon: '🏛️', needsId: true  },
+  { value: 'individual', label: 'موظف بعينه',    icon: '👤', needsId: true  },
 ]
 
 const PERIOD_OPTIONS: { value: TargetPeriod; label: string }[] = [
@@ -38,485 +39,865 @@ const PERIOD_OPTIONS: { value: TargetPeriod; label: string }[] = [
   { value: 'custom',    label: 'مخصص' },
 ]
 
-function getDefaultDates(period: TargetPeriod): { start: string; end: string } {
-  const now   = new Date()
-  const year  = now.getFullYear()
-  const month = now.getMonth()
-  switch (period) {
-    case 'monthly': {
-      const s = new Date(year, month, 1)
-      const e = new Date(year, month + 1, 0)
-      return { start: s.toISOString().slice(0, 10), end: e.toISOString().slice(0, 10) }
-    }
-    case 'quarterly': {
-      const q = Math.floor(month / 3)
-      const s = new Date(year, q * 3, 1)
-      const e = new Date(year, q * 3 + 3, 0)
-      return { start: s.toISOString().slice(0, 10), end: e.toISOString().slice(0, 10) }
-    }
-    case 'yearly':
-      return { start: `${year}-01-01`, end: `${year}-12-31` }
-    default:
-      return { start: now.toISOString().slice(0, 10), end: now.toISOString().slice(0, 10) }
-  }
+const UNIT_AR: Record<string, string> = { currency: 'ج.م', count: 'عدد', percent: '%', quantity: 'كمية' }
+
+// أنواع تستوجب عملاء مستهدفين
+const TYPES_NEED_CUSTOMERS = ['upgrade_value', 'category_spread']
+
+// فلاتر ديناميكية حسب code النوع
+const TYPE_EXTRA: Record<string, string[]> = {
+  sales_value:     ['product_id', 'category_id', 'governorate_id'],
+  collection:      ['governorate_id'],
+  product_qty:     ['product_id', 'category_id'],
+  new_customers:   ['governorate_id'],
+  reactivation:    ['dormancy_days'],
+  category_spread: ['category_id'],
 }
 
-// ── Component ────────────────────────────────────────────────────
+const STEP_LABELS = ['النوع', 'النطاق', 'القيم', 'المكافأة', 'الشرائح', 'العملاء', 'مراجعة']
+
+function defaultDates(period: TargetPeriod) {
+  const now = new Date(); const y = now.getFullYear(); const m = now.getMonth()
+  if (period === 'monthly') {
+    return { start: new Date(y, m, 1).toISOString().slice(0, 10), end: new Date(y, m + 1, 0).toISOString().slice(0, 10) }
+  }
+  if (period === 'quarterly') {
+    const q = Math.floor(m / 3)
+    return { start: new Date(y, q * 3, 1).toISOString().slice(0, 10), end: new Date(y, q * 3 + 3, 0).toISOString().slice(0, 10) }
+  }
+  if (period === 'yearly') return { start: `${y}-01-01`, end: `${y}-12-31` }
+  return { start: now.toISOString().slice(0, 10), end: now.toISOString().slice(0, 10) }
+}
+
+function fmtN(n: number) { return n.toLocaleString('ar-EG', { maximumFractionDigits: 2 }) }
+
+// ── Component ─────────────────────────────────────────────────
 
 export default function TargetForm() {
-  const navigate     = useNavigate()
-  const createTarget = useCreateTarget()
+  const navigate = useNavigate()
+  const createTarget = useCreateTargetWithRewards()
 
-  // ── Reference Data ──────────────────────────────────────────
-  const { data: targetTypes  = [] } = useTargetTypes()
-  const { data: branches     = [] } = useBranches()
-  const { data: departments  = [] } = useHRDepartments(true)
-  // جلب الموظفين بـ pageSize كبير لـ dropdown (يمكن تحسينه لاحقاً بـ search)
-  const { data: employeesRes }      = useHREmployees({ pageSize: 200 })
-  const employees = useMemo(() => employeesRes?.data ?? [], [employeesRes])
+  // ── Reference data
+  const { data: targetTypes = [] }  = useTargetTypes()
+  const { data: branches = [] }     = useBranches()
+  const { data: departments = [] }  = useHRDepartments()
+  const { data: empRes }            = useHREmployees({ pageSize: 200 })
+  const employees = useMemo(() => empRes?.data ?? [], [empRes])
+  const { data: productsRes }       = useProducts()
+  const products = useMemo(() => (productsRes as any)?.data ?? productsRes ?? [], [productsRes])
+  const { data: categories = [] }   = useCategories()
+  const { data: governorates = [] } = useGovernorates()
 
-  // ── Form State ──────────────────────────────────────────────
+  // ── Step
+  const [step, setStep] = useState(1)
+
+  // ── Step 1: نوع + اسم + فلاتر
   const [typeId,        setTypeId]        = useState('')
   const [name,          setName]          = useState('')
-  const [scope,         setScope]         = useState<TargetScope>('company')
-  const [scopeId,       setScopeId]       = useState('')         // "raw" scope_id input
-  const [period,        setPeriod]        = useState<TargetPeriod>('monthly')
-  const [periodStart,   setPeriodStart]   = useState(() => getDefaultDates('monthly').start)
-  const [periodEnd,     setPeriodEnd]     = useState(() => getDefaultDates('monthly').end)
-  const [targetValue,   setTargetValue]   = useState('')
-  const [minValue,      setMinValue]      = useState('')
-  const [stretchValue,  setStretchValue]  = useState('')
   const [description,   setDescription]   = useState('')
-  const [notes,         setNotes]         = useState('')
-  const [saving,        setSaving]        = useState(false)
+  const [productId,     setProductId]     = useState('')
+  const [categoryId,    setCategoryId]    = useState('')
+  const [governorateId, setGovernorateId] = useState('')
+  const [dormancyDays,  setDormancyDays]  = useState('')
+  const [growthPct,     setGrowthPct]     = useState('')   // upgrade_value فقط
 
-  // ── Derived ─────────────────────────────────────────────────
-  const selectedScopeOption = SCOPE_OPTIONS.find(o => o.value === scope)!
-  const needsScopeId = selectedScopeOption.needsScopeId
+  // ── Step 2: نطاق
+  const [scope,   setScope]   = useState<TargetScope>('company')
+  const [scopeId, setScopeId] = useState('')
 
-  const scopeIdLabel: Record<TargetScope, string> = {
-    company:    '',
-    branch:     'الفرع',
-    department: 'القسم',
-    individual: 'الموظف',
+  // ── Step 3: فترة + قيم + ملاحظات
+  const [period,       setPeriod]       = useState<TargetPeriod>('monthly')
+  const [periodStart,  setPeriodStart]  = useState(() => defaultDates('monthly').start)
+  const [periodEnd,    setPeriodEnd]    = useState(() => defaultDates('monthly').end)
+  const [targetValue,  setTargetValue]  = useState('')
+  const [minValue,     setMinValue]     = useState('')
+  const [stretchValue, setStretchValue] = useState('')
+  const [notes,        setNotes]        = useState('')
+
+  // ── Step 4: مكافأة
+  const [rewardType,       setRewardType]       = useState<'fixed' | 'percentage' | ''>('')
+  const [rewardBaseValue,  setRewardBaseValue]  = useState('')
+  const [rewardPoolBasis,  setRewardPoolBasis]  = useState<'sales_value' | 'collection_value' | ''>('')
+  const [autoPayout,       setAutoPayout]       = useState(false)
+  const [payoutMonthOffset, setPayoutMonthOffset] = useState('0')
+
+  // ── Step 5: شرائح
+  const [tiers, setTiers] = useState<TierInput[]>([
+    { sequence: 1, threshold_pct: 80, reward_pct: 80, label: 'جيد' },
+    { sequence: 2, threshold_pct: 100, reward_pct: 100, label: 'ممتاز' },
+  ])
+
+  // ── Step 6: عملاء (للـ upgrade_value & category_spread)
+  const [customers, setCustomers] = useState<(TargetCustomerInput & { _key: number })[]>([])
+  const [customerIdInput, setCustomerIdInput]     = useState('')
+  const [customerBaseline, setCustomerBaseline]   = useState('')
+  const [customerCatCount, setCustomerCatCount]   = useState('')
+
+  // ── Loading
+  const [saving, setSaving] = useState(false)
+
+  // ── Derived
+  const selectedType: TargetType | undefined = useMemo(() => targetTypes.find(t => t.id === typeId), [targetTypes, typeId])
+  const unit          = selectedType?.unit ?? 'currency'
+  const unitLabel     = UNIT_AR[unit] ?? ''
+  const typeCode      = selectedType?.code ?? ''
+  const typeCategory  = selectedType?.category ?? ''
+  const extraFields   = TYPE_EXTRA[typeCode] ?? []
+  const needsCustomers = TYPES_NEED_CUSTOMERS.includes(typeCode)
+  const hasReward      = !!rewardType
+  const scopeOption    = SCOPE_OPTIONS.find(o => o.value === scope)!
+  const needsScopeId   = scopeOption.needsId
+
+  const suggestedMin     = targetValue ? Math.round(Number(targetValue) * 0.8) : 0
+  const suggestedStretch = targetValue ? Math.round(Number(targetValue) * 1.2) : 0
+
+  // ── Effective steps (skip step 5 if no reward; skip step 6 if not needed)
+  const activeSteps = useMemo(() => {
+    const s = [1, 2, 3, 4]
+    if (hasReward) s.push(5)
+    if (needsCustomers) s.push(6)
+    s.push(7)
+    return s
+  }, [hasReward, needsCustomers])
+
+  const totalSteps   = activeSteps.length
+  const currentIndex = activeSteps.indexOf(step)
+  const logicalStep  = currentIndex + 1 // 1-based display
+
+  const goPrev = () => {
+    const idx = activeSteps.indexOf(step)
+    if (idx > 0) setStep(activeSteps[idx - 1])
+  }
+  const goNext = () => {
+    const idx = activeSteps.indexOf(step)
+    if (idx < activeSteps.length - 1) setStep(activeSteps[idx + 1])
   }
 
-  // ── Handlers ────────────────────────────────────────────────
-  const handleScopeChange = (s: TargetScope) => {
-    setScope(s)
-    setScopeId('')   // reset when scope changes
-  }
+  // ── Per-step validation (determines if Next is enabled)
+  const stepValid = useCallback((s: number): boolean => {
+    switch (s) {
+      case 1: {
+        if (!typeId || !name.trim()) return false
+        if (typeCode === 'upgrade_value' && !growthPct) return false
+        if (typeCode === 'reactivation' && !dormancyDays) return false
+        return true
+      }
+      case 2: return !needsScopeId || !!scopeId
+      case 3: return !!targetValue && Number(targetValue) > 0 && !!periodStart && !!periodEnd
+      case 4: {
+        if (!rewardType) return true // مكافأة اختيارية
+        if (!rewardBaseValue || Number(rewardBaseValue) <= 0) return false
+        if (rewardType === 'percentage' && !rewardPoolBasis) return false
+        return true
+      }
+      case 5: {
+        if (!hasReward) return true
+        if (tiers.length === 0) return false
+        return tiers.every(t => t.threshold_pct > 0 && t.reward_pct > 0)
+      }
+      case 6: {
+        // إلزامي: يجب وجود عميل واحد على الأقل لـ upgrade_value و category_spread
+        if (!needsCustomers) return true
+        if (customers.length === 0) return false
+        // upgrade_value: كل عميل يجب أن يمتلك baseline_value صالح
+        if (typeCode === 'upgrade_value') {
+          return customers.every(c => c.baseline_value != null && c.baseline_value > 0)
+        }
+        return true
+      }
+      default: return true
+    }
+  }, [typeId, name, typeCode, growthPct, dormancyDays, needsScopeId, scopeId, targetValue, periodStart, periodEnd, rewardType, rewardBaseValue, rewardPoolBasis, hasReward, tiers, needsCustomers, customers])
 
+  // ── Tier helpers
+  const addTier = () => setTiers(prev => [...prev, { sequence: prev.length + 1, threshold_pct: 0, reward_pct: 0, label: '' }])
+  const removeTier = (i: number) => setTiers(prev => prev.filter((_, idx) => idx !== i).map((t, idx) => ({ ...t, sequence: idx + 1 })))
+  const updateTier = (i: number, field: keyof TierInput, val: any) => setTiers(prev => prev.map((t, idx) => idx === i ? { ...t, [field]: val } : t))
+
+  // ── Customer helpers
+  const addCustomer = () => {
+    if (!customerIdInput) return
+    setCustomers(prev => [...prev, {
+      _key: Date.now(),
+      customer_id: customerIdInput,
+      baseline_value: customerBaseline ? Number(customerBaseline) : undefined,
+      baseline_category_count: customerCatCount ? Number(customerCatCount) : undefined,
+    }])
+    setCustomerIdInput(''); setCustomerBaseline(''); setCustomerCatCount('')
+  }
+  const removeCustomer = (key: number) => setCustomers(prev => prev.filter(c => c._key !== key))
+
+  // ── Period handler
   const handlePeriodChange = (p: TargetPeriod) => {
     setPeriod(p)
-    if (p !== 'custom') {
-      const { start, end } = getDefaultDates(p)
-      setPeriodStart(start)
-      setPeriodEnd(end)
-    }
+    if (p !== 'custom') { const { start, end } = defaultDates(p); setPeriodStart(start); setPeriodEnd(end) }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!typeId)        { toast.error('اختر نوع الهدف'); return }
-    if (!name.trim())   { toast.error('أدخل اسم الهدف'); return }
-    if (!targetValue)   { toast.error('أدخل القيمة المستهدفة'); return }
-    if (!periodStart || !periodEnd) { toast.error('اختر فترة الهدف'); return }
-    // scopeId مطلوب إذا كان النطاق ليس company
-    if (needsScopeId && !scopeId) {
-      toast.error(`اختر ${scopeIdLabel[scope]} للهدف`)
-      return
-    }
+  // ── Submit
+  const handleSubmit = async () => {
+    if (saving) return
     setSaving(true)
+    try {
+      const { data: u } = await supabase.auth.getUser()
+      const userId = u.user?.id ?? ''
 
-    const payload: TargetInput = {
-      type_id:       typeId,
-      name:          name.trim(),
-      scope,
-      scope_id:      needsScopeId ? scopeId : null,
-      period,
-      period_start:  periodStart,
-      period_end:    periodEnd,
-      target_value:  Number(targetValue),
-      min_value:     minValue      ? Number(minValue)      : null,
-      stretch_value: stretchValue  ? Number(stretchValue)  : null,
-      description:   description   || null,
-      notes:         notes         || null,
+      const filterCriteria: Record<string, any> = {}
+      if (typeCode === 'upgrade_value' && growthPct) filterCriteria.growth_pct = Number(growthPct)
+
+      await createTarget.mutateAsync({
+        type_id:          typeId,
+        name:             name.trim(),
+        description:      description || null,
+        scope,
+        scope_id:         needsScopeId ? scopeId : null,
+        period,
+        period_start:     periodStart,
+        period_end:       periodEnd,
+        target_value:     Number(targetValue),
+        min_value:        minValue ? Number(minValue) : null,
+        stretch_value:    stretchValue ? Number(stretchValue) : null,
+        product_id:       productId || null,
+        category_id:      categoryId || null,
+        governorate_id:   governorateId || null,
+        dormancy_days:    dormancyDays ? Number(dormancyDays) : null,
+        filter_criteria:  Object.keys(filterCriteria).length ? filterCriteria : undefined,
+        notes:            notes || null,
+        reward_type:      rewardType || null,
+        reward_base_value: rewardBaseValue ? Number(rewardBaseValue) : null,
+        reward_pool_basis: (rewardType === 'percentage' && rewardPoolBasis) ? rewardPoolBasis : null,
+        auto_payout:      autoPayout,
+        payout_month_offset: Number(payoutMonthOffset),
+        tiers:            hasReward && tiers.length > 0 ? tiers : undefined,
+        customers:        customers.length > 0 ? customers.map(({ _key, ...c }) => c) : undefined,
+        p_user_id:        userId,
+      }, {
+        onSuccess: (newId: string) => {
+          toast.success('تم إنشاء الهدف بنجاح 🎯')
+          navigate(`/activities/targets/${newId}`)
+        },
+        onError: (e: any) => toast.error(e?.message || 'فشل في الإنشاء'),
+      })
+    } catch (e: any) {
+      toast.error(e?.message || 'حدث خطأ')
+    } finally {
+      setSaving(false)
     }
-
-    createTarget.mutate(payload, {
-      onSuccess: (target) => {
-        toast.success('تم إنشاء الهدف')
-        navigate(`/activities/targets/${target.id}`)
-      },
-      onError: (err: any) => {
-        toast.error(err?.message || 'فشل إنشاء الهدف')
-        setSaving(false)
-      },
-    })
   }
 
-  // ── Scope ID Selector ────────────────────────────────────────
+  // ── Render helpers ─────────────────────────────────────────────
+
   const renderScopeIdSelector = () => {
     if (!needsScopeId) return null
-
-    if (scope === 'branch') {
-      return (
-        <div className="form-group">
-          <label className="form-label">
-            الفرع <span className="form-required">*</span>
-          </label>
-          <select
-            className="form-select"
-            value={scopeId}
-            onChange={e => setScopeId(e.target.value)}
-            required
-          >
-            <option value="">-- اختر الفرع --</option>
-            {branches.map((b: any) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
-            ))}
-          </select>
-        </div>
-      )
-    }
-
-    if (scope === 'department') {
-      return (
-        <div className="form-group">
-          <label className="form-label">
-            القسم <span className="form-required">*</span>
-          </label>
-          <select
-            className="form-select"
-            value={scopeId}
-            onChange={e => setScopeId(e.target.value)}
-            required
-          >
-            <option value="">-- اختر القسم --</option>
-            {departments.map((d: any) => (
-              <option key={d.id} value={d.id}>{d.name}</option>
-            ))}
-          </select>
-        </div>
-      )
-    }
-
-    if (scope === 'individual') {
-      return (
-        <div className="form-group">
-          <label className="form-label">
-            الموظف <span className="form-required">*</span>
-          </label>
-          <select
-            className="form-select"
-            value={scopeId}
-            onChange={e => setScopeId(e.target.value)}
-            required
-          >
-            <option value="">-- اختر الموظف --</option>
-            {employees.map((emp: any) => (
-              <option key={emp.id} value={emp.id}>
-                {emp.full_name}
-                {emp.employee_number ? ` (${emp.employee_number})` : ''}
-              </option>
-            ))}
-          </select>
-        </div>
-      )
-    }
-
-    return null
+    const opts = scope === 'branch'     ? (branches as any[]).map(b => ({ id: b.id, label: b.name }))
+               : scope === 'department' ? (departments as any[]).map(d => ({ id: d.id, label: d.name }))
+               : employees.map(e => ({ id: e.id, label: `${e.full_name}${e.employee_number ? ` (${e.employee_number})` : ''}` }))
+    const lbl = scope === 'branch' ? 'الفرع' : scope === 'department' ? 'القسم' : 'الموظف'
+    return (
+      <div className="form-group">
+        <label className="form-label">{lbl} <span className="form-required">*</span></label>
+        <select className="form-select" value={scopeId} onChange={e => setScopeId(e.target.value)}>
+          <option value="">-- اختر {lbl} --</option>
+          {opts.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+        </select>
+      </div>
+    )
   }
 
-  // ── Render ──────────────────────────────────────────────────
+  // ── STEP RENDERERS ─────────────────────────────────────────────
+
+  const S1 = () => (
+    <>
+      <div className="tf-section">
+        <div className="tf-section-title">🎯 نوع الهدف <span className="form-required">*</span></div>
+        <div className="tf-type-grid">
+          {targetTypes.map(t => (
+            <button key={t.id} type="button"
+              className={`tf-type-card${typeId === t.id ? ' tf-type-card--active' : ''}`}
+              onClick={() => setTypeId(t.id)}>
+              <div className="tf-type-name">{t.name}</div>
+              <div className="tf-type-meta">
+                <span className="tf-unit-badge">{UNIT_AR[t.unit] ?? t.unit}</span>
+                <span className="tf-type-cat">{t.category}</span>
+              </div>
+              {t.description && <div className="tf-type-desc">{t.description}</div>}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="tf-section">
+        <div className="tf-section-title">اسم الهدف</div>
+        <div className="form-group">
+          <label className="form-label">عنوان واضح يصف الهدف <span className="form-required">*</span></label>
+          <input className="form-input" value={name} onChange={e => setName(e.target.value)}
+            placeholder={`مثال: هدف ${selectedType?.name ?? 'مبيعات'} - ${PERIOD_OPTIONS.find(p => p.value === period)?.label ?? 'شهري'} 2026`} />
+        </div>
+        <div className="form-group">
+          <label className="form-label">وصف <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(اختياري)</span></label>
+          <textarea className="form-textarea" rows={2} value={description} onChange={e => setDescription(e.target.value)} placeholder="وصف مختصر..." />
+        </div>
+      </div>
+
+      {/* growth_pct — إلزامي لـ upgrade_value */}
+      {typeCode === 'upgrade_value' && (
+        <div className="tf-section">
+          <div className="tf-section-title">📈 نسبة النمو المستهدفة</div>
+          <div className="form-group">
+            <label className="form-label">growth_pct — نسبة زيادة قيمة العميل <span className="form-required">*</span></label>
+            <input type="number" className="form-input" value={growthPct} onChange={e => setGrowthPct(e.target.value)}
+              placeholder="مثال: 20 (يعني 20%)" min="1" step="0.1" />
+          </div>
+        </div>
+      )}
+
+      {extraFields.length > 0 && (
+        <div className="tf-section">
+          <div className="tf-section-title"><Info size={14} className="inline align-middle ml-1" /> فلاتر تخصصية — {selectedType?.name}</div>
+          {extraFields.includes('product_id') && (
+            <div className="form-group">
+              <label className="form-label">منتج <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(اختياري)</span></label>
+              <select className="form-select" value={productId} onChange={e => setProductId(e.target.value)}>
+                <option value="">كل المنتجات</option>
+                {(products as any[]).map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+          )}
+          {extraFields.includes('category_id') && (
+            <div className="form-group">
+              <label className="form-label">تصنيف <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(اختياري)</span></label>
+              <select className="form-select" value={categoryId} onChange={e => setCategoryId(e.target.value)}>
+                <option value="">كل التصنيفات</option>
+                {(categories as any[]).map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+          )}
+          {extraFields.includes('governorate_id') && (
+            <div className="form-group">
+              <label className="form-label">محافظة <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(اختياري)</span></label>
+              <select className="form-select" value={governorateId} onChange={e => setGovernorateId(e.target.value)}>
+                <option value="">كل المحافظات</option>
+                {(governorates as any[]).map((g: any) => <option key={g.id} value={g.id}>{g.name}</option>)}
+              </select>
+            </div>
+          )}
+          {extraFields.includes('dormancy_days') && (
+            <div className="form-group">
+              <label className="form-label">أيام الخمول <span className="form-required">*</span></label>
+              <input type="number" className="form-input" value={dormancyDays}
+                onChange={e => setDormancyDays(e.target.value)} placeholder="مثال: 90" min="1" step="1" />
+              <small style={{ color: 'var(--text-muted)', fontSize: 11 }}>عدد الأيام التي بدونها يُعتبر العميل خاملاً</small>
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  )
+
+  const S2 = () => (
+    <div className="tf-section">
+      <div className="tf-section-title">📌 نطاق الهدف</div>
+      <div className="tf-scope-grid">
+        {SCOPE_OPTIONS.map(o => (
+          <button key={o.value} type="button"
+            className={`tf-scope-btn${scope === o.value ? ' tf-scope-btn--active' : ''}`}
+            onClick={() => { setScope(o.value); setScopeId('') }}>
+            <span style={{ fontSize: 24 }}>{o.icon}</span>
+            <span>{o.label}</span>
+          </button>
+        ))}
+      </div>
+      {renderScopeIdSelector()}
+    </div>
+  )
+
+  const S3 = () => (
+    <>
+      <div className="tf-section">
+        <div className="tf-section-title">📅 الفترة الزمنية</div>
+        <div className="form-group">
+          <label className="form-label">نوع الفترة</label>
+          <select className="form-select" value={period} onChange={e => handlePeriodChange(e.target.value as TargetPeriod)}>
+            {PERIOD_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </div>
+        <div className="tf-dates">
+          <div className="form-group">
+            <label className="form-label">من <span className="form-required">*</span></label>
+            <input type="date" className="form-input" value={periodStart} onChange={e => setPeriodStart(e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">إلى <span className="form-required">*</span></label>
+            <input type="date" className="form-input" value={periodEnd} onChange={e => setPeriodEnd(e.target.value)} />
+          </div>
+        </div>
+      </div>
+
+      <div className="tf-section">
+        <div className="tf-section-title">💰 القيم المستهدفة</div>
+        {targetValue && Number(targetValue) > 0 && (
+          <div className="tf-value-visual">
+            <div className="tf-zone tf-zone--danger" style={{ width: `${minValue ? Math.min(Number(minValue) / Number(targetValue) * 100, 80) : 75}%` }}>أحمر</div>
+            <div className="tf-zone tf-zone--success" style={{ flex: 1 }}>🎯 الهدف</div>
+            <div className="tf-zone tf-zone--stretch" style={{ width: '20%' }}>تمدد</div>
+          </div>
+        )}
+        <div className="tf-values-grid">
+          <div className="form-group">
+            <label className="form-label">القيمة المستهدفة {unitLabel && <span className="tf-unit-badge">{unitLabel}</span>} <span className="form-required">*</span></label>
+            <input type="number" className="form-input" style={{ borderColor: 'var(--color-primary)', fontWeight: 700, fontSize: 'var(--text-base)' }}
+              value={targetValue} onChange={e => setTargetValue(e.target.value)} placeholder="0" min="0" step="any" />
+          </div>
+          <div className="form-group">
+            <label className="form-label">الحد الأدنى {unitLabel && <span className="tf-unit-badge">{unitLabel}</span>}<span style={{ color: 'var(--text-muted)', fontWeight: 400 }}> (اختياري)</span></label>
+            <input type="number" className="form-input" value={minValue}
+              onChange={e => setMinValue(e.target.value)}
+              placeholder={suggestedMin ? `اقتراح: ${suggestedMin.toLocaleString('ar-EG')}` : '—'} min="0" step="any" />
+            {suggestedMin > 0 && !minValue && (
+              <button type="button" className="tf-suggest-btn" onClick={() => setMinValue(String(suggestedMin))}>
+                استخدام 80% ← {suggestedMin.toLocaleString('ar-EG')}
+              </button>
+            )}
+          </div>
+          <div className="form-group">
+            <label className="form-label">هدف التمدد {unitLabel && <span className="tf-unit-badge">{unitLabel}</span>}<span style={{ color: 'var(--text-muted)', fontWeight: 400 }}> (اختياري)</span></label>
+            <input type="number" className="form-input" value={stretchValue}
+              onChange={e => setStretchValue(e.target.value)}
+              placeholder={suggestedStretch ? `اقتراح: ${suggestedStretch.toLocaleString('ar-EG')}` : '—'} min="0" step="any" />
+            {suggestedStretch > 0 && !stretchValue && (
+              <button type="button" className="tf-suggest-btn" onClick={() => setStretchValue(String(suggestedStretch))}>
+                استخدام 120% ← {suggestedStretch.toLocaleString('ar-EG')}
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="form-group">
+          <label className="form-label">ملاحظات <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(اختيارية)</span></label>
+          <textarea className="form-textarea" rows={2} value={notes} onChange={e => setNotes(e.target.value)} placeholder="ملاحظات إضافية..." />
+        </div>
+      </div>
+    </>
+  )
+
+  const S4 = () => {
+    const isPercentage = rewardType === 'percentage'
+    const isFinancial = typeCategory === 'financial' || typeCode === 'upgrade_value'
+    return (
+      <div className="tf-section">
+        <div className="tf-section-title"><Gift size={16} className="inline align-middle ml-1" /> إعداد المكافأة <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(اختياري)</span></div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '16px' }}>
+          {[{ v: '' as const, label: 'بدون مكافأة', desc: 'لا يوجد حافز مادي' },
+            { v: 'fixed' as const, label: 'مقطوعة', desc: 'مبلغ ثابت عند التحقيق' },
+            { v: 'percentage' as const, label: 'نسبة', desc: 'نسبة من وعاء الحساب' }]
+            .filter(o => o.v !== 'percentage' || isFinancial)
+            .map(o => (
+            <button key={o.v} type="button"
+              className={`tf-type-card${rewardType === o.v ? ' tf-type-card--active' : ''}`}
+              style={{ padding: '12px 8px' }}
+              onClick={() => { setRewardType(o.v); if (o.v !== 'percentage') setRewardPoolBasis('') }}>
+              <div className="tf-type-name" style={{ fontSize: '13px' }}>{o.label}</div>
+              <div className="tf-type-desc">{o.desc}</div>
+            </button>
+          ))}
+        </div>
+
+        {rewardType && (
+          <>
+            <div className="tf-dates">
+              <div className="form-group">
+                <label className="form-label">
+                  {rewardType === 'fixed' ? 'المبلغ الثابت (ج.م)' : 'النسبة المئوية (%)'}
+                  <span className="form-required"> *</span>
+                </label>
+                <input type="number" className="form-input" value={rewardBaseValue}
+                  onChange={e => setRewardBaseValue(e.target.value)}
+                  placeholder={rewardType === 'fixed' ? 'مثال: 5000' : 'مثال: 2.5'} min="0.01" step="any" />
+              </div>
+              {isPercentage && (() => {
+                // قواعد البنية: بعض الأنواع تُثبت وعاء الحساب تلقائياً
+                const lockedBasis: 'sales_value' | 'collection_value' | null =
+                  typeCode === 'collection'    ? 'collection_value' :
+                  typeCode === 'upgrade_value' ? 'sales_value' : null
+
+                if (lockedBasis) {
+                  // تثبيت تلقائي — أعلم المستخدم ولا تعرض قائمة
+                  if (rewardPoolBasis !== lockedBasis) setRewardPoolBasis(lockedBasis)
+                  return (
+                    <div className="form-group">
+                      <label className="form-label">وعاء الحساب</label>
+                      <div style={{ padding: '8px 12px', background: 'var(--bg-surface-2)', border: '1px solid var(--border-primary)', borderRadius: '6px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: 16 }}>🔒</span>
+                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                          {lockedBasis === 'sales_value' ? 'إجمالي المبيعات' : 'إجمالي التحصيلات'}
+                        </span>
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>محدد تلقائياً حسب نوع الهدف</span>
+                      </div>
+                    </div>
+                  )
+                }
+
+                // اختيار حر للأنواع الأخرى
+                return (
+                  <div className="form-group">
+                    <label className="form-label">وعاء الحساب <span className="form-required">*</span></label>
+                    <select className="form-select" value={rewardPoolBasis} onChange={e => setRewardPoolBasis(e.target.value as any)}>
+                      <option value="">-- اختر --</option>
+                      <option value="sales_value">إجمالي المبيعات</option>
+                      <option value="collection_value">إجمالي التحصيلات</option>
+                    </select>
+                  </div>
+                )
+              })()}
+            </div>
+
+            <div style={{ borderTop: '1px solid var(--border-primary)', marginTop: '8px', paddingTop: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div className="form-group">
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={autoPayout} onChange={e => setAutoPayout(e.target.checked)}
+                      style={{ width: 16, height: 16 }} />
+                    تفعيل الصرف التلقائي بالرواتب
+                  </label>
+                  <small style={{ color: 'var(--text-muted)', fontSize: 11 }}>يتطلب شريحة مكافأة واحدة على الأقل</small>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">تأخير الصرف</label>
+                  <select className="form-select" value={payoutMonthOffset} onChange={e => setPayoutMonthOffset(e.target.value)}>
+                    <option value="0">نفس الشهر</option>
+                    <option value="1">الشهر التالي</option>
+                    <option value="2">بعد شهرين</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {!rewardType && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '13px', padding: '8px 0' }}>
+            <Info size={14} /> يمكن إضافة مكافأة لاحقاً عبر صفحة تفاصيل الهدف.
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const S5 = () => (
+    <div className="tf-section">
+      <div className="tf-section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: 'none', paddingBottom: 0, marginBottom: '12px' }}>
+        <span>🏆 شرائح المكافأة</span>
+        <Button type="button" variant="secondary" icon={<Plus size={14} />} onClick={addTier} size="sm">إضافة شريحة</Button>
+      </div>
+
+      {tiers.length === 0 ? (
+        <div className="empty-state" style={{ padding: '24px 0' }}>
+          <p className="empty-state-title">لا توجد شرائح بعد</p>
+          <p className="empty-state-text">أضف شريحة واحدة على الأقل لتحديد متى وكم تُصرف المكافأة</p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {tiers.map((tier, i) => (
+            <div key={i} style={{
+              display: 'grid', gridTemplateColumns: '36px 1fr 1fr 1fr auto',
+              gap: '8px', alignItems: 'center',
+              padding: '12px', background: 'var(--bg-surface-2)',
+              border: '1px solid var(--border-primary)', borderRadius: '8px'
+            }}>
+              <div style={{ textAlign: 'center', fontWeight: 800, color: 'var(--color-primary)', fontSize: '18px' }}>{i + 1}</div>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="form-label">نسبة الإنجاز %</label>
+                <input type="number" className="form-input" value={tier.threshold_pct}
+                  onChange={e => updateTier(i, 'threshold_pct', Number(e.target.value))}
+                  placeholder="مثال: 80" min="1" max="200" />
+              </div>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="form-label">% المكافأة المصروفة</label>
+                <input type="number" className="form-input" value={tier.reward_pct}
+                  onChange={e => updateTier(i, 'reward_pct', Number(e.target.value))}
+                  placeholder="مثال: 80" min="1" max="200" />
+              </div>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="form-label">تسمية الشريحة</label>
+                <input type="text" className="form-input" value={tier.label ?? ''}
+                  onChange={e => updateTier(i, 'label', e.target.value)}
+                  placeholder="مثال: ممتاز" />
+              </div>
+              <button type="button" onClick={() => removeTier(i)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-danger)', padding: '8px', marginTop: '20px' }}>
+                <Trash2 size={16} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{ marginTop: '12px', padding: '12px', background: 'var(--color-primary-light)', borderRadius: '8px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+        <strong>مثال: </strong>شريحة 80% → تصرف 80% من المكافأة | شريحة 100% → تصرف 100% من المكافأة
+      </div>
+    </div>
+  )
+
+  const S6 = () => (
+    <div className="tf-section">
+      <div className="tf-section-title"><Users size={16} className="inline align-middle ml-1" /> العملاء المستهدفون</div>
+
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'flex-end', padding: '12px', background: 'var(--bg-surface-2)', borderRadius: '8px', marginBottom: '8px' }}>
+        <div className="form-group" style={{ margin: 0, flex: '1 1 180px' }}>
+          <label className="form-label">معرّف العميل (customer_id) <span className="form-required">*</span></label>
+          <input className="form-input" value={customerIdInput} onChange={e => setCustomerIdInput(e.target.value)} placeholder="UUID للعميل..." />
+        </div>
+        {typeCode === 'upgrade_value' && (
+          <div className="form-group" style={{ margin: 0, flex: '1 1 130px' }}>
+            <label className="form-label">القيمة المرجعية (ج.م)</label>
+            <input type="number" className="form-input" value={customerBaseline} onChange={e => setCustomerBaseline(e.target.value)} placeholder="0" min="0" />
+          </div>
+        )}
+        {typeCode === 'category_spread' && (
+          <div className="form-group" style={{ margin: 0, flex: '1 1 130px' }}>
+            <label className="form-label">عدد التصنيفات المرجعي</label>
+            <input type="number" className="form-input" value={customerCatCount} onChange={e => setCustomerCatCount(e.target.value)} placeholder="0" min="0" />
+          </div>
+        )}
+        <Button type="button" variant="secondary" icon={<Plus size={14} />} onClick={addCustomer} style={{ marginBottom: '2px' }}>إضافة</Button>
+      </div>
+
+      {customers.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '16px', color: 'var(--text-muted)', fontSize: '13px' }}>
+          {typeCode === 'upgrade_value' ? 'أضف العملاء الذين تريد تتبع نموهم الشرائي.' : 'أضف العملاء المستهدفين لتتبع انتشار التصنيفات.'}
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {customers.map((c, i) => (
+            <div key={c._key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px',
+              background: 'var(--bg-surface-2)', border: '1px solid var(--border-primary)', borderRadius: '6px' }}>
+              <span style={{ fontWeight: 700, color: 'var(--color-primary)', minWidth: 24 }}>{i + 1}</span>
+              <span style={{ flex: 1, fontSize: '12px', fontFamily: 'monospace', color: 'var(--text-secondary)' }}>{c.customer_id}</span>
+              {c.baseline_value != null && <span className="tf-unit-badge">{fmtN(c.baseline_value)} ج.م</span>}
+              {c.baseline_category_count != null && <span className="tf-unit-badge">{c.baseline_category_count} تصنيف</span>}
+              <button type="button" onClick={() => removeCustomer(c._key)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-danger)' }}>
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+
+  const S7 = () => {
+    const scopeLabel = SCOPE_OPTIONS.find(o => o.value === scope)?.label
+    const periodLabel = PERIOD_OPTIONS.find(o => o.value === period)?.label
+    const scopeIdLabel = !needsScopeId ? '' : (
+      scope === 'branch'     ? (branches as any[]).find(b => b.id === scopeId)?.name :
+      scope === 'department' ? (departments as any[]).find(d => d.id === scopeId)?.name :
+      employees.find(e => e.id === scopeId)?.full_name
+    ) ?? scopeId
+
+    return (
+      <div className="tf-section">
+        <div className="tf-section-title">✅ مراجعة شاملة قبل الإنشاء</div>
+
+        <div className="tf-review-card">
+          <div style={{ fontSize: 28 }}>🎯</div>
+          <div>
+            <div style={{ fontSize: 'var(--text-base)', fontWeight: 800, color: 'var(--color-primary)' }}>{name || '—'}</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{selectedType?.name ?? '—'}</div>
+          </div>
+        </div>
+
+        <div className="tf-review-grid">
+          <div className="tf-review-item">
+            <span className="tf-review-label">النطاق</span>
+            <span className="tf-review-value">{scopeLabel}{scopeIdLabel ? ` — ${scopeIdLabel}` : ''}</span>
+          </div>
+          <div className="tf-review-item tf-review-item--highlight">
+            <span className="tf-review-label">القيمة المستهدفة</span>
+            <span className="tf-review-value">{fmtN(Number(targetValue || 0))} {unitLabel}</span>
+          </div>
+          {minValue && <div className="tf-review-item"><span className="tf-review-label">الحد الأدنى</span><span className="tf-review-value">{fmtN(Number(minValue))} {unitLabel}</span></div>}
+          {stretchValue && <div className="tf-review-item"><span className="tf-review-label">هدف التمدد</span><span className="tf-review-value">{fmtN(Number(stretchValue))} {unitLabel}</span></div>}
+          <div className="tf-review-item">
+            <span className="tf-review-label">الفترة</span>
+            <span className="tf-review-value">{periodLabel}: {periodStart} — {periodEnd}</span>
+          </div>
+
+          {/* Reward */}
+          {hasReward && (
+            <>
+              <div className="tf-review-item" style={{ background: 'rgba(139,92,246,0.06)' }}>
+                <span className="tf-review-label">نوع المكافأة</span>
+                <span className="tf-review-value">{rewardType === 'fixed' ? 'مقطوعة' : 'نسبية'}</span>
+              </div>
+              <div className="tf-review-item" style={{ background: 'rgba(139,92,246,0.06)' }}>
+                <span className="tf-review-label">{rewardType === 'fixed' ? 'المبلغ الثابت' : 'النسبة %'}</span>
+                <span className="tf-review-value">{rewardBaseValue} {rewardType === 'fixed' ? 'ج.م' : '%'}</span>
+              </div>
+              {rewardPoolBasis && (
+                <div className="tf-review-item" style={{ background: 'rgba(139,92,246,0.06)' }}>
+                  <span className="tf-review-label">وعاء الحساب</span>
+                  <span className="tf-review-value">{rewardPoolBasis === 'sales_value' ? 'إجمالي المبيعات' : 'إجمالي التحصيلات'}</span>
+                </div>
+              )}
+              {tiers.length > 0 && (
+                <div className="tf-review-item" style={{ background: 'rgba(139,92,246,0.06)' }}>
+                  <span className="tf-review-label">الشرائح</span>
+                  <span className="tf-review-value" style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                    {tiers.map((t, i) => (
+                      <span key={i} className="tf-tag">عند {t.threshold_pct}% → {t.reward_pct}% {t.label ? `(${t.label})` : ''}</span>
+                    ))}
+                  </span>
+                </div>
+              )}
+              <div className="tf-review-item" style={{ background: 'rgba(139,92,246,0.06)' }}>
+                <span className="tf-review-label">الصرف التلقائي</span>
+                <span className="tf-review-value">{autoPayout ? `✓ مفعّل (offset +${payoutMonthOffset} شهر)` : '—'}</span>
+              </div>
+            </>
+          )}
+
+          {/* Customers */}
+          {customers.length > 0 && (
+            <div className="tf-review-item">
+              <span className="tf-review-label">العملاء المستهدفون</span>
+              <span className="tf-review-value">{customers.length} عميل</span>
+            </div>
+          )}
+
+          {/* Filters */}
+          {(productId || categoryId || governorateId || dormancyDays) && (
+            <div className="tf-review-item">
+              <span className="tf-review-label">فلاتر</span>
+              <span className="tf-review-value" style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                {productId && <span className="tf-tag">منتج</span>}
+                {categoryId && <span className="tf-tag">تصنيف</span>}
+                {governorateId && <span className="tf-tag">محافظة</span>}
+                {dormancyDays && <span className="tf-tag">خمول {dormancyDays} يوم</span>}
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', padding: '12px 16px',
+          background: 'var(--color-warning-light)', border: '1px solid var(--color-warning)',
+          borderRadius: '8px', marginTop: '12px', fontSize: '13px' }}>
+          <AlertCircle size={16} style={{ color: 'var(--color-warning)', flexShrink: 0, marginTop: 2 }} />
+          <span style={{ color: 'var(--text-secondary)' }}>
+            بعد الإنشاء، يمكن تعديل القيم والمكافأة عبر صفحة التفاصيل. لا يمكن تغيير النوع أو النطاق.
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Main Render ─────────────────────────────────────────────
+
+  const isLastStep = activeSteps.indexOf(step) === activeSteps.length - 1
+  const isFirstStep = activeSteps.indexOf(step) === 0
+  const nextValid = stepValid(step)
+
   return (
     <div className="page-container animate-enter">
       <PageHeader
         title="هدف جديد"
-        subtitle="تعيين هدف جديد للأداء"
+        subtitle={`الخطوة ${logicalStep} من ${totalSteps} — ${STEP_LABELS[step - 1] ?? ''}`}
         breadcrumbs={[
           { label: 'الأهداف', path: '/activities/targets' },
-          { label: 'جديد' },
+          { label: 'هدف جديد' },
         ]}
       />
 
-      <form className="edara-card target-form" onSubmit={handleSubmit}>
-
-        {/* ── تصنيف الهدف ── */}
-        <div className="target-form-section">
-          <div className="target-form-section-title">تفاصيل الهدف</div>
-
-          {/* نوع الهدف */}
-          <div className="form-group">
-            <label className="form-label">نوع الهدف <span className="form-required">*</span></label>
-            <select className="form-select" value={typeId} onChange={e => setTypeId(e.target.value)} required>
-              <option value="">-- اختر نوع الهدف --</option>
-              {targetTypes.map((t: any) => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* اسم الهدف */}
-          <div className="form-group">
-            <label className="form-label">اسم الهدف <span className="form-required">*</span></label>
-            <input
-              className="form-input"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="مثال: هدف مبيعات أبريل 2026"
-              required
-            />
-          </div>
-        </div>
-
-        {/* ── النطاق ── */}
-        <div className="target-form-section">
-          <div className="target-form-section-title">نطاق الهدف</div>
-          <div className="form-group">
-            <label className="form-label">المستوى <span className="form-required">*</span></label>
-            <div className="target-scope-grid">
-              {SCOPE_OPTIONS.map(o => (
-                <button
-                  key={o.value}
-                  type="button"
-                  className={`target-scope-btn${scope === o.value ? ' target-scope-btn--active' : ''}`}
-                  onClick={() => handleScopeChange(o.value)}
-                >
-                  {o.label}
-                </button>
-              ))}
+      {/* Step Indicator */}
+      <div className="tf-steps">
+        {activeSteps.map((s, i) => {
+          const done = activeSteps.indexOf(step) > i
+          const active = s === step
+          return (
+            <div key={s} className={`tf-step${active ? ' tf-step--active' : done ? ' tf-step--done' : ''}`}>
+              <div className="tf-step-circle">{done ? <Check size={11} /> : i + 1}</div>
+              <span className="tf-step-label">{STEP_LABELS[s - 1]}</span>
             </div>
-          </div>
+          )
+        })}
+      </div>
 
-          {/* ── Scope ID Selector يظهر فوراً إذا لزم ── */}
-          {renderScopeIdSelector()}
-        </div>
+      <form className="edara-card tf-form" onSubmit={e => { e.preventDefault(); if (isLastStep) handleSubmit() }}>
+        {step === 1 && <S1 />}
+        {step === 2 && <S2 />}
+        {step === 3 && <S3 />}
+        {step === 4 && <S4 />}
+        {step === 5 && <S5 />}
+        {step === 6 && <S6 />}
+        {step === 7 && <S7 />}
 
-        {/* ── الفترة ── */}
-        <div className="target-form-section">
-          <div className="target-form-section-title">الفترة الزمنية</div>
-          <div className="form-group">
-            <label className="form-label">نوع الفترة <span className="form-required">*</span></label>
-            <select className="form-select" value={period} onChange={e => handlePeriodChange(e.target.value as TargetPeriod)} required>
-              {PERIOD_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-          </div>
-
-          <div className="target-form-dates">
-            <div className="form-group">
-              <label className="form-label">من <span className="form-required">*</span></label>
-              <input
-                type="date"
-                className="form-input"
-                value={periodStart}
-                onChange={e => setPeriodStart(e.target.value)}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">إلى <span className="form-required">*</span></label>
-              <input
-                type="date"
-                className="form-input"
-                value={periodEnd}
-                onChange={e => setPeriodEnd(e.target.value)}
-                required
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* ── القيم ── */}
-        <div className="target-form-section">
-          <div className="target-form-section-title">القيم المستهدفة</div>
-          <div className="target-form-values">
-            <div className="form-group">
-              <label className="form-label">القيمة المستهدفة <span className="form-required">*</span></label>
-              <input
-                type="number"
-                className="form-input"
-                value={targetValue}
-                onChange={e => setTargetValue(e.target.value)}
-                placeholder="0"
-                min="0"
-                step="any"
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">الحد الأدنى <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(اختياري)</span></label>
-              <input
-                type="number"
-                className="form-input"
-                value={minValue}
-                onChange={e => setMinValue(e.target.value)}
-                placeholder="—"
-                min="0"
-                step="any"
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">هدف التمدد <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(اختياري)</span></label>
-              <input
-                type="number"
-                className="form-input"
-                value={stretchValue}
-                onChange={e => setStretchValue(e.target.value)}
-                placeholder="—"
-                min="0"
-                step="any"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* ── ملاحظات ── */}
-        <div className="target-form-section">
-          <div className="target-form-section-title">تفاصيل إضافية</div>
-          <div className="form-group">
-            <label className="form-label">الوصف</label>
-            <textarea
-              className="form-textarea"
-              rows={2}
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              placeholder="وصف مختصر للهدف..."
-            />
-          </div>
-          <div className="form-group">
-            <label className="form-label">ملاحظات</label>
-            <textarea
-              className="form-textarea"
-              rows={2}
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              placeholder="ملاحظات إضافية..."
-            />
-          </div>
-        </div>
-
-        {/* ── Summary Preview ── */}
-        {typeId && name && targetValue && (
-          <div className="target-form-preview">
-            <span className="target-form-preview-icon">🎯</span>
-            <span>
-              <strong>{name}</strong>
-              {' · '}
-              {SCOPE_OPTIONS.find(o => o.value === scope)?.label}
-              {needsScopeId && scopeId && ' (محدد)'}
-              {' · '}
-              {targetValue} وحدة
-            </span>
-          </div>
-        )}
-
-        <div className="target-form-actions">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => navigate('/activities/targets')}
-            disabled={saving}
-          >
-            إلغاء
-          </Button>
-          <Button
-            type="submit"
-            disabled={saving || (needsScopeId && !scopeId)}
-          >
-            {saving ? 'جاري الإنشاء...' : 'إنشاء الهدف'}
-          </Button>
+        <div className="tf-actions">
+          {!isFirstStep && (
+            <Button type="button" variant="secondary" icon={<ChevronRight size={14} />} onClick={goPrev}>
+              السابق
+            </Button>
+          )}
+          <div style={{ flex: 1 }} />
+          {!isLastStep ? (
+            <Button type="button" disabled={!nextValid} onClick={goNext} icon={<ChevronLeft size={14} />}>
+              التالي
+            </Button>
+          ) : (
+            <Button type="submit" disabled={saving || !stepValid(3)}>
+              {saving ? 'جاري الحفظ...' : 'إنشاء الهدف 🎯'}
+            </Button>
+          )}
         </div>
       </form>
 
       <style>{`
-        .target-form {
-          max-width: 680px;
-          margin: 0 auto;
-          padding: var(--space-4);
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-2);
-        }
-        .target-form-section {
-          border: 1px solid var(--border-primary);
-          border-radius: var(--radius-lg);
-          padding: var(--space-4);
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-3);
-        }
-        .target-form-section-title {
-          font-size: var(--text-sm);
-          font-weight: 700;
-          color: var(--text-secondary);
-          margin-bottom: var(--space-1);
-          padding-bottom: var(--space-2);
-          border-bottom: 1px solid var(--border-primary);
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
-        }
-        .target-scope-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: var(--space-2);
-        }
-        .target-scope-btn {
-          padding: var(--space-2) var(--space-1);
-          border: 1px solid var(--border-primary);
-          border-radius: var(--radius-md);
-          background: var(--bg-surface);
-          color: var(--text-secondary);
-          font-size: var(--text-sm);
-          cursor: pointer;
-          transition: all var(--transition-fast);
-          font-family: inherit;
-          font-weight: 500;
-        }
-        .target-scope-btn:hover {
-          border-color: var(--color-primary);
-          color: var(--color-primary);
-          background: var(--color-primary-light);
-        }
-        .target-scope-btn--active {
-          border-color: var(--color-primary);
-          background: var(--color-primary);
-          color: #fff;
-          font-weight: 700;
-        }
-        .target-form-dates,
-        .target-form-values {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-          gap: var(--space-3);
-        }
-        .target-form-preview {
-          display: flex;
-          align-items: center;
-          gap: var(--space-3);
-          padding: var(--space-3);
-          background: var(--color-primary-light);
-          border: 1px solid var(--color-primary);
-          border-radius: var(--radius-md);
-          font-size: var(--text-sm);
-          color: var(--color-primary);
-          animation: fadeIn 0.2s ease;
-        }
-        .target-form-preview-icon { font-size: 20px; }
-        .target-form-actions {
-          display: flex;
-          gap: var(--space-3);
-          justify-content: flex-end;
-          padding-top: var(--space-3);
-          border-top: 1px solid var(--border-primary);
-        }
-        @keyframes fadeIn { from { opacity:0; transform:translateY(4px) } to { opacity:1; transform:translateY(0) } }
+        .tf-form { max-width: 720px; margin: 0 auto; padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
+        .tf-steps { display: flex; justify-content: center; gap: 0; max-width: 720px; margin: 0 auto var(--space-4); padding: 0 var(--space-4); }
+        .tf-step { display: flex; align-items: center; gap: var(--space-1); flex: 1; padding: var(--space-2) 0; font-size: var(--text-xs); color: var(--text-muted); position: relative; }
+        .tf-step + .tf-step::before { content: ''; position: absolute; right: 100%; top: 12px; width: 8px; height: 2px; background: var(--border-primary); }
+        .tf-step--done + .tf-step::before, .tf-step--active + .tf-step::before { background: var(--color-primary); }
+        .tf-step-circle { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--border-primary); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; background: var(--bg-surface); color: var(--text-muted); }
+        .tf-step--active .tf-step-circle { border-color: var(--color-primary); background: var(--color-primary); color: #fff; }
+        .tf-step--done .tf-step-circle { border-color: var(--color-success); background: var(--color-success); color: #fff; }
+        .tf-step--active { color: var(--color-primary); font-weight: 700; }
+        .tf-step--done { color: var(--color-success); }
+        .tf-step-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .tf-section { border: 1px solid var(--border-primary); border-radius: var(--radius-lg); padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
+        .tf-section-title { font-size: var(--text-sm); font-weight: 700; color: var(--text-secondary); padding-bottom: var(--space-2); border-bottom: 1px solid var(--border-primary); }
+        .tf-type-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--space-2); }
+        .tf-type-card { padding: var(--space-3); border: 2px solid var(--border-primary); border-radius: var(--radius-md); background: var(--bg-surface); cursor: pointer; text-align: right; transition: all var(--transition-fast); font-family: inherit; }
+        .tf-type-card:hover { border-color: var(--color-primary); }
+        .tf-type-card--active { border-color: var(--color-primary); background: var(--color-primary-light); }
+        .tf-type-name { font-weight: 700; font-size: var(--text-sm); color: var(--text-primary); margin-bottom: 4px; }
+        .tf-type-meta { display: flex; gap: var(--space-2); font-size: 11px; }
+        .tf-type-cat { color: var(--text-muted); }
+        .tf-type-desc { font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.4; }
+        .tf-scope-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2); }
+        .tf-scope-btn { padding: var(--space-3) var(--space-2); border: 2px solid var(--border-primary); border-radius: var(--radius-md); background: var(--bg-surface); color: var(--text-secondary); font-size: var(--text-sm); cursor: pointer; transition: all var(--transition-fast); font-family: inherit; font-weight: 500; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .tf-scope-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+        .tf-scope-btn--active { border-color: var(--color-primary); background: var(--color-primary); color: #fff !important; font-weight: 700; }
+        .tf-dates, .tf-values-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--space-3); }
+        .tf-unit-badge { display: inline-block; padding: 1px 6px; border-radius: 4px; background: var(--color-primary-light); color: var(--color-primary); font-size: 11px; font-weight: 700; margin-right: var(--space-1); }
+        .tf-suggest-btn { display: block; margin-top: 4px; padding: 2px 8px; border: none; background: var(--bg-surface-2); color: var(--color-primary); font-size: 11px; font-weight: 600; cursor: pointer; border-radius: var(--radius-sm); font-family: inherit; transition: background var(--transition-fast); }
+        .tf-suggest-btn:hover { background: var(--color-primary-light); }
+        .tf-value-visual { display: flex; height: 26px; border-radius: var(--radius-md); overflow: hidden; margin-bottom: var(--space-2); }
+        .tf-zone { display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.9); }
+        .tf-zone--danger  { background: linear-gradient(135deg, #f87171, #ef4444); }
+        .tf-zone--success { background: linear-gradient(135deg, #34d399, #10b981); }
+        .tf-zone--stretch { background: linear-gradient(135deg, #a78bfa, #7c3aed); }
+        .tf-review-card { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); background: var(--color-primary-light); border: 1px solid var(--color-primary); border-radius: var(--radius-md); margin-bottom: var(--space-3); }
+        .tf-review-grid { display: flex; flex-direction: column; gap: var(--space-2); }
+        .tf-review-item { display: flex; justify-content: space-between; align-items: center; padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); background: var(--bg-surface-2); }
+        .tf-review-item--highlight { background: var(--color-success-light); }
+        .tf-review-label { font-size: var(--text-xs); color: var(--text-muted); font-weight: 600; }
+        .tf-review-value { font-size: var(--text-sm); color: var(--text-primary); font-weight: 600; }
+        .tf-tag { font-size: 10px; padding: 1px 6px; border-radius: 99px; background: var(--bg-surface); border: 1px solid var(--border-primary); color: var(--text-secondary); }
+        .tf-actions { display: flex; gap: var(--space-3); align-items: center; padding-top: var(--space-3); border-top: 1px solid var(--border-primary); }
         @media (max-width: 600px) {
-          .target-form { padding: var(--space-3); }
-          .target-scope-grid { grid-template-columns: repeat(2, 1fr); }
-          .target-form-dates,
-          .target-form-values { grid-template-columns: 1fr; }
+          .tf-form { padding: var(--space-3); }
+          .tf-scope-grid { grid-template-columns: repeat(2, 1fr); }
+          .tf-type-grid { grid-template-columns: 1fr; }
+          .tf-dates, .tf-values-grid { grid-template-columns: 1fr; }
+          .tf-step-label { display: none; }
         }
       `}</style>
     </div>

@@ -3,6 +3,7 @@ import type { ActivityOutcome, PlanStatus, PlanItemStatus, TargetTrend } from '@
 // ─── Config Maps ──────────────────────────────────────────────
 
 const OUTCOME_CONFIG: Record<ActivityOutcome, { label: string; color: string }> = {
+  visited:              { label: 'تمت الزيارة',       color: 'var(--color-success)' },
   order_placed:         { label: 'طلب مبيعات',       color: 'var(--color-success)' },
   agreed_order:         { label: 'اتفاق على طلب',    color: 'var(--color-success)' },
   collection:           { label: 'تحصيل',             color: 'var(--color-primary)' },

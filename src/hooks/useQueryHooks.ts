@@ -14,11 +14,11 @@
  *   // No useState, no useEffect, no loadData() — it just works!
  */
 
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase/client'
 
 // ─── Services ───
-import { getCustomers } from '@/lib/services/customers'
+import { getCustomers, getCustomer } from '@/lib/services/customers'
 import { getProducts, getCategories, getBrands } from '@/lib/services/products'
 import { getGovernorates, getCities, getBranches } from '@/lib/services/geography'
 import {
@@ -43,15 +43,27 @@ import {
   getCallPlans, getCallPlan, getCallPlanItems,
   createCallPlan, updateCallPlan, confirmCallPlan, cancelCallPlan,
   addCallPlanItem, updateCallPlanItem,
-  getTargets, getTarget, createTarget, adjustTarget,
+  getTarget, getTargetChildren,
+  createTarget, updateTarget, adjustTarget,
   getRepPerformance, getPlanDailySummary, getTargetStatus,
+  getChecklistTemplates, getChecklistQuestions, getChecklistResponses,
+  saveChecklistResponses,
+  deleteVisitPlanItem, deleteCallPlanItem,
+  reorderVisitPlanItems, reorderCallPlanItems,
 } from '@/lib/services/activities'
 import type {
   ActivityInput, CallDetailInput,
   VisitPlanInput, VisitPlanItemInput,
   CallPlanInput, CallPlanItemInput,
-  TargetInput, AdjustTargetInput,
+  TargetInput, AdjustTargetInput, TargetScope, TargetPeriod, TargetFilters, PayoutFilters,
+  CreateTargetWithRewardsInput, TierInput, TargetCustomerInput,
+  ChecklistResponseInput,
 } from '@/lib/types/activities'
+
+import {
+  getTargets, getTargetDetail, getTargetRewardSummary, getTargetPayouts, prepareTargetRewardPayouts,
+  adjustTargetBatch, getTargetProgressHistory, createTargetWithRewards,
+} from '@/lib/services/targets'
 
 // ════════════════════════════════════════════
 // 1. REFERENCE DATA — بيانات مرجعية (staleTime: 10 min)
@@ -181,6 +193,15 @@ export function useCustomers(params?: Parameters<typeof getCustomers>[0]) {
   return useQuery({
     queryKey: ['customers', params],
     queryFn: () => getCustomers(params),
+  })
+}
+
+export function useCustomer(id: string | null | undefined) {
+  return useQuery({
+    queryKey: ['customer', id],
+    queryFn: () => getCustomer(id!),
+    enabled: !!id,
+    staleTime: 5 * 60 * 1000,
   })
 }
 
@@ -397,7 +418,6 @@ import type {
   HRAttendanceDayInput,
   HRPayrollAdjustmentInput,
 } from '@/lib/types/hr'
-import { useMutation } from '@tanstack/react-query'
 
 // ── Reference data (staleTime: 10 min) ───────────────────────
 
@@ -901,10 +921,10 @@ export function useCallPlanItems(planId: string | null | undefined) {
 
 // ── Targets Queries ───────────────────────────────────────────
 
-export function useTargets(params?: Parameters<typeof getTargets>[0]) {
+export function useTargets(filters?: TargetFilters, pagination?: { page?: number; pageSize?: number }) {
   return useQuery({
-    queryKey: ['targets', params],
-    queryFn: () => getTargets(params),
+    queryKey: ['targets', filters, pagination],
+    queryFn: () => getTargets(filters, pagination),
   })
 }
 
@@ -913,6 +933,50 @@ export function useTarget(id: string | null | undefined) {
     queryKey: ['target', id],
     queryFn: () => getTarget(id!),
     enabled: !!id,
+  })
+}
+
+// ── Targets Phase 22 Queries ───────────────────────────────
+
+export function useTargetDetail(id: string | null | undefined) {
+  return useQuery({
+    queryKey: ['target-detail', id],
+    queryFn: () => getTargetDetail(id!),
+    enabled: !!id,
+  })
+}
+
+export function useTargetRewardSummary(id: string | null | undefined) {
+  return useQuery({
+    queryKey: ['target-reward-summary', id],
+    queryFn: () => getTargetRewardSummary(id!),
+    enabled: !!id,
+  })
+}
+export function useTargetProgressHistory(id: string | null | undefined, limit: number = 90) {
+  return useQuery({
+    queryKey: ['target-progress-history', id, limit],
+    queryFn: () => getTargetProgressHistory(id!, limit),
+    enabled: !!id,
+  })
+}
+export function useTargetPayouts(filters?: PayoutFilters) {
+  return useQuery({
+    queryKey: ['target-payouts', filters],
+    queryFn: () => getTargetPayouts(filters),
+  })
+}
+
+export function usePrepareTargetPayouts() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (periodId: string) => prepareTargetRewardPayouts(periodId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['target-payouts'] })
+      qc.invalidateQueries({ queryKey: ['target-reward-summary'] })
+      qc.invalidateQueries({ queryKey: ['target-detail'] })
+      qc.invalidateQueries({ queryKey: ['targets'] })
+    },
   })
 }
 
@@ -1128,6 +1192,38 @@ export function useCreateTarget() {
   })
 }
 
+export function useCreateTargetWithRewards() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: CreateTargetWithRewardsInput) => createTargetWithRewards(input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['targets'] })
+      qc.invalidateQueries({ queryKey: ['target-status'] })
+    },
+  })
+}
+
+export function useUpdateTarget() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: Partial<TargetInput> }) =>
+      updateTarget(id, input),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['targets'] })
+      qc.invalidateQueries({ queryKey: ['target', vars.id] })
+      qc.invalidateQueries({ queryKey: ['target-status'] })
+    },
+  })
+}
+
+export function useTargetChildren(parentId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['target-children', parentId],
+    queryFn: () => getTargetChildren(parentId!),
+    enabled: !!parentId,
+  })
+}
+
 /**
  * تعديل قيمة الهدف — يستدعي adjust_target() RPC حصراً
  * التوقيع الحقيقي: p_target_id + p_field + p_new_value (TEXT) + p_reason + p_user_id
@@ -1139,8 +1235,118 @@ export function useAdjustTarget() {
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ['targets'] })
       qc.invalidateQueries({ queryKey: ['target', vars.p_target_id] })
+      qc.invalidateQueries({ queryKey: ['target-detail', vars.p_target_id] })
+      qc.invalidateQueries({ queryKey: ['target-children'] })
       qc.invalidateQueries({ queryKey: ['target-status'] })
     },
   })
 }
 
+export function useAdjustTargetBatch() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ targetId, fields, reason, userId }: { targetId: string; fields: any; reason: string; userId: string }) => 
+      adjustTargetBatch(targetId, fields, reason, userId),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['targets'] })
+      qc.invalidateQueries({ queryKey: ['target', vars.targetId] })
+      qc.invalidateQueries({ queryKey: ['target-detail', vars.targetId] })
+      qc.invalidateQueries({ queryKey: ['target-reward-summary', vars.targetId] })
+      qc.invalidateQueries({ queryKey: ['target-children'] })
+      qc.invalidateQueries({ queryKey: ['target-status'] })
+    },
+  })
+}
+
+// ════════════════════════════════════════════
+// CHECKLISTS — استبيانات الزيارات والمكالمات
+// ════════════════════════════════════════════
+
+export function useChecklistTemplates(params?: {
+  category?: string
+  purposeType?: string | null
+}) {
+  return useQuery({
+    queryKey: ['checklist-templates', params],
+    queryFn: () => getChecklistTemplates(params),
+    staleTime: REF_STALE,
+  })
+}
+
+export function useChecklistQuestions(templateId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['checklist-questions', templateId],
+    queryFn: () => getChecklistQuestions(templateId!),
+    enabled: !!templateId,
+    staleTime: REF_STALE,
+  })
+}
+
+export function useChecklistResponses(activityId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['checklist-responses', activityId],
+    queryFn: () => getChecklistResponses(activityId!),
+    enabled: !!activityId,
+  })
+}
+
+export function useSaveChecklistResponses() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (responses: ChecklistResponseInput[]) =>
+      saveChecklistResponses(responses),
+    onSuccess: (_data, vars) => {
+      if (vars.length > 0) {
+        qc.invalidateQueries({ queryKey: ['checklist-responses', vars[0].activity_id] })
+      }
+    },
+  })
+}
+
+// ════════════════════════════════════════════
+// PLAN ITEM MANAGEMENT — حذف وإعادة ترتيب بنود الخطط
+// ════════════════════════════════════════════
+
+export function useDeleteVisitPlanItem() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (itemId: string) => deleteVisitPlanItem(itemId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['visit-plan-items'] })
+      qc.invalidateQueries({ queryKey: ['visit-plans'] })
+    },
+  })
+}
+
+export function useDeleteCallPlanItem() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (itemId: string) => deleteCallPlanItem(itemId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['call-plan-items'] })
+      qc.invalidateQueries({ queryKey: ['call-plans'] })
+    },
+  })
+}
+
+export function useReorderVisitPlanItems() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ planId, orderedItemIds }: { planId: string; orderedItemIds: string[] }) =>
+      reorderVisitPlanItems(planId, orderedItemIds),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['visit-plan-items'] })
+    },
+  })
+}
+
+export function useReorderCallPlanItems() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ planId, orderedItemIds }: { planId: string; orderedItemIds: string[] }) =>
+      reorderCallPlanItems(planId, orderedItemIds),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['call-plan-items'] })
+    },
+  })
+}

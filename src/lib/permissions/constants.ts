@@ -134,6 +134,8 @@ export const PERMISSIONS = {
   VISIT_PLANS_READ_ALL:       'visit_plans.read_all',
   VISIT_PLANS_CONFIRM:        'visit_plans.confirm',
   VISIT_PLANS_CANCEL:         'visit_plans.cancel',
+  VISIT_PLANS_UPDATE:         'visit_plans.update',
+  VISIT_PLANS_UPDATE_OWN:     'visit_plans.update_own',
 
   // Call Plans
   CALL_PLANS_CREATE:          'call_plans.create',
@@ -142,6 +144,8 @@ export const PERMISSIONS = {
   CALL_PLANS_READ_ALL:        'call_plans.read_all',
   CALL_PLANS_CONFIRM:         'call_plans.confirm',
   CALL_PLANS_CANCEL:          'call_plans.cancel',
+  CALL_PLANS_UPDATE:          'call_plans.update',
+  CALL_PLANS_UPDATE_OWN:      'call_plans.update_own',
 
   // Targets — تطبيع الأسماء:
   // TARGETS_READ (قديم) → alias لـ TARGETS_READ_TEAM (المطابق للـ schema)
@@ -161,6 +165,9 @@ export const PERMISSIONS = {
   REPORTS_TEAM_PERFORMANCE:   'reports.team_performance',
   REPORTS_TARGETS:            'reports.targets',
   REPORTS_EXPORT:             'reports.export',
+
+  // Checklists — استبيانات الزيارات
+  CHECKLISTS_MANAGE:          'checklists.manage',
 
   // Wildcard
   WILDCARD: '*',
@@ -355,12 +362,16 @@ export const PERMISSION_GROUPS = [
       { key: PERMISSIONS.VISIT_PLANS_READ_ALL,     label: 'عرض كل خطط الزيارات' },
       { key: PERMISSIONS.VISIT_PLANS_CONFIRM,      label: 'تأكيد خطة زيارات' },
       { key: PERMISSIONS.VISIT_PLANS_CANCEL,       label: 'إلغاء خطة زيارات' },
+      { key: PERMISSIONS.VISIT_PLANS_UPDATE,        label: 'تعديل خطة زيارات (مشرف/مدير)' },
+      { key: PERMISSIONS.VISIT_PLANS_UPDATE_OWN,    label: 'تعديل مسودة خطتي (مندوب)' },
       { key: PERMISSIONS.CALL_PLANS_CREATE,        label: 'إنشاء خطة مكالمات' },
       { key: PERMISSIONS.CALL_PLANS_READ_OWN,      label: 'عرض خطط مكالماتي' },
       { key: PERMISSIONS.CALL_PLANS_READ_TEAM,     label: 'عرض خطط مكالمات الفريق' },
       { key: PERMISSIONS.CALL_PLANS_READ_ALL,      label: 'عرض كل خطط المكالمات' },
       { key: PERMISSIONS.CALL_PLANS_CONFIRM,       label: 'تأكيد خطة مكالمات' },
       { key: PERMISSIONS.CALL_PLANS_CANCEL,        label: 'إلغاء خطة مكالمات' },
+      { key: PERMISSIONS.CALL_PLANS_UPDATE,         label: 'تعديل خطة مكالمات (مشرف/مدير)' },
+      { key: PERMISSIONS.CALL_PLANS_UPDATE_OWN,     label: 'تعديل مسودة مكالماتي (مندوب)' },
       { key: PERMISSIONS.TARGETS_READ_OWN,         label: 'عرض أهدافي' },
       { key: PERMISSIONS.TARGETS_READ_TEAM,        label: 'عرض أهداف الفريق' },
       { key: PERMISSIONS.TARGETS_READ_ALL,         label: 'عرض كل الأهداف' },
@@ -369,6 +380,7 @@ export const PERMISSION_GROUPS = [
       { key: PERMISSIONS.REPORTS_TEAM_PERFORMANCE, label: 'تقرير أداء الفريق' },
       { key: PERMISSIONS.REPORTS_TARGETS,          label: 'تقارير الأهداف' },
       { key: PERMISSIONS.REPORTS_EXPORT,           label: 'تصدير التقارير' },
+      { key: PERMISSIONS.CHECKLISTS_MANAGE,         label: 'إدارة استبيانات الزيارات' },
     ]
   },
   {

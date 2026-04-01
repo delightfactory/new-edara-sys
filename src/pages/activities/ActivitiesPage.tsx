@@ -1,14 +1,14 @@
 import { useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Activity, Plus, Eye, Trash2, MapPin, Phone, CheckSquare } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
-import { useActivities, useSoftDeleteActivity, useActivityTypes } from '@/hooks/useQueryHooks'
+import { useActivities, useSoftDeleteActivity, useActivityTypes, useHREmployees } from '@/hooks/useQueryHooks'
 import { PERMISSIONS } from '@/lib/permissions/constants'
 import PageHeader from '@/components/shared/PageHeader'
 import SearchInput from '@/components/shared/SearchInput'
 import DataTable from '@/components/shared/DataTable'
-import DataCard from '@/components/ui/DataCard'
+import PermissionGuard from '@/components/shared/PermissionGuard'
 import Button from '@/components/ui/Button'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
 import ActivityStatusBadge from '@/components/shared/ActivityStatusBadge'
@@ -28,26 +28,39 @@ export default function ActivitiesPage() {
   const navigate = useNavigate()
   const can      = useAuthStore(s => s.can)
 
-  const [search,       setSearch]       = useState('')
-  const [categoryFilter, setCategoryFilter] = useState('')
-  const [outcomeFilter, setOutcomeFilter]  = useState('')
-  const [dateFrom,     setDateFrom]     = useState('')
-  const [dateTo,       setDateTo]       = useState('')
-  const [page,         setPage]         = useState(1)
-  const [deleteTarget, setDeleteTarget] = useState<ActivityRow | null>(null)
-  const [deleting,     setDeleting]     = useState(false)
+  const [search,         setSearch]         = useState('')
+  const [categoryFilter, setCategoryFilter]  = useState('')
+  const [outcomeFilter,  setOutcomeFilter]   = useState('')
+  const [dateFrom,       setDateFrom]        = useState('')
+  const [dateTo,         setDateTo]          = useState('')
+  const [employeeFilter, setEmployeeFilter]  = useState('')
+  const [page,           setPage]            = useState(1)
+  const [deleteTarget,   setDeleteTarget]    = useState<ActivityRow | null>(null)
+  const [deleting,       setDeleting]        = useState(false)
+
+  // Read customerId from URL (deep link from customer detail)
+  const [searchParams] = useSearchParams()
+  const urlCustomerId = searchParams.get('customerId') ?? ''
+  const [customerFilter, setCustomerFilter] = useState(urlCustomerId)
 
   const { data: activityTypes = [] } = useActivityTypes()
   const deleteActivity = useSoftDeleteActivity()
+
+  // فلتر الموظف: يظهر فقط للمديرين
+  const canReadTeam = can(PERMISSIONS.ACTIVITIES_READ_TEAM) || can(PERMISSIONS.ACTIVITIES_READ_ALL)
+  const { data: employeesResult } = useHREmployees(canReadTeam ? { status: 'active' } : undefined)
+  const teamEmployees = employeesResult?.data ?? []
 
   const queryParams = useMemo(() => ({
     typeCategory: categoryFilter || undefined,
     outcomeType:  outcomeFilter  || undefined,
     dateFrom:     dateFrom       || undefined,
     dateTo:       dateTo         || undefined,
+    employeeId:   employeeFilter || undefined,
+    customerId:   customerFilter || undefined,
     page,
     pageSize: 25,
-  }), [categoryFilter, outcomeFilter, dateFrom, dateTo, page])
+  }), [categoryFilter, outcomeFilter, dateFrom, dateTo, employeeFilter, customerFilter, page])
 
   const { data: result, isLoading: loading } = useActivities(queryParams)
   const activities  = result?.data     ?? []
@@ -90,23 +103,37 @@ export default function ActivitiesPage() {
       <PageHeader
         title="الأنشطة الميدانية"
         subtitle={loading ? '...' : `${totalCount} نشاط`}
-        actions={canCreate ? (
-          <Button icon={<Plus size={16} />} onClick={() => navigate('/activities/new')} className="desktop-only-btn">
-            نشاط جديد
-          </Button>
-        ) : undefined}
+        actions={
+          <PermissionGuard permission={PERMISSIONS.ACTIVITIES_CREATE}>
+            <Button icon={<Plus size={16} />} onClick={() => navigate('/activities/new')} className="desktop-only-btn">
+              نشاط جديد
+            </Button>
+          </PermissionGuard>
+        }
       />
 
       {/* ── Filters ─────────────────────────────────────────────── */}
-      <div className="edara-card" style={{ padding: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
+      <div className="edara-card p-4 mb-4">
         <div className="act-filter-row">
-          <div style={{ flex: 2, minWidth: 180 }}>
+          <div className="flex-[2] min-w-[180px]">
             <SearchInput
               value={search}
               onChange={val => { setSearch(val); setPage(1) }}
               placeholder="بحث بالعميل أو النوع أو الملاحظات..."
             />
           </div>
+          {canReadTeam && teamEmployees.length > 0 && (
+            <select
+              className="form-select filter-select"
+              value={employeeFilter}
+              onChange={e => { setEmployeeFilter(e.target.value); setPage(1) }}
+            >
+              <option value="">كل المندوبين</option>
+              {teamEmployees.map(emp => (
+                <option key={emp.id} value={emp.id}>{emp.full_name}</option>
+              ))}
+            </select>
+          )}
           <select
             className="form-select filter-select"
             value={categoryFilter}
@@ -146,25 +173,34 @@ export default function ActivitiesPage() {
             onChange={e => { setDateTo(e.target.value); setPage(1) }}
             title="إلى تاريخ"
           />
+          {customerFilter && (
+            <button
+              className="btn btn--ghost btn--sm flex items-center gap-1 whitespace-nowrap text-xs"
+              onClick={() => { setCustomerFilter(''); setPage(1) }}
+              title="إزالة فلتر العميل"
+            >
+              ✕ فلتر عميل
+            </button>
+          )}
         </div>
       </div>
 
       {/* ── DESKTOP: DataTable ─────────────────────────────────── */}
-      <div className="act-table-view edara-card" style={{ overflow: 'auto' }}>
+      <div className="act-table-view edara-card overflow-auto">
         <DataTable<ActivityRow>
           columns={[
             {
               key: 'type', label: 'النوع / العميل',
               render: a => (
                 <>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontWeight: 600, fontSize: 'var(--text-sm)' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>
+                  <div className="flex items-center gap-2 font-semibold text-sm">
+                    <span className="text-muted">
                       {CATEGORY_ICON[a.type?.category ?? 'task']}
                     </span>
                     {a.type?.name ?? '—'}
                   </div>
                   {a.customer && (
-                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 2 }}>
+                    <div className="text-xs text-muted mt-0.5">
                       {a.customer.name}
                     </div>
                   )}
@@ -175,9 +211,9 @@ export default function ActivitiesPage() {
               key: 'activity_date', label: 'التاريخ',
               render: a => (
                 <>
-                  <div style={{ fontSize: 'var(--text-sm)' }}>{fmtDate(a.activity_date)}</div>
+                  <div className="text-sm">{fmtDate(a.activity_date)}</div>
                   {a.start_time && (
-                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                    <div className="text-xs text-muted">
                       {new Date(a.start_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   )}
@@ -191,17 +227,17 @@ export default function ActivitiesPage() {
             {
               key: 'outcome_notes', label: 'ملاحظات', hideOnMobile: true,
               render: a => a.outcome_notes ? (
-                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                <span className="text-xs text-muted">
                   {a.outcome_notes.slice(0, 60)}{a.outcome_notes.length > 60 ? '...' : ''}
                 </span>
-              ) : <span style={{ color: 'var(--text-muted)' }}>—</span>,
+              ) : <span className="text-muted">—</span>,
             },
             {
               key: 'gps', label: 'GPS', hideOnMobile: true, width: 60,
               render: a => a.gps_verified ? (
-                <span style={{ color: 'var(--color-success)', fontSize: 12 }}>✓</span>
+                <span className="text-success text-xs">✓</span>
               ) : (
-                <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>—</span>
+                <span className="text-muted text-xs">—</span>
               ),
             },
             {
@@ -226,73 +262,50 @@ export default function ActivitiesPage() {
           emptyIcon={<Activity size={48} />}
           emptyTitle="لا توجد أنشطة"
           emptyText="سجّل أول نشاط ميداني"
-          emptyAction={canCreate ? (
-            <Button icon={<Plus size={16} />} onClick={() => navigate('/activities/new')}>
-              نشاط جديد
-            </Button>
-          ) : undefined}
+          emptyAction={
+            <PermissionGuard permission={PERMISSIONS.ACTIVITIES_CREATE}>
+              <Button icon={<Plus size={16} />} onClick={() => navigate('/activities/new')}>
+                نشاط جديد
+              </Button>
+            </PermissionGuard>
+          }
           page={page}
           totalPages={totalPages}
           totalCount={totalCount}
           onPageChange={setPage}
+          dataCardMapping={a => ({
+            title: a.type?.name ?? 'نشاط',
+            subtitle: a.customer?.name,
+            badge: <ActivityStatusBadge outcomeType={a.outcome_type} size="sm" />,
+            metadata: [
+              { label: 'التاريخ', value: fmtDate(a.activity_date) },
+              ...(a.outcome_notes ? [{ label: 'ملاحظات', value: a.outcome_notes.slice(0, 60) }] : []),
+            ],
+            actions: (
+              <div className="flex gap-2 w-full">
+                <Button variant="secondary" size="sm" onClick={() => navigate(`/activities/${a.id}`)}
+                  className="flex-1 justify-center">
+                  <Eye size={14} /> عرض
+                </Button>
+                {canDelete && (
+                  <Button variant="danger" size="sm" onClick={() => setDeleteTarget(a)}
+                    className="justify-center">
+                    <Trash2 size={14} />
+                  </Button>
+                )}
+              </div>
+            ),
+            onClick: () => navigate(`/activities/${a.id}`),
+          })}
         />
       </div>
 
-      {/* ── MOBILE: DataCards ──────────────────────────────────── */}
-      <div className="act-card-view">
-        {loading ? (
-          <div className="mobile-card-list">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="edara-card" style={{ padding: 'var(--space-4)' }}>
-                <div className="skeleton" style={{ height: 16, width: '60%', marginBottom: 8 }} />
-                <div className="skeleton" style={{ height: 12, width: '40%' }} />
-              </div>
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="empty-state" style={{ padding: 'var(--space-8)' }}>
-            <Activity size={40} className="empty-state-icon" />
-            <p className="empty-state-title">لا توجد أنشطة</p>
-          </div>
-        ) : (
-          <div className="mobile-card-list">
-            {filtered.map(a => (
-              <DataCard
-                key={a.id}
-                title={a.type?.name ?? 'نشاط'}
-                subtitle={a.customer?.name ?? undefined}
-                badge={<ActivityStatusBadge outcomeType={a.outcome_type} size="sm" />}
-                metadata={[
-                  { label: 'التاريخ', value: fmtDate(a.activity_date) },
-                  ...(a.outcome_notes ? [{ label: 'ملاحظات', value: a.outcome_notes.slice(0, 60) }] : []),
-                ]}
-                actions={
-                  <div className="flex gap-2" style={{ width: '100%' }}>
-                    <Button variant="secondary" size="sm" onClick={() => navigate(`/activities/${a.id}`)}
-                      style={{ flex: 1, justifyContent: 'center' }}>
-                      <Eye size={14} /> عرض
-                    </Button>
-                    {canDelete && (
-                      <Button variant="danger" size="sm" onClick={() => setDeleteTarget(a)}
-                        style={{ justifyContent: 'center' }}>
-                        <Trash2 size={14} />
-                      </Button>
-                    )}
-                  </div>
-                }
-                onClick={() => navigate(`/activities/${a.id}`)}
-              />
-            ))}
-          </div>
-        )}
-        {totalPages > 1 && (
-          <div className="mobile-pagination">
-            <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>السابق</Button>
-            <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>{page} / {totalPages}</span>
-            <Button variant="ghost" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>التالي</Button>
-          </div>
-        )}
-      </div>
+      {/* ── Mobile FAB ── */}
+      <PermissionGuard permission={PERMISSIONS.ACTIVITIES_CREATE}>
+        <button className="fab-button" onClick={() => navigate('/activities/new')} aria-label="نشاط جديد">
+          <Plus size={24} />
+        </button>
+      </PermissionGuard>
 
       {/* ── Delete Modal ──────────────────────────────────────── */}
       <ResponsiveModal
@@ -309,7 +322,7 @@ export default function ActivitiesPage() {
           </>
         }
       >
-        <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', lineHeight: 1.7 }}>
+        <p className="text-secondary text-sm m-0 leading-relaxed">
           هل تريد حذف هذا النشاط؟ لا يمكن التراجع عن هذا الإجراء.
         </p>
       </ResponsiveModal>
@@ -318,14 +331,19 @@ export default function ActivitiesPage() {
         .act-filter-row { display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: flex-end; }
         .filter-select { min-width: 120px; flex: 1; }
         .act-table-view { display: block; }
-        .act-card-view  { display: none; }
+        .fab-button { display: none; }
         @media (max-width: 768px) {
-          .act-table-view { display: none; }
-          .act-card-view  { display: block; }
           .desktop-only-btn { display: none; }
+          .fab-button {
+            display: flex; align-items: center; justify-content: center;
+            position: fixed; bottom: calc(var(--bottom-nav-height, 64px) + var(--space-4)); inset-inline-end: var(--space-4);
+            width: 56px; height: 56px; border-radius: 28px;
+            background: var(--color-primary); color: white;
+            box-shadow: var(--shadow-lg); z-index: 160; border: none;
+            transition: transform 0.2s;
+          }
+          .fab-button:active { transform: scale(0.95); }
         }
-        .mobile-card-list { display: flex; flex-direction: column; gap: var(--space-3); padding: 0 0 var(--space-2); }
-        .mobile-pagination { display: flex; align-items: center; justify-content: center; gap: var(--space-4); padding: var(--space-4) 0; }
       `}</style>
     </div>
   )

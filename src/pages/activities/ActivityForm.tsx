@@ -6,7 +6,7 @@
  *  2. بعد save activity → useSaveCallDetail(activityId, callDetailInput)
  *  3. edit mode → prefill من existing.call_detail
  */
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
@@ -16,7 +16,12 @@ import {
   useUpdateActivity,
   useActivity,
   useSaveCallDetail,
+  useCustomer,
+  useActivities,
+  useTargetStatus,
 } from '@/hooks/useQueryHooks'
+import { Target, Clock, ExternalLink } from 'lucide-react'
+import { supabase } from '@/lib/supabase/client'
 import PageHeader from '@/components/shared/PageHeader'
 import Button from '@/components/ui/Button'
 import GPSStatusIndicator from '@/components/shared/GPSStatusIndicator'
@@ -111,6 +116,12 @@ export default function ActivityForm({ prefillPlanItemId, prefillPlanType }: Act
   const [gpsCoords,    setGpsCoords]    = useState<GPSCoords | null>(null)
   const [saving,       setSaving]       = useState(false)
 
+  // ── Order / Collection linking ─────────────────────────────
+  const [orderId,      setOrderId]      = useState('')
+  const [collectionId, setCollectionId] = useState('')
+  const [customerOrders, setCustomerOrders] = useState<{id:string;order_number:string;total_amount:number;status:string}[]>([])
+  const [loadingOrders, setLoadingOrders] = useState(false)
+
   // ── Call Detail State ────────────────────────────────────────
   const [callDirection,    setCallDirection]    = useState<CallDirection>('outbound')
   const [callResult,       setCallResult]       = useState<CallResult | ''>('')
@@ -122,12 +133,28 @@ export default function ActivityForm({ prefillPlanItemId, prefillPlanType }: Act
   // ── Queries ──────────────────────────────────────────────────
   const { data: activityTypes = [] } = useActivityTypes()
   const { data: existing }           = useActivity(activityId)
+  const { data: customerData }       = useCustomer(customerId || null)
   const createActivity               = useCreateActivity()
   const updateActivity               = useUpdateActivity()
   const saveCallDetail               = useSaveCallDetail()
 
   const selectedType: ActivityType | undefined = activityTypes.find(t => t.id === typeId)
   const isCallType = selectedType?.category === 'call'
+
+  // ── Smart Context: Target Gamification & Customer History ──
+  const { data: targetRows = [] } = useTargetStatus({ isActive: true })
+  // fetch last 3 acts for this customer
+  const { data: recentActsResult } = useActivities({ customerId: customerId || undefined, pageSize: 3 })
+  const recentActivities = recentActsResult?.data ?? []
+
+  const activeTarget = typeId && selectedType ? targetRows.find(t => {
+    // For visits
+    if (selectedType.category === 'visit' && t.type_code === 'visits_count') return true
+    // For calls
+    if (selectedType.category === 'call' && t.type_code === 'calls_count') return true
+    return false
+  }) : null
+
 
   // ── Prefill في وضع التعديل ─────────────────────────────────
   useEffect(() => {
@@ -151,6 +178,26 @@ export default function ActivityForm({ prefillPlanItemId, prefillPlanType }: Act
       setCallRecordingUrl(cd.call_recording_url ?? '')
     }
   }, [existing])
+
+  // ── Load customer orders for linking ─────────────────────────
+  useEffect(() => {
+    if (!customerId || (outcomeType !== 'order_placed' && outcomeType !== 'agreed_order')) {
+      setCustomerOrders([])
+      return
+    }
+    setLoadingOrders(true)
+    supabase
+      .from('sales_orders')
+      .select('id, order_number, total_amount, status')
+      .eq('customer_id', customerId)
+      .in('status', ['draft', 'confirmed', 'delivered', 'completed'])
+      .order('created_at', { ascending: false })
+      .limit(20)
+      .then(({ data }) => {
+        setCustomerOrders((data ?? []) as any[])
+        setLoadingOrders(false)
+      })
+  }, [customerId, outcomeType])
 
   // فلترة الأنواع بـ planType
   const availableTypes = activityTypes.filter(t => !planType || t.category === planType)
@@ -176,6 +223,19 @@ export default function ActivityForm({ prefillPlanItemId, prefillPlanType }: Act
 
     const buildTime = (t: string) => t ? `${activityDate}T${t}:00` : null
 
+    // ── حساب distance_meters عند توفر GPS + إحداثيات العميل ──
+    let distanceMeters: number | null = null
+    const cust = customerData as any
+    if (gpsCoords && cust?.gps_lat && cust?.gps_lng) {
+      const R = 6371000
+      const lat1 = gpsCoords.lat * Math.PI / 180
+      const lat2 = (cust.gps_lat as number) * Math.PI / 180
+      const dLat = lat2 - lat1
+      const dLng = ((cust.gps_lng as number) - gpsCoords.lng) * Math.PI / 180
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2
+      distanceMeters = Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)))
+    }
+
     const payload: ActivityInput = {
       type_id:             typeId,
       employee_id:         '',   // service يستبدله من hr_employees
@@ -188,9 +248,14 @@ export default function ActivityForm({ prefillPlanItemId, prefillPlanType }: Act
       activity_date:       activityDate,
       start_time:          buildTime(startTime),
       end_time:            buildTime(endTime),
+      order_id:            orderId || null,
+      collection_id:       collectionId || null,
+      followup_activity_id: null,
+      metadata:            {},
       gps_lat:             gpsCoords?.lat ?? null,
       gps_lng:             gpsCoords?.lng ?? null,
       gps_verified:        !!gpsCoords,
+      distance_meters:     distanceMeters,
     }
 
     const callDetailPayload: CallDetailInput | null = isCallType ? {
@@ -295,6 +360,43 @@ export default function ActivityForm({ prefillPlanItemId, prefillPlanType }: Act
           </div>
         )}
 
+        {/* ── Smart Gamification Target Alert ── */}
+        {activeTarget && activeTarget.remaining_value > 0 && (
+          <div className="bg-primary-light border border-primary rounded-md p-3 flex gap-2 items-center text-primary-dark">
+            <Target size={18} className="text-primary" />
+            <div className="flex-1 text-sm font-medium">
+              هذا النشاط سيقربك من هدفك! ({activeTarget.name})
+            </div>
+            <div className="text-[11px] font-semibold bg-primary text-white px-2 py-0.5 rounded-full">
+              باقي {activeTarget.remaining_value}
+            </div>
+          </div>
+        )}
+
+        {/* ── Customer Recent History Quick View ── */}
+        {customerId && recentActivities.length > 0 && !activityId && (
+          <div className="bg-surface-2 rounded-md p-3 border-l-4 border-secondary">
+            <div className="flex items-center gap-2 mb-2">
+              <Clock size={14} className="text-muted" />
+              <span className="text-xs font-semibold text-secondary">تاريخ العميل السريع</span>
+            </div>
+            <div className="flex flex-col gap-2">
+              {recentActivities.map(act => {
+                const outcomeLabel = getOutcomeOptions((act as any).type?.category).find(o => o.value === act.outcome_type)?.label ?? act.outcome_type
+                const date = new Date(act.activity_date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' })
+                return (
+                  <div key={act.id} className="flex justify-between text-[11px]">
+                    <span className="text-secondary">• {(act as any).type?.name}</span>
+                    <span className="font-semibold text-primary">{outcomeLabel}</span>
+                    <span className="text-muted">{date}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+
         {/* ── نتيجة النشاط ── */}
         <div className="form-group">
           <label className="form-label">نتيجة النشاط <span className="form-required">*</span></label>
@@ -322,6 +424,56 @@ export default function ActivityForm({ prefillPlanItemId, prefillPlanType }: Act
               onChange={e => setRefuseReason(e.target.value)}
               placeholder="اذكر سبب الرفض..."
             />
+          </div>
+        )}
+
+        {/* ── ربط بطلب بيع (عند order_placed / agreed_order) ── */}
+        {(outcomeType === 'order_placed' || outcomeType === 'agreed_order') && customerId && (
+          <div className="act-link-section">
+            <div className="act-link-title">🛒 ربط بطلب بيع</div>
+            {loadingOrders ? (
+              <div className="skeleton h-9 rounded-md" />
+            ) : customerOrders.length > 0 ? (
+              <select className="form-select" value={orderId} onChange={e => setOrderId(e.target.value)}>
+                <option value="">— بدون ربط —</option>
+                {customerOrders.map(o => (
+                  <option key={o.id} value={o.id}>
+                    {o.order_number} • {o.total_amount?.toLocaleString('ar-EG')} ج.م ({o.status === 'draft' ? 'مسودة' : o.status === 'confirmed' ? 'مؤكد' : o.status === 'delivered' ? 'مسلّم' : 'مكتمل'})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="text-xs text-muted p-2">
+                لا توجد طلبات لهذا العميل
+              </div>
+            )}
+            <button
+              type="button"
+              className="act-link-create-btn"
+              onClick={() => {
+                const returnUrl = encodeURIComponent(window.location.pathname + window.location.search)
+                navigate(`/sales/orders/new?customerId=${customerId}&returnUrl=${returnUrl}`)
+              }}
+            >
+              + إنشاء طلب بيع جديد
+            </button>
+          </div>
+        )}
+
+        {/* ── ربط بسند تحصيل (عند collection) ── */}
+        {outcomeType === 'collection' && customerId && (
+          <div className="act-link-section">
+            <div className="act-link-title">💰 تحصيل</div>
+            <button
+              type="button"
+              className="act-link-create-btn"
+              onClick={() => navigate(`/finance/payments?customerId=${customerId}`)}
+            >
+              إنشاء سند تحصيل →
+            </button>
+            <div className="text-xs text-muted mt-1">
+              سيتم إنشاء سند تحصيل مستقل — يمكن ربطه لاحقاً
+            </div>
           </div>
         )}
 
@@ -408,7 +560,7 @@ export default function ActivityForm({ prefillPlanItemId, prefillPlanType }: Act
               )}
 
               {/* رابط التسجيل */}
-              <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+              <div className="form-group col-span-full">
                 <label className="form-label">رابط تسجيل المكالمة</label>
                 <input
                   className="form-input"
@@ -558,6 +710,38 @@ export default function ActivityForm({ prefillPlanItemId, prefillPlanType }: Act
           color: var(--color-warning);
           font-weight: 600;
         }
+        .act-link-section {
+          border: 1px solid var(--border-primary);
+          border-radius: var(--radius-md);
+          padding: var(--space-3);
+          background: var(--bg-surface-2);
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-2);
+        }
+        .act-link-title {
+          font-size: var(--text-sm);
+          font-weight: 700;
+          color: var(--text-secondary);
+          padding-bottom: var(--space-1);
+          border-bottom: 1px solid var(--border-primary);
+        }
+        .act-link-create-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          background: none;
+          border: 1px dashed var(--color-primary);
+          color: var(--color-primary);
+          font-size: var(--text-xs);
+          font-weight: 600;
+          padding: var(--space-2) var(--space-3);
+          border-radius: var(--radius-sm);
+          cursor: pointer;
+          font-family: inherit;
+          transition: background var(--transition-fast);
+        }
+        .act-link-create-btn:hover { background: var(--color-primary-light); }
         .act-form-actions {
           display: flex;
           gap: var(--space-3);
