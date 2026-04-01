@@ -8,12 +8,19 @@ export interface GeoCoords {
 
 export type GeoPermissionStatus = 'checking' | 'granted' | 'prompt' | 'denied' | 'unavailable'
 
+/** خطوات إرشادية مرئية لإصلاح حالة الحظر — مُهيكلة للعرض بصرياً */
+export interface BrowserGuideStep {
+  step: number
+  icon: string
+  text: string
+}
+
 export interface UseGeoPermissionReturn {
   /** حالة الصلاحية الحالية */
   status: GeoPermissionStatus
   /** الإحداثيات المحدّدة (إذا نجح الطلب) */
   coords: GeoCoords | null
-  /** رسالة الخطأ (بالعربية) */
+  /** رسالة الخطأ المختصرة */
   error: string | null
   /** طلب تحديد الموقع — يُرجع الإحداثيات أو null */
   requestLocation: () => Promise<GeoCoords | null>
@@ -21,55 +28,135 @@ export interface UseGeoPermissionReturn {
   isBlocked: boolean
   /** إعادة فحص حالة الصلاحية (بعد تعديل المستخدم للإعدادات) */
   recheckPermission: () => void
-  /** هل الطلب جاري? */
+  /** هل الطلب جارٍ؟ */
   isLoading: boolean
   /** نوع المتصفح المكتشف */
-  browserType: 'chrome' | 'safari' | 'firefox' | 'samsung' | 'other'
+  browserType: 'chrome' | 'safari' | 'firefox' | 'samsung' | 'edge' | 'other'
+  /** خطوات إرشادية مرئية لهذا المتصفح في حالة الحظر */
+  browserGuideSteps: BrowserGuideStep[]
+  /** رسالة خطأ الحظر المختصرة */
+  blockedMessage: string
 }
 
-/**
- * Detection: نوع المتصفح لعرض التعليمات الصحيحة
- */
-function detectBrowser(): 'chrome' | 'safari' | 'firefox' | 'samsung' | 'other' {
+// ─── Browser Detection ──────────────────────────────────────────────────────
+
+type BrowserType = 'chrome' | 'safari' | 'firefox' | 'samsung' | 'edge' | 'other'
+
+function detectBrowser(): BrowserType {
   const ua = navigator.userAgent.toLowerCase()
+
+  // Samsung Internet Browser
   if (ua.includes('samsungbrowser')) return 'samsung'
-  if (ua.includes('firefox')) return 'firefox'
-  if (ua.includes('safari') && !ua.includes('chrome')) return 'safari'
-  if (ua.includes('chrome') || ua.includes('chromium') || ua.includes('crios')) return 'chrome'
+  // Edge
+  if (ua.includes('edg/') || ua.includes('edge/')) return 'edge'
+  // Firefox
+  if (ua.includes('firefox') || ua.includes('fxios')) return 'firefox'
+  // Chrome iOS (CriOS)
+  if (ua.includes('crios')) return 'chrome'
+  // Safari (must check after Chrome since Chrome UA includes "safari")
+  if (ua.includes('safari') && !ua.includes('chrome') && !ua.includes('chromium')) return 'safari'
+  // Chrome/Chromium (includes Android Chrome)
+  if (ua.includes('chrome') || ua.includes('chromium')) return 'chrome'
+
   return 'other'
 }
 
+// ─── Guide Steps per Browser ─────────────────────────────────────────────────
+
+function getBrowserGuideSteps(browser: BrowserType): BrowserGuideStep[] {
+  switch (browser) {
+    case 'chrome':
+      return [
+        { step: 1, icon: '🔒', text: 'اضغط على أيقونة القفل 🔒 بجانب شريط العنوان' },
+        { step: 2, icon: '📍', text: 'اختر "الموقع الجغرافي" أو "Location"' },
+        { step: 3, icon: '✅', text: 'غيّر الإعداد إلى "السماح / Allow"' },
+        { step: 4, icon: '🔄', text: 'اضغط "تم التعديل — أعد المحاولة" أدناه' },
+      ]
+    case 'samsung':
+      return [
+        { step: 1, icon: '⋮',  text: 'اضغط على قائمة ⋮ في أعلى يمين المتصفح' },
+        { step: 2, icon: '⚙️', text: 'اختر "الإعدادات / Settings"' },
+        { step: 3, icon: '🌐', text: 'اضغط "إعدادات المواقع / Site settings"' },
+        { step: 4, icon: '📍', text: 'اختر "الموقع / Location" ← السماح لهذا الموقع' },
+        { step: 5, icon: '🔄', text: 'اضغط "تم التعديل — أعد المحاولة" أدناه' },
+      ]
+    case 'safari':
+      return [
+        { step: 1, icon: '⚙️', text: 'افتح "الإعدادات / Settings" في جهازك' },
+        { step: 2, icon: '🌐', text: 'اختر "Safari" من القائمة' },
+        { step: 3, icon: '📍', text: 'اضغط "الموقع / Location"' },
+        { step: 4, icon: '✅', text: 'اختر "السماح أثناء استخدام التطبيق"' },
+        { step: 5, icon: '🔄', text: 'ارجع للتطبيق واضغط "أعد المحاولة"' },
+      ]
+    case 'firefox':
+      return [
+        { step: 1, icon: '🔒', text: 'اضغط على أيقونة القفل 🔒 في شريط العنوان' },
+        { step: 2, icon: '📋', text: 'اضغط "صلاحيات الاتصال / Connection Permissions"' },
+        { step: 3, icon: '📍', text: 'ابحث عن "الموقع" وغيّر الإعداد إلى "السماح"' },
+        { step: 4, icon: '🔄', text: 'اضغط "تم التعديل — أعد المحاولة" أدناه' },
+      ]
+    case 'edge':
+      return [
+        { step: 1, icon: '🔒', text: 'اضغط على أيقونة القفل 🔒 في شريط العنوان' },
+        { step: 2, icon: '⚙️', text: 'اضغط "إعدادات الموقع / Site Permissions"' },
+        { step: 3, icon: '📍', text: 'اختر "الموقع الجغرافي / Location"' },
+        { step: 4, icon: '✅', text: 'غيّر الإعداد إلى "السماح / Allow"' },
+        { step: 5, icon: '🔄', text: 'اضغط "تم التعديل — أعد المحاولة" أدناه' },
+      ]
+    default:
+      return [
+        { step: 1, icon: '🔒', text: 'ابحث عن أيقونة القفل أو الإعدادات بجانب شريط العنوان' },
+        { step: 2, icon: '📍', text: 'ابحث عن إعداد "الموقع الجغرافي" أو "Location"' },
+        { step: 3, icon: '✅', text: 'غيّر الإعداد إلى "السماح / Allow"' },
+        { step: 4, icon: '🔄', text: 'أعد تحميل الصفحة وحاول مرة أخرى' },
+      ]
+  }
+}
+
+function getBlockedMessage(browser: BrowserType): string {
+  switch (browser) {
+    case 'samsung':  return 'تم حظر الوصول للموقع في متصفح Samsung — راجع الإرشادات أدناه'
+    case 'safari':   return 'تم حظر الوصول للموقع في Safari — راجع إعدادات الجهاز'
+    case 'firefox':  return 'تم حظر الوصول للموقع في Firefox — راجع صلاحيات الموقع'
+    case 'edge':     return 'تم حظر الوصول للموقع في Edge — راجع إعدادات الموقع'
+    case 'chrome':   return 'تم حظر الوصول للموقع في Chrome — راجع الإرشادات أدناه'
+    default:         return 'تم حظر الوصول للموقع — راجع إعدادات المتصفح'
+  }
+}
+
+// ─── Main Hook ───────────────────────────────────────────────────────────────
+
 /**
- * useGeoPermission — إدارة صلاحيات الموقع بشكل احترافي
+ * useGeoPermission — إدارة صلاحيات الموقع بأفضل الممارسات الاحترافية
  *
- * يحل مشكلة: "تم رفض الوصول إلى الموقع" على Samsung Galaxy والأجهزة الحديثة
+ * يحل مشكلة: "تم رفض الوصول إلى الموقع" على Samsung Galaxy وغيرها
  * حيث المتصفح لا يُعيد السؤال بعد الرفض الأول.
  *
- * يستخدم:
- * 1. navigator.permissions.query() — لفحص الحالة قبل الطلب
- * 2. navigator.geolocation.getCurrentPosition() — لطلب الموقع فعلياً
- * 3. permissionStatus.onchange — لمراقبة تغيير الإعدادات
+ * Pattern: Permissions API → getCurrentPosition → onchange listener
+ *
+ * maximumAge: 0 — دائماً نطلب موقعاً طازجاً (مهم لتسجيل الحضور)
  */
 export function useGeoPermission(): UseGeoPermissionReturn {
-  const [status, setStatus] = useState<GeoPermissionStatus>('checking')
-  const [coords, setCoords] = useState<GeoCoords | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [status,    setStatus]    = useState<GeoPermissionStatus>('checking')
+  const [coords,    setCoords]    = useState<GeoCoords | null>(null)
+  const [error,     setError]     = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const permissionRef = useRef<PermissionStatus | null>(null)
-  const browserType = useRef(detectBrowser())
 
-  // ── فحص حالة الصلاحية عند التحميل ──
+  const permissionRef = useRef<PermissionStatus | null>(null)
+  const browserType   = useRef<BrowserType>(detectBrowser())
+
+  // ── فحص حالة الصلاحية عند التحميل ──────────────────────────────────────
   const checkPermission = useCallback(async () => {
     // 1. هل الجهاز يدعم تحديد الموقع؟
     if (!navigator.geolocation) {
       setStatus('unavailable')
-      setError('جهازك لا يدعم خدمات تحديد الموقع')
+      setError('جهازك أو متصفحك لا يدعم خدمات تحديد الموقع')
       return
     }
 
-    // 2. هل المتصفح يدعم Permissions API؟
+    // 2. هل المتصفح يدعم Permissions API?
     if (!navigator.permissions?.query) {
-      // المتصفحات القديمة — نفترض prompt
+      // المتصفحات القديمة — نفترض prompt وننتظر طلب المستخدم
       setStatus('prompt')
       return
     }
@@ -78,13 +165,11 @@ export function useGeoPermission(): UseGeoPermissionReturn {
       const result = await navigator.permissions.query({ name: 'geolocation' })
       permissionRef.current = result
 
-      // تحديث الحالة
       const mapState = (state: PermissionState): GeoPermissionStatus => {
         switch (state) {
           case 'granted': return 'granted'
-          case 'denied': return 'denied'
-          case 'prompt':
-          default: return 'prompt'
+          case 'denied':  return 'denied'
+          default:        return 'prompt'
         }
       }
 
@@ -94,7 +179,7 @@ export function useGeoPermission(): UseGeoPermissionReturn {
         setError(getBlockedMessage(browserType.current))
       }
 
-      // مراقبة التغيير — المستخدم قد يعدّل الإعدادات يدوياً
+      // مراقبة تغيير الإعدادات يدوياً من المستخدم
       result.onchange = () => {
         const newStatus = mapState(result.state)
         setStatus(newStatus)
@@ -103,9 +188,13 @@ export function useGeoPermission(): UseGeoPermissionReturn {
         } else {
           setError(null)
         }
+        // إذا منح المستخدم الصلاحية يدوياً → نجلب الموقع تلقائياً
+        if (result.state === 'granted') {
+          setStatus('granted')
+        }
       }
     } catch {
-      // Safari لا يدعم query('geolocation') دائماً
+      // Safari لا يدعم query('geolocation') في بعض الإصدارات
       setStatus('prompt')
     }
   }, [])
@@ -113,14 +202,13 @@ export function useGeoPermission(): UseGeoPermissionReturn {
   useEffect(() => {
     checkPermission()
     return () => {
-      // cleanup listener
       if (permissionRef.current) {
         permissionRef.current.onchange = null
       }
     }
   }, [checkPermission])
 
-  // ── طلب الموقع الفعلي ──
+  // ── طلب الموقع الفعلي ────────────────────────────────────────────────────
   const requestLocation = useCallback(async (): Promise<GeoCoords | null> => {
     if (!navigator.geolocation) {
       setStatus('unavailable')
@@ -132,42 +220,54 @@ export function useGeoPermission(): UseGeoPermissionReturn {
     setError(null)
 
     return new Promise<GeoCoords | null>((resolve) => {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const result: GeoCoords = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-            accuracy: position.coords.accuracy,
-          }
-          setCoords(result)
-          setStatus('granted')
-          setError(null)
-          setIsLoading(false)
-          resolve(result)
-        },
-        (err) => {
-          setIsLoading(false)
-          setCoords(null)
 
-          if (err.code === err.PERMISSION_DENIED) {
-            setStatus('denied')
-            setError(getBlockedMessage(browserType.current))
-          } else if (err.code === err.POSITION_UNAVAILABLE) {
-            setError('تعذّر تحديد الموقع — تأكد من تفعيل GPS في الجهاز')
-          } else if (err.code === err.TIMEOUT) {
-            setError('انتهت مهلة تحديد الموقع — حاول مرة أخرى في مكان مفتوح')
-          } else {
-            setError('حدث خطأ أثناء تحديد الموقع — حاول مرة أخرى')
-          }
+      // Strategy: نحاول أولاً بدقة عالية، ثم بدقة عادية عند الفشل
+      const tryGetPosition = (highAccuracy: boolean) => {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const result: GeoCoords = {
+              lat:      position.coords.latitude,
+              lng:      position.coords.longitude,
+              accuracy: position.coords.accuracy,
+            }
+            setCoords(result)
+            setStatus('granted')
+            setError(null)
+            setIsLoading(false)
+            resolve(result)
+          },
+          (err) => {
+            if (err.code === err.PERMISSION_DENIED) {
+              // رُفضت الصلاحية — لا نعيد المحاولة
+              setStatus('denied')
+              setError(getBlockedMessage(browserType.current))
+              setIsLoading(false)
+              resolve(null)
 
-          resolve(null)
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 30000,
-        }
-      )
+            } else if (err.code === err.TIMEOUT && highAccuracy) {
+              // انتهت المهلة بدقة عالية → نحاول بدقة عادية (أسرع داخل المباني)
+              tryGetPosition(false)
+
+            } else if (err.code === err.POSITION_UNAVAILABLE) {
+              setError('تعذّر تحديد الموقع — تأكد من تفعيل GPS في الجهاز ووجودك في مكان مفتوح')
+              setIsLoading(false)
+              resolve(null)
+
+            } else {
+              setError('حدث خطأ أثناء تحديد الموقع — حاول مرة أخرى')
+              setIsLoading(false)
+              resolve(null)
+            }
+          },
+          {
+            enableHighAccuracy: highAccuracy,
+            timeout:            highAccuracy ? 15_000 : 10_000,
+            maximumAge:         0,   // دائماً موقع طازج (لا cached positions)
+          }
+        )
+      }
+
+      tryGetPosition(true)
     })
   }, [])
 
@@ -176,28 +276,12 @@ export function useGeoPermission(): UseGeoPermissionReturn {
     coords,
     error,
     requestLocation,
-    isBlocked: status === 'denied',
+    isBlocked:        status === 'denied',
     recheckPermission: checkPermission,
     isLoading,
-    browserType: browserType.current,
-  }
-}
-
-/**
- * رسائل مخصصة حسب نوع المتصفح — تساعد المستخدم على تعديل الإعدادات
- */
-function getBlockedMessage(browser: string): string {
-  switch (browser) {
-    case 'chrome':
-      return 'تم حظر الوصول إلى الموقع. لتفعيله: اضغط على 🔒 بجانب شريط العنوان ← الموقع الجغرافي ← السماح'
-    case 'samsung':
-      return 'تم حظر الوصول إلى الموقع. لتفعيله: اضغط ⋮ ← الإعدادات ← الموقع ← السماح لهذا الموقع'
-    case 'safari':
-      return 'تم حظر الوصول إلى الموقع. لتفعيله: الإعدادات ← Safari ← الموقع ← السماح'
-    case 'firefox':
-      return 'تم حظر الوصول إلى الموقع. لتفعيله: اضغط على 🔒 ← صلاحيات ← الموقع ← السماح'
-    default:
-      return 'تم حظر الوصول إلى الموقع. يُرجى السماح من إعدادات المتصفح ثم إعادة المحاولة'
+    browserType:      browserType.current,
+    browserGuideSteps: getBrowserGuideSteps(browserType.current),
+    blockedMessage:   getBlockedMessage(browserType.current),
   }
 }
 

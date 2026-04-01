@@ -14,6 +14,9 @@ import {
 import type { HRAttendanceDay } from '@/lib/types/hr'
 import Spinner from '@/components/ui/Spinner'
 import { toast } from 'sonner'
+import useGeoPermission from '@/hooks/useGeoPermission'
+import GeoPermissionDialog from '@/components/shared/GeoPermissionDialog'
+import GeoPermissionBanner from '@/components/shared/GeoPermissionBanner'
 
 // ─────────────────────────────────────────────────────────────
 // TYPES
@@ -29,8 +32,6 @@ type ActionType = 'check_in' | 'check_out'
 
 interface GeoPos { latitude: number; longitude: number; accuracy: number }
 
-const GPS_TIMEOUT_MS = 20_000
-const GPS_MAX_AGE_MS = 10_000
 const SUCCESS_RESET_MS = 2500
 
 // ─────────────────────────────────────────────────────────────
@@ -241,13 +242,18 @@ function ProgressSteps({ flowState, position }: { flowState: FlowState; position
 export default function AttendanceCheckin() {
   const { data: employee, isLoading: empLoading } = useCurrentEmployee()
 
+  // Geolocation hook — إدارة احترافية للصلاحيات
+  const geo = useGeoPermission()
+
   // الحالة الداخلية
-  const [flowState,  setFlowState]  = useState<FlowState>('idle')
-  const [actionType, setActionType] = useState<ActionType>('check_in')
-  const [position,   setPosition]   = useState<GeoPos | null>(null)
-  const [rpcResult,  setRpcResult]  = useState<AttendanceGPSResult | null>(null)
-  const [errorMsg,   setErrorMsg]   = useState<string | null>(null)
-  const [isOnline,   setIsOnline]   = useState(navigator.onLine)
+  const [flowState,      setFlowState]      = useState<FlowState>('idle')
+  const [actionType,     setActionType]     = useState<ActionType>('check_in')
+  const [pendingAction,  setPendingAction]  = useState<ActionType | null>(null) // الإجراء المعلق حتى إذن GPS
+  const [showGeoDialog,  setShowGeoDialog]  = useState(false)  // dialog التوضيحي قبل الطلب
+  const [position,       setPosition]       = useState<GeoPos | null>(null)
+  const [rpcResult,      setRpcResult]      = useState<AttendanceGPSResult | null>(null)
+  const [errorMsg,       setErrorMsg]       = useState<string | null>(null)
+  const [isOnline,       setIsOnline]       = useState(navigator.onLine)
 
   // ✅ إصلاح الخطأ الحرج: useEffect وليس useState لمراقبة الاتصال
   useEffect(() => {
@@ -285,27 +291,8 @@ export default function AttendanceCheckin() {
     return () => clearTimeout(id)
   }, [flowState])
 
-  // ── جلب GPS ──
-  const acquireGPS = useCallback((): Promise<GeoPos> => new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject(new Error('GPS غير مدعوم في هذا الجهاز'))
-      return
-    }
-    navigator.geolocation.getCurrentPosition(
-      p => resolve({ latitude: p.coords.latitude, longitude: p.coords.longitude, accuracy: p.coords.accuracy }),
-      err => {
-        const msgs: Record<number, string> = {
-          1: 'مرفوض — اسمح للمتصفح بالوصول للموقع',
-          2: 'تعذر تحديد الموقع — فعّل GPS',
-          3: 'انتهت مهلة GPS — اذهب لمكان مفتوح',
-        }
-        reject(new Error(msgs[err.code] ?? 'خطأ غير معروف في GPS'))
-      },
-      { enableHighAccuracy: true, timeout: GPS_TIMEOUT_MS, maximumAge: GPS_MAX_AGE_MS }
-    )
-  }), [])
-
-  // ── التدفق الكامل ── خطوتان: GPS → RPC الذرية
+  // ── عند الضغط على زر الحضور/الانصراف ─────────────────────────────────────
+  // نتحقق من حالة الصلاحية أولاً ونقرر هل نعرض dialog توضيحي أم لا
   const handleAction = useCallback(async (type: ActionType) => {
     if (!employee) return
     setActionType(type)
@@ -319,38 +306,66 @@ export default function AttendanceCheckin() {
       return
     }
 
-    // خطوة 1: جلب GPS
-    setFlowState('locating')
-    let geo: GeoPos
-    try {
-      geo = await acquireGPS()
-      setPosition(geo)
-    } catch (e) {
-      setErrorMsg(e instanceof Error ? e.message : 'فشل GPS')
+    // ── تحقق من حالة الصلاحية ──
+    // granted  → استمر مباشرةً
+    // prompt   → أظهر dialog توضيحي أولاً (Explain before Ask)
+    // denied   → البانر يعرض الإرشادات — لا نستمر
+    if (geo.status === 'denied') {
+      setErrorMsg(geo.blockedMessage)
       setFlowState('error')
       return
     }
 
-    // خطوة 2: RPC ذرية (تتحقق + تسجل في log + تُنشئ/تُحدث attendance_day)
+    if (geo.status === 'prompt') {
+      // احفظ الإجراء المعلق وأظهر dialog التوضيح
+      setPendingAction(type)
+      setShowGeoDialog(true)
+      return
+    }
+
+    // granted (أو unavailable — نحاول ونتعامل مع الخطأ)
+    await executeWithGPS(type)
+
+  }, [employee, geo.status, geo.blockedMessage])
+
+  // ── التنفيذ الفعلي بعد الحصول على GPS ──────────────────────────────────
+  const executeWithGPS = useCallback(async (type: ActionType) => {
+    // خطوة 1: جلب GPS
+    setFlowState('locating')
+    const geoCoords = await geo.requestLocation()
+
+    if (!geoCoords) {
+      // فشل GPS — الخطأ محفوظ في geo.error
+      if (geo.status === 'denied') {
+        setErrorMsg(geo.blockedMessage)
+      } else {
+        setErrorMsg(geo.error ?? 'فشل تحديد الموقع — حاول مرة أخرى')
+      }
+      setFlowState('error')
+      return
+    }
+
+    setPosition({ latitude: geoCoords.lat, longitude: geoCoords.lng, accuracy: geoCoords.accuracy })
+
+    // خطوة 2: RPC ذرية
     setFlowState('submitting')
     try {
       const result = await recordAttendanceGPS({
-        latitude:     geo.latitude,
-        longitude:    geo.longitude,
-        gps_accuracy: geo.accuracy,
+        latitude:     geoCoords.lat,
+        longitude:    geoCoords.lng,
+        gps_accuracy: geoCoords.accuracy,
         log_type:     type,
         event_time:   new Date().toISOString(),
       })
       setRpcResult(result)
 
       if (!result.success) {
-        // رسائل خطأ مترجمة
         const msg =
           result.code === 'ALREADY_CHECKED_IN'  ? 'لقد سجلت حضورك بالفعل اليوم' :
           result.code === 'ALREADY_CHECKED_OUT' ? 'لقد سجلت انصرافك بالفعل اليوم' :
           result.code === 'NOT_CHECKED_IN'      ? 'يجب تسجيل الحضور أولاً' :
           result.code === 'OUT_OF_RANGE'        ? `خارج النطاق — ${result.nearest_location ?? ''} (${Math.round(result.distance_meters ?? 0)}م)` :
-          result.code === 'LOW_GPS_ACCURACY'    ? `دقة GPS ضعيفة (${Math.round(geo.accuracy)}م)` :
+          result.code === 'LOW_GPS_ACCURACY'    ? `دقة GPS ضعيفة (${Math.round(geoCoords.accuracy)}م)` :
           result.code === 'NO_LOCATION_FOUND'   ? 'لا توجد مواقع عمل مسجلة في النظام' :
           result.code === 'NO_EMPLOYEE'         ? 'حسابك غير مرتبط بموظف' :
           result.error ?? 'تعذر التسجيل'
@@ -372,7 +387,21 @@ export default function AttendanceCheckin() {
       setErrorMsg(e instanceof Error ? e.message : 'فشل التسجيل — يرجى المحاولة مجدداً')
       setFlowState('error')
     }
-  }, [acquireGPS, employee, refetchToday])
+  }, [geo, refetchToday])
+
+  // ── عند موافقة المستخدم في dialog التوضيحي ──────────────────────────────
+  const handleGeoDialogAllow = useCallback(async () => {
+    setShowGeoDialog(false)
+    if (!pendingAction) return
+    const type = pendingAction
+    setPendingAction(null)
+    await executeWithGPS(type)
+  }, [pendingAction, executeWithGPS])
+
+  const handleGeoDialogDismiss = useCallback(() => {
+    setShowGeoDialog(false)
+    setPendingAction(null)
+  }, [])
 
   // ── Loading / No Employee ──
   if (empLoading) return (
@@ -392,6 +421,7 @@ export default function AttendanceCheckin() {
   )
 
   const isProcessing  = ['locating', 'submitting'].includes(flowState)
+  const isGeoBlocked  = geo.isBlocked
   const hasCheckIn    = !!todayRecord?.punch_in_time
   const hasCheckOut   = !!todayRecord?.punch_out_time
   const isDayDone     = hasCheckIn && hasCheckOut
@@ -457,6 +487,14 @@ export default function AttendanceCheckin() {
         </div>
       )}
 
+      {/* ── بانر حالة GPS (للحالات: checking/denied/prompt) ── */}
+      {!isProcessing && flowState !== 'success' && !isDayDone && (
+        <GeoPermissionBanner
+          showOnPrompt={false}
+          contextMessage="تسجيل الحضور يتطلب تحديد موقعك الجغرافي للتحقق من تواجدك"
+        />
+      )}
+
       {/* ── تقدم العملية ── */}
       {isProcessing && (
         <ProgressSteps flowState={flowState} position={position} />
@@ -483,6 +521,9 @@ export default function AttendanceCheckin() {
               </div>
             )}
           </div>
+        ) : isGeoBlocked ? (
+          /* الصلاحية محظورة — GeoPermissionBanner يعرض الإرشادات */
+          null
         ) : (
           <SmartActionButton
             record={todayRecord}
@@ -505,6 +546,14 @@ export default function AttendanceCheckin() {
         <Info size={12} />
         موقعك يُستخدم لتسجيل الحضور فقط — لا يُتتبع خلال اليوم.
       </div>
+
+      {/* ── Dialog التوضيحي قبل طلب الصلاحية ── */}
+      <GeoPermissionDialog
+        open={showGeoDialog}
+        context="attendance"
+        onAllow={handleGeoDialogAllow}
+        onDismiss={handleGeoDialogDismiss}
+      />
 
       {/* ── الأنماط ── */}
       <style>{`

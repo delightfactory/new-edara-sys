@@ -22,6 +22,7 @@ import useGeoPermission from '@/hooks/useGeoPermission'
 import type { GeoCoords } from '@/hooks/useGeoPermission'
 import type { ChecklistResponseInput, VisitPlanItem, ActivityInput, ActivityOutcome } from '@/lib/types/activities'
 import GeoPermissionBanner from '@/components/shared/GeoPermissionBanner'
+import GeoPermissionDialog from '@/components/shared/GeoPermissionDialog'
 import VisitTimer from '@/components/shared/VisitTimer'
 import ChecklistForm from '@/components/shared/ChecklistForm'
 import PageHeader from '@/components/shared/PageHeader'
@@ -64,16 +65,17 @@ export default function VisitExecutionMode() {
   )
 
   // ── State
-  const [activeItemId, setActiveItemId] = useState<string | null>(null)
-  const [startTime, setStartTime] = useState<string | null>(null)
-  const [startGPS, setStartGPS] = useState<GeoCoords | null>(null)
-  const [skipModal, setSkipModal] = useState<VisitPlanItem | null>(null)
-  const [skipReason, setSkipReason] = useState('')
-  const [skipCustom, setSkipCustom] = useState('')
-  const [skipping, setSkipping] = useState(false)
-  const [checklistReady, setChecklistReady] = useState(false)
+  const [activeItemId,       setActiveItemId]       = useState<string | null>(null)
+  const [startTime,          setStartTime]          = useState<string | null>(null)
+  const [startGPS,           setStartGPS]           = useState<GeoCoords | null>(null)
+  const [skipModal,          setSkipModal]          = useState<VisitPlanItem | null>(null)
+  const [skipReason,         setSkipReason]         = useState('')
+  const [skipCustom,         setSkipCustom]         = useState('')
+  const [skipping,           setSkipping]           = useState(false)
+  const [checklistReady,     setChecklistReady]     = useState(false)
   const [checklistResponses, setChecklistResponses] = useState<ChecklistResponseInput[]>([])
-  const [completing, setCompleting] = useState(false)
+  const [completing,         setCompleting]         = useState(false)
+  const [showGeoDialog,      setShowGeoDialog]      = useState(false) // pre-permission dialog
 
   // ── Sorted items
   const sortedItems = useMemo(
@@ -118,6 +120,13 @@ export default function VisitExecutionMode() {
 
   const handleStartVisit = useCallback(async () => {
     if (!currentItem || !id) return
+
+    // ── Explain before Ask: إذا كانت الصلاحية لم تُمنح بعد ──
+    if (geo.status === 'prompt') {
+      setShowGeoDialog(true)
+      return
+    }
+
     setIsStarting(true)
 
     try {
@@ -151,6 +160,33 @@ export default function VisitExecutionMode() {
       setActiveItemId(null)
       setStartTime(null)
       setStartGPS(null)
+    } finally {
+      setIsStarting(false)
+    }
+  }, [currentItem, id, geo, updateItem])
+
+  // ── موافقة dialog التوضيحي ──
+  const handleGeoDialogAllow = useCallback(async () => {
+    setShowGeoDialog(false)
+    if (!currentItem || !id) return
+    setIsStarting(true)
+    try {
+      const coords = await geo.requestLocation()
+      if (!coords && geo.isBlocked) { setIsStarting(false); return }
+      const now = new Date().toISOString()
+      setStartTime(now)
+      setStartGPS(coords)
+      setActiveItemId(currentItem.id)
+      setChecklistReady(false)
+      setChecklistResponses([])
+      await updateItem.mutateAsync({
+        itemId: currentItem.id,
+        planId: id,
+        input: { status: 'in_progress', actual_start_time: now, gps_lat: coords?.lat ?? null, gps_lng: coords?.lng ?? null },
+      })
+    } catch (err: any) {
+      toast.error(err?.message || 'فشل بدء الزيارة')
+      setActiveItemId(null); setStartTime(null); setStartGPS(null)
     } finally {
       setIsStarting(false)
     }
@@ -337,7 +373,10 @@ export default function VisitExecutionMode() {
       </div>
 
       {/* ── GPS Banner ── */}
-      <GeoPermissionBanner showOnPrompt />
+      <GeoPermissionBanner
+        showOnPrompt={false}
+        contextMessage="تسجيل الزيارة يتطلب تحديد موقعك للتحقق من وصولك لموقع العميل"
+      />
 
       {/* ── All Done State ── */}
       {allDone ? (
@@ -516,6 +555,14 @@ export default function VisitExecutionMode() {
           </Button>
         </div>
       </ResponsiveModal>
+
+      {/* ── Pre-permission Dialog ── */}
+      <GeoPermissionDialog
+        open={showGeoDialog}
+        context="visit"
+        onAllow={handleGeoDialogAllow}
+        onDismiss={() => setShowGeoDialog(false)}
+      />
 
       <style>{styles}</style>
     </div>

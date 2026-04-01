@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import useGeoPermission from '@/hooks/useGeoPermission'
 
 interface GPSCoords {
   lat: number
@@ -49,6 +50,8 @@ export default function GPSStatusIndicator({
   const [error,    setError]    = useState<string>('')
   const [distance, setDistance] = useState<number | null>(null)
 
+  const geo = useGeoPermission()
+
   const requestGPS = useCallback(() => {
     if (!navigator.geolocation) {
       setState('error')
@@ -60,35 +63,30 @@ export default function GPSStatusIndicator({
     setState('loading')
     setError('')
 
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        const coords: GPSCoords = {
-          lat:      pos.coords.latitude,
-          lng:      pos.coords.longitude,
-          accuracy: pos.coords.accuracy,
-        }
-        setState('success')
-        onCoordsChange(coords)
-
-        // حساب المسافة من موقع العميل
-        if (customerLat != null && customerLng != null) {
-          const dist = haversineDistance(coords.lat, coords.lng, customerLat, customerLng)
-          setDistance(Math.round(dist))
-        }
-      },
-      err => {
-        if (err.code === err.PERMISSION_DENIED) {
+    // نستخدم الـ hook لطلب الموقع للاستفادة من retry strategy
+    geo.requestLocation().then(coords => {
+      if (!coords) {
+        if (geo.isBlocked || geo.status === 'denied') {
           setState('denied')
-          setError('تم رفض الوصول إلى الموقع — يُرجى السماح من إعدادات المتصفح')
+          setError(geo.blockedMessage)
         } else {
           setState('error')
-          setError('تعذّر تحديد الموقع — حاول مرة أخرى')
+          setError(geo.error ?? 'تعذّر تحديد الموقع — حاول مرة أخرى')
         }
         onCoordsChange(null)
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
-    )
-  }, [customerLat, customerLng, onCoordsChange])
+        return
+      }
+
+      setState('success')
+      onCoordsChange({ lat: coords.lat, lng: coords.lng, accuracy: coords.accuracy })
+
+      // حساب المسافة من موقع العميل
+      if (customerLat != null && customerLng != null) {
+        const dist = haversineDistance(coords.lat, coords.lng, customerLat, customerLng)
+        setDistance(Math.round(dist))
+      }
+    })
+  }, [customerLat, customerLng, onCoordsChange, geo])
 
   // إذا كان GPS غير مطلوب لا نعرض شيئاً
   if (!requiresGPS) return null
