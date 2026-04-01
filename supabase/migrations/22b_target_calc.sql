@@ -48,9 +48,17 @@ WHERE code = 'category_spread';
 -- إضافة: حساب expected_reward في calc_details
 -- ════════════════════════════════════════════════════════════
 
+
+-- OVERLOAD CLEANUP: حذف legacy overloads قبل CREATE OR REPLACE
+-- الغرض: ضمان وجود overload واحد canonical (3 params) فقط في قاعدة البيانات.
+-- بدون هذا DROP، يبقى الـ overload القديم (2 params) موجوداً ومنفصلاً.
+DROP FUNCTION IF EXISTS public.recalculate_target_progress(UUID, DATE);
+DROP FUNCTION IF EXISTS public.recalculate_target_progress(UUID);
+
 CREATE OR REPLACE FUNCTION public.recalculate_target_progress(
-  p_target_id     UUID,
-  p_snapshot_date DATE DEFAULT CURRENT_DATE
+  p_target_id      UUID,
+  p_snapshot_date  DATE    DEFAULT CURRENT_DATE,
+  p_force_recalc   BOOLEAN DEFAULT FALSE  -- TRUE: يتجاوز is_active/is_paused (للreconciliation التاريخي فقط)
 ) RETURNS VOID
   LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
 AS $$
@@ -68,7 +76,10 @@ DECLARE
   v_expected_rwd NUMERIC := 0;
 BEGIN
   SELECT * INTO v_target FROM public.targets
-  WHERE id = p_target_id AND is_active = true AND is_paused = false;
+  WHERE id = p_target_id
+    -- p_force_recalc=TRUE: يتجاوز التحكم التشغيلي لـ clawback/reconciliation التاريخي
+    -- p_force_recalc=FALSE (افتراضي): نفس السلوك العادي بدون أي تغيير
+    AND (p_force_recalc OR (is_active = true AND is_paused = false));
   IF NOT FOUND THEN RETURN; END IF;
 
   -- ══════════════════════════════════════════════════════════

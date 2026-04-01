@@ -323,9 +323,36 @@ BEGIN
       )
       RETURNING id INTO v_adj_id;
 
-      -- تثبيت السجل
+      -- تثبيت السجل مع snapshot للأساس الحسابي (Immutable Historical Basis)
       UPDATE public.target_reward_payouts
-      SET status = 'committed', adjustment_id = v_adj_id, committed_at = now()
+      SET status      = 'committed',
+          adjustment_id = v_adj_id,
+          committed_at  = now(),
+          payout_basis_snapshot = jsonb_build_object(
+            'achievement_pct',    v_achievement,
+            'tier_sequence',      v_best_tier.sequence,
+            'tier_threshold_pct', v_best_tier.threshold_pct,
+            'tier_reward_pct',    v_best_tier.reward_pct,
+            'pool_value',         v_pool_value,
+            'payout_amount',      v_payout_amount,
+            'reward_type',        v_target.reward_type,
+            'reward_base_value',  v_target.reward_base_value,
+            'target_value',       v_target.target_value,
+            'period_start',       v_target.period_start,
+            'period_end',         v_target.period_end,
+            'committed_at',       now(),
+            'tiers_snapshot', (
+              SELECT COALESCE(jsonb_agg(
+                jsonb_build_object(
+                  'sequence',      trt.sequence,
+                  'threshold_pct', trt.threshold_pct,
+                  'reward_pct',    trt.reward_pct,
+                  'label',         trt.label
+                ) ORDER BY trt.sequence
+              ), '[]')
+              FROM public.target_reward_tiers trt WHERE trt.target_id = v_target.id
+            )
+          )
       WHERE target_id   = v_target.id
         AND employee_id = v_employee_id
         AND period_id   = v_payout_period_id
@@ -383,13 +410,22 @@ BEGIN
   SELECT * INTO v_target FROM public.targets WHERE id = p_target_id;
   IF NOT FOUND THEN RAISE EXCEPTION 'الهدف غير موجود'; END IF;
 
-  -- قفل حقول المكافأة الجوهرية بعد أول committed
-  IF p_field IN ('reward_type', 'reward_pool_basis', 'reward_base_value') THEN
+  -- ★ Snapshot + Freeze: قفل كامل للأساس التاريخي بعد أول committed payout
+  -- يشمل: target_value, min_value, stretch_value, period_end, filter_criteria,
+  --        reward_type, reward_base_value, reward_pool_basis, payout_month_offset
+  -- is_active / is_paused / auto_payout مُستثناة (تحكم تشغيلي لا يمس الأساس)
+  IF p_field IN (
+    'target_value', 'min_value', 'stretch_value', 'period_end', 'filter_criteria',
+    'reward_type', 'reward_base_value', 'reward_pool_basis', 'payout_month_offset'
+  ) THEN
     IF EXISTS (
       SELECT 1 FROM public.target_reward_payouts
       WHERE target_id = p_target_id AND status = 'committed'
     ) THEN
-      RAISE EXCEPTION '[EDARA] لا يمكن تعديل [%] — تم تثبيت مكافأة بالفعل. أنشئ هدفاً جديداً للفترة القادمة.', p_field;
+      RAISE EXCEPTION
+        '[EDARA] الأساس التاريخي مُقفل — لا يمكن تعديل [%] بعد تثبيت مكافأة. '
+        'هذا يضمن سلامة clawback/reconciliation. أنشئ هدفاً جديداً للفترة القادمة.',
+        p_field;
     END IF;
   END IF;
 
@@ -492,19 +528,385 @@ BEGIN
   WHERE id = p_je_id;
 END; $$;
 
--- ════════════════════════════════════════════════════════════
--- SECTION 5: Grants
--- ════════════════════════════════════════════════════════════
 
-GRANT EXECUTE ON FUNCTION public.create_target_with_rewards          TO authenticated;
-GRANT EXECUTE ON FUNCTION public.prepare_target_reward_payouts(UUID) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.adjust_target                       TO authenticated;
-GRANT EXECUTE ON FUNCTION public.calc_target_pool_value              TO authenticated;
-GRANT EXECUTE ON FUNCTION public.is_valid_reward_config              TO authenticated;
-GRANT EXECUTE ON FUNCTION public.add_bonus_to_payroll_journal        TO authenticated;
+-- \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+-- SECTION 6: target_payout_clawbacks \u2014 \u0633\u062c\u0644 \u0627\u0644\u062a\u0633\u0648\u064a\u0627\u062a \u0627\u0644\u0645\u0627\u0644\u064a\u0629 \u0644\u0644\u0645\u0643\u0627\u0641\u0622\u062a
+-- Audit trail \u0643\u0627\u0645\u0644 + idempotency \u0639\u0628\u0631 UNIQUE(payout_id, source_return_id)
+-- \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
 
--- ════════════════════════════════════════════════════════════
--- نهاية 22c_target_payouts.sql (v2 — مُصلح)
--- الخطوة التالية للاعتماد من كوديكس: 22a + 22b + 22c (v2)
--- ثم 22d_payroll_sync.sql — التعديل الفعلي لـ approve_payroll_run
--- ════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS public.target_payout_clawbacks (
+  id                       UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  payout_id                UUID        NOT NULL REFERENCES public.target_reward_payouts(id),
+  source_return_id         UUID        NOT NULL REFERENCES public.sales_returns(id),
+  original_payout_amount   NUMERIC(12,2) NOT NULL,
+  recomputed_payout_amount NUMERIC(12,2) NOT NULL,
+  total_prior_clawback     NUMERIC(12,2) NOT NULL DEFAULT 0,
+  clawback_delta           NUMERIC(12,2) NOT NULL,
+  adjustment_id            UUID        REFERENCES hr_payroll_adjustments(id),
+  effective_date           DATE        NOT NULL,
+  reason                   TEXT        NOT NULL,
+  created_at               TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT uq_clawback_payout_return UNIQUE (payout_id, source_return_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_clawback_payout  ON public.target_payout_clawbacks(payout_id);
+CREATE INDEX IF NOT EXISTS idx_clawback_return  ON public.target_payout_clawbacks(source_return_id);
+CREATE INDEX IF NOT EXISTS idx_clawback_adj     ON public.target_payout_clawbacks(adjustment_id);
+CREATE INDEX IF NOT EXISTS idx_clawback_date    ON public.target_payout_clawbacks(effective_date);
+
+-- \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+-- SECTION 7: \u062d\u0642\u0644 payout_basis_snapshot \u2014 \u0644\u0642\u0637\u0629 \u0644\u0627 \u062a\u062a\u063a\u064a\u0631 \u0639\u0646\u062f commit
+-- \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+
+ALTER TABLE public.target_reward_payouts
+  ADD COLUMN IF NOT EXISTS payout_basis_snapshot JSONB;
+
+COMMENT ON COLUMN public.target_reward_payouts.payout_basis_snapshot IS
+  'Immutable snapshot at commit: achievement_pct, tiers, pool_value, reward config — used for clawback basis';
+
+-- \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+-- SECTION 8: Trigger \u2014 \u062d\u0645\u0627\u064a\u0629 target_reward_tiers / target_customers
+-- \u064a\u0645\u0646\u0639 \u0623\u064a INSERT/UPDATE/DELETE \u0628\u0639\u062f \u0623\u0648\u0644 committed payout
+-- \u0645\u0643\u0645\u0644 \u0644\u0640 adjust_target() \u0627\u0644\u0630\u064a \u064a\u0642\u0641\u0644 \u062d\u0642\u0648\u0644 targets \u062a\u0644\u0642\u0627\u0626\u064a\u0627\u064b
+-- \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+
+CREATE OR REPLACE FUNCTION public.trg_protect_committed_target_config()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_target_id UUID;
+BEGIN
+  v_target_id := CASE TG_OP WHEN 'DELETE' THEN OLD.target_id ELSE NEW.target_id END;
+  IF EXISTS (
+    SELECT 1 FROM public.target_reward_payouts
+    WHERE target_id = v_target_id AND status = 'committed'
+  ) THEN
+    RAISE EXCEPTION
+      '[EDARA] \u0627\u0644\u0623\u0633\u0627\u0633 \u0627\u0644\u062a\u0627\u0631\u064a\u062e\u064a \u0645\u064f\u0642\u0641\u0644 \u2014 \u0644\u0627 \u064a\u0645\u0643\u0646 \u062a\u0639\u062f\u064a\u0644 \u0634\u0631\u0627\u0626\u062d/\u0639\u0645\u0644\u0627\u0621 \u0647\u062f\u0641 \u062a\u0645 \u062a\u062b\u0628\u064a\u062a \u0645\u0643\u0627\u0641\u0623\u062a\u0647. '
+      'TG_OP: % | target_id: %', TG_OP, v_target_id;
+  END IF;
+  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_protect_tiers_after_commit ON public.target_reward_tiers;
+CREATE TRIGGER trg_protect_tiers_after_commit
+  BEFORE INSERT OR UPDATE OR DELETE ON public.target_reward_tiers
+  FOR EACH ROW EXECUTE FUNCTION public.trg_protect_committed_target_config();
+
+DROP TRIGGER IF EXISTS trg_protect_customers_after_commit ON public.target_customers;
+CREATE TRIGGER trg_protect_customers_after_commit
+  BEFORE INSERT OR UPDATE OR DELETE ON public.target_customers
+  FOR EACH ROW EXECUTE FUNCTION public.trg_protect_committed_target_config();
+
+-- ============================================================
+-- SECTION 9: find_next_open_payroll_period()
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION public.find_next_open_payroll_period(
+  p_reference_date DATE DEFAULT CURRENT_DATE
+) RETURNS DATE
+  LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_start       DATE;
+  v_is_approved BOOLEAN;
+BEGIN
+  v_start := DATE_TRUNC('month', p_reference_date)::DATE;
+  SELECT EXISTS (
+    SELECT 1 FROM hr_payroll_runs r
+    JOIN   hr_payroll_periods p ON p.id = r.period_id
+    WHERE  p.year  = EXTRACT(YEAR  FROM v_start)::INT
+      AND  p.month = EXTRACT(MONTH FROM v_start)::INT
+      AND  r.status = 'approved'
+  ) INTO v_is_approved;
+  IF v_is_approved THEN
+    RETURN DATE_TRUNC('month', v_start + INTERVAL '1 month')::DATE;
+  ELSE
+    RETURN v_start;
+  END IF;
+END;
+$$;
+
+-- ============================================================
+-- SECTION 10: process_late_return_clawback()
+-- Loop 1: sales targets  -> v_sale_date    + v_rep_emp_id       (p_force_recalc=TRUE)
+-- Loop 2: collection     -> v_payment_date + v_collector_emp_id (p_force_recalc=TRUE)
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION public.process_late_return_clawback(
+  p_return_id UUID
+) RETURNS INTEGER
+  LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_return            public.sales_returns%ROWTYPE;
+  v_order             public.sales_orders%ROWTYPE;
+  v_rep_emp_id        UUID;
+  v_collector_user    UUID;
+  v_collector_emp_id  UUID;
+  v_sale_date         DATE;
+  v_payment_date      DATE;
+  v_payout            public.target_reward_payouts%ROWTYPE;
+  v_target            public.targets%ROWTYPE;
+  v_best_tier         public.target_reward_tiers%ROWTYPE;
+  v_pool_value        NUMERIC;
+  v_recomputed_amount NUMERIC;
+  v_achievement_pct   NUMERIC;
+  v_total_prior       NUMERIC;
+  v_delta             NUMERIC;
+  v_adj_id            UUID;
+  v_effective_date    DATE;
+  v_count             INTEGER := 0;
+BEGIN
+
+  SELECT * INTO v_return FROM public.sales_returns WHERE id = p_return_id;
+  IF NOT FOUND OR v_return.status != 'confirmed' THEN RETURN 0; END IF;
+
+  SELECT * INTO v_order FROM public.sales_orders WHERE id = v_return.order_id;
+  IF NOT FOUND THEN RETURN 0; END IF;
+
+  v_sale_date := v_order.delivered_at::DATE;
+  IF v_sale_date IS NULL THEN RETURN 0; END IF;
+
+  -- المندوب
+  SELECT id INTO v_rep_emp_id
+  FROM   hr_employees
+  WHERE  user_id = v_order.rep_id AND status = 'active' LIMIT 1;
+
+  -- المحصّل + تاريخ الإيصال
+  SELECT pr.collected_by, pr.created_at::DATE
+  INTO   v_collector_user, v_payment_date
+  FROM   payment_receipts pr
+  WHERE  pr.sales_order_id = v_return.order_id AND pr.status = 'confirmed'
+  ORDER  BY pr.created_at ASC LIMIT 1;
+
+  IF v_collector_user IS NOT NULL THEN
+    SELECT id INTO v_collector_emp_id
+    FROM   hr_employees WHERE user_id = v_collector_user AND status = 'active' LIMIT 1;
+  END IF;
+
+  -- ╔══ حلقة 1: أهداف البيع — v_sale_date + v_rep_emp_id ══╗
+  FOR v_payout IN
+    SELECT trp.*
+    FROM   public.target_reward_payouts trp
+    JOIN   public.targets t ON t.id = trp.target_id
+    WHERE  trp.status   = 'committed'
+      AND  t.type_code  IN ('sales_value','product_qty','category_spread','upgrade_value')
+      AND  t.period_start <= v_sale_date
+      AND  t.period_end   >= v_sale_date
+      AND  v_rep_emp_id IS NOT NULL
+      AND  trp.employee_id = v_rep_emp_id
+  LOOP
+    IF EXISTS (
+      SELECT 1 FROM public.target_payout_clawbacks
+      WHERE  payout_id = v_payout.id AND source_return_id = p_return_id
+    ) THEN CONTINUE; END IF;
+
+    SELECT * INTO v_target FROM public.targets WHERE id = v_payout.target_id;
+
+    -- p_force_recalc=TRUE: يتجاوز is_active/is_paused للreconciliation التاريخي
+    PERFORM public.recalculate_target_progress(
+      v_payout.target_id, LEAST(CURRENT_DATE, v_target.period_end), TRUE);
+
+    SELECT achievement_pct INTO v_achievement_pct
+    FROM   public.target_progress WHERE target_id = v_payout.target_id
+    ORDER  BY snapshot_date DESC LIMIT 1;
+    IF v_achievement_pct IS NULL THEN CONTINUE; END IF;
+
+    SELECT * INTO v_best_tier
+    FROM   public.target_reward_tiers
+    WHERE  target_id = v_payout.target_id AND threshold_pct <= v_achievement_pct
+    ORDER  BY threshold_pct DESC LIMIT 1;
+
+    v_recomputed_amount := 0;
+    IF FOUND THEN
+      IF v_target.reward_type = 'fixed' THEN
+        v_recomputed_amount := ROUND(
+          v_target.reward_base_value * (v_best_tier.reward_pct / 100.0), 2);
+      ELSIF v_target.reward_type = 'percentage' THEN
+        v_pool_value := public.calc_target_pool_value(
+          v_target.id, v_payout.employee_id, v_target.period_start, v_target.period_end);
+        v_recomputed_amount := ROUND(
+          v_pool_value * (v_target.reward_base_value / 100.0)
+                       * (v_best_tier.reward_pct    / 100.0), 2);
+      END IF;
+    END IF;
+    v_recomputed_amount := GREATEST(COALESCE(v_recomputed_amount, 0), 0);
+
+    SELECT COALESCE(SUM(clawback_delta), 0) INTO v_total_prior
+    FROM   public.target_payout_clawbacks WHERE payout_id = v_payout.id;
+
+    v_delta := ROUND(
+      GREATEST(v_payout.payout_amount - v_recomputed_amount - v_total_prior, 0), 2);
+    IF v_delta < 0.01 THEN CONTINUE; END IF;
+
+    v_effective_date := public.find_next_open_payroll_period(CURRENT_DATE);
+
+    INSERT INTO hr_payroll_adjustments (
+      employee_id, type, amount, status, reason, effective_date, created_by
+    ) VALUES (
+      v_payout.employee_id, 'deduction', v_delta, 'approved',
+      format('[clawback بيع] هدف: %s | %.1f%% -> %.1f%% | %sج.م -> %sج.م | سابق: %s | جديد: %s',
+        v_target.name, v_payout.achievement_pct, v_achievement_pct,
+        v_payout.payout_amount, v_recomputed_amount, v_total_prior, v_delta),
+      v_effective_date, NULL
+    ) RETURNING id INTO v_adj_id;
+
+    INSERT INTO public.target_payout_clawbacks (
+      payout_id, source_return_id,
+      original_payout_amount, recomputed_payout_amount,
+      total_prior_clawback, clawback_delta,
+      adjustment_id, effective_date, reason
+    ) VALUES (
+      v_payout.id, p_return_id,
+      v_payout.payout_amount, v_recomputed_amount,
+      v_total_prior, v_delta, v_adj_id, v_effective_date,
+      format('بيع %s | اصلي: %sج.م -> مصحح: %sج.م | دلتا: %s',
+        v_sale_date, v_payout.payout_amount, v_recomputed_amount, v_delta)
+    );
+
+    v_count := v_count + 1;
+  END LOOP;
+
+  -- ╔══ حلقة 2: أهداف التحصيل — v_payment_date + v_collector_emp_id ══╗
+  -- collection فقط — payout عن فترة الإيصال لا فترة البيع
+  IF v_collector_emp_id IS NOT NULL AND v_payment_date IS NOT NULL THEN
+
+    FOR v_payout IN
+      SELECT trp.*
+      FROM   public.target_reward_payouts trp
+      JOIN   public.targets t ON t.id = trp.target_id
+      WHERE  trp.status   = 'committed'
+        AND  t.type_code  = 'collection'
+        AND  t.period_start <= v_payment_date
+        AND  t.period_end   >= v_payment_date
+        AND  trp.employee_id = v_collector_emp_id
+    LOOP
+      IF EXISTS (
+        SELECT 1 FROM public.target_payout_clawbacks
+        WHERE  payout_id = v_payout.id AND source_return_id = p_return_id
+      ) THEN CONTINUE; END IF;
+
+      SELECT * INTO v_target FROM public.targets WHERE id = v_payout.target_id;
+
+      -- p_force_recalc=TRUE: يتجاوز is_active/is_paused للreconciliation التاريخي
+      PERFORM public.recalculate_target_progress(
+        v_payout.target_id, LEAST(CURRENT_DATE, v_target.period_end), TRUE);
+
+      SELECT achievement_pct INTO v_achievement_pct
+      FROM   public.target_progress WHERE target_id = v_payout.target_id
+      ORDER  BY snapshot_date DESC LIMIT 1;
+      IF v_achievement_pct IS NULL THEN CONTINUE; END IF;
+
+      SELECT * INTO v_best_tier
+      FROM   public.target_reward_tiers
+      WHERE  target_id = v_payout.target_id AND threshold_pct <= v_achievement_pct
+      ORDER  BY threshold_pct DESC LIMIT 1;
+
+      v_recomputed_amount := 0;
+      IF FOUND THEN
+        IF v_target.reward_type = 'fixed' THEN
+          v_recomputed_amount := ROUND(
+            v_target.reward_base_value * (v_best_tier.reward_pct / 100.0), 2);
+        ELSIF v_target.reward_type = 'percentage' THEN
+          v_pool_value := public.calc_target_pool_value(
+            v_target.id, v_payout.employee_id, v_target.period_start, v_target.period_end);
+          v_recomputed_amount := ROUND(
+            v_pool_value * (v_target.reward_base_value / 100.0)
+                         * (v_best_tier.reward_pct    / 100.0), 2);
+        END IF;
+      END IF;
+      v_recomputed_amount := GREATEST(COALESCE(v_recomputed_amount, 0), 0);
+
+      SELECT COALESCE(SUM(clawback_delta), 0) INTO v_total_prior
+      FROM   public.target_payout_clawbacks WHERE payout_id = v_payout.id;
+
+      v_delta := ROUND(
+        GREATEST(v_payout.payout_amount - v_recomputed_amount - v_total_prior, 0), 2);
+      IF v_delta < 0.01 THEN CONTINUE; END IF;
+
+      v_effective_date := public.find_next_open_payroll_period(CURRENT_DATE);
+
+      INSERT INTO hr_payroll_adjustments (
+        employee_id, type, amount, status, reason, effective_date, created_by
+      ) VALUES (
+        v_payout.employee_id, 'deduction', v_delta, 'approved',
+        format('[clawback تحصيل] هدف: %s | %.1f%% -> %.1f%% | %sج.م -> %sج.م | سابق: %s | جديد: %s',
+          v_target.name, v_payout.achievement_pct, v_achievement_pct,
+          v_payout.payout_amount, v_recomputed_amount, v_total_prior, v_delta),
+        v_effective_date, NULL
+      ) RETURNING id INTO v_adj_id;
+
+      INSERT INTO public.target_payout_clawbacks (
+        payout_id, source_return_id,
+        original_payout_amount, recomputed_payout_amount,
+        total_prior_clawback, clawback_delta,
+        adjustment_id, effective_date, reason
+      ) VALUES (
+        v_payout.id, p_return_id,
+        v_payout.payout_amount, v_recomputed_amount,
+        v_total_prior, v_delta, v_adj_id, v_effective_date,
+        format('تحصيل %s | اصلي: %sج.م -> مصحح: %sج.م | دلتا: %s',
+          v_payment_date, v_payout.payout_amount, v_recomputed_amount, v_delta)
+      );
+
+      v_count := v_count + 1;
+    END LOOP;
+
+  END IF;
+
+  RETURN v_count;
+END;
+$$;
+
+-- \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+-- SECTION 11: Grants (Least Privilege)
+-- \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+
+-- \u2714 find_next_open_payroll_period: helper \u0645\u062d\u0627\u064a\u062f \u0644\u062d\u0633\u0627\u0628 \u0641\u062a\u0631\u0629 \u0627\u0644\u0631\u0648\u0627\u062a\u0628 \u2014 \u0644\u0627 \u062a\u0646\u0634\u0626 \u0634\u064a\u0626\u0627\u064b
+GRANT EXECUTE ON FUNCTION public.find_next_open_payroll_period(DATE) TO authenticated;
+
+-- \u2718 process_late_return_clawback: internal trigger-only \u2014 \u0644\u0627 GRANT \u0644\u0644\u0645\u0633\u062a\u062e\u062f\u0645\u064a\u0646
+-- \u062a\u064f\u0633\u062a\u062f\u0639\u0649 \u0641\u0642\u0637 \u0645\u0646 trg_sales_return_recalc_targets (SECURITY DEFINER trigger)
+-- \u0623\u064a GRANT EXECUTE \u0647\u0646\u0627 \u064a\u0641\u062a\u062d \u062b\u063a\u0631\u0629 RPC \u0645\u0628\u0627\u0634\u0631\u0629 \u064a\u0645\u0643\u0646 \u0625\u0633\u0627\u0621\u0629 \u0627\u0633\u062a\u062e\u062f\u0627\u0645\u0647\u0627 \u0644\u0625\u0646\u0634\u0627\u0621 \u062e\u0635\u0648\u0645\u0627\u062a \u0631\u0648\u0627\u062a\u0628 \u063a\u064a\u0631 \u0645\u0635\u0631\u062d \u0628\u0647\u0627
+-- REVOKE \u0635\u0631\u064a\u062d \u0644\u0644\u062a\u0623\u0643\u062f \u0645\u0646 \u0639\u062f\u0645 \u0648\u062c\u0648\u062f \u0623\u064a GRANT \u0633\u0627\u0628\u0642
+REVOKE ALL ON FUNCTION public.process_late_return_clawback(UUID) FROM authenticated, anon, PUBLIC;
+
+-- \u2718 trg_protect_committed_target_config: trigger function \u2014 \u0644\u0627 \u064a\u062c\u0628 \u0623\u0646 \u062a\u064f\u0633\u062a\u062f\u0639\u0649 \u0645\u0628\u0627\u0634\u0631\u0629
+-- \u064a\u0633\u062a\u062f\u0639\u064a\u0647\u0627 PostgreSQL \u062a\u0644\u0642\u0627\u0626\u064a\u0627\u064b \u0639\u0628\u0631 \u0627\u0644\u0640 triggers \u0641\u0642\u0637
+REVOKE ALL ON FUNCTION public.trg_protect_committed_target_config() FROM authenticated, anon, PUBLIC;
+
+-- \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+-- target_payout_clawbacks: internal audit table \u2014 RLS \u0641\u0642\u0637
+-- \u2718 \u0644\u0627 INSERT \u0645\u0646 \u0627\u0644\u0639\u0645\u064a\u0644 \u2014 \u0627\u0644\u0643\u062a\u0627\u0628\u0629 \u062a\u062a\u0645 \u062d\u0635\u0631\u0627\u064b \u0639\u0628\u0631 process_late_return_clawback (SECURITY DEFINER)
+-- \u2714 SELECT \u0645\u062a\u0627\u062d \u0644\u0645\u0646 \u0644\u062f\u064a\u0647 hr.payroll.read \u0641\u0642\u0637
+-- \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+
+ALTER TABLE public.target_payout_clawbacks ENABLE ROW LEVEL SECURITY;
+
+-- revoke صريح لأن GRANT SELECT وحده لا يزيل grants قديمة من تشغيلات سابقة
+REVOKE ALL ON TABLE public.target_payout_clawbacks FROM authenticated, anon, PUBLIC;
+
+-- \u0642\u0631\u0627\u0621\u0629 \u0641\u0642\u0637: hr.payroll.read \u0623\u0648 hr.adjustments.read
+DROP POLICY IF EXISTS clawback_select ON public.target_payout_clawbacks;
+CREATE POLICY clawback_select ON public.target_payout_clawbacks
+  FOR SELECT TO authenticated
+  USING (
+    check_permission(auth.uid(), 'hr.payroll.read')
+    OR check_permission(auth.uid(), 'hr.adjustments.read')
+    OR check_permission(auth.uid(), 'targets.view')
+  );
+
+-- \u0644\u0627 \u0633\u064a\u0627\u0633\u0629 INSERT \u2014 \u0627\u0644\u0643\u062a\u0627\u0628\u0629 \u0645\u0646 SECURITY DEFINER \u0641\u0642\u0637 (process_late_return_clawback)
+
+-- SELECT \u0641\u0642\u0637 \u0644\u0640 authenticated (RLS \u062a\u0641\u0644\u062a\u0631 \u0645\u0627 \u0633\u0648\u0627\u0647\u0627)
+GRANT SELECT ON public.target_payout_clawbacks TO authenticated;
+
+-- \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+-- \u0646\u0647\u0627\u064a\u0629 22c_target_payouts.sql (v4 \u2014 Security Closure)
+-- \u0644\u0627 GRANT \u0644\u0640 process_late_return_clawback \u2014 internal trigger only
+-- \u0644\u0627 INSERT \u0639\u0644\u0649 target_payout_clawbacks \u2014 SECURITY DEFINER \u062d\u0635\u0631\u0627\u064b
+-- target_payout_clawbacks \u062a\u062d\u062a RLS \u0628\u0633\u064a\u0627\u0633\u0629 SELECT \u0644\u0640 hr.payroll.read
+-- \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550

@@ -309,6 +309,12 @@ BEGIN
       END IF;
     END IF;
 
+    -- \u2554\u2550 Clawback \u2550\u2557
+    -- \u0628\u0639\u062f recalc \u0627\u0644\u062a\u0642\u062f\u0645: \u0641\u062d\u0635 committed payouts \u0627\u0644\u0645\u062a\u0623\u062b\u0631\u0629
+    -- \u0648\u0625\u0646\u0634\u0627\u0621 deduction \u0641\u064a \u0623\u0648\u0644 \u0641\u062a\u0631\u0629 \u0631\u0648\u0627\u062a\u0628 \u0645\u0641\u062a\u0648\u062d\u0629 \u0625\u0646 \u0648\u062c\u062f \u0641\u0631\u0642
+    -- idempotent: UNIQUE(payout_id, source_return_id) \u064a\u0645\u0646\u0639 \u0627\u0644\u062a\u0643\u0631\u0627\u0631
+    PERFORM public.process_late_return_clawback(NEW.id);
+
   END IF;
 
   RETURN NEW;
