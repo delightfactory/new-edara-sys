@@ -397,7 +397,7 @@ import {
   getEmployees, getEmployee, getCurrentEmployeeRecord,
   getDepartments, getPositions,
   getWorkLocations,
-  getLeaveTypes, getLeaveBalances, getLeaveRequests,
+  getLeaveTypes, createLeaveType, updateLeaveType, getLeaveBalances, getLeaveRequests,
   createLeaveRequest, updateLeaveRequestStatus,
   getAdvances, requestAdvance, disburseAdvance, updateAdvanceStatus,
   getPayrollRuns, getPayrollLines, getPayrollPeriods,
@@ -436,10 +436,10 @@ export function useHRDepartments(onlyActive = true) {
   })
 }
 
-export function useHRPositions(departmentId?: string) {
+export function useHRPositions(departmentId?: string, onlyActive = true) {
   return useQuery({
-    queryKey: ['hr-positions', departmentId],
-    queryFn: () => getPositions(departmentId),
+    queryKey: ['hr-positions', departmentId, onlyActive],
+    queryFn: () => getPositions(departmentId, onlyActive),
     staleTime: REF_STALE,
   })
 }
@@ -452,10 +452,10 @@ export function useHRWorkLocations() {
   })
 }
 
-export function useHRLeaveTypes() {
+export function useHRLeaveTypes(onlyActive = true) {
   return useQuery({
-    queryKey: ['hr-leave-types'],
-    queryFn: () => getLeaveTypes(true),
+    queryKey: ['hr-leave-types', onlyActive],
+    queryFn: () => getLeaveTypes(onlyActive),
     staleTime: REF_STALE,
   })
 }
@@ -1215,6 +1215,29 @@ export function useUpdateCallPlanItem() {
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ['call-plan', vars.planId] })
       qc.invalidateQueries({ queryKey: ['call-plan-items', vars.planId] })
+    },
+  })
+}
+
+// ── Leave Types Mutations ─────────────────────────────────────
+
+export function useCreateLeaveType() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: createLeaveType,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['hr-leave-types'] })
+    },
+  })
+}
+
+export function useUpdateLeaveType() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: Parameters<typeof updateLeaveType>[1] }) =>
+      updateLeaveType(id, input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['hr-leave-types'] })
     },
   })
 }

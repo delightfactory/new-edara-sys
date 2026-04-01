@@ -11,7 +11,7 @@ import type {
   HRAttendanceDay, HRAttendanceDayInput,
   HRAttendanceLog,
   HRPublicHoliday, HRPublicHolidayInput,
-  HRLeaveType, HRLeaveBalance, HRLeaveRequest, HRLeaveRequestInput,
+  HRLeaveType, HRLeaveTypeInput, HRLeaveBalance, HRLeaveRequest, HRLeaveRequestInput,
   HRPermissionRequest, HRPermissionRequestInput,
   HRPenaltyRule, HRPenaltyInstance,
   HRPayrollPeriod, HRPayrollPeriodInput, HRPayrollRun, HRPayrollRunInput, HRPayrollLine,
@@ -88,13 +88,15 @@ export async function deleteDepartment(id: string) {
 // POSITIONS — المسميات الوظيفية
 // ─────────────────────────────────────────────────────────────
 
-export async function getPositions(departmentId?: string) {
+export async function getPositions(departmentId?: string, onlyActive = true) {
   let query = supabase
     .from('hr_positions')
     .select('*, department:hr_departments(id, name)')
-    .eq('is_active', true)
     .order('name')
+  
+  if (onlyActive) query = query.eq('is_active', true)
   if (departmentId) query = query.eq('department_id', departmentId)
+  
   const { data, error } = await query
   if (error) throw error
   return data as HRPosition[]
@@ -586,6 +588,27 @@ export async function getLeaveTypes(onlyActive = true) {
   const { data, error } = await query
   if (error) throw error
   return data as HRLeaveType[]
+}
+
+export async function createLeaveType(input: HRLeaveTypeInput) {
+  const { data, error } = await supabase
+    .from('hr_leave_types')
+    .insert(input)
+    .select()
+    .single()
+  if (error) throw error
+  return data as HRLeaveType
+}
+
+export async function updateLeaveType(id: string, input: Partial<HRLeaveTypeInput>) {
+  const { data, error } = await supabase
+    .from('hr_leave_types')
+    .update(input)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data as HRLeaveType
 }
 
 export async function getLeaveBalances(employeeId: string, year?: number) {

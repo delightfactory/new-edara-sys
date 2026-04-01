@@ -9,6 +9,7 @@ import {
   useHRLeaveTypes,
   useCreateLeaveRequest,
   useCurrentEmployee,
+  useHREmployee,
   useHRLeaveBalances,
 } from '@/hooks/useQueryHooks'
 import type { HRLeaveRequestInput } from '@/lib/types/hr'
@@ -89,6 +90,10 @@ export default function LeaveRequestForm({ open, onClose, employeeId: externalEm
   const { data: currentEmployee } = useCurrentEmployee()
   const resolvedEmpId = externalEmpId ?? currentEmployee?.id ?? ''
 
+  // X2: Fetch Context
+  const { data: targetEmployee } = useHREmployee(resolvedEmpId || null)
+  const employeeGender = targetEmployee?.gender
+
   const [leaveTypeId, setLeaveTypeId] = useState('')
   const [startDate,   setStartDate]   = useState('')
   const [endDate,     setEndDate]     = useState('')
@@ -110,9 +115,22 @@ export default function LeaveRequestForm({ open, onClose, employeeId: externalEm
   }, [open])
 
   const { data: leaveTypes = [], isLoading: typesLoading } = useHRLeaveTypes()
+  
+  // X2: Context-Aware Filtering Model
+  const applicableLeaveTypes = leaveTypes.filter(t => {
+    // 1- Always allow universal rules
+    if (!t.eligible_gender || t.eligible_gender === 'all') return true
+    
+    // 2- If context is missing, be graceful and do NOT show targeted types
+    if (!employeeGender) return false
+    
+    // 3- Matching rules
+    return t.eligible_gender === employeeGender
+  })
+
   const createMutation = useCreateLeaveRequest()
 
-  const selectedType = leaveTypes.find(t => t.id === leaveTypeId)
+  const selectedType = applicableLeaveTypes.find(t => t.id === leaveTypeId)
   const requiresDoc  = selectedType?.requires_document ?? false
 
   const handleSubmit = async () => {
@@ -206,7 +224,7 @@ export default function LeaveRequestForm({ open, onClose, employeeId: externalEm
             disabled={typesLoading || isSubmitting}
           >
             <option value="">اختر نوع الإجازة...</option>
-            {leaveTypes.map(t => (
+            {applicableLeaveTypes.map(t => (
               <option key={t.id} value={t.id}>
                 {t.name}
                 {!t.is_paid ? ' (بدون أجر)' : ''}
@@ -214,6 +232,13 @@ export default function LeaveRequestForm({ open, onClose, employeeId: externalEm
               </option>
             ))}
           </select>
+
+          {!employeeGender && resolvedEmpId && (
+            <div className="lf-notice" style={{ marginTop: 'var(--space-2)' }}>
+              <AlertCircle size={13} style={{ flexShrink: 0, marginTop: 1, color: 'var(--color-warning)' }} />
+              <span><strong>تنبيه: </strong>بيانات الموظف غير مكتملة (الجنس غير محدد). تُعرض الإجازات المتاحة للجميع فقط. لتوسيع الخيارات، يجب تحديد الجنس في ملف الموظف.</span>
+            </div>
+          )}
 
           {/* نوع الإجازة chips */}
           {selectedType && (

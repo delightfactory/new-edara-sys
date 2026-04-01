@@ -468,8 +468,27 @@ export interface HRLeaveType {
   can_carry_forward: boolean
   affects_salary: boolean           // يؤثر على الراتب (بدون أجر)
   is_system: boolean                // لا يمكن حذفه
+  eligible_gender: 'all' | 'male' | 'female'
   is_active: boolean
   created_at: string
+}
+
+export interface HRLeaveTypeInput {
+  name: string
+  name_en?: string | null
+  code: string
+  max_days_per_year?: number | null
+  max_days_per_request?: number | null
+  is_paid?: boolean
+  has_balance?: boolean
+  deducts_from_balance?: boolean
+  requires_approval?: boolean
+  approval_levels?: 1 | 2
+  requires_document?: boolean
+  can_carry_forward?: boolean
+  affects_salary?: boolean
+  eligible_gender?: 'all' | 'male' | 'female'
+  is_active?: boolean
 }
 
 // ─────────────────────────────────────────────────────────────

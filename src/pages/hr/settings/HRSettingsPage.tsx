@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react'
 import {
   Settings, Building2, Briefcase, MapPin, Calendar, AlertTriangle,
-  Plus, Edit2, Check, X, Save, ToggleLeft, ToggleRight, Trash2,
+  Plus, Edit2, Check, X, Save, ToggleLeft, ToggleRight, Trash2, BookOpen
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { getSettings, updateSettings } from '@/lib/services/settings'
 import {
   getDepartments, createDepartment, updateDepartment,
-  getPositions,   createPosition,
+  getPositions,   createPosition,   updatePosition,
   getWorkLocations, createWorkLocation, updateWorkLocation,
   getPublicHolidays, createPublicHoliday, deletePublicHoliday,
   getPenaltyRules,
@@ -19,7 +19,9 @@ import type {
   HRWorkLocation, HRWorkLocationInput,
   HRPublicHoliday, HRPublicHolidayInput,
   HRPenaltyRule,
+  HRLeaveType, HRLeaveTypeInput,
 } from '@/lib/types/hr'
+import { useHRLeaveTypes, useCreateLeaveType, useUpdateLeaveType } from '@/hooks/useQueryHooks'
 import PageHeader from '@/components/shared/PageHeader'
 import DataTable from '@/components/shared/DataTable'
 import DataCard from '@/components/ui/DataCard'
@@ -30,7 +32,7 @@ import Badge from '@/components/ui/Badge'
 import PermissionGuard from '@/components/shared/PermissionGuard'
 
 // ─── Tab types ──────────────────────────────
-type Tab = 'settings' | 'departments' | 'positions' | 'locations' | 'holidays' | 'penalties'
+type Tab = 'settings' | 'departments' | 'positions' | 'locations' | 'holidays' | 'penalties' | 'leave-types'
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'settings',    label: 'إعدادات HR',         icon: <Settings size={15} /> },
@@ -39,6 +41,7 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'locations',   label: 'مواقع الحضور GPS',   icon: <MapPin size={15} /> },
   { id: 'holidays',    label: 'العطل الرسمية',       icon: <Calendar size={15} /> },
   { id: 'penalties',   label: 'قواعد الجزاءات',     icon: <AlertTriangle size={15} /> },
+  { id: 'leave-types', label: 'أنواع الإجازات',       icon: <BookOpen size={15} /> },
 ]
 
 // ─── HR setting keys — مجمّعة بفئات ────────────────────────
@@ -363,7 +366,7 @@ function PositionsTab() {
   const qc = useQueryClient()
   const { data: positions = [], isLoading } = useQuery({
     queryKey: ['hr-positions-all'],
-    queryFn: () => getPositions(),
+    queryFn: () => getPositions(undefined, false),
   })
   const { data: departments = [] } = useQuery({
     queryKey: ['hr-departments'],
@@ -371,7 +374,21 @@ function PositionsTab() {
   })
 
   const [adding, setAdding] = useState(false)
+  const [editing, setEditing] = useState<HRPosition | null>(null)
   const [form, setForm] = useState<HRPositionInput>({ name: '', is_field: false, is_active: true })
+
+  const startEdit = (p: HRPosition) => {
+    setEditing(p)
+    setAdding(false)
+    setForm({
+      name: p.name,
+      name_en: p.name_en,
+      department_id: p.department_id,
+      grade: p.grade,
+      is_field: p.is_field,
+      is_active: p.is_active
+    })
+  }
 
   const createMut = useMutation({
     mutationFn: () => createPosition(form),
@@ -379,15 +396,29 @@ function PositionsTab() {
     onError: (e: Error) => toast.error(e.message),
   })
 
+  const updateMut = useMutation({
+    mutationFn: (args: { id: string, input: Partial<HRPositionInput> }) => updatePosition(args.id, args.input),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['hr-positions-all'] }); qc.invalidateQueries({ queryKey: ['hr-positions'] }); setEditing(null); toast.success('تم تحديث المسمى') },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const handleToggleActive = (p: HRPosition) => {
+    const confirmMsg = p.is_active ? 'هل أنت متأكد من تعطيل هذا المسمى؟ لن يظهر في القوائم.' : 'هل أنت متأكد من إعادة تفعيل هذا المسمى؟'
+    if (!window.confirm(confirmMsg)) return
+    updateMut.mutate({ id: p.id, input: { is_active: !p.is_active } }, {
+      onSuccess: () => toast.success(p.is_active ? 'تم التعطيل' : 'تم التفعيل')
+    })
+  }
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--space-4)' }}>
-        <Button icon={<Plus size={15} />} onClick={() => setAdding(true)}>مسمى جديد</Button>
+        <Button icon={<Plus size={15} />} onClick={() => { setAdding(true); setEditing(null); setForm({ name: '', is_field: false, is_active: true }) }}>مسمى جديد</Button>
       </div>
 
-      {adding && (
+      {(adding || editing) && (
         <div className="form-card">
-          <div className="form-card-title">إضافة مسمى وظيفي</div>
+          <div className="form-card-title">{adding ? 'إضافة مسمى وظيفي' : 'تعديل المسمى الوظيفي'}</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
             <Input label="المسمى الوظيفي" required value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
             <Input label="بالإنجليزية" value={form.name_en ?? ''} onChange={e => setForm(p => ({ ...p, name_en: e.target.value || null }))} />
@@ -397,12 +428,12 @@ function PositionsTab() {
               onChange={e => setForm(p => ({ ...p, grade: e.target.value ? Number(e.target.value) : null }))} />
           </div>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 'var(--space-3)', fontSize: 'var(--text-sm)', cursor: 'pointer' }}>
-            <input type="checkbox" checked={form.is_field ?? false} onChange={e => setForm(p => ({ ...p, is_field: e.target.checked }))} />
+            <input type="checkbox" checked={form.is_field ?? false} onChange={e => setForm(p => ({ ...p, is_field: e.target.checked }))} disabled={createMut.isPending || updateMut.isPending} />
             وظيفة ميدانية (مندوب / سائق)
           </label>
           <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-3)' }}>
-            <Button size="sm" icon={<Check size={14} />} onClick={() => createMut.mutate()} loading={createMut.isPending}>حفظ</Button>
-            <Button size="sm" variant="secondary" icon={<X size={14} />} onClick={() => setAdding(false)}>إلغاء</Button>
+            <Button size="sm" icon={<Check size={14} />} onClick={() => adding ? createMut.mutate() : updateMut.mutate({ id: editing!.id, input: form })} loading={createMut.isPending || updateMut.isPending}>حفظ</Button>
+            <Button size="sm" variant="secondary" icon={<X size={14} />} onClick={() => { setAdding(false); setEditing(null) }}>إلغاء</Button>
           </div>
         </div>
       )}
@@ -413,16 +444,34 @@ function PositionsTab() {
             { key: 'pos', label: 'المسمى الوظيفي', render: (p: any) => <div><strong>{p.name}</strong>{p.name_en && <span style={{ color: 'var(--text-muted)', marginRight: 8, fontSize: 'var(--text-xs)' }}>{p.name_en}</span>}</div> },
             { key: 'dept', label: 'القسم', render: (p: any) => p.department?.name ?? '—' },
             { key: 'type', label: 'النوع', render: (p: any) => <Badge variant={p.is_field ? 'info' : 'neutral'}>{p.is_field ? 'ميداني' : 'مكتبي'}</Badge> },
-            { key: 'status', label: 'الحالة', render: (p: any) => <Badge variant={p.is_active ? 'success' : 'neutral'}>{p.is_active ? 'نشط' : 'موقوف'}</Badge> }
+            { key: 'status', label: 'الحالة', render: (p: any) => (
+              <button 
+                onClick={() => handleToggleActive(p)} 
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                title="انقر للتبديل"
+              >
+                <Badge variant={p.is_active ? 'success' : 'neutral'}>{p.is_active ? 'نشط' : 'موقوف'}</Badge>
+              </button>
+            ) },
+            { key: 'actions', label: '', align: 'end', render: (p: any) => <Button size="sm" variant="ghost" icon={<Edit2 size={13} />} onClick={() => startEdit(p)}>تعديل</Button> }
           ]}
           data={positions}
           keyField="id"
           dataCardMapping={(p: any) => ({
             title: p.name,
             subtitle: p.department?.name ?? 'بدون قسم',
-            badge: <Badge variant={p.is_active ? 'success' : 'neutral'}>{p.is_active ? 'نشط' : 'موقوف'}</Badge>,
-            metadata: [{ label: 'النوع', value: p.is_field ? 'ميداني' : 'مكتبي' }]
+            badge: (
+              <button 
+                onClick={(e) => { e.stopPropagation(); handleToggleActive(p); }} 
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              >
+                <Badge variant={p.is_active ? 'success' : 'neutral'}>{p.is_active ? 'نشط' : 'موقوف'}</Badge>
+              </button>
+            ),
+            metadata: [{ label: 'النوع', value: p.is_field ? 'ميداني' : 'مكتبي' }],
+            actions: <Button size="sm" variant="secondary" onClick={() => startEdit(p)} style={{ width: '100%', justifyContent: 'center' }}><Edit2 size={13} style={{ marginInlineEnd: 4 }} /> تعديل</Button>
           })}
+
         />
       )}
     </div>
@@ -815,6 +864,185 @@ function PenaltyRulesTab() {
 }
 
 // ════════════════════════════════════════════
+// TAB: Leave Types
+// ════════════════════════════════════════════
+function LeaveTypesTab() {
+  const { data: leaveTypes = [], isLoading } = useHRLeaveTypes(false) // Fetch ALL (active + inactive)
+  const createMut = useCreateLeaveType()
+  const updateMut = useUpdateLeaveType()
+
+  const [adding, setAdding] = useState(false)
+  const [editing, setEditing] = useState<HRLeaveType | null>(null)
+
+  const EMPTY: HRLeaveTypeInput = {
+    name: '',
+    name_en: null,
+    code: '',
+    max_days_per_year: null,
+    max_days_per_request: null,
+    is_paid: true,
+    has_balance: false,
+    deducts_from_balance: false,
+    requires_approval: true,
+    requires_document: false,
+    can_carry_forward: false,
+    affects_salary: false,
+    eligible_gender: 'all',
+    is_active: true
+  }
+  const [form, setForm] = useState<HRLeaveTypeInput>(EMPTY)
+
+  const startEdit = (lt: HRLeaveType) => {
+    if (lt.is_system) { toast.error('هذا النوع مستخدم بالنظام ولا يمكن تعديله'); return }
+    setEditing(lt)
+    setForm({
+      name: lt.name,
+      name_en: lt.name_en,
+      code: lt.code,
+      max_days_per_year: lt.max_days_per_year,
+      max_days_per_request: lt.max_days_per_request,
+      is_paid: lt.is_paid,
+      has_balance: lt.has_balance,
+      deducts_from_balance: lt.deducts_from_balance,
+      requires_approval: lt.requires_approval,
+      requires_document: lt.requires_document,
+      can_carry_forward: lt.can_carry_forward,
+      affects_salary: lt.affects_salary,
+      eligible_gender: lt.eligible_gender || 'all',
+      is_active: lt.is_active
+    })
+  }
+
+  const setF = (k: keyof HRLeaveTypeInput) => (v: string | number | boolean | null) => setForm(p => ({ ...p, [k]: v }))
+
+  const handleSave = () => {
+    if (!form.name.trim()) { toast.error('يجب إدخال اسم نوع الإجازة'); return }
+    if (adding) {
+      createMut.mutate(form, {
+        onSuccess: () => { setAdding(false); setForm(EMPTY); toast.success('تمت إضافة النوع بنجاح') },
+        onError: (e: Error) => toast.error(e.message)
+      })
+    } else if (editing) {
+      updateMut.mutate({ id: editing.id, input: form }, {
+        onSuccess: () => { setEditing(null); toast.success('تم تحديث النوع بنجاح') },
+        onError: (e: Error) => toast.error(e.message)
+      })
+    }
+  }
+
+  const handleToggleActive = (lt: HRLeaveType) => {
+    if (lt.is_system) { toast.error('هذا نوع محمي بالنظام، لا يمكن تعطيله'); return }
+    const confirmMsg = lt.is_active ? 'هل أنت متأكد من تعطيل هذا النوع؟ لن يظهر للموظفين.' : 'هل أنت متأكد من إعادة تفعيل هذا النوع؟'
+    if (!window.confirm(confirmMsg)) return
+    updateMut.mutate({ id: lt.id, input: { is_active: !lt.is_active } }, {
+      onSuccess: () => toast.success(lt.is_active ? 'تم التعطيل' : 'تم التفعيل'),
+      onError: (e: Error) => toast.error(e.message)
+    })
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--space-4)' }}>
+        <Button icon={<Plus size={15} />} onClick={() => { setAdding(true); setEditing(null); setForm(EMPTY) }}>نوع جديد</Button>
+      </div>
+
+      {(adding || editing) && (
+        <div className="form-card">
+          <div className="form-card-title">{adding ? 'إضافة نوع إجازة' : 'تعديل نوع الإجازة'}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-3)' }}>
+            <Input label="الاسم *" required value={form.name} onChange={e => setF('name')(e.target.value)} disabled={createMut.isPending || updateMut.isPending} />
+            <Input label="الاسم E" value={form.name_en ?? ''} onChange={e => setF('name_en')(e.target.value || null)} disabled={createMut.isPending || updateMut.isPending} />
+            <Input label="الكود (اختياري)" value={form.code ?? ''} onChange={e => setF('code')(e.target.value)} disabled={createMut.isPending || updateMut.isPending} placeholder="ANNUAL" dir="ltr" />
+            <Input type="number" label="أقصى أيام بالسنة" value={form.max_days_per_year?.toString() ?? ''} onChange={e => setF('max_days_per_year')(e.target.value ? Number(e.target.value) : null)} disabled={createMut.isPending || updateMut.isPending} placeholder="لا نهائي إذا فارغ" />
+            <Input type="number" label="أقصى أيام بالطلب" value={form.max_days_per_request?.toString() ?? ''} onChange={e => setF('max_days_per_request')(e.target.value ? Number(e.target.value) : null)} disabled={createMut.isPending || updateMut.isPending} placeholder="لا نهائي إذا فارغ" />
+            <Select label="مخصصة لجنس (Gender)" value={form.eligible_gender ?? 'all'} onChange={e => setF('eligible_gender')(e.target.value)} disabled={createMut.isPending || updateMut.isPending}>
+              <option value="all">متاحة للجميع (All)</option>
+              <option value="male">ذكور فقط (Male)</option>
+              <option value="female">إناث فقط (Female)</option>
+            </Select>
+          </div>
+
+          <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap', marginTop: 'var(--space-4)', padding: 'var(--space-3)', background: 'var(--bg-surface-1)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-xs)', cursor: 'pointer' }}>
+              <input type="checkbox" checked={form.is_paid ?? true} onChange={e => setF('is_paid')(e.target.checked)} disabled={createMut.isPending || updateMut.isPending} />
+              مدفوعة الأجر 💰
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-xs)', cursor: 'pointer' }}>
+              <input type="checkbox" checked={form.has_balance ?? false} onChange={e => setF('has_balance')(e.target.checked)} disabled={createMut.isPending || updateMut.isPending} />
+              تحتاج رصيد 📉
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-xs)', cursor: 'pointer' }}>
+              <input type="checkbox" checked={form.deducts_from_balance ?? false} onChange={e => setF('deducts_from_balance')(e.target.checked)} disabled={createMut.isPending || updateMut.isPending} />
+              تخصم من الرصيد ✂️
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-xs)', cursor: 'pointer' }}>
+              <input type="checkbox" checked={form.requires_document ?? false} onChange={e => setF('requires_document')(e.target.checked)} disabled={createMut.isPending || updateMut.isPending} />
+              تشترط مستند 📄
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-xs)', cursor: 'pointer' }}>
+              <input type="checkbox" checked={form.affects_salary ?? false} onChange={e => setF('affects_salary')(e.target.checked)} disabled={createMut.isPending || updateMut.isPending} />
+              تخصم من الراتب (بدون أجر) 🚫
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-xs)', cursor: 'pointer' }}>
+              <input type="checkbox" checked={form.requires_approval ?? true} onChange={e => setF('requires_approval')(e.target.checked)} disabled={createMut.isPending || updateMut.isPending} />
+              تتطلب موافقة 📝
+            </label>
+          </div>
+
+          <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-4)' }}>
+            <Button size="sm" icon={<Check size={14} />} onClick={handleSave} loading={createMut.isPending || updateMut.isPending}>حفظ</Button>
+            <Button size="sm" variant="secondary" icon={<X size={14} />} onClick={() => { setAdding(false); setEditing(null) }}>إلغاء</Button>
+          </div>
+        </div>
+      )}
+
+      {isLoading ? <div className="settings-loading">جارٍ التحميل...</div> : (
+        <DataTable
+          columns={[
+            { key: 'name', label: 'النوع', render: (l: HRLeaveType) => <div><strong style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>{l.name} {l.is_system && <span title="محمي بالنظام">🔒</span>}</strong>{l.name_en && <span style={{ color: 'var(--text-muted)', fontSize: '11px', display: 'block' }}>{l.name_en}</span>}</div> },
+            { key: 'code', label: 'الكود', render: (l: HRLeaveType) => <code style={{ fontSize: '11px' }}>{l.code || '—'}</code> },
+            { key: 'properties', label: 'الخصائص', render: (l: HRLeaveType) => (
+              <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                {l.is_paid && <Badge variant="success">مدفوعة</Badge>}
+                {l.affects_salary && <Badge variant="danger">مقطوعة</Badge>}
+                {l.has_balance && <Badge variant="info">برصيد</Badge>}
+                {l.requires_document && <Badge variant="warning">مستند</Badge>}
+                {l.eligible_gender === 'male' && <Badge variant="info">ذكور فقط</Badge>}
+                {l.eligible_gender === 'female' && <Badge variant="danger">إناث فقط</Badge>}
+              </div>
+            ) },
+            { key: 'status', label: 'الحالة', render: (l: HRLeaveType) => (
+              <button 
+                onClick={() => handleToggleActive(l)} 
+                disabled={l.is_system}
+                style={{ background: 'none', border: 'none', cursor: l.is_system ? 'not-allowed' : 'pointer', opacity: l.is_system ? 0.7 : 1, padding: 0 }}
+                title={l.is_system ? "لا يمكن تعطيله" : "انقر للتبديل"}
+              >
+                <Badge variant={l.is_active ? 'success' : 'neutral'}>{l.is_active ? 'نشط' : 'موقوف'}</Badge>
+              </button>
+            ) },
+            { key: 'actions', label: '', align: 'end', render: (l: HRLeaveType) => l.is_system ? null : <Button size="sm" variant="ghost" icon={<Edit2 size={13} />} onClick={() => startEdit(l)}>تعديل</Button> }
+          ]}
+          data={leaveTypes}
+          keyField="id"
+          dataCardMapping={(l: HRLeaveType) => ({
+            title: <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>{l.name} {l.is_system && <span title="محمي بالنظام">🔒</span>}</div>,
+            subtitle: l.name_en,
+            badge: <Badge variant={l.is_active ? 'success' : 'neutral'}>{l.is_active ? 'نشط' : 'موقوف'}</Badge>,
+            metadata: [
+              { label: 'مدفوعة', value: l.is_paid ? 'نعم' : 'لا' },
+              { label: 'برصيد', value: l.has_balance ? 'نعم' : 'لا' },
+              ...(l.eligible_gender && l.eligible_gender !== 'all' ? [{ label: 'مخصصة لـ', value: l.eligible_gender === 'male' ? 'ذكور فقط' : 'إناث فقط' }] : [])
+            ],
+            actions: l.is_system ? undefined : <Button size="sm" variant="secondary" onClick={() => startEdit(l)} style={{ width: '100%', justifyContent: 'center' }}><Edit2 size={13} style={{ marginInlineEnd: 4 }} /> تعديل</Button>
+          })}
+        />
+      )}
+    </div>
+  )
+}
+
+// ════════════════════════════════════════════
 // Main Page
 // ════════════════════════════════════════════
 export default function HRSettingsPage() {
@@ -855,6 +1083,7 @@ export default function HRSettingsPage() {
           {activeTab === 'locations'   && <LocationsTab />}
           {activeTab === 'holidays'    && <HolidaysTab />}
           {activeTab === 'penalties'   && <PenaltyRulesTab />}
+          {activeTab === 'leave-types' && <LeaveTypesTab />}
         </PermissionGuard>
       </div>
 
