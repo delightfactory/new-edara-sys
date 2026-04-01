@@ -31,11 +31,13 @@ const fmtTime = (t: string) => {
 export default function PermissionsPage() {
   const qc = useQueryClient()
   const can     = useAuthStore(s => s.can)
+  const canAny  = useAuthStore(s => s.canAny)
   const { data: currentEmp } = useCurrentEmployee()
 
-  const isManager = can('hr.attendance.approve')
+  const isManager = canAny(['hr.permissions.approve', 'hr.attendance.approve'])
 
   // State
+  const [activeTab, setActiveTab] = useState<'my_requests' | 'team_approvals'>(isManager ? 'team_approvals' : 'my_requests')
   const [formOpen, setFormOpen] = useState(false)
   const [rejectId, setRejectId] = useState<string | null>(null)
   const [rejectReason, setRejectReason] = useState('')
@@ -55,11 +57,11 @@ export default function PermissionsPage() {
 
   // Queries
   const { data: requests = [], isLoading } = useQuery({
-    queryKey: ['hr-permission-requests', isManager ? 'all' : currentEmp?.id],
+    queryKey: ['hr-permission-requests', activeTab, currentEmp?.id],
     queryFn: () => getPermissionRequests(
-      isManager ? undefined : { employeeId: currentEmp?.id }
+      activeTab === 'team_approvals' ? undefined : { employeeId: currentEmp?.id }
     ),
-    enabled: !!currentEmp || isManager,
+    enabled: !!currentEmp || activeTab === 'team_approvals',
   })
 
   const createMut = useMutation({
@@ -75,6 +77,7 @@ export default function PermissionsPage() {
       qc.invalidateQueries({ queryKey: ['hr-permission-requests'] })
       toast.success('تم تقديم طلب الإذن بنجاح ✅')
       setFormOpen(false)
+      setActiveTab('my_requests')
     },
     onError: (e: Error) => {
       console.error('[PermissionRequest] Error:', e)
@@ -107,7 +110,7 @@ export default function PermissionsPage() {
 
   // ─── Columns & DataCard Mapping ───────────────────────
   const columns = [
-    ...(isManager ? [{
+    ...(activeTab === 'team_approvals' ? [{
       key: 'employee',
       label: 'الموظف',
       render: (r: any) => <strong>{r.employee?.full_name ?? '—'}</strong>,
@@ -141,11 +144,11 @@ export default function PermissionsPage() {
       label: 'الحالة',
       render: (r: any) => <Badge variant={STATUS_VARIANT[r.status]}>{STATUS_LABEL[r.status as keyof typeof STATUS_LABEL]}</Badge>,
     },
-    {
+    ...(activeTab === 'team_approvals' ? [{
       key: 'actions',
       label: '',
       render: (r: any) => r.status === 'pending' ? (
-        <PermissionGuard permission="hr.attendance.approve">
+        <PermissionGuard permission={['hr.permissions.approve', 'hr.attendance.approve']}>
           <div style={{ display: 'flex', gap: 4 }}>
             <Button
               size="sm"
@@ -165,7 +168,7 @@ export default function PermissionsPage() {
           </div>
         </PermissionGuard>
       ) : null,
-    },
+    }] : []),
   ]
 
 
@@ -210,7 +213,7 @@ export default function PermissionsPage() {
       />
 
       {/* Pending badge */}
-      {isManager && pendingCount > 0 && (
+      {isManager && activeTab === 'team_approvals' && pendingCount > 0 && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8,
           padding: 'var(--space-3) var(--space-4)',
@@ -223,6 +226,26 @@ export default function PermissionsPage() {
           <span>
             يوجد <strong>{pendingCount}</strong> {pendingCount === 1 ? 'طلب' : 'طلبات'} بانتظار موافقتك
           </span>
+        </div>
+      )}
+
+      {/* Segmented Control for Managers */}
+      {isManager && (
+        <div style={{ display: 'flex', gap: 'var(--space-1)', marginBottom: 'var(--space-4)', padding: 'var(--space-1)', background: 'var(--bg-muted)', borderRadius: 'var(--radius-lg)', width: 'fit-content', border: '1px solid var(--border-soft)' }}>
+          <Button
+            variant={activeTab === 'team_approvals' ? 'primary' : 'ghost'}
+            size="sm"
+            onClick={() => setActiveTab('team_approvals')}
+          >
+            طلبات الفريق (للاعتماد)
+          </Button>
+          <Button
+            variant={activeTab === 'my_requests' ? 'primary' : 'ghost'}
+            size="sm"
+            onClick={() => setActiveTab('my_requests')}
+          >
+            طلباتي (الخاصة)
+          </Button>
         </div>
       )}
 
@@ -250,7 +273,7 @@ export default function PermissionsPage() {
               {requests.map(r => (
                 <DataCard
                   key={r.id}
-                  title={isManager ? (r.employee?.full_name ?? 'موظف مجهول') : 'إذن انصراف'}
+                  title={activeTab === 'team_approvals' ? (r.employee?.full_name ?? 'موظف مجهول') : 'إذن انصراف'}
                   subtitle={fmtDate(r.permission_date)}
                   badge={<Badge variant={STATUS_VARIANT[r.status]}>{STATUS_LABEL[r.status as keyof typeof STATUS_LABEL]}</Badge>}
                   leading={
@@ -268,7 +291,7 @@ export default function PermissionsPage() {
                     { label: 'السبب', value: r.reason },
                   ]}
                   actions={r.status === 'pending' ? (
-                    <PermissionGuard permission="hr.attendance.approve">
+                    <PermissionGuard permission={['hr.permissions.approve', 'hr.attendance.approve']}>
                       <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
                         <Button
                           size="sm"

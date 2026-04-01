@@ -10,7 +10,7 @@ import {
   useTargetDetail, useTargetRewardSummary, useTargetProgressHistory,
   useTargetChildren, useAdjustTarget,
   useTargetStatus, useBranches, useHREmployees, useHRDepartments,
-  useActivities,
+  useActivities, useUpdateTarget,
 } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
 import { PERMISSIONS } from '@/lib/permissions/constants'
@@ -18,7 +18,7 @@ import { toast } from 'sonner'
 import { useState, useMemo } from 'react'
 import {
   Edit2, Pause, Play, XCircle, Target, ChevronLeft,
-  TrendingUp, Clock, BarChart3, AlertCircle, MapPin, Phone, Eye, Gift
+  TrendingUp, Clock, BarChart3, AlertCircle, MapPin, Phone, Eye, Gift, Settings
 } from 'lucide-react'
 import PageHeader from '@/components/shared/PageHeader'
 import Button from '@/components/ui/Button'
@@ -69,6 +69,13 @@ export default function TargetDetail() {
   const [pauseReason, setPauseReason] = useState('')
   const [rewardEditOpen, setRewardEditOpen] = useState(false)
 
+  // ── Edit Metadata State
+  const [metaOpen, setMetaOpen]     = useState(false)
+  const [metaName, setMetaName]     = useState('')
+  const [metaDesc, setMetaDesc]     = useState('')
+  const [metaNotes, setMetaNotes]   = useState('')
+  const [metaSaving, setMetaSaving] = useState(false)
+
   // ── Data Fetching
   const { data: detailData, isLoading: detailLoading } = useTargetDetail(id)
   const { data: summaryData } = useTargetRewardSummary(id)
@@ -100,6 +107,7 @@ export default function TargetDetail() {
   const employees = useMemo(() => employeesRes?.data ?? [], [employeesRes])
 
   const adjustTarget    = useAdjustTarget()
+  const updateTarget    = useUpdateTarget()
   const canAssign       = can(PERMISSIONS.TARGETS_ASSIGN)
   // [P1 FIX] Payroll status visibility — only hr.payroll.read holders see payout status
   const canReadPayroll  = can(PERMISSIONS.HR_PAYROLL_READ)
@@ -148,6 +156,35 @@ export default function TargetDetail() {
     }
   }
 
+  const openMetaEdit = () => {
+    setMetaName(target?.name ?? '')
+    setMetaDesc(target?.description ?? '')
+    setMetaNotes(target?.notes ?? '')
+    setMetaOpen(true)
+  }
+
+  const handleSaveMeta = async () => {
+    if (!id) return
+    if (!metaName.trim()) { toast.error('اسم الهدف مطلوب'); return }
+    setMetaSaving(true)
+    try {
+      await updateTarget.mutateAsync({
+        id,
+        input: {
+          name: metaName.trim(),
+          description: metaDesc.trim() || null,
+          notes: metaNotes.trim() || null,
+        }
+      })
+      toast.success('تم تحديث بيانات الهدف بنجاح')
+      setMetaOpen(false)
+    } catch (err: any) {
+      toast.error(err?.message || 'فشل التحديث')
+    } finally {
+      setMetaSaving(false)
+    }
+  }
+
   // ── Loading / Empty state
   if (detailLoading) {
     return (
@@ -183,6 +220,9 @@ export default function TargetDetail() {
         ]}
         actions={canAssign ? (
           <div className="flex gap-2">
+            <Button icon={<Settings size={16} />} variant="secondary" onClick={openMetaEdit}>
+              تعديل البيانات
+            </Button>
             <Button icon={<Edit2 size={16} />} variant="secondary" onClick={() => setAdjustOpen(true)}>
               تعديل القيمة
             </Button>
@@ -593,7 +633,58 @@ export default function TargetDetail() {
         typeCategory={target.target_type?.category ?? ''}
       />
 
-      {/* ─── Modal: Adjust (Base Values) ─── */}
+      {/* ── Edit Metadata Modal ────────────────────────────────────────── */}
+      <ResponsiveModal
+        open={metaOpen}
+        onClose={() => setMetaOpen(false)}
+        title="تعديل بيانات الهدف"
+        disableOverlayClose={metaSaving}
+        footer={<>
+          <Button variant="secondary" onClick={() => setMetaOpen(false)} disabled={metaSaving}>إلغاء</Button>
+          <Button onClick={handleSaveMeta} disabled={metaSaving || !metaName.trim()}>
+            {metaSaving ? 'جاري الحفظ...' : 'حفظ البيانات'}
+          </Button>
+        </>}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <div className="form-group">
+            <label className="form-label">اسم الهدف <span className="form-required">*</span></label>
+            <input
+              className="form-input"
+              value={metaName}
+              onChange={e => setMetaName(e.target.value)}
+              placeholder="مثال: هدف مبيعات القاهرة"
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">الوصف التفصيلي</label>
+            <textarea
+              className="form-textarea"
+              rows={3}
+              value={metaDesc}
+              onChange={e => setMetaDesc(e.target.value)}
+              placeholder="وصف الهدف الذي يظهر للموظف..."
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">ملاحظات داخلية (للمديرين فقط)</label>
+            <textarea
+              className="form-textarea"
+              rows={2}
+              value={metaNotes}
+              onChange={e => setMetaNotes(e.target.value)}
+              placeholder="أي ملاحظات لن تظهر للموظف..."
+            />
+          </div>
+          {/* Locked fields warning */}
+          <div style={{ marginTop: 'var(--space-2)', padding: 'var(--space-3)', background: 'var(--bg-surface-2)', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+            <span style={{ fontWeight: 600, display: 'block', marginBottom: 'var(--space-1)' }}>حقول مقفلة:</span>
+            لحماية حسابات التقدم (Progress)، لا يمكن تعديل (القيم، نوع الهدف، المنتجات، الفروع) من هذه الشاشة بعد الإنشاء. لتعديل القيم المؤثرة، استخدم زر "تعديل القيمة" في أعلى الصفحة.
+          </div>
+        </div>
+      </ResponsiveModal>
+
+      {/* ── Adjust Value Modal ───────────────────────────────────────── */}
       <ResponsiveModal
         open={adjustOpen}
         onClose={() => setAdjustOpen(false)}

@@ -50,6 +50,11 @@ import {
   saveChecklistResponses,
   deleteVisitPlanItem, deleteCallPlanItem,
   reorderVisitPlanItems, reorderCallPlanItems,
+  // Wave A CRUD
+  createChecklistTemplate, updateChecklistTemplate, deleteChecklistTemplate,
+  createChecklistQuestion, updateChecklistQuestion, deleteChecklistQuestion,
+  createVisitPlanTemplate, updateVisitPlanTemplate, deleteVisitPlanTemplate,
+  createCallPlanTemplate, updateCallPlanTemplate, deleteCallPlanTemplate,
 } from '@/lib/services/activities'
 import type {
   ActivityInput, CallDetailInput,
@@ -57,8 +62,9 @@ import type {
   CallPlanInput, CallPlanItemInput,
   TargetInput, AdjustTargetInput, TargetScope, TargetPeriod, TargetFilters, PayoutFilters,
   CreateTargetWithRewardsInput, TierInput, TargetCustomerInput,
-  ChecklistResponseInput,
+  ChecklistResponseInput, ChecklistTemplateInput, ChecklistQuestionInput,
 } from '@/lib/types/activities'
+import type { PlanTemplateInput } from '@/lib/services/activities'
 
 import {
   getTargets, getTargetDetail, getTargetRewardSummary, getTargetPayouts, prepareTargetRewardPayouts,
@@ -406,6 +412,7 @@ import {
   getPermissionRequests, createPermissionRequest, approvePermissionRequest, rejectPermissionRequest,
   getEmployeeSalaryHistory, createContract, getContracts,
   getPayrollAdjustments, createPayrollAdjustment, approvePayrollAdjustment,
+  fetchMyPayslips,
 } from '@/lib/services/hr'
 import type {
   HREmployeeInput, HRDepartmentInput, HRPositionInput,
@@ -572,6 +579,13 @@ export function useHRCommissionRecords(params?: Parameters<typeof getCommissionR
   return useQuery({
     queryKey: ['hr-commission-records', params],
     queryFn: () => getCommissionRecords(params),
+  })
+}
+
+export function useMyPayslips() {
+  return useQuery({
+    queryKey: ['hr-my-payslips'],
+    queryFn: fetchMyPayslips,
   })
 }
 
@@ -844,12 +858,38 @@ export function useTargetTypes() {
   return useQuery({ queryKey: ['target-types'], queryFn: getTargetTypes, staleTime: REF_STALE })
 }
 
+// active-only — used in create forms/wizards
 export function useVisitPlanTemplates() {
-  return useQuery({ queryKey: ['visit-plan-templates'], queryFn: getVisitPlanTemplates, staleTime: REF_STALE })
+  return useQuery({
+    queryKey: ['visit-plan-templates'],
+    queryFn: () => getVisitPlanTemplates(),
+    staleTime: REF_STALE,
+  })
+}
+// admin — shows all including inactive
+export function useVisitPlanTemplatesAll() {
+  return useQuery({
+    queryKey: ['visit-plan-templates', 'all'],
+    queryFn: () => getVisitPlanTemplates({ includeInactive: true }),
+    staleTime: REF_STALE,
+  })
 }
 
+// active-only — used in create forms/wizards
 export function useCallPlanTemplates() {
-  return useQuery({ queryKey: ['call-plan-templates'], queryFn: getCallPlanTemplates, staleTime: REF_STALE })
+  return useQuery({
+    queryKey: ['call-plan-templates'],
+    queryFn: () => getCallPlanTemplates(),
+    staleTime: REF_STALE,
+  })
+}
+// admin — shows all including inactive
+export function useCallPlanTemplatesAll() {
+  return useQuery({
+    queryKey: ['call-plan-templates', 'all'],
+    queryFn: () => getCallPlanTemplates({ includeInactive: true }),
+    staleTime: REF_STALE,
+  })
 }
 
 // ── Activities Queries ────────────────────────────────────────
@@ -1265,6 +1305,7 @@ export function useAdjustTargetBatch() {
 export function useChecklistTemplates(params?: {
   category?: string
   purposeType?: string | null
+  includeInactive?: boolean
 }) {
   return useQuery({
     queryKey: ['checklist-templates', params],
@@ -1348,5 +1389,114 @@ export function useReorderCallPlanItems() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['call-plan-items'] })
     },
+  })
+}
+
+// ════════════════════════════════════════════
+// WAVE A: CHECKLIST TEMPLATE CRUD MUTATIONS
+// ════════════════════════════════════════════
+
+export function useCreateChecklistTemplate() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: ChecklistTemplateInput) => createChecklistTemplate(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['checklist-templates'] }),
+  })
+}
+
+export function useUpdateChecklistTemplate() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: Partial<ChecklistTemplateInput> }) =>
+      updateChecklistTemplate(id, input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['checklist-templates'] }),
+  })
+}
+
+export function useDeleteChecklistTemplate() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteChecklistTemplate(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['checklist-templates'] }),
+  })
+}
+
+export function useCreateChecklistQuestion() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ templateId, input }: { templateId: string; input: ChecklistQuestionInput }) =>
+      createChecklistQuestion(templateId, input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['checklist-templates'] }),
+  })
+}
+
+export function useUpdateChecklistQuestion() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: Partial<ChecklistQuestionInput> }) =>
+      updateChecklistQuestion(id, input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['checklist-templates'] }),
+  })
+}
+
+export function useDeleteChecklistQuestion() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteChecklistQuestion(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['checklist-templates'] }),
+  })
+}
+
+// ════════════════════════════════════════════
+// WAVE A: PLAN TEMPLATE CRUD MUTATIONS
+// ════════════════════════════════════════════
+
+export function useCreateVisitPlanTemplateMutation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: PlanTemplateInput) => createVisitPlanTemplate(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['visit-plan-templates'] }),
+  })
+}
+
+export function useUpdateVisitPlanTemplateMutation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: Partial<PlanTemplateInput> }) =>
+      updateVisitPlanTemplate(id, input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['visit-plan-templates'] }),
+  })
+}
+
+export function useDeleteVisitPlanTemplateMutation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteVisitPlanTemplate(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['visit-plan-templates'] }),
+  })
+}
+
+export function useCreateCallPlanTemplateMutation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: PlanTemplateInput) => createCallPlanTemplate(input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['call-plan-templates'] }),
+  })
+}
+
+export function useUpdateCallPlanTemplateMutation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: Partial<PlanTemplateInput> }) =>
+      updateCallPlanTemplate(id, input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['call-plan-templates'] }),
+  })
+}
+
+export function useDeleteCallPlanTemplateMutation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteCallPlanTemplate(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['call-plan-templates'] }),
   })
 }

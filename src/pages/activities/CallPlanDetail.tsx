@@ -4,12 +4,13 @@ import {
   useConfirmCallPlan, useCancelCallPlan,
   useAddCallPlanItem, useUpdateCallPlanItem,
   useCustomers, useCreateCallPlan,
+  useCreateCallPlanTemplateMutation,
 } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
 import { PERMISSIONS } from '@/lib/permissions/constants'
 import { toast } from 'sonner'
 import { useState } from 'react'
-import { Phone, CheckCircle, XCircle, Plus, Archive, Copy } from 'lucide-react'
+import { Phone, CheckCircle, XCircle, Plus, Archive, Copy, Save } from 'lucide-react'
 import PageHeader from '@/components/shared/PageHeader'
 import Button from '@/components/ui/Button'
 import PlanItemCard from '@/components/shared/PlanItemCard'
@@ -38,6 +39,11 @@ export default function CallPlanDetail() {
   const [cancelOpen,   setCancelOpen]   = useState(false)
   const [cancelReason, setCancelReason] = useState('')
   const [processing,   setProcessing]   = useState(false)
+
+  // ── Save as Template state
+  const [saveTmplOpen,  setSaveTmplOpen]  = useState(false)
+  const [tmplName,      setTmplName]      = useState('')
+  const [savingTmpl,    setSavingTmpl]    = useState(false)
 
   // Add item state
   const [addItemOpen,      setAddItemOpen]      = useState(false)
@@ -72,11 +78,13 @@ export default function CallPlanDetail() {
   const addPlanItem = useAddCallPlanItem()
   const updatePlanItem = useUpdateCallPlanItem()
   const createPlan  = useCreateCallPlan()
+  const saveAsTmpl  = useCreateCallPlanTemplateMutation()
 
   // Permissions
-  const canConfirm = can(PERMISSIONS.CALL_PLANS_CONFIRM) || can(PERMISSIONS.CALL_PLANS_READ_ALL)
-  const canCreate  = can(PERMISSIONS.ACTIVITIES_CREATE)
-  const canAddItem = can(PERMISSIONS.CALL_PLANS_CREATE) && plan?.status === 'draft'
+  const canConfirm   = can(PERMISSIONS.CALL_PLANS_CONFIRM) || can(PERMISSIONS.CALL_PLANS_READ_ALL)
+  const canCreate    = can(PERMISSIONS.ACTIVITIES_CREATE)
+  const canSaveTmpl  = can(PERMISSIONS.CALL_PLANS_CREATE)
+  const canAddItem   = can(PERMISSIONS.CALL_PLANS_CREATE) && plan?.status === 'draft'
 
   // Handlers
   const handleConfirm = () => {
@@ -197,6 +205,38 @@ export default function CallPlanDetail() {
     setProcessing(false)
   }
 
+  // ── Save as Template handler
+  async function handleSaveAsTemplate() {
+    if (!tmplName.trim()) { toast.error('اسم القالب مطلوب'); return }
+    if (items.length === 0) { toast.error('لا يوجد بنود في الخطة'); return }
+    setSavingTmpl(true)
+    try {
+      // Build template items from plan items
+      const tmplItems = items.map(item => ({
+        customer_id:            item.customer_id,
+        contact_name:           item.contact_name || null,
+        phone_number:           item.phone_number || null,
+        purpose_type:           item.purpose_type || null,
+        priority:               item.priority ?? 'normal',
+        estimated_duration_min: (item as any).estimated_duration_min ?? 10,
+        notes:                  null,
+        sequence:               (item as any).sequence ?? 0,
+      }))
+      await saveAsTmpl.mutateAsync({
+        name:      tmplName.trim(),
+        recurrence: 'none',
+        is_active:  true,
+        items:      tmplItems,
+      })
+      toast.success(`تم حفظ القالب "${tmplName.trim()}" بـ${items.length} بند`)
+      setSaveTmplOpen(false)
+    } catch (e: any) {
+      toast.error(e?.message || 'فشل حفظ القالب')
+    } finally {
+      setSavingTmpl(false)
+    }
+  }
+
   if (planLoading) {
     return (
       <div className="page-container animate-enter">
@@ -252,9 +292,22 @@ export default function CallPlanDetail() {
             {/* Clone Plan */}
             {canCreate && (
               <Button onClick={() => setCloneOpen(true)} variant="secondary" icon={<Copy size={16} />} className="desktop-only-btn">
-                استنساخ القائمة
+                استنساخ الخطة
               </Button>
             )}
+
+            {/* Save as Template */}
+            {canSaveTmpl && items.length > 0 && (
+              <Button
+                variant="secondary"
+                icon={<Save size={16} />}
+                className="desktop-only-btn"
+                onClick={() => { setTmplName(plan.employee?.full_name ? `خطة مبيعات ${plan.employee.full_name}` : 'قالب جديد'); setSaveTmplOpen(true) }}
+              >
+                حفظ كقالب
+              </Button>
+            )}
+
             {plan.status !== 'completed' && plan.status !== 'cancelled' && (
               <Button variant="danger" icon={<XCircle size={16} />} onClick={() => setCancelOpen(true)}>
                 إلغاء
@@ -573,6 +626,35 @@ export default function CallPlanDetail() {
           .cp-summary { grid-template-columns: repeat(2, 1fr); }
         }
       `}</style>
+
+      {/* ── Save as Template Modal ─────────────────────────────── */}
+      <ResponsiveModal
+        open={saveTmplOpen}
+        onClose={() => setSaveTmplOpen(false)}
+        title="حفظ الخطة كقالب"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <div className="form-group">
+            <label className="form-label">اسم القالب <span className="form-required">*</span></label>
+            <input
+              className="form-input"
+              value={tmplName}
+              onChange={e => setTmplName(e.target.value)}
+              placeholder="مثال: خطة اتصالات القاهرة"
+              autoFocus
+            />
+          </div>
+          <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', padding: 'var(--space-2)', background: 'rgba(0,0,0,.04)', borderRadius: 'var(--radius-md)' }}>
+            سيتم حفظ خطة {items.length} بند كقالب جديد. يمكن تحميله مجدداً عند إنشاء خطة مكالمات جديدة.
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
+            <Button variant="secondary" onClick={() => setSaveTmplOpen(false)}>إلغاء</Button>
+            <Button onClick={handleSaveAsTemplate} disabled={savingTmpl}>
+              {savingTmpl ? 'جاري الحفظ...' : 'حفظ القالب'}
+            </Button>
+          </div>
+        </div>
+      </ResponsiveModal>
     </div>
   )
 }

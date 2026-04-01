@@ -5,6 +5,7 @@ import {
   useAddVisitPlanItem, useUpdateVisitPlanItem,
   useCustomers, useCreateVisitPlan,
   useDeleteVisitPlanItem, useReorderVisitPlanItems,
+  useCreateVisitPlanTemplateMutation,
 } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
 import { PERMISSIONS } from '@/lib/permissions/constants'
@@ -99,15 +100,22 @@ export default function VisitPlanDetail() {
   const createPlan    = useCreateVisitPlan()
   const deleteItemMut = useDeleteVisitPlanItem()
   const reorderMut    = useReorderVisitPlanItems()
+  const saveAsTmpl    = useCreateVisitPlanTemplateMutation()
+
+  // ── Save as Template state
+  const [saveTmplOpen,  setSaveTmplOpen]  = useState(false)
+  const [tmplName,      setTmplName]      = useState('')
+  const [savingTmpl,    setSavingTmpl]    = useState(false)
 
   // ── Edit Mode State
   const [editMode, setEditMode] = useState(false)
 
   // ── Permissions
-  const canConfirm = can(PERMISSIONS.VISIT_PLANS_CONFIRM) || can(PERMISSIONS.VISIT_PLANS_READ_ALL)
-  const canCreate  = can(PERMISSIONS.ACTIVITIES_CREATE)
-  const canAddItem = can(PERMISSIONS.VISIT_PLANS_CREATE) && plan?.status === 'draft'
-  const canSkip    = plan?.status === 'confirmed' || plan?.status === 'in_progress'
+  const canConfirm   = can(PERMISSIONS.VISIT_PLANS_CONFIRM) || can(PERMISSIONS.VISIT_PLANS_READ_ALL)
+  const canCreate    = can(PERMISSIONS.ACTIVITIES_CREATE)
+  const canSaveTmpl  = can(PERMISSIONS.VISIT_PLANS_CREATE)
+  const canAddItem   = can(PERMISSIONS.VISIT_PLANS_CREATE) && plan?.status === 'draft'
+  const canSkip      = plan?.status === 'confirmed' || plan?.status === 'in_progress'
 
   // مصفوفة التعديل المرن
   const canEditPlan = (() => {
@@ -280,6 +288,41 @@ export default function VisitPlanDetail() {
     setProcessing(false)
   }
 
+  // ── Save as Template handler ─────────────────────────────────────
+  async function handleSaveAsTemplate() {
+    if (!tmplName.trim()) { toast.error('اسم القالب مطلوب'); return }
+    if (items.length === 0) { toast.error('لا يوجد بنود في الخطة'); return }
+    setSavingTmpl(true)
+    try {
+      // Build template items from plan items — preserving customer_id, purpose, priority
+      const tmplItems = items.map(item => ({
+        customer_id:            item.customer_id,
+        customer_name:          item.customer?.name || null,
+        customer_code:          item.customer?.code || null,
+        phone:                  item.customer?.phone || null,
+        latitude:               item.customer?.latitude ?? null,
+        longitude:              item.customer?.longitude ?? null,
+        planned_time:           item.planned_time || null,
+        estimated_duration_min: item.estimated_duration_min || 30,
+        priority:               item.priority || 'normal',
+        purpose_type:           item.purpose_type || null,
+        purpose:                (item as any).purpose || null,
+      }))
+      await saveAsTmpl.mutateAsync({
+        name:      tmplName.trim(),
+        recurrence: 'none',
+        is_active:  true,
+        items:      tmplItems,
+      })
+      toast.success(`تم حفظ القالب "${tmplName.trim()}" بـ${items.length} بند`)
+      setSaveTmplOpen(false)
+    } catch (e: any) {
+      toast.error(e?.message || 'فشل حفظ القالب')
+    } finally {
+      setSavingTmpl(false)
+    }
+  }
+
   // ── Loading
   if (planLoading) {
     return (
@@ -359,6 +402,17 @@ export default function VisitPlanDetail() {
             {canCreate && (
               <Button onClick={() => setCloneOpen(true)} variant="secondary" icon={<Copy size={16} />} className="desktop-only-btn">
                 استنساخ المسار
+              </Button>
+            )}
+            {/* Wave A: Save as Template — only if plan has items */}
+            {canSaveTmpl && items.length > 0 && (
+              <Button
+                variant="secondary"
+                icon={<Save size={16} />}
+                className="desktop-only-btn"
+                onClick={() => { setTmplName(plan.employee?.full_name ? `خطة ${plan.employee.full_name}` : 'قالب جديد'); setSaveTmplOpen(true) }}
+              >
+                حفظ كقالب
               </Button>
             )}
             {plan.status !== 'completed' && plan.status !== 'cancelled' && (
@@ -941,6 +995,36 @@ export default function VisitPlanDetail() {
           .vp-skip-reasons { grid-template-columns: 1fr; }
         }
       `}</style>
+
+      {/* ── Wave A: Save as Template Modal ─────────────────────── */}
+      <ResponsiveModal
+        open={saveTmplOpen}
+        onClose={() => setSaveTmplOpen(false)}
+        title="حفظ الخطة كقالب"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <div className="form-group">
+            <label className="form-label">اسم القالب <span className="form-required">*</span></label>
+            <input
+              className="form-input"
+              value={tmplName}
+              onChange={e => setTmplName(e.target.value)}
+              placeholder="مثال: خطة مبيعات القاهرة الأسبوعية"
+              autoFocus
+            />
+          </div>
+          <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', padding: 'var(--space-2)', background: 'rgba(0,0,0,.04)', borderRadius: 'var(--radius-md)' }}>
+            سيتم حفظ خطة {items.length} بند كقالب جديد.
+            يمكن تحميله مجدداً عند إنشاء خطة زيارات جديدة.
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
+            <Button variant="secondary" onClick={() => setSaveTmplOpen(false)}>إلغاء</Button>
+            <Button onClick={handleSaveAsTemplate} disabled={savingTmpl}>
+              {savingTmpl ? 'جاري الحفظ...' : 'حفظ القالب'}
+            </Button>
+          </div>
+        </div>
+      </ResponsiveModal>
     </div>
   )
 }

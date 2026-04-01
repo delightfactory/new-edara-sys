@@ -17,6 +17,7 @@ import {
   useActivity,
   useSaveCallDetail,
   useCustomer,
+  useCustomers,
   useActivities,
   useTargetStatus,
 } from '@/hooks/useQueryHooks'
@@ -103,13 +104,22 @@ export default function ActivityForm({ prefillPlanItemId, prefillPlanType }: Act
     || ''
   const planType = prefillPlanType
     || (searchParams.get('visitPlanItemId') ? 'visit' : searchParams.get('callPlanItemId') ? 'call' : '')
-  const customerId = searchParams.get('customerId') || ''
+  // Customer from URL — may be empty if standalone activity creation
+  const urlCustomerId = searchParams.get('customerId') || ''
+
+  // ── Customer select state (when no URL customerId) ───────────
+  const [selectedCustomerId, setSelectedCustomerId] = useState(urlCustomerId)
+  // Sync from URL (e.g., navigating back with different params)
+  useEffect(() => { if (urlCustomerId) setSelectedCustomerId(urlCustomerId) }, [urlCustomerId])
+  // Use the resolved customerId for all downstream logic
+  const customerId = selectedCustomerId || urlCustomerId
 
   // ── Activity State ───────────────────────────────────────────
   const [typeId,       setTypeId]       = useState('')
   const [outcomeType,  setOutcomeType]  = useState<ActivityOutcome | ''>('')
   const [outcomeNotes, setOutcomeNotes] = useState('')
   const [refuseReason, setRefuseReason] = useState('')
+  const [closedReason, setClosedReason] = useState('')
   const [activityDate, setActivityDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [startTime,    setStartTime]    = useState('')
   const [endTime,      setEndTime]      = useState('')
@@ -134,6 +144,9 @@ export default function ActivityForm({ prefillPlanItemId, prefillPlanType }: Act
   const { data: activityTypes = [] } = useActivityTypes()
   const { data: existing }           = useActivity(activityId)
   const { data: customerData }       = useCustomer(customerId || null)
+  // Customer list for standalone activity creation (no URL customerId)
+  const { data: customersResult }    = useCustomers({ pageSize: 300 })
+  const allCustomers = customersResult?.data ?? []
   const createActivity               = useCreateActivity()
   const updateActivity               = useUpdateActivity()
   const saveCallDetail               = useSaveCallDetail()
@@ -163,6 +176,7 @@ export default function ActivityForm({ prefillPlanItemId, prefillPlanType }: Act
     setOutcomeType(existing.outcome_type)
     setOutcomeNotes(existing.outcome_notes ?? '')
     setRefuseReason(existing.refuse_reason ?? '')
+    setClosedReason(existing.closed_reason ?? '')
     setActivityDate(existing.activity_date)
     if (existing.start_time) setStartTime(new Date(existing.start_time).toTimeString().slice(0, 5))
     if (existing.end_time)   setEndTime(new Date(existing.end_time).toTimeString().slice(0, 5))
@@ -177,6 +191,8 @@ export default function ActivityForm({ prefillPlanItemId, prefillPlanType }: Act
       setCallCallbackAt(cd.callback_at ? cd.callback_at.slice(0, 16) : '')
       setCallRecordingUrl(cd.call_recording_url ?? '')
     }
+    // prefill selectedCustomerId in edit mode
+    if (existing.customer_id && !urlCustomerId) setSelectedCustomerId(existing.customer_id)
   }, [existing])
 
   // ── Load customer orders for linking ─────────────────────────
@@ -211,6 +227,10 @@ export default function ActivityForm({ prefillPlanItemId, prefillPlanType }: Act
     if (!activityDate) return 'اختر تاريخ النشاط'
     if (gpsBlocking)   return 'يتطلب هذا النوع تحديد موقع GPS'
     if (isCallType && !callResult) return 'اختر نتيجة المكالمة'
+    // Wave A Fix: enforce customer when type requires it and not plan-linked
+    if (selectedType?.requires_customer && !customerId && !planItemId) {
+      return 'يتطلب هذا النوع اختيار عميل'
+    }
     return null
   }
 
@@ -245,6 +265,7 @@ export default function ActivityForm({ prefillPlanItemId, prefillPlanType }: Act
       outcome_type:        outcomeType as ActivityOutcome,
       outcome_notes:       outcomeNotes  || null,
       refuse_reason:       refuseReason  || null,
+      closed_reason:       closedReason  || null,
       activity_date:       activityDate,
       start_time:          buildTime(startTime),
       end_time:            buildTime(endTime),
@@ -345,6 +366,27 @@ export default function ActivityForm({ prefillPlanItemId, prefillPlanType }: Act
           </select>
         </div>
 
+        {/* ── اختيار العميل (إذا لم يكن أتى من URL أو خطة) ── Wave A */}
+        {!urlCustomerId && !planItemId && typeId && selectedType?.requires_customer && (
+          <div className="form-group">
+            <label className="form-label">العميل <span className="form-required">*</span></label>
+            {allCustomers.length > 0 ? (
+              <select
+                className="form-select"
+                value={selectedCustomerId}
+                onChange={e => setSelectedCustomerId(e.target.value)}
+              >
+                <option value="">-- اختر العميل --</option>
+                {allCustomers.map(c => (
+                  <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
+                ))}
+              </select>
+            ) : (
+              <div className="text-sm text-muted p-2">جاري تحميل العملاء...</div>
+            )}
+          </div>
+        )}
+
         {/* ── GPS ── */}
         {typeId && (
           <div className="form-group">
@@ -423,6 +465,19 @@ export default function ActivityForm({ prefillPlanItemId, prefillPlanType }: Act
               value={refuseReason}
               onChange={e => setRefuseReason(e.target.value)}
               placeholder="اذكر سبب الرفض..."
+            />
+          </div>
+        )}
+
+        {/* ── سبب الإغلاق — Wave A ── */}
+        {outcomeType === 'closed' && (
+          <div className="form-group">
+            <label className="form-label">سبب الإغلاق</label>
+            <input
+              className="form-input"
+              value={closedReason}
+              onChange={e => setClosedReason(e.target.value)}
+              placeholder="ما سبب إغلاق هذا النشاط..."
             />
           </div>
         )}

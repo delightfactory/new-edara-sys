@@ -80,7 +80,13 @@ export default function EmployeeForm({ open, onClose, employee, onToast }: Props
 
   const [form, setForm] = useState<HREmployeeInput>(EMPTY_FORM)
   const [authEmail, setAuthEmail] = useState('')   // حقل الربط الاختياري
-  const [activeTab, setActiveTab] = useState<'basic' | 'job' | 'salary'>('basic')
+  const [activeStepIndex, setActiveStepIndex] = useState(0)
+  const steps = [
+    { id: 'basic',  label: 'البيانات الشخصية' },
+    { id: 'job',    label: 'بيانات التوظيف' },
+    { id: 'salary', label: 'الراتب والبدلات' },
+  ] as const
+  const activeTab = steps[activeStepIndex].id
   const [errors, setErrors] = useState<Partial<Record<keyof HREmployeeInput, string>>>({})
 
   const createMut = useCreateEmployee()
@@ -97,7 +103,7 @@ export default function EmployeeForm({ open, onClose, employee, onToast }: Props
     if (open) {
       setForm(isEdit ? employeeToInput(employee!) : EMPTY_FORM)
       setAuthEmail('')
-      setActiveTab('basic')
+      setActiveStepIndex(0)
       setErrors({})
       setTabErrors({})
     }
@@ -146,10 +152,41 @@ export default function EmployeeForm({ open, onClose, employee, onToast }: Props
     setTabErrors(tabWithErrors)
 
     // إذا التاب الحالي ليس فيه خطأ لكن تاب آخر فيه — انتقل له
+    // إذا التاب الحالي ليس فيه خطأ لكن تاب آخر فيه — انتقل له (مؤقتًا لمعالجة الخطأ)
     if (Object.keys(tabWithErrors).length > 0 && !tabWithErrors[activeTab]) {
-      setActiveTab(Object.keys(tabWithErrors)[0] as typeof activeTab)
+      const firstErrorStepId = Object.keys(tabWithErrors)[0]
+      const idx = steps.findIndex(s => s.id === firstErrorStepId)
+      if (idx !== -1) setActiveStepIndex(idx)
     }
     return Object.keys(e).length === 0
+  }
+
+  // ── Step Navigation ────────────────────────
+  function validateCurrentStep(): boolean {
+    const e: typeof errors = { ...errors }
+    let isValid = true
+
+    if (activeTab === 'basic') {
+      if (!form.full_name.trim())      { e.full_name      = 'الاسم مطلوب'; isValid = false } else { delete e.full_name }
+      if (!form.personal_phone.trim()) { e.personal_phone = 'رقم الهاتف مطلوب'; isValid = false } else { delete e.personal_phone }
+    } else if (activeTab === 'job') {
+      if (!form.hire_date) { e.hire_date = 'تاريخ التعيين مطلوب'; isValid = false } else { delete e.hire_date }
+    } else if (activeTab === 'salary') {
+      if (form.base_salary <= 0) { e.base_salary = 'الراتب الأساسي يجب أن يكون أكبر من صفر'; isValid = false } else { delete e.base_salary }
+    }
+    setErrors(e)
+    if (!isValid) onToast('يرجى معالجة الأخطاء قبل الانتقال', 'warning')
+    return isValid
+  }
+
+  const handleNext = () => {
+    if (validateCurrentStep()) {
+      setActiveStepIndex(p => Math.min(steps.length - 1, p + 1))
+    }
+  }
+
+  const handlePrev = () => {
+    setActiveStepIndex(p => Math.max(0, p - 1))
   }
 
   // ── Submit ───────────────────────────────
@@ -195,13 +232,6 @@ export default function EmployeeForm({ open, onClose, employee, onToast }: Props
     }
   }
 
-  // ── Tab nav ──────────────────────────────
-  const tabs = [
-    { id: 'basic',  label: 'البيانات الشخصية' },
-    { id: 'job',    label: 'بيانات التوظيف' },
-    { id: 'salary', label: 'الراتب والبدلات' },
-  ] as const
-
   return (
     <ResponsiveModal
       open={open}
@@ -210,41 +240,80 @@ export default function EmployeeForm({ open, onClose, employee, onToast }: Props
       size="lg"
       disableOverlayClose={loading}
       footer={
-        <div style={{ display: 'flex', gap: 'var(--space-3)', width: '100%' }}>
-          <Button variant="secondary" onClick={onClose} disabled={loading} style={{ flex: 1 }}>
-            إلغاء
-          </Button>
-          <Button
-            icon={isEdit ? <UserCog size={16} /> : <UserPlus size={16} />}
-            onClick={handleSubmit}
-            loading={loading}
-            style={{ flex: 2 }}
-          >
-            {isEdit ? 'حفظ التعديلات' : 'إضافة الموظف'}
-          </Button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+          <div>
+            {activeStepIndex > 0 && (
+              <Button variant="ghost" onClick={handlePrev} disabled={loading}>
+                السابق
+              </Button>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+            <Button variant="secondary" onClick={onClose} disabled={loading}>
+              إلغاء
+            </Button>
+            {activeStepIndex < steps.length - 1 ? (
+              <Button onClick={handleNext}>
+                التالي
+              </Button>
+            ) : (
+              <Button
+                icon={isEdit ? <UserCog size={16} /> : <UserPlus size={16} />}
+                onClick={handleSubmit}
+                loading={loading}
+              >
+                {isEdit ? 'حفظ البيانات' : 'إضافة الموظف'}
+              </Button>
+            )}
+          </div>
         </div>
       }
     >
-      {/* ── Tab switcher ── */}
-      <div className="emp-form-tabs">
-        {tabs.map(t => (
-          <button
-            key={t.id}
-            type="button"
-            className={`emp-form-tab ${activeTab === t.id ? 'emp-form-tab--active' : ''} ${tabErrors[t.id] ? 'emp-form-tab--error' : ''}`}
-            onClick={() => setActiveTab(t.id)}
-            style={{ position: 'relative' }}
-          >
-            {t.label}
-            {tabErrors[t.id] && (
-              <span style={{
-                display: 'inline-block', width: 6, height: 6,
-                borderRadius: '50%', background: 'var(--color-danger)',
-                position: 'absolute', top: 6, left: 6,
-              }} />
-            )}
-          </button>
-        ))}
+      {/* ── Stepper Header ── */}
+      <div className="emp-stepper">
+        <div className="emp-stepper-line" />
+        {steps.map((s, idx) => {
+          const isActive = idx === activeStepIndex
+          const isDone = idx < activeStepIndex
+          const hasError = tabErrors[s.id]
+          
+          let circleColor = 'var(--text-muted)'
+          let bgColor = 'var(--bg-surface)'
+          let borderColor = 'var(--border-color)'
+          
+          if (isActive) {
+            circleColor = 'var(--color-primary)'
+            borderColor = 'var(--color-primary)'
+          }
+          if (isDone) {
+            circleColor = '#fff'
+            bgColor = 'var(--color-primary)'
+            borderColor = 'var(--color-primary)'
+          }
+          if (hasError && !isActive && !isDone) {
+            borderColor = 'var(--color-danger)'
+            circleColor = 'var(--color-danger)'
+          }
+
+          return (
+            <div 
+              key={s.id} 
+              className={`emp-step ${isActive ? 'emp-step--active' : ''} ${isDone ? 'emp-step--done' : ''}`} 
+              onClick={() => { if (isEdit || idx < activeStepIndex) setActiveStepIndex(idx) }}
+              style={{ cursor: (isEdit || idx < activeStepIndex) ? 'pointer' : 'default' }}
+            >
+              <div 
+                className="emp-step-circle" 
+                style={{ color: circleColor, background: bgColor, borderColor: borderColor }}
+              >
+                {isDone ? '✓' : idx + 1}
+              </div>
+              <span className="emp-step-label" style={{ color: isActive || isDone ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: isActive ? 700 : 500 }}>
+                {s.label}
+              </span>
+            </div>
+          )
+        })}
       </div>
 
       {/* ══ TAB 1: البيانات الشخصية ══ */}
@@ -391,19 +460,26 @@ export default function EmployeeForm({ open, onClose, employee, onToast }: Props
           </div>
 
           <div className="emp-form-grid">
-            {/* نوع التوظيف يُحفظ في جدول العقود (hr_contracts) وليس في hr_employees مباشرة */}
-            {/* يُضاف في شاشة العقود لاحقاً */}
-            <Select
-              label="حالة الموظف"
-              value={form.status ?? 'active'}
-              onChange={e => set('status')(e.target.value as HREmployeeInput['status'])}
-              options={[
-                { value: 'active',     label: 'نشط' },
-                { value: 'on_leave',   label: 'في إجازة' },
-                { value: 'suspended',  label: 'موقوف' },
-                { value: 'terminated', label: 'منتهي الخدمة' },
-              ]}
-            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+              <Select
+                label="حالة الموظف"
+                value={form.status ?? 'active'}
+                onChange={e => set('status')(e.target.value as HREmployeeInput['status'])}
+                disabled={form.status === 'terminated'}
+                options={[
+                  { value: 'active',     label: 'نشط' },
+                  { value: 'on_leave',   label: 'في إجازة' },
+                  { value: 'suspended',  label: 'موقوف' },
+                  ...(form.status === 'terminated' ? [{ value: 'terminated', label: 'منتهي الخدمة (مُقفلة)' }] : []),
+                ]}
+              />
+              {isEdit && form.status !== 'terminated' && (
+                <div style={{ display: 'flex', gap: '4px', alignItems: 'center', color: 'var(--color-primary)', fontSize: '11px', background: 'var(--bg-primary-light)', padding: '4px 8px', borderRadius: '4px' }}>
+                  <AlertCircle size={12} />
+                  <span>إنهاء الخدمة يتم فقط عبر زر "إنهاء الخدمة" في لوحة تحكم الموظف بالخارج.</span>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="emp-form-grid">
@@ -494,26 +570,38 @@ export default function EmployeeForm({ open, onClose, employee, onToast }: Props
       {/* ══ TAB 3: الراتب والبدلات ══ */}
       {activeTab === 'salary' && (
         <div className="emp-form-section">
-          {/* تنبيه: الحقول المحسوبة لا تظهر هنا (gross_salary = GENERATED ALWAYS AS) */}
-          <div className="emp-salary-notice">
-            <AlertCircle size={14} />
-            <span>
-              الراتب الإجمالي يُحسب تلقائياً = الأساسي + البدلات
-            </span>
-          </div>
+          {isEdit ? (
+            <div className="emp-salary-notice" style={{ background: 'var(--bg-warning-light)', color: 'var(--color-warning)' }}>
+              <AlertCircle size={16} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <strong style={{ fontSize: 'var(--text-sm)' }}>تعديل الراتب متوقف من هذا النموذج</strong>
+                <span style={{ fontSize: 'var(--text-xs)', opacity: 0.9 }}>
+                  للحفاظ على السجلات والتاريخ المالي للموظف، يُرجى استخدام قائمة "تعديل الراتب" أو الدخول على تبويب "العقود" من ملف الموظف مباشرة.
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="emp-salary-notice">
+              <AlertCircle size={14} />
+              <span>
+                الراتب الإجمالي يُحسب تلقائياً = الأساسي + البدلات
+              </span>
+            </div>
+          )}
 
-          <div className="emp-form-grid">
+          <div className="emp-form-grid" style={{ opacity: isEdit ? 0.7 : 1 }}>
             <Input
               label="الراتب الأساسي"
-              required
+              required={!isEdit}
               type="number"
               min={0}
               step={100}
               value={String(form.base_salary)}
               onChange={e => set('base_salary')(Number(e.target.value))}
-              error={errors.base_salary}
+              error={!isEdit ? errors.base_salary : undefined}
               placeholder="0"
-              hint="ج.م / شهر"
+              hint={isEdit ? 'لا يمكن التعديل المباشر' : 'ج.م / شهر'}
+              disabled={isEdit}
             />
             <Input
               label="بدل المواصلات"
@@ -523,11 +611,12 @@ export default function EmployeeForm({ open, onClose, employee, onToast }: Props
               value={String(form.transport_allowance ?? 0)}
               onChange={e => set('transport_allowance')(Number(e.target.value))}
               placeholder="0"
-              hint="ج.م / شهر"
+              hint={isEdit ? '' : 'ج.م / شهر'}
+              disabled={isEdit}
             />
           </div>
 
-          <div className="emp-form-grid">
+          <div className="emp-form-grid" style={{ opacity: isEdit ? 0.7 : 1 }}>
             <Input
               label="بدل السكن"
               type="number"
@@ -536,7 +625,8 @@ export default function EmployeeForm({ open, onClose, employee, onToast }: Props
               value={String(form.housing_allowance ?? 0)}
               onChange={e => set('housing_allowance')(Number(e.target.value))}
               placeholder="0"
-              hint="ج.م / شهر"
+              hint={isEdit ? '' : 'ج.م / شهر'}
+              disabled={isEdit}
             />
             <Input
               label="بدلات أخرى"
@@ -546,7 +636,8 @@ export default function EmployeeForm({ open, onClose, employee, onToast }: Props
               value={String(form.other_allowances ?? 0)}
               onChange={e => set('other_allowances')(Number(e.target.value))}
               placeholder="0"
-              hint="ج.م / شهر"
+              hint={isEdit ? '' : 'ج.م / شهر'}
+              disabled={isEdit}
             />
           </div>
 
@@ -566,35 +657,27 @@ export default function EmployeeForm({ open, onClose, employee, onToast }: Props
       )}
 
       <style>{`
-        .emp-form-tabs {
-          display: flex;
-          border-bottom: 1.5px solid var(--border-primary);
-          margin-bottom: var(--space-5);
-          gap: var(--space-1);
-          overflow-x: auto;
-          scrollbar-width: none;
+        .emp-stepper {
+          display: flex; justify-content: space-between; align-items: flex-start;
+          margin-bottom: var(--space-6); position: relative; padding: 0 var(--space-4);
         }
-        .emp-form-tabs::-webkit-scrollbar { display: none; }
-        .emp-form-tab {
-          padding: var(--space-2) var(--space-4);
-          font-size: var(--text-sm);
-          font-weight: 500;
-          color: var(--text-secondary);
-          border: none;
-          background: transparent;
-          cursor: pointer;
-          border-bottom: 2px solid transparent;
-          margin-bottom: -1.5px;
-          white-space: nowrap;
-          transition: color var(--transition-fast), border-color var(--transition-fast);
-          font-family: var(--font-sans);
+        .emp-stepper-line {
+          position: absolute; top: 15px; left: calc(var(--space-4) + 15px); right: calc(var(--space-4) + 15px);
+          height: 2px; background: var(--border-color); z-index: 0;
         }
-        .emp-form-tab:hover { color: var(--text-primary); }
-        .emp-form-tab--active {
-          color: var(--color-primary);
-          border-bottom-color: var(--color-primary);
+        .emp-step {
+          display: flex; flex-direction: column; align-items: center; gap: 6px;
+          position: relative; z-index: 1; min-width: 80px; text-align: center;
         }
-
+        .emp-step-circle {
+          width: 32px; height: 32px; border-radius: 50%;
+          border: 2px solid;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 14px; font-weight: 700;
+          transition: all 0.2s ease;
+        }
+        .emp-step-label { font-size: var(--text-xs); transition: color 0.2s ease; }
+        
         .emp-form-section {
           display: flex;
           flex-direction: column;

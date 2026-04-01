@@ -1090,3 +1090,34 @@ export interface HRPayrollAdjustmentInput {
   reason: string
   effective_date: string
 }
+
+// ─────────────────────────────────────────────────────────────
+// HR SELF-SERVICE PAYSLIP SUMMARY
+// ─────────────────────────────────────────────────────────────
+
+export interface EmployeePayslipSummary {
+  line_id: string
+  period_year: number
+  period_month: number
+  period_name: string
+  run_status: 'approved' | 'paid'
+  base_salary: number
+  total_allowances: number
+  total_deductions: number
+  net_salary: number
+  
+  // Breakdown
+  transport_allowance: number
+  housing_allowance: number
+  other_allowances: number
+  overtime_amount: number
+  commission_amount: number
+  bonus_amount: number
+
+  absence_deduction: number
+  penalty_deduction: number
+  advance_deduction: number
+  social_insurance: number
+  health_insurance: number
+  other_deductions: number
+}

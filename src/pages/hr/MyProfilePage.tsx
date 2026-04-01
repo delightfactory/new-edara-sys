@@ -1,14 +1,18 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   User, Building2, Briefcase, Calendar, CreditCard,
   Clock, ArrowLeft, FileText, Wallet, Shield,
-  CalendarOff,
+  CalendarOff, AlertCircle, ChevronLeft
 } from 'lucide-react'
-import { useCurrentEmployee, useHRLeaveBalances } from '@/hooks/useQueryHooks'
+import { useCurrentEmployee, useHRLeaveBalances, useMyPayslips } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
 import PageHeader from '@/components/shared/PageHeader'
 import Spinner from '@/components/ui/Spinner'
 import Badge from '@/components/ui/Badge'
+import Button from '@/components/ui/Button'
+import PayslipViewerModal from './components/PayslipViewerModal'
+import type { EmployeePayslipSummary } from '@/lib/types/hr'
 
 const fmtDate = (d?: string | null) =>
   d ? new Date(d).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'
@@ -128,6 +132,10 @@ export default function MyProfilePage() {
     new Date().getFullYear()
   )
 
+  // جلب قسائم الرواتب (تعرض فقط لو كان المستخدم موظف)
+  const { data: payslips = [], isLoading: isLoadingPayslips } = useMyPayslips()
+  const [selectedPayslip, setSelectedPayslip] = useState<EmployeePayslipSummary | null>(null)
+
   if (isLoading) return (
     <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <Spinner />
@@ -137,17 +145,35 @@ export default function MyProfilePage() {
   if (!employee) return (
     <div className="page-container animate-enter">
       <PageHeader
-        title="ملفي الشخصي"
-        breadcrumbs={[{ label: 'الموارد البشرية', path: '/hr' }, { label: 'ملفي' }]}
+        title="مساحتي الشخصية"
+        breadcrumbs={[{ label: 'الخدمات الذاتية' }, { label: 'مساحتي' }]}
       />
-      <div className="edara-card" style={{ textAlign: 'center', padding: 'var(--space-12)' }}>
-        <User size={48} style={{ color: 'var(--text-muted)', opacity: 0.4, margin: '0 auto var(--space-4)' }} />
-        <div style={{ fontWeight: 700, fontSize: 'var(--text-lg)', marginBottom: 'var(--space-2)' }}>
-          غير مرتبط بسجل موظف
+      <div className="edara-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: 'var(--space-12)' }}>
+        <div style={{
+          width: 72, height: 72, borderRadius: 'var(--radius-full)', background: 'var(--bg-muted)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 'var(--space-5)'
+        }}>
+          <User size={36} style={{ color: 'var(--text-muted)' }} />
         </div>
-        <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', maxWidth: 360, margin: '0 auto' }}>
-          حسابك ({profile?.email}) غير مرتبط بأي سجل في نظام الموارد البشرية.
-          تواصل مع مدير HR لربط حسابك.
+        <div style={{ fontWeight: 800, fontSize: 'var(--text-xl)', marginBottom: 'var(--space-2)' }}>
+          حسابك غير مرتبط بسجل موظف
+        </div>
+        <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', maxWidth: 420, margin: '0 auto var(--space-6)', lineHeight: 1.6 }}>
+          نظام الهوية الخاص بك <strong>({profile?.email})</strong> غير مرتبط بملف موظف نشط في النظام الإداري (HR). لا يمكنك طلب إجازات، أذونات، أو الإطلاع على رواتبك حتى يتم الربط.
+        </div>
+        
+        <div style={{
+          background: 'color-mix(in srgb, var(--color-primary) 5%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--color-primary) 20%, transparent)',
+          padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', textAlign: 'center',
+          width: '100%', maxWidth: 400
+        }}>
+          <div style={{ fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--color-primary)', marginBottom: 'var(--space-2)' }}>
+            الخطوة التالية
+          </div>
+          <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
+            يرجى مراجعة مسؤول الموارد البشرية لربط حسابك برقم الموظف الخاص بك.
+          </div>
         </div>
       </div>
     </div>
@@ -161,7 +187,7 @@ export default function MyProfilePage() {
         title="ملفي الشخصي"
         subtitle="بياناتي وإجازاتي ورواتبي"
         breadcrumbs={[
-          { label: 'الموارد البشرية', path: '/hr' },
+          { label: 'الخدمات الذاتية' },
           { label: 'ملفي' },
         ]}
       />
@@ -236,18 +262,76 @@ export default function MyProfilePage() {
       </div>
 
 
-      {/* ── الروابط السريعة ── */}
-      <div className="edara-card">
+      {/* ── سجل الرواتب (Payslips) ── */}
+      <div className="edara-card" style={{ marginBottom: 'var(--space-4)' }}>
         <div style={{ fontWeight: 700, fontSize: 'var(--text-base)', marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-          <ArrowLeft size={16} /> إجراءات سريعة
+          <CreditCard size={16} /> سجل الرواتب
         </div>
-        <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
-          <QuickLink label="طلب إجازة"   icon={<CalendarOff size={20} />} path="/hr/leaves"       color="var(--color-success)" />
-          <QuickLink label="طلب سلفة"    icon={<Wallet      size={20} />} path="/hr/advances"     color="var(--color-warning)" />
-          <QuickLink label="طلب إذن"     icon={<Clock       size={20} />} path="/hr/permissions"  color="var(--color-info)"    />
-          <QuickLink label="الحضور"      icon={<FileText    size={20} />} path="/hr/attendance"   color="var(--color-primary)" />
+        
+        {isLoadingPayslips ? (
+          <div style={{ padding: 'var(--space-6)', display: 'flex', justifyContent: 'center' }}><Spinner /></div>
+        ) : payslips.length === 0 ? (
+          <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)', padding: 'var(--space-6)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <Wallet size={24} style={{ opacity: 0.2 }} />
+            لا توجد رواتب معتمدة متاحة للعرض بعد
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+            {payslips.map(ps => (
+              <div key={ps.line_id} style={{ 
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+                padding: 'var(--space-3)', border: '1px solid var(--border-color)', 
+                borderRadius: 'var(--radius-md)', background: 'var(--bg-surface-2)',
+                transition: 'background 0.2s'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                  <div style={{ 
+                    width: 40, height: 40, borderRadius: 'var(--radius-full)', 
+                    background: 'var(--bg-primary-light)', color: 'var(--color-primary)', 
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 'var(--text-sm)' 
+                  }}>
+                    {ps.period_month}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontWeight: 700, fontSize: 'var(--text-sm)' }}>راتب {ps.period_name}</span>
+                    <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>صافي مستحق: <strong style={{color: 'var(--text-primary)'}}>{fmtCurrency(ps.net_salary)}</strong></span>
+                  </div>
+                </div>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                  <Badge variant={ps.run_status === 'paid' ? 'success' : 'warning'}>
+                    {ps.run_status === 'paid' ? 'مدفوع' : 'معتمد'}
+                  </Badge>
+                  <Button variant="secondary" size="sm" onClick={() => setSelectedPayslip(ps)} icon={<FileText size={14} />}>
+                    تفاصيل الراتب
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── بوابة الخدمات الذاتية ── */}
+      <div className="edara-card" style={{ background: 'var(--bg-surface)' }}>
+        <div style={{ fontWeight: 800, fontSize: 'var(--text-base)', marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--text-primary)' }}>
+          <Briefcase size={18} /> بوابة الخدمات الذاتية (Self Service)
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 'var(--space-3)' }}>
+          <QuickLink label="سجل الحضور"  icon={<FileText    size={22} />} path="/hr/attendance/checkin" color="var(--color-primary)" />
+          <QuickLink label="طلب إذن"     icon={<Clock       size={22} />} path="/hr/permissions"        color="var(--color-info)"    />
+          <QuickLink label="طلب إجازة"   icon={<CalendarOff size={22} />} path="/hr/leaves"             color="var(--color-success)" />
+          <QuickLink label="طلب سلفة"    icon={<Wallet      size={22} />} path="/hr/advances"           color="var(--color-warning)" />
         </div>
       </div>
+
+      <PayslipViewerModal 
+        open={!!selectedPayslip} 
+        onClose={() => setSelectedPayslip(null)} 
+        payslip={selectedPayslip} 
+        employeeName={employee.full_name}
+        employeeNumber={employee.employee_number}
+      />
     </div>
   )
 }

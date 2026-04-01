@@ -14,6 +14,7 @@ import type {
   PlanStatus,
   ChecklistTemplate, ChecklistQuestion, ChecklistResponse,
   ChecklistResponseInput,
+  ChecklistTemplateInput, ChecklistQuestionInput,
 } from '@/lib/types/activities'
 
 // ============================================================
@@ -58,22 +59,24 @@ export async function getTargetTypes(): Promise<TargetType[]> {
   return data as TargetType[]
 }
 
-export async function getVisitPlanTemplates(): Promise<VisitPlanTemplate[]> {
-  const { data, error } = await supabase
+export async function getVisitPlanTemplates(params?: { includeInactive?: boolean }): Promise<VisitPlanTemplate[]> {
+  let q = supabase
     .from('visit_plan_templates')
     .select('*')
-    .eq('is_active', true)
     .order('name')
+  if (!params?.includeInactive) q = q.eq('is_active', true)
+  const { data, error } = await q
   if (error) throw error
   return data as VisitPlanTemplate[]
 }
 
-export async function getCallPlanTemplates(): Promise<CallPlanTemplate[]> {
-  const { data, error } = await supabase
+export async function getCallPlanTemplates(params?: { includeInactive?: boolean }): Promise<CallPlanTemplate[]> {
+  let q = supabase
     .from('call_plan_templates')
     .select('*')
-    .eq('is_active', true)
     .order('name')
+  if (!params?.includeInactive) q = q.eq('is_active', true)
+  const { data, error } = await q
   if (error) throw error
   return data as CallPlanTemplate[]
 }
@@ -82,12 +85,15 @@ export async function getCallPlanTemplates(): Promise<CallPlanTemplate[]> {
 // Activities — الأنشطة
 // ============================================================
 
-// ✅ أعمدة مطابقة للـ schema (type_id لا activity_type_id)
+// ✅ أعمدة مطابقة للـ schema — Wave A: أضفنا employee + plan_link
 const ACTIVITY_SELECT = `
   *,
   type:activity_types!activities_type_id_fkey(id, name, code, category, icon, requires_gps, requires_customer),
   customer:customers(id, name, code, phone, latitude, longitude),
-  call_detail:call_details(*)
+  call_detail:call_details(*),
+  employee:hr_employees!activities_employee_id_fkey(id, full_name),
+  visit_plan_item:visit_plan_items!activities_visit_plan_item_id_fkey(id, plan_id),
+  call_plan_item:call_plan_items!activities_call_plan_item_id_fkey(id, plan_id)
 `
 
 export async function getActivities(params?: {
@@ -828,23 +834,22 @@ export async function getTargetStatus(params?: {
 export async function getChecklistTemplates(params?: {
   category?: string
   purposeType?: string | null
+  includeInactive?: boolean
 }): Promise<ChecklistTemplate[]> {
   let q = supabase
     .from('visit_checklist_templates')
     .select('*, questions:visit_checklist_questions(*)')
-    .eq('is_active', true)
     .order('sort_order')
 
+  if (!params?.includeInactive) q = q.eq('is_active', true)
   if (params?.category) q = q.eq('category', params.category)
   if (params?.purposeType) {
-    // جلب القوالب العامة (purpose_type IS NULL) + المخصصة
     q = q.or(`purpose_type.is.null,purpose_type.eq.${params.purposeType}`)
   }
 
   const { data, error } = await q
   if (error) throw error
 
-  // ترتيب الأسئلة داخل كل قالب
   return (data ?? []).map(t => ({
     ...t,
     questions: (t.questions ?? []).sort((a: any, b: any) => a.sort_order - b.sort_order),
@@ -982,4 +987,175 @@ export async function reorderCallPlanItems(
       .eq('plan_id', planId)
     if (error) throw error
   }
+}
+
+// ============================================================
+// Checklist Template CRUD — Wave A Admin Surface
+// ============================================================
+
+export async function createChecklistTemplate(input: ChecklistTemplateInput): Promise<ChecklistTemplate> {
+  const userId = await getUserId()
+  const { data, error } = await supabase
+    .from('visit_checklist_templates')
+    .insert({
+      ...input,
+      is_active: input.is_active ?? true,
+      sort_order: input.sort_order ?? 0,
+      created_by: userId,
+    })
+    .select('*, questions:visit_checklist_questions(*)')
+    .single()
+  if (error) throw error
+  return data as ChecklistTemplate
+}
+
+export async function updateChecklistTemplate(id: string, input: Partial<ChecklistTemplateInput>): Promise<ChecklistTemplate> {
+  const { data, error } = await supabase
+    .from('visit_checklist_templates')
+    .update({ ...input, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select('*, questions:visit_checklist_questions(*)')
+    .single()
+  if (error) throw error
+  return data as ChecklistTemplate
+}
+
+export async function deleteChecklistTemplate(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('visit_checklist_templates')
+    .delete()
+    .eq('id', id)
+  if (error) throw error
+}
+
+export async function createChecklistQuestion(templateId: string, input: ChecklistQuestionInput): Promise<ChecklistQuestion> {
+  const { data, error } = await supabase
+    .from('visit_checklist_questions')
+    .insert({
+      template_id:    templateId,
+      question_text:  input.question_text,
+      question_type:  input.question_type,
+      options:        input.options ?? [],
+      default_value:  input.default_value ?? null,
+      hint_text:      input.hint_text ?? null,
+      min_value:      input.min_value ?? null,
+      max_value:      input.max_value ?? null,
+      is_required:    input.is_required ?? false,
+      sort_order:     input.sort_order ?? 0,
+    })
+    .select()
+    .single()
+  if (error) throw error
+  return data as ChecklistQuestion
+}
+
+export async function updateChecklistQuestion(id: string, input: Partial<ChecklistQuestionInput>): Promise<ChecklistQuestion> {
+  const { data, error } = await supabase
+    .from('visit_checklist_questions')
+    .update(input)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data as ChecklistQuestion
+}
+
+export async function deleteChecklistQuestion(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('visit_checklist_questions')
+    .delete()
+    .eq('id', id)
+  if (error) throw error
+}
+
+// ============================================================
+// Plan Template CRUD — Wave A Admin Surface
+// ============================================================
+
+export interface PlanTemplateInput {
+  name: string
+  branch_id?: string | null
+  employee_id?: string | null
+  recurrence?: 'none' | 'daily' | 'weekly' | 'monthly'
+  day_of_week?: number[] | null
+  is_active?: boolean
+  items?: any[]
+}
+
+export async function createVisitPlanTemplate(input: PlanTemplateInput): Promise<VisitPlanTemplate> {
+  const userId = await getUserId()
+  const { data, error } = await supabase
+    .from('visit_plan_templates')
+    .insert({
+      name:         input.name,
+      branch_id:    input.branch_id    ?? null,
+      employee_id:  input.employee_id  ?? null,
+      recurrence:   input.recurrence   ?? 'none',
+      day_of_week:  input.day_of_week  ?? null,
+      is_active:    input.is_active    ?? true,
+      items:        input.items        ?? [],
+      created_by:   userId,
+    })
+    .select()
+    .single()
+  if (error) throw error
+  return data as VisitPlanTemplate
+}
+
+export async function updateVisitPlanTemplate(id: string, input: Partial<PlanTemplateInput>): Promise<VisitPlanTemplate> {
+  const { data, error } = await supabase
+    .from('visit_plan_templates')
+    .update(input)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data as VisitPlanTemplate
+}
+
+export async function deleteVisitPlanTemplate(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('visit_plan_templates')
+    .delete()
+    .eq('id', id)
+  if (error) throw error
+}
+
+export async function createCallPlanTemplate(input: PlanTemplateInput): Promise<CallPlanTemplate> {
+  const userId = await getUserId()
+  const { data, error } = await supabase
+    .from('call_plan_templates')
+    .insert({
+      name:         input.name,
+      branch_id:    input.branch_id    ?? null,
+      employee_id:  input.employee_id  ?? null,
+      recurrence:   input.recurrence   ?? 'none',
+      day_of_week:  input.day_of_week  ?? null,
+      is_active:    input.is_active    ?? true,
+      items:        input.items        ?? [],
+      created_by:   userId,
+    })
+    .select()
+    .single()
+  if (error) throw error
+  return data as CallPlanTemplate
+}
+
+export async function updateCallPlanTemplate(id: string, input: Partial<PlanTemplateInput>): Promise<CallPlanTemplate> {
+  const { data, error } = await supabase
+    .from('call_plan_templates')
+    .update(input)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data as CallPlanTemplate
+}
+
+export async function deleteCallPlanTemplate(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('call_plan_templates')
+    .delete()
+    .eq('id', id)
+  if (error) throw error
 }

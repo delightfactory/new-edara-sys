@@ -10,7 +10,7 @@ import {
   useHREmployee,
   useHRLeaveBalances,
 } from '@/hooks/useQueryHooks'
-import { getEmployeeLiveStatement, getContracts, getEmployeeSalaryHistory, updateSalaryDirectly, uploadEmployeeDocument, getDelegations, createDelegation, cancelDelegation, getEmployees } from '@/lib/services/hr'
+import { getEmployeeLiveStatement, getContracts, createContract, getEmployeeSalaryHistory, updateSalaryDirectly, uploadEmployeeDocument, getDelegations, createDelegation, cancelDelegation, getEmployees } from '@/lib/services/hr'
 import { getAdvances, getAdvanceInstallments, deferInstallment } from '@/lib/services/hr'
 import { getAttendanceDays } from '@/lib/services/hr'
 import { getCommissionTargets, getCommissionRecords } from '@/lib/services/hr'
@@ -22,7 +22,7 @@ import type {
   HREmployee, HREmployeeStatus, HRLeaveBalance, HREmployeeDocument,
   EmployeeLiveStatement, HRContractType, HRAttendanceStatus,
   HRDocumentType, HRDelegation, HRDelegationInput, HRDelegationScopeType,
-  HRAdvanceInstallment,
+  HRAdvanceInstallment, HRContractInput,
 } from '@/lib/types/hr'
 import { formatNumber } from '@/lib/utils/format'
 import DataTable from '@/components/shared/DataTable'
@@ -32,6 +32,7 @@ import Button from '@/components/ui/Button'
 import Spinner from '@/components/ui/Spinner'
 import PermissionGuard from '@/components/shared/PermissionGuard'
 import EmployeeForm from './EmployeeForm'
+import OffboardingModal from './OffboardingModal'
 import { toast } from 'sonner'
 import Input from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
@@ -113,6 +114,9 @@ export default function EmployeeProfile() {
   const [advType, setAdvType] = useState<'instant'|'scheduled'>('instant')
   const [submittingAdv, setSubmittingAdv] = useState(false)
 
+  // Wave 2B: Offboarding flow
+  const [offboardOpen, setOffboardOpen] = useState(false)
+
   // ── جلب بيانات الموظف ─────────────────────
   const { data: emp, isLoading, error } = useHREmployee(id)
 
@@ -176,12 +180,19 @@ export default function EmployeeProfile() {
               </Button>
             </PermissionGuard>
             <PermissionGuard permission="hr.employees.edit">
-              {!emp.user_id && (
+              {!emp.user_id && emp.status !== 'terminated' && (
                 <Button variant="secondary" size="sm" onClick={() => setLinkAccountOpen(true)}>
                   ربط حساب
                 </Button>
               )}
             </PermissionGuard>
+            {emp.status !== 'terminated' && (
+              <PermissionGuard permission="hr.employees.edit">
+                <Button variant="danger" size="sm" onClick={() => setOffboardOpen(true)} icon={<AlertCircle size={14} />}>
+                  إنهاء الخدمة
+                </Button>
+              </PermissionGuard>
+            )}
             <PermissionGuard permission="hr.employees.edit">
               <Button icon={<UserCog size={14} />} size="sm" onClick={() => setEditOpen(true)}>
                 تعديل
@@ -229,6 +240,15 @@ export default function EmployeeProfile() {
             {/* التاجات */}
             <div className="prof-hero-tags">
               <Badge variant={statusVariant[emp.status]}>{statusLabel[emp.status]}</Badge>
+              {emp.status === 'terminated' && emp.termination_date && (
+                <Badge variant="danger">
+                  <span style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                    <Calendar size={11} />
+                    أُنهيت في: {fmtDate(emp.termination_date)}
+                    {emp.termination_reason && ` - ${emp.termination_reason}`}
+                  </span>
+                </Badge>
+              )}
               {emp.position?.name && (
                 <span className="prof-tag">
                   <Briefcase size={11} /> {emp.position.name}
@@ -320,6 +340,13 @@ export default function EmployeeProfile() {
           else if (type === 'warning') toast.warning(msg)
           else toast.error(msg)
         }}
+      />
+
+      <OffboardingModal
+        open={offboardOpen}
+        onClose={() => setOffboardOpen(false)}
+        employeeId={emp.id}
+        employeeName={emp.full_name}
       />
 
       <style>{`
@@ -1324,6 +1351,18 @@ function ContractsTab({ employeeId }: { employeeId: string }) {
   })
   const [saving, setSaving] = useState(false)
 
+  const [contractModalOpen, setContractModalOpen] = useState(false)
+  const [contractSaving, setContractSaving] = useState(false)
+  const [contractForm, setContractForm] = useState<Partial<HRContractInput>>({
+    contract_type: 'permanent',
+    base_salary: 0,
+    transport_allowance: 0,
+    housing_allowance: 0,
+    other_allowances: 0,
+    start_date: new Date().toISOString().split('T')[0],
+    end_date: ''
+  })
+
   const { data: contracts = [], isLoading: cLoading } = useQuery({
     queryKey: ['hr-employee-contracts', employeeId],
     queryFn: () => getContracts(employeeId),
@@ -1366,10 +1405,50 @@ function ContractsTab({ employeeId }: { employeeId: string }) {
     }
   }
 
+  const handleCreateContract = async () => {
+    const bs = Number(contractForm.base_salary)
+    const startDate = contractForm.start_date
+    if (!bs || bs <= 0 || !startDate) {
+      toast.error('يرجى التأكد من الراتب الأساسي وتاريخ البداية')
+      return
+    }
+    setContractSaving(true)
+    try {
+      const payload: HRContractInput = {
+        employee_id: employeeId,
+        contract_type: contractForm.contract_type ?? 'permanent',
+        start_date: startDate,
+        end_date: contractForm.end_date || undefined,
+        base_salary: bs,
+        transport_allowance: contractForm.transport_allowance ? Number(contractForm.transport_allowance) : 0,
+        housing_allowance: contractForm.housing_allowance ? Number(contractForm.housing_allowance) : 0,
+        other_allowances: contractForm.other_allowances ? Number(contractForm.other_allowances) : 0,
+      }
+      // 1. إنشاء العقد (الـ Trigger الحديث بـ Backend سيتكفل بمزامنة الراتب والتاريخ)
+      await createContract(payload)
+      
+      toast.success('تم إنشاء العقد وتحديث الراتب بنجاح')
+      setContractModalOpen(false)
+      setContractForm({ contract_type: 'permanent', base_salary: 0, transport_allowance: 0, housing_allowance: 0, other_allowances: 0, start_date: new Date().toISOString().split('T')[0], end_date: '' })
+      qc.invalidateQueries({ queryKey: ['hr-employee-contracts', employeeId] })
+      refetchHistory()
+      qc.invalidateQueries({ queryKey: ['hr-employee', employeeId] })
+    } catch (e: any) {
+      toast.error(e.message ?? 'فشل إنشاء العقد')
+    } finally {
+      setContractSaving(false)
+    }
+  }
+
   return (
     <div>
       <div className="edara-card" style={{ marginBottom: 'var(--space-4)' }}>
-        <div style={{ fontWeight: 700, fontSize: 'var(--text-sm)', marginBottom: 'var(--space-4)', color: 'var(--color-primary)' }}>العقود</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+          <div style={{ fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--color-primary)' }}>العقود</div>
+          {can('hr.employees.edit') && (
+            <Button size="sm" onClick={() => setContractModalOpen(true)}>إنشاء عقد</Button>
+          )}
+        </div>
         {cLoading ? (
           <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 'var(--space-4)' }}>جارِ التحميل...</div>
         ) : contracts.length === 0 ? (
@@ -1462,6 +1541,44 @@ function ContractsTab({ employeeId }: { employeeId: string }) {
             onChange={e => setSalaryForm(p => ({ ...p, other_allowances: e.target.value }))} />
           <Input label="سبب التعديل" required value={salaryForm.reason}
             onChange={e => setSalaryForm(p => ({ ...p, reason: e.target.value }))} placeholder="علاوة سنوية، ترقية..." />
+        </div>
+      </ResponsiveModal>
+
+      {/* Contract Create Modal */}
+      <ResponsiveModal
+        open={contractModalOpen}
+        onClose={() => setContractModalOpen(false)}
+        title="إنشاء عقد جديد"
+        size="md"
+        disableOverlayClose={contractSaving}
+        footer={
+          <div style={{ display: 'flex', gap: 'var(--space-3)', width: '100%' }}>
+            <Button variant="secondary" onClick={() => setContractModalOpen(false)} style={{ flex: 1 }}>إلغاء</Button>
+            <Button onClick={handleCreateContract} loading={contractSaving} disabled={!contractForm.base_salary || !contractForm.start_date} style={{ flex: 2 }}>إنشاء العقد وتوثيق الراتب</Button>
+          </div>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          <Select label="نوع العقد" required value={contractForm.contract_type} onChange={e => setContractForm(p => ({ ...p, contract_type: e.target.value as HRContractType }))} options={Object.entries(CONTRACT_TYPE_LABEL).map(([k, v]) => ({ label: v, value: k }))} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>
+            <Input label="تاريخ البداية" required type="date" value={String(contractForm.start_date)} onChange={e => setContractForm(p => ({ ...p, start_date: e.target.value }))} />
+            <Input label="تاريخ النهاية" type="date" placeholder="مفتوح" value={contractForm.end_date || ''} onChange={e => setContractForm(p => ({ ...p, end_date: e.target.value }))} />
+          </div>
+          <hr style={{ borderColor: 'var(--border-color)', margin: 'var(--space-2) 0' }} />
+          <Input label="الراتب الأساسي" required type="number" value={String(contractForm.base_salary || '')} onChange={e => setContractForm(p => ({ ...p, base_salary: Number(e.target.value) }))} placeholder="0.00" />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>
+            <Input label="بدل المواصلات" type="number" value={String(contractForm.transport_allowance || '')} onChange={e => setContractForm(p => ({ ...p, transport_allowance: Number(e.target.value) }))} />
+            <Input label="بدل السكن" type="number" value={String(contractForm.housing_allowance || '')} onChange={e => setContractForm(p => ({ ...p, housing_allowance: Number(e.target.value) }))} />
+          </div>
+          <Input label="بدلات أخرى" type="number" value={String(contractForm.other_allowances || '')} onChange={e => setContractForm(p => ({ ...p, other_allowances: Number(e.target.value) }))} />
+          
+          <div style={{ 
+            fontSize: 'var(--text-xs)', color: 'var(--text-muted)', 
+            display: 'flex', gap: 'var(--space-2)', alignItems: 'center',
+            background: 'var(--bg-surface-2)', padding: 'var(--space-2)', borderRadius: 'var(--radius-sm)'
+          }}>
+            <AlertCircle size={14} /> بناءً على هذه البيانات سيتم تحديث راتب الموظف الحالي تلقائيًا لتجنب التضارب.
+          </div>
         </div>
       </ResponsiveModal>
     </div>

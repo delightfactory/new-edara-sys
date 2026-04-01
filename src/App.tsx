@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'sonner'
 import { lazy, Suspense } from 'react'
@@ -106,6 +106,9 @@ const CallPlanDetail      = lazy(() => import('@/pages/activities/CallPlanDetail
 const TargetsPage         = lazy(() => import('@/pages/activities/TargetsPage'))
 const TargetForm          = lazy(() => import('@/pages/activities/TargetForm'))
 const TargetDetail        = lazy(() => import('@/pages/activities/TargetDetail'))
+// Wave A Admin Pages
+const ChecklistTemplatesPage = lazy(() => import('@/pages/activities/ChecklistTemplatesPage'))
+const PlanTemplatesPage      = lazy(() => import('@/pages/activities/PlanTemplatesPage'))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -122,12 +125,6 @@ const LazyFallback = () => (
     {[1,2,3,4,5].map(i => <div key={i} className="skeleton skeleton-row" />)}
   </div>
 )
-
-/** Edit Mode مؤجل — يعيد التوجيه لصفحة التفاصيل ريثما يُنفَّذ لاحقاً */
-function TargetEditRedirect() {
-  const { id } = useParams<{ id: string }>()
-  return <Navigate to={`/activities/targets/${id}`} replace />
-}
 
 export default function App() {
   return (
@@ -307,9 +304,9 @@ export default function App() {
                 <ProtectedRoute permission="branches.read"><Suspense fallback={<LazyFallback />}><BranchesPage /></Suspense></ProtectedRoute>
               } />
 
-              {/* HR — Dashboard (index) */}
+              {/* HR — Dashboard (index) / Admin Workspace */}
               <Route path="hr" element={
-                <ProtectedRoute><Suspense fallback={<LazyFallback />}><HRDashboard /></Suspense></ProtectedRoute>
+                <ProtectedRoute permission="hr.employees.read"><Suspense fallback={<LazyFallback />}><HRDashboard /></Suspense></ProtectedRoute>
               } />
               <Route path="hr/employees" element={
                 <ProtectedRoute permission={['hr.employees.read', 'hr.employees.create']}><Suspense fallback={<LazyFallback />}><EmployeesPage /></Suspense></ProtectedRoute>
@@ -336,7 +333,7 @@ export default function App() {
                 <ProtectedRoute permission="hr.payroll.read"><Suspense fallback={<LazyFallback />}><TargetPayoutsPage /></Suspense></ProtectedRoute>
               } />
               <Route path="hr/attendance" element={
-                <ProtectedRoute permission="hr.employees.read"><Suspense fallback={<LazyFallback />}><AttendancePage /></Suspense></ProtectedRoute>
+                <ProtectedRoute permission="hr.attendance.read"><Suspense fallback={<LazyFallback />}><AttendancePage /></Suspense></ProtectedRoute>
               } />
               <Route path="hr/permissions" element={
                 <ProtectedRoute permission={['hr.permissions.approve', 'hr.attendance.checkin', 'hr.leaves.create']}><Suspense fallback={<LazyFallback />}><PermissionsPage /></Suspense></ProtectedRoute>
@@ -463,17 +460,21 @@ export default function App() {
                   <Suspense fallback={<LazyFallback />}><TargetForm /></Suspense>
                 </ProtectedRoute>
               } />
-              {/* /edit: مؤجل صراحة — TargetForm حالياً Create-only — إعادة توجيه للتفاصيل */}
-              <Route path="activities/targets/:id/edit" element={
-                <ProtectedRoute permission="targets.assign">
-                  <Suspense fallback={<LazyFallback />}>
-                    <TargetEditRedirect />
-                  </Suspense>
-                </ProtectedRoute>
-              } />
               <Route path="activities/targets/:id" element={
                 <ProtectedRoute permission={['targets.read_own', 'targets.read_team', 'targets.read_all']}>
                   <Suspense fallback={<LazyFallback />}><TargetDetail /></Suspense>
+                </ProtectedRoute>
+              } />
+
+              {/* ── Wave A Admin: Checklists & Template Management ── */}
+              <Route path="activities/checklists" element={
+                <ProtectedRoute permission="checklists.manage">
+                  <Suspense fallback={<LazyFallback />}><ChecklistTemplatesPage /></Suspense>
+                </ProtectedRoute>
+              } />
+              <Route path="activities/plan-templates" element={
+                <ProtectedRoute permission={['visit_plans.create', 'call_plans.create']}>
+                  <Suspense fallback={<LazyFallback />}><PlanTemplatesPage /></Suspense>
                 </ProtectedRoute>
               } />
 

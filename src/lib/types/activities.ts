@@ -201,7 +201,7 @@ export interface Activity {
   created_at: string
   updated_at: string
   deleted_at: string | null
-  // joined
+  // joined — Wave A additions
   type?: Pick<ActivityType, 'id' | 'name' | 'code' | 'category' | 'icon' | 'requires_gps' | 'requires_customer'>
   customer?: {
     id: string
@@ -211,7 +211,14 @@ export interface Activity {
     latitude: number | null
     longitude: number | null
   }
+  employee?: {
+    id: string
+    full_name: string
+  }
   call_detail?: CallDetail | null
+  // plan link navigation helpers (joined via visit_plan_item/call_plan_item)
+  visit_plan_item?: { id: string; plan_id: string } | null
+  call_plan_item?: { id: string; plan_id: string } | null
 }
 
 export interface ActivityInput {

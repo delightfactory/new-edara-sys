@@ -79,7 +79,13 @@ export default function ActivitiesPage() {
   }, [activities, search])
 
   const canCreate = can(PERMISSIONS.ACTIVITIES_CREATE)
-  const canDelete = can(PERMISSIONS.ACTIVITIES_UPDATE_OWN) || can(PERMISSIONS.ACTIVITIES_READ_TEAM)
+  // Wave A Final Fix: align with backend soft_delete_activity() RLS authority:
+  //   - UPDATE_OWN → rep can delete their own activities (24h window enforced server-side)
+  //   - READ_TEAM / READ_ALL → supervisor/manager can delete team activities (48h window server-side)
+  // UI shows the button; the actual time-window check is enforced by the RPC — not duplicated here.
+  const canDelete = can(PERMISSIONS.ACTIVITIES_UPDATE_OWN) ||
+                    can(PERMISSIONS.ACTIVITIES_READ_TEAM)  ||
+                    can(PERMISSIONS.ACTIVITIES_READ_ALL)
 
   const handleDelete = async () => {
     if (!deleteTarget) return

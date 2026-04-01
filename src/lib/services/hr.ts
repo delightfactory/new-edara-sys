@@ -23,6 +23,7 @@ import type {
   LocationValidationResult, EmployeeSalaryAtDate, MonthlyAttendanceSummary,
   PayrollApprovalResult, AdvanceRequestResult,
   LinkEmployeeResult, EmployeeLiveStatement,
+  EmployeePayslipSummary,
 } from '@/lib/types/hr'
 
 // ─────────────────────────────────────────────────────────────
@@ -1364,48 +1365,19 @@ export async function updateSalaryDirectly(params: {
 }): Promise<HRSalaryHistory> {
   const userId = await getCurrentUserId()
 
-  // جلب بيانات الراتب الحالية
-  const { data: emp } = await supabase
-    .from('hr_employees')
-    .select('base_salary, transport_allowance, housing_allowance, other_allowances')
-    .eq('id', params.employeeId)
-    .single()
+  // أصبحت الـ RPC المُضافة في 20260401200000_fix_hr_triggers هي الـ Single Source of Truth لتعديل الراتب
+  const { data, error } = await supabase.rpc('update_employee_salary', {
+    p_employee_id: params.employeeId,
+    p_base_salary: params.baseSalary,
+    p_transport_allowance: params.transportAllowance ?? 0,
+    p_housing_allowance: params.housingAllowance ?? 0,
+    p_other_allowances: params.otherAllowances ?? 0,
+    p_reason: params.reason,
+    p_effective_date: params.effectiveDate ?? new Date().toISOString().split('T')[0],
+    p_changed_by: userId
+  })
 
-  const transport  = params.transportAllowance ?? emp?.transport_allowance ?? 0
-  const housing    = params.housingAllowance   ?? emp?.housing_allowance   ?? 0
-  const other      = params.otherAllowances    ?? emp?.other_allowances    ?? 0
-  const grossSalary = params.baseSalary + transport + housing + other
-
-  // إنشاء سجل تاريخي (الـ Trigger سيحدّث hr_employees تلقائياً في بعض التكوينات)
-  const { data, error } = await supabase
-    .from('hr_salary_history')
-    .insert({
-      employee_id:          params.employeeId,
-      base_salary:          params.baseSalary,
-      transport_allowance:  transport,
-      housing_allowance:    housing,
-      other_allowances:     other,
-      gross_salary:         grossSalary,
-      effective_date:       params.effectiveDate ?? new Date().toISOString().split('T')[0],
-      change_reason:        params.reason,
-      changed_by:           userId,
-    })
-    .select('*')
-    .single()
   if (error) throw error
-
-  // تحديث hr_employees بالقيم الجديدة
-  await supabase
-    .from('hr_employees')
-    .update({
-      base_salary:         params.baseSalary,
-      transport_allowance: transport,
-      housing_allowance:   housing,
-      other_allowances:    other,
-      gross_salary:        grossSalary,
-    })
-    .eq('id', params.employeeId)
-
   return data as HRSalaryHistory
 }
 
@@ -1504,4 +1476,14 @@ export async function approvePayrollAdjustment(adjustmentId: string, action: 'ap
     })
   if (error) throw error
   return data
+}
+
+// ═══════════════════════════════════════════════════════════
+// EMPLOYEE SELF-SERVICE PAYSLIPS
+// ═══════════════════════════════════════════════════════════
+
+export async function fetchMyPayslips(): Promise<EmployeePayslipSummary[]> {
+  const { data, error } = await supabase.rpc('get_my_payslips')
+  if (error) throw error
+  return (data || []) as EmployeePayslipSummary[]
 }
