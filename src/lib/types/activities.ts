@@ -689,6 +689,8 @@ export interface TargetListItem {
   auto_payout: boolean
   unit: TargetUnit
   estimated_reward?: number                // ★ Phase 22: للموظف
+  // ★ Phase 22: معلومات الشريحة الحالية — تُحسب عند include_tiers
+  current_tier_info?: TargetComputedMetrics['current_tier_info']
 }
 
 /**

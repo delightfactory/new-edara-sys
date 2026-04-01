@@ -19,13 +19,15 @@ import PermissionGuard from '@/components/shared/PermissionGuard'
 import Button from '@/components/ui/Button'
 import ActivityStatusBadge from '@/components/shared/ActivityStatusBadge'
 import EmployeeTargetCard from '@/components/targets/EmployeeTargetCard'
-import type { Target as TargetRow, TargetScope, TargetPeriod, TargetFilters } from '@/lib/types/activities'
+import { buildTargetListItems } from '@/lib/services/targets'
+import type { Target as TargetRow, TargetScope, TargetPeriod, TargetFilters, TargetListItem } from '@/lib/types/activities'
 
 function fmtDate(d: string) {
   return new Date(d).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' })
 }
-function fmtNumber(n: number) {
-  return n.toLocaleString('ar-EG', { maximumFractionDigits: 1 })
+function fmtNumber(n: number | null | undefined) {
+  if (n == null || isNaN(Number(n))) return '—'
+  return Number(n).toLocaleString('ar-EG', { maximumFractionDigits: 1 })
 }
 
 const SCOPE_AR: Record<TargetScope, string> = {
@@ -63,6 +65,7 @@ export default function TargetsPage() {
   const [period_month, setPeriodMonth] = useState('')
   const [has_reward,  setHasReward]   = useState<'true' | 'false' | ''>('')
   const [auto_payout, setAutoPayout]  = useState<'true' | 'false' | ''>('')
+  const [payout_status, setPayoutStatus] = useState<'' | 'pending' | 'committed' | 'cancelled'>('')
   const [showFilters, setShowFilters] = useState(false)
   const [page,        setPage]        = useState(1)
 
@@ -81,9 +84,10 @@ export default function TargetsPage() {
     employee_id: employee_id || undefined,
     date_from:   monthRange?.from || undefined,
     date_to:     monthRange?.to   || undefined,
-    has_reward:  has_reward === '' ? undefined : has_reward === 'true',
-    auto_payout: auto_payout === '' ? undefined : auto_payout === 'true',
-  }), [scope, type_code, is_active, branch_id, employee_id, monthRange?.from, monthRange?.to, has_reward, auto_payout])
+    has_reward:    has_reward === '' ? undefined : has_reward === 'true',
+    auto_payout:   auto_payout === '' ? undefined : auto_payout === 'true',
+    payout_status: payout_status || undefined,
+  }), [scope, type_code, is_active, branch_id, employee_id, monthRange?.from, monthRange?.to, has_reward, auto_payout, payout_status])
 
   // فلاتر وضع الموظف — include_tiers لحساب estimated_reward فعلياً
   const employeeFilters = useMemo<TargetFilters>(() => ({
@@ -98,13 +102,20 @@ export default function TargetsPage() {
   const totalPages = result?.totalPages ?? 1
   const totalCount = result?.count    ?? 0
 
-  const activeFiltersCount = [scope, type_code, branch_id, employee_id, period_month, has_reward, auto_payout]
+  // ── Employee view-model: تحويل Target[] → TargetListItem[] بحقول محسوبة
+  // buildTargetListItems يحسب achieved_value / achievement_pct / current_tier_info / estimated_reward
+  const employeeListItems = useMemo<TargetListItem[]>(
+    () => isManagerView ? [] : buildTargetListItems(targets),
+    [targets, isManagerView]
+  )
+
+  const activeFiltersCount = [scope, type_code, branch_id, employee_id, period_month, has_reward, auto_payout, payout_status]
     .filter(Boolean).length + (is_active !== 'true' ? 1 : 0)
 
   const clearFilters = () => {
     setScope(''); setTypeCode(''); setIsActive('true')
     setBranchId(''); setEmployeeId(''); setPeriodMonth('')
-    setHasReward(''); setAutoPayout(''); setPage(1)
+    setHasReward(''); setAutoPayout(''); setPayoutStatus(''); setPage(1)
   }
 
   // ── Employee Motivational View ────────────────────────────
@@ -135,10 +146,10 @@ export default function TargetsPage() {
           </div>
         ) : (
           <div className="tg-emp-grid">
-            {targets.map(t => (
+            {employeeListItems.map(t => (
               <EmployeeTargetCard
                 key={t.id}
-                target={t as any}
+                target={t}
                 onClick={() => navigate(`/activities/targets/${t.id}`)}
               />
             ))}
@@ -257,6 +268,13 @@ export default function TargetsPage() {
               <option value="true">صرف تلقائي مفعّل</option>
               <option value="false">صرف يدوي</option>
             </select>
+            <select className="form-select tg-filter-select" value={payout_status}
+              onChange={e => { setPayoutStatus(e.target.value as any); setPage(1) }}>
+              <option value="">كل حالات الاستحقاق</option>
+              <option value="committed">💰 مصروفة</option>
+              <option value="pending">⏳ قيد الصرف</option>
+              <option value="cancelled">✕ ملغية</option>
+            </select>
           </div>
           {activeFiltersCount > 0 && (
             <button className="tg-clear-btn" onClick={clearFilters}>
@@ -309,13 +327,16 @@ export default function TargetsPage() {
             {
               key: 'progress', label: 'الإنجاز',
               render: t => {
-                const prog = t.latest_progress
+                // normalizeLatestProgress في الخدمة يضمن هذا، لكن نُضيف حماية إضافية هنا
+                const rawProg = t.latest_progress
+                const prog: typeof rawProg extends any[] ? never : typeof rawProg =
+                  Array.isArray(rawProg) ? (rawProg.length > 0 ? rawProg[0] : null) : rawProg
                 if (!prog) return <span className="text-muted text-xs">لم يُحسب</span>
                 return (
                   <div>
                     <ActivityStatusBadge trend={prog.trend ?? undefined} size="sm" />
                     <div className="text-xs text-muted mt-1">
-                      {fmtNumber(prog.achieved_value)} ({prog.achievement_pct.toFixed(0)}%)
+                      {fmtNumber(prog.achieved_value)} ({fmtNumber(prog.achievement_pct)}%)
                     </div>
                   </div>
                 )

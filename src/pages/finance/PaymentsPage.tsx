@@ -357,7 +357,7 @@ export default function PaymentsPage() {
       await confirmPaymentReceipt(confirmReceipt.id, vaultId)
       toast.success('تم تأكيد الإيصال وتوزيع المبلغ على الفواتير')
       setConfirmReceipt(null)
-      invalidate('payment-receipts')
+      invalidate('payment-receipts', 'targets', 'target-detail', 'target-progress-history', 'target-reward-summary')
     } catch (err: any) {
       toast.error(err.message || 'فشل التأكيد')
     } finally {

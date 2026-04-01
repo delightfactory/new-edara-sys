@@ -40,6 +40,19 @@ function sanitize<T extends Record<string, any>>(input: T): T {
   return cleaned as T
 }
 
+/**
+ * PostgREST يُعيد latest_progress من target_progress كـ array دائما،
+ * حتى مع .limit(1) على referencedTable.
+ * هذا الـ helper يُحوّل [] | [obj] إلى TargetProgress | null.
+ *
+ * المكان الوحيد لهذا التحويل — لا يجب أن يـ exist في consumers.
+ */
+function normalizeLatestProgress(raw: unknown): TargetProgress | null {
+  if (!raw) return null
+  if (Array.isArray(raw)) return raw.length > 0 ? (raw[0] as TargetProgress) : null
+  return raw as TargetProgress
+}
+
 // ============================================================
 // SELECT fragments
 // ============================================================
@@ -78,9 +91,12 @@ export interface RewardValidationError {
   message: string
 }
 
+import { validateRewardConfig } from '@/lib/utils/rewardRules'
+
 /**
  * تحقق موازٍ للمدخلات قبل إرسالها للـ RPC
  * يُكمِّل قيود DB ولا يُلغيها — يُعطي رسائل خطأ واضحة للمستخدم
+ * يُطابق حرفياً is_valid_reward_config() في قاعدة البيانات.
  */
 export function validateCreateTargetInput(
   input: CreateTargetWithRewardsInput,
@@ -100,12 +116,15 @@ export function validateCreateTargetInput(
     }
   }
 
-  // 2. reward_type: percentage يتطلب pool_basis
-  if (input.reward_type === 'percentage' && !input.reward_pool_basis) {
-    errors.push({
-      field: 'reward_pool_basis',
-      message: 'وعاء الحساب (reward_pool_basis) إلزامي عند اختيار المكافأة النسبية',
-    })
+  // 2. التحقق من اتساق reward config — يُطابق is_valid_reward_config() حرفياً
+  const rewardConfigError = validateRewardConfig(
+    typeCategory,
+    typeCode,
+    (input.reward_type || null) as any,
+    (input.reward_pool_basis || null) as any
+  )
+  if (rewardConfigError) {
+    errors.push({ field: 'reward_pool_basis', message: rewardConfigError })
   }
 
   // 3. reward_base_value موجب إذا كان reward_type محدداً
@@ -116,23 +135,7 @@ export function validateCreateTargetInput(
     })
   }
 
-  // 4. percentage مسموح للمالية وupgrade_value فقط
-  if (input.reward_type === 'percentage' && typeCategory !== 'financial' && typeCode !== 'upgrade_value') {
-    errors.push({
-      field: 'reward_type',
-      message: 'المكافأة النسبية مسموحة فقط للأهداف المالية وأهداف رفع قيمة العميل',
-    })
-  }
-
-  // 5. collection + pool_basis يجب أن يكون collection_value
-  if (typeCode === 'collection' && input.reward_pool_basis && input.reward_pool_basis !== 'collection_value') {
-    errors.push({
-      field: 'reward_pool_basis',
-      message: 'هدف التحصيل يدعم فقط وعاء حساب قيمة التحصيل',
-    })
-  }
-
-  // 6. auto_payout يتطلب شرائح + reward_type
+  // 4. auto_payout يتطلب شرائح + reward_type
   if (input.auto_payout) {
     if (!input.reward_type) {
       errors.push({ field: 'reward_type', message: 'الصرف التلقائي يتطلب تحديد نوع المكافأة' })
@@ -142,7 +145,7 @@ export function validateCreateTargetInput(
     }
   }
 
-  // 7. ترتيب الشرائح: كل شريحة يجب أن تكون أعلى من السابقة
+  // 5. ترتيب الشرائح: كل شريحة يجب أن تكون أعلى من السابقة
   if (input.tiers && input.tiers.length > 0) {
     const sorted = [...input.tiers].sort((a, b) => a.threshold_pct - b.threshold_pct)
     for (let i = 1; i < sorted.length; i++) {
@@ -156,13 +159,14 @@ export function validateCreateTargetInput(
     }
   }
 
-  // 8. target_customers مطلوب لـ upgrade_value و category_spread
+  // 6. target_customers مطلوب لـ upgrade_value و category_spread
   if (['upgrade_value', 'category_spread'].includes(typeCode) && (!input.customers || input.customers.length === 0)) {
     errors.push({
       field: 'customers',
       message: `هدف ${typeCode} يتطلب تحديد العملاء المستهدفين مع بيانات الفترة المرجعية`,
     })
   }
+
 
   // 9. baseline_value إلزامي لـ upgrade_value
   if (typeCode === 'upgrade_value' && input.customers) {
@@ -235,8 +239,8 @@ export async function createTargetWithRewards(
     p_reward_base_value:  input.reward_base_value ?? null,
     p_reward_pool_basis:  input.reward_pool_basis ?? null,
     p_payout_month_offset: input.payout_month_offset ?? 0,
-    p_tiers:              JSON.stringify(input.tiers ?? []),
-    p_customers:          JSON.stringify(input.customers ?? []),
+    p_tiers:              input.tiers ?? [],
+    p_customers:          input.customers ?? [],
     p_auto_payout:        input.auto_payout ?? false,
     p_user_id:            input.p_user_id ?? userId,
   })
@@ -320,11 +324,21 @@ export async function getTargets(
     q = q.in('id', targetIdFilter)
   }
 
-  const { data, error, count } = await q.returns<Target[]>()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error, count } = await q.returns<any[]>()
 
   if (error) throw error
+
+  // تطبيع latest_progress: PostgREST يُعيد array دائماً حتى مع .limit(1) على referencedTable
+  // نحوّلها إلى TargetProgress | null في طبقة الخدمة قبل تسليم البيانات للواجهة
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const normalized: Target[] = ((data ?? []) as any[]).map((t: any) => ({
+    ...t,
+    latest_progress: normalizeLatestProgress(t.latest_progress),
+  })) as unknown as Target[]
+
   return {
-    data: (data ?? []) as Target[],
+    data: normalized,
     count: count ?? 0,
     page,
     pageSize,
@@ -582,7 +596,9 @@ export function buildTargetListItems(
   scopeLabels?: Record<string, string>  // scope_id → display name
 ): TargetListItem[] {
   return targets.map(t => {
-    const progress = t.latest_progress as TargetProgress | undefined
+    // latest_progress مضمون الآن أن يكون TargetProgress | null بعد normalizeLatestProgress في getTargets
+    const progress    = (t.latest_progress ?? null) as TargetProgress | null
+    const rewardTiers = ((t as any).reward_tiers ?? []) as TargetRewardTier[]
     return {
       id:              t.id,
       name:            t.name,
@@ -604,13 +620,21 @@ export function buildTargetListItems(
       reward_type:     t.reward_type,                     // ★ Phase 22 fallback
       auto_payout:     t.auto_payout,                    // ★ Phase 22
       unit:            t.target_type?.unit ?? 'currency',
-      estimated_reward: t.reward_type && (t as any).reward_tiers?.length > 0
+      estimated_reward: rewardTiers.length > 0
         ? buildCurrentTierInfo(
             progress?.achievement_pct ?? 0,
             t,
-            (t as any).reward_tiers as TargetRewardTier[],
+            rewardTiers,
             progress?.achieved_value ?? 0
           )?.estimated_reward ?? undefined
+        : undefined,
+      current_tier_info: rewardTiers.length > 0
+        ? buildCurrentTierInfo(
+            progress?.achievement_pct ?? 0,
+            t,
+            rewardTiers,
+            progress?.achieved_value ?? 0
+          )
         : undefined,
     }
   })

@@ -123,7 +123,7 @@ export default function PaymentReceiptDetail() {
       await confirmPaymentReceipt(receipt.id, (isCheque || hasCustodyLink) ? null : confirmVaultId)
       toast.success('تم تأكيد الإيصال بنجاح')
       setConfirmOpen(false)
-      invalidate('payment-receipts', 'payment-receipt')
+      invalidate('payment-receipts', 'payment-receipt', 'targets', 'target-detail', 'target-progress-history', 'target-reward-summary')
       await refetch()
     } catch (e: any) {
       toast.error(e.message || 'فشل التأكيد')

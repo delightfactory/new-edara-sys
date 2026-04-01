@@ -303,7 +303,25 @@ export default function TargetDetail() {
       {/* ── Reward Payouts Ledger ────────────────────────────── */}
       {target.reward_type && (
         <div className="edara-card td-card">
-          <h3 className="td-section-title">💸 سجل استحقاقات المكافآت</h3>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <h3 className="td-section-title" style={{ margin: 0, border: 'none', padding: 0 }}>💸 سجل استحقاقات المكافآت</h3>
+            {canReadPayroll && (
+              <a
+                href={`/hr/payroll/target-payouts?target_id=${id}`}
+                style={{
+                  fontSize: '12px', fontWeight: 600, color: 'var(--color-primary)',
+                  textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px',
+                  padding: '4px 10px', border: '1px solid var(--color-primary)',
+                  borderRadius: '6px', background: 'var(--color-primary-light)',
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--color-primary)'; (e.currentTarget as HTMLElement).style.color = '#fff' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'var(--color-primary-light)'; (e.currentTarget as HTMLElement).style.color = 'var(--color-primary)' }}
+              >
+                ← صفحة HR للمكافآت
+              </a>
+            )}
+          </div>
           {payouts.length === 0 ? (
             <div className="empty-state" style={{ padding: 'var(--space-6) 0' }}>
               <p className="empty-state-title" style={{ marginBottom: '8px' }}>لا توجد سجلات استحقاق حتى الآن</p>
@@ -571,6 +589,8 @@ export default function TargetDetail() {
         onClose={() => setRewardEditOpen(false)}
         targetId={id!}
         summary={summaryData ?? null}
+        typeCode={target.type_code ?? ''}
+        typeCategory={target.target_type?.category ?? ''}
       />
 
       {/* ─── Modal: Adjust (Base Values) ─── */}

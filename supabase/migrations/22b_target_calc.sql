@@ -1,9 +1,21 @@
 -- ============================================================
 -- 22b_target_calc.sql
 -- EDARA v2 — محرك الأهداف: الحساب والمنطق
--- يُصلح خلل احتساب المبيعات المفلترة (soi.line_total)
--- يُضيف منطق upgrade_value وcategory_spread
--- يُنشئ دالة calc_target_pool_value() للمكافأة النسبية
+-- v2 (Net-Engine): جميع الأهداف المرتبطة بالبيع/التحصيل أصبحت Net-based
+--
+-- السياسة المعتمدة:
+--   sales_value    = Net Sales         (gross - confirmed returns)
+--   product_qty    = Net Quantity      (delivered - returned)
+--   collection     = Net Cash Collected (cash receipts only - cash refunds)
+--   upgrade_value  = Net Customer Growth (based on net sales per customer)
+--   category_spread = Net Category Adoption (only categories with net qty > 0)
+--   visits/calls/new_customers/reactivation = Gross (غير عرضة للمرتجع)
+--
+-- معيار Net Collection:
+--   يُخصم فقط مرتجع نقدي (cash return) له رد فعلي من خزنة/عهدة
+--   الـ credit return (تخفيض ذمم فقط) لا يُخصم من collection
+--   لأن لم يتم تحصيل فعلي + رده لاحقاً في هذه الحالة
+--
 -- Idempotent: آمن للتشغيل أكثر من مرة
 -- ============================================================
 
@@ -94,9 +106,21 @@ BEGIN
   CASE v_target.type_code
 
     WHEN 'sales_value' THEN
-      -- ★ الإصلاح الجوهري: فلتر منتج/تصنيف → نجمع فقط line_total البنود المطابقة
+      -- ★ Net Sales: Gross - confirmed return amounts
+      -- مع فلتر منتج/تصنيف: نحسب per-line_total ثم نخصم المرتجع per-line
+      -- بدون فلتر: total_amount - returned_amount على مستوى الفاتورة
       IF v_target.product_id IS NOT NULL OR v_target.category_id IS NOT NULL THEN
-        SELECT COALESCE(SUM(soi.line_total), 0) INTO v_achieved
+        -- Net line value: line_total يمثل الببيع، نخصم قيمة المرتجع المؤكد لنفس البند
+        SELECT COALESCE(SUM(
+          soi.line_total
+          - COALESCE((
+            SELECT SUM(sri.line_total)
+            FROM sales_return_items sri
+            JOIN sales_returns sr ON sr.id = sri.return_id
+            WHERE sri.order_item_id = soi.id
+              AND sr.status = 'confirmed'
+          ), 0)
+        ), 0) INTO v_achieved
         FROM sales_orders so
         JOIN hr_employees he ON he.user_id = so.rep_id
         JOIN sales_order_items soi ON soi.order_id = so.id
@@ -111,8 +135,10 @@ BEGIN
           AND (v_target.city_id        IS NULL OR c.city_id        = v_target.city_id)
           AND (v_target.area_id        IS NULL OR c.area_id        = v_target.area_id);
       ELSE
-        -- بدون فلتر منتج: إجمالي الطلب صحيح (لا مشكلة)
-        SELECT COALESCE(SUM(so.total_amount), 0) INTO v_achieved
+        -- Net order value: total_amount - returned_amount (الحقل يُحدَّث بـ confirm_sales_return)
+        SELECT COALESCE(SUM(
+          GREATEST(so.total_amount - COALESCE(so.returned_amount, 0), 0)
+        ), 0) INTO v_achieved
         FROM sales_orders so
         JOIN hr_employees he ON he.user_id = so.rep_id
         JOIN customers c ON c.id = so.customer_id
@@ -125,12 +151,41 @@ BEGIN
       END IF;
 
     WHEN 'collection' THEN
-      SELECT COALESCE(SUM(pr.amount), 0) INTO v_achieved
+      -- ★ Net Cash Collections (Unified Attribution via collected_by):
+      --
+      -- الزيادة: payment_receipts.collected_by ← الشخص الذي حصّل فعلاً
+      -- الخصم المرتجع النقدي: pr2.collected_by (ليس so.rep_id)
+      --   لأن الشخص الذي حصّل هو من ستُخصم منه collection عند المرتجع
+      --   (attribution موحد: كلا الجانبين على collected_by)
+      --
+      -- تاريخ الخصم: so.delivered_at (تاريخ البيع الأصلي، ليس sr.confirmed_at)
+      --   هذا يضمن: مرتجع أبريل لبيع مارس → يُخصم من هدف مارس
+      --   عند إعادة الحساب بـ p_snapshot_date = LEAST(TODAY, period_end_march)
+      SELECT COALESCE(SUM(pr.amount), 0)
+           - COALESCE((
+               SELECT SUM(sr.total_amount)
+               FROM sales_returns sr
+               JOIN sales_orders so ON so.id = sr.order_id
+               -- Unified: عبر الإيصال المرتبط بنفس الطلب (لا rep_id)
+               JOIN payment_receipts pr2 ON pr2.sales_order_id = so.id
+                 AND pr2.status = 'confirmed'
+               JOIN hr_employees he2 ON he2.user_id = pr2.collected_by
+               WHERE he2.id = ANY(v_employee_ids)
+                 AND sr.status = 'confirmed'
+                 -- تاريخ البيع الأصلي (ليس تاريخ تأكيد المرتجع)
+                 AND so.delivered_at::DATE BETWEEN v_target.period_start AND p_snapshot_date
+                 AND (so.payment_terms = 'cash' OR COALESCE(so.credit_amount, 0) = 0)
+             ), 0)
+        INTO v_achieved
       FROM payment_receipts pr
       JOIN hr_employees he ON he.user_id = pr.collected_by
       WHERE he.id = ANY(v_employee_ids)
         AND pr.status = 'confirmed'
         AND pr.created_at::DATE BETWEEN v_target.period_start AND p_snapshot_date;
+
+      -- لا تسمح بقيمة سالبة
+      v_achieved := GREATEST(v_achieved, 0);
+
 
     WHEN 'visits_count' THEN
       SELECT COUNT(*) INTO v_achieved
@@ -181,7 +236,11 @@ BEGIN
         );
 
     WHEN 'product_qty' THEN
-      SELECT COALESCE(SUM(soi.base_quantity), 0) INTO v_achieved
+      -- ★ Net Quantity: delivered_quantity - returned_quantity
+      -- returned_quantity يُحدَّث بـ confirm_sales_return (الحقل الموثوق)
+      SELECT COALESCE(SUM(
+        GREATEST(soi.delivered_quantity - COALESCE(soi.returned_quantity, 0), 0)
+      ), 0) INTO v_achieved
       FROM sales_order_items soi
       JOIN sales_orders so ON so.id = soi.order_id
       JOIN hr_employees he ON he.user_id = so.rep_id
@@ -198,6 +257,8 @@ BEGIN
     -- growth_pct مُخزَّن في filter_criteria->>'growth_pct' (مثلاً 30%)
     -- achievement_pct = v_achieved / target_value × 100 (صحيح تماماً)
     WHEN 'upgrade_value' THEN
+      -- ★ Net Customer Growth: صافي مشتريات العميل بعد المرتجعات
+      -- period_sales = total_amount - returned_amount (Net per order)
       DECLARE
         v_required_growth NUMERIC;
       BEGIN
@@ -205,24 +266,28 @@ BEGIN
         SELECT COUNT(*) INTO v_achieved
         FROM public.target_customers tc
         LEFT JOIN LATERAL (
-          SELECT COALESCE(SUM(so.total_amount), 0) AS period_sales
+          SELECT COALESCE(SUM(
+            GREATEST(so.total_amount - COALESCE(so.returned_amount, 0), 0)
+          ), 0) AS period_net_sales
           FROM sales_orders so
           WHERE so.customer_id = tc.customer_id
             AND so.status IN ('delivered','completed')
             AND so.delivered_at::DATE BETWEEN v_target.period_start AND p_snapshot_date
         ) pa ON true
         WHERE tc.target_id = p_target_id
-          -- العميل نجح إذا تجاوزت مشترياته: baseline × (1 + growth_pct%)
-          AND pa.period_sales >= COALESCE(tc.baseline_value, 0) * (1 + v_required_growth / 100.0);
-        -- v_achieved = عدد العملاء الناجحين
-        -- v_pct = v_achieved / target_value × 100 (صحيح: عدد/عدد × 100)
+          -- العميل نجح إذا تجاوز صافي مشترياته: baseline × (1 + growth_pct%)
+          AND pa.period_net_sales >= COALESCE(tc.baseline_value, 0) * (1 + v_required_growth / 100.0);
+        -- v_achieved = عدد العملاء الناجحين (صافي)
       END;
 
-    -- ★ جديد: category_spread — عدد العملاء الذين وصلوا للعدد المستهدف من التصنيفات
+    -- ★ Net Category Adoption:
+    -- تصنيف يُحتسب فقط إذا بقي للعميل صافي كمية > 0 منه
+    -- (أي لم يُرجع كل ما اشتراه من هذا التصنيف)
     WHEN 'category_spread' THEN
       SELECT COUNT(*) INTO v_achieved
       FROM (
-        SELECT tc.customer_id, COUNT(DISTINCT p.category_id) AS cat_count
+        SELECT tc.customer_id,
+               COUNT(DISTINCT p.category_id) AS cat_count
         FROM public.target_customers tc
         JOIN sales_orders so ON so.customer_id = tc.customer_id
           AND so.status IN ('delivered','completed')
@@ -230,10 +295,12 @@ BEGIN
         JOIN sales_order_items soi ON soi.order_id = so.id
         JOIN products p ON p.id = soi.product_id
         WHERE tc.target_id = p_target_id
+          -- فقط بنود لا تزال لها صافي كمية موجبة
+          AND GREATEST(soi.delivered_quantity - COALESCE(soi.returned_quantity, 0), 0) > 0
         GROUP BY tc.customer_id
       ) sub
       WHERE sub.cat_count >= v_target.target_value;
-      -- target_value = عدد التصنيفات المستهدف لكل عميل
+      -- target_value = عدد التصنيفات المستهدف لكل عميل (بالصافي)
 
     ELSE
       v_achieved := 0;
@@ -325,12 +392,20 @@ BEGIN
   CASE v_target.reward_pool_basis
 
     WHEN 'sales_value' THEN
-      -- هل هناك عملاء محددون (upgrade_value / category_spread)؟
+      -- ★ Net Sales Pool (يُطابق منطق recalculate_target_progress)
       IF EXISTS (SELECT 1 FROM public.target_customers WHERE target_id = p_target_id) THEN
-        -- ★ الوعاء من العملاء المستهدفين فقط
+        -- وعاء من العملاء المستهدفين فقط
         IF v_target.product_id IS NOT NULL OR v_target.category_id IS NOT NULL THEN
-          -- + فلتر منتج/تصنيف → line_total
-          SELECT COALESCE(SUM(soi.line_total), 0) INTO v_pool
+          -- Net per-line: line_total - confirmed return lines
+          SELECT COALESCE(SUM(
+            soi.line_total
+            - COALESCE((
+              SELECT SUM(sri.line_total)
+              FROM sales_return_items sri
+              JOIN sales_returns sr ON sr.id = sri.return_id
+              WHERE sri.order_item_id = soi.id AND sr.status = 'confirmed'
+            ), 0)
+          ), 0) INTO v_pool
           FROM public.target_customers tc
           JOIN sales_orders so ON so.customer_id = tc.customer_id
           JOIN hr_employees he ON he.user_id = so.rep_id
@@ -343,8 +418,10 @@ BEGIN
             AND (v_target.product_id  IS NULL OR soi.product_id = v_target.product_id)
             AND (v_target.category_id IS NULL OR p.category_id  = v_target.category_id);
         ELSE
-          -- إجمالي الطلب من العملاء المحددين
-          SELECT COALESCE(SUM(so.total_amount), 0) INTO v_pool
+          -- Net order: total - returned
+          SELECT COALESCE(SUM(
+            GREATEST(so.total_amount - COALESCE(so.returned_amount, 0), 0)
+          ), 0) INTO v_pool
           FROM public.target_customers tc
           JOIN sales_orders so ON so.customer_id = tc.customer_id
           JOIN hr_employees he ON he.user_id = so.rep_id
@@ -357,8 +434,16 @@ BEGIN
       ELSE
         -- بدون عملاء محددين: مبيعات الموظف مع فلاتر الهدف
         IF v_target.product_id IS NOT NULL OR v_target.category_id IS NOT NULL THEN
-          -- ★ فلتر منتج/تصنيف → line_total لا total_amount
-          SELECT COALESCE(SUM(soi.line_total), 0) INTO v_pool
+          -- Net per-line
+          SELECT COALESCE(SUM(
+            soi.line_total
+            - COALESCE((
+              SELECT SUM(sri.line_total)
+              FROM sales_return_items sri
+              JOIN sales_returns sr ON sr.id = sri.return_id
+              WHERE sri.order_item_id = soi.id AND sr.status = 'confirmed'
+            ), 0)
+          ), 0) INTO v_pool
           FROM sales_orders so
           JOIN hr_employees he ON he.user_id = so.rep_id
           JOIN sales_order_items soi ON soi.order_id = so.id
@@ -373,8 +458,10 @@ BEGIN
             AND (v_target.city_id        IS NULL OR c.city_id        = v_target.city_id)
             AND (v_target.area_id        IS NULL OR c.area_id        = v_target.area_id);
         ELSE
-          -- بدون فلاتر: إجمالي الطلب (صحيح)
-          SELECT COALESCE(SUM(so.total_amount), 0) INTO v_pool
+          -- Net order
+          SELECT COALESCE(SUM(
+            GREATEST(so.total_amount - COALESCE(so.returned_amount, 0), 0)
+          ), 0) INTO v_pool
           FROM sales_orders so
           JOIN hr_employees he ON he.user_id = so.rep_id
           JOIN customers c ON c.id = so.customer_id
@@ -388,8 +475,28 @@ BEGIN
       END IF;
 
     WHEN 'collection_value' THEN
-      -- وعاء التحصيل مع الفلاتر الجغرافية
-      SELECT COALESCE(SUM(pr.amount), 0) INTO v_pool
+      -- ★ Net Cash Collections Pool (Unified Attribution)
+      -- توحيد: الزيادة والخصم كلاهما عبر collected_by (لا rep_id)
+      -- تاريخ الخصم: so.delivered_at (ليس sr.confirmed_at)
+      SELECT GREATEST(
+        COALESCE(SUM(pr.amount), 0)
+        - COALESCE((
+            SELECT SUM(sr.total_amount)
+            FROM sales_returns sr
+            JOIN sales_orders so ON so.id = sr.order_id
+            -- Unified: عبر الإيصال المتصل بالطلب (لا rep_id)
+            JOIN payment_receipts pr2 ON pr2.sales_order_id = so.id
+              AND pr2.status = 'confirmed'
+            WHERE pr2.collected_by IN (
+              SELECT user_id FROM hr_employees
+              WHERE id = p_employee_id AND status = 'active'
+            )
+              AND sr.status = 'confirmed'
+              -- تاريخ البيع الأصلي (حل late return period)
+              AND so.delivered_at::DATE BETWEEN p_period_start AND p_period_end
+              AND (so.payment_terms = 'cash' OR COALESCE(so.credit_amount, 0) = 0)
+          ), 0)
+      , 0) INTO v_pool
       FROM payment_receipts pr
       JOIN hr_employees he ON he.user_id = pr.collected_by
       LEFT JOIN customers c ON c.id = pr.customer_id

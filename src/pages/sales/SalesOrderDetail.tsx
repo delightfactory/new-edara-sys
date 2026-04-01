@@ -267,7 +267,7 @@ export default function SalesOrderDetail() {
         : 'تم التسليم — الإيصال بانتظار مراجعة المحاسب المالي ✓'
       toast.success(msg)
       setShowDeliverModal(false)
-      invalidate('sales-orders', 'sales-stats', 'stock', 'vaults', 'custody-accounts', 'payment-receipts')
+      invalidate('sales-orders', 'sales-stats', 'stock', 'vaults', 'custody-accounts', 'payment-receipts', 'targets', 'target-detail', 'target-progress-history', 'target-reward-summary')
       await loadOrder()
     } catch (e: any) { toast.error(e.message || 'فشل التسليم') }
     finally { setActionLoading(false) }

@@ -77,7 +77,7 @@ export default function SalesReturnDetail() {
       })
       toast.success('تم تأكيد المرتجع وإعادة المخزون')
       setShowConfirm(false)
-      invalidate('sales-returns', 'sales-orders', 'sales-stats', 'stock', 'vaults', 'custody-accounts')
+      invalidate('sales-returns', 'sales-orders', 'sales-stats', 'stock', 'vaults', 'custody-accounts', 'targets', 'target-detail', 'target-progress-history', 'target-reward-summary')
       await loadReturn()
     } catch (e: any) {
       toast.error(e.message || 'فشل تأكيد المرتجع')

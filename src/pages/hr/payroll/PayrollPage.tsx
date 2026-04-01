@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, FileSpreadsheet, ChevronDown, CheckCircle, Clock, AlertCircle } from 'lucide-react'
+import { Plus, FileSpreadsheet, ChevronDown, CheckCircle, Clock, AlertCircle, Gift } from 'lucide-react'
 import {
   useHRPayrollRuns,
   useHRPayrollPeriods,
@@ -163,6 +163,16 @@ export default function PayrollPage() {
         ]}
         actions={
           <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', flexWrap: 'wrap' }}>
+
+            {/* مكافآت الأهداف — مدخل طبيعي من hub الرواتب */}
+            <Button
+              id="btn-target-payouts"
+              variant="secondary"
+              icon={<Gift size={14} />}
+              onClick={() => navigate('/hr/payroll/target-payouts')}
+            >
+              مكافآت الأهداف
+            </Button>
 
             {/* زر الفترة الجديدة */}
             <PermissionGuard permission="hr.payroll.calculate">

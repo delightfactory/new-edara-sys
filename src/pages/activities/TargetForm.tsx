@@ -15,13 +15,16 @@ import {
   useProducts,
   useCategories,
   useGovernorates,
+  useCustomers,
 } from '@/hooks/useQueryHooks'
 import { supabase } from '@/lib/supabase/client'
 import type { TargetScope, TargetPeriod, TargetType } from '@/lib/types/activities'
 import type { TierInput, TargetCustomerInput } from '@/lib/types/activities'
 import PageHeader from '@/components/shared/PageHeader'
 import Button from '@/components/ui/Button'
+import TierLadderDisplay from '@/components/targets/TierLadderDisplay'
 import { ChevronRight, ChevronLeft, Check, Gift, Plus, Trash2, Info, Users, AlertCircle } from 'lucide-react'
+import { allowsPercentageReward } from '@/lib/utils/rewardRules'
 
 // ── Constants ──────────────────────────────────────────────────
 
@@ -56,18 +59,34 @@ const TYPE_EXTRA: Record<string, string[]> = {
 
 const STEP_LABELS = ['النوع', 'النطاق', 'القيم', 'المكافأة', 'الشرائح', 'العملاء', 'مراجعة']
 
+function toDateStr(y: number, m: number, d: number) {
+  // بناء yyyy-mm-dd مباشرة بدون تحويل UTC لتجنب مشكلة timezone offset
+  return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+}
+
 function defaultDates(period: TargetPeriod) {
-  const now = new Date(); const y = now.getFullYear(); const m = now.getMonth()
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = now.getMonth() // 0-indexed
+
   if (period === 'monthly') {
-    return { start: new Date(y, m, 1).toISOString().slice(0, 10), end: new Date(y, m + 1, 0).toISOString().slice(0, 10) }
+    // آخر يوم في الشهر: اليوم 0 من الشهر التالي
+    const lastDay = new Date(y, m + 1, 0).getDate()
+    return { start: toDateStr(y, m, 1), end: toDateStr(y, m, lastDay) }
   }
   if (period === 'quarterly') {
     const q = Math.floor(m / 3)
-    return { start: new Date(y, q * 3, 1).toISOString().slice(0, 10), end: new Date(y, q * 3 + 3, 0).toISOString().slice(0, 10) }
+    const qStartMonth = q * 3           // 0-indexed
+    const qEndMonth   = q * 3 + 2       // 0-indexed
+    const lastDay = new Date(y, qEndMonth + 1, 0).getDate()
+    return { start: toDateStr(y, qStartMonth, 1), end: toDateStr(y, qEndMonth, lastDay) }
   }
   if (period === 'yearly') return { start: `${y}-01-01`, end: `${y}-12-31` }
-  return { start: now.toISOString().slice(0, 10), end: now.toISOString().slice(0, 10) }
+  // custom: اليوم الحالي
+  const today = toDateStr(y, m, now.getDate())
+  return { start: today, end: today }
 }
+
 
 function fmtN(n: number) { return n.toLocaleString('ar-EG', { maximumFractionDigits: 2 }) }
 
@@ -128,10 +147,19 @@ export default function TargetForm() {
   ])
 
   // ── Step 6: عملاء (للـ upgrade_value & category_spread)
-  const [customers, setCustomers] = useState<(TargetCustomerInput & { _key: number })[]>([])
-  const [customerIdInput, setCustomerIdInput]     = useState('')
+  const [customers, setCustomers] = useState<(TargetCustomerInput & { _key: number; _name?: string })[]>([])
+  const [customerSearch, setCustomerSearch]       = useState('')
   const [customerBaseline, setCustomerBaseline]   = useState('')
   const [customerCatCount, setCustomerCatCount]   = useState('')
+  const [customerPickId,   setCustomerPickId]     = useState('')  // selected customer id from search
+  const [customerActiveIdx, setCustomerActiveIdx] = useState(-1)  // keyboard navigation index
+
+  // ── S6: Customer search query (lazy — يبدأ عند كتابة 2 أحرف+)
+  const { data: customersRes } = useCustomers(
+    customerSearch.trim().length >= 2 ? { search: customerSearch.trim(), pageSize: 20, isActive: true } : undefined
+  )
+  const customerResults = useMemo(() => customersRes?.data ?? [], [customersRes])
+  const showDropdown = customerSearch.trim().length >= 2 && customerResults.length > 0 && !customerPickId
 
   // ── Loading
   const [saving, setSaving] = useState(false)
@@ -216,14 +244,21 @@ export default function TargetForm() {
 
   // ── Customer helpers
   const addCustomer = () => {
-    if (!customerIdInput) return
+    if (!customerPickId) return
+    // منع التكرار
+    if (customers.some(c => c.customer_id === customerPickId)) {
+      toast.warning('هذا العميل موجود بالفعل في القائمة')
+      return
+    }
+    const picked = customerResults.find(c => c.id === customerPickId)
     setCustomers(prev => [...prev, {
       _key: Date.now(),
-      customer_id: customerIdInput,
+      _name: picked?.name ?? customerPickId,
+      customer_id: customerPickId,
       baseline_value: customerBaseline ? Number(customerBaseline) : undefined,
       baseline_category_count: customerCatCount ? Number(customerCatCount) : undefined,
     }])
-    setCustomerIdInput(''); setCustomerBaseline(''); setCustomerCatCount('')
+    setCustomerSearch(''); setCustomerPickId(''); setCustomerBaseline(''); setCustomerCatCount('')
   }
   const removeCustomer = (key: number) => setCustomers(prev => prev.filter(c => c._key !== key))
 
@@ -268,7 +303,7 @@ export default function TargetForm() {
         auto_payout:      autoPayout,
         payout_month_offset: Number(payoutMonthOffset),
         tiers:            hasReward && tiers.length > 0 ? tiers : undefined,
-        customers:        customers.length > 0 ? customers.map(({ _key, ...c }) => c) : undefined,
+        customers:        customers.length > 0 ? customers.map(({ _key, _name, ...c }) => c) : undefined,
         p_user_id:        userId,
       }, {
         onSuccess: (newId: string) => {
@@ -303,9 +338,13 @@ export default function TargetForm() {
     )
   }
 
-  // ── STEP RENDERERS ─────────────────────────────────────────────
+  // ── STEP RENDERERS ───────────────────────────────────────────
+  // تنبيه: هذه دوال عادية لا مكونات React
+  // يجب استدعاؤها كـ {renderStep1()} وليس <S1 />
+  // استخدام <S1 /> داخل الـ component body يُنشئ نوع مكوّن جديد في كل render
+  // مما يُسبب remount وفقدان التركيز عند كل ضغطة مفتاح
 
-  const S1 = () => (
+  function renderStep1() { return (
     <>
       <div className="tf-section">
         <div className="tf-section-title">🎯 نوع الهدف <span className="form-required">*</span></div>
@@ -391,9 +430,9 @@ export default function TargetForm() {
         </div>
       )}
     </>
-  )
+  ) } // end renderStep1
 
-  const S2 = () => (
+  function renderStep2() { return (
     <div className="tf-section">
       <div className="tf-section-title">📌 نطاق الهدف</div>
       <div className="tf-scope-grid">
@@ -408,9 +447,9 @@ export default function TargetForm() {
       </div>
       {renderScopeIdSelector()}
     </div>
-  )
+  ) } // end renderStep2
 
-  const S3 = () => (
+  function renderStep3() { return (
     <>
       <div className="tf-section">
         <div className="tf-section-title">📅 الفترة الزمنية</div>
@@ -476,11 +515,18 @@ export default function TargetForm() {
         </div>
       </div>
     </>
-  )
+  ) } // end renderStep3
 
-  const S4 = () => {
-    const isPercentage = rewardType === 'percentage'
-    const isFinancial = typeCategory === 'financial' || typeCode === 'upgrade_value'
+  function renderStep4() {
+    const isPercentage  = rewardType === 'percentage'
+    const canPercentage = allowsPercentageReward(typeCategory, typeCode)
+
+    // وعاء الحساب المُثبَّت تلقائياً للنوع (null = مقيَّد بـ sales_value دائماً بحكم DB)
+    // كل الأنواع المالية غير collection تقبل sales_value فقط
+    const lockedBasis = isPercentage
+      ? (typeCode === 'collection' ? 'collection_value' : 'sales_value')
+      : null
+
     return (
       <div className="tf-section">
         <div className="tf-section-title"><Gift size={16} className="inline align-middle ml-1" /> إعداد المكافأة <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(اختياري)</span></div>
@@ -489,17 +535,35 @@ export default function TargetForm() {
           {[{ v: '' as const, label: 'بدون مكافأة', desc: 'لا يوجد حافز مادي' },
             { v: 'fixed' as const, label: 'مقطوعة', desc: 'مبلغ ثابت عند التحقيق' },
             { v: 'percentage' as const, label: 'نسبة', desc: 'نسبة من وعاء الحساب' }]
-            .filter(o => o.v !== 'percentage' || isFinancial)
+            .filter(o => o.v !== 'percentage' || canPercentage)
             .map(o => (
             <button key={o.v} type="button"
               className={`tf-type-card${rewardType === o.v ? ' tf-type-card--active' : ''}`}
               style={{ padding: '12px 8px' }}
-              onClick={() => { setRewardType(o.v); if (o.v !== 'percentage') setRewardPoolBasis('') }}>
+              onClick={() => {
+                setRewardType(o.v)
+                // تنظيف pool_basis تلقائياً عند تغيير نوع المكافأة
+                if (!o.v || o.v === 'fixed') {
+                  setRewardPoolBasis('')
+                } else if (o.v === 'percentage') {
+                  // تعيين pool_basis تلقائياً حسب النوع
+                  const auto = typeCode === 'collection' ? 'collection_value' : 'sales_value'
+                  setRewardPoolBasis(auto)
+                }
+              }}>
               <div className="tf-type-name" style={{ fontSize: '13px' }}>{o.label}</div>
               <div className="tf-type-desc">{o.desc}</div>
             </button>
           ))}
         </div>
+
+        {!canPercentage && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px',
+            background: 'var(--bg-surface-2)', borderRadius: '6px', fontSize: '12px', color: 'var(--text-muted)',
+            marginBottom: '12px' }}>
+            <Info size={13} /> هذا النوع من الأهداف يدعم المكافأة المقطوعة فقط
+          </div>
+        )}
 
         {rewardType && (
           <>
@@ -513,41 +577,25 @@ export default function TargetForm() {
                   onChange={e => setRewardBaseValue(e.target.value)}
                   placeholder={rewardType === 'fixed' ? 'مثال: 5000' : 'مثال: 2.5'} min="0.01" step="any" />
               </div>
-              {isPercentage && (() => {
-                // قواعد البنية: بعض الأنواع تُثبت وعاء الحساب تلقائياً
-                const lockedBasis: 'sales_value' | 'collection_value' | null =
-                  typeCode === 'collection'    ? 'collection_value' :
-                  typeCode === 'upgrade_value' ? 'sales_value' : null
 
-                if (lockedBasis) {
-                  // تثبيت تلقائي — أعلم المستخدم ولا تعرض قائمة
-                  if (rewardPoolBasis !== lockedBasis) setRewardPoolBasis(lockedBasis)
-                  return (
-                    <div className="form-group">
-                      <label className="form-label">وعاء الحساب</label>
-                      <div style={{ padding: '8px 12px', background: 'var(--bg-surface-2)', border: '1px solid var(--border-primary)', borderRadius: '6px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ fontSize: 16 }}>🔒</span>
-                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                          {lockedBasis === 'sales_value' ? 'إجمالي المبيعات' : 'إجمالي التحصيلات'}
-                        </span>
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>محدد تلقائياً حسب نوع الهدف</span>
-                      </div>
-                    </div>
-                  )
-                }
-
-                // اختيار حر للأنواع الأخرى
-                return (
-                  <div className="form-group">
-                    <label className="form-label">وعاء الحساب <span className="form-required">*</span></label>
-                    <select className="form-select" value={rewardPoolBasis} onChange={e => setRewardPoolBasis(e.target.value as any)}>
-                      <option value="">-- اختر --</option>
-                      <option value="sales_value">إجمالي المبيعات</option>
-                      <option value="collection_value">إجمالي التحصيلات</option>
-                    </select>
+              {/* وعاء الحساب — يظهر فقط مع percentage */}
+              {isPercentage && (
+                <div className="form-group">
+                  <label className="form-label">وعاء الحساب</label>
+                  {/* مُثبَّت دائماً — لا خيار للمستخدم لأن DB تفرض قيماً محددة */}
+                  <div style={{
+                    padding: '8px 12px', background: 'var(--bg-surface-2)',
+                    border: '1px solid var(--border-primary)', borderRadius: '6px',
+                    fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px'
+                  }}>
+                    <span style={{ fontSize: 16 }}>🔒</span>
+                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {lockedBasis === 'collection_value' ? 'إجمالي التحصيلات' : 'إجمالي المبيعات'}
+                    </span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>محدد تلقائياً حسب نوع الهدف</span>
                   </div>
-                )
-              })()}
+                </div>
+              )}
             </div>
 
             <div style={{ borderTop: '1px solid var(--border-primary)', marginTop: '8px', paddingTop: '16px' }}>
@@ -580,9 +628,9 @@ export default function TargetForm() {
         )}
       </div>
     )
-  }
+  } // end renderStep4
 
-  const S5 = () => (
+  function renderStep5() { return (
     <div className="tf-section">
       <div className="tf-section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: 'none', paddingBottom: 0, marginBottom: '12px' }}>
         <span>🏆 شرائح المكافأة</span>
@@ -635,47 +683,132 @@ export default function TargetForm() {
         <strong>مثال: </strong>شريحة 80% → تصرف 80% من المكافأة | شريحة 100% → تصرف 100% من المكافأة
       </div>
     </div>
-  )
+  ) } // end renderStep5
 
-  const S6 = () => (
+  function renderStep6() { return (
     <div className="tf-section">
       <div className="tf-section-title"><Users size={16} className="inline align-middle ml-1" /> العملاء المستهدفون</div>
+      <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+        {typeCode === 'upgrade_value'
+          ? 'اختر العملاء الذين تريد قياس نمو مشترياتهم مقارنة بقيمة مرجعية.'
+          : 'اختر العملاء الذين تريد قياس انتشار التصنيفات لديهم.'}
+      </p>
 
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'flex-end', padding: '12px', background: 'var(--bg-surface-2)', borderRadius: '8px', marginBottom: '8px' }}>
-        <div className="form-group" style={{ margin: 0, flex: '1 1 180px' }}>
-          <label className="form-label">معرّف العميل (customer_id) <span className="form-required">*</span></label>
-          <input className="form-input" value={customerIdInput} onChange={e => setCustomerIdInput(e.target.value)} placeholder="UUID للعميل..." />
+      {/* ── اختيار بالبحث ── */}
+      <div style={{ padding: '14px', background: 'var(--bg-surface-2)', border: '1px solid var(--border-primary)', borderRadius: '10px', marginBottom: '10px' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+          {/* searchable input with keyboard navigation */}
+          <div className="form-group" style={{ margin: 0, flex: '2 1 220px', position: 'relative' }}>
+            <label className="form-label">بحث عن عميل <span className="form-required">*</span></label>
+            <input
+              className="form-input"
+              value={customerSearch}
+              autoComplete="off"
+              aria-autocomplete="list"
+              aria-expanded={showDropdown}
+              onChange={e => {
+                setCustomerSearch(e.target.value)
+                setCustomerPickId('')
+                setCustomerActiveIdx(-1)
+              }}
+              onKeyDown={e => {
+                if (!showDropdown) return
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault()
+                  setCustomerActiveIdx(i => Math.min(i + 1, customerResults.length - 1))
+                } else if (e.key === 'ArrowUp') {
+                  e.preventDefault()
+                  setCustomerActiveIdx(i => Math.max(i - 1, 0))
+                } else if (e.key === 'Enter') {
+                  e.preventDefault()
+                  const c = customerActiveIdx >= 0 ? customerResults[customerActiveIdx] : null
+                  if (c) { setCustomerPickId((c as any).id); setCustomerSearch((c as any).name); setCustomerActiveIdx(-1) }
+                } else if (e.key === 'Escape') {
+                  setCustomerActiveIdx(-1)
+                  setCustomerPickId('')
+                  setCustomerSearch('')
+                }
+              }}
+              onBlur={() =>
+                // تأخير بسيط للسماح للنقر على عنصر القائمة قبل الإغلاق
+                setTimeout(() => { if (!customerPickId) setCustomerActiveIdx(-1) }, 200)
+              }
+              placeholder="اكتب اسم العميل أو الكود..."
+            />
+            {showDropdown && (
+              <div role="listbox" style={{
+                position: 'absolute', top: '100%', right: 0, left: 0, zIndex: 50,
+                background: 'var(--bg-surface)', border: '1px solid var(--border-primary)',
+                borderRadius: '8px', boxShadow: 'var(--shadow-lg)', maxHeight: 220, overflowY: 'auto',
+                marginTop: '2px',
+              }}>
+                {(customerResults as any[]).map((c: any, idx: number) => (
+                  <button
+                    key={c.id} type="button" role="option"
+                    aria-selected={customerActiveIdx === idx}
+                    style={{
+                      display: 'block', width: '100%', textAlign: 'right', padding: '9px 14px',
+                      background: customerActiveIdx === idx ? 'var(--color-primary-light)' : 'none',
+                      border: 'none', borderBottom: '1px solid var(--border-secondary)',
+                      cursor: 'pointer', fontSize: '13px', color: 'var(--text-primary)',
+                    }}
+                    onMouseEnter={() => setCustomerActiveIdx(idx)}
+                    onMouseLeave={() => setCustomerActiveIdx(-1)}
+                    onClick={() => { setCustomerPickId(c.id); setCustomerSearch(c.name); setCustomerActiveIdx(-1) }}
+                  >
+                    <span style={{ fontWeight: 600 }}>{c.name}</span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginRight: '6px' }}>{c.code}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            {customerSearch.trim().length >= 2 && customerResults.length === 0 && (
+              <div style={{ position: 'absolute', top: '100%', right: 0, left: 0, zIndex: 50, background: 'var(--bg-surface)', border: '1px solid var(--border-primary)', borderRadius: '8px', padding: '10px 14px', fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                لا يوجد عميل بهذا الاسم
+              </div>
+            )}
+          </div>
+
+          {typeCode === 'upgrade_value' && (
+            <div className="form-group" style={{ margin: 0, flex: '1 1 130px' }}>
+              <label className="form-label">القيمة المرجعية (ج.م)</label>
+              <input type="number" className="form-input" value={customerBaseline} onChange={e => setCustomerBaseline(e.target.value)} placeholder="0" min="0" />
+            </div>
+          )}
+          {typeCode === 'category_spread' && (
+            <div className="form-group" style={{ margin: 0, flex: '1 1 130px' }}>
+              <label className="form-label">عدد التصنيفات المرجعي</label>
+              <input type="number" className="form-input" value={customerCatCount} onChange={e => setCustomerCatCount(e.target.value)} placeholder="0" min="0" />
+            </div>
+          )}
+          <Button type="button" variant="secondary" icon={<Plus size={14} />}
+            onClick={addCustomer} disabled={!customerPickId}
+            style={{ alignSelf: 'flex-end' }}
+          >
+            إضافة
+          </Button>
         </div>
-        {typeCode === 'upgrade_value' && (
-          <div className="form-group" style={{ margin: 0, flex: '1 1 130px' }}>
-            <label className="form-label">القيمة المرجعية (ج.م)</label>
-            <input type="number" className="form-input" value={customerBaseline} onChange={e => setCustomerBaseline(e.target.value)} placeholder="0" min="0" />
-          </div>
-        )}
-        {typeCode === 'category_spread' && (
-          <div className="form-group" style={{ margin: 0, flex: '1 1 130px' }}>
-            <label className="form-label">عدد التصنيفات المرجعي</label>
-            <input type="number" className="form-input" value={customerCatCount} onChange={e => setCustomerCatCount(e.target.value)} placeholder="0" min="0" />
-          </div>
-        )}
-        <Button type="button" variant="secondary" icon={<Plus size={14} />} onClick={addCustomer} style={{ marginBottom: '2px' }}>إضافة</Button>
       </div>
 
+      {/* ── قائمة المختارين ── */}
       {customers.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '16px', color: 'var(--text-muted)', fontSize: '13px' }}>
-          {typeCode === 'upgrade_value' ? 'أضف العملاء الذين تريد تتبع نموهم الشرائي.' : 'أضف العملاء المستهدفين لتتبع انتشار التصنيفات.'}
+        <div style={{ textAlign: 'center', padding: '16px', color: 'var(--text-muted)', fontSize: '13px', background: 'var(--bg-surface-2)', borderRadius: '8px' }}>
+          ابحث عن عميل وأضفه للقائمة
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           {customers.map((c, i) => (
-            <div key={c._key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px',
-              background: 'var(--bg-surface-2)', border: '1px solid var(--border-primary)', borderRadius: '6px' }}>
-              <span style={{ fontWeight: 700, color: 'var(--color-primary)', minWidth: 24 }}>{i + 1}</span>
-              <span style={{ flex: 1, fontSize: '12px', fontFamily: 'monospace', color: 'var(--text-secondary)' }}>{c.customer_id}</span>
+            <div key={c._key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px',
+              background: 'var(--bg-surface-2)', border: '1px solid var(--border-primary)', borderRadius: '8px' }}>
+              <span style={{ fontWeight: 700, color: 'var(--color-primary)', minWidth: 24, fontSize: '13px' }}>{i + 1}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>{c._name ?? c.customer_id}</div>
+                {c._name && <div style={{ fontSize: '10px', fontFamily: 'monospace', color: 'var(--text-muted)' }}>{c.customer_id}</div>}
+              </div>
               {c.baseline_value != null && <span className="tf-unit-badge">{fmtN(c.baseline_value)} ج.م</span>}
               {c.baseline_category_count != null && <span className="tf-unit-badge">{c.baseline_category_count} تصنيف</span>}
               <button type="button" onClick={() => removeCustomer(c._key)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-danger)' }}>
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-danger)', padding: '4px' }}>
                 <Trash2 size={14} />
               </button>
             </div>
@@ -683,9 +816,9 @@ export default function TargetForm() {
         </div>
       )}
     </div>
-  )
+  ) } // end renderStep6
 
-  const S7 = () => {
+  function renderStep7() {
     const scopeLabel = SCOPE_OPTIONS.find(o => o.value === scope)?.label
     const periodLabel = PERIOD_OPTIONS.find(o => o.value === period)?.label
     const scopeIdLabel = !needsScopeId ? '' : (
@@ -707,10 +840,22 @@ export default function TargetForm() {
         </div>
 
         <div className="tf-review-grid">
-          <div className="tf-review-item">
-            <span className="tf-review-label">النطاق</span>
-            <span className="tf-review-value">{scopeLabel}{scopeIdLabel ? ` — ${scopeIdLabel}` : ''}</span>
-          </div>
+          {/* Tiers visual — TierLadderDisplay (عرضبصري في صفحة المراجعة */}
+          {hasReward && tiers.length > 0 && (
+            <div style={{ marginTop: '12px' }}>
+              <TierLadderDisplay
+                tiers={tiers.map((t, i) => ({
+                  id: `preview-${i}`, sequence: i + 1,
+                  target_id: '', threshold_pct: t.threshold_pct,
+                  reward_pct: t.reward_pct, label: t.label ?? null,
+                  created_at: '',
+                }))}
+                currentAchievementPct={0}
+                rewardType={rewardType as 'fixed' | 'percentage' | null}
+                rewardBaseValue={rewardBaseValue ? Number(rewardBaseValue) : null}
+              />
+            </div>
+          )}
           <div className="tf-review-item tf-review-item--highlight">
             <span className="tf-review-label">القيمة المستهدفة</span>
             <span className="tf-review-value">{fmtN(Number(targetValue || 0))} {unitLabel}</span>
@@ -760,7 +905,16 @@ export default function TargetForm() {
           {customers.length > 0 && (
             <div className="tf-review-item">
               <span className="tf-review-label">العملاء المستهدفون</span>
-              <span className="tf-review-value">{customers.length} عميل</span>
+              <span className="tf-review-value" style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                {customers.map((c, i) => (
+                  <span key={c._key} style={{ fontSize: '12px' }}>
+                    <strong style={{ color: 'var(--color-primary)' }}>{i + 1}.</strong>{' '}
+                    {c._name || c.customer_id}
+                    {c.baseline_value != null && <span className="tf-unit-badge" style={{ marginRight: 6 }}>{fmtN(c.baseline_value)} ج.م</span>}
+                    {c.baseline_category_count != null && <span className="tf-unit-badge" style={{ marginRight: 6 }}>{c.baseline_category_count} تصنيف</span>}
+                  </span>
+                ))}
+              </span>
             </div>
           )}
 
@@ -788,7 +942,7 @@ export default function TargetForm() {
         </div>
       </div>
     )
-  }
+  } // end renderStep7
 
   // ── Main Render ─────────────────────────────────────────────
 
@@ -822,13 +976,13 @@ export default function TargetForm() {
       </div>
 
       <form className="edara-card tf-form" onSubmit={e => { e.preventDefault(); if (isLastStep) handleSubmit() }}>
-        {step === 1 && <S1 />}
-        {step === 2 && <S2 />}
-        {step === 3 && <S3 />}
-        {step === 4 && <S4 />}
-        {step === 5 && <S5 />}
-        {step === 6 && <S6 />}
-        {step === 7 && <S7 />}
+        {step === 1 && renderStep1()}
+        {step === 2 && renderStep2()}
+        {step === 3 && renderStep3()}
+        {step === 4 && renderStep4()}
+        {step === 5 && renderStep5()}
+        {step === 6 && renderStep6()}
+        {step === 7 && renderStep7()}
 
         <div className="tf-actions">
           {!isFirstStep && (
