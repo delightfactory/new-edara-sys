@@ -22,6 +22,14 @@ Deno.serve(async (req: Request) => {
     return new Response(null, { headers: corsHeaders })
   }
 
+  // Internal-only endpoint: validate caller is service_role
+  // dispatch-notification calls this with SUPABASE_SERVICE_ROLE_KEY as Bearer token
+  const callerToken = req.headers.get('Authorization')?.replace('Bearer ', '').trim()
+  const serviceKey  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  if (!callerToken || callerToken !== serviceKey) {
+    return Response.json({ error: 'Forbidden — internal endpoint' }, { status: 403, headers: corsHeaders })
+  }
+
   try {
     // 1. Validate VAPID environment variables
     const vapidPublicKey  = Deno.env.get('VAPID_PUBLIC_KEY')
@@ -66,7 +74,18 @@ Deno.serve(async (req: Request) => {
         },
         JSON.stringify(payload),
         {
-          TTL: 86400, // 24 hours — if device is offline, retry for up to 24h
+          // TTL varies by notification priority:
+          // critical: 7 days  (must reach user even after long offline period)
+          // high:     48 hours
+          // medium:   24 hours (default)
+          // low:      4 hours  (time-sensitive context fades quickly)
+          TTL: (() => {
+            const p = (payload as { priority?: string })?.priority
+            if (p === 'critical') return 60 * 60 * 24 * 7
+            if (p === 'high')     return 60 * 60 * 48
+            if (p === 'low')      return 60 * 60 * 4
+            return 86400 // medium default
+          })(),
         }
       )
 
@@ -78,6 +97,14 @@ Deno.serve(async (req: Request) => {
         // Non-critical: if RPC fails, delivery still succeeded. Log for observability.
         console.warn('reset_push_failed_count failed (non-critical):', (rpcErr as Error)?.message)
       }
+
+      // Log successful delivery for observability dashboard
+      await adminClient.from('notification_delivery_log').insert({
+        notification_id: payload?.id || null,
+        channel:         'push',
+        status:          'delivered',
+        subscription_id,
+      }).catch(() => {}) // Non-critical — log failure must never block delivery response
 
       return Response.json({ sent: true }, { status: 200, headers: corsHeaders })
 

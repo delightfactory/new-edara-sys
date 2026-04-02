@@ -197,21 +197,29 @@ Deno.serve(async (req: Request) => {
           prefs?.quiet_end   ?? '08:00',
           prefs?.timezone    ?? 'Africa/Cairo',
         )
-        const shouldPush = pushEnabled && !inQuiet
 
-        console.log(`[PUSH DEBUG] user=${userId} pushEnabled=${pushEnabled} quietEnabled=${quietEnabled} inQuiet=${inQuiet} shouldPush=${shouldPush}`)
+        // Respect min_priority_push preference
+        const PRIORITY_ORDER = ['low', 'medium', 'high', 'critical'] as const
+        type PriorityLevel = typeof PRIORITY_ORDER[number]
+        const minPriorityPush = (prefs?.min_priority_push ?? 'medium') as PriorityLevel
+        const meetsMinPriority =
+          PRIORITY_ORDER.indexOf(effectivePriority as PriorityLevel) >=
+          PRIORITY_ORDER.indexOf(minPriorityPush)
+
+        // Respect per-category push preference
+        const categoryPrefs = prefs?.category_preferences as Record<string, { in_app?: boolean; push?: boolean }> | null
+        const catPushEnabled = categoryPrefs?.[eventType.category]?.push ?? true
+
+        const shouldPush = pushEnabled && !inQuiet && meetsMinPriority && catPushEnabled
 
         if (shouldPush) {
-          const { data: subscriptions, error: subErr } = await adminClient
+          const { data: subscriptions } = await adminClient
             .from('push_subscriptions')
             .select('id, endpoint, p256dh_key, auth_key')
             .eq('user_id', userId)
             .eq('is_active', true)
 
-          console.log(`[PUSH DEBUG] subscriptions count=${subscriptions?.length ?? 0} error=${JSON.stringify(subErr)}`)
-
           for (const sub of subscriptions ?? []) {
-            console.log(`[PUSH DEBUG] calling send-push-notification for endpoint=${sub.endpoint.slice(0, 50)}...`)
             const pushResp = await fetch(
               `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-push-notification`,
               {
@@ -238,12 +246,8 @@ Deno.serve(async (req: Request) => {
               }
             )
 
-            console.log(`[PUSH DEBUG] send-push response: ${pushResp.status} ok=${pushResp.ok}`)
             if (pushResp.ok) {
               dispatchedCount.push++
-            } else {
-              const errBody = await pushResp.text().catch(() => 'unreadable')
-              console.error(`[PUSH DEBUG] send-push failed: ${errBody}`)
             }
           }
         }

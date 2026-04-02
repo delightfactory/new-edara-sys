@@ -154,7 +154,8 @@ export default function GlobalRealtimeManager() {
 
           // 3. إبطال caches ذات الصلة
           queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() })
-          queryClient.invalidateQueries({ queryKey: notificationKeys.recent() })
+          // Use prefix match to invalidate all recent(X) queries regardless of limit param
+          queryClient.invalidateQueries({ queryKey: [...notificationKeys.all, 'recent'] })
           queryClient.invalidateQueries({ queryKey: notificationKeys.lists() })
 
           // 4. Toast للإشعارات ذات الأولوية العالية فقط

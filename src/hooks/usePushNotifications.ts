@@ -134,6 +134,9 @@ export function usePushNotifications(): UsePushNotificationsReturn {
         userAgent: navigator.userAgent,
       })
 
+      // Activate push channel in user preferences now that we have a valid subscription
+      await NotificationsAPI.updatePreferences({ pushEnabled: true })
+
       // 6. Refresh devices list immediately so UI reflects the new device (BUG-06)
       await queryClient.invalidateQueries({ queryKey: notificationKeys.pushDevices() })
 
@@ -177,6 +180,12 @@ export function usePushNotifications(): UsePushNotificationsReturn {
 
       // Remove from Supabase regardless (endpoint may belong to another device)
       await NotificationsAPI.removePushSubscription(endpoint)
+
+      // If this was the last active device, deactivate the push channel in preferences
+      const remaining = await NotificationsAPI.getPushSubscriptions()
+      if (!remaining || remaining.filter(s => s.isActive).length === 0) {
+        await NotificationsAPI.updatePreferences({ pushEnabled: false })
+      }
 
       // Clear local state only if the unsubscribed endpoint matches current device
       if (currentSubscription?.endpoint === endpoint) {

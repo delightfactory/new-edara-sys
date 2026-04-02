@@ -164,6 +164,72 @@ function PrefRow({
   )
 }
 
+// ── Push Permission Dialog (WCAG 2.4.3 compliant) ────────────
+function PushPermissionDialog({
+  onConfirm,
+  onDismiss,
+}: {
+  onConfirm: () => void
+  onDismiss: () => void
+}) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+
+  // Focus the dialog on mount + restore focus on unmount
+  useEffect(() => {
+    const previousFocus = document.activeElement as HTMLElement | null
+    dialogRef.current?.focus()
+
+    // Escape key handler
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        onDismiss()
+      }
+      // Focus trap: keep Tab within dialog
+      if (e.key === 'Tab' && dialogRef.current) {
+        const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        )
+        const first = focusable[0]
+        const last  = focusable[focusable.length - 1]
+        if (e.shiftKey) {
+          if (document.activeElement === first) { e.preventDefault(); last.focus() }
+        } else {
+          if (document.activeElement === last)  { e.preventDefault(); first.focus() }
+        }
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      previousFocus?.focus()
+    }
+  }, [onDismiss])
+
+  return (
+    <div className="push-prompt-overlay" role="alertdialog" aria-modal="true" aria-labelledby="push-prompt-title">
+      <div className="push-prompt-dialog" ref={dialogRef} tabIndex={-1}>
+        <div className="push-prompt-icon" aria-hidden="true">🔔</div>
+        <h3 className="push-prompt-title" id="push-prompt-title">تفعيل الإشعارات الفورية</h3>
+        <p className="push-prompt-body">
+          ستحصل على إشعارات مباشرة حتى عند إغلاق التطبيق — للإجازات والرواتب والمهام العاجلة.
+          <br />
+          <strong>سيطلب المتصفح إذنك في الخطوة التالية.</strong>
+        </p>
+        <div className="push-prompt-actions">
+          <button className="btn btn-primary" onClick={onConfirm} type="button">
+            تفعيل الإشعارات
+          </button>
+          <button className="btn btn-ghost" onClick={onDismiss} type="button">
+            ليس الآن
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Main component ────────────────────────────────────────────
 
 export default function NotificationPreferences() {
@@ -320,36 +386,13 @@ export default function NotificationPreferences() {
 
         {/* Pre-permission explanation dialog */}
         {showPushPrompt && (
-          <div className="push-prompt-overlay" role="alertdialog" aria-modal="true">
-            <div className="push-prompt-dialog">
-              <div className="push-prompt-icon" aria-hidden="true">🔔</div>
-              <h3 className="push-prompt-title">تفعيل الإشعارات الفورية</h3>
-              <p className="push-prompt-body">
-                ستحصل على إشعارات مباشرة حتى عند إغلاق التطبيق — للإجازات والرواتب والمهام العاجلة.
-                <br />
-                <strong>سيطلب المتصفح إذنك في الخطوة التالية.</strong>
-              </p>
-              <div className="push-prompt-actions">
-                <button
-                  className="btn btn-primary"
-                  onClick={() => {
-                    setShowPushPrompt(false)
-                    pushNotif.requestAndSubscribe()
-                  }}
-                  type="button"
-                >
-                  تفعيل الإشعارات
-                </button>
-                <button
-                  className="btn btn-ghost"
-                  onClick={() => setShowPushPrompt(false)}
-                  type="button"
-                >
-                  ليس الآن
-                </button>
-              </div>
-            </div>
-          </div>
+          <PushPermissionDialog
+            onConfirm={() => {
+              setShowPushPrompt(false)
+              pushNotif.requestAndSubscribe()
+            }}
+            onDismiss={() => setShowPushPrompt(false)}
+          />
         )}
 
         {/* Unsupported banner */}
