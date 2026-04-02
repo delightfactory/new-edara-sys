@@ -1,13 +1,12 @@
 // src/components/notifications/NotificationCenter.tsx
 // ─────────────────────────────────────────────────────────────
-// Full notifications page — filters, search, pagination, archived tab.
-// URL params: ?category=&isRead=&priority=&archived=true&page=&search=
+// Full notifications page — filters, search, pagination.
+// Premium design with stats bar and chip filters.
 // ─────────────────────────────────────────────────────────────
 
 import { useSearchParams } from 'react-router-dom'
-import { BellOff, CheckCheck, Trash2 } from 'lucide-react'
+import { BellOff, CheckCheck, Bell, AlertTriangle, Eye } from 'lucide-react'
 import PageHeader from '@/components/shared/PageHeader'
-import EmptyState from '@/components/shared/EmptyState'
 import SearchInput from '@/components/shared/SearchInput'
 import { Skeleton } from '@/components/ui/Skeleton'
 import {
@@ -17,23 +16,23 @@ import {
   useArchiveMutation,
   useDeleteMutation,
 } from '@/hooks/useNotificationQueries'
+import { useNotificationStore } from '@/stores/notification-store'
 import NotificationItem from './NotificationItem'
 import type { NotificationCategory, NotificationPriority, NotificationFilters } from '@/lib/notifications/types'
 
-// ── Category options — all values match notification_category DB enum ─
-const CATEGORY_OPTIONS: { value: string; label: string }[] = [
-  { value: '',                  label: 'كل الفئات' },
-  { value: 'hr_attendance',     label: 'الحضور' },
-  { value: 'hr_leaves',         label: 'الإجازات' },
-  { value: 'hr_payroll',        label: 'الرواتب' },
-  { value: 'finance_expenses',  label: 'المصروفات' },
-  { value: 'finance_approvals', label: 'الموافقات' },
-  { value: 'inventory',         label: 'المخزون' },
-  { value: 'sales',             label: 'المبيعات' },
-  { value: 'procurement',       label: 'المشتريات' },
-  { value: 'tasks',             label: 'المهام' },
-  { value: 'system',            label: 'النظام' },
-  { value: 'alerts',            label: 'التنبيهات' },
+// ── Category filter chips ─────────────────────────────────────
+const CATEGORY_CHIPS: { value: string; label: string; color: string }[] = [
+  { value: '',                  label: 'الكل',         color: '' },
+  { value: 'hr_attendance',     label: 'الحضور',       color: '#6366f1' },
+  { value: 'hr_leaves',         label: 'الإجازات',     color: '#8b5cf6' },
+  { value: 'hr_payroll',        label: 'الرواتب',      color: '#10b981' },
+  { value: 'finance_expenses',  label: 'المصروفات',    color: '#f59e0b' },
+  { value: 'finance_approvals', label: 'الموافقات',    color: '#3b82f6' },
+  { value: 'inventory',         label: 'المخزون',      color: '#06b6d4' },
+  { value: 'sales',             label: 'المبيعات',     color: '#ec4899' },
+  { value: 'procurement',       label: 'المشتريات',    color: '#0891b2' },
+  { value: 'system',            label: 'النظام',       color: '#6b7280' },
+  { value: 'alerts',            label: 'التنبيهات',    color: '#ef4444' },
 ]
 
 const READ_OPTIONS = [
@@ -42,44 +41,37 @@ const READ_OPTIONS = [
   { value: 'true',  label: 'مقروء' },
 ]
 
-// C-02: Priority filter — matches notification_priority DB enum
 const PRIORITY_OPTIONS: { value: string; label: string }[] = [
   { value: '',         label: 'كل الأولويات' },
   { value: 'critical', label: '🔴 حرج' },
   { value: 'high',     label: '🟠 عالي' },
-  { value: 'medium',   label: '🟡 متوسط' },
+  { value: 'medium',   label: '🔵 متوسط' },
   { value: 'low',      label: '⚪ منخفض' },
 ]
 
-// ── Pagination component ──────────────────────────────────────
+// ── Pagination ────────────────────────────────────────────────
 function Pagination({
-  page,
-  totalPages,
-  onPage,
+  page, totalPages, onPage,
 }: {
-  page: number
-  totalPages: number
-  onPage: (p: number) => void
+  page: number; totalPages: number; onPage: (p: number) => void
 }) {
   if (totalPages <= 1) return null
   return (
     <div className="nc-pagination">
       <button
-        className="btn btn-ghost btn-sm"
+        className="nc-page-btn"
         disabled={page <= 1}
         onClick={() => onPage(page - 1)}
         type="button"
-        aria-label="الصفحة السابقة"
       >
         السابق
       </button>
       <span className="nc-page-info">{page} / {totalPages}</span>
       <button
-        className="btn btn-ghost btn-sm"
+        className="nc-page-btn"
         disabled={page >= totalPages}
         onClick={() => onPage(page + 1)}
         type="button"
-        aria-label="الصفحة التالية"
       >
         التالي
       </button>
@@ -91,32 +83,29 @@ function Pagination({
 
 export default function NotificationCenter() {
   const [params, setParams] = useSearchParams()
+  const unreadCount = useNotificationStore(s => s.unreadCount)
 
-  // Read ALL filters from URL — single source of truth
   const page       = parseInt(params.get('page') ?? '1', 10)
   const category   = (params.get('category') ?? '') as NotificationCategory | ''
   const isReadRaw  = params.get('isRead') ?? ''
   const search     = params.get('search') ?? ''
   const priority   = (params.get('priority') ?? '') as NotificationPriority | ''
-  const archived   = params.get('archived') === 'true'  // C-03: archived tab toggle
+  const archived   = params.get('archived') === 'true'
 
   const filters: NotificationFilters = {
     ...(category ? { category } : {}),
     ...(isReadRaw !== '' ? { isRead: isReadRaw === 'true' } : {}),
     ...(search ? { search } : {}),
     ...(priority ? { priority } : {}),
-    // archived tab always shows archived; normal tab explicitly excludes them
-    isArchived: archived ? true : false,
+    isArchived: archived,
   }
 
   const setParam = (key: string, val: string) => {
     const next = new URLSearchParams(params)
     if (val) next.set(key, val); else next.delete(key)
-    next.delete('page') // reset to page 1 on filter change
+    next.delete('page')
     setParams(next)
   }
-
-
 
   const setPage = (p: number) => {
     const next = new URLSearchParams(params)
@@ -128,18 +117,20 @@ export default function NotificationCenter() {
   const markRead = useMarkAsReadMutation()
   const markAll  = useMarkAllAsReadMutation()
   const archive  = useArchiveMutation()
-  const del      = useDeleteMutation()  // C-03: hard-delete for archived items
+  const del      = useDeleteMutation()
+
+  const totalCount = data?.count ?? 0
 
   return (
     <div className="nc-page">
       <div className="nc-container">
-      <PageHeader
-          title="مركز الإشعارات"
-          subtitle={data ? `${data.count} إشعار` : undefined}
+        <PageHeader
+          title={archived ? 'الأرشيف' : 'مركز الإشعارات'}
+          subtitle={data ? `${totalCount} إشعار` : undefined}
           actions={
-            !archived ? (
+            !archived && unreadCount > 0 ? (
               <button
-                className="btn btn-ghost btn-sm"
+                className="nc-mark-all-btn"
                 onClick={() => markAll.mutate(undefined)}
                 type="button"
                 aria-label="تحديد الكل كمقروء"
@@ -151,7 +142,53 @@ export default function NotificationCenter() {
           }
         />
 
+        {/* Stats bar */}
+        {!archived && (
+          <div className="nc-stats">
+            <div className="nc-stat">
+              <div className="nc-stat-icon nc-stat-icon--total">
+                <Bell size={16} />
+              </div>
+              <div className="nc-stat-info">
+                <span className="nc-stat-value">{totalCount}</span>
+                <span className="nc-stat-label">إجمالي</span>
+              </div>
+            </div>
+            <div className="nc-stat">
+              <div className="nc-stat-icon nc-stat-icon--unread">
+                <Eye size={16} />
+              </div>
+              <div className="nc-stat-info">
+                <span className="nc-stat-value">{unreadCount}</span>
+                <span className="nc-stat-label">غير مقروء</span>
+              </div>
+            </div>
+          </div>
+        )}
 
+        {/* Category chips */}
+        <div className="nc-chips" role="tablist">
+          {CATEGORY_CHIPS.map(chip => {
+            const isActive = category === chip.value
+            return (
+              <button
+                key={chip.value}
+                role="tab"
+                aria-selected={isActive}
+                className={`nc-chip${isActive ? ' nc-chip--active' : ''}`}
+                onClick={() => setParam('category', chip.value)}
+                type="button"
+                style={isActive && chip.color ? {
+                  background: `${chip.color}14`,
+                  color: chip.color,
+                  borderColor: `${chip.color}40`,
+                } : undefined}
+              >
+                {chip.label}
+              </button>
+            )
+          })}
+        </div>
 
         {/* Filters bar */}
         <div className="nc-filters">
@@ -163,32 +200,20 @@ export default function NotificationCenter() {
           />
           <select
             className="form-select nc-select"
-            value={category}
-            onChange={e => setParam('category', e.target.value)}
-            aria-label="تصفية حسب الفئة"
-          >
-            {CATEGORY_OPTIONS.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-          {/* C-02: Priority filter — BUG-11 */}
-          <select
-            className="form-select nc-select"
             value={priority}
             onChange={e => setParam('priority', e.target.value)}
-            aria-label="تصفية حسب الأولوية"
+            aria-label="الأولوية"
           >
             {PRIORITY_OPTIONS.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
-          {/* isRead filter hidden in archived tab — all archived are read */}
           {!archived && (
             <select
               className="form-select nc-select"
               value={isReadRaw}
               onChange={e => setParam('isRead', e.target.value)}
-              aria-label="تصفية حسب حالة القراءة"
+              aria-label="حالة القراءة"
             >
               {READ_OPTIONS.map(opt => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -198,13 +223,13 @@ export default function NotificationCenter() {
         </div>
 
         {/* List */}
-        <div className="card nc-list-card">
+        <div className="nc-list-card">
           {isLoading ? (
             <div role="list" aria-label="جاري التحميل">
               {[1, 2, 3, 4, 5].map(i => (
-                <div key={i} style={{ padding: 'var(--space-4)', display: 'flex', gap: 14, borderBottom: '1px solid var(--border-primary)' }}>
-                  <Skeleton width={36} height={36} className="skeleton-circle" />
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div key={i} className="nc-skeleton-row">
+                  <Skeleton width={40} height={40} className="nc-skeleton-icon" />
+                  <div className="nc-skeleton-content">
                     <Skeleton width="55%" height={14} />
                     <Skeleton width="90%" height={12} />
                     <Skeleton width="25%" height={10} />
@@ -213,17 +238,28 @@ export default function NotificationCenter() {
               ))}
             </div>
           ) : isError ? (
-            <EmptyState
-              icon={<BellOff size={40} />}
-              title="تعذّر تحميل الإشعارات"
-              text="تحقق من اتصالك بالإنترنت وأعد المحاولة"
-            />
+            <div className="nc-empty">
+              <div className="nc-empty-icon nc-empty-icon--error">
+                <AlertTriangle size={32} />
+              </div>
+              <p className="nc-empty-title">تعذّر تحميل الإشعارات</p>
+              <p className="nc-empty-text">تحقق من اتصالك بالإنترنت وأعد المحاولة</p>
+            </div>
           ) : !data || data.data.length === 0 ? (
-            <EmptyState
-              icon={<BellOff size={40} />}
-              title={archived ? 'لا توجد إشعارات مؤرشفة' : 'لا توجد إشعارات'}
-              text={search || category || isReadRaw ? 'حاول تعديل معايير البحث' : (archived ? 'ستظهر هنا الإشعارات التي تؤرشفها' : 'ستظهر إشعاراتك الجديدة هنا')}
-            />
+            <div className="nc-empty">
+              <div className="nc-empty-icon">
+                <BellOff size={32} />
+              </div>
+              <p className="nc-empty-title">
+                {archived ? 'لا توجد إشعارات مؤرشفة' : 'لا توجد إشعارات'}
+              </p>
+              <p className="nc-empty-text">
+                {search || category || isReadRaw
+                  ? 'حاول تعديل معايير البحث'
+                  : (archived ? 'ستظهر هنا الإشعارات التي تؤرشفها' : 'ستظهر إشعاراتك الجديدة هنا')
+                }
+              </p>
+            </div>
           ) : (
             <div role="list" aria-label="قائمة الإشعارات">
               {data.data.map(n => (
@@ -240,13 +276,8 @@ export default function NotificationCenter() {
           )}
         </div>
 
-        {/* Pagination */}
         {data && (
-          <Pagination
-            page={page}
-            totalPages={data.totalPages}
-            onPage={setPage}
-          />
+          <Pagination page={page} totalPages={data.totalPages} onPage={setPage} />
         )}
       </div>
 
@@ -254,11 +285,94 @@ export default function NotificationCenter() {
         .nc-page {
           padding: var(--space-6);
           min-height: 100%;
+          animation: fade-in-up 0.3s ease-out;
         }
         .nc-container {
           max-width: 800px;
         }
 
+        /* Stats */
+        .nc-stats {
+          display: flex;
+          gap: var(--space-4);
+          margin-bottom: var(--space-5);
+        }
+        .nc-stat {
+          display: flex;
+          align-items: center;
+          gap: var(--space-3);
+          padding: var(--space-3) var(--space-4);
+          background: var(--bg-surface);
+          border: 1px solid var(--border-primary);
+          border-radius: 12px;
+          flex: 1;
+          transition: box-shadow 0.2s;
+        }
+        .nc-stat:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .nc-stat-icon {
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .nc-stat-icon--total {
+          background: rgba(37,99,235,0.1);
+          color: #2563eb;
+        }
+        .nc-stat-icon--unread {
+          background: rgba(245,158,11,0.1);
+          color: #f59e0b;
+        }
+        .nc-stat-info {
+          display: flex;
+          flex-direction: column;
+        }
+        .nc-stat-value {
+          font-size: var(--text-lg, 17px);
+          font-weight: 700;
+          color: var(--text-primary);
+          line-height: 1.2;
+        }
+        .nc-stat-label {
+          font-size: var(--text-xs, 12px);
+          color: var(--text-muted);
+        }
+
+        /* Category chips */
+        .nc-chips {
+          display: flex;
+          gap: var(--space-2);
+          margin-bottom: var(--space-4);
+          overflow-x: auto;
+          scrollbar-width: none;
+          padding-bottom: 2px;
+        }
+        .nc-chips::-webkit-scrollbar { display: none; }
+        .nc-chip {
+          padding: 6px 14px;
+          border-radius: 20px;
+          border: 1px solid var(--border-primary);
+          background: var(--bg-surface);
+          font-size: var(--text-xs, 12px);
+          font-family: var(--font-sans);
+          font-weight: 500;
+          color: var(--text-secondary);
+          cursor: pointer;
+          white-space: nowrap;
+          transition: all 0.2s;
+          flex-shrink: 0;
+        }
+        .nc-chip:hover:not(.nc-chip--active) {
+          background: var(--bg-hover);
+          border-color: var(--text-muted);
+        }
+        .nc-chip--active {
+          font-weight: 600;
+        }
+
+        /* Filters */
         .nc-filters {
           display: flex;
           gap: var(--space-3);
@@ -266,21 +380,91 @@ export default function NotificationCenter() {
           flex-wrap: wrap;
           align-items: center;
         }
-        .nc-search {
-          flex: 1;
-          min-width: 180px;
+        .nc-search { flex: 1; min-width: 180px; }
+        .nc-select { flex: 0 0 auto; min-width: 130px; }
+
+        /* Mark all button */
+        .nc-mark-all-btn {
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+          padding: var(--space-2) var(--space-3);
+          border: 1px solid var(--border-primary);
+          border-radius: 8px;
+          background: var(--bg-surface);
+          font-family: var(--font-sans);
+          font-size: var(--text-xs, 12px);
+          font-weight: 500;
+          color: var(--text-secondary);
+          cursor: pointer;
+          transition: all 0.15s;
         }
-        .nc-select {
-          flex: 0 0 auto;
-          min-width: 130px;
+        .nc-mark-all-btn:hover {
+          background: var(--primary, #2563eb);
+          color: #fff;
+          border-color: var(--primary, #2563eb);
         }
 
+        /* List card */
         .nc-list-card {
-          border-radius: var(--radius-lg);
+          border-radius: 16px;
           overflow: hidden;
-          padding: 0;
+          border: 1px solid var(--border-primary);
+          background: var(--bg-surface);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
         }
 
+        /* Empty state */
+        .nc-empty {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: var(--space-12) var(--space-6);
+          text-align: center;
+        }
+        .nc-empty-icon {
+          width: 72px;
+          height: 72px;
+          border-radius: 20px;
+          background: var(--bg-hover, rgba(0,0,0,0.04));
+          color: var(--text-muted);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: var(--space-4);
+        }
+        .nc-empty-icon--error {
+          background: rgba(220,38,38,0.08);
+          color: #dc2626;
+        }
+        .nc-empty-title {
+          font-size: var(--text-sm, 14px);
+          font-weight: 600;
+          color: var(--text-primary);
+          margin-bottom: var(--space-1);
+        }
+        .nc-empty-text {
+          font-size: var(--text-xs, 12px);
+          color: var(--text-muted);
+        }
+
+        /* Skeleton */
+        .nc-skeleton-row {
+          padding: var(--space-4);
+          display: flex;
+          gap: 14px;
+          border-bottom: 1px solid var(--border-primary);
+        }
+        .nc-skeleton-icon { border-radius: 12px !important; }
+        .nc-skeleton-content {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        /* Pagination */
         .nc-pagination {
           display: flex;
           align-items: center;
@@ -288,51 +472,40 @@ export default function NotificationCenter() {
           gap: var(--space-4);
           margin-top: var(--space-6);
         }
-        .nc-page-info {
-          font-size: var(--text-sm);
-          color: var(--text-secondary);
-        }
-
-        /* C-03: Archived / Active tab switcher */
-        .nc-tabs {
-          display: flex;
-          gap: var(--space-1);
-          margin-bottom: var(--space-4);
-          border-bottom: 1px solid var(--border-primary);
-          padding-bottom: 0;
-        }
-        .nc-tab {
+        .nc-page-btn {
           padding: var(--space-2) var(--space-4);
-          border: none;
-          background: none;
-          font-size: var(--text-sm);
+          border: 1px solid var(--border-primary);
+          border-radius: 8px;
+          background: var(--bg-surface);
           font-family: var(--font-sans);
-          font-weight: 500;
+          font-size: var(--text-sm, 14px);
           color: var(--text-secondary);
           cursor: pointer;
-          border-bottom: 2px solid transparent;
-          margin-bottom: -1px;
-          transition: color var(--transition-fast), border-color var(--transition-fast);
+          transition: all 0.15s;
         }
-        .nc-tab--active {
-          color: var(--primary, #2563eb);
-          border-bottom-color: var(--primary, #2563eb);
+        .nc-page-btn:hover:not(:disabled) {
+          background: var(--primary, #2563eb);
+          color: #fff;
+          border-color: var(--primary, #2563eb);
         }
-        .nc-tab:hover:not(.nc-tab--active) {
-          color: var(--text-primary);
+        .nc-page-btn:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+        }
+        .nc-page-info {
+          font-size: var(--text-sm, 14px);
+          color: var(--text-muted);
+          font-weight: 500;
         }
 
         @media (max-width: 768px) {
-          .nc-page {
-            padding: var(--space-4);
-          }
+          .nc-page { padding: var(--space-4); }
           .nc-filters {
             flex-direction: column;
             align-items: stretch;
           }
-          .nc-select {
-            min-width: unset;
-          }
+          .nc-select { min-width: unset; }
+          .nc-stats { flex-direction: column; }
         }
       `}</style>
     </div>

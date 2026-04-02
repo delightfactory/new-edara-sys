@@ -57,6 +57,10 @@ input, textarea, select { font-family: inherit; }
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
+@keyframes notif-toast-slide {
+  from { opacity: 0; transform: translateY(-12px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
 
 .animate-enter { animation: fade-in-up 0.25s ease-out; }
 .animate-fade  { animation: fade-in 0.2s ease; }

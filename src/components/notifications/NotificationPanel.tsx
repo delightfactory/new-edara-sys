@@ -1,18 +1,14 @@
 // src/components/notifications/NotificationPanel.tsx
 // ─────────────────────────────────────────────────────────────
-// Notification Panel — Popover on desktop / Bottom Sheet on mobile.
+// Premium Notification Panel — Popover on desktop / Bottom Sheet on mobile.
+// Glassmorphism, animated tabs, smooth scroll, rich empty state.
 // Rendered via createPortal to escape z-index stacking contexts.
-//
-// BUG FIX: overlay rendered conditionally in JS (not via CSS display:none)
-// because <style> inside createPortal body doesn't scope correctly in all
-// browsers — global CSS class manipulation via display:none/block causes
-// the overlay to appear on desktop when it shouldn't.
 // ─────────────────────────────────────────────────────────────
 
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { X, BellOff, CheckCheck, Settings } from 'lucide-react'
+import { X, BellOff, CheckCheck, Settings, Bell } from 'lucide-react'
 import { useNotificationStore } from '@/stores/notification-store'
 import {
   useRecentNotificationsQuery,
@@ -21,13 +17,12 @@ import {
   useArchiveMutation,
 } from '@/hooks/useNotificationQueries'
 import { Skeleton } from '@/components/ui/Skeleton'
-import EmptyState from '@/components/shared/EmptyState'
 import NotificationItem from './NotificationItem'
 
 // ── Tab type ─────────────────────────────────────────────────
 type Tab = 'all' | 'unread'
 
-// ── Detect mobile via JS (avoids CSS media-query scoping issues in portal) ─
+// ── Detect mobile via JS ────────────────────────────────────
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768)
   useEffect(() => {
@@ -68,33 +63,38 @@ function PanelContent({ onClose }: { onClose: () => void }) {
     <>
       {/* Header */}
       <div className="np-header">
-        <span className="np-title">الإشعارات</span>
+        <div className="np-header-start">
+          <Bell size={18} className="np-header-icon" />
+          <span className="np-title">الإشعارات</span>
+          {unreadCount > 0 && (
+            <span className="np-title-badge">{unreadCount > 99 ? '+99' : unreadCount}</span>
+          )}
+        </div>
         <div className="np-header-actions">
           {unreadCount > 0 && (
             <button
-              className="btn btn-ghost btn-sm"
+              className="np-action-btn"
               onClick={() => markAll.mutate(undefined)}
               title="تحديد الكل كمقروء"
               aria-label="تحديد الكل كمقروء"
               type="button"
             >
-              <CheckCheck size={14} />
-              <span style={{ marginInlineStart: 4 }}>الكل مقروء</span>
+              <CheckCheck size={15} />
             </button>
           )}
           <button
-            className="btn btn-ghost btn-sm btn-icon"
+            className="np-action-btn"
             onClick={handleSettings}
-            aria-label="إعدادات الإشعارات"
-            title="إعدادات الإشعارات"
+            aria-label="الإعدادات"
+            title="الإعدادات"
             type="button"
           >
-            <Settings size={16} />
+            <Settings size={15} />
           </button>
           <button
-            className="btn btn-ghost btn-sm btn-icon"
+            className="np-action-btn np-close-btn"
             onClick={onClose}
-            aria-label="إغلاق لوحة الإشعارات"
+            aria-label="إغلاق"
             type="button"
           >
             <X size={16} />
@@ -102,7 +102,7 @@ function PanelContent({ onClose }: { onClose: () => void }) {
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs — animated indicator */}
       <div className="np-tabs" role="tablist">
         <button
           role="tab"
@@ -131,9 +131,9 @@ function PanelContent({ onClose }: { onClose: () => void }) {
       <div className="np-list" role="list">
         {isLoading ? (
           [1, 2, 3].map(i => (
-            <div key={i} style={{ padding: 'var(--space-3) var(--space-4)', display: 'flex', gap: 12, borderBottom: '1px solid var(--border-primary)' }}>
-              <Skeleton width={32} height={32} className="skeleton-circle" />
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div key={i} className="np-skeleton-item">
+              <Skeleton width={40} height={40} className="np-skeleton-icon" />
+              <div className="np-skeleton-content">
                 <Skeleton width="70%" height={14} />
                 <Skeleton width="100%" height={12} />
                 <Skeleton width="30%" height={10} />
@@ -141,11 +141,15 @@ function PanelContent({ onClose }: { onClose: () => void }) {
             </div>
           ))
         ) : filtered.length === 0 ? (
-          <EmptyState
-            icon={<BellOff size={36} />}
-            title="لا توجد إشعارات"
-            text="ستظهر إشعاراتك الجديدة هنا"
-          />
+          <div className="np-empty">
+            <div className="np-empty-icon">
+              <BellOff size={32} />
+            </div>
+            <p className="np-empty-title">
+              {tab === 'unread' ? 'لا توجد إشعارات غير مقروءة' : 'لا توجد إشعارات'}
+            </p>
+            <p className="np-empty-text">ستظهر إشعاراتك الجديدة هنا</p>
+          </div>
         ) : (
           filtered.map(n => (
             <NotificationItem
@@ -162,7 +166,7 @@ function PanelContent({ onClose }: { onClose: () => void }) {
       {/* Footer */}
       <div className="np-footer">
         <button
-          className="btn btn-ghost btn-sm btn-block"
+          className="np-footer-btn"
           onClick={handleViewAll}
           type="button"
         >
@@ -182,8 +186,6 @@ export default function NotificationPanel() {
   }))
 
   const panelRef = useRef<HTMLDivElement>(null)
-  // ✅ FIX: detect mobile in JS — avoids CSS media-query scoping issues
-  //    inside createPortal which injects into body, not the style cascade
   const isMobile = useIsMobile()
 
   // Close on Escape
@@ -196,7 +198,7 @@ export default function NotificationPanel() {
     return () => document.removeEventListener('keydown', onKey)
   }, [isPanelOpen, setPanelOpen])
 
-  // Close on outside click (desktop only — mobile uses overlay tap)
+  // Close on outside click (desktop only)
   useEffect(() => {
     if (!isPanelOpen || isMobile) return
     const onClick = (e: MouseEvent) => {
@@ -204,7 +206,6 @@ export default function NotificationPanel() {
         setPanelOpen(false)
       }
     }
-    // Delay so the button click that opened it doesn't immediately close it
     const id = setTimeout(() => document.addEventListener('mousedown', onClick), 100)
     return () => {
       clearTimeout(id)
@@ -216,9 +217,7 @@ export default function NotificationPanel() {
 
   return createPortal(
     <>
-      {/* ✅ FIX: Overlay rendered conditionally in JS — ONLY on mobile.
-          Previously used CSS display:none/block which caused overlay to
-          bleed through on desktop due to <style> inside portal body context. */}
+      {/* Mobile overlay */}
       {isMobile && (
         <div
           className="np-overlay"
@@ -244,10 +243,10 @@ export default function NotificationPanel() {
           position: fixed;
           inset: 0;
           z-index: var(--z-overlay, 190);
-          background: rgba(0,0,0,0.45);
-          backdrop-filter: blur(2px);
-          -webkit-backdrop-filter: blur(2px);
-          animation: np-fade-in 0.2s ease;
+          background: rgba(0,0,0,0.4);
+          backdrop-filter: blur(4px);
+          -webkit-backdrop-filter: blur(4px);
+          animation: np-fade-in 0.25s ease;
         }
 
         @keyframes np-fade-in {
@@ -261,22 +260,24 @@ export default function NotificationPanel() {
           z-index: var(--z-modal, 200);
           background: var(--bg-surface);
           border: 1px solid var(--border-primary);
-          border-radius: var(--radius-xl, 16px);
-          box-shadow: var(--shadow-lg);
+          border-radius: 16px;
+          box-shadow:
+            0 12px 40px rgba(0,0,0,0.12),
+            0 4px 12px rgba(0,0,0,0.06),
+            0 0 0 1px rgba(0,0,0,0.03);
           display: flex;
           flex-direction: column;
           overflow: hidden;
-          animation: np-slide-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          animation: np-slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 
-          /* Desktop: popover below the bell (~AppBar) */
           top: calc(var(--app-bar-height, 56px) + 8px);
           inset-inline-end: var(--space-4);
-          width: 380px;
+          width: 400px;
           max-height: calc(100vh - var(--app-bar-height, 56px) - 24px);
         }
 
         @keyframes np-slide-in {
-          from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+          from { opacity: 0; transform: translateY(-10px) scale(0.97); }
           to   { opacity: 1; transform: translateY(0) scale(1); }
         }
 
@@ -287,9 +288,9 @@ export default function NotificationPanel() {
           inset-inline-end: 0;
           inset-inline-start: 0;
           width: 100%;
-          border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-          max-height: 72vh;
-          animation: np-slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+          border-radius: 20px 20px 0 0;
+          max-height: 75vh;
+          animation: np-slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         @keyframes np-slide-up {
@@ -302,55 +303,96 @@ export default function NotificationPanel() {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: var(--space-3) var(--space-4);
+          padding: var(--space-4);
           border-bottom: 1px solid var(--border-primary);
           flex-shrink: 0;
+          background: linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-app, #f8fafc) 100%);
+        }
+        .np-header-start {
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+        }
+        .np-header-icon {
+          color: var(--primary, #2563eb);
         }
         .np-title {
-          font-size: var(--text-base);
+          font-size: var(--text-base, 15px);
           font-weight: 700;
           color: var(--text-primary);
+        }
+        .np-title-badge {
+          font-size: 10px;
+          font-weight: 700;
+          background: var(--primary, #2563eb);
+          color: #fff;
+          padding: 1px 6px;
+          border-radius: 9px;
+          line-height: 1.5;
         }
         .np-header-actions {
           display: flex;
           align-items: center;
-          gap: var(--space-1);
+          gap: 2px;
+        }
+        .np-action-btn {
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          border: none;
+          background: transparent;
+          color: var(--text-muted);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: background 0.15s, color 0.15s;
+        }
+        .np-action-btn:hover {
+          background: var(--bg-hover, rgba(0,0,0,0.06));
+          color: var(--text-primary);
+        }
+        .np-close-btn:hover {
+          background: rgba(220,38,38,0.08);
+          color: var(--danger, #dc2626);
         }
 
         /* ── Tabs ── */
         .np-tabs {
           display: flex;
-          padding: var(--space-2) var(--space-4) 0;
-          gap: var(--space-1);
+          padding: 0 var(--space-4);
+          gap: 0;
           border-bottom: 1px solid var(--border-primary);
           flex-shrink: 0;
         }
         .np-tab {
-          padding: var(--space-2) var(--space-3);
+          padding: var(--space-3) var(--space-4);
           border: none;
           background: none;
-          font-size: var(--text-sm);
+          font-size: var(--text-sm, 14px);
           font-family: var(--font-sans);
           font-weight: 500;
-          color: var(--text-secondary);
+          color: var(--text-muted);
           cursor: pointer;
           border-bottom: 2px solid transparent;
           margin-bottom: -1px;
           display: flex;
           align-items: center;
           gap: var(--space-1);
-          transition: color var(--transition-fast);
+          transition: color 0.2s, border-color 0.2s;
         }
+        .np-tab:hover { color: var(--text-primary); }
         .np-tab--active {
           color: var(--primary, #2563eb);
           border-bottom-color: var(--primary, #2563eb);
+          font-weight: 600;
         }
         .np-tab-badge {
           font-size: 10px;
           font-weight: 700;
           background: var(--primary, #2563eb);
           color: #fff;
-          padding: 1px 5px;
+          padding: 1px 6px;
           border-radius: 9px;
           line-height: 1.4;
         }
@@ -360,6 +402,58 @@ export default function NotificationPanel() {
           flex: 1;
           overflow-y: auto;
           scrollbar-width: thin;
+          scrollbar-color: var(--border-primary) transparent;
+        }
+        .np-list::-webkit-scrollbar { width: 4px; }
+        .np-list::-webkit-scrollbar-thumb {
+          background: var(--border-primary);
+          border-radius: 4px;
+        }
+
+        /* ── Skeleton loading ── */
+        .np-skeleton-item {
+          padding: var(--space-3) var(--space-4);
+          display: flex;
+          gap: 12px;
+          border-bottom: 1px solid var(--border-primary);
+        }
+        .np-skeleton-icon { border-radius: 12px !important; }
+        .np-skeleton-content {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        /* ── Empty state ── */
+        .np-empty {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: var(--space-10) var(--space-6);
+          text-align: center;
+        }
+        .np-empty-icon {
+          width: 64px;
+          height: 64px;
+          border-radius: 20px;
+          background: var(--bg-hover, rgba(0,0,0,0.04));
+          color: var(--text-muted);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: var(--space-4);
+        }
+        .np-empty-title {
+          font-size: var(--text-sm, 14px);
+          font-weight: 600;
+          color: var(--text-primary);
+          margin-bottom: var(--space-1);
+        }
+        .np-empty-text {
+          font-size: var(--text-xs, 12px);
+          color: var(--text-muted);
         }
 
         /* ── Footer ── */
@@ -367,6 +461,22 @@ export default function NotificationPanel() {
           padding: var(--space-3) var(--space-4);
           border-top: 1px solid var(--border-primary);
           flex-shrink: 0;
+        }
+        .np-footer-btn {
+          width: 100%;
+          padding: var(--space-2) 0;
+          border: none;
+          background: none;
+          font-family: var(--font-sans);
+          font-size: var(--text-sm, 14px);
+          font-weight: 600;
+          color: var(--primary, #2563eb);
+          cursor: pointer;
+          border-radius: 8px;
+          transition: background 0.15s;
+        }
+        .np-footer-btn:hover {
+          background: rgba(37,99,235,0.06);
         }
       `}</style>
     </>,

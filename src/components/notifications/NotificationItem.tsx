@@ -1,14 +1,20 @@
 // src/components/notifications/NotificationItem.tsx
 // ─────────────────────────────────────────────────────────────
-// Single notification row — used in both Panel (compact) and Center.
-// Priority stripe, category icon, relative time, read/archive actions.
+// Premium single notification row with:
+//  • Category icon with colored background
+//  • Priority stripe (4px, left/RTL-aware)
+//  • Unread dot with glow
+//  • Relative time in Arabic
+//  • Archive/Delete action buttons (hover + always visible on mobile)
+//  • Click navigates to action URL (with fallback)
+//  • Smooth enter animation
 // ─────────────────────────────────────────────────────────────
 
 import { useNavigate } from 'react-router-dom'
 import {
   Clock, Users, Calendar, Banknote, Receipt, CheckCircle,
   Package, ShoppingCart, Settings, Shield, AlertTriangle,
-  Archive, Bell, Trash2,
+  Archive, Bell, Trash2, ExternalLink,
 } from 'lucide-react'
 import type { Notification, NotificationCategory, NotificationPriority } from '@/lib/notifications/types'
 
@@ -28,47 +34,28 @@ function relativeTime(isoDate: string): string {
   return 'الآن'
 }
 
-function priorityColor(p: NotificationPriority): string {
-  switch (p) {
-    case 'critical': return 'var(--danger, #dc2626)'
-    case 'high':     return 'var(--warning, #f59e0b)'
-    case 'medium':   return 'var(--info, #3b82f6)'
-    default:         return 'transparent'
-  }
+const PRIORITY_CONFIG: Record<NotificationPriority, { color: string; glow: string }> = {
+  critical: { color: '#dc2626', glow: '0 0 8px rgba(220,38,38,0.3)' },
+  high:     { color: '#f59e0b', glow: '0 0 8px rgba(245,158,11,0.3)' },
+  medium:   { color: '#3b82f6', glow: 'none' },
+  low:      { color: 'transparent', glow: 'none' },
 }
 
-function CategoryIcon({ category }: { category: NotificationCategory }) {
-  const size = 16
-  switch (category) {
-    case 'hr_attendance': return <Clock size={size} />
-    case 'hr_leaves':     return <Calendar size={size} />
-    case 'hr_payroll':    return <Banknote size={size} />
-    case 'finance_expenses': return <Receipt size={size} />
-    case 'finance_approvals': return <CheckCircle size={size} />
-    case 'inventory':     return <Package size={size} />
-    case 'sales':         return <ShoppingCart size={size} />
-    case 'system':        return <Settings size={size} />
-    case 'alerts':        return <AlertTriangle size={size} />
-    case 'procurement':   return <Package size={size} />
-    case 'tasks':         return <CheckCircle size={size} />
-    default:              return <Bell size={size} />
-  }
+const CATEGORY_CONFIG: Record<string, { icon: React.ReactNode; color: string; bg: string }> = {
+  hr_attendance:     { icon: <Clock size={18} />,          color: '#6366f1', bg: 'rgba(99,102,241,0.1)' },
+  hr_leaves:         { icon: <Calendar size={18} />,       color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)' },
+  hr_payroll:        { icon: <Banknote size={18} />,       color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
+  finance_expenses:  { icon: <Receipt size={18} />,        color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
+  finance_approvals: { icon: <CheckCircle size={18} />,    color: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
+  inventory:         { icon: <Package size={18} />,        color: '#06b6d4', bg: 'rgba(6,182,212,0.1)' },
+  sales:             { icon: <ShoppingCart size={18} />,    color: '#ec4899', bg: 'rgba(236,72,153,0.1)' },
+  system:            { icon: <Settings size={18} />,       color: '#6b7280', bg: 'rgba(107,114,128,0.1)' },
+  alerts:            { icon: <AlertTriangle size={18} />,  color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+  procurement:       { icon: <Package size={18} />,        color: '#0891b2', bg: 'rgba(8,145,178,0.1)' },
+  tasks:             { icon: <CheckCircle size={18} />,    color: '#059669', bg: 'rgba(5,150,105,0.1)' },
 }
 
-function categoryIconColor(category: NotificationCategory): string {
-  switch (category) {
-    case 'hr_attendance':    return '#6366f1'
-    case 'hr_leaves':        return '#8b5cf6'
-    case 'hr_payroll':       return '#10b981'
-    case 'finance_expenses': return '#f59e0b'
-    case 'finance_approvals':return '#3b82f6'
-    case 'inventory':        return '#06b6d4'
-    case 'sales':            return '#ec4899'
-    case 'system':           return '#6b7280'
-    case 'alerts':           return '#ef4444'
-    default:                 return '#6b7280'
-  }
-}
+const DEFAULT_CATEGORY = { icon: <Bell size={18} />, color: '#6b7280', bg: 'rgba(107,114,128,0.1)' }
 
 // ── Props ─────────────────────────────────────────────────────
 
@@ -76,7 +63,6 @@ interface NotificationItemProps {
   notification: Notification
   onRead?:    (id: string) => void
   onArchive?: (id: string) => void
-  /** Hard-delete — only shown when notification.isArchived is true */
   onDelete?:  (id: string) => void
   compact?: boolean
 }
@@ -94,7 +80,9 @@ export default function NotificationItem({
 
   const handleClick = () => {
     if (!notification.isRead) onRead?.(notification.id)
-    if (notification.actionUrl) navigate(notification.actionUrl)
+    if (notification.actionUrl) {
+      navigate(notification.actionUrl)
+    }
   }
 
   const handleArchive = (e: React.MouseEvent) => {
@@ -107,148 +95,207 @@ export default function NotificationItem({
     onDelete?.(notification.id)
   }
 
-  const stripeColor = priorityColor(notification.priority)
-  const iconColor   = categoryIconColor(notification.category)
+  const priority = PRIORITY_CONFIG[notification.priority] ?? PRIORITY_CONFIG.low
+  const cat = CATEGORY_CONFIG[notification.category] ?? DEFAULT_CATEGORY
+  const hasLink = !!notification.actionUrl
 
   return (
     <div
-      className={`notif-item${notification.isRead ? ' notif-item--read' : ''}${compact ? ' notif-item--compact' : ''}`}
+      className={[
+        'ni-item',
+        notification.isRead ? 'ni-item--read' : '',
+        compact ? 'ni-item--compact' : '',
+      ].filter(Boolean).join(' ')}
       onClick={handleClick}
       role="listitem"
       tabIndex={0}
       onKeyDown={e => e.key === 'Enter' && handleClick()}
       aria-label={`إشعار: ${notification.title}`}
+      style={{ cursor: hasLink ? 'pointer' : 'default' }}
     >
       {/* Priority stripe */}
-      <div className="notif-stripe" style={{ background: stripeColor }} />
+      <div className="ni-stripe" style={{ background: priority.color }} />
 
-      {/* Icon */}
-      <div className="notif-icon" style={{ color: iconColor, background: `${iconColor}18` }}>
-        <CategoryIcon category={notification.category} />
+      {/* Category icon */}
+      <div
+        className="ni-icon"
+        style={{ color: cat.color, background: cat.bg }}
+      >
+        {cat.icon}
       </div>
 
       {/* Content */}
-      <div className="notif-content">
-        <div className="notif-title-row">
-          {!notification.isRead && <span className="notif-dot" aria-hidden="true" />}
-          <span className="notif-title">{notification.title}</span>
+      <div className="ni-content">
+        <div className="ni-title-row">
+          {!notification.isRead && (
+            <span
+              className="ni-dot"
+              style={{ boxShadow: priority.glow }}
+              aria-hidden="true"
+            />
+          )}
+          <span className="ni-title">{notification.title}</span>
+          {hasLink && <ExternalLink size={12} className="ni-link-icon" />}
         </div>
-        <p className="notif-body">{notification.body}</p>
-        <span className="notif-time">{relativeTime(notification.createdAt)}</span>
+        <p className="ni-body">{notification.body}</p>
+        <div className="ni-meta">
+          <span className="ni-time">{relativeTime(notification.createdAt)}</span>
+          {notification.priority === 'critical' && (
+            <span className="ni-priority-tag ni-priority-tag--critical">حرج</span>
+          )}
+          {notification.priority === 'high' && (
+            <span className="ni-priority-tag ni-priority-tag--high">عالي</span>
+          )}
+        </div>
       </div>
 
-      {/* Archive action — visible in active view */}
-      {onArchive && (
-        <button
-          className="notif-action-btn"
-          onClick={handleArchive}
-          aria-label="أرشفة الإشعار"
-          type="button"
-          tabIndex={-1}
-        >
-          <Archive size={14} />
-        </button>
-      )}
-
-      {/* Delete action — visible in archived view only (BUG-12) */}
-      {onDelete && (
-        <button
-          className="notif-action-btn notif-action-btn--danger"
-          onClick={handleDelete}
-          aria-label="حذف نهائي"
-          type="button"
-          tabIndex={-1}
-          title="حذف نهائي — لا يمكن التراجع"
-        >
-          <Trash2 size={14} />
-        </button>
-      )}
+      {/* Action buttons — hover reveal on desktop, always visible on mobile */}
+      <div className="ni-actions">
+        {onArchive && (
+          <button
+            className="ni-action-btn"
+            onClick={handleArchive}
+            aria-label="أرشفة الإشعار"
+            type="button"
+            title="أرشفة"
+          >
+            <Archive size={14} />
+          </button>
+        )}
+        {onDelete && (
+          <button
+            className="ni-action-btn ni-action-btn--danger"
+            onClick={handleDelete}
+            aria-label="حذف نهائي"
+            type="button"
+            title="حذف نهائي"
+          >
+            <Trash2 size={14} />
+          </button>
+        )}
+      </div>
 
       <style>{`
-        .notif-item {
+        .ni-item {
           display: flex;
           align-items: flex-start;
           gap: var(--space-3);
           padding: var(--space-3) var(--space-4);
-          cursor: pointer;
           position: relative;
           border-bottom: 1px solid var(--border-primary);
-          transition: background var(--transition-fast);
+          transition: background 0.2s, transform 0.15s;
           background: var(--bg-surface);
+          animation: ni-slide-in 0.3s ease-out both;
         }
-        .notif-item:hover {
-          background: var(--bg-hover);
+        .ni-item:hover {
+          background: var(--bg-hover, rgba(0,0,0,0.03));
         }
-        .notif-item:hover .notif-archive-btn {
+        .ni-item:hover .ni-actions {
           opacity: 1;
+          transform: translateX(0);
         }
-        .notif-item--compact {
+        .ni-item:active {
+          transform: scale(0.995);
+        }
+        .ni-item--compact {
           padding: var(--space-2) var(--space-3);
         }
-        .notif-item--read {
-          opacity: 0.72;
+        .ni-item--read {
+          opacity: 0.65;
         }
-        .notif-item--read .notif-title {
+        .ni-item--read:hover {
+          opacity: 0.85;
+        }
+        .ni-item--read .ni-title {
           font-weight: 500;
         }
 
-        .notif-stripe {
+        @keyframes ni-slide-in {
+          from { opacity: 0; transform: translateY(4px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Priority stripe */
+        .ni-stripe {
           position: absolute;
-          inset-inline-end: 0;           /* RTL-aware: logical replacement for right: 0 */
+          inset-inline-end: 0;
           top: 0;
           bottom: 0;
-          width: 3px;
-          border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+          width: 4px;
+          border-radius: 0 var(--radius-sm, 4px) var(--radius-sm, 4px) 0;
           flex-shrink: 0;
         }
 
-        .notif-icon {
-          width: 32px;
-          height: 32px;
-          border-radius: var(--radius-full);
+        /* Category icon */
+        .ni-icon {
+          width: 40px;
+          height: 40px;
+          border-radius: 12px;
           display: flex;
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
           margin-top: 2px;
+          transition: transform 0.2s;
+        }
+        .ni-item:hover .ni-icon {
+          transform: scale(1.05);
         }
 
-        .notif-content {
+        /* Content */
+        .ni-content {
           flex: 1;
           min-width: 0;
           display: flex;
           flex-direction: column;
-          gap: 3px;
+          gap: 4px;
         }
 
-        .notif-title-row {
+        .ni-title-row {
           display: flex;
           align-items: center;
           gap: var(--space-2);
         }
 
-        .notif-dot {
-          width: 7px;
-          height: 7px;
+        .ni-dot {
+          width: 8px;
+          height: 8px;
           border-radius: 50%;
           background: var(--primary, #2563eb);
           flex-shrink: 0;
+          animation: ni-dot-pulse 2s ease-in-out infinite;
         }
 
-        .notif-title {
-          font-size: var(--text-sm);
-          font-weight: 700;
+        @keyframes ni-dot-pulse {
+          0%, 100% { opacity: 1; }
+          50%      { opacity: 0.5; }
+        }
+
+        .ni-title {
+          font-size: var(--text-sm, 14px);
+          font-weight: 600;
           color: var(--text-primary);
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
           flex: 1;
+          line-height: 1.4;
         }
 
-        .notif-body {
-          font-size: var(--text-xs);
+        .ni-link-icon {
+          color: var(--text-muted);
+          flex-shrink: 0;
+          opacity: 0;
+          transition: opacity 0.2s;
+        }
+        .ni-item:hover .ni-link-icon {
+          opacity: 0.6;
+        }
+
+        .ni-body {
+          font-size: var(--text-xs, 12px);
           color: var(--text-secondary);
-          line-height: 1.45;
+          line-height: 1.5;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
@@ -256,43 +303,77 @@ export default function NotificationItem({
           margin: 0;
         }
 
-        .notif-time {
+        .ni-meta {
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+        }
+
+        .ni-time {
           font-size: 11px;
           color: var(--text-muted);
         }
 
-        /* shared action button (archive / delete) — appears on hover */
-        .notif-action-btn {
-          position: absolute;
-          top: var(--space-2);
-          inset-inline-start: var(--space-3);
-          width: 28px;
-          height: 28px;
-          border-radius: var(--radius-sm);
+        .ni-priority-tag {
+          font-size: 10px;
+          font-weight: 600;
+          padding: 1px 6px;
+          border-radius: 4px;
+          line-height: 1.4;
+        }
+        .ni-priority-tag--critical {
+          background: rgba(220,38,38,0.1);
+          color: #dc2626;
+        }
+        .ni-priority-tag--high {
+          background: rgba(245,158,11,0.1);
+          color: #d97706;
+        }
+
+        /* Action buttons */
+        .ni-actions {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          align-self: center;
+          opacity: 0;
+          transform: translateX(4px);
+          transition: opacity 0.2s, transform 0.2s;
+        }
+
+        .ni-action-btn {
+          width: 30px;
+          height: 30px;
+          border-radius: var(--radius-md, 8px);
           border: none;
-          background: var(--bg-app);
+          background: var(--bg-app, #f8fafc);
           color: var(--text-muted);
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          opacity: 0;
-          transition: opacity var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
+          transition: background 0.15s, color 0.15s, transform 0.15s;
         }
-        .notif-action-btn:hover {
+        .ni-action-btn:hover {
           background: var(--bg-hover);
           color: var(--text-primary);
+          transform: scale(1.1);
         }
-        /* danger variant — delete button */
-        .notif-action-btn--danger:hover {
-          background: var(--danger-bg, #fee2e2);
+        .ni-action-btn:active {
+          transform: scale(0.95);
+        }
+        .ni-action-btn--danger:hover {
+          background: rgba(220,38,38,0.08);
           color: var(--danger, #dc2626);
         }
-        /* always visible on mobile — no hover state */
+
+        /* Mobile: always show actions */
         @media (max-width: 768px) {
-          .notif-action-btn {
+          .ni-actions {
             opacity: 1;
+            transform: translateX(0);
           }
+          .ni-link-icon { opacity: 0.4; }
         }
       `}</style>
     </div>

@@ -158,13 +158,120 @@ export default function GlobalRealtimeManager() {
           queryClient.invalidateQueries({ queryKey: [...notificationKeys.all, 'recent'] })
           queryClient.invalidateQueries({ queryKey: notificationKeys.lists() })
 
-          // 4. Toast للإشعارات ذات الأولوية العالية فقط
-          // (low/medium تظهر فقط في لوحة الإشعارات عند فتحها)
+          // 4. Rich toast for high/critical priority notifications
+          // (low/medium appear only in the notification panel when opened)
           if (notification.priority === 'critical' || notification.priority === 'high') {
-            toast(notification.title, {
-              description: notification.body,
-              duration: notification.priority === 'critical' ? 10_000 : 5_000,
-            })
+            const isCritical = notification.priority === 'critical'
+            const categoryColors: Record<string, string> = {
+              hr_attendance: '#6366f1', hr_leaves: '#8b5cf6', hr_payroll: '#10b981',
+              finance_expenses: '#f59e0b', finance_approvals: '#3b82f6',
+              inventory: '#06b6d4', sales: '#ec4899', system: '#6b7280',
+              alerts: '#ef4444', procurement: '#0891b2', tasks: '#059669',
+            }
+            const accentColor = isCritical
+              ? '#dc2626'
+              : categoryColors[notification.category] || '#3b82f6'
+
+            toast.custom(
+              (t) => {
+                const handleToastClick = () => {
+                  toast.dismiss(t)
+                  if (notification.action_url) {
+                    // Navigate using location (GlobalRealtimeManager is outside BrowserRouter)
+                    window.location.href = notification.action_url
+                  } else {
+                    useNotificationStore.getState().setPanelOpen(true)
+                  }
+                }
+
+                return (
+                  <div
+                    onClick={handleToastClick}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '12px',
+                      padding: '14px 16px',
+                      background: 'var(--bg-surface, #fff)',
+                      border: '1px solid var(--border-primary, #e2e8f0)',
+                      borderRadius: '14px',
+                      boxShadow: '0 8px 30px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)',
+                      cursor: 'pointer',
+                      maxWidth: '380px',
+                      width: '100%',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      direction: 'rtl',
+                      fontFamily: 'var(--font-sans)',
+                      animation: 'notif-toast-slide 0.4s cubic-bezier(0.16,1,0.3,1)',
+                    }}
+                  >
+                    {/* Priority accent stripe */}
+                    <div style={{
+                      position: 'absolute',
+                      top: 0,
+                      right: 0,
+                      bottom: 0,
+                      width: '4px',
+                      background: accentColor,
+                      borderRadius: '0 14px 14px 0',
+                    }} />
+
+                    {/* Category icon */}
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '12px',
+                      background: `${accentColor}14`,
+                      color: accentColor,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      fontSize: '18px',
+                    }}>
+                      🔔
+                    </div>
+
+                    {/* Text content */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        color: 'var(--text-primary, #0f172a)',
+                        marginBottom: '3px',
+                        lineHeight: '1.4',
+                      }}>
+                        {notification.title}
+                      </div>
+                      <div style={{
+                        fontSize: '12px',
+                        color: 'var(--text-secondary, #64748b)',
+                        lineHeight: '1.5',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }}>
+                        {notification.body}
+                      </div>
+                      <div style={{
+                        fontSize: '11px',
+                        color: accentColor,
+                        fontWeight: 500,
+                        marginTop: '6px',
+                      }}>
+                        اضغط للعرض ←
+                      </div>
+                    </div>
+                  </div>
+                )
+              },
+              {
+                duration: isCritical ? 10_000 : 6_000,
+                position: 'top-center',
+              }
+            )
           }
         }
       )

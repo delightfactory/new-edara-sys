@@ -1,12 +1,11 @@
 // src/pages/notifications/NotificationsPage.tsx
 // ─────────────────────────────────────────────────────────────
-// Notifications page wrapper with top-level tabs:
+// Premium notifications page wrapper with visual tab bar:
 //   • الإشعارات  → NotificationCenter (active)
 //   • المؤرشف    → NotificationCenter (archived)
 //   • الإعدادات  → NotificationPreferences
 //
 // URL: /notifications?tab=notifications|archived|settings
-// The ?tab=settings route is used by the panel's ⚙️ button.
 // ─────────────────────────────────────────────────────────────
 
 import { useSearchParams } from 'react-router-dom'
@@ -25,13 +24,11 @@ const TABS: { id: PageTab; label: string; icon: React.ReactNode }[] = [
 export default function NotificationsPage() {
   const [params, setParams] = useSearchParams()
 
-  // Read active tab from URL — default to 'notifications'
   const rawTab = params.get('tab') as PageTab | null
   const activeTab: PageTab =
     rawTab === 'archived' || rawTab === 'settings' ? rawTab : 'notifications'
 
   const switchTab = (tab: PageTab) => {
-    // Clear all filters when switching tabs — fresh start
     if (tab === 'notifications') {
       setParams({})
     } else if (tab === 'archived') {
@@ -42,106 +39,139 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="notif-page">
+    <div className="npage">
 
-      {/* ── Page-level tab bar ── */}
-      <div className="notif-page-tabs" role="tablist" aria-label="تبويبات الإشعارات">
-        {TABS.map(t => (
-          <button
-            key={t.id}
-            role="tab"
-            type="button"
-            aria-selected={activeTab === t.id}
-            className={`notif-page-tab${activeTab === t.id ? ' notif-page-tab--active' : ''}`}
-            onClick={() => switchTab(t.id)}
-          >
-            {t.icon}
-            <span>{t.label}</span>
-          </button>
-        ))}
+      {/* Tab bar */}
+      <div className="npage-tabs" role="tablist" aria-label="تبويبات الإشعارات">
+        {TABS.map(t => {
+          const isActive = activeTab === t.id
+          return (
+            <button
+              key={t.id}
+              role="tab"
+              type="button"
+              aria-selected={isActive}
+              className={`npage-tab${isActive ? ' npage-tab--active' : ''}`}
+              onClick={() => switchTab(t.id)}
+            >
+              <span className="npage-tab-icon">{t.icon}</span>
+              <span>{t.label}</span>
+              {isActive && <span className="npage-tab-indicator" />}
+            </button>
+          )
+        })}
       </div>
 
-      {/* ── Tab content ── */}
-      <div className="notif-page-body">
+      {/* Tab content */}
+      <div className="npage-body">
         {activeTab === 'notifications' && <NotificationCenter />}
         {activeTab === 'archived'      && <NotificationCenter />}
         {activeTab === 'settings'      && (
-          <div className="notif-settings-wrapper">
+          <div className="npage-settings">
             <NotificationPreferences />
           </div>
         )}
       </div>
 
       <style>{`
-        .notif-page {
+        .npage {
           display: flex;
           flex-direction: column;
           min-height: 100%;
         }
 
-        /* ── Top tab bar ── */
-        .notif-page-tabs {
+        /* ── Tab bar ── */
+        .npage-tabs {
           display: flex;
           gap: 0;
           background: var(--bg-surface);
-          border-bottom: 2px solid var(--border-primary);
+          border-bottom: 1px solid var(--border-primary);
           padding: 0 var(--space-6);
           position: sticky;
           top: var(--app-bar-height, 0);
           z-index: var(--z-sticky, 10);
         }
 
-        .notif-page-tab {
+        .npage-tab {
           display: flex;
           align-items: center;
           gap: var(--space-2);
-          padding: var(--space-3) var(--space-4);
+          padding: var(--space-3) var(--space-5);
           border: none;
           background: none;
           font-family: var(--font-sans);
-          font-size: var(--text-sm);
+          font-size: var(--text-sm, 14px);
           font-weight: 500;
-          color: var(--text-secondary);
+          color: var(--text-muted);
           cursor: pointer;
-          border-bottom: 2px solid transparent;
-          margin-bottom: -2px;
-          transition: color 0.15s, border-color 0.15s;
+          position: relative;
+          transition: color 0.2s, background 0.2s;
           white-space: nowrap;
         }
 
-        .notif-page-tab:hover:not(.notif-page-tab--active) {
-          color: var(--text-primary);
-          background: var(--bg-hover, rgba(0,0,0,0.04));
+        .npage-tab:hover:not(.npage-tab--active) {
+          color: var(--text-secondary);
+          background: var(--bg-hover, rgba(0,0,0,0.03));
         }
 
-        .notif-page-tab--active {
+        .npage-tab--active {
           color: var(--primary, #2563eb);
-          border-bottom-color: var(--primary, #2563eb);
           font-weight: 600;
         }
 
+        .npage-tab-icon {
+          display: flex;
+          align-items: center;
+          transition: transform 0.2s;
+        }
+        .npage-tab--active .npage-tab-icon {
+          transform: scale(1.1);
+        }
+
+        /* Animated indicator */
+        .npage-tab-indicator {
+          position: absolute;
+          bottom: -1px;
+          left: var(--space-3);
+          right: var(--space-3);
+          height: 2px;
+          background: var(--primary, #2563eb);
+          border-radius: 2px 2px 0 0;
+          animation: npage-indicator-slide 0.25s ease;
+        }
+
+        @keyframes npage-indicator-slide {
+          from { transform: scaleX(0); }
+          to   { transform: scaleX(1); }
+        }
+
         /* ── Body ── */
-        .notif-page-body {
+        .npage-body {
           flex: 1;
         }
 
         /* ── Settings wrapper ── */
-        .notif-settings-wrapper {
+        .npage-settings {
           max-width: 640px;
           margin: var(--space-6) auto;
           padding: 0 var(--space-4);
         }
 
-        /* ── Mobile adjustments ── */
+        /* ── Mobile ── */
         @media (max-width: 768px) {
-          .notif-page-tabs {
+          .npage-tabs {
             padding: 0 var(--space-2);
             overflow-x: auto;
             scrollbar-width: none;
           }
-          .notif-page-tabs::-webkit-scrollbar { display: none; }
+          .npage-tabs::-webkit-scrollbar { display: none; }
 
-          .notif-settings-wrapper {
+          .npage-tab {
+            padding: var(--space-3) var(--space-3);
+            font-size: var(--text-xs, 12px);
+          }
+
+          .npage-settings {
             margin: var(--space-4) auto;
             padding: 0 var(--space-3);
           }
