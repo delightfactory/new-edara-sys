@@ -8,6 +8,7 @@ import { useCurrentEmployee } from '@/hooks/useQueryHooks'
 import { useQuery } from '@tanstack/react-query'
 import {
   recordAttendanceGPS,
+  recordAttendanceLocationPing,
   getAttendanceDays,
   type AttendanceGPSResult,
 } from '@/lib/services/hr'
@@ -17,6 +18,7 @@ import { toast } from 'sonner'
 import useGeoPermission from '@/hooks/useGeoPermission'
 import GeoPermissionDialog from '@/components/shared/GeoPermissionDialog'
 import GeoPermissionBanner from '@/components/shared/GeoPermissionBanner'
+import { getSettings } from '@/lib/services/settings'
 
 // ─────────────────────────────────────────────────────────────
 // TYPES
@@ -33,6 +35,26 @@ type ActionType = 'check_in' | 'check_out'
 interface GeoPos { latitude: number; longitude: number; accuracy: number }
 
 const SUCCESS_RESET_MS = 2500
+
+function distanceMeters(a: GeoPos | null, b: GeoPos | null) {
+  if (!a || !b) return 0
+  const toRad = (deg: number) => (deg * Math.PI) / 180
+  const r = 6371000
+  const dLat = toRad(b.latitude - a.latitude)
+  const dLng = toRad(b.longitude - a.longitude)
+  const sa = Math.sin(dLat / 2) ** 2
+    + Math.cos(toRad(a.latitude)) * Math.cos(toRad(b.latitude)) * Math.sin(dLng / 2) ** 2
+  return 2 * r * Math.asin(Math.sqrt(sa))
+}
+
+function fmtTime(value?: string | null) {
+  if (!value) return '—'
+  return new Date(value).toLocaleTimeString('ar-EG', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  })
+}
 
 // ─────────────────────────────────────────────────────────────
 // LIVE CLOCK — عرض الوقت بدقة الثانية
@@ -254,6 +276,29 @@ export default function AttendanceCheckin() {
   const [rpcResult,      setRpcResult]      = useState<AttendanceGPSResult | null>(null)
   const [errorMsg,       setErrorMsg]       = useState<string | null>(null)
   const [isOnline,       setIsOnline]       = useState(navigator.onLine)
+  const [trackingMessage, setTrackingMessage] = useState<string | null>(null)
+  const [lastPingAt, setLastPingAt] = useState<string | null>(null)
+  const [outsideZone, setOutsideZone] = useState(false)
+  const lastPingPosRef = useRef<GeoPos | null>(null)
+  const lastPingTsRef = useRef<number>(0)
+  const trackingTimerRef = useRef<number | null>(null)
+
+  const { data: hrSettings = [] } = useQuery({
+    queryKey: ['settings', 'hr', 'tracking'],
+    queryFn: () => getSettings('hr'),
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const settingsMap = Object.fromEntries(hrSettings.map(s => [s.key, s.value]))
+  const trackingEnabled = employee
+    ? (
+        employee.is_field_employee
+          ? (settingsMap['hr.tracking_enabled_field'] ?? 'true') === 'true'
+          : (settingsMap['hr.tracking_enabled_office'] ?? 'true') === 'true'
+      )
+    : false
+  const movingMinutes = Number(settingsMap['hr.tracking_ping_minutes_moving'] ?? '5')
+  const idleMinutes = Number(settingsMap['hr.tracking_ping_minutes_idle'] ?? '10')
 
   // ✅ إصلاح الخطأ الحرج: useEffect وليس useState لمراقبة الاتصال
   useEffect(() => {
@@ -360,15 +405,21 @@ export default function AttendanceCheckin() {
       setRpcResult(result)
 
       if (!result.success) {
-        const msg =
-          result.code === 'ALREADY_CHECKED_IN'  ? 'لقد سجلت حضورك بالفعل اليوم' :
-          result.code === 'ALREADY_CHECKED_OUT' ? 'لقد سجلت انصرافك بالفعل اليوم' :
-          result.code === 'NOT_CHECKED_IN'      ? 'يجب تسجيل الحضور أولاً' :
-          result.code === 'OUT_OF_RANGE'        ? `خارج النطاق — ${result.nearest_location ?? ''} (${Math.round(result.distance_meters ?? 0)}م)` :
-          result.code === 'LOW_GPS_ACCURACY'    ? `دقة GPS ضعيفة (${Math.round(geoCoords.accuracy)}م)` :
-          result.code === 'NO_LOCATION_FOUND'   ? 'لا توجد مواقع عمل مسجلة في النظام' :
-          result.code === 'NO_EMPLOYEE'         ? 'حسابك غير مرتبط بموظف' :
-          result.error ?? 'تعذر التسجيل'
+        let msg: string
+        if (result.code === 'LOW_GPS_ACCURACY') {
+          const actual   = Math.round(result.actual_accuracy   ?? 0)
+          const required = Math.round(result.required_accuracy ?? 100)
+          msg = `إشارة GPS ضعيفة — الدقة الحالية ±${actual}م والمطلوب ±${required}م أو أفضل. انتقل لمكان مفتوح وأعد المحاولة.`
+        } else {
+          msg =
+            result.code === 'ALREADY_CHECKED_IN'  ? 'لقد سجلت حضورك بالفعل اليوم' :
+            result.code === 'ALREADY_CHECKED_OUT' ? 'لقد سجلت انصرافك بالفعل اليوم' :
+            result.code === 'NOT_CHECKED_IN'      ? 'يجب تسجيل الحضور أولاً' :
+            result.code === 'OUT_OF_RANGE'        ? `خارج النطاق — ${result.nearest_location ?? ''} (${Math.round(result.distance_meters ?? 0)}م)` :
+            result.code === 'NO_LOCATION_FOUND'   ? 'لا توجد مواقع عمل مسجلة في النظام' :
+            result.code === 'NO_EMPLOYEE'         ? 'حسابك غير مرتبط بموظف' :
+            result.error ?? 'تعذر التسجيل'
+        }
         setErrorMsg(msg)
         setFlowState('error')
         return
@@ -376,6 +427,15 @@ export default function AttendanceCheckin() {
 
       // ✅ نجاح
       await refetchToday()
+      if (type === 'check_in' && trackingEnabled) {
+        setLastPingAt(result.event_time ?? new Date().toISOString())
+        setTrackingMessage('بدأ التتبع الدوري لهذا اليوم')
+        setOutsideZone(false)
+        lastPingTsRef.current = Date.now()
+      }
+      if (type === 'check_out') {
+        setTrackingMessage('تم إيقاف التتبع بعد إنهاء اليوم')
+      }
       setFlowState('success')
       toast.success(
         type === 'check_in'
@@ -403,6 +463,129 @@ export default function AttendanceCheckin() {
     setPendingAction(null)
   }, [])
 
+  const sendTrackingPing = useCallback(async (reason: 'interval' | 'focus' | 'reconnect' | 'resume' = 'interval') => {
+    if (!employee || !trackingEnabled) return
+    if (!todayRecord?.punch_in_time || todayRecord?.punch_out_time) return
+    if (!navigator.onLine) {
+      setTrackingMessage('التتبع متوقف مؤقتًا لعدم توفر الاتصال')
+      return
+    }
+
+    const geoCoords = await geo.requestLocation()
+    if (!geoCoords) {
+      setTrackingMessage('تعذر إرسال نقطة تتبع الآن')
+      return
+    }
+
+    const nextPos: GeoPos = { latitude: geoCoords.lat, longitude: geoCoords.lng, accuracy: geoCoords.accuracy }
+
+    try {
+      const result = await recordAttendanceLocationPing({
+        latitude: nextPos.latitude,
+        longitude: nextPos.longitude,
+        gps_accuracy: nextPos.accuracy,
+        event_time: new Date().toISOString(),
+        device_info: reason,
+      })
+
+      if (!result.success) {
+        setTrackingMessage(result.error ?? 'تعذر تحديث التتبع')
+        return
+      }
+
+      setLastPingAt(result.last_ping_at ?? new Date().toISOString())
+      lastPingTsRef.current = Date.now()
+
+      if (result.low_accuracy) {
+        // ★ دقة GPS ضعيفة — النقطة سُجِّلت لكن لم تُستخدم مكانيًا
+        // لا نغير outsideZone، لا نظهر "طبيعي"
+        const actual   = Math.round(result.actual_accuracy   ?? 0)
+        const required = Math.round(result.required_accuracy ?? 100)
+        setTrackingMessage(
+          `دقة GPS ضعيفة — ±${actual}م (المطلوب ±${required}م). تم تسجيل النقطة لكنها لن تُستخدم للحكم المكاني حتى تتحسن الدقة.`
+        )
+        lastPingPosRef.current = nextPos
+        return
+      }
+
+      setOutsideZone(!!result.outside_allowed_zone)
+      setTrackingMessage(
+        result.outside_allowed_zone
+          ? 'تم رصد خروج من النطاق المسموح ويحتاج مراجعة'
+          : 'التتبع يعمل بشكل طبيعي'
+      )
+      lastPingPosRef.current = nextPos
+    } catch {
+      setTrackingMessage('تعذر مزامنة نقطة التتبع')
+    }
+  }, [employee, trackingEnabled, todayRecord?.punch_in_time, todayRecord?.punch_out_time, geo])
+
+  useEffect(() => {
+    if (!trackingEnabled || !todayRecord?.punch_in_time || todayRecord?.punch_out_time) {
+      if (trackingTimerRef.current) {
+        window.clearTimeout(trackingTimerRef.current)
+        trackingTimerRef.current = null
+      }
+      return
+    }
+
+    const schedule = async () => {
+      const prevPos = lastPingPosRef.current  // ★ الموقع السابق قبل الإرسال
+      await sendTrackingPing('interval')
+      // ★ المقارنة بين آخر نقطتي تتبع فعليتين (وليس نقطة الحضور)
+      const moveDistance = distanceMeters(prevPos, lastPingPosRef.current)
+      const nextMinutes = moveDistance >= 75 ? movingMinutes : idleMinutes
+      trackingTimerRef.current = window.setTimeout(schedule, nextMinutes * 60 * 1000)
+    }
+
+    // ★ حساب أول delay بناءً على الزمن المنقضي منذ آخر ping
+    const elapsed = lastPingTsRef.current ? (Date.now() - lastPingTsRef.current) : 0
+    const targetInterval = movingMinutes * 60 * 1000
+    const firstDelay = Math.max(500, targetInterval - elapsed)
+
+    trackingTimerRef.current = window.setTimeout(schedule, firstDelay)
+    return () => {
+      if (trackingTimerRef.current) {
+        window.clearTimeout(trackingTimerRef.current)
+        trackingTimerRef.current = null
+      }
+    }
+  }, [trackingEnabled, todayRecord?.punch_in_time, todayRecord?.punch_out_time, movingMinutes, idleMinutes, sendTrackingPing])
+
+  // ★ تهيئة بيانات التتبع من DB بعد إعادة تحميل الصفحة
+  useEffect(() => {
+    if (todayRecord?.last_tracking_lat && todayRecord?.last_tracking_lng && !lastPingPosRef.current) {
+      lastPingPosRef.current = {
+        latitude: todayRecord.last_tracking_lat,
+        longitude: todayRecord.last_tracking_lng,
+        accuracy: todayRecord.last_tracking_accuracy ?? 50,
+      }
+    }
+    if (todayRecord?.last_tracking_ping_at && !lastPingTsRef.current) {
+      lastPingTsRef.current = new Date(todayRecord.last_tracking_ping_at).getTime()
+    }
+  }, [todayRecord?.last_tracking_lat, todayRecord?.last_tracking_lng, todayRecord?.last_tracking_ping_at])
+
+  useEffect(() => {
+    if (!trackingEnabled || !todayRecord?.punch_in_time || todayRecord?.punch_out_time) return
+
+    const onFocus = () => { void sendTrackingPing('focus') }
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') void sendTrackingPing('resume')
+    }
+    const onReconnect = () => { void sendTrackingPing('reconnect') }
+
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onVisibility)
+    window.addEventListener('online', onReconnect)
+
+    return () => {
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('online', onReconnect)
+    }
+  }, [trackingEnabled, todayRecord?.punch_in_time, todayRecord?.punch_out_time, sendTrackingPing])
+
   // ── Loading / No Employee ──
   if (empLoading) return (
     <div className="ci-page" style={{ justifyContent: 'center' }}>
@@ -425,6 +608,18 @@ export default function AttendanceCheckin() {
   const hasCheckIn    = !!todayRecord?.punch_in_time
   const hasCheckOut   = !!todayRecord?.punch_out_time
   const isDayDone     = hasCheckIn && hasCheckOut
+  const trackingRunning = trackingEnabled && hasCheckIn && !hasCheckOut
+  const effectiveLastPingAt = lastPingAt ?? todayRecord?.last_tracking_ping_at ?? null
+  // ★ تهيئة outsideZone من todayRecord عند فتح الصفحة (لا ننتظر ping جديدة)
+  const effectiveOutsideZone = outsideZone || todayRecord?.tracking_status === 'outside_zone'
+  const effectiveTrackingStatus = todayRecord?.tracking_status ?? 'idle'
+  const trackingToneClass = effectiveOutsideZone
+    ? 'ci-tracking-card ci-tracking-card--warn'
+    : effectiveTrackingStatus === 'stale'
+      ? 'ci-tracking-card ci-tracking-card--warn'
+      : trackingRunning
+        ? 'ci-tracking-card ci-tracking-card--active'
+        : 'ci-tracking-card ci-tracking-card--idle'
 
   // ─────────────────────────────────────
   // RENDER
@@ -446,6 +641,44 @@ export default function AttendanceCheckin() {
 
       {/* ── حالة الحضور ── */}
       <TodayStatus record={todayRecord} isLoading={todayLoading} />
+
+      {(trackingEnabled || effectiveLastPingAt || trackingMessage) && (
+        <div className={trackingToneClass}>
+          <div className="ci-tracking-head">
+            <div className="ci-tracking-title-wrap">
+              <div className="ci-tracking-title">متابعة الموقع أثناء يوم العمل</div>
+              <div className="ci-tracking-sub">
+                {employee.is_field_employee
+                  ? 'متابعة دورية خفيفة لإثبات استمرار اليوم الميداني'
+                  : 'متابعة دورية للتحقق من البقاء داخل النطاق المسموح'}
+              </div>
+            </div>
+            <div className={`ci-tracking-badge ${effectiveOutsideZone ? 'ci-tracking-badge--warn' : effectiveTrackingStatus === 'stale' ? 'ci-tracking-badge--warn' : trackingRunning ? 'ci-tracking-badge--active' : 'ci-tracking-badge--idle'}`}>
+              {effectiveOutsideZone ? 'خارج النطاق'
+                : effectiveTrackingStatus === 'stale' ? 'منقطع'
+                : effectiveTrackingStatus === 'ended' ? 'منتهٍ'
+                : trackingRunning ? 'نشط'
+                : 'غير نشط'}
+            </div>
+          </div>
+
+          <div className="ci-tracking-body">
+            {trackingMessage && (
+              <div className="ci-tracking-message">
+                <MapPin size={13} />
+                <span>{trackingMessage}</span>
+              </div>
+            )}
+
+            <div className="ci-tracking-meta">
+              <span>آخر تحديث: {effectiveLastPingAt ? fmtTime(effectiveLastPingAt) : 'لم يبدأ بعد'}</span>
+              <span>عدد النقاط: {todayRecord?.tracking_ping_count ?? 0}</span>
+              {todayRecord?.outside_zone_count ? <span>خروج من النطاق: {todayRecord.outside_zone_count}</span> : null}
+              {todayRecord?.tracking_status ? <span>الحالة: {effectiveTrackingStatus === 'outside_zone' ? 'خارج النطاق' : effectiveTrackingStatus === 'stale' ? 'منقطع' : effectiveTrackingStatus === 'ended' ? 'منتهٍ' : effectiveTrackingStatus === 'active' ? 'مستمر' : 'خامل'}</span> : null}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── بطاقة الموظف ── */}
       <div className="ci-employee-card">
@@ -544,7 +777,7 @@ export default function AttendanceCheckin() {
       {/* ملاحظة الخصوصية */}
       <div className="ci-privacy-note">
         <Info size={12} />
-        موقعك يُستخدم لتسجيل الحضور فقط — لا يُتتبع خلال اليوم.
+        يتم استخدام موقعك لتسجيل الحضور والانصراف، وقد تُرسل نقاط متابعة دورية خفيفة أثناء يوم العمل للتحقق التشغيلي دون تتبع مرهق أو مستمر.
       </div>
 
       {/* ── Dialog التوضيحي قبل طلب الصلاحية ── */}
@@ -619,6 +852,84 @@ export default function AttendanceCheckin() {
         .ci-time-badge--elapsed { font-weight: 800; font-size: 12px; }
 
         /* ══ Employee card ══ */
+        .ci-tracking-card {
+          width: 100%; max-width: 440px;
+          border-radius: var(--radius-2xl);
+          border: 1px solid var(--border-color);
+          background: var(--bg-card);
+          padding: var(--space-4) var(--space-5);
+          display: flex; flex-direction: column; gap: var(--space-3);
+        }
+        .ci-tracking-card--active {
+          background: color-mix(in srgb, var(--color-success) 6%, var(--bg-card));
+          border-color: color-mix(in srgb, var(--color-success) 20%, var(--border-color));
+        }
+        .ci-tracking-card--idle {
+          background: color-mix(in srgb, var(--color-info) 4%, var(--bg-card));
+        }
+        .ci-tracking-card--warn {
+          background: color-mix(in srgb, var(--color-warning) 8%, var(--bg-card));
+          border-color: color-mix(in srgb, var(--color-warning) 26%, var(--border-color));
+        }
+        .ci-tracking-head {
+          display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3);
+        }
+        .ci-tracking-title-wrap { min-width: 0; }
+        .ci-tracking-title {
+          font-size: var(--text-sm);
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+        .ci-tracking-sub {
+          margin-top: 4px;
+          font-size: 11px;
+          color: var(--text-muted);
+          line-height: 1.6;
+        }
+        .ci-tracking-badge {
+          border-radius: 999px;
+          padding: 4px 10px;
+          font-size: 11px;
+          font-weight: 700;
+          white-space: nowrap;
+        }
+        .ci-tracking-badge--active {
+          background: color-mix(in srgb, var(--color-success) 12%, transparent);
+          color: var(--color-success);
+        }
+        .ci-tracking-badge--idle {
+          background: var(--bg-surface-2);
+          color: var(--text-muted);
+        }
+        .ci-tracking-badge--warn {
+          background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+          color: var(--color-danger);
+        }
+        .ci-tracking-body {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-2);
+        }
+        .ci-tracking-message {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12px;
+          color: var(--text-secondary);
+        }
+        .ci-tracking-meta {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+        .ci-tracking-meta > span {
+          padding: 4px 8px;
+          border-radius: 999px;
+          background: var(--bg-surface-2);
+          font-size: 11px;
+          color: var(--text-muted);
+        }
+
         .ci-employee-card {
           display: flex; align-items: center; gap: var(--space-3);
           background: var(--bg-card);

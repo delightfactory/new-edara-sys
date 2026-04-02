@@ -34,6 +34,18 @@ export type HRCheckoutStatus =
   | 'overtime' | 'auto'
 
 export type HRReviewStatus = 'ok' | 'needs_review' | 'reviewed'
+export type HRAttendancePolicyMode = 'assigned_only' | 'field_allowed'
+export type HRTrackingStatus = 'idle' | 'active' | 'ended' | 'stale' | 'outside_zone'
+export type HRAttendanceAlertType =
+  | 'tracking_gap'
+  | 'outside_allowed_zone'
+  | 'permission_no_return'
+  | 'auto_checkout'
+  | 'manual_correction'
+  | 'missing_day'
+  | 'open_day_unclosed'
+export type HRAttendanceAlertStatus = 'open' | 'resolved' | 'dismissed'
+export type HRAttendanceAlertSeverity = 'low' | 'medium' | 'high'
 
 export type HRLeaveRequestStatus =
   | 'draft' | 'pending_supervisor' | 'approved_supervisor'
@@ -159,6 +171,10 @@ export interface HREmployee {
   // نمط العمل
   is_field_employee: boolean
   work_location_id: string | null   // موقع الحضور الافتراضي
+  attendance_checkin_mode: HRAttendancePolicyMode
+  attendance_checkout_mode: HRAttendancePolicyMode
+  allowed_checkin_location_ids: string[]
+  allowed_checkout_location_ids: string[]
 
   // الراتب الحالي (cached — يُحدَّث بالـ Trigger)
   base_salary: number
@@ -202,6 +218,10 @@ export interface HREmployeeInput {
   weekly_off_day?: HRDayOfWeek | null
   is_field_employee?: boolean
   work_location_id?: string | null
+  attendance_checkin_mode?: HRAttendancePolicyMode
+  attendance_checkout_mode?: HRAttendancePolicyMode
+  allowed_checkin_location_ids?: string[]
+  allowed_checkout_location_ids?: string[]
   base_salary: number
   transport_allowance?: number
   housing_allowance?: number
@@ -381,6 +401,15 @@ export interface HRAttendanceDay {
   day_value: number                 // NUMERIC(4,4) 1=كامل 0.5=نصف 0=غياب
   is_auto_checkout: boolean
   review_status: HRReviewStatus
+  tracking_started_at: string | null
+  tracking_ended_at: string | null
+  last_tracking_ping_at: string | null
+  last_tracking_lat: number | null
+  last_tracking_lng: number | null
+  last_tracking_accuracy: number | null
+  tracking_status: HRTrackingStatus
+  tracking_ping_count: number
+  outside_zone_count: number
   reviewed_by: string | null
   reviewed_at: string | null        // TIMESTAMPTZ
   notes: string | null
@@ -408,6 +437,7 @@ export interface HRAttendanceDayInput {
   overtime_minutes?: number
   effective_hours?: number | null
   day_value?: number
+  review_status?: HRReviewStatus
   notes?: string | null
 }
 
@@ -446,6 +476,38 @@ export interface HRAttendanceLogInput {
   /** وقت الحدث الفعلي — ضروري في Offline Mode */
   event_time?: string
   device_info?: string | null
+}
+
+export interface HRAttendanceAlert {
+  id: string
+  employee_id: string
+  attendance_day_id: string | null
+  alert_type: HRAttendanceAlertType
+  severity: HRAttendanceAlertSeverity
+  status: HRAttendanceAlertStatus
+  title: string
+  details: string | null
+  metadata: Record<string, unknown> | null
+  started_at: string
+  resolved_at: string | null
+  resolved_by: string | null
+  resolution_note: string | null
+  created_at: string
+  updated_at: string
+  employee?: Pick<HREmployee, 'id' | 'full_name' | 'employee_number'>
+}
+
+export interface HRAttendanceAlertInput {
+  employee_id: string
+  attendance_day_id?: string | null
+  alert_type: HRAttendanceAlertType
+  severity?: HRAttendanceAlertSeverity
+  status?: HRAttendanceAlertStatus
+  title: string
+  details?: string | null
+  metadata?: Record<string, unknown> | null
+  started_at?: string
+  resolution_note?: string | null
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -569,6 +631,7 @@ export interface HRPermissionRequest {
   approved_by: string | null
   action_at: string | null          // TIMESTAMPTZ
   rejection_reason: string | null
+  return_note: string | null
   month_permit_count: number | null // عدد مرات الإذن في الشهر
   created_at: string
   updated_at: string
@@ -582,6 +645,7 @@ export interface HRPermissionRequestInput {
   permission_date: string
   leave_time: string
   expected_return?: string | null
+  actual_return?: string | null
   reason: string
 }
 
@@ -943,6 +1007,16 @@ export interface PayrollApprovalResult {
     balanced: boolean
   }
   total_employees: number
+}
+
+export interface HRAttendanceReviewSummary {
+  open_alerts: number
+  unresolved_days: number
+  permission_no_return: number
+  auto_checkout_days: number
+  tracking_gap_days: number
+  open_day_unclosed: number
+  total_blocking_items: number
 }
 
 /** نتيجة request_advance */

@@ -399,6 +399,7 @@ import {
   getEmployees, getEmployee, getCurrentEmployeeRecord,
   getDepartments, getPositions,
   getWorkLocations,
+  getAttendanceAlerts, resolveAttendanceAlert, dismissAttendanceAlert,
   getLeaveTypes, createLeaveType, updateLeaveType, getLeaveBalances, getLeaveRequests,
   createLeaveRequest, updateLeaveRequestStatus,
   getAdvances, requestAdvance, disburseAdvance, updateAdvanceStatus,
@@ -409,9 +410,10 @@ import {
   getPublicHolidays,
   getAttendanceDays, upsertAttendanceDay,
   getMonthlyAttendanceSummary,
+  getAttendanceReviewSummary,
   createEmployee, updateEmployee,
   createDepartment, createPosition,
-  getPermissionRequests, createPermissionRequest, approvePermissionRequest, rejectPermissionRequest,
+  getPermissionRequests, createPermissionRequest, approvePermissionRequest, rejectPermissionRequest, completePermissionReturn,
   getEmployeeSalaryHistory, createContract, getContracts,
   getPayrollAdjustments, createPayrollAdjustment, approvePayrollAdjustment,
   fetchMyPayslips,
@@ -446,10 +448,10 @@ export function useHRPositions(departmentId?: string, onlyActive = true) {
   })
 }
 
-export function useHRWorkLocations() {
+export function useHRWorkLocations(onlyActive = true) {
   return useQuery({
-    queryKey: ['hr-work-locations'],
-    queryFn: getWorkLocations,
+    queryKey: ['hr-work-locations', onlyActive],
+    queryFn: () => getWorkLocations(onlyActive),
     staleTime: REF_STALE,
   })
 }
@@ -481,6 +483,22 @@ export function useCurrentEmployee() {
     queryFn: getCurrentEmployeeRecord,
     staleTime: 5 * 60 * 1000, // 5 دقائق
     retry: 1,
+  })
+}
+
+export function useHRAttendanceAlerts(params?: Parameters<typeof getAttendanceAlerts>[0]) {
+  return useQuery({
+    queryKey: ['hr-attendance-alerts', params],
+    queryFn: () => getAttendanceAlerts(params),
+    staleTime: 30_000, // 30 ثانية — التنبيهات تتحدث دوريًا عبر pg_cron
+  })
+}
+
+export function useAttendanceReviewSummary(dateFrom?: string | null, dateTo?: string | null) {
+  return useQuery({
+    queryKey: ['hr-attendance-review-summary', dateFrom, dateTo],
+    queryFn: () => getAttendanceReviewSummary(dateFrom!, dateTo!),
+    enabled: !!dateFrom && !!dateTo,
   })
 }
 
@@ -1286,6 +1304,44 @@ export function useUpdateLeaveType() {
       updateLeaveType(id, input),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['hr-leave-types'] })
+    },
+  })
+}
+
+export function useResolveAttendanceAlert() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, note }: { id: string; note?: string | null }) => resolveAttendanceAlert(id, note),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['hr-attendance-alerts'] })
+      qc.invalidateQueries({ queryKey: ['hr-attendance-days-admin'] })
+      qc.invalidateQueries({ queryKey: ['hr-attendance-review-summary'] })
+    },
+  })
+}
+
+export function useDismissAttendanceAlert() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, note }: { id: string; note?: string | null }) => dismissAttendanceAlert(id, note),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['hr-attendance-alerts'] })
+      qc.invalidateQueries({ queryKey: ['hr-attendance-days-admin'] })
+      qc.invalidateQueries({ queryKey: ['hr-attendance-review-summary'] })
+    },
+  })
+}
+
+export function useCompletePermissionReturn() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, actualReturn, note }: { id: string; actualReturn: string; note?: string | null }) =>
+      completePermissionReturn(id, actualReturn, note),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['hr-permission-requests'] })
+      qc.invalidateQueries({ queryKey: ['hr-attendance-days-admin'] })
+      qc.invalidateQueries({ queryKey: ['hr-attendance-alerts'] })
+      qc.invalidateQueries({ queryKey: ['hr-attendance-review-summary'] })
     },
   })
 }

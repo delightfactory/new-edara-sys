@@ -11,6 +11,7 @@ import {
   useApprovePayrollRun,
   useCalculatePayrollRun,
   useHRAdjustments,
+  useAttendanceReviewSummary,
 } from '@/hooks/useQueryHooks'
 import { updatePayrollLine } from '@/lib/services/hr'
 import type { HRPayrollRun, HRPayrollLine, HRPayrollRunStatus } from '@/lib/types/hr'
@@ -97,6 +98,9 @@ export default function PayrollRunDetail() {
   // جلب بيانات المسير (تحديث تلقائي كل 15 ثانية)
   const { data: runs = [], isLoading: runsLoading, dataUpdatedAt: runsUpdatedAt, refetch: refetchRuns } = useHRPayrollRuns()
   const run: HRPayrollRun | undefined = runs.find(r => r.id === runId)
+  const periodStart = run?.period?.start_date ?? null
+  const periodEnd = run?.period?.end_date ?? null
+  const { data: attendanceReview } = useAttendanceReviewSummary(periodStart, periodEnd)
 
   // سطور الرواتب (تحديث تلقائي كل 15 ثانية)
   const { data: lines = [], isLoading: linesLoading, dataUpdatedAt: linesUpdatedAt, refetch: refetchLines } = useHRPayrollLines(runId ?? null)
@@ -114,7 +118,8 @@ export default function PayrollRunDetail() {
   const pendingAdj = run ? allAdjustments.filter(a => a.payroll_line_id === null) : []
   const hasPendingAdjustments = pendingAdj.length > 0
 
-  const canApprove = run && ['review', 'calculating'].includes(run.status)
+  const hasAttendanceRisk = !!attendanceReview && attendanceReview.total_blocking_items > 0
+  const canApprove = run && ['review', 'calculating'].includes(run.status) && !hasAttendanceRisk
 
   const handleRecalculate = async () => {
     if (!runId) return
@@ -466,6 +471,61 @@ export default function PayrollRunDetail() {
       )}
 
       {/* ── زر الاعتماد المالي ── */}
+      {hasAttendanceRisk && attendanceReview && (
+        <div style={{
+          padding: 'var(--space-4)',
+          background: 'color-mix(in srgb, var(--color-danger) 7%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--color-danger) 24%, transparent)',
+          borderRadius: 'var(--radius-lg)',
+          marginBottom: 'var(--space-4)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+            <AlertCircle size={18} style={{ color: 'var(--color-danger)', flexShrink: 0 }} />
+            <div style={{ fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--color-danger)' }}>
+              توجد حالات حضور غير محسومة تمنع اعتماد المسير الآن
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+            {attendanceReview.open_day_unclosed > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: 'var(--text-sm)' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-danger)', flexShrink: 0 }} />
+                <span style={{ color: 'var(--color-danger)', fontWeight: 600 }}>{attendanceReview.open_day_unclosed}</span>
+                <span style={{ color: 'var(--text-secondary)' }}>يوم حضور غير مغلق (بدون تسجيل انصراف)</span>
+              </div>
+            )}
+            {attendanceReview.unresolved_days > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: 'var(--text-sm)' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-warning)', flexShrink: 0 }} />
+                <span style={{ color: 'var(--color-warning)', fontWeight: 600 }}>{attendanceReview.unresolved_days}</span>
+                <span style={{ color: 'var(--text-secondary)' }}>يوم تحتاج مراجعة إدارية</span>
+              </div>
+            )}
+            {attendanceReview.permission_no_return > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: 'var(--text-sm)' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-warning)', flexShrink: 0 }} />
+                <span style={{ color: 'var(--color-warning)', fontWeight: 600 }}>{attendanceReview.permission_no_return}</span>
+                <span style={{ color: 'var(--text-secondary)' }}>إذن خروج بدون تسجيل عودة</span>
+              </div>
+            )}
+            {attendanceReview.open_alerts > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: 'var(--text-sm)' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-danger)', flexShrink: 0 }} />
+                <span style={{ color: 'var(--color-danger)', fontWeight: 600 }}>{attendanceReview.open_alerts}</span>
+                <span style={{ color: 'var(--text-secondary)' }}>تنبيه حضور مفتوح لم يُحل</span>
+                {attendanceReview.tracking_gap_days > 0 && (
+                  <span style={{ color: 'var(--text-muted)', fontSize: 'var(--text-xs)' }}>
+                    (منها {attendanceReview.tracking_gap_days} يوم بفجوة تتبع)
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+          <div style={{ marginTop: 'var(--space-3)', fontSize: 'var(--text-xs)', color: 'var(--text-muted)', borderTop: '1px solid color-mix(in srgb, var(--color-danger) 15%, transparent)', paddingTop: 'var(--space-2)' }}>
+            ارجع لصفحة الحضور وأغلق هذه الحالات قبل اعتماد المسير.
+          </div>
+        </div>
+      )}
+
       {canApprove && !run?.journal_entry_id && (
         <PermissionGuard permission="hr.payroll.approve">
           <div style={{

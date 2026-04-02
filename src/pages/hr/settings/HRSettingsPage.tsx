@@ -97,9 +97,15 @@ const HR_SETTING_SECTIONS = [
     title: 'الحضور GPS',
     icon: '📡',
     settings: [
-      { key: 'hr.attendance_gps_required',      label: 'GPS إلزامي لتسجيل الحضور',  type: 'boolean', desc: 'إذا كان مفعلاً، يرفض الحضور بدون موقع' },
-      { key: 'hr.attendance_gps_radius_meters', label: 'نطاق GPS المقبول (متر)',     type: 'number',  desc: 'الافتراضي: 200 متر' },
-      { key: 'hr.gps_accuracy_threshold_meters',label: 'أقصى دقة GPS مقبولة (متر)', type: 'number',  desc: 'الافتراضي: 150 متر' },
+      { key: 'hr.attendance_gps_required',          label: 'GPS إلزامي لتسجيل الحضور',       type: 'boolean', desc: 'إذا كان مفعلاً، يرفض الحضور بدون موقع' },
+      { key: 'hr.attendance_gps_radius_meters',     label: 'نطاق GPS المقبول (متر)',           type: 'number',  desc: 'الافتراضي: 200 متر' },
+      { key: 'hr.default_gps_accuracy_threshold_meters', label: 'أقصى دقة GPS الافتراضي (متر)', type: 'number', desc: 'الافتراضي: 100 متر — يُستخدم عند غياب threshold المحدد للموقع' },
+      { key: 'hr.field_attendance_max_distance_meters', label: 'حد الحضور الميداني (متر)',     type: 'number',  desc: 'الافتراضي: 50000 متر (50كم) — أقصى مسافة للمندوب الميداني' },
+      { key: 'hr.tracking_enabled_office',          label: 'تفعيل التتبع للموظف المكتبي',     type: 'boolean', desc: 'متابعة دورية خفيفة للتحقق من البقاء داخل النطاق أثناء يوم العمل' },
+      { key: 'hr.tracking_enabled_field',           label: 'تفعيل التتبع للموظف الميداني',    type: 'boolean', desc: 'متابعة دورية خفيفة لإثبات استمرارية العمل الميداني' },
+      { key: 'hr.tracking_ping_minutes_moving',     label: 'فاصل التتبع عند الحركة (دقيقة)',  type: 'number',  desc: 'الافتراضي: 5 دقائق' },
+      { key: 'hr.tracking_ping_minutes_idle',       label: 'فاصل التتبع عند السكون (دقيقة)',  type: 'number',  desc: 'الافتراضي: 10 دقائق' },
+      { key: 'hr.tracking_gap_minutes',             label: 'حد انقطاع التتبع قبل التنبيه',    type: 'number',  desc: 'الافتراضي: 20 دقيقة' },
     ],
   },
   {
@@ -635,9 +641,9 @@ function GpsCoordinatePicker({
 // ════════════════════════════════════════════
 function LocationsTab() {
   const qc = useQueryClient()
-  const { data: locations = [], isLoading } = useQuery({
+  const { data: locations = [], isLoading } = useQuery<HRWorkLocation[]>({
     queryKey: ['hr-work-locations'],
-    queryFn: getWorkLocations,
+    queryFn: () => getWorkLocations(false),
   })
 
   const [editing, setEditing] = useState<HRWorkLocation | null>(null)

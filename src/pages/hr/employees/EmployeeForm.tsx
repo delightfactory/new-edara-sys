@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { UserPlus, UserCog, Link, AlertCircle } from 'lucide-react'
-import type { HREmployee, HREmployeeInput, HRGender, HRMaritalStatus, HRDayOfWeek } from '@/lib/types/hr'
+import type {
+  HREmployee, HREmployeeInput, HRGender, HRMaritalStatus, HRDayOfWeek, HRAttendancePolicyMode,
+} from '@/lib/types/hr'
 import {
   useHRDepartments,
   useHRPositions,
@@ -38,6 +40,10 @@ const EMPTY_FORM: HREmployeeInput = {
   other_allowances: 0,
   is_field_employee: false,
   status: 'active',
+  attendance_checkin_mode: 'assigned_only',
+  attendance_checkout_mode: 'assigned_only',
+  allowed_checkin_location_ids: [],
+  allowed_checkout_location_ids: [],
 }
 
 // تحويل موظف موجود إلى HREmployeeInput (بدون الحقول المحسوبة!)
@@ -65,6 +71,10 @@ function employeeToInput(emp: HREmployee): HREmployeeInput {
     weekly_off_day:     emp.weekly_off_day ?? undefined,
     is_field_employee:  emp.is_field_employee,
     work_location_id:   emp.work_location_id ?? undefined,
+    attendance_checkin_mode: emp.attendance_checkin_mode,
+    attendance_checkout_mode: emp.attendance_checkout_mode,
+    allowed_checkin_location_ids: emp.allowed_checkin_location_ids ?? [],
+    allowed_checkout_location_ids: emp.allowed_checkout_location_ids ?? [],
     base_salary:        emp.base_salary,
     transport_allowance: emp.transport_allowance,
     housing_allowance:  emp.housing_allowance,
@@ -112,6 +122,21 @@ export default function EmployeeForm({ open, onClose, employee, onToast }: Props
   const set = <K extends keyof HREmployeeInput>(key: K) =>
     (val: HREmployeeInput[K] | null) =>
       setForm(prev => ({ ...prev, [key]: val === null ? undefined : val }))
+
+  const toggleLocation = (key: 'allowed_checkin_location_ids' | 'allowed_checkout_location_ids', locationId: string) => {
+    setForm(prev => {
+      const current = prev[key] ?? []
+      const next = current.includes(locationId)
+        ? current.filter(id => id !== locationId)
+        : [...current, locationId]
+      return { ...prev, [key]: next }
+    })
+  }
+
+  const attendanceModeOptions: { value: HRAttendancePolicyMode; label: string }[] = [
+    { value: 'assigned_only', label: 'من المواقع المحددة فقط' },
+    { value: 'field_allowed', label: 'يسمح بالميدان' },
+  ]
 
   // ── loadOptions للمدير المباشر (Combobox) ──
   const loadManagers = useCallback(async (search: string): Promise<ComboboxOption[]> => {
@@ -514,10 +539,81 @@ export default function EmployeeForm({ open, onClose, employee, onToast }: Props
           <Select
             label="موقع الحضور الافتراضي (GPS)"
             value={form.work_location_id ?? ''}
-            onChange={e => set('work_location_id')(e.target.value || null)}
+            onChange={e => {
+              const nextId = e.target.value || null
+              setForm(prev => ({
+                ...prev,
+                work_location_id: nextId ?? undefined,
+                allowed_checkin_location_ids: nextId && (prev.allowed_checkin_location_ids?.length ?? 0) === 0
+                  ? [nextId]
+                  : (prev.allowed_checkin_location_ids ?? []),
+                allowed_checkout_location_ids: nextId && (prev.allowed_checkout_location_ids?.length ?? 0) === 0
+                  ? [nextId]
+                  : (prev.allowed_checkout_location_ids ?? []),
+              }))
+            }}
             placeholder="اختر الموقع"
             options={workLocations.map(l => ({ value: l.id, label: l.name }))}
           />
+
+          <div className="emp-form-grid">
+            <Select
+              label="سياسة تسجيل الحضور"
+              value={form.attendance_checkin_mode ?? 'assigned_only'}
+              onChange={e => set('attendance_checkin_mode')((e.target.value as HRAttendancePolicyMode) || 'assigned_only')}
+              options={attendanceModeOptions}
+              hint="حدد هل يبدأ اليوم من مواقع محددة فقط أم يسمح بالبداية من الميدان"
+            />
+            <Select
+              label="سياسة تسجيل الانصراف"
+              value={form.attendance_checkout_mode ?? 'assigned_only'}
+              onChange={e => set('attendance_checkout_mode')((e.target.value as HRAttendancePolicyMode) || 'assigned_only')}
+              options={attendanceModeOptions}
+              hint="يمكن إلزام الحضور من المقر والسماح بالانصراف من الميدان"
+            />
+          </div>
+
+          <div className="emp-form-grid">
+            <div className="form-group">
+              <label className="form-label">المواقع المسموح بها للحضور</label>
+              <div className="emp-location-checklist">
+                {workLocations.map(location => {
+                  const checked = (form.allowed_checkin_location_ids ?? []).includes(location.id)
+                  return (
+                    <label key={`checkin-${location.id}`} className="emp-location-option">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleLocation('allowed_checkin_location_ids', location.id)}
+                      />
+                      <span>{location.name}</span>
+                    </label>
+                  )
+                })}
+              </div>
+              <span className="form-hint">إذا تركت القائمة فارغة فسيُستخدم الموقع الافتراضي فقط عند التحقق.</span>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">المواقع المسموح بها للانصراف</label>
+              <div className="emp-location-checklist">
+                {workLocations.map(location => {
+                  const checked = (form.allowed_checkout_location_ids ?? []).includes(location.id)
+                  return (
+                    <label key={`checkout-${location.id}`} className="emp-location-option">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleLocation('allowed_checkout_location_ids', location.id)}
+                      />
+                      <span>{location.name}</span>
+                    </label>
+                  )
+                })}
+              </div>
+              <span className="form-hint">استخدمها للسماح بإنهاء اليوم من فرع آخر أو من الميدان حسب السياسة المحددة.</span>
+            </div>
+          </div>
 
           <div className="emp-form-grid">
             <Select
@@ -688,6 +784,25 @@ export default function EmployeeForm({ open, onClose, employee, onToast }: Props
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
           gap: var(--space-4);
+        }
+        .emp-location-checklist {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-2);
+          max-height: 180px;
+          overflow-y: auto;
+          padding: var(--space-3);
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-md);
+          background: var(--bg-surface);
+        }
+        .emp-location-option {
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+          font-size: var(--text-sm);
+          color: var(--text-secondary);
+          cursor: pointer;
         }
 
         /* Auth link section */

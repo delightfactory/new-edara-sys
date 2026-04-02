@@ -10,6 +10,7 @@ import type {
   HRDocumentType, HREmployeeDocument, HREmployeeDocumentInput,
   HRAttendanceDay, HRAttendanceDayInput,
   HRAttendanceLog,
+  HRAttendanceAlert, HRAttendanceAlertStatus,
   HRPublicHoliday, HRPublicHolidayInput,
   HRLeaveType, HRLeaveTypeInput, HRLeaveBalance, HRLeaveRequest, HRLeaveRequestInput,
   HRPermissionRequest, HRPermissionRequestInput,
@@ -24,6 +25,7 @@ import type {
   PayrollApprovalResult, AdvanceRequestResult,
   LinkEmployeeResult, EmployeeLiveStatement,
   EmployeePayslipSummary,
+  HRAttendanceReviewSummary,
 } from '@/lib/types/hr'
 
 // ─────────────────────────────────────────────────────────────
@@ -320,12 +322,13 @@ export async function getContracts(employeeId: string) {
 // WORK LOCATIONS — مواقع العمل GPS
 // ─────────────────────────────────────────────────────────────
 
-export async function getWorkLocations() {
-  const { data, error } = await supabase
+export async function getWorkLocations(onlyActive = true) {
+  let query = supabase
     .from('hr_work_locations')
     .select('*, branch:branches(id, name)')
-    .eq('is_active', true)
     .order('name')
+  if (onlyActive) query = query.eq('is_active', true)
+  const { data, error } = await query
   if (error) throw error
   return data as HRWorkLocation[]
 }
@@ -361,8 +364,20 @@ export async function deleteWorkLocation(id: string) {
 }
 
 /**
- * التحقق من صحة موقع GPS للحضور — عبر RPC
- * @param gpsAccuracy دقة GPS بالأمتار (من navigator.geolocation)
+ * PRECHECK ONLY — التحقق المسبق من الموقع الجغرافي للحضور
+ *
+ * هذه الدالة تفوّض إلى resolve_employee_attendance_location_context
+ * وتعيد نتيجة متسقة مع منطق التسجيل الفعلي من حيث:
+ *   - كود الخطأ (OUT_OF_RANGE / NO_ALLOWED_LOCATIONS / ...)
+ *   - حد المسافة الميدانية
+ *   - allowed_ids للموظف
+ *
+ * ⚠ لا تعتمد على نتيجتها كمرجع نهائي للقبول:
+ *   - لا تفحص GPS accuracy (تفوّض ذلك لـ record_attendance_gps_v2)
+ *   - لا تتحقق من حالة اليوم (punch_in / punch_out)
+ *   - مصدر القبول الفعلي هو record_attendance_gps_v2 / checkIn / checkOut
+ *
+ * الاستخدام المقبول: تغذية راجعة سريعة للمستخدم قبل بدء التسجيل
  */
 export async function validateAttendanceLocation(params: {
   employeeId: string
@@ -438,6 +453,64 @@ export async function getAttendanceDays(params: {
   }
 }
 
+export async function getAttendanceAlerts(params?: {
+  employeeId?: string
+  dateFrom?: string
+  dateTo?: string
+  status?: HRAttendanceAlertStatus
+}) {
+  let query = supabase
+    .from('hr_attendance_alerts')
+    .select(`
+      *,
+      employee:hr_employees!employee_id(id, full_name, employee_number)
+    `)
+    .order('started_at', { ascending: false })
+
+  if (params?.employeeId) query = query.eq('employee_id', params.employeeId)
+  if (params?.status) query = query.eq('status', params.status)
+  if (params?.dateFrom) query = query.gte('started_at', `${params.dateFrom}T00:00:00.000Z`)
+  if (params?.dateTo) query = query.lte('started_at', `${params.dateTo}T23:59:59.999Z`)
+
+  const { data, error } = await query
+  if (error) throw error
+  return data as HRAttendanceAlert[]
+}
+
+export async function resolveAttendanceAlert(id: string, resolution_note?: string | null) {
+  const userId = await getCurrentUserId()
+  const { data, error } = await supabase
+    .from('hr_attendance_alerts')
+    .update({
+      status: 'resolved',
+      resolved_at: new Date().toISOString(),
+      resolved_by: userId,
+      resolution_note: resolution_note?.trim() || null,
+    })
+    .eq('id', id)
+    .select('*')
+    .single()
+  if (error) throw error
+  return data as HRAttendanceAlert
+}
+
+export async function dismissAttendanceAlert(id: string, resolution_note?: string | null) {
+  const userId = await getCurrentUserId()
+  const { data, error } = await supabase
+    .from('hr_attendance_alerts')
+    .update({
+      status: 'dismissed',
+      resolved_at: new Date().toISOString(),
+      resolved_by: userId,
+      resolution_note: resolution_note?.trim() || null,
+    })
+    .eq('id', id)
+    .select('*')
+    .single()
+  if (error) throw error
+  return data as HRAttendanceAlert
+}
+
 /**
  * FIX-AUDIT-07: تعديل الحضور اليدوي مع إعادة تشغيل محرك الجزاءات
  * يستدعي RPC ذري يقوم بـ:
@@ -492,6 +565,27 @@ export interface AttendanceGPSResult {
   error?: string
   nearest_location?: string
   distance_meters?: number
+  tracking_status?: 'idle' | 'active' | 'ended' | 'stale' | 'outside_zone'
+  penalties_applied?: number
+  // ★ Wave E: GPS accuracy contract
+  required_accuracy?: number
+  actual_accuracy?: number
+}
+
+export interface AttendancePingResult {
+  success: boolean
+  attendance_day_id?: string
+  location_id?: string
+  location_name?: string
+  outside_allowed_zone?: boolean
+  tracking_status?: 'idle' | 'active' | 'ended' | 'stale' | 'outside_zone'
+  last_ping_at?: string
+  code?: string
+  error?: string
+  // ★ Wave E: GPS accuracy fields
+  low_accuracy?: boolean
+  actual_accuracy?: number
+  required_accuracy?: number
 }
 
 export async function recordAttendanceGPS(params: {
@@ -501,7 +595,7 @@ export async function recordAttendanceGPS(params: {
   log_type:    'check_in' | 'check_out'
   event_time?: string
 }): Promise<AttendanceGPSResult> {
-  const { data, error } = await supabase.rpc('record_attendance_gps', {
+  const { data, error } = await supabase.rpc('record_attendance_gps_v2', {
     p_latitude:    params.latitude,
     p_longitude:   params.longitude,
     p_gps_accuracy: params.gps_accuracy,
@@ -510,6 +604,24 @@ export async function recordAttendanceGPS(params: {
   })
   if (error) throw error
   return data as AttendanceGPSResult
+}
+
+export async function recordAttendanceLocationPing(params: {
+  latitude: number
+  longitude: number
+  gps_accuracy: number
+  event_time?: string
+  device_info?: string | null
+}): Promise<AttendancePingResult> {
+  const { data, error } = await supabase.rpc('record_attendance_location_ping', {
+    p_latitude: params.latitude,
+    p_longitude: params.longitude,
+    p_gps_accuracy: params.gps_accuracy,
+    p_event_time: params.event_time ?? null,
+    p_device_info: params.device_info ?? null,
+  })
+  if (error) throw error
+  return data as AttendancePingResult
 }
 
 
@@ -541,6 +653,21 @@ export async function getMonthlyAttendanceSummary(
   })
   if (error) throw error
   return data as MonthlyAttendanceSummary
+}
+
+export async function scanAttendanceTrackingAlerts() {
+  const { data, error } = await supabase.rpc('scan_attendance_tracking_alerts')
+  if (error) throw error
+  return data as { success: boolean; tracking_alerts: number; permission_alerts: number }
+}
+
+export async function getAttendanceReviewSummary(dateFrom: string, dateTo: string) {
+  const { data, error } = await supabase.rpc('get_attendance_review_summary', {
+    p_date_from: dateFrom,
+    p_date_to: dateTo,
+  })
+  if (error) throw error
+  return data as HRAttendanceReviewSummary
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -729,7 +856,8 @@ export async function getPermissionRequests(params?: {
     .from('hr_permission_requests')
     .select(`
       *,
-      employee:hr_employees!employee_id(id, full_name)
+      employee:hr_employees!employee_id(id, full_name, employee_number),
+      approved_by_emp:hr_employees!approved_by(id, full_name)
     `)
     .order('permission_date', { ascending: false })
 
@@ -754,6 +882,16 @@ export async function createPermissionRequest(input: HRPermissionRequestInput) {
     .single()
   if (error) throw error
   return data as HRPermissionRequest
+}
+
+export async function completePermissionReturn(id: string, actualReturn: string, resolutionNote?: string | null) {
+  const { data, error } = await supabase.rpc('complete_permission_return', {
+    p_permission_id: id,
+    p_actual_return: actualReturn,
+    p_resolution_note: resolutionNote ?? null,
+  })
+  if (error) throw error
+  return data as { success: boolean; permission_id?: string; actual_return?: string; code?: string; error?: string }
 }
 
 export async function approvePermissionRequest(id: string, approverId: string) {

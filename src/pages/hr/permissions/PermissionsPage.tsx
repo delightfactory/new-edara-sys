@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { getPermissionRequests, createPermissionRequest, approvePermissionRequest, rejectPermissionRequest } from '@/lib/services/hr'
 import type { HRPermissionRequestInput } from '@/lib/types/hr'
-import { useCurrentEmployee } from '@/hooks/useQueryHooks'
+import { useCurrentEmployee, useCompletePermissionReturn } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
 import PageHeader from '@/components/shared/PageHeader'
 import DataTable from '@/components/shared/DataTable'
@@ -28,9 +28,22 @@ const fmtTime = (t: string) => {
   return `${hr > 12 ? hr - 12 : hr}:${m} ${hr >= 12 ? 'م' : 'ص'}`
 }
 
+function normalizeTime(t: string): string {
+  // تطبيع HH:MM أو HH:MM:SS إلى HH:MM:SS للمقارنة الآمنة
+  const parts = t.split(':')
+  return `${(parts[0] ?? '00').padStart(2, '0')}:${(parts[1] ?? '00').padStart(2, '0')}:${(parts[2] ?? '00').padStart(2, '0')}`
+}
+
+function getPermissionOperationalState(r: { status: string; expected_return: string | null; actual_return: string | null }) {
+  if (r.status === 'rejected') return { label: 'مرفوض', variant: 'danger' as const }
+  if (r.status === 'pending') return { label: 'بانتظار الاعتماد', variant: 'warning' as const }
+  if (!r.actual_return) return { label: 'خرج ولم يعد بعد', variant: 'warning' as const }
+  if (r.expected_return && normalizeTime(r.actual_return) <= normalizeTime(r.expected_return)) return { label: 'عاد في الوقت', variant: 'success' as const }
+  return { label: 'عاد متأخرًا', variant: 'danger' as const }
+}
+
 export default function PermissionsPage() {
   const qc = useQueryClient()
-  const can     = useAuthStore(s => s.can)
   const canAny  = useAuthStore(s => s.canAny)
   const { data: currentEmp } = useCurrentEmployee()
 
@@ -41,6 +54,9 @@ export default function PermissionsPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [rejectId, setRejectId] = useState<string | null>(null)
   const [rejectReason, setRejectReason] = useState('')
+  const [returnId, setReturnId] = useState<string | null>(null)
+  const [actualReturn, setActualReturn] = useState('')
+  const [returnNote, setReturnNote] = useState('')
   const [form, setForm] = useState<HRPermissionRequestInput>({
     employee_id:     '',
     permission_date: new Date().toISOString().split('T')[0],
@@ -49,10 +65,18 @@ export default function PermissionsPage() {
     reason:          '',
   })
 
+  const completeReturnMut = useCompletePermissionReturn()
+
   // Auto-fill employee_id when form opens
   const openForm = () => {
     if (currentEmp) setForm(p => ({ ...p, employee_id: currentEmp.id }))
     setFormOpen(true)
+  }
+
+  const openReturnModal = (requestId: string, expectedReturn?: string | null) => {
+    setReturnId(requestId)
+    setActualReturn(expectedReturn ? expectedReturn.slice(0, 5) : new Date().toTimeString().slice(0, 5))
+    setReturnNote('')
   }
 
   // Queries
@@ -131,6 +155,11 @@ export default function PermissionsPage() {
       render: (r: any) => <span style={{ fontVariantNumeric: 'tabular-nums' }}>{r.expected_return ? fmtTime(r.expected_return) : '—'}</span>,
     },
     {
+      key: 'actual_return',
+      label: 'العودة الفعلية',
+      render: (r: any) => <span style={{ fontVariantNumeric: 'tabular-nums' }}>{r.actual_return ? fmtTime(r.actual_return) : '—'}</span>,
+    },
+    {
       key: 'reason',
       label: 'السبب',
       render: (r: any) => (
@@ -140,35 +169,77 @@ export default function PermissionsPage() {
       ),
     },
     {
+      key: 'return_note',
+      label: 'ملاحظة العودة',
+      render: (r: any) => {
+        const note = r.return_note
+        if (!note) return <span style={{ color: 'var(--text-muted)' }}>—</span>
+        return (
+          <div style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }} title={note}>
+            {note}
+          </div>
+        )
+      },
+    },
+    {
       key: 'status',
       label: 'الحالة',
       render: (r: any) => <Badge variant={STATUS_VARIANT[r.status]}>{STATUS_LABEL[r.status as keyof typeof STATUS_LABEL]}</Badge>,
     },
-    ...(activeTab === 'team_approvals' ? [{
+    {
+      key: 'operational_status',
+      label: 'الحالة التشغيلية',
+      render: (r: any) => {
+        const op = getPermissionOperationalState(r)
+        return <Badge variant={op.variant}>{op.label}</Badge>
+      },
+    },
+    {
       key: 'actions',
       label: '',
-      render: (r: any) => r.status === 'pending' ? (
-        <PermissionGuard permission={['hr.permissions.approve', 'hr.attendance.approve']}>
-          <div style={{ display: 'flex', gap: 4 }}>
-            <Button
-              size="sm"
-              variant="ghost"
-              icon={<CheckCircle size={13} />}
-              onClick={(e) => { e.stopPropagation(); approveMut.mutate(r.id); }}
-              loading={approveMut.isPending}
-              style={{ color: 'var(--color-success)' }}
-            />
-            <Button
-              size="sm"
-              variant="ghost"
-              icon={<XCircle size={13} />}
-              onClick={(e) => { e.stopPropagation(); setRejectId(r.id); }}
-              style={{ color: 'var(--color-danger)' }}
-            />
+      render: (r: any) => {
+        const canApproveRequest = activeTab === 'team_approvals' && r.status === 'pending'
+        const canRecordReturn = r.status === 'approved' && !r.actual_return && (activeTab === 'my_requests' || isManager)
+        if (!canApproveRequest && !canRecordReturn) return null
+
+        return (
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            {canApproveRequest && (
+              <PermissionGuard permission={['hr.permissions.approve', 'hr.attendance.approve']}>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    icon={<CheckCircle size={13} />}
+                    onClick={(e) => { e.stopPropagation(); approveMut.mutate(r.id); }}
+                    loading={approveMut.isPending}
+                    style={{ color: 'var(--color-success)' }}
+                  />
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    icon={<XCircle size={13} />}
+                    onClick={(e) => { e.stopPropagation(); setRejectId(r.id); }}
+                    style={{ color: 'var(--color-danger)' }}
+                  />
+                </div>
+              </PermissionGuard>
+            )}
+            {canRecordReturn && (
+              <Button
+                size="sm"
+                variant="ghost"
+                icon={<Clock size={13} />}
+                onClick={(e) => { e.stopPropagation(); openReturnModal(r.id, r.expected_return); }}
+                style={{ color: 'var(--color-primary)' }}
+              >
+                تسجيل العودة
+              </Button>
+            )}
           </div>
-        </PermissionGuard>
-      ) : null,
-    }] : []),
+        )
+      },
+    },
   ]
 
 
@@ -288,29 +359,43 @@ export default function PermissionsPage() {
                   metadata={[
                     { label: 'وقت الخروج', value: fmtTime(r.leave_time) },
                     { label: 'متوقع عودة', value: r.expected_return ? fmtTime(r.expected_return) : '—' },
+                    { label: 'عودة فعلية', value: r.actual_return ? fmtTime(r.actual_return) : '—' },
+                    { label: 'حالة الإذن', value: getPermissionOperationalState(r).label, highlight: getPermissionOperationalState(r).variant !== 'success' },
                     { label: 'السبب', value: r.reason },
+                    ...(r.return_note ? [{ label: 'ملاحظة العودة', value: r.return_note }] : []),
                   ]}
-                  actions={r.status === 'pending' ? (
-                    <PermissionGuard permission={['hr.permissions.approve', 'hr.attendance.approve']}>
-                      <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          icon={<CheckCircle size={13} />}
-                          onClick={(e) => { e.stopPropagation(); approveMut.mutate(r.id); }}
-                          loading={approveMut.isPending}
-                          style={{ color: 'var(--color-success)', flex: 1, border: '1px solid color-mix(in srgb, var(--color-success) 30%, transparent)' }}
-                        >اعتماد</Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          icon={<XCircle size={13} />}
-                          onClick={(e) => { e.stopPropagation(); setRejectId(r.id); }}
-                          style={{ color: 'var(--color-danger)', flex: 1, border: '1px solid color-mix(in srgb, var(--color-danger) 30%, transparent)' }}
-                        >رفض</Button>
-                      </div>
-                    </PermissionGuard>
-                  ) : undefined}
+                  actions={
+                    r.status === 'pending' ? (
+                      <PermissionGuard permission={['hr.permissions.approve', 'hr.attendance.approve']}>
+                        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            icon={<CheckCircle size={13} />}
+                            onClick={(e) => { e.stopPropagation(); approveMut.mutate(r.id); }}
+                            loading={approveMut.isPending}
+                            style={{ color: 'var(--color-success)', flex: 1, border: '1px solid color-mix(in srgb, var(--color-success) 30%, transparent)' }}
+                          >اعتماد</Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            icon={<XCircle size={13} />}
+                            onClick={(e) => { e.stopPropagation(); setRejectId(r.id); }}
+                            style={{ color: 'var(--color-danger)', flex: 1, border: '1px solid color-mix(in srgb, var(--color-danger) 30%, transparent)' }}
+                          >رفض</Button>
+                        </div>
+                      </PermissionGuard>
+                    ) : r.status === 'approved' && !r.actual_return && (activeTab === 'my_requests' || isManager) ? (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        style={{ width: '100%', justifyContent: 'center' }}
+                        onClick={(e) => { e.stopPropagation(); openReturnModal(r.id, r.expected_return) }}
+                      >
+                        <Clock size={12} style={{ marginInlineEnd: 4 }} /> تسجيل العودة
+                      </Button>
+                    ) : undefined
+                  }
                 />
               ))}
             </div>
@@ -355,6 +440,58 @@ export default function PermissionsPage() {
             placeholder="مراجعة طبية، إجراء حكومي، ..." />
         </div>
       </ResponsiveModal>
+
+      {returnId && (
+        <ResponsiveModal
+          open={!!returnId}
+          onClose={() => { setReturnId(null); setActualReturn(''); setReturnNote('') }}
+          title="تسجيل العودة الفعلية"
+          size="sm"
+          footer={
+            <div style={{ display: 'flex', gap: 'var(--space-3)', width: '100%' }}>
+              <Button variant="secondary" onClick={() => { setReturnId(null); setActualReturn(''); setReturnNote('') }} style={{ flex: 1 }}>
+                إلغاء
+              </Button>
+              <Button
+                icon={<CheckCircle size={14} />}
+                onClick={async () => {
+                  if (!returnId || !actualReturn) return
+                  await completeReturnMut.mutateAsync({
+                    id: returnId,
+                    actualReturn,
+                    note: returnNote || null,
+                  })
+                  toast.success('تم تسجيل العودة الفعلية')
+                  setReturnId(null)
+                  setActualReturn('')
+                  setReturnNote('')
+                }}
+                loading={completeReturnMut.isPending}
+                disabled={!actualReturn}
+                style={{ flex: 2 }}
+              >
+                حفظ العودة
+              </Button>
+            </div>
+          }
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            <Input
+              label="وقت العودة الفعلي"
+              type="time"
+              value={actualReturn}
+              onChange={e => setActualReturn(e.target.value)}
+              dir="ltr"
+            />
+            <Input
+              label="ملاحظة إدارية"
+              value={returnNote}
+              onChange={e => setReturnNote(e.target.value)}
+              placeholder="اختياري"
+            />
+          </div>
+        </ResponsiveModal>
+      )}
 
       {/* Reject reason modal - simplified inline */}
       {rejectId && (
