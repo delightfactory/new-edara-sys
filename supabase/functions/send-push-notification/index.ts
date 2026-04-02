@@ -99,12 +99,14 @@ Deno.serve(async (req: Request) => {
       }
 
       // Log successful delivery for observability dashboard
-      await adminClient.from('notification_delivery_log').insert({
-        notification_id: payload?.id || null,
-        channel:         'push',
-        status:          'delivered',
-        subscription_id,
-      }).catch(() => {}) // Non-critical — log failure must never block delivery response
+      try {
+        await adminClient.from('notification_delivery_log').insert({
+          notification_id: payload?.id || null,
+          channel:         'push',
+          status:          'delivered',
+          subscription_id,
+        })
+      } catch { /* Non-critical — log failure must never block delivery response */ }
 
       return Response.json({ sent: true }, { status: 200, headers: corsHeaders })
 
@@ -124,14 +126,16 @@ Deno.serve(async (req: Request) => {
           .eq('id', subscription_id)
 
         // Log to delivery_log for observability
-        await adminClient.from('notification_delivery_log').insert({
-          notification_id: payload?.id ?? null,
-          channel:         'push',
-          status:          'failed',
-          subscription_id,
-          error_code:      String(statusCode),
-          error_message:   'Subscription expired or invalid — deactivated',
-        }).catch(() => {})
+        try {
+          await adminClient.from('notification_delivery_log').insert({
+            notification_id: payload?.id ?? null,
+            channel:         'push',
+            status:          'failed',
+            subscription_id,
+            error_code:      String(statusCode),
+            error_message:   'Subscription expired or invalid — deactivated',
+          })
+        } catch { /* Non-critical */ }
 
         return Response.json(
           { error: 'Subscription expired — deactivated' },
