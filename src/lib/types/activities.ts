@@ -126,6 +126,19 @@ export interface ActivityType {
   created_at: string
 }
 
+export interface ActivityTypeInput {
+  name: string
+  code?: string | null
+  category: ActivityCategory
+  icon?: string | null
+  requires_gps?: boolean
+  requires_customer?: boolean
+  requires_outcome?: boolean
+  default_duration_min?: number
+  is_active?: boolean
+  sort_order?: number
+}
+
 export interface TargetType {
   id: string
   name: string
@@ -137,6 +150,17 @@ export interface TargetType {
   description: string | null
   is_active: boolean
   created_at: string
+}
+
+export interface TargetTypeInput {
+  name: string
+  code: string
+  unit: TargetUnit
+  category: string
+  auto_source: string
+  auto_calc_enabled: boolean
+  description?: string | null
+  is_active?: boolean
 }
 
 export interface VisitPlanTemplate {

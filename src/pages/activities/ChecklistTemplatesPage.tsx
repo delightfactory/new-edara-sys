@@ -33,9 +33,7 @@ import type {
 } from '@/lib/types/activities'
 
 const CATEGORY_OPTIONS: { value: ActivityCategory; label: string }[] = [
-  { value: 'visit', label: 'زيارة' },
-  { value: 'call',  label: 'مكالمة' },
-  { value: 'task',  label: 'مهمة' },
+  { value: 'visit', label: 'زيارة ميدانية' },
 ]
 
 /**
@@ -66,8 +64,8 @@ const PURPOSE_OPTIONS: { value: PlanItemPurposeType; label: string }[] = [
 
 const CATEGORY_COLOR: Record<string, string> = {
   visit: 'var(--color-primary)',
-  call:  'var(--color-success)',
-  task:  'var(--color-warning)',
+  call:  'var(--text-muted)',
+  task:  'var(--text-muted)',
 }
 
 const EMPTY_TEMPLATE: ChecklistTemplateInput = {
@@ -302,7 +300,7 @@ export default function ChecklistTemplatesPage() {
                       className="chk-category-badge"
                       style={{ background: CATEGORY_COLOR[t.category] + '22', color: CATEGORY_COLOR[t.category], opacity: t.is_active ? 1 : 0.5 }}
                     >
-                      {CATEGORY_OPTIONS.find(c => c.value === t.category)?.label}
+                      {CATEGORY_OPTIONS.find(c => c.value === t.category)?.label || 'غير مدعوم (' + t.category + ')'}
                     </span>
                     <div>
                       <div className="chk-card-name" style={!t.is_active ? { opacity: 0.6 } : undefined}>{t.name}</div>

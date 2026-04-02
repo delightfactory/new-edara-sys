@@ -36,6 +36,8 @@ import {
   getActivityTypes, getTargetTypes,
   getVisitPlanTemplates, getCallPlanTemplates,
   getActivities, getActivity, createActivity, updateActivity, softDeleteActivity,
+  createActivityType, updateActivityType,
+  createTargetType, updateTargetType,
   saveCallDetail,
   getVisitPlans, getVisitPlan, getVisitPlanItems,
   createVisitPlan, updateVisitPlan, confirmVisitPlan, cancelVisitPlan,
@@ -849,13 +851,59 @@ export function useApproveAdjustment() {
 // ════════════════════════════════════════════
 
 // ── Reference Data (staleTime: 10min) ────────────────────────
-
-export function useActivityTypes() {
-  return useQuery({ queryKey: ['activity-types'], queryFn: getActivityTypes, staleTime: REF_STALE })
+export function useActivityTypes(onlyActive = true) {
+  return useQuery({ 
+    queryKey: ['activity-types', onlyActive], 
+    queryFn: () => getActivityTypes(onlyActive), 
+    staleTime: REF_STALE 
+  })
 }
 
-export function useTargetTypes() {
-  return useQuery({ queryKey: ['target-types'], queryFn: getTargetTypes, staleTime: REF_STALE })
+export function useCreateActivityType() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: createActivityType,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['activity-types'] })
+    }
+  })
+}
+
+export function useUpdateActivityType() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string, input: any }) => updateActivityType(id, input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['activity-types'] })
+    }
+  })
+}
+export function useTargetTypes(onlyActive = true) {
+  return useQuery({ 
+    queryKey: ['target-types', onlyActive], 
+    queryFn: () => getTargetTypes(onlyActive), 
+    staleTime: REF_STALE 
+  })
+}
+
+export function useCreateTargetType() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: createTargetType,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['target-types'] })
+    }
+  })
+}
+
+export function useUpdateTargetType() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string, input: any }) => updateTargetType(id, input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['target-types'] })
+    }
+  })
 }
 
 // active-only — used in create forms/wizards

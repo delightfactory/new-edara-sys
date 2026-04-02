@@ -15,6 +15,7 @@ import type {
   ChecklistTemplate, ChecklistQuestion, ChecklistResponse,
   ChecklistResponseInput,
   ChecklistTemplateInput, ChecklistQuestionInput,
+  ActivityTypeInput, TargetTypeInput,
 } from '@/lib/types/activities'
 
 // ============================================================
@@ -39,24 +40,72 @@ function sanitize<T extends Record<string, any>>(input: T): T {
 // Reference Data — قراءة فقط (staleTime: 10min في الـ hooks)
 // ============================================================
 
-export async function getActivityTypes(): Promise<ActivityType[]> {
-  const { data, error } = await supabase
+export async function getActivityTypes(onlyActive = true): Promise<ActivityType[]> {
+  let query = supabase
     .from('activity_types')
     .select('*')
-    .eq('is_active', true)
     .order('sort_order')
+  
+  if (onlyActive) query = query.eq('is_active', true)
+
+  const { data, error } = await query
   if (error) throw error
   return data as ActivityType[]
 }
 
-export async function getTargetTypes(): Promise<TargetType[]> {
+export async function createActivityType(input: ActivityTypeInput): Promise<ActivityType> {
   const { data, error } = await supabase
+    .from('activity_types')
+    .insert(sanitize(input))
+    .select()
+    .single()
+  if (error) throw error
+  return data as ActivityType
+}
+
+export async function updateActivityType(id: string, input: Partial<ActivityTypeInput>): Promise<ActivityType> {
+  const { data, error } = await supabase
+    .from('activity_types')
+    .update(sanitize(input))
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data as ActivityType
+}
+
+export async function getTargetTypes(onlyActive = true): Promise<TargetType[]> {
+  let query = supabase
     .from('target_types')
     .select('*')
-    .eq('is_active', true)
     .order('name')
+
+  if (onlyActive) query = query.eq('is_active', true)
+
+  const { data, error } = await query
   if (error) throw error
   return data as TargetType[]
+}
+
+export async function createTargetType(input: TargetTypeInput): Promise<TargetType> {
+  const { data, error } = await supabase
+    .from('target_types')
+    .insert(sanitize(input))
+    .select()
+    .single()
+  if (error) throw error
+  return data as TargetType
+}
+
+export async function updateTargetType(id: string, input: Partial<TargetTypeInput>): Promise<TargetType> {
+  const { data, error } = await supabase
+    .from('target_types')
+    .update(sanitize(input))
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data as TargetType
 }
 
 export async function getVisitPlanTemplates(params?: { includeInactive?: boolean }): Promise<VisitPlanTemplate[]> {

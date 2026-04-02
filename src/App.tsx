@@ -96,6 +96,8 @@ const ActivitiesDashboard = lazy(() => import('@/pages/activities/ActivitiesDash
 const ActivitiesPage      = lazy(() => import('@/pages/activities/ActivitiesPage'))
 const ActivityForm        = lazy(() => import('@/pages/activities/ActivityForm'))
 const ActivityDetail      = lazy(() => import('@/pages/activities/ActivityDetail'))
+const ActivityTypesPage   = lazy(() => import('@/pages/activities/ActivityTypesPage'))
+const TargetTypesPage     = lazy(() => import('@/pages/activities/TargetTypesPage'))
 const VisitPlansPage      = lazy(() => import('@/pages/activities/VisitPlansPage'))
 const VisitPlanForm       = lazy(() => import('@/pages/activities/VisitPlanForm'))
 const VisitPlanDetail     = lazy(() => import('@/pages/activities/VisitPlanDetail'))
@@ -409,6 +411,18 @@ export default function App() {
               <Route path="activities/:id/edit" element={
                 <ProtectedRoute permission="activities.update_own">
                   <Suspense fallback={<LazyFallback />}><ActivityForm /></Suspense>
+                </ProtectedRoute>
+              } />
+              {/* Activity Types (Settings) */}
+              <Route path="activities/types" element={
+                <ProtectedRoute permission="settings.update">
+                  <Suspense fallback={<LazyFallback />}><ActivityTypesPage /></Suspense>
+                </ProtectedRoute>
+              } />
+              {/* Target Types (Settings) */}
+              <Route path="activities/target-types" element={
+                <ProtectedRoute permission="settings.update">
+                  <Suspense fallback={<LazyFallback />}><TargetTypesPage /></Suspense>
                 </ProtectedRoute>
               } />
               {/* ── Visit Plans ── */}
