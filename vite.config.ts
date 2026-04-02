@@ -16,9 +16,12 @@ export default defineConfig({
       registerType: 'prompt',
       injectRegister: 'auto',
 
-      // SW only active in production — enabling in dev causes duplicate React instances
+      // SW enabled in dev mode to support Push Notifications testing.
+      // Uses type:'module' to avoid duplicate React instance issues.
       devOptions: {
-        enabled: false,
+        enabled: true,
+        type: 'module',
+        navigateFallback: 'index.html',
       },
 
       includeAssets: [

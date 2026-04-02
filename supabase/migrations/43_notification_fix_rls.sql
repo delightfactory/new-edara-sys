@@ -1,0 +1,24 @@
+-- ═══════════════════════════════════════════════════════════════
+-- 43_notification_fix_rls.sql
+-- Notification System — RLS Security Hardening
+--
+-- Problem: "notifications_update_own" policy allowed users to
+--   directly UPDATE any column on their notifications rows via
+--   the Supabase client API (e.g. elevating priority, altering
+--   action_url or entity_id).
+--
+-- Fix: Drop the permissive direct-UPDATE policy.
+--   All legitimate notification updates go through
+--   SECURITY DEFINER RPCs:
+--     • mark_notification_read()
+--     • mark_all_notifications_read()
+--     • archive_notification()
+--   These RPCs enforce ownership and only touch the columns
+--   they are designed to modify.
+--
+-- ✅ idempotent — DROP POLICY IF EXISTS is safe to re-run
+-- ═══════════════════════════════════════════════════════════════
+
+-- Remove overly-permissive UPDATE policy from notifications.
+-- Direct column-level updates from the client are not permitted.
+DROP POLICY IF EXISTS "notifications_update_own" ON public.notifications;

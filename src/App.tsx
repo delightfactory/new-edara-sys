@@ -112,6 +112,9 @@ const TargetDetail        = lazy(() => import('@/pages/activities/TargetDetail')
 const ChecklistTemplatesPage = lazy(() => import('@/pages/activities/ChecklistTemplatesPage'))
 const PlanTemplatesPage      = lazy(() => import('@/pages/activities/PlanTemplatesPage'))
 
+// Notifications
+const NotificationsPage = lazy(() => import('@/pages/notifications/NotificationsPage'))
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -354,6 +357,15 @@ export default function App() {
               } />
               <Route path="hr/my-profile" element={
                 <ProtectedRoute><Suspense fallback={<LazyFallback />}><MyProfilePage /></Suspense></ProtectedRoute>
+              } />
+
+              {/* Notifications */}
+              <Route path="notifications" element={
+                <ProtectedRoute>
+                  <Suspense fallback={<LazyFallback />}>
+                    <NotificationsPage />
+                  </Suspense>
+                </ProtectedRoute>
               } />
 
               {/* Settings */}

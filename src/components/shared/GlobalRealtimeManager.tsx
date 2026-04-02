@@ -5,19 +5,26 @@
  * يستمع لتغييرات الجداول الحرجة عبر Supabase Realtime
  * ويُبطل React Query cache تلقائياً.
  *
- * المبدأ: قناة واحدة → عشرات الجداول → cache invalidation فوري
+ * المبدأ: قناتان منفصلتان:
+ *   1. global-realtime  → عشرات الجداول → cache invalidation فوري (debounced)
+ *   2. notifications:<userId> → إشعارات المستخدم فقط → store + toast
  *
  * Best Practices المُطبقة:
- * 1. قناة واحدة (singleton) بدلاً من قناة لكل صفحة → توفير WebSocket connections
- * 2. Broad invalidation بالـ queryKey prefix → يُبطل كل الـ queries ذات الصلة
+ * 1. قناة واحدة للبيانات العامة (singleton) → توفير WebSocket connections
+ * 2. قناة منفصلة للإشعارات مع filter → لا تُستقبل إشعارات مستخدمين آخرين
  * 3. Debounce لتجنُّب سيل الـ invalidations عند bulk operations
  * 4. يعمل فقط عند وجود مستخدم مُسجّل دخول
  */
 
 import { useEffect, useRef, useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
+import { useNotificationStore } from '@/stores/notification-store'
+import { notificationKeys } from '@/lib/notifications/query-keys'
+import { updateAppBadge } from '@/lib/notifications/push-utils'
+import type { NotificationRow } from '@/lib/notifications/types'
 
 /**
  * خريطة الجدول → مفاتيح الـ cache المُبطلة
@@ -75,6 +82,7 @@ export default function GlobalRealtimeManager() {
     timerRef.current = setTimeout(flushInvalidations, DEBOUNCE_MS)
   }, [flushInvalidations])
 
+  // ── قناة 1: الجداول العامة ─────────────────────────────
   useEffect(() => {
     // لا نشترك إلا عند وجود مستخدم مُسجّل
     if (!profile) return
@@ -114,6 +122,71 @@ export default function GlobalRealtimeManager() {
       supabase.removeChannel(channel)
     }
   }, [profile, queryClient, scheduleInvalidation])
+
+  // ── قناة 2: إشعارات المستخدم الحالي ───────────────────
+  useEffect(() => {
+    if (!profile) return
+
+    // profile.id هو الـ auth.users.id المرتبط بالمستخدم الحالي
+    const userId = profile.id
+
+    const notificationChannel = supabase
+      .channel(`notifications:${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event:  'INSERT',
+          schema: 'public',
+          table:  'notifications',
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          const notification = payload.new as NotificationRow
+
+          // 1. تحديث unread count في الـ store فوراً
+          //    نقرأ القيمة الحالية أولاً ثم نُضيف 1 للـ badge — Zustand's set() متزامن
+          //    لكن قراءة count قبل increment ثم إضافة 1 تضمن الدقة دون أي التباس
+          const prevCount = useNotificationStore.getState().unreadCount
+          useNotificationStore.getState().incrementUnread()
+
+          // 2. تحديث App Badge على مستوى نظام التشغيل (Chrome/Edge فقط)
+          updateAppBadge(prevCount + 1).catch(() => {})
+
+          // 3. إبطال caches ذات الصلة
+          queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() })
+          queryClient.invalidateQueries({ queryKey: notificationKeys.recent() })
+          queryClient.invalidateQueries({ queryKey: notificationKeys.lists() })
+
+          // 4. Toast للإشعارات ذات الأولوية العالية فقط
+          // (low/medium تظهر فقط في لوحة الإشعارات عند فتحها)
+          if (notification.priority === 'critical' || notification.priority === 'high') {
+            toast(notification.title, {
+              description: notification.body,
+              duration: notification.priority === 'critical' ? 10_000 : 5_000,
+            })
+          }
+        }
+      )
+      .subscribe((status) => {
+        const notifStore = useNotificationStore.getState()
+        if (status === 'SUBSCRIBED') {
+          notifStore.setRealtimeStatus('connected')
+          console.log('[Notifications Realtime] ✅ Subscribed for user:', userId)
+        } else if (status === 'CHANNEL_ERROR') {
+          notifStore.setRealtimeStatus('error')
+          console.error('[Notifications Realtime] ❌ Channel error')
+        } else if (status === 'CLOSED') {
+          notifStore.setRealtimeStatus('disconnected')
+        } else {
+          notifStore.setRealtimeStatus('connecting')
+        }
+      })
+
+    return () => {
+      supabase.removeChannel(notificationChannel)
+      useNotificationStore.getState().setRealtimeStatus('disconnected')
+    }
+  }, [profile, queryClient])
 
   // هذا المكوّن لا يعرض شيئاً — فقط يدير الاشتراكات
   return null

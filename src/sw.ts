@@ -1,7 +1,9 @@
+/// <reference lib="webworker" />
 import {
   cleanupOutdatedCaches,
   precacheAndRoute,
 } from 'workbox-precaching'
+
 import { clientsClaim } from 'workbox-core'
 import { registerRoute, NavigationRoute } from 'workbox-routing'
 import {
@@ -13,6 +15,19 @@ import { ExpirationPlugin } from 'workbox-expiration'
 import { CacheableResponsePlugin } from 'workbox-cacheable-response'
 
 declare let self: ServiceWorkerGlobalScope
+
+// ── Push notification payload shape (matches dispatch-notification output) ──
+interface PushPayload {
+  id: string              // notification id (for mark-as-read on click)
+  title: string
+  body: string
+  icon?: string           // icon name (not URL — resolved client-side)
+  category: string
+  priority: 'low' | 'medium' | 'high' | 'critical'
+  actionUrl?: string      // deep-link URL in the app
+  badge?: number          // unread count for app badge
+  tag?: string            // notification grouping tag
+}
 
 // ── 1. Smart update strategy for ERP: notify clients, they apply on next navigation ──
 // Do NOT skipWaiting immediately — wait for PWAUpdateBanner user confirmation
@@ -88,3 +103,109 @@ registerRoute(
     { denylist: [/^\/api\//] }
   )
 )
+
+// ══════════════════════════════════════════════════════════════
+// PUSH NOTIFICATION HANDLERS
+// Registered AFTER Workbox routes — Workbox does not manage push/click events
+// ══════════════════════════════════════════════════════════════
+
+// ── PUSH EVENT HANDLER ──────────────────────────────────────────
+// Triggered when the browser receives a push message from the server.
+// Must call event.waitUntil() — the browser may close the SW otherwise.
+self.addEventListener('push', (event: PushEvent) => {
+  // Guard: if no data, show a generic fallback
+  if (!event.data) {
+    event.waitUntil(
+      self.registration.showNotification('إشعار جديد', {
+        body: 'لديك رسالة جديدة',
+        icon: '/pwa-192x192.png',
+        badge: '/pwa-64x64.png',
+      })
+    )
+    return
+  }
+
+  let payload: PushPayload
+  try {
+    payload = event.data.json() as PushPayload
+  } catch {
+    return  // malformed payload — ignore silently
+  }
+
+  // Cast to bypass TS lib.webworker.d.ts lag on 'renotify' — valid browser property per spec
+  const options = {
+    body:    payload.body,
+    icon:    '/pwa-192x192.png',
+    badge:   '/pwa-64x64.png',
+    data:    { url: payload.actionUrl ?? '/', notificationId: payload.id },
+    tag:     payload.tag ?? payload.category ?? 'default',
+    renotify: payload.priority === 'critical',
+    requireInteraction: payload.priority === 'critical',
+    vibrate: payload.priority === 'critical' ? [200, 100, 200, 100, 200] : [100],
+    actions: payload.actionUrl
+      ? [{ action: 'open', title: 'فتح' }, { action: 'dismiss', title: 'تجاهل' }]
+      : [{ action: 'dismiss', title: 'تجاهل' }],
+    dir: 'rtl',
+    lang: 'ar',
+  } as NotificationOptions
+
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title, options)
+  )
+})
+
+// ── NOTIFICATION CLICK HANDLER ──────────────────────────────────
+// Fired when the user clicks the notification or one of its actions.
+self.addEventListener('notificationclick', (event: NotificationEvent) => {
+  event.notification.close()
+
+  // If user clicked dismiss action — just close, no navigation
+  if (event.action === 'dismiss') return
+
+  const notifData = event.notification.data as { url?: string; notificationId?: string }
+  const targetUrl = notifData?.url ?? '/'
+
+  event.waitUntil(
+    // Try to focus an existing tab showing this app first
+    self.clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then(clientList => {
+        const existingClient = clientList.find(
+          client => new URL(client.url).origin === self.location.origin
+        )
+        if (existingClient) {
+          // Navigate existing window to the target URL
+          return existingClient.navigate(targetUrl).then(c => c?.focus() ?? existingClient.focus())
+        }
+        // No open window — open a new one
+        return self.clients.openWindow(targetUrl)
+      })
+  )
+})
+
+// ── APP BADGE UPDATE HANDLER ────────────────────────────────────
+// Called by the React app to update the OS-level app badge counter.
+// Chrome/Edge support navigator.setAppBadge; Firefox/Safari ignore silently.
+self.addEventListener('message', (event: ExtendableMessageEvent) => {
+  // Handle SKIP_WAITING (pre-existing logic)
+  if (event.data?.type === 'SKIP_WAITING') {
+    ;(self as unknown as { skipWaiting: () => void }).skipWaiting()
+    return
+  }
+
+  // Handle badge count updates
+  if (event.data?.type !== 'UPDATE_BADGE') return
+
+  const count = (event.data?.count as number) ?? 0
+
+  if ('setAppBadge' in navigator) {
+    if (count > 0) {
+      ;(navigator as Navigator & { setAppBadge: (n: number) => Promise<void> })
+        .setAppBadge(count).catch(() => {})
+    } else {
+      ;(navigator as Navigator & { clearAppBadge: () => Promise<void> })
+        .clearAppBadge().catch(() => {})
+    }
+  }
+})

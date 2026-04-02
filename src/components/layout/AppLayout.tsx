@@ -1,11 +1,11 @@
 import { Outlet } from 'react-router-dom'
-import { Bell } from 'lucide-react'
 import Sidebar from './Sidebar'
 import BottomNav from './BottomNav'
 import FAB from './FAB'
 import PageTitleContext, { PageTitleProvider } from './PageTitleContext'
 import OfflineDetector from '@/components/pwa/OfflineDetector'
 import InstallBanner from '@/components/pwa/InstallBanner'
+import { NotificationBell, NotificationPanel } from '@/components/notifications'
 import { useContext } from 'react'
 
 function AppBarTitle() {
@@ -33,13 +33,7 @@ export default function AppLayout() {
         {/* ── Mobile App Bar ─────────────────────────────── */}
         <header className="app-bar" aria-label="شريط التطبيق">
           <AppBarTitle />
-          <button
-            className="app-bar-bell"
-            aria-label="الإشعارات"
-            type="button"
-          >
-            <Bell size={20} />
-          </button>
+          <NotificationBell className="app-bar-bell" />
         </header>
 
         {/* ── Main Content ──────────────────────────────── */}
@@ -54,6 +48,9 @@ export default function AppLayout() {
         {/* ── PWA Utilities ─────────────────────────────── */}
         <OfflineDetector />
         <InstallBanner />
+
+        {/* ── Notification Panel ────────────────────────── */}
+        <NotificationPanel />
 
         <style>{`
           /* ── Layout Shell ──────────────────────────── */

@@ -1,5 +1,6 @@
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth-store'
+import { useNotificationStore } from '@/stores/notification-store'
 import { useUiStore } from '@/stores/ui-store'
 import { signOut } from '@/lib/services/auth'
 import { PERMISSIONS } from '@/lib/permissions/constants'
@@ -7,7 +8,7 @@ import {
   LayoutDashboard, ShoppingCart, Package, Warehouse, DollarSign,
   Users, Settings, ClipboardList, Target, BarChart3,
   LogOut, Moon, Sun, ChevronDown, X,
-  BoxesIcon, Truck, Building2, UserCog,
+  BoxesIcon, Truck, Building2, UserCog, Bell,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
@@ -34,7 +35,8 @@ interface NavSection {
 const sections: NavSection[] = [
   {
     items: [
-      { id: 'dashboard', label: 'الرئيسية', icon: LayoutDashboard, path: '/' },
+      { id: 'dashboard',     label: 'الرئيسية',    icon: LayoutDashboard, path: '/' },
+      { id: 'notifications', label: 'الإشعارات',   icon: Bell,            path: '/notifications' },
     ],
   },
   {
@@ -170,6 +172,7 @@ export default function Sidebar() {
   const canAny = useAuthStore(s => s.canAny)
   const profile = useAuthStore(s => s.profile)
   const { theme, toggleTheme, sidebarOpen, setSidebarOpen } = useUiStore()
+  const unreadCount = useNotificationStore(s => s.unreadCount)
   const navigate = useNavigate()
   const location = useLocation()
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -228,6 +231,8 @@ export default function Sidebar() {
           </div>
         )
       }
+      // Notification item gets a live unread badge
+      const isNotifItem = item.id === 'notifications'
       return (
         <NavLink
           key={item.id}
@@ -238,6 +243,11 @@ export default function Sidebar() {
         >
           <span className="si-icon"><Icon size={16} /></span>
           <span className="si-label">{item.label}</span>
+          {isNotifItem && unreadCount > 0 && (
+            <span className="si-notif-badge">
+              {unreadCount > 99 ? '+99' : unreadCount}
+            </span>
+          )}
         </NavLink>
       )
     }
@@ -556,6 +566,19 @@ export default function Sidebar() {
             color: ${isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.35)'};
             padding: 2px 6px;
             border-radius: 4px;
+          }
+          .si-notif-badge {
+            font-size: 10px;
+            font-weight: 700;
+            background: var(--danger, #dc2626);
+            color: #fff;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            border-radius: 9px;
+            line-height: 18px;
+            text-align: center;
+            flex-shrink: 0;
           }
 
           /* ── Sub-items ── */
