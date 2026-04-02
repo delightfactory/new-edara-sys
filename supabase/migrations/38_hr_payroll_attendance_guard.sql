@@ -472,8 +472,8 @@ BEGIN
       status = EXCLUDED.status,
       late_minutes = EXCLUDED.late_minutes,
       review_status = CASE
-        WHEN hr_attendance_days.review_status = 'reviewed' THEN 'reviewed'
-        ELSE 'ok'
+        WHEN hr_attendance_days.review_status = 'reviewed' THEN 'reviewed'::hr_review_status
+        ELSE 'ok'::hr_review_status
       END,
       tracking_started_at = COALESCE(hr_attendance_days.tracking_started_at, EXCLUDED.tracking_started_at),
       last_tracking_ping_at = EXCLUDED.last_tracking_ping_at,

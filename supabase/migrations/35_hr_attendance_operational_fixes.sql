@@ -294,8 +294,8 @@ BEGIN
       status = EXCLUDED.status,
       late_minutes = EXCLUDED.late_minutes,
       review_status = CASE
-        WHEN hr_attendance_days.review_status = 'reviewed' THEN 'reviewed'
-        ELSE 'ok'
+        WHEN hr_attendance_days.review_status = 'reviewed' THEN 'reviewed'::hr_review_status
+        ELSE 'ok'::hr_review_status
       END,
       tracking_started_at = COALESCE(hr_attendance_days.tracking_started_at, EXCLUDED.tracking_started_at),
       last_tracking_ping_at = EXCLUDED.last_tracking_ping_at,
@@ -491,8 +491,8 @@ BEGIN
     tracking_ping_count = tracking_ping_count + 1,
     outside_zone_count = outside_zone_count + CASE WHEN v_outside_zone THEN 1 ELSE 0 END,
     review_status = CASE
-      WHEN v_outside_zone THEN 'needs_review'
-      WHEN review_status = 'reviewed' THEN 'reviewed'
+      WHEN v_outside_zone THEN 'needs_review'::hr_review_status
+      WHEN review_status = 'reviewed' THEN 'reviewed'::hr_review_status
       ELSE review_status
     END,
     updated_at = now()
