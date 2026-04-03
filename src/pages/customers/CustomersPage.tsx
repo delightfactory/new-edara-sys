@@ -301,7 +301,20 @@ export default function CustomersPage() {
           .customers-table-view { display: none; }
           .customers-card-view  { display: block; }
           .desktop-only-btn     { display: none; }
-          .filter-select { font-size: var(--text-xs); }
+          .customers-filter-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-2);
+          }
+          /* حقل البحث يملأ الصف بالكامل */
+          .customers-filter-row > div:first-child {
+            grid-column: 1 / -1;
+          }
+          .filter-select {
+            font-size: var(--text-xs);
+            width: 100%;
+            flex: none;
+          }
         }
 
         .mobile-card-list {

@@ -133,7 +133,7 @@ export default function BottomNav() {
           }
 
           .bottom-nav-label {
-            font-size: 0.65rem;
+            font-size: 0.6875rem; /* 11px — الحد الأدنى المقبول للعربية */
             font-weight: 600;
             line-height: 1;
             white-space: nowrap;

@@ -31,7 +31,7 @@ function InfoCard({ label, value, icon, muted = false }: {
       padding: 'var(--space-3)',
       background: 'var(--bg-surface-2)',
       borderRadius: 'var(--radius-md)',
-      border: '1px solid var(--border-color)',
+      border: '1px solid var(--border-primary)',
     }}>
       <div style={{
         width: 36, height: 36, borderRadius: 'var(--radius-md)',
@@ -63,7 +63,7 @@ function LeaveBalanceCard({ label, used, remaining, total, icon }: {
       padding: 'var(--space-4)',
       background: 'var(--bg-surface-2)',
       borderRadius: 'var(--radius-lg)',
-      border: '1px solid var(--border-color)',
+      border: '1px solid var(--border-primary)',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: 'var(--text-sm)', fontWeight: 600 }}>
@@ -73,7 +73,7 @@ function LeaveBalanceCard({ label, used, remaining, total, icon }: {
           {remaining} / {total} يوم
         </span>
       </div>
-      <div style={{ height: 6, background: 'var(--bg-surface-3, var(--border-color))', borderRadius: 99, overflow: 'hidden' }}>
+      <div style={{ height: 6, background: 'var(--bg-surface-2)', borderRadius: 99, overflow: 'hidden' }}>
         <div style={{
           height: '100%', width: `${pct}%`, borderRadius: 99,
           background: pct > 80 ? 'var(--color-danger)' : pct > 50 ? 'var(--color-warning)' : 'var(--color-success)',
@@ -99,14 +99,14 @@ function QuickLink({ label, icon, path, color }: {
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-2)',
         padding: 'var(--space-4)',
         background: 'var(--bg-surface-2)',
-        border: '1px solid var(--border-color)',
+        border: '1px solid var(--border-primary)',
         borderRadius: 'var(--radius-lg)',
         cursor: 'pointer', fontFamily: 'var(--font-sans)',
         transition: 'all 0.15s',
         flex: 1, minWidth: 80,
       }}
       onMouseEnter={e => (e.currentTarget.style.borderColor = color)}
-      onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border-color)')}
+      onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border-primary)')}
     >
       <div style={{
         width: 40, height: 40, borderRadius: 'var(--radius-md)',

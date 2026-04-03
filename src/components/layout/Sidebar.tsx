@@ -570,7 +570,7 @@ export default function Sidebar() {
           .si-notif-badge {
             font-size: 10px;
             font-weight: 700;
-            background: var(--danger, #dc2626);
+            background: var(--color-danger);
             color: #fff;
             min-width: 18px;
             height: 18px;

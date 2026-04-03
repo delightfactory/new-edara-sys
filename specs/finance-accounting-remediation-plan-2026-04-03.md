@@ -65,6 +65,16 @@ These flows currently appear to have both operational movement and accounting po
 - Employee advance disbursement
 - Payroll approval
 
+Payroll note:
+- Payroll accounting depends on chart-of-accounts additions introduced across later migrations, not only the base finance migration.
+- In the current migration chain, the required payroll accounts are seeded across:
+  - `17_hr_core.sql` for `2310`, `2320`, `2330`, `5310`, `5320`, `5330`
+  - `19b_hr_core_hotfixes.sql` for `2340`
+  - `22a_target_schema.sql` for `5335`
+  - `15_procurement_core_rpcs.sql` for `5900`
+- So this is not a blocker for a normal fresh database that runs the full checked-in migration chain.
+- It is still a deployment-coupling risk if environments are created from partial migration subsets.
+
 ### 2.2 Flows that remain structurally exposed
 
 These are the remaining priority gaps:
@@ -412,6 +422,7 @@ Protect direct mutation on:
 - `customers.current_balance`
 - `suppliers.current_balance`
 - `vaults.current_balance`
+- `vaults.type`
 - `sales_orders.paid_amount`
 - `sales_orders.returned_amount`
 - `purchase_invoices.paid_amount`
@@ -431,6 +442,54 @@ Examples:
 - `app.finance_context = vault_posting`
 
 This avoids accidental direct edits while keeping the existing trusted RPC model.
+
+### 8.4 Vault type immutability rule
+
+Additional rule:
+- once a vault has any financial history, its `type` must become immutable
+
+Reason:
+- the vault type determines the mapped treasury GL account:
+  - `cash` -> `1110`
+  - `bank` -> `1120`
+  - `mobile_wallet` -> `1130`
+- changing `vaults.type` after transactions already exist would silently reinterpret the historical treasury classification of that vault
+
+Implementation:
+- add a `BEFORE UPDATE` trigger on `vaults`
+- if `OLD.type IS DISTINCT FROM NEW.type`
+- and there exists at least one related `vault_transactions` row
+- then raise an exception
+
+Allowed case:
+- type may still be changed only if the vault has never been used financially
+
+### 8.5 Manual journal restrictions on control accounts
+
+Current structural risk:
+- `create_manual_journal_entry()` validates balance and account existence only
+- it does not create `customer_ledger` or `supplier_ledger` rows
+- therefore a manual journal that hits:
+  - `1200`
+  - `2100`
+  can break GL-to-subledger reconciliation
+
+Target rule:
+- manual journals must not post directly to control accounts backed by subledgers unless a dedicated allocation flow exists
+
+Phase-1 safe rule:
+- block manual posting to:
+  - `1200`
+  - `2100`
+  - and any future subledger-control accounts
+
+Implementation options:
+1. Add a guard inside `create_manual_journal_entry()` that rejects these account codes
+2. Optionally maintain a small protected-account list or an `is_control_account` flag in `chart_of_accounts`
+
+Preferred phase-1 implementation:
+- hard-block `1200` and `2100` in the RPC
+- document that customer and supplier adjustments must go through dedicated subledger-aware RPCs instead
 
 ## 9. Workstream E: Reconciliation Views And Blocking Audits
 
@@ -601,12 +660,29 @@ The following scenarios must pass before the work is considered complete.
 - Same update through approved RPC:
   - succeeds
 
+- Changing `vault.type` after transactions exist:
+  - rejected
+
+- Changing `vault.type` before any financial use:
+  - succeeds
+
 ### 12.5 Reconciliation
 
 - All seeded scenario balances reconcile to zero difference in:
   - customer reconciliation view
   - supplier reconciliation view
   - vault reconciliation view
+
+### 12.6 Manual journal control-account protection
+
+- Manual journal using account `1200`:
+  - rejected
+
+- Manual journal using account `2100`:
+  - rejected
+
+- Dedicated customer or supplier adjustment RPC:
+  - succeeds and keeps subledger and GL aligned
 
 ## 13. Recommended Delivery Sequence
 
@@ -637,7 +713,7 @@ The highest-priority implementation order is:
 1. Fix opening-balance editing safely without removing the feature.
 2. Fix cross-type vault transfers.
 3. Convert manual vault adjustments into controlled accounting postings.
-4. Add financial field guards.
+4. Add financial field guards, including `vault.type` immutability and control-account journal restrictions.
 5. Add reconciliation views and backfill scripts.
 
 This sequence preserves current user flows, minimizes UI disruption, and closes the highest-risk accounting gaps first.

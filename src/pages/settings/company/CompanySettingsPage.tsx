@@ -13,6 +13,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   inventory: '📦 المخزون',
   hr: '👥 الموارد البشرية',
   notifications: '🔔 الإشعارات',
+  general: '⚙️ عام',
 }
 
 export default function CompanySettingsPage() {
@@ -122,7 +123,7 @@ export default function CompanySettingsPage() {
             onClick={() => setActiveTab(cat)}
             style={{ flexShrink: 0 }}
           >
-            {CATEGORY_LABELS[cat] || cat}
+            {CATEGORY_LABELS[cat] ?? `⚙️ ${cat}`}
           </button>
         ))}
       </div>
@@ -143,12 +144,6 @@ export default function CompanySettingsPage() {
                 <td>
                   <div>
                     <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{setting.description}</span>
-                    <span style={{
-                      display: 'block', fontSize: 'var(--text-xs)',
-                      color: 'var(--text-muted)', fontFamily: 'monospace', direction: 'ltr'
-                    }}>
-                      {setting.key}
-                    </span>
                   </div>
                 </td>
                 <td>{renderInput(setting)}</td>
@@ -161,7 +156,6 @@ export default function CompanySettingsPage() {
           {filtered.map(setting => (
             <div key={setting.key} className="settings-list-item">
               <div className="settings-list-label">{setting.description}</div>
-              <span className="settings-list-key">{setting.key}</span>
               {renderInput(setting)}
             </div>
           ))}

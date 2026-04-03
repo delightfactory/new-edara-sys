@@ -202,7 +202,7 @@
 .modal-title { font-size: var(--text-lg); font-weight: 700; }
 .modal-body { padding: var(--space-6); }
 .modal-footer {
-  display: flex; gap: var(--space-3); justify-content: flex-end;
+  display: flex; gap: var(--space-3); justify-content: flex-start; /* flex-start في RTL = يمين بصري */
   padding: var(--space-4) var(--space-6);
   border-top: 1px solid var(--border-primary);
   background: var(--bg-surface-2);
@@ -516,7 +516,7 @@
   height: 36px;
   min-width: 36px;
   border-radius: var(--radius-md);
-  border: 1px solid var(--border-default);
+  border: 1px solid var(--border-primary);
   background: var(--bg-surface);
   cursor: pointer;
   color: var(--text-secondary);
@@ -528,7 +528,7 @@
   inset-inline-end: 0;
   min-width: 180px;
   background: var(--bg-surface);
-  border: 1px solid var(--border-default);
+  border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   z-index: 200;

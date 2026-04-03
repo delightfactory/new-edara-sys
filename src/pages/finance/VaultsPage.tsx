@@ -235,7 +235,10 @@ export default function VaultsPage() {
       <div className="edara-stats-row">
         <div className="edara-card stat-card">
           <span className="stat-label">إجمالي الرصيد</span>
-          <span className="stat-value" style={{ color: totalBalance >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>{formatCurrency(totalBalance)}</span>
+          <span className="stat-value" style={{ color: totalBalance >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
+            {formatCurrency(totalBalance)}{' '}
+            <small style={{ fontSize: '0.6em', fontWeight: 500, opacity: 0.7 }}>ج.م</small>
+          </span>
         </div>
         <div className="edara-card stat-card">
           <span className="stat-label">الخزائن النشطة</span>
@@ -260,7 +263,7 @@ export default function VaultsPage() {
             { key: 'type', label: 'النوع', render: (v) => <Badge variant={vaultTypeBadge(v.type)}>{vaultTypeLabel(v.type)}</Badge> },
             { key: 'current_balance', label: 'الرصيد', render: (v) => (
               <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: v.current_balance >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
-                {formatCurrency(v.current_balance)}
+                {formatCurrency(v.current_balance)} ج.م
               </span>
             )},
             { key: 'branch', label: 'الفرع', hideOnMobile: true, render: (v) => v.branch?.name || <span style={{ color: 'var(--text-muted)' }}>—</span> },
@@ -322,7 +325,7 @@ export default function VaultsPage() {
                     </div>
                     <div style={{ textAlign: 'end' }}>
                       <div style={{ fontWeight: 800, fontSize: '1.1rem', color: v.current_balance >= 0 ? 'var(--color-success)' : 'var(--color-danger)', fontVariantNumeric: 'tabular-nums' }}>
-                        {formatCurrency(v.current_balance)}
+                        {formatCurrency(v.current_balance)} ج.م
                       </div>
                       {v.branch?.name && <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{v.branch.name}</div>}
                     </div>
@@ -366,7 +369,7 @@ export default function VaultsPage() {
         title={editingVault ? 'تعديل الخزنة' : 'خزنة جديدة'}
         size="md"
         footer={
-          <div style={{ display: 'flex', gap: 'var(--space-3)', width: '100%', justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-3)', width: '100%', justifyContent: 'flex-start' }}>
             <Button variant="ghost" onClick={() => setFormOpen(false)}>إلغاء</Button>
             <Button onClick={handleSave} loading={saving}>حفظ</Button>
           </div>
@@ -427,7 +430,7 @@ export default function VaultsPage() {
         title={txMode === 'deposit' ? `إيداع في: ${txVault?.name}` : txMode === 'withdrawal' ? `سحب من: ${txVault?.name}` : `رصيد افتتاحي: ${txVault?.name}`}
         size="sm"
         footer={
-          <div style={{ display: 'flex', gap: 'var(--space-3)', width: '100%', justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-3)', width: '100%', justifyContent: 'flex-start' }}>
             <Button variant="ghost" onClick={() => setTxMode(null)}>إلغاء</Button>
             <Button
               onClick={handleTx}
