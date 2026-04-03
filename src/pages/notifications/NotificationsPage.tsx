@@ -78,6 +78,8 @@ export default function NotificationsPage() {
           display: flex;
           flex-direction: column;
           min-height: 100%;
+          width: 100%;
+          overflow-x: hidden;
         }
 
         /* ── Tab bar ── */
@@ -90,6 +92,8 @@ export default function NotificationsPage() {
           position: sticky;
           top: var(--app-bar-height, 0);
           z-index: var(--z-sticky, 10);
+          width: 100%;
+          max-width: 100%;
         }
 
         .npage-tab {
@@ -160,15 +164,21 @@ export default function NotificationsPage() {
         /* ── Mobile ── */
         @media (max-width: 768px) {
           .npage-tabs {
-            padding: 0 var(--space-2);
-            overflow-x: auto;
-            scrollbar-width: none;
+            padding: 0;
+            overflow-x: visible;
           }
-          .npage-tabs::-webkit-scrollbar { display: none; }
 
           .npage-tab {
-            padding: var(--space-3) var(--space-3);
+            flex: 1;
+            justify-content: center;
+            padding: var(--space-3) var(--space-2);
             font-size: var(--text-xs, 12px);
+            gap: var(--space-1);
+          }
+
+          .npage-tab-indicator {
+            left: var(--space-2);
+            right: var(--space-2);
           }
 
           .npage-settings {
@@ -180,3 +190,4 @@ export default function NotificationsPage() {
     </div>
   )
 }
+

@@ -990,7 +990,7 @@ export default function VisitPlanDetail() {
           font-size: 11px;
           font-weight: 700;
         }
-        @media (max-width: 480px) {
+        @media (max-width: 768px) {
           .vp-summary { grid-template-columns: repeat(2, 1fr); }
           .vp-skip-reasons { grid-template-columns: 1fr; }
         }

@@ -286,9 +286,12 @@ export default function NotificationCenter() {
           padding: var(--space-6);
           min-height: 100%;
           animation: fade-in-up 0.3s ease-out;
+          overflow-x: hidden;
         }
         .nc-container {
           max-width: 800px;
+          margin-inline: auto;
+          width: 100%;
         }
 
         /* Stats */
@@ -348,6 +351,9 @@ export default function NotificationCenter() {
           overflow-x: auto;
           scrollbar-width: none;
           padding-bottom: 2px;
+          -webkit-overflow-scrolling: touch;
+          /* Prevent chips from pushing parent wider */
+          max-width: 100%;
         }
         .nc-chips::-webkit-scrollbar { display: none; }
         .nc-chip {
@@ -499,13 +505,60 @@ export default function NotificationCenter() {
         }
 
         @media (max-width: 768px) {
-          .nc-page { padding: var(--space-4); }
+          .nc-page {
+            padding: var(--space-3) var(--space-3);
+          }
+          .nc-container {
+            max-width: 100%;
+          }
+          .nc-stats {
+            flex-direction: row;
+            gap: var(--space-2);
+          }
+          .nc-stat {
+            padding: var(--space-2) var(--space-3);
+            flex: 1;
+            min-width: 0;
+          }
+          .nc-stat-value {
+            font-size: var(--text-base, 15px);
+          }
+          .nc-chips {
+            gap: var(--space-1);
+            margin-inline: calc(-1 * var(--space-3));
+            padding-inline: var(--space-3);
+          }
+          .nc-chip {
+            padding: 5px 10px;
+            font-size: 11px;
+          }
           .nc-filters {
             flex-direction: column;
             align-items: stretch;
+            gap: var(--space-2);
           }
-          .nc-select { min-width: unset; }
-          .nc-stats { flex-direction: column; }
+          .nc-search {
+            min-width: unset;
+            width: 100%;
+          }
+          .nc-select {
+            min-width: unset;
+            width: 100%;
+          }
+          .nc-list-card {
+            border-radius: 12px;
+          }
+          .nc-mark-all-btn {
+            font-size: 11px;
+            padding: var(--space-1) var(--space-2);
+          }
+          .nc-pagination {
+            margin-top: var(--space-4);
+          }
+          .nc-page-btn {
+            font-size: var(--text-xs, 12px);
+            padding: var(--space-2) var(--space-3);
+          }
         }
       `}</style>
     </div>

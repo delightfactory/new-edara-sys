@@ -367,11 +367,43 @@ export default function NotificationItem({
           color: var(--danger, #dc2626);
         }
 
-        /* Mobile: always show actions */
+        /* Mobile: always show actions + compact layout */
         @media (max-width: 768px) {
+          .ni-item {
+            padding: var(--space-2) var(--space-3);
+            gap: var(--space-2);
+          }
+          .ni-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+          }
+          .ni-icon svg {
+            width: 14px;
+            height: 14px;
+          }
+          .ni-title {
+            font-size: 13px;
+          }
+          .ni-body {
+            font-size: 11px;
+            -webkit-line-clamp: 1;
+          }
+          .ni-time {
+            font-size: 10px;
+          }
           .ni-actions {
             opacity: 1;
             transform: translateX(0);
+            flex-direction: row;
+          }
+          .ni-action-btn {
+            width: 26px;
+            height: 26px;
+          }
+          .ni-action-btn svg {
+            width: 12px;
+            height: 12px;
           }
           .ni-link-icon { opacity: 0.4; }
         }

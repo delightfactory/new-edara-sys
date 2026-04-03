@@ -458,7 +458,8 @@
   .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
 
   /* ===== Page Layout ===== */
-  .page-container { padding: var(--space-4) var(--space-3); }
+  .page-container { padding: var(--space-4) var(--space-3); overflow-x: hidden; }
+  .desktop-only-btn { display: none !important; }
   .page-title { font-size: var(--text-xl); }
   .page-header {
     flex-direction: column;
@@ -493,7 +494,7 @@
 
   /* ===== Filters → stack vertically ===== */
   .flex[style*="flexWrap"],
-  .flex.gap-3, .flex.gap-4 {
+  .flex.gap-2, .flex.gap-3, .flex.gap-4 {
     flex-direction: column;
     gap: var(--space-2);
   }

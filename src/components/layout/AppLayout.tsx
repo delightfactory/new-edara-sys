@@ -80,6 +80,11 @@ export default function AppLayout() {
               padding-top: var(--app-bar-height);
               /* Prevent BottomNav from covering content */
               padding-bottom: var(--bottom-nav-height);
+              /* ROOT FIX: prevent flex children (scrollable tabs/chips) from
+                 expanding this container beyond viewport width */
+              min-width: 0;
+              overflow-x: hidden;
+              max-width: 100vw;
             }
 
             /* Glassmorphism App Bar */
