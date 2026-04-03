@@ -5,7 +5,7 @@ import {
 } from 'lucide-react'
 import {
   getJournalEntries, getJournalEntry,
-  createManualJournalEntry, getChartOfAccounts
+  createUIManualJournalEntry, getChartOfAccounts
 } from '@/lib/services/finance'
 import { useAuthStore } from '@/stores/auth-store'
 import type { JournalEntry, JournalEntryLine, ChartOfAccount, JournalEntryLineInput } from '@/lib/types/master-data'
@@ -96,7 +96,7 @@ export default function JournalsPage() {
     if (manualLines.some(l => !l.account_code)) { toast.error('كل السطور تحتاج كود حساب'); return }
     setSaving(true)
     try {
-      await createManualJournalEntry(
+      await createUIManualJournalEntry(
         { source_type: 'manual', description: manualDesc, entry_date: manualDate },
         manualLines.filter(l => l.debit > 0 || l.credit > 0),
       )

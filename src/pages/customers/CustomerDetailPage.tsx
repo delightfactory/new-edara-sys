@@ -140,13 +140,23 @@ export default function CustomerDetailPage() {
           </div>
         </div>
         <div className="stat-card">
+          <div className="stat-card-label">الرصيد الافتتاحي</div>
+          <div className="stat-card-value" style={{ fontSize: 'var(--text-xl)', color: 'var(--text-secondary)' }}>
+            {(customer.opening_balance ?? 0).toLocaleString('ar-EG', { minimumFractionDigits: 2 })}
+          </div>
+        </div>
+        <div className="stat-card">
           <div className="stat-card-label">الرصيد الحالي</div>
           {(() => {
-            const bal = customer.current_balance || customer.opening_balance || 0
+            const bal = customer.current_balance ?? 0
+            // bal > 0 = العميل لا يزال مديناً لنا (danger)
+            // bal = 0 = مسدّد بالكامل (success)
+            // bal < 0 = رصيد دائن للعميل (info)
             return (
               <div className="stat-card-value" style={{
                 fontSize: 'var(--text-xl)',
-                color: bal > 0 ? 'var(--color-danger)' : bal < 0 ? 'var(--color-success)' : 'var(--text-primary)',
+                color: bal > 0 ? 'var(--color-danger)' : bal < 0 ? 'var(--color-primary)' : 'var(--color-success)',
+                fontWeight: 700,
               }}>
                 {bal.toLocaleString('ar-EG', { minimumFractionDigits: 2 })}
               </div>
@@ -247,7 +257,14 @@ export default function CustomerDetailPage() {
             </h3>
             <InfoItem icon={CreditCard} label="حد الائتمان" value={customer.credit_limit > 0 ? customer.credit_limit.toLocaleString('ar-EG-u-nu-latn') : '—'} />
             <InfoItem icon={Calendar} label="أيام السداد" value={customer.credit_days > 0 ? `${customer.credit_days} يوم` : '—'} />
-            <InfoItem icon={Wallet} label="الرصيد الافتتاحي" value={customer.opening_balance !== 0 ? customer.opening_balance.toLocaleString('ar-EG', { minimumFractionDigits: 2 }) : '0.00'} />
+            <InfoItem icon={Wallet} label="الرصيد الافتتاحي"
+              value={(customer.opening_balance ?? 0).toLocaleString('ar-EG', { minimumFractionDigits: 2 })} />
+            <InfoItem icon={Wallet} label="الرصيد الحالي"
+              value={
+                <span style={{ fontWeight: 700, color: (customer.current_balance ?? 0) > 0 ? 'var(--color-danger)' : (customer.current_balance ?? 0) < 0 ? 'var(--color-primary)' : 'var(--color-success)' }}>
+                  {(customer.current_balance ?? 0).toLocaleString('ar-EG', { minimumFractionDigits: 2 })}
+                </span>
+              } />
             <InfoItem icon={Tag} label="قائمة الأسعار" value={customer.price_list?.name} />
             <InfoItem icon={Users} label="المندوب" value={customer.assigned_rep?.full_name} />
           </div>
@@ -500,4 +517,3 @@ function CustomerActivitiesTab({ customerId, navigate }: { customerId: string; n
     </div>
   )
 }
-

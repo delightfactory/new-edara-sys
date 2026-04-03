@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import { Landmark, Plus, Edit, ArrowDownToLine, ArrowUpFromLine, Eye, Building2, Wallet, ArrowLeftRight } from 'lucide-react'
-import { createVault, updateVault, getVaultTransactions, addVaultDeposit, addVaultWithdrawal, addVaultOpeningBalance, transferBetweenVaults } from '@/lib/services/vaults'
+import { createVault, updateVault, getVaultTransactions, postManualVaultAdjustment, transferBetweenVaults } from '@/lib/services/vaults'
 import { useVaults, useBranches, useProfiles, useInvalidate } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
 import type { Vault, VaultInput, VaultTransaction, VaultType } from '@/lib/types/master-data'
@@ -59,6 +59,7 @@ export default function VaultsPage() {
   const [txVault, setTxVault] = useState<Vault | null>(null)
   const [txAmount, setTxAmount] = useState('')
   const [txDesc, setTxDesc] = useState('')
+  const [txReasonCode, setTxReasonCode] = useState('owner_funding')
   const [txSaving, setTxSaving] = useState(false)
 
   // Statement modal
@@ -125,18 +126,24 @@ export default function VaultsPage() {
     setTxMode(mode)
     setTxAmount('')
     setTxDesc(mode === 'opening' ? 'رصيد افتتاحي' : '')
+    setTxReasonCode(mode === 'deposit' ? 'owner_funding' : mode === 'withdrawal' ? 'owner_withdrawal' : 'opening_balance')
   }
 
   const handleTx = async () => {
     if (!txVault || !txMode) return
     const amt = parseFloat(txAmount)
     if (!amt || amt <= 0) { toast.error('المبلغ يجب أن يكون أكبر من صفر'); return }
+    if (txMode !== 'opening' && !txReasonCode) { toast.error('سبب الحركة مطلوب'); return }
     if (txMode !== 'opening' && !txDesc.trim()) { toast.error('الوصف مطلوب'); return }
     setTxSaving(true)
     try {
-      if (txMode === 'deposit') await addVaultDeposit(txVault.id, amt, txDesc)
-      else if (txMode === 'withdrawal') await addVaultWithdrawal(txVault.id, amt, txDesc)
-      else await addVaultOpeningBalance(txVault.id, amt)
+      await postManualVaultAdjustment(
+        txVault.id,
+        txMode === 'opening' ? 'opening_balance' : txMode,
+        amt,
+        txReasonCode,
+        txDesc || 'رصيد افتتاحي',
+      )
 
       toast.success(txMode === 'deposit' ? 'تم الإيداع بنجاح' : txMode === 'withdrawal' ? 'تم السحب بنجاح' : 'تم إضافة الرصيد الافتتاحي')
       setTxMode(null)
@@ -204,6 +211,19 @@ export default function VaultsPage() {
     custody_load: 'تحميل عهدة', custody_return: 'إرجاع عهدة',
     transfer_in: 'تحويل وارد', transfer_out: 'تحويل صادر', opening_balance: 'رصيد افتتاحي',
   }
+  const txReasonOptions: Record<'deposit' | 'withdrawal', { value: string; label: string }[]> = {
+    deposit: [
+      { value: 'owner_funding', label: 'تمويل من المالك' },
+      { value: 'treasury_adjustment', label: 'تسوية خزينة' },
+      { value: 'cash_overage', label: 'زيادة نقدية' },
+    ],
+    withdrawal: [
+      { value: 'owner_withdrawal', label: 'سحب المالك' },
+      { value: 'cash_shortage', label: 'عجز نقدي' },
+      { value: 'treasury_adjustment', label: 'تسوية خزينة' },
+    ],
+  }
+  const showReasonSelect = txMode === 'deposit' || txMode === 'withdrawal'
   const txTypeBadgeVariant = (t: string): 'success' | 'danger' | 'neutral' => {
     if (['deposit', 'collection', 'custody_return', 'transfer_in', 'opening_balance'].includes(t)) return 'success'
     if (['withdrawal', 'expense', 'custody_load', 'transfer_out'].includes(t)) return 'danger'
@@ -453,7 +473,15 @@ export default function VaultsPage() {
             <label className="form-label required">المبلغ</label>
             <input className="form-input" type="number" min="0.01" step="0.01" value={txAmount} onChange={e => setTxAmount(e.target.value)} placeholder="0.00" autoFocus />
           </div>
-          {txMode !== 'opening' && (
+          {showReasonSelect && (
+            <div className="form-group">
+              <label className="form-label required">سبب الحركة</label>
+              <select className="form-select" value={txReasonCode} onChange={e => setTxReasonCode(e.target.value)}>
+                {txReasonOptions[txMode as 'deposit' | 'withdrawal'].map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              </select>
+            </div>
+          )}
+          {showReasonSelect && (
             <div className="form-group">
               <label className="form-label required">الوصف</label>
               <input className="form-input" value={txDesc} onChange={e => setTxDesc(e.target.value)} placeholder="مثال: إيداع نقدي" />

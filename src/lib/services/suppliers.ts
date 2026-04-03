@@ -3,6 +3,40 @@ import type {
   Supplier, SupplierInput, SupplierContact, SupplierPaymentReminder
 } from '@/lib/types/master-data'
 
+function buildSupplierPatch(input: Partial<SupplierInput>) {
+  const patch: Record<string, unknown> = {}
+
+  const setText = (key: string, value: string | null | undefined, nullable = true) => {
+    if (value === undefined) return
+    patch[key] = value === '' ? (nullable ? null : '') : value
+  }
+
+  const setNumber = (key: string, value: number | null | undefined) => {
+    if (value === undefined) return
+    patch[key] = value
+  }
+
+  const setBoolean = (key: string, value: boolean | undefined) => {
+    if (value === undefined) return
+    patch[key] = value
+  }
+
+  setText('name', input.name, false)
+  setText('type', input.type)
+  setText('governorate_id', input.governorate_id)
+  setText('city_id', input.city_id)
+  setText('phone', input.phone)
+  setText('email', input.email)
+  setText('tax_number', input.tax_number)
+  setText('payment_terms', input.payment_terms)
+  setNumber('credit_limit', input.credit_limit)
+  setNumber('credit_days', input.credit_days)
+  setText('bank_account', input.bank_account)
+  setBoolean('is_active', input.is_active)
+
+  return patch
+}
+
 // ============================================================
 // Suppliers — الموردين
 // ============================================================
@@ -71,6 +105,9 @@ export async function getSupplier(id: string) {
  * إنشاء مورد — الكود يتولد تلقائياً بالـ Trigger (SUP-00001)
  */
 export async function createSupplier(input: SupplierInput) {
+  // NOTE: suppliers table has NO created_by column (confirmed schema).
+  // Actor resolution is handled by sync_supplier_opening_balance trigger
+  // via auth.uid() fallback. Do NOT add created_by here.
   const { data, error } = await supabase
     .from('suppliers')
     .insert(input)
@@ -84,13 +121,26 @@ export async function createSupplier(input: SupplierInput) {
  * تحديث مورد
  */
 export async function updateSupplier(id: string, input: Partial<SupplierInput>) {
-  const { data, error } = await supabase
-    .from('suppliers')
-    .update(input)
-    .eq('id', id)
-    .select()
-    .single()
+  const userId = (await supabase.auth.getUser()).data.user?.id
+  const { opening_balance, ...nonFinancialFields } = input
+  const { error } = await supabase.rpc('update_supplier_with_opening_balance', {
+    p_supplier_id: id,
+    p_non_financial_patch: buildSupplierPatch(nonFinancialFields),
+    p_new_opening_balance: opening_balance ?? null,
+    p_reason: null,
+    p_user_id: userId,
+  })
   if (error) throw error
+  const { data, error: fetchError } = await supabase
+    .from('suppliers')
+    .select(`
+      *,
+      governorate:governorates(id, name),
+      city:cities(id, name)
+    `)
+    .eq('id', id)
+    .single()
+  if (fetchError) throw fetchError
   return data as Supplier
 }
 

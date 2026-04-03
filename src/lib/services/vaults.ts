@@ -139,13 +139,28 @@ export async function addVaultDeposit(
   refType?: string,
   refId?: string,
 ) {
+  void refType
+  void refId
+  return await postManualVaultAdjustment(vaultId, 'deposit', amount, 'owner_funding', description)
+}
+
+/**
+ * إيداع يدوي في الخزنة
+ * يستدعي post_manual_vault_adjustment RPC
+ */
+export async function postManualVaultAdjustment(
+  vaultId: string,
+  direction: 'deposit' | 'withdrawal' | 'opening_balance',
+  amount: number,
+  reasonCode: string,
+  description: string,
+) {
   const userId = (await supabase.auth.getUser()).data.user?.id
-  const { data, error } = await supabase.rpc('add_vault_transaction', {
+  const { data, error } = await supabase.rpc('post_manual_vault_adjustment', {
     p_vault_id: vaultId,
-    p_type: 'deposit',
+    p_direction: direction,
     p_amount: amount,
-    p_ref_type: refType || null,
-    p_ref_id: refId || null,
+    p_reason_code: reasonCode,
     p_description: description,
     p_user_id: userId,
   })
@@ -164,18 +179,9 @@ export async function addVaultWithdrawal(
   refType?: string,
   refId?: string,
 ) {
-  const userId = (await supabase.auth.getUser()).data.user?.id
-  const { data, error } = await supabase.rpc('add_vault_transaction', {
-    p_vault_id: vaultId,
-    p_type: 'withdrawal',
-    p_amount: amount,
-    p_ref_type: refType || null,
-    p_ref_id: refId || null,
-    p_description: description,
-    p_user_id: userId,
-  })
-  if (error) throw error
-  return data as string
+  void refType
+  void refId
+  return await postManualVaultAdjustment(vaultId, 'withdrawal', amount, 'owner_withdrawal', description)
 }
 
 /**
@@ -185,18 +191,7 @@ export async function addVaultOpeningBalance(
   vaultId: string,
   amount: number,
 ) {
-  const userId = (await supabase.auth.getUser()).data.user?.id
-  const { data, error } = await supabase.rpc('add_vault_transaction', {
-    p_vault_id: vaultId,
-    p_type: 'opening_balance',
-    p_amount: amount,
-    p_ref_type: null,
-    p_ref_id: null,
-    p_description: 'رصيد افتتاحي',
-    p_user_id: userId,
-  })
-  if (error) throw error
-  return data as string
+  return await postManualVaultAdjustment(vaultId, 'opening_balance', amount, 'opening_balance', 'رصيد افتتاحي')
 }
 
 /**

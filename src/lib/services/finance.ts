@@ -290,6 +290,40 @@ export async function createManualJournalEntry(
   return await getJournalEntry(data as string)
 }
 
+/**
+ * إنشاء قيد يدوي من شاشة اليومية فقط
+ * يمنع القيد المباشر على حسابات السيطرة الخاصة بالعملاء والموردين
+ */
+export async function createUIManualJournalEntry(
+  entry: JournalEntryInput,
+  lines: JournalEntryLineInput[]
+) {
+  const blockedAccounts = new Set(['1200', '2100'])
+  if (lines.some(l => blockedAccounts.has(l.account_code.trim()))) {
+    throw new Error('لا يمكن القيد المباشر على حسابات السيطرة للعملاء والموردين من شاشة القيود اليدوية')
+  }
+
+  const userId = (await supabase.auth.getUser()).data.user?.id
+  const linesJson = lines.map(l => ({
+    account_code: l.account_code,
+    debit: l.debit,
+    credit: l.credit,
+    description: l.description || null,
+  }))
+
+  const { data, error } = await supabase.rpc('create_ui_manual_journal_entry', {
+    p_description: entry.description,
+    p_entry_date: entry.entry_date || new Date().toISOString().split('T')[0],
+    p_source_type: entry.source_type || 'manual',
+    p_source_id: entry.source_id || null,
+    p_lines: linesJson,
+    p_user_id: userId,
+  })
+  if (error) throw error
+
+  return await getJournalEntry(data as string)
+}
+
 // ============================================================
 // Approval Rules — قواعد الموافقات
 // ============================================================

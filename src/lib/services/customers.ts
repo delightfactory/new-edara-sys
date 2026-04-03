@@ -3,6 +3,45 @@ import type {
   Customer, CustomerInput, CustomerBranch, CustomerContact, CustomerCreditHistory
 } from '@/lib/types/master-data'
 
+function buildCustomerPatch(input: Partial<CustomerInput>) {
+  const patch: Record<string, unknown> = {}
+
+  const setText = (key: string, value: string | null | undefined, nullable = true) => {
+    if (value === undefined) return
+    patch[key] = value === '' ? (nullable ? null : '') : value
+  }
+
+  const setNumber = (key: string, value: number | null | undefined) => {
+    if (value === undefined) return
+    patch[key] = value
+  }
+
+  const setBoolean = (key: string, value: boolean | undefined) => {
+    if (value === undefined) return
+    patch[key] = value
+  }
+
+  setText('name', input.name, false)
+  setText('type', input.type, false)
+  setText('governorate_id', input.governorate_id)
+  setText('city_id', input.city_id)
+  setText('area_id', input.area_id)
+  setText('address', input.address)
+  setText('phone', input.phone)
+  setText('mobile', input.mobile)
+  setText('email', input.email)
+  setText('tax_number', input.tax_number)
+  setText('payment_terms', input.payment_terms, false)
+  setNumber('credit_limit', input.credit_limit)
+  setNumber('credit_days', input.credit_days)
+  setText('price_list_id', input.price_list_id)
+  setText('assigned_rep_id', input.assigned_rep_id)
+  setBoolean('is_active', input.is_active)
+  setText('notes', input.notes)
+
+  return patch
+}
+
 // ============================================================
 // Customers — العملاء
 // ============================================================
@@ -106,14 +145,17 @@ export async function createCustomer(input: CustomerInput) {
  * تحديث عميل
  */
 export async function updateCustomer(id: string, input: Partial<CustomerInput>) {
-  const { data, error } = await supabase
-    .from('customers')
-    .update(input)
-    .eq('id', id)
-    .select()
-    .single()
+  const userId = (await supabase.auth.getUser()).data.user?.id
+  const { opening_balance, ...nonFinancialFields } = input
+  const { error } = await supabase.rpc('update_customer_with_opening_balance', {
+    p_customer_id: id,
+    p_non_financial_patch: buildCustomerPatch(nonFinancialFields),
+    p_new_opening_balance: opening_balance ?? null,
+    p_reason: null,
+    p_user_id: userId,
+  })
   if (error) throw error
-  return data as Customer
+  return await getCustomer(id)
 }
 
 /**

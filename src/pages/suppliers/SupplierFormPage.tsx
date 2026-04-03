@@ -44,7 +44,7 @@ export default function SupplierFormPage() {
         try {
           const s = await getSupplier(id)
           setSupplierCode(s.code || '')
-          setSupplierBalance(s.current_balance || 0)
+          setSupplierBalance(s.current_balance ?? 0)
           setForm({
             name: s.name, type: s.type || '', governorate_id: s.governorate_id,
             city_id: s.city_id, phone: s.phone || '', email: s.email || '',
@@ -83,7 +83,11 @@ export default function SupplierFormPage() {
     if (!form.name.trim()) { toast.error('يرجى إدخال اسم المورد'); return }
     setSaving(true)
     try {
-      if (isEdit) { await updateSupplier(id!, form); toast.success('تم تحديث المورد') }
+      if (isEdit) {
+        const updated = await updateSupplier(id!, form)
+        setSupplierBalance(updated.current_balance ?? 0)
+        toast.success('تم تحديث المورد')
+      }
       else { await createSupplier(form); toast.success('تم إنشاء المورد'); navigate('/suppliers') }
     } catch (err: any) { toast.error(err?.message || 'فشلت العملية') }
     finally { setSaving(false) }

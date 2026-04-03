@@ -197,10 +197,9 @@ export default function CustomerFormPage() {
     setSaving(true)
     try {
       if (isEdit) {
-        await updateCustomer(id!, form)
+        const updated = await updateCustomer(id!, form)
+        setCustomerData(updated)
         toast.success('تم تحديث العميل')
-        const c = await getCustomer(id!)
-        setCustomerData(c)
       } else {
         const created = await createCustomer(form)
 

@@ -71,7 +71,7 @@ export default function SupplierDetailPage() {
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 2 }}>{label}</div>
-        <div style={{ fontSize: 'var(--text-sm)', fontWeight: 500, color: value ? 'var(--text-primary)' : 'var(--text-muted)' }} dir={dir}>{value || '—'}</div>
+        <div style={{ fontSize: 'var(--text-sm)', fontWeight: 500, color: value != null && value !== '' ? 'var(--text-primary)' : 'var(--text-muted)' }} dir={dir}>{value ?? '—'}</div>
       </div>
     </div>
   )
@@ -132,13 +132,23 @@ export default function SupplierDetailPage() {
           </div>
         </div>
         <div className="stat-card">
+          <div className="stat-card-label">الرصيد الافتتاحي</div>
+          <div className="stat-card-value" style={{ fontSize: 'var(--text-xl)', color: 'var(--text-secondary)' }}>
+            {(supplier.opening_balance ?? 0).toLocaleString('ar-EG', { minimumFractionDigits: 2 })}
+          </div>
+        </div>
+        <div className="stat-card">
           <div className="stat-card-label">الرصيد الحالي</div>
           {(() => {
-            const bal = supplier.current_balance || supplier.opening_balance || 0
+            const bal = supplier.current_balance ?? 0
+            // المورد: بال موجب = نحن مدينون له (تحذير)
+            // بال = 0 = لا ديون (نجاح)
+            // بال سالب = المورد مدين لنا (نادر)
             return (
               <div className="stat-card-value" style={{
                 fontSize: 'var(--text-xl)',
-                color: bal > 0 ? 'var(--color-success)' : bal < 0 ? 'var(--color-danger)' : 'var(--text-primary)',
+                color: bal > 0 ? 'var(--color-warning)' : bal < 0 ? 'var(--color-primary)' : 'var(--color-success)',
+                fontWeight: 700,
               }}>
                 {bal.toLocaleString('ar-EG', { minimumFractionDigits: 2 })}
               </div>
@@ -199,7 +209,14 @@ export default function SupplierDetailPage() {
             </h3>
             <InfoItem icon={CreditCard} label="حد الائتمان" value={supplier.credit_limit > 0 ? supplier.credit_limit.toLocaleString('ar-EG-u-nu-latn') : '—'} />
             <InfoItem icon={Calendar} label="أيام السداد" value={supplier.credit_days > 0 ? `${supplier.credit_days} يوم` : '—'} />
-            <InfoItem icon={Wallet} label="الرصيد الافتتاحي" value={supplier.opening_balance !== 0 ? supplier.opening_balance.toLocaleString('ar-EG', { minimumFractionDigits: 2 }) : '0.00'} />
+            <InfoItem icon={Wallet} label="الرصيد الافتتاحي"
+              value={(supplier.opening_balance ?? 0).toLocaleString('ar-EG', { minimumFractionDigits: 2 })} />
+            <InfoItem icon={Wallet} label="الرصيد الحالي"
+              value={
+                <span style={{ fontWeight: 700, color: (supplier.current_balance ?? 0) > 0 ? 'var(--color-warning)' : (supplier.current_balance ?? 0) < 0 ? 'var(--color-primary)' : 'var(--color-success)' }}>
+                  {(supplier.current_balance ?? 0).toLocaleString('ar-EG', { minimumFractionDigits: 2 })}
+                </span>
+              } />
             <InfoItem icon={CreditCard} label="الحساب البنكي" value={supplier.bank_account} dir="ltr" />
           </div>
         </div>
