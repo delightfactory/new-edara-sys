@@ -1,17 +1,25 @@
-// @ts-nocheck — This file runs in Deno runtime, not Node.js
+// @ts-nocheck — Deno runtime only. Node.js tsc does not include Deno globals.
+// To get full type-checking on this file: run `deno check index.ts` locally
+// with a deno.json that maps the esm.sh imports.
 // supabase/functions/dispatch-notification/index.ts
 // ─────────────────────────────────────────────────────────────
 // Orchestrates notification delivery: creates in-app DB records
 // and triggers push delivery for each target user.
-// Caller must be an authenticated session (any logged-in user).
-// Service-to-service calls (e.g. from DB triggers) use service_role key.
+//
+// Auth model:
+//   Internal callers (DB triggers, cron jobs):
+//     Preferred: X-Internal-Secret: <INTERNAL_DISPATCH_SECRET>
+//     Backwards-compatible fallback: Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>
+//   Browser callers (authenticated users):
+//     Must include  Authorization: Bearer <user-session-jwt>
+//     and the caller's role must have the  notifications.dispatch  permission.
 // ─────────────────────────────────────────────────────────────
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-internal-secret',
 }
 
 // ── Template interpolation ────────────────────────────────────
@@ -50,42 +58,47 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    // 1. Auth check
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      return Response.json({ error: 'غير مصرح' }, { status: 401, headers: corsHeaders })
-    }
-
     const supabaseUrl    = Deno.env.get('SUPABASE_URL')!
     const anonKey        = Deno.env.get('SUPABASE_ANON_KEY')!
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey)
 
-    // ── Detect internal (service_role) vs external (user session) calls ──
-    // Service role JWTs always carry {"role":"service_role"} in their payload.
-    // Reading the JWT role is more reliable than string-comparing the raw key,
-    // which can fail if the env var contains trailing whitespace or newlines.
-    function getJWTRole(token: string): string | null {
-      try {
-        const base64 = token.split('.')[1]?.replace(/-/g, '+').replace(/_/g, '/')
-        if (!base64) return null
-        const payload = JSON.parse(atob(base64))
-        return payload.role ?? null
-      } catch { return null }
-    }
-
-    const bearerToken    = authHeader.replace(/^Bearer\s+/i, '').trim()
-    const isInternalCall = getJWTRole(bearerToken) === 'service_role'
+    // ── Detect internal vs browser calls BEFORE requiring Authorization ──
+    // Internal callers (DB triggers, cron jobs) pass X-Internal-Secret only —
+    // they must NOT need to provide a user session token.
+    // Never trust JWT payload claims without signature verification —
+    // the previous getJWTRole() approach allowed forged service_role tokens.
+    const authHeader      = req.headers.get('Authorization')
+    const bearerToken     = authHeader?.replace(/^Bearer\s+/i, '').trim() ?? null
+    const internalSecret  = Deno.env.get('INTERNAL_DISPATCH_SECRET')
+    const providedSecret  = req.headers.get('x-internal-secret')
+    const isSecretInternalCall =
+      !!internalSecret && !!providedSecret && providedSecret === internalSecret
+    const isServiceKeyInternalCall =
+      !!serviceRoleKey && !!bearerToken && bearerToken === serviceRoleKey
+    const isInternalCall = isSecretInternalCall || isServiceKeyInternalCall
 
     if (!isInternalCall) {
-      // External (browser) call — validate as authenticated user session
+      // External (browser) call — require Authorization + validate session + check permission
+      if (!authHeader) {
+        return Response.json({ error: 'غير مصرح' }, { status: 401, headers: corsHeaders })
+      }
+
       const callerClient = createClient(supabaseUrl, anonKey, {
         global: { headers: { Authorization: authHeader } },
       })
       const { data: { user: caller }, error: authErr } = await callerClient.auth.getUser()
       if (authErr || !caller) {
         return Response.json({ error: 'جلسة غير صالحة' }, { status: 401, headers: corsHeaders })
+      }
+
+      const { data: hasPermission } = await adminClient.rpc('check_permission', {
+        p_user_id:    caller.id,
+        p_permission: 'notifications.dispatch',
+      })
+      if (!hasPermission) {
+        return Response.json({ error: 'لا تملك صلاحية إرسال الإشعارات' }, { status: 403, headers: corsHeaders })
       }
     }
 

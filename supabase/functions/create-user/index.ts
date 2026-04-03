@@ -129,7 +129,13 @@ Deno.serve(async (req: Request) => {
         )
 
       if (rolesErr) {
-        console.error('Role assignment error:', rolesErr)
+        // Roll back: delete the auth user so we don't leave a role-less orphan
+        console.error('Role assignment error — rolling back user creation:', rolesErr)
+        await adminClient.auth.admin.deleteUser(newUserId)
+        return Response.json(
+          { error: 'فشل تعيين الأدوار — لم يُنشأ المستخدم. يرجى المحاولة مرة أخرى.' },
+          { status: 500, headers: corsHeaders }
+        )
       }
     }
 

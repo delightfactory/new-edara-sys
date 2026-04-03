@@ -1,6 +1,30 @@
 import { supabase } from '@/lib/supabase/client'
 import type { Profile, UserWithRoles, Role, UserRole, UserPermissionOverride } from '@/lib/types/auth'
 
+// ── Roles cache ───────────────────────────────────────────────
+// `roles` is reference data that changes rarely; fetching it on every
+// getUsers/getUser call is wasteful. Cache with a 5-minute TTL.
+const ROLES_CACHE_TTL = 5 * 60 * 1000
+let rolesCache: Map<string, Role> | null = null
+let rolesCacheTime = 0
+
+async function getRolesMap(): Promise<Map<string, Role>> {
+  if (rolesCache && Date.now() - rolesCacheTime < ROLES_CACHE_TTL) {
+    return rolesCache
+  }
+  const { data, error } = await supabase.from('roles').select('*')
+  if (error) throw error
+  rolesCache = new Map((data || []).map(r => [r.id, r as Role]))
+  rolesCacheTime = Date.now()
+  return rolesCache
+}
+
+/** Invalidate the cache when a role is created/updated/deleted */
+export function invalidateRolesCache() {
+  rolesCache = null
+  rolesCacheTime = 0
+}
+
 /**
  * جلب قائمة المستخدمين مع أدوارهم
  */
@@ -20,7 +44,6 @@ export async function getUsers(params?: {
     .from('profiles')
     .select('*', { count: 'estimated' })
     .order('created_at', { ascending: false })
-    .range(from, to)
 
   if (params?.search) {
     query = query.or(`full_name.ilike.%${params.search}%,email.ilike.%${params.search}%`)
@@ -29,40 +52,58 @@ export async function getUsers(params?: {
     query = query.eq('status', params.status)
   }
 
-  const { data: profiles, error, count } = await query
+  // role filter: resolve to user_ids at DB level before pagination so count is accurate
+  if (params?.role) {
+    const { data: roleRow, error: roleLookupError } = await supabase
+      .from('roles')
+      .select('id')
+      .eq('name', params.role)
+      .maybeSingle()
+    if (roleLookupError) throw roleLookupError
+
+    if (!roleRow) {
+      return { data: [], count: 0, page, pageSize, totalPages: 0 }
+    }
+
+    const { data: urRows, error: userRolesLookupError } = await supabase
+      .from('user_roles')
+      .select('user_id')
+      .eq('role_id', roleRow.id)
+      .eq('is_active', true)
+    if (userRolesLookupError) throw userRolesLookupError
+
+    const roleUserIds = (urRows || []).map(ur => ur.user_id)
+    if (roleUserIds.length === 0) {
+      return { data: [], count: 0, page, pageSize, totalPages: 0 }
+    }
+    query = query.in('id', roleUserIds)
+  }
+
+  const { data: profiles, error, count } = await query.range(from, to)
   if (error) throw error
 
   // جلب أدوار كل المستخدمين المحملين
-  const userIds = (profiles || []).map(p => p.id)
+  const pageUserIds = (profiles || []).map(p => p.id)
   let userRolesData: any[] = []
-  if (userIds.length > 0) {
+  if (pageUserIds.length > 0) {
     const { data: ur } = await supabase
       .from('user_roles')
       .select('id, user_id, role_id, branch_id, is_active, assigned_at')
-      .in('user_id', userIds)
+      .in('user_id', pageUserIds)
       .eq('is_active', true)
 
     userRolesData = ur || []
   }
 
-  // جلب كل الأدوار
-  const { data: allRoles } = await supabase.from('roles').select('*')
-  const rolesMap = new Map((allRoles || []).map(r => [r.id, r]))
+  const rolesMap = await getRolesMap()
 
   // دمج البيانات
-  let users = (profiles || []).map(p => ({
+  const users = (profiles || []).map(p => ({
     ...p,
     user_roles: userRolesData
       .filter(ur => ur.user_id === p.id)
       .map(ur => ({ ...ur, role: rolesMap.get(ur.role_id) || null })),
   })) as unknown as UserWithRoles[]
-
-  // فلترة بالدور على العميل
-  if (params?.role) {
-    users = users.filter(u =>
-      u.user_roles?.some(ur => ur.role?.name === params.role)
-    )
-  }
 
   return {
     data: users,
@@ -91,8 +132,7 @@ export async function getUser(userId: string) {
     .eq('user_id', userId)
     .eq('is_active', true)
 
-  const { data: allRoles } = await supabase.from('roles').select('*')
-  const rolesMap = new Map((allRoles || []).map(r => [r.id, r]))
+  const rolesMap = await getRolesMap()
 
   return {
     ...profile,
@@ -192,6 +232,7 @@ export async function createRole(role: { name: string; name_ar: string; descript
     if (permErr) throw permErr
   }
 
+  invalidateRolesCache()
   return data as Role
 }
 
@@ -209,6 +250,7 @@ export async function updateRole(roleId: string, role: { name_ar?: string; descr
     p_user_id: currentUserId,
   })
   if (error) throw error
+  invalidateRolesCache()
 }
 
 /**
@@ -220,6 +262,7 @@ export async function deleteRole(roleId: string) {
     .delete()
     .eq('id', roleId)
   if (error) throw error
+  invalidateRolesCache()
 }
 
 /**

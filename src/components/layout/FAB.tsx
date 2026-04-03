@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import {
   Plus, ShoppingCart, UserPlus, Package, ArrowLeftRight,
   Receipt, RotateCcw, Activity, MapPin, Phone,
+  ClipboardList, Users, TrendingDown,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import { useIsAnyModalOpen } from '@/hooks/useModalStack'
@@ -16,17 +17,21 @@ interface FabConfig {
 }
 
 const FAB_MAP: FabConfig[] = [
-  { path: '/sales/orders',              label: '+ طلب بيع',     icon: ShoppingCart,   navigateTo: '/sales/orders/new',             permission: 'sales.orders.create'         },
-  { path: '/customers',                 label: '+ عميل',        icon: UserPlus,       navigateTo: '/customers/new',                permission: 'customers.create'            },
-  { path: '/purchases/invoices',        label: '+ فاتورة',      icon: Package,        navigateTo: '/purchases/invoices/new',       permission: 'procurement.invoices.create' },
-  { path: '/purchases/returns',         label: '+ مرتجع',       icon: RotateCcw,      navigateTo: '/purchases/returns/new',        permission: 'procurement.returns.create'  },
-  { path: '/inventory/transfers',       label: '+ تحويل',       icon: ArrowLeftRight, navigateTo: '/inventory/transfers/new',      permission: 'inventory.transfers.create'  },
-  { path: '/finance/expenses',          label: '+ مصروف',       icon: Receipt,        navigateTo: '/finance/expenses/new',         permission: 'finance.expenses.create'     },
+  { path: '/sales/orders',              label: '+ طلب بيع',     icon: ShoppingCart,   navigateTo: '/sales/orders/new',             permission: 'sales.orders.create'            },
+  { path: '/sales/returns',             label: '+ مرتجع بيع',   icon: RotateCcw,      navigateTo: '/sales/returns/new',            permission: 'sales.returns.create'           },
+  { path: '/customers',                 label: '+ عميل',        icon: UserPlus,       navigateTo: '/customers/new',                permission: 'customers.create'               },
+  { path: '/suppliers',                 label: '+ مورد',        icon: Users,          navigateTo: '/suppliers/new',                permission: 'suppliers.create'               },
+  { path: '/products',                  label: '+ منتج',        icon: Package,        navigateTo: '/products/new',                 permission: 'products.create'                },
+  { path: '/purchases/invoices',        label: '+ فاتورة',      icon: Package,        navigateTo: '/purchases/invoices/new',       permission: 'procurement.invoices.create'    },
+  { path: '/purchases/returns',         label: '+ مرتجع',       icon: RotateCcw,      navigateTo: '/purchases/returns/new',        permission: 'procurement.returns.create'     },
+  { path: '/inventory/transfers',       label: '+ تحويل',       icon: ArrowLeftRight, navigateTo: '/inventory/transfers/new',      permission: 'inventory.transfers.create'     },
+  { path: '/inventory/adjustments',     label: '+ تسوية',       icon: ClipboardList,  navigateTo: '/inventory/adjustments/new',    permission: 'inventory.adjustments.create'   },
+  { path: '/finance/expenses',          label: '+ مصروف',       icon: Receipt,        navigateTo: '/finance/expenses/new',         permission: 'finance.expenses.create'        },
   // ── Activities Module ──
-  { path: '/activities',                label: '+ نشاط',        icon: Activity,       navigateTo: '/activities/new',               permission: 'activities.create'           },
-  { path: '/activities/list',           label: '+ نشاط',        icon: Activity,       navigateTo: '/activities/new',               permission: 'activities.create'           },
-  { path: '/activities/visit-plans',    label: '+ خطة زيارة',   icon: MapPin,         navigateTo: '/activities/visit-plans/new',   permission: 'visit_plans.create'          },
-  { path: '/activities/call-plans',     label: '+ خطة مكالمات', icon: Phone,          navigateTo: '/activities/call-plans/new',    permission: 'call_plans.create'           },
+  { path: '/activities',                label: '+ نشاط',        icon: Activity,       navigateTo: '/activities/new',               permission: 'activities.create'              },
+  { path: '/activities/list',           label: '+ نشاط',        icon: Activity,       navigateTo: '/activities/new',               permission: 'activities.create'              },
+  { path: '/activities/visit-plans',    label: '+ خطة زيارة',   icon: MapPin,         navigateTo: '/activities/visit-plans/new',   permission: 'visit_plans.create'             },
+  { path: '/activities/call-plans',     label: '+ خطة مكالمات', icon: Phone,          navigateTo: '/activities/call-plans/new',    permission: 'call_plans.create'              },
   // Vaults, Payments, Journals use inline modals — they have their own smart local FABs
 ]
 

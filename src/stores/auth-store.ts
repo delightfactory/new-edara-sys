@@ -6,11 +6,15 @@ interface AuthState {
   permissions: string[]
   isLoading: boolean
   isInitialized: boolean
+  hasSession: boolean
+  profileLoadError: string | null
 
   setProfile: (profile: MyProfile | null) => void
   setPermissions: (permissions: string[]) => void
   setLoading: (v: boolean) => void
   setInitialized: (v: boolean) => void
+  setHasSession: (v: boolean) => void
+  setProfileLoadError: (v: string | null) => void
 
   /** فحص صلاحية واحدة — يدعم wildcard '*' */
   can: (permission: string) => boolean
@@ -31,11 +35,15 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   permissions: [],
   isLoading: true,
   isInitialized: false,
+  hasSession: false,
+  profileLoadError: null,
 
   setProfile:     (profile)       => set({ profile }),
   setPermissions: (permissions)   => set({ permissions }),
   setLoading:     (isLoading)     => set({ isLoading }),
   setInitialized: (isInitialized) => set({ isInitialized }),
+  setHasSession:  (hasSession)    => set({ hasSession }),
+  setProfileLoadError: (profileLoadError) => set({ profileLoadError }),
 
   can: (permission) => {
     const { permissions } = get()
@@ -51,5 +59,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     permissions: [],
     isLoading: false,
     isInitialized: false,
+    hasSession: false,
+    profileLoadError: null,
   }),
 }))

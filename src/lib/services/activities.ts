@@ -178,22 +178,29 @@ export async function getActivities(params?: {
   if (params?.dateTo)          q = q.lte('activity_date', params.dateTo)
   if (params?.outcomeType)     q = q.eq('outcome_type', params.outcomeType)
   if (params?.customerId)      q = q.eq('customer_id', params.customerId)
-  // ✅ typeCategory: PostgREST لا يدعم فلترة على joined table مباشرة بشكل آمن
-  // نُحضر البيانات ونُفلتر client-side إذا لزم (كمية صغيرة مع date filter)
+
+  // typeCategory: resolve to type_ids first so the filter hits the main table's
+  // type_id column directly — guarantees accurate pagination counts regardless
+  // of the PostgREST version's embedded-resource filter semantics.
+  if (params?.typeCategory) {
+    const { data: typeRows, error: typeLookupError } = await supabase
+      .from('activity_types')
+      .select('id')
+      .eq('category', params.typeCategory)
+    if (typeLookupError) throw typeLookupError
+
+    const typeIds = (typeRows ?? []).map(t => t.id)
+    if (typeIds.length === 0) {
+      return { data: [], count: 0, page, pageSize, totalPages: 0 }
+    }
+    q = q.in('type_id', typeIds)
+  }
 
   const { data, error, count } = await q
   if (error) throw error
 
-  let rows = (data ?? []) as Activity[]
-
-  // فلترة typeCategory client-side بعد الجلب
-  if (params?.typeCategory) {
-    const cat = params.typeCategory
-    rows = rows.filter(a => (a as any).type?.category === cat)
-  }
-
   return {
-    data: rows,
+    data: (data ?? []) as Activity[],
     count: count ?? 0,
     page,
     pageSize,
@@ -326,17 +333,28 @@ export async function getVisitPlans(params?: {
   if (params?.dateFrom)   q = q.gte('plan_date', params.dateFrom)
   if (params?.dateTo)     q = q.lte('plan_date', params.dateTo)
   if (params?.status)     q = q.eq('status', params.status)
-  // ✅ branchId: فلترة عبر employee.branch_id يتطلب join — نُفلتر بعد الجلب
+
+  // branchId: resolve to employee_ids first so the filter hits the main table's
+  // employee_id column directly — guarantees accurate pagination counts.
+  if (params?.branchId) {
+    const { data: empRows, error: employeeLookupError } = await supabase
+      .from('hr_employees')
+      .select('id')
+      .eq('branch_id', params.branchId)
+    if (employeeLookupError) throw employeeLookupError
+
+    const empIds = (empRows ?? []).map(e => e.id)
+    if (empIds.length === 0) {
+      return { data: [], count: 0, page, pageSize, totalPages: 0 }
+    }
+    q = q.in('employee_id', empIds)
+  }
+
   const { data, error, count } = await q
   if (error) throw error
 
-  let rows = (data ?? []) as VisitPlan[]
-  if (params?.branchId) {
-    rows = rows.filter(p => (p as any).employee?.branch_id === params.branchId)
-  }
-
   return {
-    data: rows,
+    data: (data ?? []) as VisitPlan[],
     count: count ?? 0,
     page,
     pageSize,
@@ -495,16 +513,27 @@ export async function getCallPlans(params?: {
   if (params?.dateTo)     q = q.lte('plan_date', params.dateTo)
   if (params?.status)     q = q.eq('status', params.status)
 
+  // branchId: resolve to employee_ids first so the filter hits the main table's
+  // employee_id column directly — guarantees accurate pagination counts.
+  if (params?.branchId) {
+    const { data: empRows, error: employeeLookupError } = await supabase
+      .from('hr_employees')
+      .select('id')
+      .eq('branch_id', params.branchId)
+    if (employeeLookupError) throw employeeLookupError
+
+    const empIds = (empRows ?? []).map(e => e.id)
+    if (empIds.length === 0) {
+      return { data: [], count: 0, page, pageSize, totalPages: 0 }
+    }
+    q = q.in('employee_id', empIds)
+  }
+
   const { data, error, count } = await q
   if (error) throw error
 
-  let rows = (data ?? []) as CallPlan[]
-  if (params?.branchId) {
-    rows = rows.filter(p => (p as any).employee?.branch_id === params.branchId)
-  }
-
   return {
-    data: rows,
+    data: (data ?? []) as CallPlan[],
     count: count ?? 0,
     page,
     pageSize,

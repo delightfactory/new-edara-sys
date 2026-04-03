@@ -10,7 +10,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import { PERMISSIONS } from '@/lib/permissions/constants'
 import { toast } from 'sonner'
 import { useState } from 'react'
-import { Phone, CheckCircle, XCircle, Plus, Archive, Copy, Save } from 'lucide-react'
+import { Phone, CheckCircle, XCircle, Plus, Archive, Copy, Save, MoreVertical } from 'lucide-react'
 import PageHeader from '@/components/shared/PageHeader'
 import Button from '@/components/ui/Button'
 import PlanItemCard from '@/components/shared/PlanItemCard'
@@ -65,6 +65,9 @@ export default function CallPlanDetail() {
   // ── Modal: Clone Plan
   const [cloneOpen, setCloneOpen] = useState(false)
   const [cloneDate, setCloneDate] = useState(tomorrow())
+
+  // ── Mobile overflow menu
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false)
 
   // Data
   const { data: plan,  isLoading: planLoading  } = useCallPlan(id)
@@ -306,6 +309,45 @@ export default function CallPlanDetail() {
               >
                 حفظ كقالب
               </Button>
+            )}
+
+            {/* Mobile overflow menu — exposes desktop-only actions on small screens */}
+            {(canCreate || canSaveTmpl || (canConfirm && plan.status === 'in_progress' && pendingItems.length > 0)) && (
+              <div className="mobile-overflow-menu">
+                <button
+                  className="mobile-overflow-menu-btn"
+                  onClick={() => setMoreMenuOpen(prev => !prev)}
+                  aria-label="المزيد من الإجراءات"
+                  aria-expanded={moreMenuOpen}
+                >
+                  <MoreVertical size={18} />
+                </button>
+                {moreMenuOpen && (
+                  <>
+                    <div
+                      style={{ position: 'fixed', inset: 0, zIndex: 199 }}
+                      onClick={() => setMoreMenuOpen(false)}
+                    />
+                    <div className="mobile-overflow-dropdown" role="menu">
+                      {canConfirm && plan.status === 'in_progress' && pendingItems.length > 0 && (
+                        <button className="mobile-overflow-item" role="menuitem" onClick={() => { setMoreMenuOpen(false); setBulkCloseOpen(true) }}>
+                          <Archive size={16} /> إنهاء اليومية المتبقية
+                        </button>
+                      )}
+                      {canCreate && (
+                        <button className="mobile-overflow-item" role="menuitem" onClick={() => { setMoreMenuOpen(false); setCloneOpen(true) }}>
+                          <Copy size={16} /> استنساخ الخطة
+                        </button>
+                      )}
+                      {canSaveTmpl && items.length > 0 && (
+                        <button className="mobile-overflow-item" role="menuitem" onClick={() => { setMoreMenuOpen(false); setTmplName(plan.employee?.full_name ? `خطة مبيعات ${plan.employee.full_name}` : 'قالب جديد'); setSaveTmplOpen(true) }}>
+                          <Save size={16} /> حفظ كقالب
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
             )}
 
             {plan.status !== 'completed' && plan.status !== 'cancelled' && (

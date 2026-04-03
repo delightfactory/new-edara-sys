@@ -54,9 +54,35 @@ const TABLE_QUERY_MAP: Record<string, string[]> = {
   products:            ['products'],
   suppliers:           ['suppliers'],
   warehouses:          ['warehouses', 'my-warehouses'],
-  profiles:            ['profiles-active'],
+  profiles:            ['profiles-active', 'users'],
   product_categories:  ['product-categories'],
   brands:              ['brands'],
+  user_roles:          ['users', 'profiles-active'],
+
+  // ─── المبيعات ───
+  sales_orders:        ['sales-orders', 'sales-stats'],
+  sales_order_items:   ['sales-orders'],
+  sale_returns:        ['sales-returns'],
+
+  // ─── المشتريات ───
+  purchase_orders:     ['purchase-orders'],
+  purchase_order_items:['purchase-orders'],
+
+  // ─── الأنشطة الميدانية ───
+  visit_plans:         ['visit-plans'],
+  visit_plan_items:    ['visit-plans', 'visit-plan-items'],
+  call_plans:          ['call-plans'],
+  call_plan_items:     ['call-plans', 'call-plan-items'],
+  activities:          ['activities', 'rep-performance', 'plan-daily-summary'],
+
+  // ─── الموارد البشرية ───
+  hr_employees:        ['hr-employees', 'hr-current-employee'],
+  hr_attendance:       ['hr-attendance-days', 'hr-attendance-alerts',
+                        'hr-attendance-review-summary', 'hr-attendance-summary'],
+  hr_leave_requests:   ['hr-leave-requests', 'hr-leave-balances'],
+  hr_advances:         ['hr-advances'],
+  hr_payroll_runs:     ['hr-payroll-runs'],
+  hr_payroll_lines:    ['hr-payroll-runs', 'hr-payroll-lines'],
 }
 
 const DEBOUNCE_MS = 500 // تأخير نصف ثانية لتجميع bulk operations

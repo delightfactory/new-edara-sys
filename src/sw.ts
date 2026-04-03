@@ -1,15 +1,14 @@
 /// <reference lib="webworker" />
 import {
   cleanupOutdatedCaches,
+  createHandlerBoundToURL,
   precacheAndRoute,
 } from 'workbox-precaching'
 
 import { clientsClaim } from 'workbox-core'
 import { registerRoute, NavigationRoute } from 'workbox-routing'
 import {
-  NetworkFirst,
   CacheFirst,
-  StaleWhileRevalidate,
 } from 'workbox-strategies'
 import { ExpirationPlugin } from 'workbox-expiration'
 import { CacheableResponsePlugin } from 'workbox-cacheable-response'
@@ -46,22 +45,11 @@ clientsClaim()
 cleanupOutdatedCaches()
 precacheAndRoute(self.__WB_MANIFEST)
 
-// ── 3. Supabase REST / Auth / Storage → NetworkFirst ──
-//       Live data first, cache fallback if offline (ERP critical)
-registerRoute(
-  ({ url }) => url.hostname.includes('supabase.co'),
-  new NetworkFirst({
-    cacheName: 'supabase-api-v1',
-    networkTimeoutSeconds: 8,
-    plugins: [
-      new ExpirationPlugin({
-        maxEntries: 150,
-        maxAgeSeconds: 60 * 60, // 1 hour
-      }),
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
-    ],
-  })
-)
+// ── 3. Supabase REST / Auth / Storage → NOT cached ──
+//       All authenticated API traffic must bypass the service worker cache.
+//       Caching bearer-token responses in a shared cache risks leaking one
+//       user's data to another user on the same device (shared-cache attack).
+//       The Supabase JS client manages its own in-memory state; no SW cache needed.
 
 // ── 4. Google Fonts → CacheFirst (immutable, cache 1 year) ──
 registerRoute(
@@ -97,11 +85,9 @@ registerRoute(
 
 // ── 6. App Shell navigation → StaleWhileRevalidate ──
 //       Instant load from cache + silent background refresh
+const appShellHandler = createHandlerBoundToURL('index.html')
 registerRoute(
-  new NavigationRoute(
-    new StaleWhileRevalidate({ cacheName: 'pages-v1' }),
-    { denylist: [/^\/api\//] }
-  )
+  new NavigationRoute(appShellHandler, { denylist: [/^\/api\//] })
 )
 
 // ══════════════════════════════════════════════════════════════

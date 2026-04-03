@@ -1,5 +1,6 @@
 import { Component, type ReactNode, type ErrorInfo } from 'react'
 import { AlertTriangle } from 'lucide-react'
+import { captureError } from '@/lib/monitoring/sentry'
 
 interface Props {
   children: ReactNode
@@ -26,6 +27,7 @@ export default class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('[ErrorBoundary] Caught error:', error, errorInfo)
+    captureError(error, { componentStack: errorInfo.componentStack ?? undefined })
   }
 
   handleReset = () => {

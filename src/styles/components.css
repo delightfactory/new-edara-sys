@@ -453,6 +453,57 @@
   font-size: var(--text-xs);
 }
 
+/* ── Visibility helpers ───────────────────────────────────────── */
+.mobile-only-btn { display: none; } /* hidden on desktop, shown in mobile MQ below */
+
+/* ── Overflow action menu (mobile secondary actions) ─────────── */
+.mobile-overflow-menu {
+  position: relative;
+  display: none; /* hidden on desktop — shown inside mobile media query */
+}
+.mobile-overflow-menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+.mobile-overflow-menu-btn:hover { background: var(--bg-surface-2); }
+.mobile-overflow-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  inset-inline-end: 0;
+  min-width: 180px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  z-index: 200;
+  padding: var(--space-1) 0;
+}
+.mobile-overflow-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  text-align: start;
+  min-height: 44px;
+}
+.mobile-overflow-item:hover { background: var(--bg-surface-2); }
+.mobile-overflow-item:active { background: var(--bg-surface-3); }
+
 @media (max-width: 768px) {
   /* ===== Grid ===== */
   .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
@@ -460,6 +511,8 @@
   /* ===== Page Layout ===== */
   .page-container { padding: var(--space-4) var(--space-3); overflow-x: hidden; }
   .desktop-only-btn { display: none !important; }
+  .mobile-only-btn  { display: flex !important; }
+  .mobile-overflow-menu { display: block; }
   .page-title { font-size: var(--text-xl); }
   .page-header {
     flex-direction: column;

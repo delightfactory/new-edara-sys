@@ -127,6 +127,12 @@ export function useMarkAsReadMutation() {
         queryKey: [...notificationKeys.all, 'recent'],
       })
 
+      // Check once whether the notification is currently unread — same pattern as useArchiveMutation.
+      // Decrementing without this guard causes count drift if markAsRead is called on an already-read notification.
+      const wasUnread = previousLists.some(([, cache]) =>
+        cache?.data.some(n => n.id === id && !n.isRead)
+      )
+
       // Apply optimistic update to all list caches
       queryClient.setQueriesData<{ data: Notification[]; count: number; page: number; pageSize: number; totalPages: number }>(
         { queryKey: notificationKeys.lists() },
@@ -145,8 +151,10 @@ export function useMarkAsReadMutation() {
         old => old?.map(n => n.id === id ? { ...n, isRead: true } : n),
       )
 
-      // Decrement badge optimistically
-      useNotificationStore.getState().decrementUnread()
+      // Decrement badge only if notification was unread — prevents drift on duplicate calls
+      if (wasUnread) {
+        useNotificationStore.getState().decrementUnread()
+      }
 
       return { previousLists, previousRecentEntries }
     },
@@ -211,16 +219,19 @@ export function useArchiveMutation() {
         queryKey: [...notificationKeys.all, 'recent'],
       })
 
+      // Check once whether the notification is unread (search all list caches before mutating)
+      const existingLists = queryClient.getQueriesData<{ data: Notification[] }>({
+        queryKey: notificationKeys.lists(),
+      })
+      const wasUnread = existingLists.some(([, cache]) =>
+        cache?.data.some(n => n.id === id && !n.isRead)
+      )
+
       // Optimistically remove from all list caches
       queryClient.setQueriesData<{ data: Notification[]; count: number; page: number; pageSize: number; totalPages: number }>(
         { queryKey: notificationKeys.lists() },
         old => {
           if (!old) return old
-          const removed = old.data.find(n => n.id === id)
-          // Decrement unread count if the archived item was unread (side-effect only, not in cache)
-          if (removed && !removed.isRead) {
-            useNotificationStore.getState().decrementUnread()
-          }
           return {
             ...old,
             data: old.data.filter(n => n.id !== id),
@@ -228,6 +239,11 @@ export function useArchiveMutation() {
           }
         },
       )
+
+      // Decrement exactly once — outside setQueriesData which runs once per cache entry
+      if (wasUnread) {
+        useNotificationStore.getState().decrementUnread()
+      }
 
       // Optimistically remove from all recent caches (any limit variant)
       queryClient.setQueriesData<Notification[]>(

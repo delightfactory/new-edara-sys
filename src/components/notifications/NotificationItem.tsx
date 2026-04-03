@@ -398,12 +398,13 @@ export default function NotificationItem({
             flex-direction: row;
           }
           .ni-action-btn {
-            width: 26px;
-            height: 26px;
+            /* WCAG 2.5.8 / iOS HIG: minimum 44×44 pt touch target */
+            width: 44px;
+            height: 44px;
           }
           .ni-action-btn svg {
-            width: 12px;
-            height: 12px;
+            width: 16px;
+            height: 16px;
           }
           .ni-link-icon { opacity: 0.4; }
         }

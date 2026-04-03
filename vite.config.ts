@@ -16,10 +16,12 @@ export default defineConfig({
       registerType: 'prompt',
       injectRegister: 'auto',
 
-      // SW enabled in dev mode to support Push Notifications testing.
-      // Uses type:'module' to avoid duplicate React instance issues.
+      // Keep the SW disabled in Vite dev mode.
+      // A previously cached app shell can interfere with HMR/normal refresh
+      // and boot an old React tree against the current module graph.
+      // Production/preview PWA behavior is unaffected.
       devOptions: {
-        enabled: true,
+        enabled: false,
         type: 'module',
         navigateFallback: 'index.html',
       },

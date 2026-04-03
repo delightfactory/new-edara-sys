@@ -165,8 +165,11 @@ export default function NotificationsPage() {
         @media (max-width: 768px) {
           .npage-tabs {
             padding: 0;
-            overflow-x: visible;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
           }
+          .npage-tabs::-webkit-scrollbar { display: none; }
 
           .npage-tab {
             flex: 1;

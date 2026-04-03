@@ -32,6 +32,9 @@
 --         pg_cron pings dispatch-notification every 10 minutes
 --         to prevent cold-start timeouts
 --
+-- [RC-08] Permission matrix:
+--         Seed notifications.dispatch for administrative roles
+--
 -- NOT TOUCHED:
 --   notify_on_leave_request_change — already correct in DB
 --   notify_on_advance_change — uses hr_employees (correct)
@@ -68,6 +71,8 @@ AS $$
 DECLARE
   v_url         text;
   v_service_key text;
+  v_internal_secret text;
+  v_headers     jsonb;
   v_body        jsonb;
 BEGIN
   -- Guard: if user_ids is empty, skip (nothing to notify)
@@ -78,6 +83,7 @@ BEGIN
   -- Read Supabase connection details from internal_config table
   SELECT value INTO v_url         FROM internal_config WHERE key = 'supabase_url';
   SELECT value INTO v_service_key FROM internal_config WHERE key = 'service_role_key';
+  SELECT value INTO v_internal_secret FROM internal_config WHERE key = 'internal_dispatch_secret';
 
   -- Fallback: try GUC app.settings (backwards compatibility)
   IF v_url IS NULL OR v_url = '' THEN
@@ -85,6 +91,9 @@ BEGIN
   END IF;
   IF v_service_key IS NULL OR v_service_key = '' THEN
     v_service_key := current_setting('app.settings.service_role_key', true);
+  END IF;
+  IF v_internal_secret IS NULL OR v_internal_secret = '' THEN
+    v_internal_secret := current_setting('app.settings.internal_dispatch_secret', true);
   END IF;
 
   -- If settings are not configured, log and return silently
@@ -94,7 +103,8 @@ BEGIN
     RETURN;
   END IF;
 
-  IF v_service_key IS NULL OR v_service_key = '' THEN
+  IF (v_internal_secret IS NULL OR v_internal_secret = '')
+     AND (v_service_key IS NULL OR v_service_key = '') THEN
     RAISE WARNING 'call_dispatch_notification: service_role_key not configured — skipping notification for %', p_event_key;
     RETURN;
   END IF;
@@ -108,15 +118,19 @@ BEGIN
     'entity_id',   p_entity_id
   );
 
+  v_headers := jsonb_build_object('Content-Type', 'application/json');
+  IF v_internal_secret IS NOT NULL AND v_internal_secret <> '' THEN
+    v_headers := v_headers || jsonb_build_object('x-internal-secret', v_internal_secret);
+  ELSIF v_service_key IS NOT NULL AND v_service_key <> '' THEN
+    v_headers := v_headers || jsonb_build_object('Authorization', 'Bearer ' || v_service_key);
+  END IF;
+
   -- Fire async HTTP POST to dispatch-notification Edge Function
   -- [RC-01 FIX] body passed as jsonb directly (not ::text)
   -- [RC-01 FIX] timeout raised to 30s to absorb cold start (~5s)
   PERFORM net.http_post(
     url                  := v_url || '/functions/v1/dispatch-notification',
-    headers              := jsonb_build_object(
-      'Content-Type',  'application/json',
-      'Authorization', 'Bearer ' || v_service_key
-    ),
+    headers              := v_headers,
     body                 := v_body,
     timeout_milliseconds := 30000
   );
@@ -600,13 +614,26 @@ SELECT cron.schedule(
     SELECT net.http_post(
       url     := (SELECT value FROM internal_config WHERE key = 'supabase_url')
                  || '/functions/v1/dispatch-notification',
-      headers := jsonb_build_object(
-        'Content-Type',  'application/json',
-        'Authorization', 'Bearer ' || (SELECT value FROM internal_config WHERE key = 'service_role_key')
-      ),
-      body    := '{"event_key":"__ping__","user_ids":[]}'::jsonb,
-      timeout_milliseconds := 10000
-    );
+       headers := (
+         WITH cfg AS (
+           SELECT
+             max(case when key = 'service_role_key' then value end) as service_role_key,
+             max(case when key = 'internal_dispatch_secret' then value end) as internal_dispatch_secret
+           FROM internal_config
+           WHERE key in ('service_role_key', 'internal_dispatch_secret')
+         )
+         SELECT jsonb_build_object('Content-Type', 'application/json')
+           || CASE
+                WHEN coalesce(nullif(cfg.internal_dispatch_secret, ''), '') <> '' THEN
+                  jsonb_build_object('x-internal-secret', cfg.internal_dispatch_secret)
+                ELSE
+                  jsonb_build_object('Authorization', 'Bearer ' || cfg.service_role_key)
+              END
+         FROM cfg
+       ),
+       body    := '{"event_key":"__ping__","user_ids":[]}'::jsonb,
+       timeout_milliseconds := 10000
+     );
   $$
 );
 
@@ -621,6 +648,15 @@ REVOKE EXECUTE ON FUNCTION public.notify_on_purchase_invoice_change()   FROM aut
 
 
 -- ─────────────────────────────────────────────────────────────
+-- RC-08: Seed browser notification dispatch permission
+-- Security default: grant only to administrative roles.
+-- Operational roles can receive it later from the role editor UI.
+INSERT INTO role_permissions (role_id, permission)
+SELECT id, 'notifications.dispatch'
+FROM roles
+WHERE name IN ('super_admin', 'ceo')
+ON CONFLICT DO NOTHING;
+
 -- VERIFICATION
 -- ─────────────────────────────────────────────────────────────
 DO $$

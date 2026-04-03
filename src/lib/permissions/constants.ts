@@ -19,10 +19,14 @@ export const PERMISSIONS = {
   SETTINGS_UPDATE:     'settings.update',
   SETTINGS_AUDIT_READ: 'settings.audit.read',
 
+  // Notifications
+  NOTIFICATIONS_DISPATCH: 'notifications.dispatch',
+
   // Sales
   SALES_ORDERS_READ:        'sales.orders.read',
   SALES_ORDERS_READ_ALL:    'sales.orders.read_all',
   SALES_ORDERS_CREATE:      'sales.orders.create',
+  SALES_ORDERS_UPDATE:      'sales.orders.update',
   SALES_ORDERS_CONFIRM:     'sales.orders.confirm',
   SALES_ORDERS_DELIVER:     'sales.orders.deliver',
   SALES_ORDERS_CANCEL:      'sales.orders.cancel',
@@ -204,6 +208,13 @@ export const PERMISSION_GROUPS = [
     ]
   },
   {
+    id: 'notifications',
+    label: 'الإشعارات',
+    permissions: [
+      { key: PERMISSIONS.NOTIFICATIONS_DISPATCH, label: 'إرسال إشعارات يدوية' },
+    ]
+  },
+  {
     id: 'products',
     label: 'المنتجات',
     permissions: [
@@ -238,6 +249,7 @@ export const PERMISSION_GROUPS = [
       { key: PERMISSIONS.SALES_ORDERS_READ,        label: 'عرض الطلبات' },
       { key: PERMISSIONS.SALES_ORDERS_READ_ALL,    label: 'عرض كل الطلبات' },
       { key: PERMISSIONS.SALES_ORDERS_CREATE,      label: 'إنشاء طلب' },
+      { key: PERMISSIONS.SALES_ORDERS_UPDATE,      label: 'تعديل طلب مسودة' },
       { key: PERMISSIONS.SALES_ORDERS_CONFIRM,     label: 'تأكيد طلب' },
       { key: PERMISSIONS.SALES_ORDERS_DELIVER,     label: 'تسليم طلب' },
       { key: PERMISSIONS.SALES_ORDERS_CANCEL,      label: 'إلغاء طلب' },
