@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
-import { Landmark, Plus, Edit, ArrowDownToLine, ArrowUpFromLine, Eye, Building2, Wallet, ArrowLeftRight } from 'lucide-react'
+import { Landmark, Plus, Edit, ArrowDownToLine, ArrowUpFromLine, Eye, Building2, Wallet, ArrowLeftRight, Layers } from 'lucide-react'
 import { createVault, updateVault, getVaultTransactions, postManualVaultAdjustment, transferBetweenVaults } from '@/lib/services/vaults'
 import { useVaults, useBranches, useProfiles, useInvalidate } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
@@ -289,11 +289,22 @@ export default function VaultsPage() {
             { key: 'branch', label: 'الفرع', hideOnMobile: true, render: (v) => v.branch?.name || <span style={{ color: 'var(--text-muted)' }}>—</span> },
             { key: 'responsible', label: 'المسؤول', hideOnMobile: true, render: (v) => v.responsible?.full_name || <span style={{ color: 'var(--text-muted)' }}>—</span> },
             { key: 'is_active', label: 'الحالة', render: (v) => <Badge variant={v.is_active ? 'success' : 'neutral'}>{v.is_active ? 'نشطة' : 'معطلة'}</Badge> },
-            { key: 'actions', label: 'إجراءات', width: 140, render: (v) => (
+            { key: 'actions', label: 'إجراءات', width: 160, render: (v) => (
               <div className="action-group" onClick={e => e.stopPropagation()}>
                 <Button variant="ghost" size="sm" title="كشف حساب" onClick={() => openStatement(v)}><Eye size={14} /></Button>
                 {can('finance.vaults.transact') && (
                   <>
+                    {/* Opening balance — only available when vault has never been used */}
+                    {v.current_balance === 0 && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        title="تعيين الرصيد الافتتاحي (متاح عند رصيد صفر فقط)"
+                        onClick={() => openTx(v, 'opening')}
+                      >
+                        <Layers size={14} />
+                      </Button>
+                    )}
                     <Button variant="success" size="sm" title="إيداع" onClick={() => openTx(v, 'deposit')}><ArrowDownToLine size={14} /></Button>
                     <Button variant="danger" size="sm" title="سحب" onClick={() => openTx(v, 'withdrawal')}><ArrowUpFromLine size={14} /></Button>
                   </>
@@ -354,6 +365,17 @@ export default function VaultsPage() {
                     <Button variant="ghost" size="sm" icon={<Eye size={12} />} onClick={() => openStatement(v)}>كشف</Button>
                     {can('finance.vaults.transact') && (
                       <>
+                        {/* Opening balance — only when vault is unused (balance = 0) */}
+                        {v.current_balance === 0 && (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            icon={<Layers size={12} />}
+                            onClick={() => openTx(v, 'opening')}
+                          >
+                            افتتاحي
+                          </Button>
+                        )}
                         <Button variant="success" size="sm" icon={<ArrowDownToLine size={12} />} onClick={() => openTx(v, 'deposit')}>إيداع</Button>
                         <Button variant="danger" size="sm" icon={<ArrowUpFromLine size={12} />} onClick={() => openTx(v, 'withdrawal')}>سحب</Button>
                       </>
@@ -463,7 +485,29 @@ export default function VaultsPage() {
         }
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-          {txVault && (
+          {/* Opening balance: explain the one-time nature and accounting impact */}
+          {txMode === 'opening' && (
+            <div style={{
+              background: 'rgba(37,99,235,0.08)',
+              border: '1px solid rgba(37,99,235,0.2)',
+              borderRadius: 'var(--radius-md)',
+              padding: 'var(--space-3)',
+              fontSize: 'var(--text-xs)',
+              color: 'var(--text-secondary)',
+              lineHeight: 1.6,
+              display: 'flex',
+              gap: 8,
+              alignItems: 'flex-start',
+            }}>
+              <Layers size={14} style={{ color: 'var(--color-primary)', flexShrink: 0, marginTop: 2 }} />
+              <span>
+                الرصيد الافتتاحي هو المبلغ الأولي للخزنة عند بدء التشغيل.
+                سيُسجَّل كقيد مالي: <strong>مدين حساب الخزنة / دائن رأس مال المالك (3100)</strong>.
+                هذا الإجراء متاح مرة واحدة فقط (عند رصيد صفر).
+              </span>
+            </div>
+          )}
+          {txVault && txMode !== 'opening' && (
             <div className="info-box">
               <span className="info-box-label">الرصيد الحالي</span>
               <span className="info-box-value">{formatCurrency(txVault.current_balance)}</span>
