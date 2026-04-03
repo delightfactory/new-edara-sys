@@ -159,6 +159,19 @@ Deno.serve(async (req: Request) => {
         const pushEnabled  = prefs?.push_enabled  ?? true
         const quietEnabled = prefs?.quiet_hours_enabled ?? false
 
+        // Per-category preferences (applies to both in-app and push)
+        // Stored as: notification_preferences.category_preferences[category].inApp / .push
+        const categoryPrefs = (
+          prefs?.category_preferences ?? {}
+        ) as Record<string, { inApp?: boolean; push?: boolean }>
+        const catKey = eventType.category
+
+        // ✅ FIX [Wave 1A-edge]: Per-category in-app filtering
+        // Previously, the UI saved inApp per-category but this was never read here.
+        // Now: global inAppEnabled AND category-level inApp must both be true.
+        const catInAppEnabled = categoryPrefs[catKey]?.inApp ?? true
+        const shouldCreateInApp = inAppEnabled && catInAppEnabled
+
         // 4b. Render templates
         const title     = renderTemplate(eventType.title_template, vars)
         const bodyText  = renderTemplate(eventType.body_template, vars)
@@ -170,7 +183,7 @@ Deno.serve(async (req: Request) => {
 
         // 4c. Create in-app notification record
         let notificationId: string | null = null
-        if (inAppEnabled) {
+        if (shouldCreateInApp) {
           const { data: notification, error: insertErr } = await adminClient
             .from('notifications')
             .insert({
@@ -219,9 +232,8 @@ Deno.serve(async (req: Request) => {
           PRIORITY_ORDER.indexOf(effectivePriority as PriorityLevel) >=
           PRIORITY_ORDER.indexOf(minPriorityPush)
 
-        // Respect per-category push preference
-        const categoryPrefs = prefs?.category_preferences as Record<string, { in_app?: boolean; push?: boolean }> | null
-        const catPushEnabled = categoryPrefs?.[eventType.category]?.push ?? true
+        // Respect per-category push preference (uses same categoryPrefs declared above)
+        const catPushEnabled = categoryPrefs[catKey]?.push ?? true
 
         const shouldPush = pushEnabled && !inQuiet && meetsMinPriority && catPushEnabled
 

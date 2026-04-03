@@ -197,7 +197,7 @@ export const NOTIFICATION_EVENTS = {
     defaultPriority: 'high',
     labelAr:         'مخزون منخفض',
     labelEn:         'Low Stock Alert',
-    variables:       ['product_name', 'current_quantity', 'min_quantity', 'unit', 'product_id'],
+    variables:       ['product_name', 'warehouse_name', 'available_qty', 'min_stock_level'],
   },
   INVENTORY_STOCK_OUT: {
     key:             'inventory.stock.out',
@@ -205,7 +205,7 @@ export const NOTIFICATION_EVENTS = {
     defaultPriority: 'critical',
     labelAr:         'نفاد المخزون',
     labelEn:         'Out of Stock',
-    variables:       ['product_name', 'product_id'],
+    variables:       ['product_name', 'warehouse_name'],
   },
   INVENTORY_TRANSFER_REQUESTED: {
     key:             'inventory.transfer.requested',
@@ -213,7 +213,7 @@ export const NOTIFICATION_EVENTS = {
     defaultPriority: 'medium',
     labelAr:         'طلب تحويل مخزون',
     labelEn:         'Transfer Requested',
-    variables:       ['requester_name', 'quantity', 'unit', 'product_name', 'transfer_id'],
+    variables:       ['transfer_number', 'from_warehouse', 'to_warehouse', 'transfer_id'],
   },
   INVENTORY_TRANSFER_COMPLETED: {
     key:             'inventory.transfer.completed',
@@ -221,7 +221,7 @@ export const NOTIFICATION_EVENTS = {
     defaultPriority: 'low',
     labelAr:         'اكتمال تحويل المخزون',
     labelEn:         'Transfer Completed',
-    variables:       ['quantity', 'unit', 'product_name', 'transfer_id'],
+    variables:       ['transfer_number', 'from_warehouse', 'to_warehouse', 'transfer_id'],
   },
 
   // ── Sales ────────────────────────────────────────────────────
@@ -231,7 +231,7 @@ export const NOTIFICATION_EVENTS = {
     defaultPriority: 'medium',
     labelAr:         'طلب بيع جديد',
     labelEn:         'New Sales Order',
-    variables:       ['order_number', 'customer_name', 'amount', 'currency', 'order_id'],
+    variables:       ['order_number', 'customer_name', 'amount', 'order_id'],
   },
   SALES_ORDER_CONFIRMED: {
     key:             'sales.order.confirmed',
@@ -239,7 +239,7 @@ export const NOTIFICATION_EVENTS = {
     defaultPriority: 'medium',
     labelAr:         'طلب بيع مؤكد',
     labelEn:         'Sales Order Confirmed',
-    variables:       ['order_number', 'customer_name', 'amount', 'currency', 'order_id'],
+    variables:       ['order_number', 'customer_name', 'amount', 'order_id'],
   },
   SALES_INVOICE_OVERDUE: {
     key:             'sales.invoice.overdue',
@@ -247,7 +247,7 @@ export const NOTIFICATION_EVENTS = {
     defaultPriority: 'critical',
     labelAr:         'فاتورة متأخرة السداد',
     labelEn:         'Invoice Overdue',
-    variables:       ['invoice_number', 'amount', 'currency', 'customer_name', 'days_overdue', 'invoice_id'],
+    variables:       ['order_number', 'customer_name', 'outstanding', 'due_date', 'order_id'],
   },
 
   // ── Procurement ──────────────────────────────────────────────

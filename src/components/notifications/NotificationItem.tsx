@@ -17,6 +17,7 @@ import {
   Archive, Bell, Trash2, ExternalLink,
 } from 'lucide-react'
 import type { Notification, NotificationCategory, NotificationPriority } from '@/lib/notifications/types'
+import { resolveNotificationUrlFromModel } from '@/lib/notifications/navigation'
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -77,11 +78,12 @@ export default function NotificationItem({
   compact = false,
 }: NotificationItemProps) {
   const navigate = useNavigate()
+  const resolvedActionUrl = resolveNotificationUrlFromModel(notification)
 
   const handleClick = () => {
     if (!notification.isRead) onRead?.(notification.id)
-    if (notification.actionUrl) {
-      navigate(notification.actionUrl)
+    if (resolvedActionUrl) {
+      navigate(resolvedActionUrl)
     }
   }
 
@@ -97,7 +99,7 @@ export default function NotificationItem({
 
   const priority = PRIORITY_CONFIG[notification.priority] ?? PRIORITY_CONFIG.low
   const cat = CATEGORY_CONFIG[notification.category] ?? DEFAULT_CATEGORY
-  const hasLink = !!notification.actionUrl
+  const hasLink = !!resolvedActionUrl
 
   return (
     <div

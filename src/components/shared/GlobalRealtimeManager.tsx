@@ -24,6 +24,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import { useNotificationStore } from '@/stores/notification-store'
 import { notificationKeys } from '@/lib/notifications/query-keys'
 import { updateAppBadge } from '@/lib/notifications/push-utils'
+import { resolveNotificationUrlFromRow } from '@/lib/notifications/navigation'
 import type { NotificationRow } from '@/lib/notifications/types'
 
 /**
@@ -202,9 +203,10 @@ export default function GlobalRealtimeManager() {
               (t) => {
                 const handleToastClick = () => {
                   toast.dismiss(t)
-                  if (notification.action_url) {
+                  const actionUrl = resolveNotificationUrlFromRow(notification)
+                  if (actionUrl) {
                     // Navigate using location (GlobalRealtimeManager is outside BrowserRouter)
-                    window.location.href = notification.action_url
+                    window.location.href = actionUrl
                   } else {
                     useNotificationStore.getState().setPanelOpen(true)
                   }
