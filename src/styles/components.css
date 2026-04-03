@@ -456,6 +456,53 @@
 /* ── Visibility helpers ───────────────────────────────────────── */
 .mobile-only-btn { display: none; } /* hidden on desktop, shown in mobile MQ below */
 
+/* ── Global FAB (Floating Action Button) ──────────────────────── */
+/* Hidden on desktop by default — shown only inside mobile media query below */
+.fab { display: none; }
+
+@media (max-width: 768px) {
+  .fab {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    position: fixed;
+    bottom: calc(var(--bottom-nav-height) + var(--space-4));
+    inset-inline-end: var(--space-4);
+    z-index: var(--z-fab);
+    height: var(--fab-size);
+    padding: 0 var(--space-4);
+    border-radius: var(--radius-full);
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: 700;
+    box-shadow: var(--shadow-lg);
+    animation: fab-enter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .fab--hidden {
+    opacity: 0;
+    transform: translateY(14px) scale(0.9);
+    pointer-events: none;
+  }
+
+  .fab:not(.fab--hidden):active {
+    transform: scale(0.95);
+  }
+
+  .fab-label { white-space: nowrap; }
+
+  @keyframes fab-enter {
+    from { opacity: 0; transform: scale(0.6) translateY(8px); }
+    to   { opacity: 1; transform: scale(1)   translateY(0);   }
+  }
+}
+
 /* ── Overflow action menu (mobile secondary actions) ─────────── */
 .mobile-overflow-menu {
   position: relative;

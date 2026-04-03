@@ -228,13 +228,6 @@ export default function SuppliersPage() {
         )}
       </div>
 
-      {/* Mobile FAB */}
-      {can('suppliers.create') && (
-        <button className="fab-btn" onClick={() => navigate('/suppliers/new')} aria-label="إضافة مورد">
-          <Plus size={24} />
-        </button>
-      )}
-
       <ConfirmDialog
         open={!!confirmTarget}
         title={confirmTarget?.is_active ? 'تعطيل المورد' : 'تفعيل المورد'}
@@ -252,21 +245,11 @@ export default function SuppliersPage() {
         .sup-mobile-card:hover { background: var(--bg-hover); }
         .mobile-card-list { display: flex; flex-direction: column; gap: var(--space-3); }
         .mobile-pagination { display: flex; align-items: center; justify-content: center; gap: var(--space-4); padding: var(--space-4) 0; }
-        .fab-btn {
-          position: fixed; bottom: calc(70px + var(--space-4)); left: var(--space-4);
-          width: 56px; height: 56px; border-radius: 50%;
-          background: var(--color-primary); color: #fff;
-          border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
-          box-shadow: 0 4px 20px rgba(37,99,235,0.35);
-          z-index: var(--z-modal, 400); transition: transform 0.15s;
-        }
-        .fab-btn:hover { transform: scale(1.06); }
         @media (max-width: 768px) {
           .desktop-only-btn { display: none !important; }
           .sup-table-view { display: none; }
           .sup-card-view  { display: block; }
         }
-        @media (min-width: 769px) { .fab-btn { display: none; } }
       `}</style>
     </div>
   )

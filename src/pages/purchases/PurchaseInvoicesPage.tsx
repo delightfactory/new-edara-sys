@@ -248,15 +248,6 @@ export default function PurchaseInvoicesPage() {
         )}
       </div>
 
-      {/* FAB for mobile */}
-      <button
-        className="mobile-fab"
-        onClick={() => navigate('/purchases/invoices/new')}
-        aria-label="فاتورة شراء جديدة"
-      >
-        <Plus size={24} />
-      </button>
-
       <style>{`
         .purch-filter-row { display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: flex-end; }
         .filter-select { min-width: 100px; flex: 1; }
@@ -268,18 +259,7 @@ export default function PurchaseInvoicesPage() {
           .purch-table-view { display: none; }
           .purch-card-view  { display: block; }
           .desktop-only-btn { display: none; }
-          .mobile-fab {
-            position: fixed; bottom: calc(70px + var(--space-4)); left: var(--space-4);
-            width: 56px; height: 56px; border-radius: 50%;
-            background: var(--color-primary); color: #fff;
-            border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 4px 20px rgba(37,99,235,0.4);
-            z-index: var(--z-modal, 400);
-            transition: transform 0.15s, box-shadow 0.15s;
-          }
-          .mobile-fab:hover { transform: scale(1.06); box-shadow: 0 6px 24px rgba(37,99,235,0.5); }
         }
-        @media (min-width: 769px) { .mobile-fab { display: none; } }
 
         .mobile-card-list { display: flex; flex-direction: column; gap: var(--space-3); padding-bottom: var(--space-2); }
         .mobile-pagination { display: flex; align-items: center; justify-content: center; gap: var(--space-4); padding: var(--space-4) 0; }

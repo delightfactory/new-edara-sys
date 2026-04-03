@@ -306,13 +306,6 @@ export default function ActivitiesPage() {
         />
       </div>
 
-      {/* ── Mobile FAB ── */}
-      <PermissionGuard permission={PERMISSIONS.ACTIVITIES_CREATE}>
-        <button className="fab-button" onClick={() => navigate('/activities/new')} aria-label="نشاط جديد">
-          <Plus size={24} />
-        </button>
-      </PermissionGuard>
-
       {/* ── Delete Modal ──────────────────────────────────────── */}
       <ResponsiveModal
         open={!!deleteTarget}
@@ -337,18 +330,8 @@ export default function ActivitiesPage() {
         .act-filter-row { display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: flex-end; }
         .filter-select { min-width: 120px; flex: 1; }
         .act-table-view { display: block; }
-        .fab-button { display: none; }
         @media (max-width: 768px) {
           .desktop-only-btn { display: none; }
-          .fab-button {
-            display: flex; align-items: center; justify-content: center;
-            position: fixed; bottom: calc(var(--bottom-nav-height, 64px) + var(--space-4)); inset-inline-end: var(--space-4);
-            width: 56px; height: 56px; border-radius: 28px;
-            background: var(--color-primary); color: white;
-            box-shadow: var(--shadow-lg); z-index: 160; border: none;
-            transition: transform 0.2s;
-          }
-          .fab-button:active { transform: scale(0.95); }
         }
       `}</style>
     </div>

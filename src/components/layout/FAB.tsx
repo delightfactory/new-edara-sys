@@ -1,9 +1,9 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import {
-  Plus, ShoppingCart, UserPlus, Package, ArrowLeftRight,
+  ShoppingCart, UserPlus, Package,
   Receipt, RotateCcw, Activity, MapPin, Phone,
-  ClipboardList, Users, TrendingDown,
+  Users,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import { useIsAnyModalOpen } from '@/hooks/useModalStack'
@@ -24,15 +24,16 @@ const FAB_MAP: FabConfig[] = [
   { path: '/products',                  label: '+ منتج',        icon: Package,        navigateTo: '/products/new',                 permission: 'products.create'                },
   { path: '/purchases/invoices',        label: '+ فاتورة',      icon: Package,        navigateTo: '/purchases/invoices/new',       permission: 'procurement.invoices.create'    },
   { path: '/purchases/returns',         label: '+ مرتجع',       icon: RotateCcw,      navigateTo: '/purchases/returns/new',        permission: 'procurement.returns.create'     },
-  { path: '/inventory/transfers',       label: '+ تحويل',       icon: ArrowLeftRight, navigateTo: '/inventory/transfers/new',      permission: 'inventory.transfers.create'     },
-  { path: '/inventory/adjustments',     label: '+ تسوية',       icon: ClipboardList,  navigateTo: '/inventory/adjustments/new',    permission: 'inventory.adjustments.create'   },
-  { path: '/finance/expenses',          label: '+ مصروف',       icon: Receipt,        navigateTo: '/finance/expenses/new',         permission: 'finance.expenses.create'        },
   // ── Activities Module ──
   { path: '/activities',                label: '+ نشاط',        icon: Activity,       navigateTo: '/activities/new',               permission: 'activities.create'              },
   { path: '/activities/list',           label: '+ نشاط',        icon: Activity,       navigateTo: '/activities/new',               permission: 'activities.create'              },
   { path: '/activities/visit-plans',    label: '+ خطة زيارة',   icon: MapPin,         navigateTo: '/activities/visit-plans/new',   permission: 'visit_plans.create'             },
   { path: '/activities/call-plans',     label: '+ خطة مكالمات', icon: Phone,          navigateTo: '/activities/call-plans/new',    permission: 'call_plans.create'              },
-  // Vaults, Payments, Journals use inline modals — they have their own smart local FABs
+  // Pages below use inline-modal creation (no /new route exists) — they manage their own FAB locally:
+  // /inventory/transfers → TransfersPage modal   (tr-fab)
+  // /inventory/adjustments → AdjustmentsPage modal
+  // /finance/expenses → ExpensesPage modal   (mobile-fab)
+  // /finance/vaults, /finance/payments, /finance/journals → modal FABs
 ]
 
 /**
@@ -93,6 +94,7 @@ export default function FAB() {
 
   const Icon = config.icon
 
+  // Styles live in components.css (.fab, .fab--hidden, .fab-label, @keyframes fab-enter)
   return (
     <button
       className={`fab${softHidden ? ' fab--hidden' : ''}`}
@@ -105,55 +107,6 @@ export default function FAB() {
     >
       <Icon size={22} />
       <span className="fab-label">{config.label}</span>
-
-      <style>{`
-        /* Hidden on desktop by default */
-        .fab { display: none; }
-
-        @media (max-width: 768px) {
-          .fab {
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
-            position: fixed;
-            bottom: calc(var(--bottom-nav-height) + var(--space-4));
-            inset-inline-end: var(--space-4);
-            z-index: var(--z-fab);
-            height: var(--fab-size);
-            padding: 0 var(--space-4);
-            border-radius: var(--radius-full);
-            background: var(--color-primary);
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-family: var(--font-sans);
-            font-size: var(--text-sm);
-            font-weight: 700;
-            box-shadow: var(--shadow-lg);
-            animation: fab-enter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-            transition: opacity 0.2s ease, transform 0.2s ease;
-            -webkit-tap-highlight-color: transparent;
-          }
-
-          /* Soft-hide: modal open OR scroll direction down */
-          .fab--hidden {
-            opacity: 0;
-            transform: translateY(14px) scale(0.9);
-            pointer-events: none;
-          }
-
-          .fab:not(.fab--hidden):active {
-            transform: scale(0.95);
-          }
-
-          .fab-label { white-space: nowrap; }
-
-          @keyframes fab-enter {
-            from { opacity: 0; transform: scale(0.6) translateY(8px); }
-            to   { opacity: 1; transform: scale(1)   translateY(0);   }
-          }
-        }
-      `}</style>
     </button>
   )
 }

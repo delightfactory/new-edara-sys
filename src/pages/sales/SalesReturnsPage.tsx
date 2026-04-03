@@ -195,13 +195,6 @@ export default function SalesReturnsPage() {
         )}
       </div>
 
-      {/* Mobile FAB */}
-      {can('sales.returns.create') && (
-        <button className="ret-fab" onClick={() => navigate('/sales/returns/new')} aria-label="مرتجع جديد">
-          <Plus size={24} />
-        </button>
-      )}
-
       <style>{`
         .ret-table-view { display: block; }
         .ret-card-view  { display: none; }
@@ -209,21 +202,11 @@ export default function SalesReturnsPage() {
         .ret-mobile-card:hover { background: var(--bg-hover); }
         .mobile-card-list { display: flex; flex-direction: column; gap: var(--space-3); }
         .mobile-pagination { display: flex; align-items: center; justify-content: center; gap: var(--space-4); padding: var(--space-4) 0; }
-        .ret-fab {
-          position: fixed; bottom: calc(70px + var(--space-4)); left: var(--space-4);
-          width: 56px; height: 56px; border-radius: 50%;
-          background: var(--color-danger); color: #fff;
-          border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
-          box-shadow: 0 4px 20px rgba(239,68,68,0.35);
-          z-index: var(--z-modal, 400); transition: transform 0.15s;
-        }
-        .ret-fab:hover { transform: scale(1.06); }
         @media (max-width: 768px) {
           .desktop-only-btn { display: none !important; }
           .ret-table-view { display: none; }
           .ret-card-view  { display: block; }
         }
-        @media (min-width: 769px) { .ret-fab { display: none; } }
       `}</style>
     </div>
   )

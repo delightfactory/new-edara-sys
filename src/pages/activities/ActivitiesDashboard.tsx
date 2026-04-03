@@ -222,11 +222,6 @@ function RepDashboard() {
         </div>
       </div>
 
-      {/* ── FAB Mobile ── */}
-      <button className="act-fab" onClick={() => navigate('/activities/new')} aria-label="نشاط جديد">
-        <Plus size={24} />
-      </button>
-
       {/* ── Main Grid ── */}
       <div className="act-dash-grid act-dash-grid--rep">
 
@@ -783,22 +778,6 @@ export default function ActivitiesDashboard() {
         .act-dash-plan-icon--call  { color: var(--color-success); }
         .act-dash-plan-btn-title { font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); }
         .act-dash-plan-btn-sub { font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px; }
-
-        /* ── FAB ── */
-        .act-fab {
-          display: none;
-          position: fixed; bottom: var(--space-5); left: var(--space-5);
-          z-index: 50;
-          width: 56px; height: 56px;
-          border-radius: 50%;
-          background: var(--color-primary); color: #fff;
-          border: none; cursor: pointer;
-          box-shadow: var(--shadow-lg);
-          align-items: center; justify-content: center;
-          transition: transform var(--transition-fast);
-        }
-        .act-fab:hover { transform: scale(1.08); }
-        @media (max-width: 768px) { .act-fab { display: flex; } }
 
         /* ── Supervisor Alerts ── */
         .sup-alerts { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-4); }
