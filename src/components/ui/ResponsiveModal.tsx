@@ -1,7 +1,6 @@
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { useModalStack } from '@/hooks/useModalStack'
-import { isFilePicking } from '@/lib/utils/file-picking-guard'
 
 interface ResponsiveModalProps {
   open: boolean
@@ -50,13 +49,11 @@ export default function ResponsiveModal({
   const [isVisible, setIsVisible] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
   const { push, pop } = useModalStack()
+
+  // إغلاق المودال — بسيط كنمط home-care بدون guards معقّدة
   const requestClose = useCallback(() => {
-    if (isFilePicking()) return
     onClose()
   }, [onClose])
-
-  // يتتبع إن كان الضغط بدأ داخل المحتوى — لمنع إغلاق المودال عند رفع الإصبع خارجه
-  const pointerStartedInsideRef = useRef(false)
 
   // Track modal depth so FAB can auto-hide
   useEffect(() => {
@@ -105,34 +102,7 @@ export default function ResponsiveModal({
   return (
     <div
       className={`rmodal-overlay ${isVisible ? 'rmodal-overlay--visible' : ''}`}
-      onClickCapture={e => {
-        // يمسك الـ phantom clicks وهمية (iOS/Android) قبل وصولها لأي زر داخل المودال.
-        // onClickCapture آمن لأنه يأتي بعد انتهاء الـ user gesture ولا يُفسد فتح الكاميرا.
-        if (isFilePicking()) { e.stopPropagation(); e.preventDefault() }
-      }}
-      onPointerDown={e => {
-        // نسجّل ما إذا كان الضغط بدأ داخل المحتوى
-        // أثناء file picking: نتجاهل أي pointerdown خارجي (phantom events)
-        if (isFilePicking()) {
-          pointerStartedInsideRef.current = true // اعتبره داخلياً لمنع الإغلاق
-          return
-        }
-        pointerStartedInsideRef.current = contentRef.current?.contains(e.target as Node) ?? false
-      }}
-      onPointerUp={e => {
-        if (disableOverlayClose || isFilePicking()) {
-          pointerStartedInsideRef.current = false
-          return
-        }
-        // نغلق فقط إذا:
-        // 1. الضغط بدأ على الـ overlay (خارج المحتوى)
-        // 2. الضغط انتهى على الـ overlay (خارج المحتوى)
-        const endedOutside = !(contentRef.current?.contains(e.target as Node) ?? false)
-        if (!pointerStartedInsideRef.current && endedOutside) {
-          requestClose()
-        }
-        pointerStartedInsideRef.current = false
-      }}
+      onClick={disableOverlayClose ? undefined : requestClose}
       aria-hidden="true"
     >
       <div

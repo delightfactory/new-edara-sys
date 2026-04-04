@@ -12,9 +12,10 @@ export default defineConfig({
       srcDir: 'src',
       filename: 'sw.ts',
 
-      // autoUpdate = SW skips waiting automatically; our sw.ts broadcasts APP_UPDATED
-      // to trigger a controlled 2-second delayed reload in the React app.
-      registerType: 'autoUpdate',
+      // prompt = never auto-activate a new SW in the middle of a user flow.
+      // This is critical on mobile because returning from camera/gallery changes
+      // page visibility and must not trigger an implicit app reload.
+      registerType: 'prompt',
       injectRegister: 'auto',
 
       // Keep the SW disabled in Vite dev mode.

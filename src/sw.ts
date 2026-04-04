@@ -29,24 +29,36 @@ interface PushPayload {
 }
 
 // ══════════════════════════════════════════════════════════════
-// UPDATE STRATEGY: Instant Silent Update
-// 1. skipWaiting() on install → new SW activates immediately
-// 2. clientsClaim() → takes control of all open tabs instantly
-// 3. Browser fires `controllerchange` event on each tab — the React
-//    app listens for this (not postMessage) to trigger a safe reload.
-//    Using controllerchange avoids the postMessage race condition where
-//    the message may arrive before the React listener is attached.
+// UPDATE STRATEGY: Prompted / user-controlled update
+// 1. New SW installs and waits
+// 2. React decides when to activate it by sending SKIP_WAITING
+// 3. This avoids surprise reloads during mobile camera/gallery flows
 // ══════════════════════════════════════════════════════════════
 
-// ── 1. Skip waiting immediately on install ──
-self.addEventListener('install', () => {
-  ;(self as unknown as { skipWaiting: () => void }).skipWaiting()
-})
-
-// ── 2. Claim all open clients on activate ──
-// clientsClaim() fires the `controllerchange` event on every open tab,
-// which is the signal the React app uses to trigger a graceful reload.
+// ── 1. Claim all open clients after activation ──
 clientsClaim()
+
+// ── 2. Wait for the app to explicitly activate the new worker ──
+self.addEventListener('message', (event: ExtendableMessageEvent) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    ;(self as unknown as { skipWaiting: () => void }).skipWaiting()
+    return
+  }
+
+  if (event.data?.type !== 'UPDATE_BADGE') return
+
+  const count = (event.data?.count as number) ?? 0
+
+  if ('setAppBadge' in navigator) {
+    if (count > 0) {
+      ;(navigator as Navigator & { setAppBadge: (n: number) => Promise<void> })
+        .setAppBadge(count).catch(() => {})
+    } else {
+      ;(navigator as Navigator & { clearAppBadge: () => Promise<void> })
+        .clearAppBadge().catch(() => {})
+    }
+  }
+})
 
 // ── 3. Precache all build assets + cleanup old caches ──
 cleanupOutdatedCaches()
@@ -164,21 +176,4 @@ self.addEventListener('notificationclick', (event: NotificationEvent) => {
         return self.clients.openWindow(targetUrl)
       })
   )
-})
-
-// ── APP BADGE UPDATE HANDLER ────────────────────────────────────
-self.addEventListener('message', (event: ExtendableMessageEvent) => {
-  if (event.data?.type !== 'UPDATE_BADGE') return
-
-  const count = (event.data?.count as number) ?? 0
-
-  if ('setAppBadge' in navigator) {
-    if (count > 0) {
-      ;(navigator as Navigator & { setAppBadge: (n: number) => Promise<void> })
-        .setAppBadge(count).catch(() => {})
-    } else {
-      ;(navigator as Navigator & { clearAppBadge: () => Promise<void> })
-        .clearAppBadge().catch(() => {})
-    }
-  }
 })

@@ -1,7 +1,6 @@
 import { type ReactNode, useCallback, useEffect } from 'react'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils/helpers'
-import { isFilePicking } from '@/lib/utils/file-picking-guard'
 
 interface ModalProps {
   open: boolean
@@ -21,7 +20,6 @@ interface ModalProps {
  */
 export default function Modal({ open, onClose, title, size = 'md', children, footer, disableOverlayClose = false }: ModalProps) {
   const requestClose = useCallback(() => {
-    if (isFilePicking()) return
     onClose()
   }, [onClose])
 
@@ -48,9 +46,6 @@ export default function Modal({ open, onClose, title, size = 'md', children, foo
   return (
     <div
       className="modal-overlay"
-      onClickCapture={e => {
-        if (isFilePicking()) { e.stopPropagation(); e.preventDefault() }
-      }}
       onClick={disableOverlayClose ? undefined : requestClose}
     >
       <div

@@ -1,20 +1,16 @@
 /**
  * ProofUploadButton — مكوّن رفع الإثبات
  *
- * الحل النهائي لمشكلة phantom click:
- *
- * المشكلة كانت في النهج القديم: bottom sheet يُغلق قبل فتح الكاميرا.
- * عندما تُغلق الكاميرا، الـ phantom click يقع على overlay المودال (لأن الشيت اختفى)
- * فيُغلق المودال.
- *
- * الحل (مستوحى من تطبيق home-care): أزرار الكاميرا/المعرض دائماً ظاهرة inline.
- * عندما تُغلق الكاميرا والـ phantom click يحدث، يقع على الأزرار الموجودة في DOM
- * ويتوقف داخل محتوى المودال (stopPropagation). المودال لا يُغلق.
+ * النهج المعتمد (مطابق للنمط العامل في home-care):
+ * ─────────────────────────────────────────────
+ * - أزرار inline دائمة في DOM
+ * - e.stopPropagation() على الأزرار لمنع الفقاعة للـ overlay
+ * - لا file-picking-guard / لا startFilePicking / لا endFilePicking
+ * - المودال يُغلق بالضغط على الـ backdrop — والضغط على المحتوى يُوقف الفقاعة
  */
 
 import { useRef, useCallback } from 'react'
 import { Camera, Image, FileText, X, CheckCircle2, AlertCircle, Upload } from 'lucide-react'
-import { startFilePicking, endFilePicking } from '@/lib/utils/file-picking-guard'
 
 interface ProofUploadButtonProps {
   file: File | null
@@ -50,51 +46,39 @@ export default function ProofUploadButton({
     })
   }, [])
 
-  // معالجة الملف المُختار
+  // معالجة الملف المُختار — مطابق لـ handleFileChange في home-care
   const handleFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
-    // ترتيب مهم:
-    // 1. نقرأ الملف أولاً قبل clearInputs (لأن clearInputs تُصفّر e.target.files)
-    // 2. نُبلّغ onChange
-    // 3. نُصفّر الـ inputs (قد يُطلق حدث change وهمي على بعض متصفحات Android)
-    // 4. نُوقف الحماية أخيراً — بعد clearInputs حتى تُحجب أي أحداث وهمية ناتجة عنه
     if (f) {
       if (f.size > maxSizeMB * 1024 * 1024) {
         alert(`حجم الملف يتجاوز ${maxSizeMB}MB — يرجى اختيار ملف أصغر`)
         clearInputs()
-        endFilePicking()
         return
       }
       onChange(f)
     }
     clearInputs()
-    endFilePicking()
   }, [maxSizeMB, onChange, clearInputs])
 
-  // فتح الكاميرا — الزر دائم الظهور في DOM
+  // فتح الكاميرا — stopPropagation يمنع الفقاعة للـ backdrop
   const openCamera = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
     if (disabled) return
-    // مهم: نُطلق click أولاً (isFilePicking=false) ثم نُشغّل الحماية.
-    // لو عكسنا الترتيب، onClickCapture يحجب الـ click ولا تفتح الكاميرا.
     cameraRef.current?.click()
-    startFilePicking()
   }, [disabled])
 
-  // فتح المعرض — الزر دائم الظهور في DOM
+  // فتح المعرض
   const openGallery = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
     if (disabled) return
     galleryRef.current?.click()
-    startFilePicking()
   }, [disabled])
 
-  // فتح منتقي الملفات العام (PDF + الديسكتوب)
+  // فتح منتقي الملفات (PDF + الديسكتوب)
   const openFile = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
     if (disabled) return
     fileRef.current?.click()
-    startFilePicking()
   }, [disabled])
 
   // حذف الملف
@@ -180,10 +164,7 @@ export default function ProofUploadButton({
           </div>
         ) : null}
 
-        {/* ── أزرار الاختيار — دائماً ظاهرة في DOM ──
-            هذا هو جوهر الحل: الأزرار لا تختفي أبداً.
-            عند إغلاق الكاميرا، الـ phantom click يقع على الأزرار (لا على overlay المودال).
-        */}
+        {/* ── أزرار الاختيار — دائماً ظاهرة في DOM ── */}
         {isMobile() ? (
           /* جوال: أزرار كاميرا + معرض inline */
           <div style={{ display: 'flex', gap: 6 }}>
