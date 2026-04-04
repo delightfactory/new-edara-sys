@@ -1,6 +1,7 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
-import { ReceiptText, Plus, Check, XCircle, Upload, Send, Eye, TrendingDown } from 'lucide-react'
+import { ReceiptText, Plus, Check, XCircle, Send, Eye, TrendingDown } from 'lucide-react'
+import ProofUploadButton from '@/components/ui/ProofUploadButton'
 import { createExpense, submitExpenseForApproval, approveExpense, rejectExpense, uploadExpenseReceipt } from '@/lib/services/payments'
 import { useExpenses, useExpenseCategories, useVaults, useCustodyAccounts, useInvalidate } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
@@ -42,7 +43,6 @@ export default function ExpensesPage() {
   const [form, setForm] = useState<ExpenseInput>({ amount: 0, description: '', payment_source: 'vault' })
   const [receiptFile, setReceiptFile] = useState<File | null>(null)
   const [saving, setSaving] = useState(false)
-  const fileRef = useRef<HTMLInputElement>(null)
 
   // Approve/Reject
   const [targetExpense, setTargetExpense] = useState<Expense | null>(null)
@@ -283,9 +283,11 @@ export default function ExpensesPage() {
             </div>
           )}
           <div className="form-group">
-            <label className="form-label">إيصال المصروف</label>
-            <input ref={fileRef} type="file" accept="image/*,.pdf" style={{ display: 'none' }} onChange={e => setReceiptFile(e.target.files?.[0] || null)} />
-            <Button variant="ghost" onClick={() => fileRef.current?.click()} icon={<Upload size={14} />}>{receiptFile ? receiptFile.name : 'رفع ملف'}</Button>
+            <ProofUploadButton
+              file={receiptFile}
+              onChange={setReceiptFile}
+              label="إيصال المصروف"
+            />
           </div>
         </div>
       </ResponsiveModal>

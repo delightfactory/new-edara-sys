@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
@@ -6,8 +6,9 @@ import {
   RotateCcw, FileText, Clock, User, CreditCard,
   Package, Building2, Banknote, Warehouse, AlertTriangle,
   TrendingUp, TrendingDown, Info, Copy, ChevronDown, Receipt,
-  CheckCircle2, XOctagon, AlertCircle, Upload, X, ImageIcon,
+  CheckCircle2, XOctagon, AlertCircle, ImageIcon,
 } from 'lucide-react'
+import ProofUploadButton from '@/components/ui/ProofUploadButton'
 import { useAuthStore } from '@/stores/auth-store'
 import { useWarehouses, useInvalidate } from '@/hooks/useQueryHooks'
 import { useQuery } from '@tanstack/react-query'
@@ -98,7 +99,6 @@ export default function SalesOrderDetail() {
   const [paymentOptions, setPaymentOptions] = useState<UserPaymentOptions | null>(null)
   const [deliverForm, setDeliverForm] = useState<DeliverFormState>(defaultDeliverForm(0))
   const [proofFile, setProofFile] = useState<File | null>(null)
-  const proofFileRef = useRef<HTMLInputElement>(null)
 
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
@@ -666,8 +666,12 @@ export default function SalesOrderDetail() {
       </ResponsiveModal>
 
       {/* ══════════════════════════════════════════ DELIVER MODAL */}
-      <ResponsiveModal open={showDeliverModal} onClose={() => setShowDeliverModal(false)}
-        title={`تسليم #${order.order_number}`}>
+      <ResponsiveModal
+        open={showDeliverModal}
+        onClose={() => setShowDeliverModal(false)}
+        title={`تسليم #${order.order_number}`}
+        disableOverlayClose
+      >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
           {deliverLoading && (
@@ -860,33 +864,13 @@ export default function SalesOrderDetail() {
 
                   {/* ── إثبات الدفع (إجباري للتحويلات والشيكات) ── */}
                   {isProofRequired && (
-                    <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 8, border: `1px solid ${proofFile ? 'var(--color-success)' : 'color-mix(in srgb, var(--color-danger) 40%, transparent)'}`, background: proofFile ? 'color-mix(in srgb, var(--color-success) 6%, transparent)' : 'color-mix(in srgb, var(--color-danger) 5%, transparent)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                        <label style={{ fontSize: 12, fontWeight: 700, color: proofFile ? 'var(--color-success)' : 'var(--color-danger)', display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <ImageIcon size={13} />
-                          إثبات الدفع <span style={{ fontWeight: 400, fontSize: 10 }}>(إجباري)</span>
-                        </label>
-                        {proofFile && (
-                          <button type="button" onClick={() => { setProofFile(null); if (proofFileRef.current) proofFileRef.current.value = '' }}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 2 }}>
-                            <X size={13} />
-                          </button>
-                        )}
-                      </div>
-                      <input ref={proofFileRef} type="file" accept="image/*,.pdf" style={{ display: 'none' }}
-                        onChange={e => setProofFile(e.target.files?.[0] || null)} />
-                      {proofFile ? (
-                        <div style={{ fontSize: 11, color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <CheckCircle2 size={12} /> {proofFile.name}
-                        </div>
-                      ) : (
-                        <button type="button"
-                          onClick={() => proofFileRef.current?.click()}
-                          style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: 'var(--color-danger)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                          <Upload size={13} /> اختر صورة أو ملف PDF
-                        </button>
-                      )}
-                      <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>صور أو PDF — بحد أقصى 5MB</div>
+                    <div style={{ marginTop: 10 }}>
+                      <ProofUploadButton
+                        file={proofFile}
+                        onChange={setProofFile}
+                        required
+                        label="إثبات الدفع"
+                      />
                     </div>
                   )}
                 </div>

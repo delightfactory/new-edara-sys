@@ -9,6 +9,7 @@ import {
 import { getPaymentReceipt, confirmPaymentReceipt, rejectPaymentReceipt } from '@/lib/services/payments'
 import { useVaults, useInvalidate } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
+import { supabase } from '@/lib/supabase/client'
 import { formatCurrency, formatDateTime } from '@/lib/utils/format'
 import Button from '@/components/ui/Button'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
@@ -84,6 +85,7 @@ export default function PaymentReceiptDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const can      = useAuthStore(s => s.can)
+  const profile  = useAuthStore(s => s.profile)
   const invalidate = useInvalidate()
 
   const { data: receipt, isLoading, refetch } = useQuery({
@@ -94,6 +96,35 @@ export default function PaymentReceiptDetail() {
   })
 
   const { data: vaults = [] } = useVaults({ isActive: true })
+
+  // ── My Custody ──────────────────────────────────────────────
+  const { data: myCustody } = useQuery({
+    queryKey: ['my-custody', profile?.id],
+    queryFn: async () => {
+      if (!profile?.id) return null
+      const { data } = await supabase
+        .from('custody_accounts')
+        .select('id')
+        .eq('employee_id', profile.id)
+        .eq('is_active', true)
+        .maybeSingle()
+      return data as { id: string } | null
+    },
+    enabled: !!profile?.id,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  // ── Self-Confirm للإيصالات النقدية في العهدة الشخصية ─────────────
+  const isSelfCashCustody =
+    !!receipt &&
+    receipt.status === 'pending' &&
+    receipt.payment_method === 'cash' &&
+    !!receipt.custody_id &&
+    !!myCustody &&
+    receipt.custody_id === myCustody.id
+
+  const isAdmin = !!receipt && receipt.status === 'pending' && can('finance.payments.confirm')
+  const canConfirm = isAdmin || isSelfCashCustody
 
   // ── Confirm ──
   const [confirmOpen, setConfirmOpen]   = useState(false)
@@ -205,15 +236,18 @@ export default function PaymentReceiptDetail() {
         </div>
 
         {/* Action buttons — pending only */}
-        {receipt.status === 'pending' && can('finance.payments.confirm') && (
+        {canConfirm && (
           <div style={{ display: 'flex', gap: 8 }}>
             <Button size="sm" onClick={openConfirm} icon={<Check size={13} />}>
-              تأكيد الاستلام
+              {isSelfCashCustody && !isAdmin ? 'تأكيد استلام النقدية' : 'تأكيد الاستلام'}
             </Button>
-            <Button variant="danger" size="sm" onClick={() => { setRejectReason(''); setRejectOpen(true) }}
-              icon={<XCircle size={13} />}>
-              رفض
-            </Button>
+            {/* الرفض للإدارة فقط — المندوب لا يرفض إيصاله (يُعاد لدور الإدارة) */}
+            {isAdmin && (
+              <Button variant="danger" size="sm" onClick={() => { setRejectReason(''); setRejectOpen(true) }}
+                icon={<XCircle size={13} />}>
+                رفض
+              </Button>
+            )}
           </div>
         )}
       </div>

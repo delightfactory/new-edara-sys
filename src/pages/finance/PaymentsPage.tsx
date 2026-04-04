@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { toast } from 'sonner'
 import {
-  Receipt, Plus, Check, XCircle, Upload, Search,
-  ExternalLink, AlertCircle, Wallet, X, Info, ImageIcon, FileText,
+  Receipt, Plus, Check, XCircle, Search,
+  ExternalLink, AlertCircle, Wallet, X, Info, FileText, ImageIcon,
 } from 'lucide-react'
+import ProofUploadButton from '@/components/ui/ProofUploadButton'
 import {
   createPaymentReceipt, confirmPaymentReceipt, rejectPaymentReceipt,
   uploadPaymentProof, getOpenOrdersForCustomer,
@@ -248,13 +249,22 @@ export default function PaymentsPage() {
   )
   const [proofFile, setProofFile] = useState<File | null>(null)
   const [saving, setSaving]       = useState(false)
-  const fileRef = useRef<HTMLInputElement>(null)
 
   const currentMethodCfg = PAYMENT_METHODS.find(m => m.value === form.payment_method)
   const isProofRequired  = currentMethodCfg?.requiresProof ?? false
   const isCashCreate     = form.payment_method === 'cash'
   const routeToCustody   = isCashCreate && !!myCustody && !can('finance.vaults.transact')
   const hasReference     = ['bank_transfer', 'instapay', 'mobile_wallet'].includes(form.payment_method)
+
+  // ── Self-Confirm: النقدي + عهدتي الشخصية ──────────────────
+  // المنطق: المندوب يمكنه تأكيد الإيصال النقدي الذي وجّهه النظام لعهدته فقط.
+  // هذا لا يمنحه صلاحية تأكيد إيصالات الآخرين أو التحويلات البنكية.
+  const canSelfConfirm = (r: { status: string; payment_method: string; custody_id?: string | null }) =>
+    r.status === 'pending' &&
+    r.payment_method === 'cash' &&
+    !!r.custody_id &&
+    !!myCustody &&
+    r.custody_id === myCustody.id
 
   const openCreate = () => {
     setForm({ customer_id: '', amount: 0, payment_method: 'cash', sales_order_id: null })
@@ -593,8 +603,13 @@ export default function PaymentsPage() {
             },
             {
               key: 'actions', label: '', width: 90,
-              render: r => (
-                r.status === 'pending' && can('finance.payments.confirm') ? (
+              render: r => {
+                const isAdmin        = r.status === 'pending' && can('finance.payments.confirm')
+                const isSelfCashConf = canSelfConfirm(r)
+
+                if (!isAdmin && !isSelfCashConf) return null
+
+                return (
                   <div
                     className="action-group"
                     onClick={e => e.stopPropagation()}
@@ -602,19 +617,22 @@ export default function PaymentsPage() {
                   >
                     <Button
                       variant="success" size="sm"
-                      title="تأكيد الإيصال"
+                      title={isSelfCashConf && !isAdmin ? 'تأكيد استلام النقدية في عهدتي' : 'تأكيد الإيصال'}
                       onClick={() => openConfirm(r)}
                       icon={<Check size={14} />}
                     />
-                    <Button
-                      variant="danger" size="sm"
-                      title="رفض الإيصال"
-                      onClick={() => { setRejectReceipt(r); setRejectReason('') }}
-                      icon={<XCircle size={14} />}
-                    />
+                    {/* الرفض للإدارة فقط */}
+                    {isAdmin && (
+                      <Button
+                        variant="danger" size="sm"
+                        title="رفض الإيصال"
+                        onClick={() => { setRejectReceipt(r); setRejectReason('') }}
+                        icon={<XCircle size={14} />}
+                      />
+                    )}
                   </div>
-                ) : null
-              ),
+                )
+              },
             },
           ]}
           data={receipts}
@@ -657,7 +675,7 @@ export default function PaymentsPage() {
                       <span style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--color-success)', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(r.amount)}</span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: r.status === 'pending' && can('finance.payments.confirm') ? 10 : 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: (r.status === 'pending' && (can('finance.payments.confirm') || canSelfConfirm(r))) ? 10 : 0 }}>
                     <span>{getMethodIcon(r.payment_method)} {getMethodLabel(r.payment_method)}</span>
                     <span style={{ marginRight: 'auto' }}>{formatDateTime(r.created_at).split(' ')[0]}</span>
                   </div>
@@ -665,6 +683,19 @@ export default function PaymentsPage() {
                     <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
                       <Button variant="success" size="sm" icon={<Check size={12} />} onClick={() => openConfirm(r)}>تأكيد</Button>
                       <Button variant="danger" size="sm" icon={<XCircle size={12} />} onClick={() => { setRejectReceipt(r); setRejectReason('') }}>رفض</Button>
+                    </div>
+                  )}
+                  {/* التأكيد الذاتي: نقدي + عهدتي */}
+                  {!can('finance.payments.confirm') && canSelfConfirm(r) && (
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }} onClick={e => e.stopPropagation()}>
+                      <Button
+                        variant="success" size="sm"
+                        icon={<Check size={12} />}
+                        onClick={() => openConfirm(r)}
+                        style={{ flex: 1, justifyContent: 'center' }}
+                      >
+                        تأكيد الاستلام النقدي
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -853,64 +884,12 @@ export default function PaymentsPage() {
 
           {/* رفع الإثبات */}
           <div className="form-group">
-            <label className={`form-label${isProofRequired ? ' required' : ''}`}>
-              إثبات الدفع
-              {isProofRequired && (
-                <span style={{
-                  fontSize: 'var(--text-xs)',
-                  color: 'var(--color-danger)',
-                  fontWeight: 400,
-                  marginInlineStart: 'var(--space-1)',
-                }}>
-                  (إجباري)
-                </span>
-              )}
-            </label>
-
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*,.pdf"
-              style={{ display: 'none' }}
-              onChange={e => setProofFile(e.target.files?.[0] || null)}
+            <ProofUploadButton
+              file={proofFile}
+              onChange={f => { setProofFile(f); }}
+              required={isProofRequired}
+              label="إثبات الدفع"
             />
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-              <Button
-                variant={isProofRequired && !proofFile ? 'danger' : 'ghost'}
-                size="sm"
-                onClick={() => fileRef.current?.click()}
-                icon={<Upload size={14} />}
-              >
-                {proofFile ? proofFile.name : 'اختر ملف'}
-              </Button>
-
-              {proofFile && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  icon={<X size={13} />}
-                  title="إزالة الملف"
-                  onClick={() => setProofFile(null)}
-                />
-              )}
-
-              {isProofRequired && !proofFile && (
-                <span style={{
-                  fontSize: 'var(--text-xs)',
-                  color: 'var(--color-danger)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 'var(--space-1)',
-                }}>
-                  <AlertCircle size={12} /> مطلوب
-                </span>
-              )}
-            </div>
-
-            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 'var(--space-1)' }}>
-              صور أو PDF — بحد أقصى 5MB
-            </div>
           </div>
 
           {/* ملاحظات */}
