@@ -105,6 +105,11 @@ export default function ResponsiveModal({
   return (
     <div
       className={`rmodal-overlay ${isVisible ? 'rmodal-overlay--visible' : ''}`}
+      onClickCapture={e => {
+        // يمسك الـ phantom clicks وهمية (iOS/Android) قبل وصولها لأي زر داخل المودال.
+        // onClickCapture آمن لأنه يأتي بعد انتهاء الـ user gesture ولا يُفسد فتح الكاميرا.
+        if (isFilePicking()) { e.stopPropagation(); e.preventDefault() }
+      }}
       onPointerDown={e => {
         // نسجّل ما إذا كان الضغط بدأ خارج المحتوى (على الـ overlay مباشرة)
         pointerStartedInsideRef.current = contentRef.current?.contains(e.target as Node) ?? false

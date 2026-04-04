@@ -48,6 +48,9 @@ export default function Modal({ open, onClose, title, size = 'md', children, foo
   return (
     <div
       className="modal-overlay"
+      onClickCapture={e => {
+        if (isFilePicking()) { e.stopPropagation(); e.preventDefault() }
+      }}
       onClick={disableOverlayClose ? undefined : requestClose}
     >
       <div
