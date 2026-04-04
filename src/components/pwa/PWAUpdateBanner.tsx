@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { toast } from 'sonner'
+import { isFilePicking } from '@/lib/utils/file-picking-guard'
 
 /**
  * PWAUpdateManager — Professional Silent Update Strategy (v2)
@@ -60,6 +61,21 @@ export default function PWAUpdateManager() {
     const handleControllerChange = () => {
       if (reloadingRef.current) return
 
+      // Guard: don't reload while user is using camera/gallery picker
+      // isFilePicking stays true for 1200ms after camera closes, so this
+      // check safely defers the reload until after the image is selected.
+      if (isFilePicking()) {
+        const waitForPicker = () => {
+          if (isFilePicking()) {
+            setTimeout(waitForPicker, 200)
+            return
+          }
+          handleControllerChange()
+        }
+        setTimeout(waitForPicker, 200)
+        return
+      }
+
       // Guard: don't interrupt an active form entry
       const active = document.activeElement
       const isFormActive =
@@ -112,8 +128,13 @@ export default function PWAUpdateManager() {
     const interval = setInterval(checkForUpdate, 5 * 60 * 1000)
 
     // Re-check when user switches back to this tab
+    // Guard: skip check if user is returning from camera/gallery picker
+    // (isFilePicking = true for 1200ms after camera closes — enough time to avoid triggering
+    //  a SW update check that could fire controllerchange and reload the page)
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') checkForUpdate()
+      if (document.visibilityState !== 'visible') return
+      if (isFilePicking()) return
+      checkForUpdate()
     }
     document.addEventListener('visibilitychange', handleVisibilityChange)
 

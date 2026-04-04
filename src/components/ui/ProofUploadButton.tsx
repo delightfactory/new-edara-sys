@@ -53,15 +53,22 @@ export default function ProofUploadButton({
   // معالجة الملف المُختار
   const handleFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
+    // ترتيب مهم:
+    // 1. نقرأ الملف أولاً قبل clearInputs (لأن clearInputs تُصفّر e.target.files)
+    // 2. نُبلّغ onChange
+    // 3. نُصفّر الـ inputs (قد يُطلق حدث change وهمي على بعض متصفحات Android)
+    // 4. نُوقف الحماية أخيراً — بعد clearInputs حتى تُحجب أي أحداث وهمية ناتجة عنه
+    if (f) {
+      if (f.size > maxSizeMB * 1024 * 1024) {
+        alert(`حجم الملف يتجاوز ${maxSizeMB}MB — يرجى اختيار ملف أصغر`)
+        clearInputs()
+        endFilePicking()
+        return
+      }
+      onChange(f)
+    }
     clearInputs()
     endFilePicking()
-    if (!f) return
-
-    if (f.size > maxSizeMB * 1024 * 1024) {
-      alert(`حجم الملف يتجاوز ${maxSizeMB}MB — يرجى اختيار ملف أصغر`)
-      return
-    }
-    onChange(f)
   }, [maxSizeMB, onChange, clearInputs])
 
   // فتح الكاميرا — الزر دائم الظهور في DOM

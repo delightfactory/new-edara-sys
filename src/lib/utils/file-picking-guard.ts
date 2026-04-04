@@ -1,13 +1,23 @@
 /**
- * file-picking-guard
+ * file-picking-guard — v2
  *
- * مشكلة: على Android/iOS، عند إغلاق منتقي الملفات الأصلي (كاميرا/معرض)،
- * يُولّد النظام أحداثاً وهمية تُغلق المودال الرئيسي:
- *   - Android: زر Back يُطلق Escape keydown في المتصفح
- *   - iOS: touch events وهمية عند العودة من الكاميرا
+ * المشكلة على Android / iOS:
+ *   عند إغلاق منتقي الملفات الأصلي (كاميرا/معرض)، يُطلق النظام:
+ *   - Android: أحداث pointer وهمية على إحداثيات زر "OK" في الكاميرا
+ *   - Android: أحياناً Escape keydown يُغلق المودال
+ *   - iOS: touch events متأخرة بعد العودة من الكاميرا
  *
- * الحل: نُشغّل هذه الحماية قبل فتح أي file input برمجياً،
- * ونوقفها بعد اكتمال الاختيار (أو بعد 600ms للاستيعاب الكامل للأحداث الوهمية).
+ * سلوك التسلسل الزمني على Android:
+ *   1. onChange fires (نختار ملف)  ← الحماية نشطة هنا ✅
+ *   2. phantom pointerdown (~0ms)  ← الحماية تحجبه ✅
+ *   3. phantom pointerup (~50-400ms) ← يجب أن تظل الحماية نشطة هنا
+ *
+ * المشكلة كانت: endFilePicking يبدأ العدّ التنازلي من 600ms
+ * بمجرد استلام onChange، لكن phantom pointerup قد يصل بعد 400ms
+ * مما يُقلّص هامش الأمان.
+ *
+ * الحل: نرفع المهلة إلى 1200ms لاستيعاب كل الأحداث الوهمية بأمان.
+ * هذه المهلة لا تؤثر على UX لأن المستخدم لا يلاحظ 1.2 ثانية بعد رجوعه من الكاميرا.
  */
 
 let _active = false
@@ -23,11 +33,15 @@ export function startFilePicking(): void {
 
 /**
  * أوقف الحماية بعد اكتمال الاختيار أو الإلغاء.
- * تبقى فعّالة 600ms إضافية لاستيعاب الأحداث الوهمية.
+ *
+ * 1200ms بدلاً من 600ms:
+ * - Android يُطلق phantom events على مدى 50-400ms بعد إغلاق الكاميرا
+ * - 1200ms هامش أمان مريح يستوعب أبطأ الأجهزة
+ * - لا تأثير على UX: المستخدم لا يلاحظ هذه الفترة
  */
 export function endFilePicking(): void {
   if (_clearTimer) { clearTimeout(_clearTimer); _clearTimer = null }
-  _clearTimer = setTimeout(() => { _active = false; _clearTimer = null }, 600)
+  _clearTimer = setTimeout(() => { _active = false; _clearTimer = null }, 1200)
 }
 
 /** true أثناء عمل منتقي الملفات أو خلال فترة الحماية بعد إغلاقه */
