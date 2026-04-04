@@ -432,9 +432,7 @@ export default function VisitPlanWizard() {
                   autoFocus
                 />
                 {customerSearch.search && (
-                  <span className="vpw-search-count">
-                    {customerSearch.totalCount} نتيجة
-                  </span>
+                  <span className="vpw-search-count">بحث نشط</span>
                 )}
               </div>
 
@@ -471,7 +469,7 @@ export default function VisitPlanWizard() {
                         {customerSearch.isLoading ? (
                           <><Loader2 size={14} className="vpw-spin" /> جاري التحميل...</>
                         ) : (
-                          <>تحميل المزيد ({customerSearch.totalCount - customerSearch.results.length} متبقي)</>
+                          <>تحميل المزيد</>
                         )}
                       </button>
                     )}

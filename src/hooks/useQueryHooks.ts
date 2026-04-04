@@ -201,6 +201,7 @@ export function useCustomers(params?: Parameters<typeof getCustomers>[0]) {
   return useQuery({
     queryKey: ['customers', params],
     queryFn: () => getCustomers(params),
+    staleTime: 30_000,
   })
 }
 
@@ -331,13 +332,28 @@ export function useSuppliers(params?: Parameters<typeof getSuppliers>[0]) {
 // ════════════════════════════════════════════
 
 import {
-  getSalesOrders, getSalesReturns, getShippingCompanies, getSalesStats, getSalesSettings
+  getSalesOrders, getSalesReturns, getShippingCompanies,
+  getSalesStats, getSalesSettings, searchSalesOrders,
 } from '@/lib/services/sales'
 
 export function useSalesOrders(params?: Parameters<typeof getSalesOrders>[0]) {
   return useQuery({
     queryKey: ['sales-orders', params],
     queryFn: () => getSalesOrders(params),
+    staleTime: 30_000,
+  })
+}
+
+/**
+ * useSalesOrdersSearch — Keyset pagination عبر RPC
+ * يُستخدم عند وجود بحث نصي أو Infinite Scroll
+ * بديل لـ useSalesOrders عند الحاجة لأداء أقصى
+ */
+export function useSalesOrdersSearch(params?: Parameters<typeof searchSalesOrders>[0]) {
+  return useQuery({
+    queryKey: ['sales-orders-keyset', params],
+    queryFn: () => searchSalesOrders(params),
+    staleTime: 30_000,
   })
 }
 

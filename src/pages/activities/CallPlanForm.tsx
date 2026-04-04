@@ -495,7 +495,7 @@ export default function CallPlanWizard() {
                       autoFocus
                     />
                     {customerSearch.search && (
-                      <span className="cpw-search-count">{customerSearch.totalCount} نتيجة</span>
+                      <span className="cpw-search-count">بحث نشط</span>
                     )}
                   </div>
 
@@ -532,7 +532,7 @@ export default function CallPlanWizard() {
                             {customerSearch.isLoading ? (
                               <><Loader2 size={14} className="cpw-spin" /> جاري التحميل...</>
                             ) : (
-                              <>تحميل المزيد ({customerSearch.totalCount - customerSearch.results.length} متبقي)</>
+                            <>تحميل المزيد</>
                             )}
                           </button>
                         )}

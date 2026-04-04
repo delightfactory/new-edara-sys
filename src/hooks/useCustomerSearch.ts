@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
-import { useCustomers } from '@/hooks/useQueryHooks'
+import { useQuery } from '@tanstack/react-query'
+import { searchCustomers } from '@/lib/services/customers'
 import type { Customer } from '@/lib/types/master-data'
 
 export interface CustomerSearchResult {
@@ -23,7 +24,7 @@ export interface CustomerSearchResult {
 }
 
 interface UseCustomerSearchReturn {
-  /** نتائج البحث */
+  /** نتائج البحث المتراكمة */
   results: CustomerSearchResult[]
   /** حالة التحميل */
   isLoading: boolean
@@ -33,139 +34,164 @@ interface UseCustomerSearchReturn {
   search: string
   /** تعيين نص البحث */
   setSearch: (s: string) => void
-  /** تحميل المزيد */
+  /** تحميل الصفحة التالية عبر Keyset cursor */
   loadMore: () => void
-  /** العدد الإجمالي */
-  totalCount: number
-  /** الصفحة الحالية */
-  page: number
-  /** إعادة تحميل */
+  /** إعادة تحميل من البداية */
   refresh: () => void
 }
 
+function mapToSearchResult(c: Customer): CustomerSearchResult {
+  const raw = c as any
+  return {
+    id: raw.id,
+    name: raw.name ?? '',
+    code: raw.code ?? '',
+    phone: raw.phone ?? null,
+    mobile: raw.mobile ?? null,
+    type: raw.type ?? null,
+    governorate_name: raw.governorate?.name ?? null,
+    city_name: raw.city?.name ?? null,
+    current_balance: raw.current_balance ?? 0,
+    credit_limit: raw.credit_limit ?? 0,
+    latitude: raw.latitude ?? null,
+    longitude: raw.longitude ?? null,
+    address: raw.address ?? null,
+    is_active: raw.is_active ?? true,
+    assigned_rep_id: raw.assigned_rep_id ?? null,
+    _raw: c,
+  }
+}
+
 /**
- * useCustomerSearch — بحث Server-side ذكي عن العملاء
+ * useCustomerSearch — بحث Server-side بـ Keyset Pagination
  *
  * المميزات:
  * - Debounced search (300ms) — لا يرسل طلب عند كل حرف
- * - Pagination — pageSize: 30 مع "تحميل المزيد"
+ * - Keyset cursor — أداء O(log N) ثابت، لا OFFSET، لا COUNT(*)
  * - RLS تلقائي — المندوب يرى عملاءه فقط (من DB)
- * - Cache — React Query يُخزّن نتائج البحث
- * - تحويل النتائج إلى format موحّد مع المعلومات المالية والجغرافية
+ * - React Query cache لكل صفحة منفصلة
+ * - Infinite scroll بدون تكرارات
  */
 export function useCustomerSearch(options?: {
   /** حجم الصفحة (افتراضي: 30) */
   pageSize?: number
-  /** فلترة إضافية — المحافظة */
+  /** فلترة — المحافظة */
   governorateId?: string
-  /** فلترة إضافية — النوع */
+  /** فلترة — النوع */
   type?: string
   /** تعطيل البحث مؤقتاً */
   enabled?: boolean
+  /**
+   * فلترة حسب الحالة — undefined = الكل، true = فعال فقط، false = موقوف فقط
+   * الافتراضي: true (للاستخدام في نماذج إنشاء الطلبات)
+   */
+  isActive?: boolean
 }): UseCustomerSearchReturn {
   const pageSize = options?.pageSize ?? 30
-  const enabled = options?.enabled !== false
+  const enabled  = options?.enabled !== false
+  const isActive = options?.isActive !== undefined ? options.isActive : true
 
-  const [search, setSearchRaw] = useState('')
-  const [debouncedSearch, setDebouncedSearch] = useState('')
-  const [page, setPage] = useState(1)
-  const [allResults, setAllResults] = useState<CustomerSearchResult[]>([])
+  // نص البحث (raw + debounced)
+  const [search,          setSearchRaw]       = useState('')
+  const [debouncedSearch, setDebouncedSearch]  = useState('')
   const debounceRef = useRef<ReturnType<typeof setTimeout>>()
 
-  // Debounce: 300ms
+  // Keyset cursor للصفحة الحالية
+  const [cursorTs,  setCursorTs]  = useState<string | null>(null)
+  const [cursorId,  setCursorId]  = useState<string | null>(null)
+
+  // النتائج المتراكمة
+  const [allResults, setAllResults] = useState<CustomerSearchResult[]>([])
+  const [canLoadMore, setCanLoadMore] = useState(false)
+
+  // ─── Debounce: 300ms ─────────────────────────────────────
   const setSearch = useCallback((value: string) => {
     setSearchRaw(value)
-
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
       setDebouncedSearch(value)
-      setPage(1)
+      // إعادة ضبط الـ cursor عند تغيير البحث
+      setCursorTs(null)
+      setCursorId(null)
       setAllResults([])
+      setCanLoadMore(false)
     }, 300)
   }, [])
 
-  // Cleanup debounce
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current)
-    }
+  useEffect(() => () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
   }, [])
 
-  // Query params
-  const queryParams = useMemo(() => ({
-    search: debouncedSearch || undefined,
-    page,
+  // ─── Query key فريد لكل مجموعة فلاتر + cursor ─────────────
+  const queryKey = useMemo(() => [
+    'customers-keyset',
+    debouncedSearch,
+    isActive,
+    options?.type,
+    options?.governorateId,
     pageSize,
-    governorateId: options?.governorateId,
-    type: options?.type,
-    isActive: true,
-  }), [debouncedSearch, page, pageSize, options?.governorateId, options?.type])
+    cursorTs,
+    cursorId,
+  ], [debouncedSearch, isActive, options?.type, options?.governorateId, pageSize, cursorTs, cursorId])
 
-  const { data: customersResult, isLoading, refetch } = useCustomers(
-    enabled ? queryParams : undefined
-  )
+  const { data: currentPage, isLoading, refetch } = useQuery({
+    queryKey,
+    queryFn: () => searchCustomers({
+      search:        debouncedSearch || undefined,
+      isActive,
+      type:          options?.type,
+      governorateId: options?.governorateId,
+      cursor:        cursorTs,
+      cursorId:      cursorId,
+      pageSize,
+    }),
+    enabled,
+    staleTime: 30_000, // 30 ثانية
+  })
 
-  // تحويل إلى CustomerSearchResult وتراكم النتائج
+  // ─── تراكم النتائج عند استلام صفحة جديدة ─────────────────
   useEffect(() => {
-    if (!customersResult?.data) return
+    if (!currentPage?.data) return
 
-    const mapped: CustomerSearchResult[] = customersResult.data.map((c: any) => ({
-      id: c.id,
-      name: c.name ?? '',
-      code: c.code ?? '',
-      phone: c.phone ?? null,
-      mobile: c.mobile ?? null,
-      type: c.type ?? null,
-      governorate_name: c.governorate?.name ?? null,
-      city_name: c.city?.name ?? null,
-      current_balance: c.current_balance ?? 0,
-      credit_limit: c.credit_limit ?? 0,
-      latitude: c.latitude ?? null,
-      longitude: c.longitude ?? null,
-      address: c.address ?? null,
-      is_active: c.is_active ?? true,
-      assigned_rep_id: c.assigned_rep_id ?? null,
-      _raw: c,
-    }))
+    const mapped = currentPage.data.map(mapToSearchResult)
 
-    // إذا page > 1 نضيف للنتائج السابقة (تحميل المزيد)
-    if (page === 1) {
+    if (cursorTs === null && cursorId === null) {
+      // الصفحة الأولى — استبدل كل النتائج
       setAllResults(mapped)
     } else {
+      // صفحة لاحقة — أضف مع إزالة التكرارات
       setAllResults(prev => {
-        // إزالة التكرارات
         const existingIds = new Set(prev.map(r => r.id))
-        const newItems = mapped.filter(m => !existingIds.has(m.id))
-        return [...prev, ...newItems]
+        return [...prev, ...mapped.filter(m => !existingIds.has(m.id))]
       })
     }
-  }, [customersResult?.data, page])
 
-  // حساب hasMore
-  const totalCount = customersResult?.count ?? 0
-  const hasMore = totalCount > page * pageSize
+    setCanLoadMore(currentPage.hasMore)
+  }, [currentPage]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ─── تحميل المزيد: ادفع cursor الجديد ───────────────────
   const loadMore = useCallback(() => {
-    if (hasMore && !isLoading) {
-      setPage(p => p + 1)
-    }
-  }, [hasMore, isLoading])
+    if (!canLoadMore || isLoading || !currentPage?.nextCursor) return
+    setCursorTs(currentPage.nextCursor)
+    setCursorId(currentPage.nextCursorId)
+  }, [canLoadMore, isLoading, currentPage])
 
+  // ─── إعادة التحميل من الصفحة الأولى ─────────────────────
   const refresh = useCallback(() => {
-    setPage(1)
+    setCursorTs(null)
+    setCursorId(null)
     setAllResults([])
+    setCanLoadMore(false)
     refetch()
   }, [refetch])
 
   return {
     results: allResults,
     isLoading,
-    hasMore,
+    hasMore: canLoadMore,
     search,
     setSearch,
     loadMore,
-    totalCount,
-    page,
     refresh,
   }
 }

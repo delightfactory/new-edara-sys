@@ -108,6 +108,85 @@ export async function getCustomers(params?: {
   }
 }
 
+// ============================================================
+// searchCustomers — Keyset Pagination (O(log N) ثابت الأداء)
+// يستخدم RPC search_customers لأفضل أداء مع البحث
+// ============================================================
+
+export interface CustomerSearchPage {
+  data: Customer[]
+  hasMore: boolean
+  nextCursor: string | null    // ISO timestamp
+  nextCursorId: string | null  // UUID
+}
+
+/**
+ * searchCustomers — يستخدم RPC مع Keyset cursor
+ * - لا COUNT(*) — أسرع بكثير من OFFSET
+ * - أداء O(log N) ثابت بغض النظر عن عمق الصفحة
+ * - يدعم البحث النصي الكامل (اسم + كود + هاتف + موبايل)
+ */
+export async function searchCustomers(params?: {
+  search?: string
+  type?: string
+  governorateId?: string
+  cityId?: string
+  repId?: string
+  isActive?: boolean
+  cursor?: string | null      // created_at من آخر عنصر
+  cursorId?: string | null    // id من آخر عنصر
+  pageSize?: number
+}): Promise<CustomerSearchPage> {
+  const pageSize = params?.pageSize ?? 30
+
+  const { data, error } = await supabase.rpc('search_customers', {
+    p_search:      params?.search      || null,
+    p_type:        params?.type        || null,
+    p_governorate: params?.governorateId || null,
+    p_city:        params?.cityId      || null,
+    p_rep_id:      params?.repId       || null,
+    p_is_active:   params?.isActive    ?? null,
+    p_cursor_ts:   params?.cursor      || null,
+    p_cursor_id:   params?.cursorId    || null,
+    p_limit:       pageSize,
+  })
+
+  if (error) throw error
+
+  const rows = (data || []) as any[]
+  const hasMore = rows.length > 0 && rows[rows.length - 1]?.has_more === true
+  const lastRow = rows[rows.length - 1]
+
+  // تحويل نتائج RPC إلى نوع Customer المتوافق
+  const mapped = rows.map(r => ({
+    id: r.id,
+    name: r.name,
+    code: r.code,
+    phone: r.phone,
+    mobile: r.mobile,
+    type: r.type,
+    payment_terms: r.payment_terms,
+    credit_limit: r.credit_limit,
+    current_balance: r.current_balance,
+    is_active: r.is_active,
+    assigned_rep_id: r.assigned_rep_id,
+    latitude: r.latitude,
+    longitude: r.longitude,
+    address: r.address,
+    created_at: r.created_at,
+    governorate: r.governorate_id ? { id: r.governorate_id, name: r.governorate_name } : null,
+    city: r.city_id ? { id: r.city_id, name: r.city_name } : null,
+    assigned_rep: r.assigned_rep_id ? { id: r.assigned_rep_id, full_name: r.rep_name } : null,
+  })) as Customer[]
+
+  return {
+    data: mapped,
+    hasMore,
+    nextCursor: hasMore ? lastRow?.created_at ?? null : null,
+    nextCursorId: hasMore ? lastRow?.id ?? null : null,
+  }
+}
+
 /**
  * جلب عميل واحد مع بياناته الكاملة
  */

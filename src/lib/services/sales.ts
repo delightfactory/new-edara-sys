@@ -134,7 +134,24 @@ export async function getSalesOrders(params?: {
     .range(from, to)
 
   if (params?.search) {
-    query = query.or(`order_number.ilike.%${params.search}%,customer.name.ilike.%${params.search}%`)
+    const trimmed = params.search.trim()
+    // PostgREST لا يدعم الفلترة على أعمدة الجداول المرتبطة داخل .or()
+    // لذلك نجلب customer_ids أولاً ثم نبني OR صحيح
+    const { data: matchedCustomers } = await supabase
+      .from('customers')
+      .select('id')
+      .or(`name.ilike.%${trimmed}%,code.ilike.%${trimmed}%`)
+      .limit(100)
+
+    const customerIds = (matchedCustomers || []).map((c: { id: string }) => c.id)
+
+    if (customerIds.length > 0) {
+      query = query.or(
+        `order_number.ilike.%${trimmed}%,customer_id.in.(${customerIds.join(',')})`
+      )
+    } else {
+      query = query.ilike('order_number', `%${trimmed}%`)
+    }
   }
   if (params?.status) {
     query = query.eq('status', params.status)
@@ -161,6 +178,72 @@ export async function getSalesOrders(params?: {
     page,
     pageSize,
     totalPages: Math.ceil((count || 0) / pageSize),
+  }
+}
+
+// ============================================================
+// searchSalesOrders — Keyset Pagination via RPC (O(log N))
+// يحل مشكلتين معاً:
+//   1. البحث في اسم العميل (كان معطوباً سابقاً)
+//   2. أداء OFFSET التنازلي مع كبر الجدول
+// ============================================================
+
+export interface SalesOrderSearchPage {
+  data: SalesOrder[]
+  hasMore: boolean
+  nextCursor: string | null
+  nextCursorId: string | null
+}
+
+/**
+ * searchSalesOrders — يستخدم RPC search_sales_orders مع Keyset cursor
+ * مثالي للبحث وInfinite Scroll في الموبايل وعند الحاجة لأداء أقصى
+ */
+export async function searchSalesOrders(params?: {
+  search?: string
+  status?: SalesOrderStatus
+  repId?: string
+  dateFrom?: string
+  dateTo?: string
+  cursor?: string | null
+  cursorId?: string | null
+  pageSize?: number
+}): Promise<SalesOrderSearchPage> {
+  const pageSize = params?.pageSize ?? 25
+
+  const { data, error } = await supabase.rpc('search_sales_orders', {
+    p_search:    params?.search    || null,
+    p_status:    params?.status    || null,
+    p_rep_id:    params?.repId     || null,
+    p_date_from: params?.dateFrom  || null,
+    p_date_to:   params?.dateTo    || null,
+    p_cursor_ts: params?.cursor    || null,
+    p_cursor_id: params?.cursorId  || null,
+    p_limit:     pageSize,
+  })
+
+  if (error) throw error
+
+  const rows = (data || []) as any[]
+  const hasMore = rows.length > 0 && rows[rows.length - 1]?.has_more === true
+  const lastRow = rows[rows.length - 1]
+
+  // تحويل نتائج RPC إلى نوع SalesOrder المتوافق
+  const mapped = rows.map(r => ({
+    ...r,
+    customer: r.customer_id ? {
+      id: r.customer_id, name: r.customer_name,
+      code: r.customer_code, phone: null,
+    } : null,
+    rep: r.rep_id ? { id: r.rep_id, full_name: r.rep_name } : null,
+    branch: r.branch_id ? { id: r.branch_id, name: r.branch_name } : null,
+  })) as SalesOrder[]
+
+  return {
+    data: mapped,
+    hasMore,
+    nextCursor: hasMore ? lastRow?.created_at ?? null : null,
+    nextCursorId: hasMore ? lastRow?.id ?? null : null,
   }
 }
 
@@ -606,31 +689,20 @@ export async function allocatePayment(
  * جلب إحصائيات عدد الطلبات حسب الحالة
  */
 export async function getSalesStats() {
-  const statuses: SalesOrderStatus[] = [
-    'draft', 'confirmed', 'delivered', 'completed', 'cancelled',
-  ]
+  // استعلام واحد مُجمَّع في PostgreSQL بدلاً من 6 استعلامات منفصلة
+  const { data, error } = await supabase.rpc('get_sales_stats')
+  if (error) throw error
 
-  const promises = statuses.map(async (status) => {
-    const { count, error } = await supabase
-      .from('sales_orders')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', status)
-    if (error) return { status, count: 0 }
-    return { status, count: count || 0 }
-  })
-
-  // إجمالي المبيعات المكتملة
-  const { data: totalData, error: totalError } = await supabase
-    .from('sales_orders')
-    .select('total_amount')
-    .in('status', ['delivered', 'completed'])
-
-  const totalSales = totalError ? 0 : (totalData || []).reduce((s, r) => s + r.total_amount, 0)
-  const statusCounts = await Promise.all(promises)
+  const result = data as {
+    status_counts: Record<string, number>
+    total_sales: number
+    total_orders: number
+  }
 
   return {
-    statusCounts: Object.fromEntries(statusCounts.map(s => [s.status, s.count])),
-    totalSales,
+    statusCounts: result.status_counts ?? {},
+    totalSales: result.total_sales ?? 0,
+    totalOrders: result.total_orders ?? 0,
   }
 }
 
