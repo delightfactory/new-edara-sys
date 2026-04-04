@@ -129,8 +129,8 @@ export default function ProofUploadButton({
     e.stopPropagation()
     closeSheet()
     pickingRef.current = true
-    startFilePicking()
     setTimeout(() => {
+      startFilePicking()
       cameraRef.current?.click()
     }, 50)
   }, [closeSheet])
@@ -140,8 +140,8 @@ export default function ProofUploadButton({
     e.stopPropagation()
     closeSheet()
     pickingRef.current = true
-    startFilePicking()
     setTimeout(() => {
+      startFilePicking()
       galleryRef.current?.click()
     }, 50)
   }, [closeSheet])
@@ -151,8 +151,8 @@ export default function ProofUploadButton({
     e.stopPropagation()
     closeSheet()
     pickingRef.current = true
-    startFilePicking()
     setTimeout(() => {
+      startFilePicking()
       fileRef.current?.click()
     }, 50)
   }, [closeSheet])

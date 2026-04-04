@@ -55,11 +55,6 @@ export default function ResponsiveModal({
     onClose()
   }, [onClose])
 
-  const swallowGhostEvent = (e: { stopPropagation: () => void; preventDefault: () => void }) => {
-    if (!isFilePicking()) return
-    e.preventDefault()
-    e.stopPropagation()
-  }
   // يتتبع إن كان الضغط بدأ داخل المحتوى — لمنع إغلاق المودال عند رفع الإصبع خارجه
   const pointerStartedInsideRef = useRef(false)
 
@@ -110,8 +105,6 @@ export default function ResponsiveModal({
   return (
     <div
       className={`rmodal-overlay ${isVisible ? 'rmodal-overlay--visible' : ''}`}
-      onPointerUpCapture={swallowGhostEvent}
-      onClickCapture={swallowGhostEvent}
       onPointerDown={e => {
         // نسجّل ما إذا كان الضغط بدأ خارج المحتوى (على الـ overlay مباشرة)
         pointerStartedInsideRef.current = contentRef.current?.contains(e.target as Node) ?? false

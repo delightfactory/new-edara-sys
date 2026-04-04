@@ -25,11 +25,6 @@ export default function Modal({ open, onClose, title, size = 'md', children, foo
     onClose()
   }, [onClose])
 
-  const swallowGhostEvent = (e: { stopPropagation: () => void; preventDefault: () => void }) => {
-    if (!isFilePicking()) return
-    e.preventDefault()
-    e.stopPropagation()
-  }
   // إغلاق بمفتاح Escape
   useEffect(() => {
     if (!open) return
@@ -53,8 +48,6 @@ export default function Modal({ open, onClose, title, size = 'md', children, foo
   return (
     <div
       className="modal-overlay"
-      onPointerUpCapture={swallowGhostEvent}
-      onClickCapture={swallowGhostEvent}
       onClick={disableOverlayClose ? undefined : requestClose}
     >
       <div
