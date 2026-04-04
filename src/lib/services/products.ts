@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { getAuthUserId } from '@/lib/services/_get-user-id'
 import type {
   Product, ProductInput, ProductUnit, ProductUnitInput,
   ProductCategory, Brand, Unit,
@@ -138,7 +139,7 @@ export async function getProductUnits(productId: string) {
  * حفظ وحدات المنتج (حذف القديمة + إضافة الجديدة)
  */
 export async function saveProductUnits(productId: string, units: ProductUnitInput[]) {
-  const userId = (await supabase.auth.getUser()).data.user?.id
+  const userId = await getAuthUserId()
   const { error } = await supabase.rpc('save_product_units_atomic', {
     p_product_id: productId,
     p_units: units,
@@ -308,7 +309,7 @@ export async function updateBundle(
   bundle: { name?: string; sku?: string; price?: number; is_active?: boolean },
   items?: { product_id: string; unit_id: string; quantity: number }[]
 ) {
-  const userId = (await supabase.auth.getUser()).data.user?.id
+  const userId = await getAuthUserId()
   const { error } = await supabase.rpc('update_bundle_atomic', {
     p_bundle_id: id,
     p_name: bundle.name ?? null,

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { getAuthUserId } from '@/lib/services/_get-user-id'
 import type {
   PurchaseInvoice,
   PurchaseInvoiceItem,
@@ -7,16 +8,6 @@ import type {
   PurchaseInvoiceStatus,
   PurchasePaymentMethod,
 } from '@/lib/types/master-data'
-
-// ============================================================
-// Helper — جلب معرف المستخدم الحالي
-// ============================================================
-
-async function getUserId(): Promise<string> {
-  const { data } = await supabase.auth.getUser()
-  if (!data.user?.id) throw new Error('يجب تسجيل الدخول')
-  return data.user.id
-}
 
 // تنظيف سلاسل فارغة → null (لمنع فشل UUID في Postgres)
 function sanitize(input: Record<string, any>): Record<string, any> {
@@ -123,7 +114,7 @@ export async function createPurchaseInvoice(
   header: PurchaseInvoiceInput,
   items: PurchaseInvoiceItemInput[]
 ): Promise<PurchaseInvoice> {
-  const userId = await getUserId()
+  const userId = await getAuthUserId()
   const cleanHeader = sanitize(header)
 
   // حساب إجماليات الرأسية من البنود
@@ -282,7 +273,7 @@ export async function recalcPurchaseInvoiceTotals(
  * (المرحلة الثالثة — تُحدَّث received_quantity في البنود قبل الاستدعاء)
  */
 export async function receivePurchaseInvoice(invoiceId: string): Promise<void> {
-  const userId = await getUserId()
+  const userId = await getAuthUserId()
   const { error } = await supabase.rpc('receive_purchase_invoice', {
     p_invoice_id: invoiceId,
     p_user_id:    userId,
@@ -302,7 +293,7 @@ export async function billPurchaseInvoice(
     paymentMethod?: PurchasePaymentMethod | null
   }
 ): Promise<void> {
-  const userId = await getUserId()
+  const userId = await getAuthUserId()
   const { error } = await supabase.rpc('bill_purchase_invoice', {
     p_invoice_id:     invoiceId,
     p_user_id:        userId,
@@ -324,7 +315,7 @@ export async function paySupplier(
     notes?: string | null
   }
 ): Promise<void> {
-  const userId = await getUserId()
+  const userId = await getAuthUserId()
   const { error } = await supabase.rpc('pay_supplier', {
     p_invoice_id:     invoiceId,
     p_user_id:        userId,

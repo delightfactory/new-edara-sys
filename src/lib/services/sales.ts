@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { getAuthUserId } from '@/lib/services/_get-user-id'
 import type {
   SalesOrder, SalesOrderInput, SalesOrderItem, SalesOrderItemInput,
   SalesReturn, SalesReturnInput, SalesReturnItem, SalesReturnItemInput,
@@ -6,16 +7,6 @@ import type {
   SalesOrderStatus, SalesReturnStatus,
   PaymentTerms, PaymentMethod,
 } from '@/lib/types/master-data'
-
-// ============================================================
-// Helper — جلب معرف المستخدم الحالي
-// ============================================================
-
-async function getUserId(): Promise<string> {
-  const { data } = await supabase.auth.getUser()
-  if (!data.user?.id) throw new Error('يجب تسجيل الدخول')
-  return data.user.id
-}
 
 // ============================================================
 // Shipping Companies — شركات الشحن
@@ -45,7 +36,7 @@ export async function saveShippingCompany(input: ShippingCompanyInput, id?: stri
     if (error) throw error
     return data as ShippingCompany
   } else {
-    const userId = await getUserId()
+    const userId = await getAuthUserId()
     const { data, error } = await supabase
       .from('shipping_companies')
       .insert({ ...input, created_by: userId })
@@ -202,7 +193,7 @@ function sanitize(input: Record<string, any>): Record<string, any> {
  * إنشاء أمر بيع (مسودة)
  */
 export async function createSalesOrder(input: SalesOrderInput) {
-  const userId = await getUserId()
+  const userId = await getAuthUserId()
   const clean = sanitize(input)
   const { data, error } = await supabase
     .from('sales_orders')
@@ -315,7 +306,7 @@ export async function recalcOrderTotals(orderId: string) {
  * تأكيد أمر البيع → حجز المخزون
  */
 export async function confirmSalesOrder(orderId: string) {
-  const userId = await getUserId()
+  const userId = await getAuthUserId()
   const { error } = await supabase.rpc('confirm_sales_order', {
     p_order_id: orderId,
     p_user_id: userId,
@@ -338,7 +329,7 @@ export async function deliverSalesOrder(orderId: string, params: {
   checkDate?: string | null       // تاريخ استحقاق الشيك (YYYY-MM-DD)
   proofUrl?: string | null        // رابط إثبات الدفع (صورة/PDF)
 }) {
-  const userId = await getUserId()
+  const userId = await getAuthUserId()
   // نُحدّث proof_url في إيصال الدفع المُنشأ تلقائياً بعد التسليم
   const { error } = await supabase.rpc('deliver_sales_order', {
     p_order_id: orderId,
@@ -370,7 +361,7 @@ export async function deliverSalesOrder(orderId: string, params: {
  * إلغاء أمر البيع → إلغاء حجز المخزون
  */
 export async function cancelSalesOrder(orderId: string, reason?: string) {
-  const userId = await getUserId()
+  const userId = await getAuthUserId()
   const { error } = await supabase.rpc('cancel_sales_order', {
     p_order_id: orderId,
     p_user_id: userId,
@@ -423,7 +414,7 @@ export interface UserPaymentOptions {
 
 /** خيارات الدفع المتاحة للمستخدم الحالي */
 export async function getUserPaymentOptions(branchId?: string | null): Promise<UserPaymentOptions> {
-  const userId = await getUserId()
+  const userId = await getAuthUserId()
   const { data, error } = await supabase.rpc('get_user_payment_options', {
     p_user_id: userId,
     p_branch_id: branchId || null,
@@ -530,7 +521,7 @@ export async function createSalesReturn(
   input: SalesReturnInput,
   items: SalesReturnItemInput[]
 ) {
-  const userId = await getUserId()
+  const userId = await getAuthUserId()
 
   // إنشاء الرأسية
   const { data: ret, error } = await supabase
@@ -570,7 +561,7 @@ export async function confirmSalesReturn(returnId: string, params?: {
   vaultId?: string | null
   custodyId?: string | null
 }) {
-  const userId = await getUserId()
+  const userId = await getAuthUserId()
   const { error } = await supabase.rpc('confirm_sales_return', {
     p_return_id: returnId,
     p_user_id: userId,
@@ -594,7 +585,7 @@ export async function allocatePayment(
   sourceType: string,
   sourceId: string
 ) {
-  const userId = await getUserId()
+  const userId = await getAuthUserId()
   const { data, error } = await supabase.rpc('allocate_payment_to_invoices', {
     p_customer_id: customerId,
     p_amount: amount,

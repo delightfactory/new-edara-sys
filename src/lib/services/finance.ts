@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { getAuthUserId } from '@/lib/services/_get-user-id'
 import type {
   ChartOfAccount, CustomerLedgerEntry, CustomerBalance,
   SupplierLedgerEntry, SupplierBalance,
@@ -254,7 +255,7 @@ export async function createManualJournalEntry(
   entry: JournalEntryInput,
   lines: JournalEntryLineInput[]
 ) {
-  const userId = (await supabase.auth.getUser()).data.user?.id
+  const userId = await getAuthUserId()
 
   // Client-side fast-fail validation
   const totalDebit = lines.reduce((sum, l) => sum + l.debit, 0)
@@ -303,7 +304,7 @@ export async function createUIManualJournalEntry(
     throw new Error('لا يمكن القيد المباشر على حسابات السيطرة للعملاء والموردين من شاشة القيود اليدوية')
   }
 
-  const userId = (await supabase.auth.getUser()).data.user?.id
+  const userId = await getAuthUserId()
   const linesJson = lines.map(l => ({
     account_code: l.account_code,
     debit: l.debit,

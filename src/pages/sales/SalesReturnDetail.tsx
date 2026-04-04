@@ -29,6 +29,7 @@ export default function SalesReturnDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const can = useAuthStore(s => s.can)
+  const currentUserId = useAuthStore(s => s.profile?.id)
   const invalidate = useInvalidate()
 
   const [ret, setRet] = useState<SalesReturn | null>(null)
@@ -89,10 +90,9 @@ export default function SalesReturnDetail() {
   const handleCancel = async () => {
     setActionLoading(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
       const { error } = await supabase
         .from('sales_returns')
-        .update({ status: 'cancelled', cancelled_by: user?.id, cancelled_at: new Date().toISOString() })
+        .update({ status: 'cancelled', cancelled_by: currentUserId, cancelled_at: new Date().toISOString() })
         .eq('id', id!)
         .eq('status', 'draft')
       if (error) throw error

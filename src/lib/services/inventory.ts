@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { getAuthUserId } from '@/lib/services/_get-user-id'
 import type {
   Warehouse, WarehouseManager, Stock, StockBatch, StockMovement,
   StockTransfer, StockTransferItem,
@@ -420,7 +421,7 @@ export async function createTransfer(
   },
   items: { product_id: string; unit_id: string; quantity: number }[]
 ) {
-  const userId = (await supabase.auth.getUser()).data.user?.id
+  const userId = await getAuthUserId()
   if (!userId) throw new Error('يجب تسجيل الدخول')
 
   const { data, error } = await supabase.rpc('create_transfer_with_reservation', {
@@ -439,7 +440,7 @@ export async function createTransfer(
  * تأكيد شحن (Push) — خصم المخزون + إلغاء الحجز + تسجيل حركات
  */
 export async function shipTransfer(transferId: string) {
-  const userId = (await supabase.auth.getUser()).data.user?.id
+  const userId = await getAuthUserId()
   if (!userId) throw new Error('يجب تسجيل الدخول')
 
   const { error } = await supabase.rpc('confirm_transfer_shipment', {
@@ -453,7 +454,7 @@ export async function shipTransfer(transferId: string) {
  * موافقة وشحن (Pull) — فحص التوفر + خصم فوري + تسجيل حركات
  */
 export async function approveAndShipTransfer(transferId: string) {
-  const userId = (await supabase.auth.getUser()).data.user?.id
+  const userId = await getAuthUserId()
   if (!userId) throw new Error('يجب تسجيل الدخول')
 
   const { error } = await supabase.rpc('approve_and_ship_transfer', {
@@ -467,7 +468,7 @@ export async function approveAndShipTransfer(transferId: string) {
  * تأكيد الاستلام — إضافة المخزون بالـ WAC + تسجيل حركات
  */
 export async function receiveTransfer(transferId: string) {
-  const userId = (await supabase.auth.getUser()).data.user?.id
+  const userId = await getAuthUserId()
   if (!userId) throw new Error('يجب تسجيل الدخول')
 
   const { error } = await supabase.rpc('confirm_transfer_receipt', {
@@ -481,7 +482,7 @@ export async function receiveTransfer(transferId: string) {
  * إلغاء التحويل — إلغاء الحجز إن وُجد
  */
 export async function cancelTransfer(transferId: string) {
-  const userId = (await supabase.auth.getUser()).data.user?.id
+  const userId = await getAuthUserId()
   if (!userId) throw new Error('يجب تسجيل الدخول')
 
   const { error } = await supabase.rpc('cancel_transfer', {
@@ -574,7 +575,7 @@ export async function createAdjustment(
   },
   items: { product_id: string; actual_qty: number; unit_cost?: number; notes?: string }[]
 ) {
-  const userId = (await supabase.auth.getUser()).data.user?.id
+  const userId = await getAuthUserId()
   if (!userId) throw new Error('يجب تسجيل الدخول')
 
   const { data, error } = await supabase.rpc('create_adjustment_with_items', {
@@ -592,7 +593,7 @@ export async function createAdjustment(
  * اعتماد التسوية — تطبيق الفروق على المخزون (ذري)
  */
 export async function approveAdjustment(adjustmentId: string) {
-  const userId = (await supabase.auth.getUser()).data.user?.id
+  const userId = await getAuthUserId()
   if (!userId) throw new Error('يجب تسجيل الدخول')
 
   const { error } = await supabase.rpc('confirm_adjustment', {
@@ -606,7 +607,7 @@ export async function approveAdjustment(adjustmentId: string) {
  * رفض التسوية — بدون تطبيق + سبب الرفض
  */
 export async function rejectAdjustment(adjustmentId: string, reason?: string) {
-  const userId = (await supabase.auth.getUser()).data.user?.id
+  const userId = await getAuthUserId()
   if (!userId) throw new Error('يجب تسجيل الدخول')
 
   const { error } = await supabase.rpc('reject_adjustment', {

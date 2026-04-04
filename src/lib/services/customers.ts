@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { getAuthUserId } from '@/lib/services/_get-user-id'
 import type {
   Customer, CustomerInput, CustomerBranch, CustomerContact, CustomerCreditHistory
 } from '@/lib/types/master-data'
@@ -131,7 +132,7 @@ export async function getCustomer(id: string) {
  * إنشاء عميل — الكود يتولد تلقائياً بالـ Trigger (CUS-00001)
  */
 export async function createCustomer(input: CustomerInput) {
-  const userId = (await supabase.auth.getUser()).data.user?.id
+  const userId = await getAuthUserId()
   const { data, error } = await supabase
     .from('customers')
     .insert({ ...input, created_by: userId })
@@ -145,7 +146,7 @@ export async function createCustomer(input: CustomerInput) {
  * تحديث عميل
  */
 export async function updateCustomer(id: string, input: Partial<CustomerInput>) {
-  const userId = (await supabase.auth.getUser()).data.user?.id
+  const userId = await getAuthUserId()
   const { opening_balance, ...nonFinancialFields } = input
   const { error } = await supabase.rpc('update_customer_with_opening_balance', {
     p_customer_id: id,
@@ -182,7 +183,7 @@ export async function updateCustomerLocation(id: string, location: {
     .update({
       ...location,
       location_updated_at: new Date().toISOString(),
-      location_updated_by: (await supabase.auth.getUser()).data.user?.id,
+      location_updated_by: await getAuthUserId(),
     })
     .eq('id', id)
   if (error) throw error

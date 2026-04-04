@@ -29,64 +29,35 @@ import type { NotificationRow } from '@/lib/notifications/types'
 
 /**
  * خريطة الجدول → مفاتيح الـ cache المُبطلة
- * كل تغيير في الجدول يُبطل كل الـ queries التي تبدأ بهذه المفاتيح
+ *
+ * ⚠️ قاعدة التحسين:
+ * نستمع فقط للجداول التي:
+ *   1. تتغير بشكل متكرر أثناء الاستخدام الفعلي
+ *   2. يحتاج المستخدم لرؤية تحديثها فوراً دون تحميل يدوي
+ *
+ * الجداول المرجعية (categories, brands, warehouses, profiles...)
+ * لا تتغير بشكل متكرر → لا تستحق استهلاك WebSocket bandwidth
+ * والمستخدم يقوم بتحميل الصفحة عند الحاجة للتحديث
  */
 const TABLE_QUERY_MAP: Record<string, string[]> = {
-  // ─── المالية ───
-  expenses:             ['expenses'],
+  // ─── عمليات مالية (تتغير مع كل معاملة) ───
   payment_receipts:     ['payment-receipts'],
-  vaults:               ['vaults'],
+  expenses:             ['expenses'],
   vault_transactions:   ['vault-transactions', 'vaults'],
-  custody_accounts:     ['custody-accounts'],
   custody_transactions: ['custody-transactions', 'custody-accounts'],
-  journal_entries:      ['journal-entries'],
-  journal_entry_lines:  ['journal-entries'],
-  customer_ledger:      ['customer-ledger'],
-  supplier_ledger:      ['supplier-ledger'],
 
-  // ─── المخزون ───
-  stock:               ['stock', 'stock-movements'],
+  // ─── المخزون الحي (يتغير مع كل تسليم) ───
+  stock:               ['stock'],
   stock_transfers:     ['transfers'],
-  stock_transfer_items:['transfers'],
-  stock_adjustments:   ['adjustments'],
 
-  // ─── البيانات الأساسية ───
-  customers:           ['customers'],
-  products:            ['products'],
-  suppliers:           ['suppliers'],
-  warehouses:          ['warehouses', 'my-warehouses'],
-  profiles:            ['profiles-active', 'users'],
-  product_categories:  ['product-categories'],
-  brands:              ['brands'],
-  user_roles:          ['users', 'profiles-active'],
-
-  // ─── المبيعات ───
+  // ─── المبيعات (حالة الطلبات تتغير مع التسليم) ───
   sales_orders:        ['sales-orders', 'sales-stats'],
-  sales_order_items:   ['sales-orders'],
-  sale_returns:        ['sales-returns'],
 
-  // ─── المشتريات ───
-  purchase_orders:     ['purchase-orders'],
-  purchase_order_items:['purchase-orders'],
-
-  // ─── الأنشطة الميدانية ───
-  visit_plans:         ['visit-plans'],
-  visit_plan_items:    ['visit-plans', 'visit-plan-items'],
-  call_plans:          ['call-plans'],
-  call_plan_items:     ['call-plans', 'call-plan-items'],
-  activities:          ['activities', 'rep-performance', 'plan-daily-summary'],
-
-  // ─── الموارد البشرية ───
-  hr_employees:        ['hr-employees', 'hr-current-employee'],
-  hr_attendance:       ['hr-attendance-days', 'hr-attendance-alerts',
-                        'hr-attendance-review-summary', 'hr-attendance-summary'],
-  hr_leave_requests:   ['hr-leave-requests', 'hr-leave-balances'],
-  hr_advances:         ['hr-advances'],
-  hr_payroll_runs:     ['hr-payroll-runs'],
-  hr_payroll_lines:    ['hr-payroll-runs', 'hr-payroll-lines'],
+  // ─── الحضور (يتغير بشكل مستمر أثناء الدوام) ───
+  hr_attendance:       ['hr-attendance-days', 'hr-attendance-summary'],
 }
 
-const DEBOUNCE_MS = 500 // تأخير نصف ثانية لتجميع bulk operations
+const DEBOUNCE_MS = 1500 // 1.5 ثانية — يمنع cascade refetch في bulk operations
 
 export default function GlobalRealtimeManager() {
   const queryClient = useQueryClient()

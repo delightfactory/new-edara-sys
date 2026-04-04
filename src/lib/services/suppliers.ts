@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { getAuthUserId } from '@/lib/services/_get-user-id'
 import type {
   Supplier, SupplierInput, SupplierContact, SupplierPaymentReminder
 } from '@/lib/types/master-data'
@@ -121,7 +122,7 @@ export async function createSupplier(input: SupplierInput) {
  * تحديث مورد
  */
 export async function updateSupplier(id: string, input: Partial<SupplierInput>) {
-  const userId = (await supabase.auth.getUser()).data.user?.id
+  const userId = await getAuthUserId()
   const { opening_balance, ...nonFinancialFields } = input
   const { error } = await supabase.rpc('update_supplier_with_opening_balance', {
     p_supplier_id: id,

@@ -25,7 +25,6 @@ import Button from '@/components/ui/Button'
 import TargetProgressWidget from '@/components/shared/TargetProgressWidget'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
 import ActivityStatusBadge from '@/components/shared/ActivityStatusBadge'
-import { supabase } from '@/lib/supabase/client'
 import type { TargetProgress, TargetAdjustment, AdjustableField } from '@/lib/types/activities'
 
 import RewardConfigCard from '@/components/targets/RewardConfigCard'
@@ -58,6 +57,7 @@ export default function TargetDetail() {
   const { id }     = useParams<{ id: string }>()
   const navigate   = useNavigate()
   const can        = useAuthStore(s => s.can)
+  const currentUserId = useAuthStore(s => s.profile?.id) ?? ''
 
   // ── Modals State
   const [adjustOpen, setAdjustOpen]   = useState(false)
@@ -127,10 +127,8 @@ export default function TargetDetail() {
     if (!id || !reason.trim()) return
     setProcessing(true)
     try {
-      const { data: userData } = await supabase.auth.getUser()
-      const userId = userData.user?.id ?? ''
       adjustTarget.mutate(
-        { p_target_id: id, p_field: field, p_new_value: value, p_reason: reason, p_user_id: userId },
+        { p_target_id: id, p_field: field, p_new_value: value, p_reason: reason, p_user_id: currentUserId },
         {
           onSuccess: () => {
             toast.success('تم تعديل الهدف')

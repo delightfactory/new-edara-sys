@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
 import Button from '@/components/ui/Button'
 import { useAdjustTargetBatch } from '@/hooks/useQueryHooks'
-import { supabase } from '@/lib/supabase/client'
+import { useAuthStore } from '@/stores/auth-store'
 import { toast } from 'sonner'
 import type { TargetRewardSummary } from '@/lib/types/activities'
 import { AlertCircle, Lock } from 'lucide-react'
@@ -36,6 +36,7 @@ export default function TargetRewardEditModal({
 
   const adjustBatch = useAdjustTargetBatch()
   const isLocked    = summary?.is_payout_locked
+  const currentUserId = useAuthStore(s => s.profile?.id) ?? ''
 
   // ── القواعد المستنتجة من helper ────────────────────────────
   const canPercentage  = allowsPercentageReward(typeCategory, typeCode)
@@ -109,10 +110,7 @@ export default function TargetRewardEditModal({
     }
 
     try {
-      const { data: userData } = await supabase.auth.getUser()
-      const userId = userData.user?.id ?? ''
-
-      adjustBatch.mutate({ targetId, fields, reason, userId }, {
+      adjustBatch.mutate({ targetId, fields, reason, userId: currentUserId }, {
         onSuccess: () => {
           toast.success('تم تحديث إعدادات المكافأة بنجاح')
           onClose()

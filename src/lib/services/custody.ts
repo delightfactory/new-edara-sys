@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { getAuthUserId } from '@/lib/services/_get-user-id'
 import type {
   CustodyAccount, CustodyAccountInput, CustodyTransaction
 } from '@/lib/types/master-data'
@@ -50,7 +51,7 @@ export async function getCustodyAccount(id: string) {
  * جلب عهدة الموظف الحالي
  */
 export async function getMyCustodyAccount() {
-  const userId = (await supabase.auth.getUser()).data.user?.id
+  const userId = await getAuthUserId()
   if (!userId) throw new Error('غير مصادق')
 
   const { data, error } = await supabase
@@ -141,7 +142,7 @@ export async function loadCustodyFromVault(
   vaultId: string,
   amount: number,
 ) {
-  const userId = (await supabase.auth.getUser()).data.user?.id
+  const userId = await getAuthUserId()
   const { error } = await supabase.rpc('load_custody_from_vault', {
     p_custody_id: custodyId,
     p_vault_id: vaultId,
@@ -161,7 +162,7 @@ export async function settleCustodyToVault(
   amount: number,
   type: 'settlement' | 'return' = 'settlement',
 ) {
-  const userId = (await supabase.auth.getUser()).data.user?.id
+  const userId = await getAuthUserId()
   const { error } = await supabase.rpc('settle_custody_to_vault', {
     p_custody_id: custodyId,
     p_vault_id: vaultId,

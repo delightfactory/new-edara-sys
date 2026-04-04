@@ -1,0 +1,2877 @@
+[
+    {
+        "policies_snapshot": [
+            {
+                "tablename": "activities",
+                "policyname": "acts_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "((employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) AND (created_by = auth.uid()) AND check_permission(auth.uid(), 'activities.create'::text))"
+            },
+            {
+                "tablename": "activities",
+                "policyname": "acts_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) OR (check_permission(auth.uid(), 'activities.read_team'::text) AND (employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n           FROM hr_employees hr_employees_1\n          WHERE (hr_employees_1.user_id = auth.uid())\n         LIMIT 1))))) OR check_permission(auth.uid(), 'activities.read_all'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "activities",
+                "policyname": "acts_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "(((employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) AND check_permission(auth.uid(), 'activities.update_own'::text) AND (created_at > (now() - '24:00:00'::interval))) OR check_permission(auth.uid(), 'activities.read_all'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "activity_types",
+                "policyname": "act_types_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(auth.uid() IS NOT NULL)",
+                "with_check": null
+            },
+            {
+                "tablename": "activity_types",
+                "policyname": "act_types_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'settings.update'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "activity_types",
+                "policyname": "activity_types_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(auth.uid() IS NOT NULL)",
+                "with_check": null
+            },
+            {
+                "tablename": "approval_rules",
+                "policyname": "approval_rules_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(auth.uid() IS NOT NULL)",
+                "with_check": null
+            },
+            {
+                "tablename": "approval_rules",
+                "policyname": "approval_rules_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'settings.update'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "areas",
+                "policyname": "areas_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(auth.uid() IS NOT NULL)",
+                "with_check": null
+            },
+            {
+                "tablename": "areas",
+                "policyname": "areas_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'branches.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "audit_logs",
+                "policyname": "audit_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "(auth.uid() IS NOT NULL)"
+            },
+            {
+                "tablename": "audit_logs",
+                "policyname": "audit_select",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((user_id = auth.uid()) OR check_permission(auth.uid(), 'settings.audit.read'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "branches",
+                "policyname": "branches_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "check_permission(auth.uid(), 'branches.read'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "branches",
+                "policyname": "branches_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'branches.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "brands",
+                "policyname": "brands_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "check_permission(auth.uid(), 'products.read'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "brands",
+                "policyname": "brands_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'products.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "call_details",
+                "policyname": "cd_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "(EXISTS ( SELECT 1\n   FROM activities a\n  WHERE ((a.id = call_details.activity_id) AND (a.employee_id IN ( SELECT hr_employees.id\n           FROM hr_employees\n          WHERE (hr_employees.user_id = auth.uid()))) AND check_permission(auth.uid(), 'activities.create'::text))))"
+            },
+            {
+                "tablename": "call_details",
+                "policyname": "cd_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(EXISTS ( SELECT 1\n   FROM activities a\n  WHERE ((a.id = call_details.activity_id) AND ((a.employee_id IN ( SELECT hr_employees.id\n           FROM hr_employees\n          WHERE (hr_employees.user_id = auth.uid()))) OR (check_permission(auth.uid(), 'activities.read_team'::text) AND (a.employee_id IN ( SELECT hr_employees.id\n           FROM hr_employees\n          WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n                   FROM hr_employees hr_employees_1\n                  WHERE (hr_employees_1.user_id = auth.uid())))))) OR check_permission(auth.uid(), 'activities.read_all'::text)))))",
+                "with_check": null
+            },
+            {
+                "tablename": "call_details",
+                "policyname": "cd_rls",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "(activity_id IN ( SELECT activities.id\n   FROM activities\n  WHERE ((activities.employee_id IN ( SELECT hr_employees.id\n           FROM hr_employees\n          WHERE (hr_employees.user_id = auth.uid()))) OR check_permission(auth.uid(), 'activities.read_all'::text))))",
+                "with_check": null
+            },
+            {
+                "tablename": "call_details",
+                "policyname": "cd_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "(EXISTS ( SELECT 1\n   FROM activities a\n  WHERE ((a.id = call_details.activity_id) AND (((a.employee_id IN ( SELECT hr_employees.id\n           FROM hr_employees\n          WHERE (hr_employees.user_id = auth.uid()))) AND check_permission(auth.uid(), 'activities.update_own'::text)) OR check_permission(auth.uid(), 'activities.read_all'::text)))))",
+                "with_check": "(EXISTS ( SELECT 1\n   FROM activities a\n  WHERE ((a.id = call_details.activity_id) AND (((a.employee_id IN ( SELECT hr_employees.id\n           FROM hr_employees\n          WHERE (hr_employees.user_id = auth.uid()))) AND check_permission(auth.uid(), 'activities.update_own'::text)) OR check_permission(auth.uid(), 'activities.read_all'::text)))))"
+            },
+            {
+                "tablename": "call_plan_items",
+                "policyname": "cpi_delete",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "DELETE",
+                "qual": "((check_permission(auth.uid(), 'call_plans.create'::text) AND (EXISTS ( SELECT 1\n   FROM call_plans cp\n  WHERE ((cp.id = call_plan_items.plan_id) AND (cp.employee_id IN ( SELECT hr_employees.id\n           FROM hr_employees\n          WHERE (hr_employees.user_id = auth.uid()))))))) OR check_permission(auth.uid(), 'call_plans.read_all'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "call_plan_items",
+                "policyname": "cpi_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "((check_permission(auth.uid(), 'call_plans.create'::text) AND (EXISTS ( SELECT 1\n   FROM call_plans cp\n  WHERE ((cp.id = call_plan_items.plan_id) AND ((cp.employee_id IN ( SELECT hr_employees.id\n           FROM hr_employees\n          WHERE (hr_employees.user_id = auth.uid()))) OR check_permission(auth.uid(), 'call_plans.read_team'::text)))))) OR check_permission(auth.uid(), 'call_plans.read_all'::text))"
+            },
+            {
+                "tablename": "call_plan_items",
+                "policyname": "cpi_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(EXISTS ( SELECT 1\n   FROM call_plans cp\n  WHERE ((cp.id = call_plan_items.plan_id) AND ((cp.employee_id IN ( SELECT hr_employees.id\n           FROM hr_employees\n          WHERE (hr_employees.user_id = auth.uid()))) OR check_permission(auth.uid(), 'call_plans.read_all'::text)))))",
+                "with_check": null
+            },
+            {
+                "tablename": "call_plan_items",
+                "policyname": "cpi_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "((check_permission(auth.uid(), 'activities.create'::text) AND (EXISTS ( SELECT 1\n   FROM call_plans cp\n  WHERE ((cp.id = call_plan_items.plan_id) AND (cp.employee_id IN ( SELECT hr_employees.id\n           FROM hr_employees\n          WHERE (hr_employees.user_id = auth.uid()))))))) OR (check_permission(auth.uid(), 'call_plans.create'::text) AND (EXISTS ( SELECT 1\n   FROM call_plans cp\n  WHERE ((cp.id = call_plan_items.plan_id) AND (cp.employee_id IN ( SELECT hr_employees.id\n           FROM hr_employees\n          WHERE (hr_employees.user_id = auth.uid()))))))) OR (check_permission(auth.uid(), 'call_plans.confirm'::text) AND (EXISTS ( SELECT 1\n   FROM call_plans cp\n  WHERE ((cp.id = call_plan_items.plan_id) AND (cp.employee_id IN ( SELECT hr_employees.id\n           FROM hr_employees\n          WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n                   FROM hr_employees hr_employees_1\n                  WHERE (hr_employees_1.user_id = auth.uid())\n                 LIMIT 1)))))))) OR check_permission(auth.uid(), 'call_plans.read_all'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "call_plan_templates",
+                "policyname": "cpt_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "(check_permission(auth.uid(), 'call_plans.create'::text) AND ((branch_id IS NULL) OR (branch_id IN ( SELECT hr_employees.branch_id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) OR check_permission(auth.uid(), 'call_plans.read_all'::text)))"
+            },
+            {
+                "tablename": "call_plan_templates",
+                "policyname": "cpt_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(auth.uid() IS NOT NULL)",
+                "with_check": null
+            },
+            {
+                "tablename": "call_plan_templates",
+                "policyname": "cpt_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "((check_permission(auth.uid(), 'call_plans.create'::text) AND ((created_by = auth.uid()) OR (employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n           FROM hr_employees hr_employees_1\n          WHERE (hr_employees_1.user_id = auth.uid()))))) OR (branch_id IN ( SELECT hr_employees.branch_id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))))) OR check_permission(auth.uid(), 'call_plans.read_all'::text))",
+                "with_check": "((check_permission(auth.uid(), 'call_plans.create'::text) AND ((created_by = auth.uid()) OR (employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n           FROM hr_employees hr_employees_1\n          WHERE (hr_employees_1.user_id = auth.uid()))))) OR (branch_id IN ( SELECT hr_employees.branch_id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))))) OR check_permission(auth.uid(), 'call_plans.read_all'::text))"
+            },
+            {
+                "tablename": "call_plan_templates",
+                "policyname": "cpt_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'call_plans.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "call_plans",
+                "policyname": "cp_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "(check_permission(auth.uid(), 'call_plans.create'::text) AND ((employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) OR (check_permission(auth.uid(), 'call_plans.read_team'::text) AND (employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n           FROM hr_employees hr_employees_1\n          WHERE (hr_employees_1.user_id = auth.uid())))))) OR check_permission(auth.uid(), 'call_plans.read_all'::text)))"
+            },
+            {
+                "tablename": "call_plans",
+                "policyname": "cp_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) OR (check_permission(auth.uid(), 'call_plans.read_team'::text) AND (employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n           FROM hr_employees hr_employees_1\n          WHERE (hr_employees_1.user_id = auth.uid())\n         LIMIT 1))))) OR check_permission(auth.uid(), 'call_plans.read_all'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "call_plans",
+                "policyname": "cp_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "((check_permission(auth.uid(), 'call_plans.create'::text) AND (employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n           FROM hr_employees hr_employees_1\n          WHERE (hr_employees_1.user_id = auth.uid())))))) OR (check_permission(auth.uid(), 'call_plans.confirm'::text) AND (employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n           FROM hr_employees hr_employees_1\n          WHERE (hr_employees_1.user_id = auth.uid())))))) OR (check_permission(auth.uid(), 'call_plans.cancel'::text) AND (employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n           FROM hr_employees hr_employees_1\n          WHERE (hr_employees_1.user_id = auth.uid())))))) OR check_permission(auth.uid(), 'call_plans.read_all'::text))",
+                "with_check": "((check_permission(auth.uid(), 'call_plans.create'::text) AND (employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n           FROM hr_employees hr_employees_1\n          WHERE (hr_employees_1.user_id = auth.uid())))))) OR (check_permission(auth.uid(), 'call_plans.confirm'::text) AND (employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n           FROM hr_employees hr_employees_1\n          WHERE (hr_employees_1.user_id = auth.uid())))))) OR (check_permission(auth.uid(), 'call_plans.cancel'::text) AND (employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n           FROM hr_employees hr_employees_1\n          WHERE (hr_employees_1.user_id = auth.uid())))))) OR check_permission(auth.uid(), 'call_plans.read_all'::text))"
+            },
+            {
+                "tablename": "call_plans",
+                "policyname": "cp_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'call_plans.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "chart_of_accounts",
+                "policyname": "coa_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(auth.uid() IS NOT NULL)",
+                "with_check": null
+            },
+            {
+                "tablename": "chart_of_accounts",
+                "policyname": "coa_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'finance.journal.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "cities",
+                "policyname": "cities_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(auth.uid() IS NOT NULL)",
+                "with_check": null
+            },
+            {
+                "tablename": "company_settings",
+                "policyname": "settings_select",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((is_public = true) OR check_permission(auth.uid(), 'settings.read'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "company_settings",
+                "policyname": "settings_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "check_permission(auth.uid(), 'settings.update'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "custody_accounts",
+                "policyname": "custody_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((employee_id = auth.uid()) OR check_permission(auth.uid(), 'finance.custody.read_all'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "custody_accounts",
+                "policyname": "custody_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'finance.custody.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "custody_transactions",
+                "policyname": "custody_txn_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(check_permission(auth.uid(), 'finance.custody.read_all'::text) OR (custody_id IN ( SELECT custody_accounts.id\n   FROM custody_accounts\n  WHERE (custody_accounts.employee_id = auth.uid()))))",
+                "with_check": null
+            },
+            {
+                "tablename": "custody_transactions",
+                "policyname": "custody_txn_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'finance.custody.transact'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "customer_branches",
+                "policyname": "customer_branches_delete",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "DELETE",
+                "qual": "check_permission(auth.uid(), 'customers.update'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "customer_branches",
+                "policyname": "customer_branches_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "(check_permission(auth.uid(), 'customers.create'::text) OR check_permission(auth.uid(), 'customers.update'::text))"
+            },
+            {
+                "tablename": "customer_branches",
+                "policyname": "customer_branches_modify",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "check_permission(auth.uid(), 'customers.update'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "customer_branches",
+                "policyname": "customer_branches_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(check_permission(auth.uid(), 'customers.read_all'::text) OR (check_permission(auth.uid(), 'customers.read'::text) AND (customer_id IN ( SELECT customers.id\n   FROM customers\n  WHERE (customers.assigned_rep_id = auth.uid())))))",
+                "with_check": null
+            },
+            {
+                "tablename": "customer_contacts",
+                "policyname": "customer_contacts_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(check_permission(auth.uid(), 'customers.read_all'::text) OR (check_permission(auth.uid(), 'customers.read'::text) AND (customer_id IN ( SELECT customers.id\n   FROM customers\n  WHERE (customers.assigned_rep_id = auth.uid())))))",
+                "with_check": null
+            },
+            {
+                "tablename": "customer_contacts",
+                "policyname": "customer_contacts_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'customers.update'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "customer_credit_history",
+                "policyname": "credit_history_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "check_permission(auth.uid(), 'customers.read'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "customer_ledger",
+                "policyname": "cust_ledger_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "check_permission(auth.uid(), 'finance.ledger.read'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "customer_ledger",
+                "policyname": "cust_ledger_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'finance.ledger.adjust'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "customers",
+                "policyname": "customers_delete",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "DELETE",
+                "qual": "check_permission(auth.uid(), 'customers.delete'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "customers",
+                "policyname": "customers_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(check_permission(auth.uid(), 'customers.read_all'::text) OR (check_permission(auth.uid(), 'customers.read'::text) AND (assigned_rep_id = auth.uid())))",
+                "with_check": null
+            },
+            {
+                "tablename": "customers",
+                "policyname": "customers_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "check_permission(auth.uid(), 'customers.update'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "customers",
+                "policyname": "customers_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "check_permission(auth.uid(), 'customers.create'::text)"
+            },
+            {
+                "tablename": "expense_categories",
+                "policyname": "exp_cat_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(auth.uid() IS NOT NULL)",
+                "with_check": null
+            },
+            {
+                "tablename": "expense_categories",
+                "policyname": "exp_cat_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'finance.expenses.approve'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "expenses",
+                "policyname": "expenses_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "check_permission(auth.uid(), 'finance.expenses.create'::text)"
+            },
+            {
+                "tablename": "expenses",
+                "policyname": "expenses_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((created_by = auth.uid()) OR check_permission(auth.uid(), 'finance.expenses.read_all'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "expenses",
+                "policyname": "expenses_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "(((created_by = auth.uid()) AND (status = 'draft'::text)) OR check_permission(auth.uid(), 'finance.expenses.approve'::text))",
+                "with_check": "(check_permission(auth.uid(), 'finance.expenses.approve'::text) OR (status = ANY (ARRAY['draft'::text, 'pending_approval'::text])))"
+            },
+            {
+                "tablename": "feature_flags",
+                "policyname": "flags_select",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(auth.uid() IS NOT NULL)",
+                "with_check": null
+            },
+            {
+                "tablename": "feature_flags",
+                "policyname": "flags_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'settings.update'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "governorates",
+                "policyname": "geo_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(auth.uid() IS NOT NULL)",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_advance_installments",
+                "policyname": "hr_inst_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((advance_id IN ( SELECT hr_advances.id\n   FROM hr_advances\n  WHERE (hr_advances.employee_id IN ( SELECT hr_employees.id\n           FROM hr_employees\n          WHERE (hr_employees.user_id = auth.uid()))))) OR check_permission(auth.uid(), 'hr.advances.read'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_advance_installments",
+                "policyname": "hr_inst_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'hr.payroll.calculate'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_advances",
+                "policyname": "hr_adv_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "((employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) OR check_permission(auth.uid(), 'hr.advances.create'::text))"
+            },
+            {
+                "tablename": "hr_advances",
+                "policyname": "hr_adv_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) OR check_permission(auth.uid(), 'hr.advances.read'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_advances",
+                "policyname": "hr_adv_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "check_permission(auth.uid(), 'hr.advances.approve'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_attendance_alerts",
+                "policyname": "hr_attendance_alerts_select",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) OR check_permission(auth.uid(), 'hr.attendance.read'::text) OR check_permission(auth.uid(), 'hr.payroll.read'::text) OR check_permission(auth.uid(), 'hr.permissions.approve'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_attendance_alerts",
+                "policyname": "hr_attendance_alerts_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "(check_permission(auth.uid(), 'hr.attendance.edit'::text) OR check_permission(auth.uid(), 'hr.permissions.approve'::text) OR check_permission(auth.uid(), 'hr.payroll.approve'::text))",
+                "with_check": "(check_permission(auth.uid(), 'hr.attendance.edit'::text) OR check_permission(auth.uid(), 'hr.permissions.approve'::text) OR check_permission(auth.uid(), 'hr.payroll.approve'::text))"
+            },
+            {
+                "tablename": "hr_attendance_days",
+                "policyname": "hr_att_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) OR check_permission(auth.uid(), 'hr.attendance.read'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_attendance_days",
+                "policyname": "hr_att_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'hr.attendance.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_attendance_logs",
+                "policyname": "hr_logs_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "(auth.uid() IS NOT NULL)"
+            },
+            {
+                "tablename": "hr_attendance_logs",
+                "policyname": "hr_logs_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) OR check_permission(auth.uid(), 'hr.attendance.read'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_commission_records",
+                "policyname": "hr_cr_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) OR check_permission(auth.uid(), 'hr.payroll.read'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_commission_records",
+                "policyname": "hr_cr_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'hr.payroll.calculate'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_commission_targets",
+                "policyname": "hr_ct_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) OR check_permission(auth.uid(), 'hr.payroll.read'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_commission_targets",
+                "policyname": "hr_ct_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'hr.payroll.calculate'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_contracts",
+                "policyname": "hr_contracts_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) OR check_permission(auth.uid(), 'hr.employees.read'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_contracts",
+                "policyname": "hr_contracts_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'hr.employees.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_delegations",
+                "policyname": "hr_deleg_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((delegator_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) OR (delegate_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) OR check_permission(auth.uid(), 'hr.employees.read'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_delegations",
+                "policyname": "hr_deleg_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'hr.employees.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_departments",
+                "policyname": "hr_depts_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(auth.uid() IS NOT NULL)",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_departments",
+                "policyname": "hr_depts_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'hr.employees.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_employee_documents",
+                "policyname": "hr_docs_rls_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) OR check_permission(auth.uid(), 'hr.employees.read'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_employee_documents",
+                "policyname": "hr_docs_rls_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'hr.employees.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_employees",
+                "policyname": "hr_emp_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "check_permission(auth.uid(), 'hr.employees.create'::text)"
+            },
+            {
+                "tablename": "hr_employees",
+                "policyname": "hr_emp_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((user_id = auth.uid()) OR check_permission(auth.uid(), 'hr.employees.read'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_employees",
+                "policyname": "hr_emp_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "check_permission(auth.uid(), 'hr.employees.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_leave_balances",
+                "policyname": "hr_lb_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) OR check_permission(auth.uid(), 'hr.leaves.read'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_leave_balances",
+                "policyname": "hr_lb_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'hr.payroll.calculate'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_leave_requests",
+                "policyname": "hr_lr_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "((employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) OR check_permission(auth.uid(), 'hr.leaves.create'::text))"
+            },
+            {
+                "tablename": "hr_leave_requests",
+                "policyname": "hr_lr_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) OR (supervisor_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) OR check_permission(auth.uid(), 'hr.leaves.read'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_leave_requests",
+                "policyname": "hr_lr_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "(((employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) AND (status = 'pending_supervisor'::hr_leave_request_status)) OR check_permission(auth.uid(), 'hr.leaves.approve'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_leave_types",
+                "policyname": "hr_lt_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(auth.uid() IS NOT NULL)",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_leave_types",
+                "policyname": "hr_lt_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'hr.settings.update'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_payroll_adjustments",
+                "policyname": "adj_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "authenticated"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "check_permission(auth.uid(), 'hr.adjustments.create'::text)"
+            },
+            {
+                "tablename": "hr_payroll_adjustments",
+                "policyname": "adj_select",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "authenticated"
+                ],
+                "cmd": "SELECT",
+                "qual": "(check_permission(auth.uid(), 'hr.payroll.read'::text) OR check_permission(auth.uid(), 'hr.adjustments.read'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_payroll_adjustments",
+                "policyname": "adj_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "authenticated"
+                ],
+                "cmd": "UPDATE",
+                "qual": "(check_permission(auth.uid(), 'hr.adjustments.approve'::text) OR ((created_by = auth.uid()) AND (status = 'pending'::text)))",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_payroll_lines",
+                "policyname": "hr_pl_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) OR check_permission(auth.uid(), 'hr.payroll.read'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_payroll_lines",
+                "policyname": "hr_pl_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'hr.payroll.calculate'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_payroll_periods",
+                "policyname": "hr_pp_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(auth.uid() IS NOT NULL)",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_payroll_periods",
+                "policyname": "hr_pp_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'hr.payroll.calculate'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_payroll_runs",
+                "policyname": "hr_pr_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "check_permission(auth.uid(), 'hr.payroll.read'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_payroll_runs",
+                "policyname": "hr_pr_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'hr.payroll.calculate'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_penalty_instances",
+                "policyname": "hr_pen_inst_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) OR check_permission(auth.uid(), 'hr.attendance.read'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_penalty_instances",
+                "policyname": "hr_pen_inst_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'hr.attendance.approve'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_penalty_rules",
+                "policyname": "hr_pen_rules_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(auth.uid() IS NOT NULL)",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_penalty_rules",
+                "policyname": "hr_pen_rules_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'hr.settings.update'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_permission_requests",
+                "policyname": "hr_perm_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "((employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) OR check_permission(auth.uid(), 'hr.attendance.create'::text))"
+            },
+            {
+                "tablename": "hr_permission_requests",
+                "policyname": "hr_perm_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) OR check_permission(auth.uid(), 'hr.attendance.read'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_permission_requests",
+                "policyname": "hr_perm_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "check_permission(auth.uid(), 'hr.attendance.approve'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_positions",
+                "policyname": "hr_pos_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(auth.uid() IS NOT NULL)",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_positions",
+                "policyname": "hr_pos_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'hr.employees.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_public_holidays",
+                "policyname": "hr_holidays_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(auth.uid() IS NOT NULL)",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_public_holidays",
+                "policyname": "hr_holidays_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'hr.settings.update'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_salary_history",
+                "policyname": "hr_sal_hist_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) OR check_permission(auth.uid(), 'hr.payroll.read'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_salary_history",
+                "policyname": "hr_sal_hist_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'hr.payroll.calculate'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_work_locations",
+                "policyname": "hr_locations_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((auth.uid() IS NOT NULL) AND (is_active = true))",
+                "with_check": null
+            },
+            {
+                "tablename": "hr_work_locations",
+                "policyname": "hr_locations_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'hr.employees.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "journal_entries",
+                "policyname": "je_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "check_permission(auth.uid(), 'finance.journal.read'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "journal_entries",
+                "policyname": "je_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'finance.journal.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "journal_entry_lines",
+                "policyname": "je_lines_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "check_permission(auth.uid(), 'finance.journal.read'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "journal_entry_lines",
+                "policyname": "je_lines_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'finance.journal.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "notification_delivery_log",
+                "policyname": "delivery_log_select_own",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(notification_id IN ( SELECT notifications.id\n   FROM notifications\n  WHERE (notifications.user_id = auth.uid())))",
+                "with_check": null
+            },
+            {
+                "tablename": "notification_event_types",
+                "policyname": "notification_event_types_read_all",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "true",
+                "with_check": null
+            },
+            {
+                "tablename": "notification_preferences",
+                "policyname": "preferences_select_own",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(auth.uid() = user_id)",
+                "with_check": null
+            },
+            {
+                "tablename": "notification_preferences",
+                "policyname": "preferences_upsert_own",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "(auth.uid() = user_id)",
+                "with_check": "(auth.uid() = user_id)"
+            },
+            {
+                "tablename": "notifications",
+                "policyname": "notifications_insert_service_role",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "(auth.role() = 'service_role'::text)"
+            },
+            {
+                "tablename": "notifications",
+                "policyname": "notifications_select_own",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(auth.uid() = user_id)",
+                "with_check": null
+            },
+            {
+                "tablename": "payment_receipts",
+                "policyname": "receipts_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "check_permission(auth.uid(), 'finance.payments.create'::text)"
+            },
+            {
+                "tablename": "payment_receipts",
+                "policyname": "receipts_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((created_by = auth.uid()) OR (collected_by = auth.uid()) OR check_permission(auth.uid(), 'finance.payments.read_all'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "payment_receipts",
+                "policyname": "receipts_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "check_permission(auth.uid(), 'finance.payments.confirm'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "price_list_assignments",
+                "policyname": "price_list_assignments_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "check_permission(auth.uid(), 'price_lists.read'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "price_list_assignments",
+                "policyname": "price_list_assignments_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'price_lists.update'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "price_list_items",
+                "policyname": "price_list_items_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "check_permission(auth.uid(), 'price_lists.read'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "price_list_items",
+                "policyname": "price_list_items_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'price_lists.update'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "price_lists",
+                "policyname": "price_lists_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "check_permission(auth.uid(), 'price_lists.read'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "price_lists",
+                "policyname": "price_lists_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'price_lists.update'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "product_bundle_items",
+                "policyname": "bundle_items_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "check_permission(auth.uid(), 'products.read'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "product_bundle_items",
+                "policyname": "bundle_items_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'products.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "product_bundles",
+                "policyname": "bundles_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "check_permission(auth.uid(), 'products.read'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "product_bundles",
+                "policyname": "bundles_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'products.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "product_categories",
+                "policyname": "categories_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "check_permission(auth.uid(), 'products.read'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "product_categories",
+                "policyname": "categories_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'categories.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "product_units",
+                "policyname": "product_units_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "check_permission(auth.uid(), 'products.read'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "product_units",
+                "policyname": "product_units_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'products.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "products",
+                "policyname": "products_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "check_permission(auth.uid(), 'products.read'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "products",
+                "policyname": "products_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'products.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "profiles",
+                "policyname": "profiles_select",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((id = auth.uid()) OR check_permission(auth.uid(), 'auth.users.read'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "profiles",
+                "policyname": "profiles_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "((id = auth.uid()) OR check_permission(auth.uid(), 'auth.users.update'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "purchase_invoice_items",
+                "policyname": "pii_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "check_permission(auth.uid(), 'procurement.invoices.create'::text)"
+            },
+            {
+                "tablename": "purchase_invoice_items",
+                "policyname": "pii_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "check_permission(auth.uid(), 'procurement.invoices.read'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "purchase_invoice_items",
+                "policyname": "pii_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "check_permission(auth.uid(), 'procurement.invoices.receive'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "purchase_invoices",
+                "policyname": "pi_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "check_permission(auth.uid(), 'procurement.invoices.create'::text)"
+            },
+            {
+                "tablename": "purchase_invoices",
+                "policyname": "pi_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "check_permission(auth.uid(), 'procurement.invoices.read'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "purchase_invoices",
+                "policyname": "pi_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "(check_permission(auth.uid(), 'procurement.invoices.receive'::text) OR check_permission(auth.uid(), 'procurement.invoices.bill'::text) OR check_permission(auth.uid(), 'procurement.invoices.pay'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "purchase_return_items",
+                "policyname": "pri_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "check_permission(auth.uid(), 'procurement.returns.create'::text)"
+            },
+            {
+                "tablename": "purchase_return_items",
+                "policyname": "pri_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "check_permission(auth.uid(), 'procurement.returns.read'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "purchase_return_items",
+                "policyname": "pri_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "check_permission(auth.uid(), 'procurement.returns.confirm'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "purchase_returns",
+                "policyname": "pr_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "check_permission(auth.uid(), 'procurement.returns.create'::text)"
+            },
+            {
+                "tablename": "purchase_returns",
+                "policyname": "pr_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "check_permission(auth.uid(), 'procurement.returns.read'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "purchase_returns",
+                "policyname": "pr_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "(check_permission(auth.uid(), 'procurement.returns.create'::text) OR check_permission(auth.uid(), 'procurement.returns.confirm'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "push_subscriptions",
+                "policyname": "push_delete_own",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "DELETE",
+                "qual": "(auth.uid() = user_id)",
+                "with_check": null
+            },
+            {
+                "tablename": "push_subscriptions",
+                "policyname": "push_insert_own",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "(auth.uid() = user_id)"
+            },
+            {
+                "tablename": "push_subscriptions",
+                "policyname": "push_select_own",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(auth.uid() = user_id)",
+                "with_check": null
+            },
+            {
+                "tablename": "push_subscriptions",
+                "policyname": "push_update_own",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "(auth.uid() = user_id)",
+                "with_check": null
+            },
+            {
+                "tablename": "role_permissions",
+                "policyname": "role_perms_delete",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "DELETE",
+                "qual": "check_permission(auth.uid(), 'auth.roles.update'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "role_permissions",
+                "policyname": "role_perms_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "check_permission(auth.uid(), 'auth.roles.update'::text)"
+            },
+            {
+                "tablename": "role_permissions",
+                "policyname": "role_perms_select",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(auth.uid() IS NOT NULL)",
+                "with_check": null
+            },
+            {
+                "tablename": "role_permissions",
+                "policyname": "role_perms_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "check_permission(auth.uid(), 'auth.roles.update'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "roles",
+                "policyname": "roles_delete",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "DELETE",
+                "qual": "((NOT is_system) AND check_permission(auth.uid(), 'auth.roles.delete'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "roles",
+                "policyname": "roles_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "check_permission(auth.uid(), 'auth.roles.create'::text)"
+            },
+            {
+                "tablename": "roles",
+                "policyname": "roles_select",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(auth.uid() IS NOT NULL)",
+                "with_check": null
+            },
+            {
+                "tablename": "roles",
+                "policyname": "roles_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "((NOT is_system) AND check_permission(auth.uid(), 'auth.roles.update'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "sales_order_items",
+                "policyname": "soi_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(EXISTS ( SELECT 1\n   FROM sales_orders so\n  WHERE ((so.id = sales_order_items.order_id) AND ((so.rep_id = auth.uid()) OR (so.created_by_id = auth.uid()) OR check_permission(auth.uid(), 'sales.orders.read_all'::text)))))",
+                "with_check": null
+            },
+            {
+                "tablename": "sales_order_items",
+                "policyname": "soi_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "(EXISTS ( SELECT 1\n   FROM sales_orders so\n  WHERE (((so.id = sales_order_items.order_id) AND ((so.status = 'draft'::sales_order_status) AND ((so.rep_id = auth.uid()) OR (so.created_by_id = auth.uid())))) OR check_permission(auth.uid(), 'sales.orders.read_all'::text))))",
+                "with_check": null
+            },
+            {
+                "tablename": "sales_orders",
+                "policyname": "so_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "check_permission(auth.uid(), 'sales.orders.create'::text)"
+            },
+            {
+                "tablename": "sales_orders",
+                "policyname": "so_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((rep_id = auth.uid()) OR (created_by_id = auth.uid()) OR check_permission(auth.uid(), 'sales.orders.read_all'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "sales_orders",
+                "policyname": "so_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "(((status = 'draft'::sales_order_status) AND ((rep_id = auth.uid()) OR (created_by_id = auth.uid()))) OR check_permission(auth.uid(), 'sales.orders.read_all'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "sales_return_items",
+                "policyname": "sri_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(EXISTS ( SELECT 1\n   FROM sales_returns sr\n  WHERE ((sr.id = sales_return_items.return_id) AND ((sr.created_by = auth.uid()) OR check_permission(auth.uid(), 'sales.returns.read'::text)))))",
+                "with_check": null
+            },
+            {
+                "tablename": "sales_return_items",
+                "policyname": "sri_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "(EXISTS ( SELECT 1\n   FROM sales_returns sr\n  WHERE ((sr.id = sales_return_items.return_id) AND (sr.status = 'draft'::sales_return_status) AND ((sr.created_by = auth.uid()) OR check_permission(auth.uid(), 'sales.returns.confirm'::text)))))",
+                "with_check": null
+            },
+            {
+                "tablename": "sales_returns",
+                "policyname": "sr_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "check_permission(auth.uid(), 'sales.returns.create'::text)"
+            },
+            {
+                "tablename": "sales_returns",
+                "policyname": "sr_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((created_by = auth.uid()) OR check_permission(auth.uid(), 'sales.returns.read'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "sales_returns",
+                "policyname": "sr_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "(((status = 'draft'::sales_return_status) AND (created_by = auth.uid())) OR check_permission(auth.uid(), 'sales.returns.confirm'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "shipping_companies",
+                "policyname": "shipping_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(auth.uid() IS NOT NULL)",
+                "with_check": null
+            },
+            {
+                "tablename": "shipping_companies",
+                "policyname": "shipping_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'sales.shipping.manage'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "stock",
+                "policyname": "stock_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(check_permission(auth.uid(), 'inventory.read_all'::text) OR (check_permission(auth.uid(), 'inventory.read'::text) AND (warehouse_id IN ( SELECT user_warehouse_ids_set() AS user_warehouse_ids_set))))",
+                "with_check": null
+            },
+            {
+                "tablename": "stock_adjustment_items",
+                "policyname": "adjustment_items_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(check_permission(auth.uid(), 'inventory.read_all'::text) OR (adjustment_id IN ( SELECT stock_adjustments.id\n   FROM stock_adjustments\n  WHERE ((stock_adjustments.created_by = auth.uid()) OR (stock_adjustments.warehouse_id IN ( SELECT user_warehouse_ids_set() AS user_warehouse_ids_set))))))",
+                "with_check": null
+            },
+            {
+                "tablename": "stock_adjustment_items",
+                "policyname": "adjustment_items_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'inventory.adjustments.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "stock_adjustments",
+                "policyname": "adjustments_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(check_permission(auth.uid(), 'inventory.read_all'::text) OR (created_by = auth.uid()) OR (check_permission(auth.uid(), 'inventory.adjustments.read'::text) AND (warehouse_id IN ( SELECT user_warehouse_ids_set() AS user_warehouse_ids_set))))",
+                "with_check": null
+            },
+            {
+                "tablename": "stock_adjustments",
+                "policyname": "adjustments_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'inventory.adjustments.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "stock_batches",
+                "policyname": "stock_batches_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(check_permission(auth.uid(), 'inventory.read_all'::text) OR (check_permission(auth.uid(), 'inventory.read'::text) AND (stock_id IN ( SELECT stock.id\n   FROM stock\n  WHERE (stock.warehouse_id IN ( SELECT user_warehouse_ids_set() AS user_warehouse_ids_set))))))",
+                "with_check": null
+            },
+            {
+                "tablename": "stock_movements",
+                "policyname": "stock_movements_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(check_permission(auth.uid(), 'inventory.read_all'::text) OR (check_permission(auth.uid(), 'inventory.read'::text) AND (warehouse_id IN ( SELECT user_warehouse_ids_set() AS user_warehouse_ids_set))))",
+                "with_check": null
+            },
+            {
+                "tablename": "stock_transfer_items",
+                "policyname": "transfer_items_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(check_permission(auth.uid(), 'inventory.read_all'::text) OR (transfer_id IN ( SELECT stock_transfers.id\n   FROM stock_transfers\n  WHERE ((stock_transfers.requested_by = auth.uid()) OR (stock_transfers.from_warehouse_id IN ( SELECT user_warehouse_ids_set() AS user_warehouse_ids_set)) OR (stock_transfers.to_warehouse_id IN ( SELECT user_warehouse_ids_set() AS user_warehouse_ids_set))))))",
+                "with_check": null
+            },
+            {
+                "tablename": "stock_transfer_items",
+                "policyname": "transfer_items_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'inventory.transfers.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "stock_transfers",
+                "policyname": "transfers_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(check_permission(auth.uid(), 'inventory.read_all'::text) OR (requested_by = auth.uid()) OR (check_permission(auth.uid(), 'inventory.transfers.read'::text) AND ((from_warehouse_id IN ( SELECT user_warehouse_ids_set() AS user_warehouse_ids_set)) OR (to_warehouse_id IN ( SELECT user_warehouse_ids_set() AS user_warehouse_ids_set)))))",
+                "with_check": null
+            },
+            {
+                "tablename": "stock_transfers",
+                "policyname": "transfers_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'inventory.transfers.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "supplier_contacts",
+                "policyname": "supplier_contacts_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "check_permission(auth.uid(), 'suppliers.read'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "supplier_contacts",
+                "policyname": "supplier_contacts_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'suppliers.update'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "supplier_ledger",
+                "policyname": "supp_ledger_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "check_permission(auth.uid(), 'finance.ledger.read'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "supplier_ledger",
+                "policyname": "supp_ledger_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'finance.ledger.adjust'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "supplier_payment_reminders",
+                "policyname": "payment_reminders_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "check_permission(auth.uid(), 'suppliers.read'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "supplier_payment_reminders",
+                "policyname": "payment_reminders_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'suppliers.update'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "supplier_payment_vouchers",
+                "policyname": "spv_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "check_permission(auth.uid(), 'procurement.invoices.pay'::text)"
+            },
+            {
+                "tablename": "supplier_payment_vouchers",
+                "policyname": "spv_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(check_permission(auth.uid(), 'procurement.invoices.pay'::text) OR check_permission(auth.uid(), 'procurement.invoices.read'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "supplier_payment_vouchers",
+                "policyname": "spv_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "check_permission(auth.uid(), 'procurement.invoices.pay'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "suppliers",
+                "policyname": "suppliers_delete",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "DELETE",
+                "qual": "check_permission(auth.uid(), 'suppliers.delete'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "suppliers",
+                "policyname": "suppliers_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "check_permission(auth.uid(), 'suppliers.read'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "suppliers",
+                "policyname": "suppliers_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "check_permission(auth.uid(), 'suppliers.update'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "suppliers",
+                "policyname": "suppliers_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "check_permission(auth.uid(), 'suppliers.create'::text)"
+            },
+            {
+                "tablename": "target_adjustments",
+                "policyname": "ta_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(check_permission(auth.uid(), 'targets.read_team'::text) OR check_permission(auth.uid(), 'targets.read_all'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "target_customers",
+                "policyname": "tc_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((EXISTS ( SELECT 1\n   FROM targets t\n  WHERE ((t.id = target_customers.target_id) AND (t.assigned_by = auth.uid())))) OR (EXISTS ( SELECT 1\n   FROM (targets t\n     JOIN hr_employees he ON ((he.id = t.scope_id)))\n  WHERE ((t.id = target_customers.target_id) AND ((t.scope)::text = 'individual'::text) AND (he.user_id = auth.uid())))) OR check_permission(auth.uid(), 'targets.read_all'::text) OR check_permission(auth.uid(), 'targets.rewards.view'::text) OR check_permission(auth.uid(), 'targets.rewards.configure'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "target_customers",
+                "policyname": "tc_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "(check_permission(auth.uid(), 'targets.create'::text) OR check_permission(auth.uid(), 'targets.read_all'::text) OR check_permission(auth.uid(), 'targets.rewards.configure'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "target_payout_clawbacks",
+                "policyname": "clawback_select",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "authenticated"
+                ],
+                "cmd": "SELECT",
+                "qual": "(check_permission(auth.uid(), 'hr.payroll.read'::text) OR check_permission(auth.uid(), 'hr.adjustments.read'::text) OR check_permission(auth.uid(), 'targets.view'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "target_progress",
+                "policyname": "tp_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(EXISTS ( SELECT 1\n   FROM targets t\n  WHERE ((t.id = target_progress.target_id) AND ((((t.scope)::text = 'individual'::text) AND (t.scope_id IN ( SELECT hr_employees.id\n           FROM hr_employees\n          WHERE (hr_employees.user_id = auth.uid())))) OR (check_permission(auth.uid(), 'targets.read_team'::text) AND ((((t.scope)::text = 'branch'::text) AND (t.scope_id = ( SELECT hr_employees.branch_id\n           FROM hr_employees\n          WHERE (hr_employees.user_id = auth.uid())\n         LIMIT 1))) OR (((t.scope)::text = 'individual'::text) AND (t.scope_id IN ( SELECT hr_employees.id\n           FROM hr_employees\n          WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n                   FROM hr_employees hr_employees_1\n                  WHERE (hr_employees_1.user_id = auth.uid())\n                 LIMIT 1))))))) OR check_permission(auth.uid(), 'targets.read_all'::text)))))",
+                "with_check": null
+            },
+            {
+                "tablename": "target_reward_payouts",
+                "policyname": "trp_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) OR check_permission(auth.uid(), 'targets.read_all'::text) OR check_permission(auth.uid(), 'hr.payroll.read'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "target_reward_payouts",
+                "policyname": "trp_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "false",
+                "with_check": null
+            },
+            {
+                "tablename": "target_reward_tiers",
+                "policyname": "trt_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((EXISTS ( SELECT 1\n   FROM targets t\n  WHERE ((t.id = target_reward_tiers.target_id) AND (t.assigned_by = auth.uid())))) OR (EXISTS ( SELECT 1\n   FROM (targets t\n     JOIN hr_employees he ON ((he.id = t.scope_id)))\n  WHERE ((t.id = target_reward_tiers.target_id) AND ((t.scope)::text = 'individual'::text) AND (he.user_id = auth.uid())))) OR check_permission(auth.uid(), 'targets.read_all'::text) OR check_permission(auth.uid(), 'targets.rewards.view'::text) OR check_permission(auth.uid(), 'targets.rewards.configure'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "target_reward_tiers",
+                "policyname": "trt_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "(check_permission(auth.uid(), 'targets.create'::text) OR check_permission(auth.uid(), 'targets.read_all'::text) OR check_permission(auth.uid(), 'targets.rewards.configure'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "target_types",
+                "policyname": "target_types_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(auth.uid() IS NOT NULL)",
+                "with_check": null
+            },
+            {
+                "tablename": "target_types",
+                "policyname": "tgt_types_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(auth.uid() IS NOT NULL)",
+                "with_check": null
+            },
+            {
+                "tablename": "target_types",
+                "policyname": "tgt_types_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'settings.update'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "targets",
+                "policyname": "tgt_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "(check_permission(auth.uid(), 'targets.read_all'::text) OR ((check_permission(auth.uid(), 'targets.create'::text) OR check_permission(auth.uid(), 'targets.assign'::text)) AND ((((scope)::text = 'individual'::text) AND (scope_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n           FROM hr_employees hr_employees_1\n          WHERE (hr_employees_1.user_id = auth.uid())\n         LIMIT 1))))) OR (((scope)::text = 'branch'::text) AND (scope_id = ( SELECT hr_employees.branch_id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid())\n LIMIT 1))) OR (((scope)::text = 'department'::text) AND (scope_id IN ( SELECT hr_departments.id\n   FROM hr_departments\n  WHERE (hr_departments.branch_id = ( SELECT hr_employees.branch_id\n           FROM hr_employees\n          WHERE (hr_employees.user_id = auth.uid())\n         LIMIT 1))))))))"
+            },
+            {
+                "tablename": "targets",
+                "policyname": "tgt_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((((scope)::text = 'individual'::text) AND (scope_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid())))) OR (check_permission(auth.uid(), 'targets.read_team'::text) AND ((((scope)::text = 'branch'::text) AND (scope_id = ( SELECT hr_employees.branch_id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid())\n LIMIT 1))) OR (((scope)::text = 'individual'::text) AND (scope_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n           FROM hr_employees hr_employees_1\n          WHERE (hr_employees_1.user_id = auth.uid())\n         LIMIT 1))))))) OR check_permission(auth.uid(), 'targets.read_all'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "targets",
+                "policyname": "tgt_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "(check_permission(auth.uid(), 'targets.read_all'::text) OR ((check_permission(auth.uid(), 'targets.update'::text) OR check_permission(auth.uid(), 'targets.assign'::text)) AND ((((scope)::text = 'individual'::text) AND (scope_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n           FROM hr_employees hr_employees_1\n          WHERE (hr_employees_1.user_id = auth.uid())))))) OR (((scope)::text = 'branch'::text) AND (scope_id = ( SELECT hr_employees.branch_id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid())))) OR (((scope)::text = 'department'::text) AND (scope_id IN ( SELECT hr_departments.id\n   FROM hr_departments\n  WHERE (hr_departments.branch_id = ( SELECT hr_employees.branch_id\n           FROM hr_employees\n          WHERE (hr_employees.user_id = auth.uid())))))))))",
+                "with_check": "(check_permission(auth.uid(), 'targets.read_all'::text) OR ((check_permission(auth.uid(), 'targets.update'::text) OR check_permission(auth.uid(), 'targets.assign'::text)) AND ((((scope)::text = 'individual'::text) AND (scope_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n           FROM hr_employees hr_employees_1\n          WHERE (hr_employees_1.user_id = auth.uid())))))) OR (((scope)::text = 'branch'::text) AND (scope_id = ( SELECT hr_employees.branch_id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid())))) OR (((scope)::text = 'department'::text) AND (scope_id IN ( SELECT hr_departments.id\n   FROM hr_departments\n  WHERE (hr_departments.branch_id = ( SELECT hr_employees.branch_id\n           FROM hr_employees\n          WHERE (hr_employees.user_id = auth.uid())))))))))"
+            },
+            {
+                "tablename": "units",
+                "policyname": "units_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(auth.uid() IS NOT NULL)",
+                "with_check": null
+            },
+            {
+                "tablename": "units",
+                "policyname": "units_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'products.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "user_permission_overrides",
+                "policyname": "overrides_select",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((user_id = auth.uid()) OR check_permission(auth.uid(), 'auth.users.read'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "user_permission_overrides",
+                "policyname": "overrides_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'auth.users.update'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "user_roles",
+                "policyname": "user_roles_delete",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "DELETE",
+                "qual": "check_permission(auth.uid(), 'auth.users.update'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "user_roles",
+                "policyname": "user_roles_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "check_permission(auth.uid(), 'auth.users.update'::text)"
+            },
+            {
+                "tablename": "user_roles",
+                "policyname": "user_roles_select",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((user_id = auth.uid()) OR check_permission(auth.uid(), 'auth.users.read'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "user_roles",
+                "policyname": "user_roles_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "check_permission(auth.uid(), 'auth.users.update'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "vault_transactions",
+                "policyname": "vault_txn_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(check_permission(auth.uid(), 'finance.vaults.read_all'::text) OR (check_permission(auth.uid(), 'finance.vaults.read'::text) AND (vault_id IN ( SELECT vaults.id\n   FROM vaults\n  WHERE (vaults.responsible_id = auth.uid())))))",
+                "with_check": null
+            },
+            {
+                "tablename": "vault_transactions",
+                "policyname": "vault_txn_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'finance.vaults.transact'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "vaults",
+                "policyname": "vaults_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "check_permission(auth.uid(), 'finance.vaults.create'::text)"
+            },
+            {
+                "tablename": "vaults",
+                "policyname": "vaults_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(check_permission(auth.uid(), 'finance.vaults.read_all'::text) OR (check_permission(auth.uid(), 'finance.vaults.read'::text) AND (responsible_id = auth.uid())))",
+                "with_check": null
+            },
+            {
+                "tablename": "vaults",
+                "policyname": "vaults_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "check_permission(auth.uid(), 'finance.vaults.update'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "visit_checklist_questions",
+                "policyname": "checklist_questions_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(auth.uid() IS NOT NULL)",
+                "with_check": null
+            },
+            {
+                "tablename": "visit_checklist_questions",
+                "policyname": "checklist_questions_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'checklists.manage'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "visit_checklist_responses",
+                "policyname": "checklist_responses_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "(check_permission(auth.uid(), 'activities.update_own'::text) OR check_permission(auth.uid(), 'activities.read_team'::text) OR check_permission(auth.uid(), 'activities.read_all'::text))"
+            },
+            {
+                "tablename": "visit_checklist_responses",
+                "policyname": "checklist_responses_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(check_permission(auth.uid(), 'activities.read_all'::text) OR check_permission(auth.uid(), 'activities.read_team'::text) OR (check_permission(auth.uid(), 'activities.update_own'::text) AND (activity_id IN ( SELECT activities.id\n   FROM activities\n  WHERE (activities.created_by = auth.uid())))))",
+                "with_check": null
+            },
+            {
+                "tablename": "visit_checklist_responses",
+                "policyname": "checklist_responses_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "(check_permission(auth.uid(), 'activities.update_own'::text) AND (activity_id IN ( SELECT activities.id\n   FROM activities\n  WHERE (activities.created_by = auth.uid()))))",
+                "with_check": null
+            },
+            {
+                "tablename": "visit_checklist_templates",
+                "policyname": "checklist_templates_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(auth.uid() IS NOT NULL)",
+                "with_check": null
+            },
+            {
+                "tablename": "visit_checklist_templates",
+                "policyname": "checklist_templates_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'checklists.manage'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "visit_plan_items",
+                "policyname": "vpi_delete",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "DELETE",
+                "qual": "((check_permission(auth.uid(), 'visit_plans.create'::text) AND (EXISTS ( SELECT 1\n   FROM visit_plans vp\n  WHERE ((vp.id = visit_plan_items.plan_id) AND (vp.employee_id IN ( SELECT hr_employees.id\n           FROM hr_employees\n          WHERE (hr_employees.user_id = auth.uid()))))))) OR (check_permission(auth.uid(), 'visit_plans.update'::text) AND (EXISTS ( SELECT 1\n   FROM visit_plans vp\n  WHERE ((vp.id = visit_plan_items.plan_id) AND (vp.employee_id IN ( SELECT hr_employees.id\n           FROM hr_employees\n          WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n                   FROM hr_employees hr_employees_1\n                  WHERE (hr_employees_1.user_id = auth.uid())\n                 LIMIT 1)))))))) OR check_permission(auth.uid(), 'visit_plans.read_all'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "visit_plan_items",
+                "policyname": "vpi_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "((check_permission(auth.uid(), 'visit_plans.create'::text) AND (EXISTS ( SELECT 1\n   FROM visit_plans vp\n  WHERE ((vp.id = visit_plan_items.plan_id) AND ((vp.employee_id IN ( SELECT hr_employees.id\n           FROM hr_employees\n          WHERE (hr_employees.user_id = auth.uid()))) OR check_permission(auth.uid(), 'visit_plans.read_team'::text)))))) OR (check_permission(auth.uid(), 'visit_plans.update'::text) AND (EXISTS ( SELECT 1\n   FROM visit_plans vp\n  WHERE ((vp.id = visit_plan_items.plan_id) AND (vp.employee_id IN ( SELECT hr_employees.id\n           FROM hr_employees\n          WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n                   FROM hr_employees hr_employees_1\n                  WHERE (hr_employees_1.user_id = auth.uid())\n                 LIMIT 1)))))))) OR check_permission(auth.uid(), 'visit_plans.read_all'::text))"
+            },
+            {
+                "tablename": "visit_plan_items",
+                "policyname": "vpi_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(EXISTS ( SELECT 1\n   FROM visit_plans vp\n  WHERE ((vp.id = visit_plan_items.plan_id) AND ((vp.employee_id IN ( SELECT hr_employees.id\n           FROM hr_employees\n          WHERE (hr_employees.user_id = auth.uid()))) OR check_permission(auth.uid(), 'visit_plans.read_all'::text)))))",
+                "with_check": null
+            },
+            {
+                "tablename": "visit_plan_items",
+                "policyname": "vpi_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "((check_permission(auth.uid(), 'activities.create'::text) AND (EXISTS ( SELECT 1\n   FROM visit_plans vp\n  WHERE ((vp.id = visit_plan_items.plan_id) AND (vp.employee_id IN ( SELECT hr_employees.id\n           FROM hr_employees\n          WHERE (hr_employees.user_id = auth.uid()))))))) OR (check_permission(auth.uid(), 'visit_plans.create'::text) AND (EXISTS ( SELECT 1\n   FROM visit_plans vp\n  WHERE ((vp.id = visit_plan_items.plan_id) AND (vp.employee_id IN ( SELECT hr_employees.id\n           FROM hr_employees\n          WHERE (hr_employees.user_id = auth.uid()))))))) OR (check_permission(auth.uid(), 'visit_plans.update'::text) AND (EXISTS ( SELECT 1\n   FROM visit_plans vp\n  WHERE ((vp.id = visit_plan_items.plan_id) AND (vp.employee_id IN ( SELECT hr_employees.id\n           FROM hr_employees\n          WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n                   FROM hr_employees hr_employees_1\n                  WHERE (hr_employees_1.user_id = auth.uid())\n                 LIMIT 1)))))))) OR (check_permission(auth.uid(), 'visit_plans.confirm'::text) AND (EXISTS ( SELECT 1\n   FROM visit_plans vp\n  WHERE ((vp.id = visit_plan_items.plan_id) AND (vp.employee_id IN ( SELECT hr_employees.id\n           FROM hr_employees\n          WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n                   FROM hr_employees hr_employees_1\n                  WHERE (hr_employees_1.user_id = auth.uid())\n                 LIMIT 1)))))))) OR check_permission(auth.uid(), 'visit_plans.read_all'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "visit_plan_templates",
+                "policyname": "vpt_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "(check_permission(auth.uid(), 'visit_plans.create'::text) AND ((branch_id IS NULL) OR (branch_id IN ( SELECT hr_employees.branch_id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) OR check_permission(auth.uid(), 'visit_plans.read_all'::text)))"
+            },
+            {
+                "tablename": "visit_plan_templates",
+                "policyname": "vpt_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(auth.uid() IS NOT NULL)",
+                "with_check": null
+            },
+            {
+                "tablename": "visit_plan_templates",
+                "policyname": "vpt_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "((check_permission(auth.uid(), 'visit_plans.create'::text) AND ((created_by = auth.uid()) OR (employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n           FROM hr_employees hr_employees_1\n          WHERE (hr_employees_1.user_id = auth.uid()))))) OR (branch_id IN ( SELECT hr_employees.branch_id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))))) OR check_permission(auth.uid(), 'visit_plans.read_all'::text))",
+                "with_check": "((check_permission(auth.uid(), 'visit_plans.create'::text) AND ((created_by = auth.uid()) OR (employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n           FROM hr_employees hr_employees_1\n          WHERE (hr_employees_1.user_id = auth.uid()))))) OR (branch_id IN ( SELECT hr_employees.branch_id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))))) OR check_permission(auth.uid(), 'visit_plans.read_all'::text))"
+            },
+            {
+                "tablename": "visit_plan_templates",
+                "policyname": "vpt_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'visit_plans.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "visit_plans",
+                "policyname": "vp_insert",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "INSERT",
+                "qual": null,
+                "with_check": "(check_permission(auth.uid(), 'visit_plans.create'::text) AND ((employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) OR (check_permission(auth.uid(), 'visit_plans.read_team'::text) AND (employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n           FROM hr_employees hr_employees_1\n          WHERE (hr_employees_1.user_id = auth.uid())))))) OR check_permission(auth.uid(), 'visit_plans.read_all'::text)))"
+            },
+            {
+                "tablename": "visit_plans",
+                "policyname": "vp_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "((employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.user_id = auth.uid()))) OR (check_permission(auth.uid(), 'visit_plans.read_team'::text) AND (employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n           FROM hr_employees hr_employees_1\n          WHERE (hr_employees_1.user_id = auth.uid())\n         LIMIT 1))))) OR check_permission(auth.uid(), 'visit_plans.read_all'::text))",
+                "with_check": null
+            },
+            {
+                "tablename": "visit_plans",
+                "policyname": "vp_update",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "UPDATE",
+                "qual": "((check_permission(auth.uid(), 'visit_plans.create'::text) AND (employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n           FROM hr_employees hr_employees_1\n          WHERE (hr_employees_1.user_id = auth.uid())))))) OR (check_permission(auth.uid(), 'visit_plans.confirm'::text) AND (employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n           FROM hr_employees hr_employees_1\n          WHERE (hr_employees_1.user_id = auth.uid())))))) OR (check_permission(auth.uid(), 'visit_plans.cancel'::text) AND (employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n           FROM hr_employees hr_employees_1\n          WHERE (hr_employees_1.user_id = auth.uid())))))) OR check_permission(auth.uid(), 'visit_plans.read_all'::text))",
+                "with_check": "((check_permission(auth.uid(), 'visit_plans.create'::text) AND (employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n           FROM hr_employees hr_employees_1\n          WHERE (hr_employees_1.user_id = auth.uid())))))) OR (check_permission(auth.uid(), 'visit_plans.confirm'::text) AND (employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n           FROM hr_employees hr_employees_1\n          WHERE (hr_employees_1.user_id = auth.uid())))))) OR (check_permission(auth.uid(), 'visit_plans.cancel'::text) AND (employee_id IN ( SELECT hr_employees.id\n   FROM hr_employees\n  WHERE (hr_employees.branch_id = ( SELECT hr_employees_1.branch_id\n           FROM hr_employees hr_employees_1\n          WHERE (hr_employees_1.user_id = auth.uid())))))) OR check_permission(auth.uid(), 'visit_plans.read_all'::text))"
+            },
+            {
+                "tablename": "visit_plans",
+                "policyname": "vp_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'visit_plans.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "warehouse_managers",
+                "policyname": "wh_managers_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(check_permission(auth.uid(), 'inventory.read_all'::text) OR (check_permission(auth.uid(), 'inventory.read'::text) AND (warehouse_id IN ( SELECT user_warehouse_ids_set() AS user_warehouse_ids_set))))",
+                "with_check": null
+            },
+            {
+                "tablename": "warehouse_managers",
+                "policyname": "wh_managers_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'inventory.create'::text)",
+                "with_check": null
+            },
+            {
+                "tablename": "warehouses",
+                "policyname": "warehouses_read",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "SELECT",
+                "qual": "(check_permission(auth.uid(), 'inventory.read_all'::text) OR (check_permission(auth.uid(), 'inventory.read'::text) AND (id IN ( SELECT user_warehouse_ids_set() AS user_warehouse_ids_set))))",
+                "with_check": null
+            },
+            {
+                "tablename": "warehouses",
+                "policyname": "warehouses_write",
+                "permissive": "PERMISSIVE",
+                "roles": [
+                    "public"
+                ],
+                "cmd": "ALL",
+                "qual": "check_permission(auth.uid(), 'inventory.create'::text)",
+                "with_check": null
+            }
+        ]
+    }
+]

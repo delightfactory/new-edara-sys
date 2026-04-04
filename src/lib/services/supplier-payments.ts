@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { getAuthUserId } from '@/lib/services/_get-user-id'
 
 // ============================================================
 // Types
@@ -39,11 +40,7 @@ export interface CreateSupplierPaymentInput {
 // Helpers
 // ============================================================
 
-async function getUserId(): Promise<string> {
-  const { data } = await supabase.auth.getUser()
-  if (!data.user?.id) throw new Error('يجب تسجيل الدخول')
-  return data.user.id
-}
+
 
 const SELECT_VOUCHER = `
   *,
@@ -134,7 +131,7 @@ export async function getAllSupplierPayments(params?: {
 export async function createSupplierPayment(
   input: CreateSupplierPaymentInput
 ): Promise<string> {
-  const userId = await getUserId()
+  const userId = await getAuthUserId()
 
   const { data, error } = await supabase.rpc('pay_supplier_account', {
     p_supplier_id:    input.supplierId,

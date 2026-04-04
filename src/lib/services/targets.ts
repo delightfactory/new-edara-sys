@@ -10,6 +10,7 @@
 // ============================================================
 
 import { supabase } from '@/lib/supabase/client'
+import { getAuthUserId } from '@/lib/services/_get-user-id'
 import type {
   // Phase 21 (موجودة)
   Target, TargetInput, TargetProgress, TargetAdjustment,
@@ -26,11 +27,7 @@ import type {
 // Helpers
 // ============================================================
 
-async function getUserId(): Promise<string> {
-  const { data } = await supabase.auth.getUser()
-  if (!data.user?.id) throw new Error('يجب تسجيل الدخول')
-  return data.user.id
-}
+
 
 function sanitize<T extends Record<string, any>>(input: T): T {
   const cleaned = { ...input } as any
@@ -194,7 +191,7 @@ export function validateCreateTargetInput(
 export async function createTargetWithRewards(
   input: CreateTargetWithRewardsInput
 ): Promise<string> {
-  const userId = await getUserId()
+  const userId = await getAuthUserId()
 
   // [P2 FIX] جلب معلومات نوع الهدف للتحقق الموازي
   const { data: typeData, error: typeError } = await supabase

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { getAuthUserId } from '@/lib/services/_get-user-id'
 import type { Profile, UserWithRoles, Role, UserRole, UserPermissionOverride } from '@/lib/types/auth'
 
 // ── Roles cache ───────────────────────────────────────────────
@@ -166,7 +167,7 @@ export async function toggleUserStatus(userId: string, newStatus: 'active' | 'in
  * تعيين أدوار للمستخدم (يحذف القديمة ويضيف الجديدة)
  */
 export async function setUserRoles(userId: string, roleIds: string[]) {
-  const currentUserId = (await supabase.auth.getUser()).data.user?.id
+  const currentUserId = await getAuthUserId()
   const { error } = await supabase.rpc('set_user_roles_atomic', {
     p_target_user_id: userId,
     p_role_ids: roleIds,
@@ -240,7 +241,7 @@ export async function createRole(role: { name: string; name_ar: string; descript
  * تحديث دور وصلاحياته
  */
 export async function updateRole(roleId: string, role: { name_ar?: string; description?: string; color?: string }, permissions: string[]) {
-  const currentUserId = (await supabase.auth.getUser()).data.user?.id
+  const currentUserId = await getAuthUserId()
   const { error } = await supabase.rpc('update_role_atomic', {
     p_role_id: roleId,
     p_name_ar: role.name_ar ?? null,

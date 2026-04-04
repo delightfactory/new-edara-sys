@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { getAuthUserId } from '@/lib/services/_get-user-id'
 import type {
   HREmployee, HREmployeeInput,
   HRDepartment, HRDepartmentInput,
@@ -32,11 +33,7 @@ import type {
 // HELPERS
 // ─────────────────────────────────────────────────────────────
 
-async function getCurrentUserId(): Promise<string> {
-  const { data } = await supabase.auth.getUser()
-  if (!data.user) throw new Error('المستخدم غير مسجل دخوله')
-  return data.user.id
-}
+
 
 // ─────────────────────────────────────────────────────────────
 // DEPARTMENTS — الأقسام
@@ -202,7 +199,7 @@ export async function getEmployee(id: string) {
  * يُرجع null إذا لم يكن المستخدم موظفاً مسجلاً
  */
 export async function getCurrentEmployeeRecord(): Promise<HREmployee | null> {
-  const userId = await getCurrentUserId()
+  const userId = await getAuthUserId()
   const { data, error } = await supabase
     .from('hr_employees')
     .select(`
@@ -218,7 +215,7 @@ export async function getCurrentEmployeeRecord(): Promise<HREmployee | null> {
 }
 
 export async function createEmployee(input: HREmployeeInput) {
-  const userId = await getCurrentUserId()
+  const userId = await getAuthUserId()
   const { data, error } = await supabase
     .from('hr_employees')
     .insert({ ...input, created_by: userId })
@@ -298,7 +295,7 @@ export async function getEmployeeSalaryAtDate(
 // ─────────────────────────────────────────────────────────────
 
 export async function createContract(input: HRContractInput) {
-  const userId = await getCurrentUserId()
+  const userId = await getAuthUserId()
   const { data, error } = await supabase
     .from('hr_contracts')
     .insert({ ...input, created_by: userId })
@@ -478,7 +475,7 @@ export async function getAttendanceAlerts(params?: {
 }
 
 export async function resolveAttendanceAlert(id: string, resolution_note?: string | null) {
-  const userId = await getCurrentUserId()
+  const userId = await getAuthUserId()
   const { data, error } = await supabase
     .from('hr_attendance_alerts')
     .update({
@@ -495,7 +492,7 @@ export async function resolveAttendanceAlert(id: string, resolution_note?: strin
 }
 
 export async function dismissAttendanceAlert(id: string, resolution_note?: string | null) {
-  const userId = await getCurrentUserId()
+  const userId = await getAuthUserId()
   const { data, error } = await supabase
     .from('hr_attendance_alerts')
     .update({
@@ -519,7 +516,7 @@ export async function dismissAttendanceAlert(id: string, resolution_note?: strin
  *   3. إعادة تشغيل process_attendance_penalties بالقيم الجديدة
  */
 export async function upsertAttendanceDay(input: HRAttendanceDayInput) {
-  const userId = await getCurrentUserId()
+  const userId = await getAuthUserId()
   const { data, error } = await supabase.rpc('upsert_attendance_and_reprocess', {
     p_employee_id:    input.employee_id,
     p_shift_date:     input.shift_date,
@@ -686,7 +683,7 @@ export async function getPublicHolidays(year?: number) {
 }
 
 export async function createPublicHoliday(input: HRPublicHolidayInput) {
-  const userId = await getCurrentUserId()
+  const userId = await getAuthUserId()
   const { data, error } = await supabase
     .from('hr_public_holidays')
     .insert({ ...input, created_by: userId })
@@ -969,7 +966,7 @@ export async function getPenaltyInstances(params: {
 }
 
 export async function overridePenalty(id: string, reason: string) {
-  const userId = await getCurrentUserId()
+  const userId = await getAuthUserId()
   const { data, error } = await supabase
     .from('hr_penalty_instances')
     .update({
@@ -1009,7 +1006,7 @@ export async function createPayrollPeriod(input: HRPayrollPeriodInput) {
 }
 
 export async function createPayrollRun(input: HRPayrollRunInput): Promise<HRPayrollRun> {
-  const userId = await getCurrentUserId()
+  const userId = await getAuthUserId()
   const { data, error } = await supabase
     .from('hr_payroll_runs')
     .insert({ ...input, created_by: userId, status: 'draft' })
@@ -1073,7 +1070,7 @@ export async function calculateEmployeePayroll(
  * يرفض EXCEPTION إذا كان القيد غير متوازن
  */
 export async function approvePayrollRun(runId: string): Promise<PayrollApprovalResult> {
-  const userId = await getCurrentUserId()
+  const userId = await getAuthUserId()
   const { data, error } = await supabase.rpc('approve_payroll_run', {
     p_run_id:  runId,
     p_user_id: userId,
@@ -1133,7 +1130,7 @@ export async function getAdvances(params?: {
  * المعاملات مطابقة لـ 19_hr_payroll_loans.sql السطر 846
  */
 export async function requestAdvance(input: HRAdvanceInput): Promise<AdvanceRequestResult> {
-  const userId = await getCurrentUserId()
+  const userId = await getAuthUserId()
   const { data, error } = await supabase.rpc('request_advance', {
     p_employee_id:      input.employee_id,
     p_advance_type:     input.advance_type,
@@ -1199,7 +1196,7 @@ export async function disburseAdvance(
   vaultId: string,
   notes?: string | null
 ): Promise<{ success: boolean; advance_id: string; journal_entry_id: string; vault_txn_id: string; amount: number; vault_name: string; message: string }> {
-  const userId = await getCurrentUserId()
+  const userId = await getAuthUserId()
   const { data, error } = await supabase.rpc('disburse_employee_advance', {
     p_advance_id:       id,
     p_vault_id:         vaultId,
@@ -1233,7 +1230,7 @@ export async function updateAdvanceStatus(
   notes?: string | null,
   rejectionReason?: string | null
 ): Promise<HRAdvance> {
-  const userId = await getCurrentUserId()
+  const userId = await getAuthUserId()
 
   // ـــ جلب الحالة الحالية للتحقق من صلاحية التحويل ـــ
   const { data: current, error: fetchErr } = await supabase
@@ -1290,7 +1287,7 @@ export async function getCommissionTargets(params?: {
 }
 
 export async function createCommissionTarget(input: HRCommissionTargetInput) {
-  const userId = await getCurrentUserId()
+  const userId = await getAuthUserId()
   const { data, error } = await supabase
     .from('hr_commission_targets')
     .insert({ ...input, created_by: userId })
@@ -1367,7 +1364,7 @@ export async function uploadEmployeeDocument(params: {
   notes?: string | null
   file: File
 }): Promise<HREmployeeDocument> {
-  const userId = await getCurrentUserId()
+  const userId = await getAuthUserId()
 
   // 1. رفع الملف إلى Storage
   const ext       = params.file.name.split('.').pop() ?? 'pdf'
@@ -1401,7 +1398,7 @@ export async function uploadEmployeeDocument(params: {
 }
 
 export async function createEmployeeDocument(input: HREmployeeDocumentInput): Promise<HREmployeeDocument> {
-  const userId = await getCurrentUserId()
+  const userId = await getAuthUserId()
   const { data, error } = await supabase
     .from('hr_employee_documents')
     .insert({ ...input, uploaded_by: userId })
@@ -1439,7 +1436,7 @@ export async function getDelegations(params?: {
 }
 
 export async function createDelegation(input: HRDelegationInput): Promise<HRDelegation> {
-  const userId = await getCurrentUserId()
+  const userId = await getAuthUserId()
   const { data, error } = await supabase
     .from('hr_delegations')
     .insert({
@@ -1524,7 +1521,7 @@ export async function updateSalaryDirectly(params: {
   reason: string
   effectiveDate?: string
 }): Promise<HRSalaryHistory> {
-  const userId = await getCurrentUserId()
+  const userId = await getAuthUserId()
 
   // أصبحت الـ RPC المُضافة في 20260401200000_fix_hr_triggers هي الـ Single Source of Truth لتعديل الراتب
   const { data, error } = await supabase.rpc('update_employee_salary', {
@@ -1566,7 +1563,7 @@ export async function updatePayrollLine(
     notes?: string | null
   }
 ): Promise<HRPayrollLine> {
-  const userId = await getCurrentUserId()
+  const userId = await getAuthUserId()
   const { data, error } = await supabase.rpc('update_payroll_line_adjustments', {
     p_line_id:          lineId,
     p_bonus_amount:     updates.bonus_amount     ?? null,

@@ -14,6 +14,7 @@
 
 // External
 import { supabase } from '@/lib/supabase/client'
+import { getAuthUserId } from '@/lib/services/_get-user-id'
 
 // Internal types
 import type {
@@ -51,18 +52,18 @@ export class NotificationError extends Error {
 
 /**
  * Resolve the currently authenticated user's id.
+ * Reads from AuthStore first (zero network), then session cache.
  * Throws NotificationError if no session is found.
  */
 async function requireUserId(): Promise<string> {
-  const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user) {
+  try {
+    return await getAuthUserId()
+  } catch {
     throw new NotificationError(
       'المستخدم غير مسجّل دخول',
       'UNAUTHENTICATED',
-      error,
     )
   }
-  return user.id
 }
 
 /**

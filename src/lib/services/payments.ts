@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { getAuthUserId } from '@/lib/services/_get-user-id'
 import type {
   PaymentReceipt, PaymentReceiptInput,
   ExpenseCategory, Expense, ExpenseInput,
@@ -94,7 +95,7 @@ export async function getPaymentReceipt(id: string) {
  * إنشاء إيصال دفع (حالة: pending)
  */
 export async function createPaymentReceipt(input: PaymentReceiptInput) {
-  const userId = (await supabase.auth.getUser()).data.user?.id
+  const userId = await getAuthUserId()
   const { data, error } = await supabase
     .from('payment_receipts')
     .insert({
@@ -115,7 +116,7 @@ export async function createPaymentReceipt(input: PaymentReceiptInput) {
  * vaultId: مطلوب للنقد/البنك/المحفظة — null للشيكات
  */
 export async function confirmPaymentReceipt(receiptId: string, vaultId: string | null) {
-  const userId = (await supabase.auth.getUser()).data.user?.id
+  const userId = await getAuthUserId()
   const { error } = await supabase.rpc('confirm_payment_receipt', {
     p_receipt_id: receiptId,
     p_action: 'confirm',
@@ -148,7 +149,7 @@ export async function getOpenOrdersForCustomer(customerId: string) {
  * RPC: confirm_payment_receipt(action='reject')
  */
 export async function rejectPaymentReceipt(receiptId: string, reason: string) {
-  const userId = (await supabase.auth.getUser()).data.user?.id
+  const userId = await getAuthUserId()
   const { error } = await supabase.rpc('confirm_payment_receipt', {
     p_receipt_id: receiptId,
     p_action: 'reject',
@@ -315,7 +316,7 @@ export async function getExpense(id: string) {
  * إنشاء مصروف (حالة: draft)
  */
 export async function createExpense(input: ExpenseInput) {
-  const userId = (await supabase.auth.getUser()).data.user?.id
+  const userId = await getAuthUserId()
   const { data, error } = await supabase
     .from('expenses')
     .insert({
@@ -365,7 +366,7 @@ export async function submitExpenseForApproval(id: string) {
  * RPC: approve_expense(action='approve')
  */
 export async function approveExpense(expenseId: string) {
-  const userId = (await supabase.auth.getUser()).data.user?.id
+  const userId = await getAuthUserId()
   const { error } = await supabase.rpc('approve_expense', {
     p_expense_id: expenseId,
     p_action: 'approve',
@@ -380,7 +381,7 @@ export async function approveExpense(expenseId: string) {
  * RPC: approve_expense(action='reject')
  */
 export async function rejectExpense(expenseId: string, reason: string) {
-  const userId = (await supabase.auth.getUser()).data.user?.id
+  const userId = await getAuthUserId()
   const { error } = await supabase.rpc('approve_expense', {
     p_expense_id: expenseId,
     p_action: 'reject',

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { getAuthUserId } from '@/lib/services/_get-user-id'
 import type {
   Activity, ActivityInput,
   CallDetail, CallDetailInput,
@@ -21,11 +22,7 @@ import type {
 // ============================================================
 // Helper — جلب UID المستخدم الحالي
 // ============================================================
-async function getUserId(): Promise<string> {
-  const { data } = await supabase.auth.getUser()
-  if (!data.user?.id) throw new Error('يجب تسجيل الدخول')
-  return data.user.id
-}
+
 
 /** تنظيف مدخلات UUID — تحويل '' إلى null */
 function sanitize<T extends Record<string, any>>(input: T): T {
@@ -219,7 +216,7 @@ export async function getActivity(id: string): Promise<Activity> {
 }
 
 export async function createActivity(input: ActivityInput): Promise<Activity> {
-  const userId = await getUserId()
+  const userId = await getAuthUserId()
 
   // ✅ حل P0: employee_id NOT NULL — نجلبه من hr_employees(user_id)
   const { data: empRow, error: empErr } = await supabase
@@ -390,7 +387,7 @@ export async function getVisitPlanItems(planId: string): Promise<VisitPlanItem[]
 }
 
 export async function createVisitPlan(input: VisitPlanInput): Promise<VisitPlan> {
-  const userId = await getUserId()
+  const userId = await getAuthUserId()
   const clean  = sanitize(input)
   const { data, error } = await supabase
     .from('visit_plans')
@@ -415,7 +412,7 @@ export async function updateVisitPlan(id: string, input: Partial<VisitPlanInput>
 }
 
 export async function confirmVisitPlan(id: string): Promise<void> {
-  const userId = await getUserId()
+  const userId = await getAuthUserId()
   const { error } = await supabase
     .from('visit_plans')
     .update({ status: 'confirmed', confirmed_at: new Date().toISOString(), confirmed_by: userId })
@@ -569,7 +566,7 @@ export async function getCallPlanItems(planId: string): Promise<CallPlanItem[]> 
 }
 
 export async function createCallPlan(input: CallPlanInput): Promise<CallPlan> {
-  const userId = await getUserId()
+  const userId = await getAuthUserId()
   const clean  = sanitize(input)
   const { data, error } = await supabase
     .from('call_plans')
@@ -594,7 +591,7 @@ export async function updateCallPlan(id: string, input: Partial<CallPlanInput>):
 }
 
 export async function confirmCallPlan(id: string): Promise<void> {
-  const userId = await getUserId()
+  const userId = await getAuthUserId()
   const { error } = await supabase
     .from('call_plans')
     .update({ status: 'confirmed', confirmed_at: new Date().toISOString(), confirmed_by: userId })
@@ -1072,7 +1069,7 @@ export async function reorderCallPlanItems(
 // ============================================================
 
 export async function createChecklistTemplate(input: ChecklistTemplateInput): Promise<ChecklistTemplate> {
-  const userId = await getUserId()
+  const userId = await getAuthUserId()
   const { data, error } = await supabase
     .from('visit_checklist_templates')
     .insert({
@@ -1161,7 +1158,7 @@ export interface PlanTemplateInput {
 }
 
 export async function createVisitPlanTemplate(input: PlanTemplateInput): Promise<VisitPlanTemplate> {
-  const userId = await getUserId()
+  const userId = await getAuthUserId()
   const { data, error } = await supabase
     .from('visit_plan_templates')
     .insert({
@@ -1200,7 +1197,7 @@ export async function deleteVisitPlanTemplate(id: string): Promise<void> {
 }
 
 export async function createCallPlanTemplate(input: PlanTemplateInput): Promise<CallPlanTemplate> {
-  const userId = await getUserId()
+  const userId = await getAuthUserId()
   const { data, error } = await supabase
     .from('call_plan_templates')
     .insert({

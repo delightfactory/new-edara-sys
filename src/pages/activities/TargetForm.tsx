@@ -17,7 +17,7 @@ import {
   useGovernorates,
   useCustomers,
 } from '@/hooks/useQueryHooks'
-import { supabase } from '@/lib/supabase/client'
+import { useAuthStore } from '@/stores/auth-store'
 import type { TargetScope, TargetPeriod, TargetType } from '@/lib/types/activities'
 import type { TierInput, TargetCustomerInput } from '@/lib/types/activities'
 import PageHeader from '@/components/shared/PageHeader'
@@ -95,6 +95,7 @@ function fmtN(n: number) { return n.toLocaleString('ar-EG', { maximumFractionDig
 export default function TargetForm() {
   const navigate = useNavigate()
   const createTarget = useCreateTargetWithRewards()
+  const currentUserId = useAuthStore(s => s.profile?.id) ?? ''
 
   // ── Reference data
   const { data: targetTypes = [] }  = useTargetTypes()
@@ -273,8 +274,7 @@ export default function TargetForm() {
     if (saving) return
     setSaving(true)
     try {
-      const { data: u } = await supabase.auth.getUser()
-      const userId = u.user?.id ?? ''
+      const userId = currentUserId
 
       const filterCriteria: Record<string, any> = {}
       if (typeCode === 'upgrade_value' && growthPct) filterCriteria.growth_pct = Number(growthPct)

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { getAuthUserId } from '@/lib/services/_get-user-id'
 import type {
   PurchaseReturn,
   PurchaseReturnInput,
@@ -10,11 +11,7 @@ import type {
 // Helpers
 // ============================================================
 
-async function getUserId(): Promise<string> {
-  const { data } = await supabase.auth.getUser()
-  if (!data.user?.id) throw new Error('يجب تسجيل الدخول')
-  return data.user.id
-}
+
 
 function sanitize(input: Record<string, any>): Record<string, any> {
   const cleaned = { ...input }
@@ -117,7 +114,7 @@ export async function createPurchaseReturn(
   header: PurchaseReturnInput,
   items:  PurchaseReturnItemInput[]
 ): Promise<PurchaseReturn> {
-  const userId      = await getUserId()
+  const userId      = await getAuthUserId()
   const cleanHeader = sanitize(header)
 
   const subtotal    = items.reduce((s, i) => s + i.quantity * i.unit_price, 0)
@@ -229,7 +226,7 @@ export async function updatePurchaseReturn(
  * حراسة صارمة: لا يتجاهل allow_negative_stock
  */
 export async function cancelPurchaseInvoice(invoiceId: string): Promise<void> {
-  const userId = await getUserId()
+  const userId = await getAuthUserId()
   const { error } = await supabase.rpc('cancel_purchase_invoice', {
     p_invoice_id: invoiceId,
     p_user_id:    userId,
@@ -241,7 +238,7 @@ export async function cancelPurchaseInvoice(invoiceId: string): Promise<void> {
  * تأكيد مرتجع المشتريات — ذري | WAC Variance → ±5300 | IAS 2
  */
 export async function confirmPurchaseReturn(returnId: string): Promise<void> {
-  const userId = await getUserId()
+  const userId = await getAuthUserId()
   const { error } = await supabase.rpc('confirm_purchase_return', {
     p_return_id: returnId,
     p_user_id:   userId,

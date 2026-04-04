@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { getAuthUserId } from '@/lib/services/_get-user-id'
 import type { Vault, VaultInput, VaultTransaction } from '@/lib/types/master-data'
 
 // ============================================================
@@ -155,7 +156,7 @@ export async function postManualVaultAdjustment(
   reasonCode: string,
   description: string,
 ) {
-  const userId = (await supabase.auth.getUser()).data.user?.id
+  const userId = await getAuthUserId()
   const { data, error } = await supabase.rpc('post_manual_vault_adjustment', {
     p_vault_id: vaultId,
     p_direction: direction,
@@ -204,7 +205,7 @@ export async function transferBetweenVaults(
   amount: number,
   description: string,
 ) {
-  const userId = (await supabase.auth.getUser()).data.user?.id
+  const userId = await getAuthUserId()
   const { data, error } = await supabase.rpc('transfer_between_vaults', {
     p_from_vault_id: fromVaultId,
     p_to_vault_id: toVaultId,
