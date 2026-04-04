@@ -49,6 +49,8 @@ export default function ResponsiveModal({
   const [isVisible, setIsVisible] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
   const { push, pop } = useModalStack()
+  // يتتبع إن كان الضغط بدأ داخل المحتوى — لمنع إغلاق المودال عند رفع الإصبع خارجه
+  const pointerStartedInsideRef = useRef(false)
 
   // Track modal depth so FAB can auto-hide
   useEffect(() => {
@@ -95,7 +97,21 @@ export default function ResponsiveModal({
   return (
     <div
       className={`rmodal-overlay ${isVisible ? 'rmodal-overlay--visible' : ''}`}
-      onClick={disableOverlayClose ? undefined : onClose}
+      onPointerDown={e => {
+        // نسجّل ما إذا كان الضغط بدأ خارج المحتوى (على الـ overlay مباشرة)
+        pointerStartedInsideRef.current = contentRef.current?.contains(e.target as Node) ?? false
+      }}
+      onPointerUp={e => {
+        if (disableOverlayClose) return
+        // نغلق فقط إذا:
+        // 1. الضغط بدأ على الـ overlay (خارج المحتوى)
+        // 2. الضغط انتهى على الـ overlay (خارج المحتوى)
+        const endedOutside = !(contentRef.current?.contains(e.target as Node) ?? false)
+        if (!pointerStartedInsideRef.current && endedOutside) {
+          onClose()
+        }
+        pointerStartedInsideRef.current = false
+      }}
       aria-hidden="true"
     >
       <div

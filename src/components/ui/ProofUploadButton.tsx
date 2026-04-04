@@ -64,6 +64,14 @@ export default function ProofUploadButton({
   // مؤشر انتظار لمنع الضغط المزدوج
   const pickingRef = useRef(false)
 
+  // مهلة حماية بعد إغلاق Bottom Sheet — تمنع أي click من الوصول للـ overlay
+  const sheetClosingRef = useRef(false)
+  const closeSheet = useCallback(() => {
+    setShowPicker(false)
+    sheetClosingRef.current = true
+    setTimeout(() => { sheetClosingRef.current = false }, 400)
+  }, [])
+
   // تنظيف قيمة الـ input بعد الاستخدام (ضروري لإتاحة اختيار نفس الملف مرة أخرى)
   const clearInputs = useCallback(() => {
     ;[galleryRef, cameraRef, fileRef].forEach(ref => {
@@ -108,32 +116,32 @@ export default function ProofUploadButton({
   // فتح الكاميرا على الجوال
   const triggerCamera = useCallback((e: React.PointerEvent) => {
     e.stopPropagation()
-    setShowPicker(false)
+    closeSheet()
     pickingRef.current = true
     setTimeout(() => {
       cameraRef.current?.click()
     }, 50)
-  }, [])
+  }, [closeSheet])
 
   // فتح المعرض على الجوال
   const triggerGallery = useCallback((e: React.PointerEvent) => {
     e.stopPropagation()
-    setShowPicker(false)
+    closeSheet()
     pickingRef.current = true
     setTimeout(() => {
       galleryRef.current?.click()
     }, 50)
-  }, [])
+  }, [closeSheet])
 
   // فتح منتقي الملفات العام (PDF...) على الجوال
   const triggerAnyFile = useCallback((e: React.PointerEvent) => {
     e.stopPropagation()
-    setShowPicker(false)
+    closeSheet()
     pickingRef.current = true
     setTimeout(() => {
       fileRef.current?.click()
     }, 50)
-  }, [])
+  }, [closeSheet])
 
   // حذف الملف
   const removeFile = useCallback((e: React.PointerEvent | React.MouseEvent) => {
@@ -305,7 +313,9 @@ export default function ProofUploadButton({
               background: 'rgba(0,0,0,0.5)',
               zIndex: 9000,
             }}
-            onPointerDown={e => { e.stopPropagation(); setShowPicker(false) }}
+            onPointerDown={e => { e.stopPropagation(); e.preventDefault() }}
+            onPointerUp={e => { e.stopPropagation(); e.preventDefault(); closeSheet() }}
+            onClick={e => { e.stopPropagation(); e.preventDefault() }}
           />
           {/* Sheet */}
           <div
@@ -319,6 +329,8 @@ export default function ProofUploadButton({
               boxShadow: '0 -4px 30px rgba(0,0,0,0.2)',
             }}
             onPointerDown={e => e.stopPropagation()}
+            onPointerUp={e => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
           >
             {/* Drag handle */}
             <div style={{
@@ -386,7 +398,9 @@ export default function ProofUploadButton({
             {/* إلغاء */}
             <button
               type="button"
-              onPointerDown={e => { e.stopPropagation(); setShowPicker(false) }}
+              onPointerDown={e => { e.stopPropagation(); e.preventDefault() }}
+              onPointerUp={e => { e.stopPropagation(); e.preventDefault(); closeSheet() }}
+              onClick={e => e.stopPropagation()}
               style={{
                 width: 'calc(100% - 32px)',
                 margin: '8px 16px 0',
