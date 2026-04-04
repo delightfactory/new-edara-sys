@@ -28,30 +28,37 @@ interface PushPayload {
   tag?: string            // notification grouping tag
 }
 
-// ── 1. Smart update strategy for ERP: notify clients, they apply on next navigation ──
-// Do NOT skipWaiting immediately — wait for PWAUpdateBanner user confirmation
-// OR apply automatically when user navigates between pages (safe for data integrity)
-clientsClaim()
+// ══════════════════════════════════════════════════════════════
+// UPDATE STRATEGY: Instant Silent Update
+// 1. skipWaiting() on install → new SW activates immediately
+// 2. clientsClaim() → takes control of all open tabs instantly
+// 3. Browser fires `controllerchange` event on each tab — the React
+//    app listens for this (not postMessage) to trigger a safe reload.
+//    Using controllerchange avoids the postMessage race condition where
+//    the message may arrive before the React listener is attached.
+// ══════════════════════════════════════════════════════════════
 
-// Listen for SKIP_WAITING message from PWAUpdateBanner or auto-apply logic
-;(self as unknown as EventTarget).addEventListener('message', (e: Event) => {
-  const event = e as MessageEvent
-  if (event.data?.type === 'SKIP_WAITING') {
-    ;(self as unknown as { skipWaiting: () => void }).skipWaiting()
-  }
+// ── 1. Skip waiting immediately on install ──
+self.addEventListener('install', () => {
+  ;(self as unknown as { skipWaiting: () => void }).skipWaiting()
 })
 
-// ── 2. Precache all build assets + cleanup old caches ──
+// ── 2. Claim all open clients on activate ──
+// clientsClaim() fires the `controllerchange` event on every open tab,
+// which is the signal the React app uses to trigger a graceful reload.
+clientsClaim()
+
+// ── 3. Precache all build assets + cleanup old caches ──
 cleanupOutdatedCaches()
 precacheAndRoute(self.__WB_MANIFEST)
 
-// ── 3. Supabase REST / Auth / Storage → NOT cached ──
+// ── 4. Supabase REST / Auth / Storage → NOT cached ──
 //       All authenticated API traffic must bypass the service worker cache.
 //       Caching bearer-token responses in a shared cache risks leaking one
 //       user's data to another user on the same device (shared-cache attack).
 //       The Supabase JS client manages its own in-memory state; no SW cache needed.
 
-// ── 4. Google Fonts → CacheFirst (immutable, cache 1 year) ──
+// ── 5. Google Fonts → CacheFirst (immutable, cache 1 year) ──
 registerRoute(
   ({ url }) =>
     url.hostname.includes('fonts.gstatic.com') ||
@@ -68,7 +75,7 @@ registerRoute(
   })
 )
 
-// ── 5. Static assets (JS, CSS, images) → CacheFirst ──
+// ── 6. Static assets (JS, CSS, images) → CacheFirst ──
 registerRoute(
   ({ request }) =>
     ['style', 'script', 'image'].includes(request.destination),
@@ -83,8 +90,7 @@ registerRoute(
   })
 )
 
-// ── 6. App Shell navigation → StaleWhileRevalidate ──
-//       Instant load from cache + silent background refresh
+// ── 7. App Shell navigation → serve index.html from precache ──
 const appShellHandler = createHandlerBoundToURL('index.html')
 registerRoute(
   new NavigationRoute(appShellHandler, { denylist: [/^\/api\//] })
@@ -96,10 +102,7 @@ registerRoute(
 // ══════════════════════════════════════════════════════════════
 
 // ── PUSH EVENT HANDLER ──────────────────────────────────────────
-// Triggered when the browser receives a push message from the server.
-// Must call event.waitUntil() — the browser may close the SW otherwise.
 self.addEventListener('push', (event: PushEvent) => {
-  // Guard: if no data, show a generic fallback
   if (!event.data) {
     event.waitUntil(
       self.registration.showNotification('إشعار جديد', {
@@ -115,10 +118,9 @@ self.addEventListener('push', (event: PushEvent) => {
   try {
     payload = event.data.json() as PushPayload
   } catch {
-    return  // malformed payload — ignore silently
+    return
   }
 
-  // Cast to bypass TS lib.webworker.d.ts lag on 'renotify' — valid browser property per spec
   const options = {
     body:    payload.body,
     icon:    '/pwa-192x192.png',
@@ -135,25 +137,21 @@ self.addEventListener('push', (event: PushEvent) => {
     lang: 'ar',
   } as NotificationOptions
 
-
   event.waitUntil(
     self.registration.showNotification(payload.title, options)
   )
 })
 
 // ── NOTIFICATION CLICK HANDLER ──────────────────────────────────
-// Fired when the user clicks the notification or one of its actions.
 self.addEventListener('notificationclick', (event: NotificationEvent) => {
   event.notification.close()
 
-  // If user clicked dismiss action — just close, no navigation
   if (event.action === 'dismiss') return
 
   const notifData = event.notification.data as { url?: string; notificationId?: string }
   const targetUrl = notifData?.url ?? '/'
 
   event.waitUntil(
-    // Try to focus an existing tab showing this app first
     self.clients
       .matchAll({ type: 'window', includeUncontrolled: true })
       .then(clientList => {
@@ -161,26 +159,15 @@ self.addEventListener('notificationclick', (event: NotificationEvent) => {
           client => new URL(client.url).origin === self.location.origin
         )
         if (existingClient) {
-          // Navigate existing window to the target URL
           return existingClient.navigate(targetUrl).then(c => c?.focus() ?? existingClient.focus())
         }
-        // No open window — open a new one
         return self.clients.openWindow(targetUrl)
       })
   )
 })
 
 // ── APP BADGE UPDATE HANDLER ────────────────────────────────────
-// Called by the React app to update the OS-level app badge counter.
-// Chrome/Edge support navigator.setAppBadge; Firefox/Safari ignore silently.
 self.addEventListener('message', (event: ExtendableMessageEvent) => {
-  // Handle SKIP_WAITING (pre-existing logic)
-  if (event.data?.type === 'SKIP_WAITING') {
-    ;(self as unknown as { skipWaiting: () => void }).skipWaiting()
-    return
-  }
-
-  // Handle badge count updates
   if (event.data?.type !== 'UPDATE_BADGE') return
 
   const count = (event.data?.count as number) ?? 0

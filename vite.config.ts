@@ -12,8 +12,9 @@ export default defineConfig({
       srcDir: 'src',
       filename: 'sw.ts',
 
-      // prompt = we control timing; SW notifies via BroadcastChannel, auto-reloads between pages
-      registerType: 'prompt',
+      // autoUpdate = SW skips waiting automatically; our sw.ts broadcasts APP_UPDATED
+      // to trigger a controlled 2-second delayed reload in the React app.
+      registerType: 'autoUpdate',
       injectRegister: 'auto',
 
       // Keep the SW disabled in Vite dev mode.

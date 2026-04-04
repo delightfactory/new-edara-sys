@@ -8,7 +8,7 @@ import { ProtectedRoute } from '@/components/layout/ProtectedRoute'
 import ErrorBoundary from '@/components/shared/ErrorBoundary'
 import GlobalRealtimeManager from '@/components/shared/GlobalRealtimeManager'
 import AppLayout from '@/components/layout/AppLayout'
-import PWAUpdateBanner from '@/components/pwa/PWAUpdateBanner'
+import PWAUpdateManager from '@/components/pwa/PWAUpdateBanner'
 
 // Auth Pages
 import LoginPage from '@/pages/auth/LoginPage'
@@ -119,8 +119,10 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
-      staleTime: 30_000,
+      staleTime: 2 * 60_000,   // 2 دقيقة — Realtime يتولى التحديث الفوري
+      gcTime:    10 * 60_000,  // 10 دقائق — احتفظ بالـ cache في الذاكرة
       refetchOnWindowFocus: false,
+      refetchOnReconnect: false, // Realtime يتولى إعادة التزامن عند الاتصال
     },
   },
 })
@@ -513,8 +515,8 @@ export default function App() {
           </Routes>
           </ErrorBoundary>
 
-          {/* PWA: update available / offline ready banner */}
-          <PWAUpdateBanner />
+          {/* PWA: instant silent update manager */}
+          <PWAUpdateManager />
 
           <Toaster
             position="top-center"

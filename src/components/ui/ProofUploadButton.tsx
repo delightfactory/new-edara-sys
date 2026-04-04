@@ -68,24 +68,26 @@ export default function ProofUploadButton({
   const openCamera = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
     if (disabled) return
-    startFilePicking()
+    // مهم: نُطلق click أولاً (isFilePicking=false) ثم نُشغّل الحماية.
+    // لو عكسنا الترتيب، onClickCapture يحجب الـ click ولا تفتح الكاميرا.
     cameraRef.current?.click()
+    startFilePicking()
   }, [disabled])
 
   // فتح المعرض — الزر دائم الظهور في DOM
   const openGallery = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
     if (disabled) return
-    startFilePicking()
     galleryRef.current?.click()
+    startFilePicking()
   }, [disabled])
 
   // فتح منتقي الملفات العام (PDF + الديسكتوب)
   const openFile = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
     if (disabled) return
-    startFilePicking()
     fileRef.current?.click()
+    startFilePicking()
   }, [disabled])
 
   // حذف الملف
