@@ -73,7 +73,7 @@ export async function getCustomers(params?: {
       governorate:governorates(id, name),
       city:cities(id, name),
       assigned_rep:profiles!customers_assigned_rep_id_fkey(id, full_name)
-    `, { count: 'estimated' })
+    `, { count: 'exact' })
     .order('created_at', { ascending: false })
     .range(from, to)
 

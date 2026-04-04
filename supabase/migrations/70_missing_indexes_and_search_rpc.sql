@@ -133,12 +133,14 @@ AS $$
       AND (p_date_from IS NULL OR so.order_date >= p_date_from)
       AND (p_date_to   IS NULL OR so.order_date <= p_date_to)
       -- Keyset cursor — أسرع من OFFSET لأنه يستخدم الفهرس مباشرة
+      -- الترتيب: order_date → created_at → id (للبيانات التاريخية التي تشترك في نفس created_at)
       AND (
         p_cursor_ts IS NULL
-        OR so.created_at < p_cursor_ts
-        OR (so.created_at = p_cursor_ts AND so.id < p_cursor_id)
+        OR so.order_date < p_cursor_ts::DATE
+        OR (so.order_date = p_cursor_ts::DATE AND so.created_at < p_cursor_ts)
+        OR (so.order_date = p_cursor_ts::DATE AND so.created_at = p_cursor_ts AND so.id < p_cursor_id)
       )
-    ORDER BY so.created_at DESC, so.id DESC
+    ORDER BY so.order_date DESC, so.created_at DESC, so.id DESC
     -- نجلب p_limit + 1 لمعرفة هل يوجد المزيد بدون COUNT(*)
     LIMIT p_limit + 1
   )

@@ -116,11 +116,51 @@ export async function getSalesOrders(params?: {
   page?: number
   pageSize?: number
 }) {
-  const page = params?.page || 1
+  const page     = params?.page     || 1
   const pageSize = params?.pageSize || 25
-  const from = (page - 1) * pageSize
-  const to = from + pageSize - 1
+  const from     = (page - 1) * pageSize
+  const to       = from + pageSize - 1
 
+  // ── مسار البحث النصي: RPC يبحث في اسم العميل مباشرة من SQL ─────────
+  // هذا يحل مشكلة حد الـ 100 عميل في المسار القديم
+  if (params?.search?.trim()) {
+    const trimmed  = params.search.trim()
+    const fetchAll = from + pageSize  // نجلب حتى نهاية الصفحة الحالية
+
+    const { data, error } = await supabase.rpc('search_sales_orders', {
+      p_search:    trimmed,
+      p_status:    params?.status   || null,
+      p_rep_id:    params?.repId    || null,
+      p_date_from: params?.dateFrom || null,
+      p_date_to:   params?.dateTo   || null,
+      p_cursor_ts: null,
+      p_cursor_id: null,
+      p_limit:     fetchAll + 1,  // +1 لاكتشاف "هل يوجد المزيد"
+    })
+    if (error) throw error
+
+    const rows      = (data || []) as any[]
+    const hasMore   = rows.length > fetchAll
+    const sliced    = rows.slice(from, from + pageSize)
+    const estimated = hasMore ? (page + 1) * pageSize : from + sliced.length
+
+    const mapped = sliced.map((r: any) => ({
+      ...r,
+      customer: r.customer_id ? { id: r.customer_id, name: r.customer_name, code: r.customer_code, phone: null } : null,
+      rep:      r.rep_id      ? { id: r.rep_id,      full_name: r.rep_name } : null,
+      branch:   r.branch_id   ? { id: r.branch_id,   name: r.branch_name  } : null,
+    })) as SalesOrder[]
+
+    return {
+      data:       mapped,
+      count:      estimated,
+      page,
+      pageSize,
+      totalPages: hasMore ? page + 1 : page,
+    }
+  }
+
+  // ── المسار العادي (لا يوجد بحث نصي): PostgREST أسرع ────────────────
   let query = supabase
     .from('sales_orders')
     .select(`
@@ -130,51 +170,22 @@ export async function getSalesOrders(params?: {
       branch:branches(id, name),
       warehouse:warehouses(id, name)
     `, { count: 'estimated' })
+    .order('order_date', { ascending: false })
     .order('created_at', { ascending: false })
     .range(from, to)
 
-  if (params?.search) {
-    const trimmed = params.search.trim()
-    // PostgREST لا يدعم الفلترة على أعمدة الجداول المرتبطة داخل .or()
-    // لذلك نجلب customer_ids أولاً ثم نبني OR صحيح
-    const { data: matchedCustomers } = await supabase
-      .from('customers')
-      .select('id')
-      .or(`name.ilike.%${trimmed}%,code.ilike.%${trimmed}%`)
-      .limit(100)
-
-    const customerIds = (matchedCustomers || []).map((c: { id: string }) => c.id)
-
-    if (customerIds.length > 0) {
-      query = query.or(
-        `order_number.ilike.%${trimmed}%,customer_id.in.(${customerIds.join(',')})`
-      )
-    } else {
-      query = query.ilike('order_number', `%${trimmed}%`)
-    }
-  }
-  if (params?.status) {
-    query = query.eq('status', params.status)
-  }
-  if (params?.customerId) {
-    query = query.eq('customer_id', params.customerId)
-  }
-  if (params?.repId) {
-    query = query.eq('rep_id', params.repId)
-  }
-  if (params?.dateFrom) {
-    query = query.gte('order_date', params.dateFrom)
-  }
-  if (params?.dateTo) {
-    query = query.lte('order_date', params.dateTo)
-  }
+  if (params?.status)     query = query.eq('status',      params.status)
+  if (params?.customerId) query = query.eq('customer_id', params.customerId)
+  if (params?.repId)      query = query.eq('rep_id',      params.repId)
+  if (params?.dateFrom)   query = query.gte('order_date', params.dateFrom)
+  if (params?.dateTo)     query = query.lte('order_date', params.dateTo)
 
   const { data, error, count } = await query
   if (error) throw error
 
   return {
-    data: data as SalesOrder[],
-    count: count || 0,
+    data:       data as SalesOrder[],
+    count:      count || 0,
     page,
     pageSize,
     totalPages: Math.ceil((count || 0) / pageSize),

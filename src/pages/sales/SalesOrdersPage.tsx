@@ -1,13 +1,14 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ShoppingCart, Plus, Eye, FileText, TrendingUp,
-  CheckCircle, Truck, XCircle, Clock, Calendar
+  CheckCircle, Truck, XCircle, Clock, Calendar, Loader2, CheckCircle2
 } from 'lucide-react'
 import { useSalesOrders, useSalesStats, useProfiles } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
 import type { SalesOrder, SalesOrderStatus } from '@/lib/types/master-data'
 import { formatNumber } from '@/lib/utils/format'
+import { useMobileInfiniteList } from '@/hooks/useIntersectionObserver'
 import PageHeader from '@/components/shared/PageHeader'
 import SearchInput from '@/components/shared/SearchInput'
 import DataTable from '@/components/shared/DataTable'
@@ -26,30 +27,59 @@ const statusVariants: Record<SalesOrderStatus, 'neutral' | 'primary' | 'info' | 
 const paymentLabels: Record<string, string> = { cash: 'نقدي', credit: 'آجل', mixed: 'مختلط' }
 const paymentVariants: Record<string, 'success' | 'warning' | 'info'> = { cash: 'success', credit: 'warning', mixed: 'info' }
 
+const PAGE_SIZE = 25
+
 export default function SalesOrdersPage() {
   const navigate = useNavigate()
   const can = useAuthStore(s => s.can)
 
-  const [search, setSearch] = useState('')
+  // ── Filters ──────────────────────────────────────────────────────
+  const [search,       setSearch]       = useState('')
   const [statusFilter, setStatusFilter] = useState<SalesOrderStatus | ''>('')
-  const [repFilter, setRepFilter] = useState('')
-  const [page, setPage] = useState(1)
+  const [repFilter,    setRepFilter]    = useState('')
 
-  const { data: reps = [] } = useProfiles()
-  const { data: stats } = useSalesStats()
+  // ── Desktop pagination ────────────────────────────────────────────
+  const [desktopPage, setDesktopPage] = useState(1)
+  // ── Mobile pagination ─────────────────────────────────────────────
+  const [mobilePage,  setMobilePage]  = useState(1)
 
-  const queryParams = useMemo(() => ({
-    search: search || undefined,
-    status: statusFilter || undefined,
-    repId: repFilter || undefined,
-    page,
-    pageSize: 25,
-  }), [search, statusFilter, repFilter, page])
+  const filterKey = `${search}|${statusFilter}|${repFilter}`
+  const filterParams = useMemo(() => ({
+    search:  search       || undefined,
+    status:  statusFilter || undefined,
+    repId:   repFilter    || undefined,
+  }), [search, statusFilter, repFilter])
 
-  const { data: result, isLoading: loading } = useSalesOrders(queryParams)
-  const orders = result?.data ?? []
-  const totalPages = result?.totalPages ?? 1
-  const totalCount = result?.count ?? 0
+  const handleFilterChange = useCallback((fn: () => void) => {
+    fn()
+    setDesktopPage(1)
+    setMobilePage(1)
+  }, [])
+
+  const { data: reps = [] }  = useProfiles()
+  const { data: stats }      = useSalesStats()
+
+  // Desktop query
+  const desktopParams = useMemo(() => ({ ...filterParams, page: desktopPage, pageSize: PAGE_SIZE }), [filterParams, desktopPage])
+  const { data: desktopResult, isLoading: desktopLoading } = useSalesOrders(desktopParams)
+  const desktopOrders = desktopResult?.data ?? []
+  const totalPages    = desktopResult?.totalPages ?? 1
+  const totalCount    = desktopResult?.count ?? 0
+
+  // Mobile query
+  const mobileParams  = useMemo(() => ({ ...filterParams, page: mobilePage,  pageSize: PAGE_SIZE }), [filterParams, mobilePage])
+  const { data: mobileResult, isLoading: mobileLoading } = useSalesOrders(mobileParams)
+  const mobileData    = mobileResult?.data ?? []
+  const hasMoreMobile = mobileData.length === PAGE_SIZE
+
+  const handleLoadMore = useCallback(() => {
+    if (!mobileLoading && hasMoreMobile) setMobilePage(p => p + 1)
+  }, [mobileLoading, hasMoreMobile])
+
+  const { accumulated: mobileOrders, sentinelRef } = useMobileInfiniteList<SalesOrder>({
+    data: mobileData, pageSize: PAGE_SIZE, loading: mobileLoading,
+    resetKey: filterKey, hasMore: hasMoreMobile, onLoadMore: handleLoadMore,
+  })
 
   const statCards = stats ? [
     { label: 'إجمالي المبيعات', value: formatNumber(stats.totalSales) + ' ج.م', icon: <TrendingUp size={18} /> },
@@ -62,7 +92,7 @@ export default function SalesOrdersPage() {
     <div className="page-container animate-enter">
       <PageHeader
         title="أوامر البيع"
-        subtitle={loading ? '...' : `${totalCount} طلب`}
+        subtitle={desktopLoading ? '...' : `${totalCount.toLocaleString('ar-EG')} طلب`}
         actions={can('sales.orders.create') ? (
           <Button icon={<Plus size={16} />} onClick={() => navigate('/sales/orders/new')}
             className="desktop-only-btn">
@@ -72,9 +102,14 @@ export default function SalesOrdersPage() {
       />
 
       {/* ── Stat Cards ──────────────────────────────── */}
-      {statCards && (
+      {stats && (
         <div className="stat-cards-grid">
-          {statCards.map((s, i) => (
+          {[
+            { label: 'إجمالي المبيعات', value: formatNumber(stats.totalSales) + ' ج.م', icon: <TrendingUp size={18} /> },
+            { label: 'مسودة',  value: String(stats.statusCounts.draft      ?? 0), icon: <FileText size={18} /> },
+            { label: 'مؤكد',   value: String(stats.statusCounts.confirmed  ?? 0), icon: <CheckCircle size={18} /> },
+            { label: 'مُسلّم', value: String(stats.statusCounts.delivered  ?? 0), icon: <Truck size={18} /> },
+          ].map((s, i) => (
             <div key={i} className="edara-card stat-card">
               <div className="stat-card-icon">{s.icon}</div>
               <div>
@@ -90,11 +125,12 @@ export default function SalesOrdersPage() {
       <div className="edara-card" style={{ padding: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
         <div className="sales-filter-row">
           <div style={{ flex: 2, minWidth: 180 }}>
-            <SearchInput value={search} onChange={val => { setSearch(val); setPage(1) }}
+            <SearchInput value={search}
+              onChange={val => handleFilterChange(() => setSearch(val))}
               placeholder="بحث برقم الطلب أو اسم العميل..." />
           </div>
           <select className="form-select filter-select" value={statusFilter}
-            onChange={e => { setStatusFilter(e.target.value as any); setPage(1) }}>
+            onChange={e => handleFilterChange(() => setStatusFilter(e.target.value as any))}>
             <option value="">كل الحالات</option>
             <option value="draft">مسودة</option>
             <option value="confirmed">مؤكد</option>
@@ -103,14 +139,14 @@ export default function SalesOrdersPage() {
             <option value="cancelled">ملغي</option>
           </select>
           <select className="form-select filter-select" value={repFilter}
-            onChange={e => { setRepFilter(e.target.value); setPage(1) }}>
+            onChange={e => handleFilterChange(() => setRepFilter(e.target.value))}>
             <option value="">كل المناديب</option>
             {reps.map(r => <option key={r.id} value={r.id}>{r.full_name}</option>)}
           </select>
         </div>
       </div>
 
-      {/* ── DESKTOP: DataTable ───────────────────────── */}
+      {/* ══════════════ DESKTOP: Numbered Pagination ══════════════ */}
       <div className="sales-table-view edara-card" style={{ overflow: 'auto' }}>
         <DataTable<SalesOrder>
           columns={[
@@ -185,8 +221,8 @@ export default function SalesOrdersPage() {
               ),
             },
           ]}
-          data={orders}
-          loading={loading}
+          data={desktopOrders}
+          loading={desktopLoading}
           onRowClick={o => navigate(`/sales/orders/${o.id}`)}
           emptyIcon={<ShoppingCart size={48} />}
           emptyTitle="لا توجد أوامر بيع"
@@ -194,16 +230,16 @@ export default function SalesOrdersPage() {
           emptyAction={can('sales.orders.create') ? (
             <Button icon={<Plus size={16} />} onClick={() => navigate('/sales/orders/new')}>طلب جديد</Button>
           ) : undefined}
-          page={page}
+          page={desktopPage}
           totalPages={totalPages}
           totalCount={totalCount}
-          onPageChange={setPage}
+          onPageChange={setDesktopPage}
         />
       </div>
 
-      {/* ── MOBILE: DataCard list ────────────────────── */}
+      {/* ══════════════ MOBILE: Infinite Scroll ══════════════════ */}
       <div className="sales-card-view">
-        {loading ? (
+        {mobileLoading && mobileOrders.length === 0 ? (
           <div className="mobile-card-list">
             {[1, 2, 3, 4].map(i => (
               <div key={i} className="edara-card" style={{ padding: 'var(--space-4)' }}>
@@ -213,20 +249,19 @@ export default function SalesOrdersPage() {
               </div>
             ))}
           </div>
-        ) : orders.length === 0 ? (
+        ) : mobileOrders.length === 0 ? (
           <div className="empty-state" style={{ padding: 'var(--space-8)' }}>
             <ShoppingCart size={40} className="empty-state-icon" />
             <p className="empty-state-title">لا توجد أوامر بيع</p>
-            <p className="empty-state-text">ابدأ بإنشاء أول أمر بيع للعملاء</p>
           </div>
         ) : (
           <div className="mobile-card-list">
-            {orders.map(o => {
+            {mobileOrders.map(o => {
               const paidRatio = o.total_amount > 0 ? ((o.paid_amount + o.returned_amount) / o.total_amount) : 0
               return (
                 <DataCard
                   key={o.id}
-                  title={o.customer?.name || '—'}
+                  title={(o as any).customer?.name || '—'}
                   subtitle={
                     <span dir="ltr" style={{ fontFamily: 'monospace', fontSize: '0.7rem' }}>
                       {o.order_number}
@@ -242,23 +277,10 @@ export default function SalesOrdersPage() {
                     </div>
                   }
                   metadata={[
-                    {
-                      label: 'التاريخ',
-                      value: new Date(o.order_date).toLocaleDateString('ar-EG-u-nu-latn'),
-                    },
-                    {
-                      label: 'الإجمالي',
-                      value: `${formatNumber(o.total_amount)} ج.م`,
-                      highlight: true,
-                    },
-                    {
-                      label: 'المدفوع',
-                      value: `${formatNumber(o.paid_amount)} ج.م`,
-                    },
-                    ...(o.payment_terms ? [{
-                      label: 'الدفع',
-                      value: paymentLabels[o.payment_terms] || o.payment_terms,
-                    }] : []),
+                    { label: 'التاريخ',  value: new Date(o.order_date).toLocaleDateString('ar-EG-u-nu-latn') },
+                    { label: 'الإجمالي', value: `${formatNumber(o.total_amount)} ج.م`, highlight: true },
+                    { label: 'المدفوع',  value: `${formatNumber(o.paid_amount)} ج.م` },
+                    ...(o.payment_terms ? [{ label: 'الدفع', value: paymentLabels[o.payment_terms] || o.payment_terms }] : []),
                   ]}
                   actions={
                     <Button variant="secondary" size="sm" style={{ width: '100%', justifyContent: 'center' }}
@@ -270,14 +292,23 @@ export default function SalesOrdersPage() {
                 />
               )
             })}
-          </div>
-        )}
 
-        {totalPages > 1 && (
-          <div className="mobile-pagination">
-            <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>السابق</Button>
-            <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>{page} / {totalPages}</span>
-            <Button variant="ghost" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>التالي</Button>
+            {/* Sentinel — يكتشفه الـ IntersectionObserver لتشغيل loadMore */}
+            <div ref={sentinelRef} style={{ height: 8, flexShrink: 0 }} />
+
+            {mobileLoading && mobileOrders.length > 0 && (
+              <div className="infinite-loading">
+                <Loader2 size={18} className="spin-icon" />
+                <span>جاري تحميل المزيد...</span>
+              </div>
+            )}
+
+            {!mobileLoading && !hasMoreMobile && mobileOrders.length > 0 && (
+              <div className="infinite-end">
+                <CheckCircle2 size={16} />
+                <span>جميع الطلبات ({mobileOrders.length.toLocaleString('ar-EG')})</span>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -323,11 +354,21 @@ export default function SalesOrdersPage() {
         }
 
         .mobile-card-list {
-          display: flex; flex-direction: column; gap: var(--space-3); padding: 0 0 var(--space-2);
+          display: flex; flex-direction: column; gap: var(--space-3); padding: 0 0 var(--space-4);
         }
-        .mobile-pagination {
+        .infinite-loading {
           display: flex; align-items: center; justify-content: center;
-          gap: var(--space-4); padding: var(--space-4) 0;
+          gap: var(--space-2); padding: var(--space-4);
+          color: var(--text-muted); font-size: var(--text-sm);
+        }
+        .spin-icon { animation: spin 1s linear infinite; color: var(--color-primary); }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .infinite-end {
+          display: flex; align-items: center; justify-content: center;
+          gap: var(--space-2); padding: var(--space-3) var(--space-4);
+          color: var(--color-success); font-size: var(--text-sm); font-weight: 600;
+          background: var(--color-success-light); border-radius: var(--radius-lg);
+          margin-top: var(--space-2);
         }
       `}</style>
     </div>
