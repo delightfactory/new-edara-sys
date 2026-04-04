@@ -21,6 +21,7 @@
 
 import { useRef, useState, useCallback } from 'react'
 import { Upload, Camera, Image, FileText, X, CheckCircle2, AlertCircle } from 'lucide-react'
+import { startFilePicking, endFilePicking } from '@/lib/utils/file-picking-guard'
 
 interface ProofUploadButtonProps {
   /** الملف المُختار حالياً */
@@ -82,18 +83,27 @@ export default function ProofUploadButton({
   // معالجة الملف المُختار
   const handleFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
-    if (!f) { clearInputs(); return }
+    if (!f) {
+      // المستخدم ألغى الاختيار — نوقف الحماية ونعيد ضبط المؤشر
+      clearInputs()
+      pickingRef.current = false
+      endFilePicking()
+      return
+    }
 
     // التحقق من الحجم
     if (f.size > maxSizeMB * 1024 * 1024) {
       alert(`حجم الملف يتجاوز ${maxSizeMB}MB — يرجى اختيار ملف أصغر`)
       clearInputs()
+      pickingRef.current = false
+      endFilePicking()
       return
     }
     onChange(f)
     clearInputs()
-    // إعادة ضبط مؤشر الانتظار
-    setTimeout(() => { pickingRef.current = false }, 300)
+    pickingRef.current = false
+    // نبقي الحماية فعّالة 600ms لاستيعاب الأحداث الوهمية بعد إغلاق منتقي الملفات
+    endFilePicking()
   }, [maxSizeMB, onChange, clearInputs])
 
   // ── فتح منتقي الملف (يدعم الجوال والديسكتوب) ──
@@ -109,6 +119,7 @@ export default function ProofUploadButton({
       setTimeout(() => { pickingRef.current = false }, 500)
     } else {
       // على الديسكتوب: نفتح منتقي الملف مباشرة
+      startFilePicking()
       fileRef.current?.click()
     }
   }, [disabled])
@@ -118,6 +129,7 @@ export default function ProofUploadButton({
     e.stopPropagation()
     closeSheet()
     pickingRef.current = true
+    startFilePicking()
     setTimeout(() => {
       cameraRef.current?.click()
     }, 50)
@@ -128,6 +140,7 @@ export default function ProofUploadButton({
     e.stopPropagation()
     closeSheet()
     pickingRef.current = true
+    startFilePicking()
     setTimeout(() => {
       galleryRef.current?.click()
     }, 50)
@@ -138,6 +151,7 @@ export default function ProofUploadButton({
     e.stopPropagation()
     closeSheet()
     pickingRef.current = true
+    startFilePicking()
     setTimeout(() => {
       fileRef.current?.click()
     }, 50)

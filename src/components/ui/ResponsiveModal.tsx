@@ -1,6 +1,7 @@
-import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { useModalStack } from '@/hooks/useModalStack'
+import { isFilePicking } from '@/lib/utils/file-picking-guard'
 
 interface ResponsiveModalProps {
   open: boolean
@@ -49,6 +50,16 @@ export default function ResponsiveModal({
   const [isVisible, setIsVisible] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
   const { push, pop } = useModalStack()
+  const requestClose = useCallback(() => {
+    if (isFilePicking()) return
+    onClose()
+  }, [onClose])
+
+  const swallowGhostEvent = (e: { stopPropagation: () => void; preventDefault: () => void }) => {
+    if (!isFilePicking()) return
+    e.preventDefault()
+    e.stopPropagation()
+  }
   // يتتبع إن كان الضغط بدأ داخل المحتوى — لمنع إغلاق المودال عند رفع الإصبع خارجه
   const pointerStartedInsideRef = useRef(false)
 
@@ -69,13 +80,15 @@ export default function ResponsiveModal({
     }
   }, [open])
 
-  // Escape key
+  // Escape key — مع تجاهل الحدث أثناء استخدام منتقي الملفات
   useEffect(() => {
     if (!open) return
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') requestClose()
+    }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
-  }, [open, onClose])
+  }, [open, requestClose])
 
   // Lock body scroll
   useEffect(() => {
@@ -97,18 +110,23 @@ export default function ResponsiveModal({
   return (
     <div
       className={`rmodal-overlay ${isVisible ? 'rmodal-overlay--visible' : ''}`}
+      onPointerUpCapture={swallowGhostEvent}
+      onClickCapture={swallowGhostEvent}
       onPointerDown={e => {
         // نسجّل ما إذا كان الضغط بدأ خارج المحتوى (على الـ overlay مباشرة)
         pointerStartedInsideRef.current = contentRef.current?.contains(e.target as Node) ?? false
       }}
       onPointerUp={e => {
-        if (disableOverlayClose) return
+        if (disableOverlayClose || isFilePicking()) {
+          pointerStartedInsideRef.current = false
+          return
+        }
         // نغلق فقط إذا:
         // 1. الضغط بدأ على الـ overlay (خارج المحتوى)
         // 2. الضغط انتهى على الـ overlay (خارج المحتوى)
         const endedOutside = !(contentRef.current?.contains(e.target as Node) ?? false)
         if (!pointerStartedInsideRef.current && endedOutside) {
-          onClose()
+          requestClose()
         }
         pointerStartedInsideRef.current = false
       }}
@@ -131,7 +149,7 @@ export default function ResponsiveModal({
             <span id="rmodal-title" className="rmodal-title">{title}</span>
             <button
               className="btn btn-ghost btn-icon"
-              onClick={onClose}
+              onClick={requestClose}
               aria-label="إغلاق"
               type="button"
             >

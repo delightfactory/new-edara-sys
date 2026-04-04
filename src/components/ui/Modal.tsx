@@ -1,6 +1,7 @@
-import { type ReactNode, useEffect } from 'react'
+import { type ReactNode, useCallback, useEffect } from 'react'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils/helpers'
+import { isFilePicking } from '@/lib/utils/file-picking-guard'
 
 interface ModalProps {
   open: boolean
@@ -19,15 +20,25 @@ interface ModalProps {
  * يغلق بـ Escape أو الضغط على الخلفية
  */
 export default function Modal({ open, onClose, title, size = 'md', children, footer, disableOverlayClose = false }: ModalProps) {
+  const requestClose = useCallback(() => {
+    if (isFilePicking()) return
+    onClose()
+  }, [onClose])
+
+  const swallowGhostEvent = (e: { stopPropagation: () => void; preventDefault: () => void }) => {
+    if (!isFilePicking()) return
+    e.preventDefault()
+    e.stopPropagation()
+  }
   // إغلاق بمفتاح Escape
   useEffect(() => {
     if (!open) return
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') requestClose()
     }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
-  }, [open, onClose])
+  }, [open, requestClose])
 
   // منع scroll الصفحة خلف الـ modal
   useEffect(() => {
@@ -40,7 +51,12 @@ export default function Modal({ open, onClose, title, size = 'md', children, foo
   if (!open) return null
 
   return (
-    <div className="modal-overlay" onClick={disableOverlayClose ? undefined : onClose}>
+    <div
+      className="modal-overlay"
+      onPointerUpCapture={swallowGhostEvent}
+      onClickCapture={swallowGhostEvent}
+      onClick={disableOverlayClose ? undefined : requestClose}
+    >
       <div
         className={cn('modal-box', `modal-${size}`)}
         onClick={e => e.stopPropagation()}
