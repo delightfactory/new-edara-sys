@@ -1,50 +1,54 @@
 /**
- * file-picking-guard — v2
+ * file-picking-guard — v3
  *
- * المشكلة على Android / iOS:
- *   عند إغلاق منتقي الملفات الأصلي (كاميرا/معرض)، يُطلق النظام:
- *   - Android: أحداث pointer وهمية على إحداثيات زر "OK" في الكاميرا
- *   - Android: أحياناً Escape keydown يُغلق المودال
- *   - iOS: touch events متأخرة بعد العودة من الكاميرا
+ * يحل مشكلتين:
+ * 1. Phantom click من الكاميرا يُغلق المودال
+ * 2. المودال مجمّد 30 ثانية عند إلغاء الكاميرا (endFilePicking لا يُستدعى)
  *
- * سلوك التسلسل الزمني على Android:
- *   1. onChange fires (نختار ملف)  ← الحماية نشطة هنا ✅
- *   2. phantom pointerdown (~0ms)  ← الحماية تحجبه ✅
- *   3. phantom pointerup (~50-400ms) ← يجب أن تظل الحماية نشطة هنا
- *
- * المشكلة كانت: endFilePicking يبدأ العدّ التنازلي من 600ms
- * بمجرد استلام onChange، لكن phantom pointerup قد يصل بعد 400ms
- * مما يُقلّص هامش الأمان.
- *
- * الحل: نرفع المهلة إلى 1200ms لاستيعاب كل الأحداث الوهمية بأمان.
- * هذه المهلة لا تؤثر على UX لأن المستخدم لا يلاحظ 1.2 ثانية بعد رجوعه من الكاميرا.
+ * الحل:
+ * - نستمع لـ visibilitychange: حين تعود الصفحة للواجهة بعد الكاميرا،
+ *   نبدأ فوراً مؤقت الـ 800ms (سواء اختار المستخدم صورة أم لا).
+ * - 800ms كافية لاستيعاب phantom events التي تصل خلال 0-400ms.
+ * - isFilePicking() يبقى true فقط 800ms بعد إغلاق الكاميرا.
  */
 
 let _active = false
 let _clearTimer: ReturnType<typeof setTimeout> | null = null
 
+function clearTimerIfAny(): void {
+  if (_clearTimer) { clearTimeout(_clearTimer); _clearTimer = null }
+}
+
+// عند عودة الصفحة للواجهة (كاميرا تُغلق — سواء اختار أم لا)
+// نبدأ مؤقت الإنهاء فوراً
+function handlePageVisible(): void {
+  if (document.visibilityState === 'visible' && _active) {
+    endFilePicking()
+  }
+}
+
 /** شغّل الحماية قبل استدعاء input.click() */
 export function startFilePicking(): void {
   _active = true
-  if (_clearTimer) clearTimeout(_clearTimer)
-  // أمان: إلغاء تلقائي بعد 30 ثانية لو لم يُستدعَ endFilePicking
+  clearTimerIfAny()
+  // أمان: إلغاء تلقائي بعد 30 ثانية في حالة عدم استدعاء endFilePicking وعدم تغيير الـ visibility
   _clearTimer = setTimeout(() => { _active = false; _clearTimer = null }, 30_000)
+  // الحل الرئيسي: حين تعود الصفحة للواجهة نبدأ الإنهاء فوراً
+  document.addEventListener('visibilitychange', handlePageVisible)
 }
 
 /**
- * أوقف الحماية بعد اكتمال الاختيار أو الإلغاء.
- *
- * 1200ms بدلاً من 600ms:
- * - Android يُطلق phantom events على مدى 50-400ms بعد إغلاق الكاميرا
- * - 1200ms هامش أمان مريح يستوعب أبطأ الأجهزة
- * - لا تأثير على UX: المستخدم لا يلاحظ هذه الفترة
+ * أوقف الحماية بعد اكتمال الاختيار.
+ * 800ms لاستيعاب phantom events (تصل خلال 0-400ms على Android).
+ * يُستدعى تلقائياً من handlePageVisible عند الإلغاء.
  */
 export function endFilePicking(): void {
-  if (_clearTimer) { clearTimeout(_clearTimer); _clearTimer = null }
-  _clearTimer = setTimeout(() => { _active = false; _clearTimer = null }, 1200)
+  document.removeEventListener('visibilitychange', handlePageVisible)
+  clearTimerIfAny()
+  _clearTimer = setTimeout(() => { _active = false; _clearTimer = null }, 800)
 }
 
-/** true أثناء عمل منتقي الملفات أو خلال فترة الحماية بعد إغلاقه */
+/** true أثناء عمل منتقي الملفات أو خلال فترة الحماية (800ms) بعد إغلاقه */
 export function isFilePicking(): boolean {
   return _active
 }

@@ -111,7 +111,12 @@ export default function ResponsiveModal({
         if (isFilePicking()) { e.stopPropagation(); e.preventDefault() }
       }}
       onPointerDown={e => {
-        // نسجّل ما إذا كان الضغط بدأ خارج المحتوى (على الـ overlay مباشرة)
+        // نسجّل ما إذا كان الضغط بدأ داخل المحتوى
+        // أثناء file picking: نتجاهل أي pointerdown خارجي (phantom events)
+        if (isFilePicking()) {
+          pointerStartedInsideRef.current = true // اعتبره داخلياً لمنع الإغلاق
+          return
+        }
         pointerStartedInsideRef.current = contentRef.current?.contains(e.target as Node) ?? false
       }}
       onPointerUp={e => {
@@ -147,7 +152,7 @@ export default function ResponsiveModal({
             <span id="rmodal-title" className="rmodal-title">{title}</span>
             <button
               className="btn btn-ghost btn-icon"
-              onClick={requestClose}
+              onClick={onClose}
               aria-label="إغلاق"
               type="button"
             >

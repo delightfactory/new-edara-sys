@@ -231,6 +231,7 @@ export default function ExpensesPage() {
 
       {/* ── Create: ResponsiveModal (Bottom Sheet on mobile) ── */}
       <ResponsiveModal open={createOpen} onClose={() => setCreateOpen(false)} title="مصروف جديد"
+        disableOverlayClose
         footer={<><Button variant="ghost" onClick={() => setCreateOpen(false)}>إلغاء</Button><Button onClick={handleCreate} loading={saving}>حفظ</Button></>}
       >
         <div className="flex-col gap-4">
