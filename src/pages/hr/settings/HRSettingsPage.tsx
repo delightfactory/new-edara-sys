@@ -494,8 +494,22 @@ function GpsCoordinatePicker({
   const [gpsError, setGpsError] = useState<string | null>(null)
   const hasCoords = lat !== 0 || lng !== 0
 
-  const useMyLocation = () => {
+  const useMyLocation = async () => {
     if (!navigator.geolocation) { setGpsError('GPS غير مدعوم في هذا المتصفح'); return }
+
+    // ── فحص مسبق للإذن قبل الطلب الفعلي ──────────────────────────────────
+    if (navigator.permissions?.query) {
+      try {
+        const perm = await navigator.permissions.query({ name: 'geolocation' })
+        if (perm.state === 'denied') {
+          setGpsError('تم حظر إذن الموقع — افتح إعدادات المتصفح وأعده للسماح ثم أعد المحاولة')
+          return
+        }
+      } catch {
+        // المتصفحات التي لا تدعم query → نكمل بشكل طبيعي
+      }
+    }
+
     setFetching(true); setGpsError(null)
     navigator.geolocation.getCurrentPosition(
       pos => {
@@ -505,7 +519,7 @@ function GpsCoordinatePicker({
       },
       err => {
         const msgs: Record<number, string> = {
-          1: 'مرفوض: فعّل إذن الموقع في المتصفح ثم أعد المحاولة',
+          1: 'تم حظر إذن الموقع — اضغط على أيقونة القفل 🔒 في شريط العنوان وأعط الإذن',
           2: 'تعذر تحديد الموقع — تأكد من تفعيل GPS في الجهاز',
           3: 'انتهت مهلة GPS — تحرك لمكان مفتوح وأعد المحاولة',
         }

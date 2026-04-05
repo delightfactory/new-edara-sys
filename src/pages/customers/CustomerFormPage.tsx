@@ -147,6 +147,18 @@ export default function CustomerFormPage() {
   // GPS capture (customer location)
   const captureGPS = async () => {
     if (!navigator.geolocation) { toast.error('المتصفح لا يدعم خدمات الموقع'); return }
+
+    // ── فحص مسبق للإذن قبل الطلب الفعلي ──────────────────────────────────
+    if (navigator.permissions?.query) {
+      try {
+        const perm = await navigator.permissions.query({ name: 'geolocation' })
+        if (perm.state === 'denied') {
+          toast.error('تم حظر إذن الموقع — اضغط على أيقونة القفل 🔒 في شريط العنوان وأعط الإذن')
+          return
+        }
+      } catch { /* متصفحات لا تدعم query → نكمل */ }
+    }
+
     setGpsLoading(true)
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
@@ -168,7 +180,7 @@ export default function CustomerFormPage() {
       },
       (err) => {
         setGpsLoading(false)
-        if (err.code === 1) toast.error('تم رفض صلاحية الموقع — اسمح للمتصفح بالوصول')
+        if (err.code === 1) toast.error('تم حظر إذن الموقع — اضغط على أيقونة القفل 🔒 وأعط الإذن')
         else if (err.code === 2) toast.error('الموقع غير متاح حالياً')
         else toast.error('انتهت مهلة سحب الموقع')
       },
@@ -177,8 +189,20 @@ export default function CustomerFormPage() {
   }
 
   // GPS capture (branch modal)
-  const captureBranchGPS = () => {
+  const captureBranchGPS = async () => {
     if (!navigator.geolocation) { toast.error('المتصفح لا يدعم خدمات الموقع'); return }
+
+    // ── فحص مسبق للإذن قبل الطلب الفعلي ──────────────────────────────────
+    if (navigator.permissions?.query) {
+      try {
+        const perm = await navigator.permissions.query({ name: 'geolocation' })
+        if (perm.state === 'denied') {
+          toast.error('تم حظر إذن الموقع — اضغط على أيقونة القفل 🔒 في شريط العنوان وأعط الإذن')
+          return
+        }
+      } catch { /* متصفحات لا تدعم query → نكمل */ }
+    }
+
     setBranchGpsLoading(true)
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -186,7 +210,7 @@ export default function CustomerFormPage() {
         setBranchGpsLoading(false)
         toast.success('تم سحب الموقع')
       },
-      () => { setBranchGpsLoading(false); toast.error('فشل سحب الموقع') },
+      () => { setBranchGpsLoading(false); toast.error('تعذر سحب الموقع — تأكد من تفعيل GPS') },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     )
   }

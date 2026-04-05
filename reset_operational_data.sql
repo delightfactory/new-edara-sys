@@ -42,10 +42,8 @@ TRUNCATE TABLE call_details               CASCADE;
 TRUNCATE TABLE activities                 CASCADE;
 TRUNCATE TABLE visit_plan_items           CASCADE;
 TRUNCATE TABLE visit_plans                CASCADE;
-TRUNCATE TABLE visit_plan_templates       CASCADE;
 TRUNCATE TABLE call_plan_items            CASCADE;
 TRUNCATE TABLE call_plans                 CASCADE;
-TRUNCATE TABLE call_plan_templates        CASCADE;
 
 -- ════════════════════════════════════════════════════════════
 -- ٢. الأهداف والإنجازات
@@ -154,7 +152,12 @@ TRUNCATE TABLE hr_employees               CASCADE;
 -- ════════════════════════════════════════════════════════════
 -- ١١. الإشعارات والتنبيهات التشغيلية
 -- ════════════════════════════════════════════════════════════
+TRUNCATE TABLE notification_delivery_log  CASCADE;
+TRUNCATE TABLE push_subscriptions         CASCADE;
+TRUNCATE TABLE notifications              CASCADE;
+TRUNCATE TABLE notification_preferences   CASCADE;
 TRUNCATE TABLE notification_alert_state   CASCADE;   -- ← جديد: حالة التنبيهات
+TRUNCATE TABLE audit_logs                 CASCADE;
 
 -- ════════════════════════════════════════════════════════════
 -- ١٢. تصفير أرصدة المخزون

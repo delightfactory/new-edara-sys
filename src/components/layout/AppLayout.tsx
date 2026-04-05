@@ -6,6 +6,8 @@ import PageTitleContext, { PageTitleProvider } from './PageTitleContext'
 import OfflineDetector from '@/components/pwa/OfflineDetector'
 import InstallBanner from '@/components/pwa/InstallBanner'
 import { NotificationBell, NotificationPanel } from '@/components/notifications'
+import GeoPermissionDialog from '@/components/shared/GeoPermissionDialog'
+import { useGeoOnboarding } from '@/hooks/useGeoOnboarding'
 import { useContext } from 'react'
 
 function AppBarTitle() {
@@ -25,6 +27,8 @@ function AppBarTitle() {
  *   - Sidebar remains a drawer opened by BottomNav "القائمة" tab.
  */
 export default function AppLayout() {
+  const geoOnboarding = useGeoOnboarding()
+
   return (
     <PageTitleProvider>
       <div className="app-layout">
@@ -51,6 +55,15 @@ export default function AppLayout() {
 
         {/* ── Notification Panel ────────────────────────── */}
         <NotificationPanel />
+
+        {/* ── GPS Onboarding ───────────────────── */}
+        {/* يُعرض مرة واحدة فقط بعد 2.5ث من فتح التطبيق إذا كانت الصلاحية لم تُحدّد بعد */}
+        <GeoPermissionDialog
+          open={geoOnboarding.showDialog}
+          context="app_onboarding"
+          onAllow={geoOnboarding.handleAllow}
+          onDismiss={geoOnboarding.handleDismiss}
+        />
 
         <style>{`
           /* ── Layout Shell ──────────────────────────── */

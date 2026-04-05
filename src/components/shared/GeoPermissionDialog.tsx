@@ -12,7 +12,7 @@ interface GeoPermissionDialogProps {
   /** هل الـ Dialog مفتوح */
   open: boolean
   /** السياق: لماذا نحتاج الموقع */
-  context: 'attendance' | 'visit' | 'general'
+  context: 'attendance' | 'visit' | 'general' | 'app_onboarding'
   /** عند الضغط على "السماح" */
   onAllow: () => void
   /** عند الضغط على "لاحقاً" أو الإغلاق */
@@ -20,6 +20,17 @@ interface GeoPermissionDialogProps {
 }
 
 const CONTEXT_CONFIG = {
+  app_onboarding: {
+    title: 'مرحباً — نحتاج إذن موقعك',
+    subtitle: 'لتمكين ميزات التطبيق الأساسية بشكل صحيح',
+    reasons: [
+      { icon: '🏢', text: 'تسجيل الحضور والانصراف والتحقق من تواجدك' },
+      { icon: '📍', text: 'حفظ مواقع العملاء والشركة بدقة' },
+      { icon: '🗺️', text: 'تتبع الزيارات الميدانية وتسجيل الأنشطة' },
+      { icon: '🔒', text: 'موقعك لا يُشارك أو يُخزَّن إلا عند الحاجة' },
+    ],
+    allowLabel: '📍 السماح بالوصول للموقع',
+  },
   attendance: {
     title: 'تسجيل الحضور يحتاج موقعك',
     subtitle: 'للتحقق من تواجدك في مكان العمل',
