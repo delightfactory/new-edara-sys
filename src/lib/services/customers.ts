@@ -83,11 +83,24 @@ export async function getCustomers(params?: {
   if (params?.type) {
     query = query.eq('type', params.type)
   }
-  if (params?.governorateId) {
-    query = query.eq('governorate_id', params.governorateId)
-  }
   if (params?.cityId) {
+    // مدينة محددة — أدق وأسرع
     query = query.eq('city_id', params.cityId)
+  } else if (params?.governorateId) {
+    // محافظة فقط: نُغطي بيانات old (governorate_id) وnew (city_id فقط)
+    // نحضر مدن المحافظة ثم نفلتر بـ OR
+    const { data: govCities } = await supabase
+      .from('cities').select('id')
+      .eq('governorate_id', params.governorateId)
+    const cityIds = (govCities || []).map((c: any) => c.id as string)
+
+    if (cityIds.length > 0) {
+      query = query.or(
+        `governorate_id.eq.${params.governorateId},city_id.in.(${cityIds.join(',')})`
+      )
+    } else {
+      query = query.eq('governorate_id', params.governorateId)
+    }
   }
   if (params?.repId) {
     query = query.eq('assigned_rep_id', params.repId)

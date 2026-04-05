@@ -9,6 +9,7 @@ import ErrorBoundary from '@/components/shared/ErrorBoundary'
 import GlobalRealtimeManager from '@/components/shared/GlobalRealtimeManager'
 import AppLayout from '@/components/layout/AppLayout'
 import PWAUpdateManager from '@/components/pwa/PWAUpdateBanner'
+import ScrollToTopButton from '@/components/shared/ScrollToTop'
 
 // Auth Pages
 import LoginPage from '@/pages/auth/LoginPage'
@@ -517,6 +518,9 @@ export default function App() {
 
           {/* PWA: instant silent update manager */}
           <PWAUpdateManager />
+
+          {/* Scroll to top — global, always available */}
+          <ScrollToTopButton />
 
           <Toaster
             position="top-center"

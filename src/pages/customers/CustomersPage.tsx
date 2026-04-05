@@ -1,101 +1,107 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Plus, Users, ToggleLeft, ToggleRight, Eye, Phone, Loader2, CheckCircle2 } from 'lucide-react'
 import { toggleCustomerActive } from '@/lib/services/customers'
 import { getCities } from '@/lib/services/geography'
-import { useCustomers, useGovernorates, useProfiles, useInvalidate } from '@/hooks/useQueryHooks'
+import { useCustomers, useGovernorates, useProfiles, useInvalidate, useCities } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
-import type { Customer, City } from '@/lib/types/master-data'
-import { formatNumber } from '@/lib/utils/format'
+import { useFilterState } from '@/hooks/useFilterState'
 import { useMobileInfiniteList } from '@/hooks/useIntersectionObserver'
+import type { Customer } from '@/lib/types/master-data'
+import { formatNumber } from '@/lib/utils/format'
+import FilterBar from '@/components/shared/FilterBar'
 import PageHeader from '@/components/shared/PageHeader'
-import SearchInput from '@/components/shared/SearchInput'
 import DataTable from '@/components/shared/DataTable'
 import DataCard from '@/components/ui/DataCard'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
 
-const typeLabels: Record<string, string> = { retail: 'تجزئة', wholesale: 'جملة', distributor: 'موزع' }
-const typeBadge: Record<string, 'neutral' | 'info' | 'primary'> = { retail: 'neutral', wholesale: 'info', distributor: 'primary' }
-const paymentLabels: Record<string, string> = { cash: 'نقدي', credit: 'آجل', mixed: 'مختلط' }
-const paymentBadge: Record<string, 'success' | 'warning' | 'info'> = { cash: 'success', credit: 'warning', mixed: 'info' }
+const typeLabels:    Record<string, string>                      = { retail: 'تجزئة', wholesale: 'جملة', distributor: 'موزع' }
+const typeBadge:    Record<string, 'neutral' | 'info' | 'primary'> = { retail: 'neutral', wholesale: 'info', distributor: 'primary' }
+const paymentLabels: Record<string, string>                      = { cash: 'نقدي', credit: 'آجل', mixed: 'مختلط' }
+const paymentBadge:  Record<string, 'success' | 'warning' | 'info'> = { cash: 'success', credit: 'warning', mixed: 'info' }
+
+const TYPE_OPTIONS = [
+  { value: 'retail',      label: 'تجزئة'  },
+  { value: 'wholesale',   label: 'جملة'    },
+  { value: 'distributor', label: 'موزع'   },
+]
+
+const STATUS_OPTIONS = [
+  { value: 'active',   label: 'نشط'   },
+  { value: 'inactive', label: 'معطل'  },
+]
+
+const CUSTOMER_DEFAULTS = {
+  search:       '',
+  type:         '',
+  governorateId: '',
+  cityId:       '',
+  repId:        '',
+  status:       '',
+}
 
 const PAGE_SIZE = 25
 
 export default function CustomersPage() {
-  const navigate = useNavigate()
-  const can = useAuthStore(s => s.can)
+  const navigate   = useNavigate()
+  const can        = useAuthStore(s => s.can)
   const invalidate = useInvalidate()
 
-  // ── Filters ───────────────────────────────────────────────────────
-  const [cities,       setCities]       = useState<City[]>([])
-  const [search,       setSearch]       = useState('')
-  const [typeFilter,   setTypeFilter]   = useState('')
-  const [govFilter,    setGovFilter]    = useState('')
-  const [cityFilter,   setCityFilter]   = useState('')
-  const [repFilter,    setRepFilter]    = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
+  // ── Filters via useFilterState ─────────────────────────────────────
+  const { filters, setFilter, setFilters, reset, activeCount, filterKey } = useFilterState({
+    defaults: CUSTOMER_DEFAULTS,
+    urlSync: true,
+  })
 
-  // ── Pagination: Desktop (numbered) ────────────────────────────────
+  // المدن — reactive على governorateId من الـ URL (يعمل عند Back button أيضاً)
+  const { data: cities = [] } = useCities(filters.governorateId || undefined)
+
+  // ── Pagination ─────────────────────────────────────────────────────
   const [desktopPage, setDesktopPage] = useState(1)
-
-  // ── Pagination: Mobile (infinite scroll via page accumulation) ────
-  const [mobilePage, setMobilePage] = useState(1)
+  const [mobilePage,  setMobilePage]  = useState(1)
 
   const [confirmTarget, setConfirmTarget] = useState<Customer | null>(null)
   const [toggling,      setToggling]      = useState(false)
 
+  // ── Remote data ────────────────────────────────────────────────────
   const { data: governorates = [] } = useGovernorates()
   const { data: reps = [] }         = useProfiles()
 
-  // resetKey: أي تغيير في الفلاتر يُعيد ضبط التراكم
-  const filterKey = `${search}|${typeFilter}|${govFilter}|${cityFilter}|${repFilter}|${statusFilter}`
+  // ── Computed params ────────────────────────────────────────────────
   const filterParams = useMemo(() => ({
-    search:       search       || undefined,
-    type:         typeFilter   || undefined,
-    governorateId: govFilter   || undefined,
-    cityId:       cityFilter   || undefined,
-    repId:        repFilter    || undefined,
-    isActive:     statusFilter === '' ? undefined : statusFilter === 'active',
-  }), [search, typeFilter, govFilter, cityFilter, repFilter, statusFilter])
+    search:        filters.search        || undefined,
+    type:          filters.type          || undefined,
+    governorateId: filters.governorateId || undefined,
+    cityId:        filters.cityId        || undefined,
+    repId:         filters.repId         || undefined,
+    isActive:      filters.status === '' ? undefined : filters.status === 'active',
+  }), [filters])
 
-  // ── Desktop query (exact count for correct pagination) ───────────
-  const desktopParams = useMemo(() => ({
-    ...filterParams,
-    page: desktopPage,
-    pageSize: PAGE_SIZE,
-  }), [filterParams, desktopPage])
+  // إعادة ضبط الصفحات عند تغيير الفلاتر
+  useEffect(() => {
+    setDesktopPage(1)
+    setMobilePage(1)
+  }, [filterKey])
 
+  // Desktop
+  const desktopParams = useMemo(() => ({ ...filterParams, page: desktopPage, pageSize: PAGE_SIZE }), [filterParams, desktopPage])
   const { data: desktopResult, isLoading: desktopLoading } = useCustomers(desktopParams)
   const desktopCustomers = desktopResult?.data ?? []
   const totalCount       = desktopResult?.count ?? 0
   const totalPages       = desktopResult?.totalPages ?? 1
 
-  // ── Mobile query (accumulates across pages) ───────────────────────
-  const mobileParams = useMemo(() => ({
-    ...filterParams,
-    page: mobilePage,
-    pageSize: PAGE_SIZE,
-  }), [filterParams, mobilePage])
-
+  // Mobile
+  const mobileParams = useMemo(() => ({ ...filterParams, page: mobilePage, pageSize: PAGE_SIZE }), [filterParams, mobilePage])
   const { data: mobileResult, isLoading: mobileLoading } = useCustomers(mobileParams)
-  const mobileData = mobileResult?.data ?? []
+  const mobileData    = mobileResult?.data ?? []
   const hasMoreMobile = mobileData.length === PAGE_SIZE
 
   const handleLoadMore = useCallback(() => {
-    if (!mobileLoading && hasMoreMobile) {
-      setMobilePage(p => p + 1)
-    }
+    if (!mobileLoading && hasMoreMobile) setMobilePage(p => p + 1)
   }, [mobileLoading, hasMoreMobile])
-
-  // إعادة ضبط صفحة الموبايل عند تغيير الفلاتر
-  const handleFilterChange = useCallback((fn: () => void) => {
-    fn()
-    setDesktopPage(1)
-    setMobilePage(1)
-  }, [])
 
   const { accumulated: mobileCustomers, sentinelRef } = useMobileInfiniteList<Customer>({
     data:       mobileData,
@@ -106,15 +112,14 @@ export default function CustomersPage() {
     onLoadMore: handleLoadMore,
   })
 
-  // ── Geography ────────────────────────────────────────────────────
-  const handleGovChange = async (govId: string) => {
-    handleFilterChange(() => { setGovFilter(govId); setCityFilter('') })
-    setCities(govId ? await getCities(govId) : [])
-  }
+  // ── Geography: تحميل المدن عند اختيار محافظة ──────────────────────
+  const handleGovChange = useCallback((govId: string) => {
+    setFilters({ governorateId: govId, cityId: '' } as any)
+  }, [setFilters])
 
-  // ── Toggle active ────────────────────────────────────────────────
-  const handleToggle    = (c: Customer) => setConfirmTarget(c)
-  const executeToggle   = async () => {
+  // ── Toggle active ──────────────────────────────────────────────────
+  const handleToggle  = (c: Customer) => setConfirmTarget(c)
+  const executeToggle = async () => {
     if (!confirmTarget) return
     const next = !confirmTarget.is_active
     setToggling(true)
@@ -126,7 +131,109 @@ export default function CustomersPage() {
     finally { setToggling(false); setConfirmTarget(null) }
   }
 
-  // ── Desktop table columns ─────────────────────────────────────────
+  // ── Options for FilterBar.Select ───────────────────────────────────
+  const govOptions = useMemo(() =>
+    governorates.map(g => ({ value: g.id, label: g.name })),
+    [governorates]
+  )
+  const cityOptions = useMemo(() =>
+    cities.map(c => ({ value: c.id, label: c.name })),
+    [cities]
+  )
+  const repOptions = useMemo(() =>
+    reps.map(r => ({ value: r.id, label: r.full_name })),
+    [reps]
+  )
+
+  // ── Stats ذكية: totalCount من الـ server (دقيق 100%)
+  // المنطق:
+  //   1. label الإجمالي يعكس سياق الفلاتر المفعّلة
+  //   2. Sub-stats تختفي إذا كان الفلتر يُكررها (لا قيمة مضافة)
+  //   3. التوزيع الداخلي (نشط/آجل) يظهر فقط عندما البيانات في صفحة واحدة
+  //      (لأن الحسابات من desktopCustomers تكون دقيقة 100% آنذاك)
+  const allOnOnePage = totalCount <= PAGE_SIZE
+
+  const filterStats = useMemo(() => {
+    type StatVariant = 'default' | 'success' | 'warning' | 'danger' | 'info'
+
+    // ── 1. Label + variant للـ stat الرئيسي ──────────────────────────
+    let primaryLabel   = 'عميل'
+    let primaryVariant: StatVariant = 'default'
+
+    if (filters.status === 'active')   { primaryLabel = 'عميل نشط';  primaryVariant = 'success' }
+    if (filters.status === 'inactive') { primaryLabel = 'عميل معطل'; primaryVariant = 'danger'  }
+
+    // أضف سياق البعد الجغرافي إذا كان مُفعّلاً (يُغني عن كتابة اسم المحافظة)
+    const govName  = filters.governorateId
+      ? governorates.find(g => g.id === filters.governorateId)?.name ?? ''
+      : ''
+    const hasGeo   = Boolean(filters.governorateId || filters.cityId)
+    const typeHint = filters.type === 'retail'      ? 'تجزئة'
+                   : filters.type === 'wholesale'   ? 'جملة'
+                   : filters.type === 'distributor' ? 'موزع'
+                   : ''
+
+    // بناء label إثرائي: "عميل نشط جملة في القاهرة"
+    const parts: string[] = [primaryLabel]
+    if (typeHint  && filters.type)    parts.push(typeHint)
+    if (hasGeo    && govName)         parts.push(`في ${govName}`)
+    primaryLabel = parts.join(' ')
+
+    // ── 2. Stat الأساسي — دائماً من totalCount (server) ─────────────
+    const result: ReturnType<typeof useMemo<any>> = [
+      {
+        label:   primaryLabel,
+        value:   totalCount.toLocaleString('ar-EG'),
+        variant: primaryVariant,
+        loading: desktopLoading,
+      },
+    ]
+
+    // ── 3. Sub-stats: التوزيع الداخلي (من desktopCustomers = الصفحة الحالية) ──
+    // ملاحظة: البيانات من الصفحة الأولى دائماً — مفيدة للاستدلال السريع.
+    // primaryStat يُظهر الإجمالي الدقيق من الـ server (totalCount).
+    if (desktopCustomers.length > 0 && !desktopLoading) {
+      const activeInPage   = desktopCustomers.filter(c =>  c.is_active).length
+      const inactiveInPage = desktopCustomers.filter(c => !c.is_active).length
+      const creditInPage   = desktopCustomers.filter(c => c.payment_terms === 'credit').length
+
+      // نشط — اعرضه فقط إذا لا يوجد فلتر حالة
+      if (!filters.status && activeInPage > 0 && activeInPage < desktopCustomers.length) {
+        result.push({
+          label:   'نشط',
+          value:   activeInPage.toLocaleString('ar-EG'),
+          variant: 'success' as const,
+        })
+      }
+
+      // معطل — اعرضه فقط إذا لا يوجد فلتر حالة وكانت هناك معطّلون
+      if (!filters.status && inactiveInPage > 0) {
+        result.push({
+          label:   'معطل',
+          value:   inactiveInPage.toLocaleString('ar-EG'),
+          variant: 'danger' as const,
+        })
+      }
+
+      // آجل — دائماً مفيد
+      if (creditInPage > 0) {
+        result.push({
+          label:   'آجل',
+          value:   creditInPage.toLocaleString('ar-EG'),
+          variant: 'warning' as const,
+        })
+      }
+    }
+
+    return result
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    filters.status, filters.type, filters.governorateId, filters.cityId,
+    totalCount, desktopLoading, desktopCustomers, governorates,
+  ])
+
+
+  // ── Desktop table columns ──────────────────────────────────────────
   const columns = [
     {
       key: 'name', label: 'العميل',
@@ -150,8 +257,8 @@ export default function CustomersPage() {
         </>
       ),
     },
-    { key: 'rep', label: 'المندوب', hideOnMobile: true, render: (c: Customer) => (c as any).assigned_rep?.full_name || <span style={{ color: 'var(--text-muted)' }}>—</span> },
-    { key: 'payment', label: 'الدفع', hideOnMobile: true, render: (c: Customer) => <Badge variant={paymentBadge[c.payment_terms as string] || 'neutral'}>{paymentLabels[c.payment_terms as string] || c.payment_terms}</Badge> },
+    { key: 'rep',    label: 'المندوب',     hideOnMobile: true, render: (c: Customer) => (c as any).assigned_rep?.full_name || <span style={{ color: 'var(--text-muted)' }}>—</span> },
+    { key: 'payment',label: 'الدفع',       hideOnMobile: true, render: (c: Customer) => <Badge variant={paymentBadge[c.payment_terms as string] || 'neutral'}>{paymentLabels[c.payment_terms as string] || c.payment_terms}</Badge> },
     { key: 'credit', label: 'حد الائتمان', hideOnMobile: true, render: (c: Customer) => c.credit_limit > 0 ? <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{formatNumber(c.credit_limit)}</span> : <span style={{ color: 'var(--text-muted)' }}>—</span> },
     { key: 'status', label: 'الحالة', render: (c: Customer) => <Badge variant={c.is_active ? 'success' : 'danger'}>{c.is_active ? 'نشط' : 'معطل'}</Badge> },
     {
@@ -185,50 +292,71 @@ export default function CustomersPage() {
         ) : undefined}
       />
 
-      {/* ── Filters ──────────────────────────────────────── */}
-      <div className="edara-card" style={{ padding: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
-        <div className="customers-filter-row">
-          <div style={{ flex: 2, minWidth: 180 }}>
-            <SearchInput
-              value={search}
-              onChange={val => handleFilterChange(() => setSearch(val))}
-              placeholder="بحث بالاسم أو الكود أو الهاتف..."
-            />
-          </div>
-          <select className="form-select filter-select" value={typeFilter}
-            onChange={e => handleFilterChange(() => setTypeFilter(e.target.value))}>
-            <option value="">كل الأنواع</option>
-            <option value="retail">تجزئة</option>
-            <option value="wholesale">جملة</option>
-            <option value="distributor">موزع</option>
-          </select>
-          <select className="form-select filter-select" value={govFilter}
-            onChange={e => handleGovChange(e.target.value)}>
-            <option value="">كل المحافظات</option>
-            {governorates.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-          </select>
-          {govFilter && cities.length > 0 && (
-            <select className="form-select filter-select" value={cityFilter}
-              onChange={e => handleFilterChange(() => setCityFilter(e.target.value))}>
-              <option value="">كل المدن</option>
-              {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          )}
-          <select className="form-select filter-select" value={repFilter}
-            onChange={e => handleFilterChange(() => setRepFilter(e.target.value))}>
-            <option value="">كل المناديب</option>
-            {reps.map(r => <option key={r.id} value={r.id}>{r.full_name}</option>)}
-          </select>
-          <select className="form-select filter-select" value={statusFilter}
-            onChange={e => handleFilterChange(() => setStatusFilter(e.target.value))}>
-            <option value="">الحالة</option>
-            <option value="active">نشط</option>
-            <option value="inactive">معطل</option>
-          </select>
-        </div>
-      </div>
+      {/* ── FilterBar ────────────────────────────────────────────────── */}
+      <FilterBar
+        title="فلاتر العملاء"
+        activeCount={activeCount}
+        onReset={reset}
+        stats={filterStats}
+      >
 
-      {/* ══════════════════ DESKTOP: Numbered Pagination ═══════════════════ */}
+        {/* البحث النصي — يمتد عرض كامل */}
+        <FilterBar.Search
+          value={filters.search}
+          onChange={v => setFilter('search', v)}
+          placeholder="بحث بالاسم أو الكود أو الهاتف..."
+          fullWidth
+        />
+
+        {/* نوع العميل */}
+        <FilterBar.Select
+          label="نوع العميل"
+          value={filters.type}
+          onChange={v => setFilter('type', v)}
+          options={TYPE_OPTIONS}
+          allLabel="كل الأنواع"
+        />
+
+        {/* المحافظة */}
+        <FilterBar.Select
+          label="المحافظة"
+          value={filters.governorateId}
+          onChange={handleGovChange}
+          options={govOptions}
+          allLabel="كل المحافظات"
+        />
+
+        {/* المدينة — تظهر فقط عند اختيار محافظة */}
+        {filters.governorateId && cityOptions.length > 0 && (
+          <FilterBar.Select
+            label="المدينة"
+            value={filters.cityId}
+            onChange={v => setFilter('cityId', v)}
+            options={cityOptions}
+            allLabel="كل المدن"
+          />
+        )}
+
+        {/* المندوب */}
+        <FilterBar.Select
+          label="المندوب"
+          value={filters.repId}
+          onChange={v => setFilter('repId', v)}
+          options={repOptions}
+          allLabel="كل المناديب"
+        />
+
+        {/* الحالة */}
+        <FilterBar.Select
+          label="الحالة"
+          value={filters.status}
+          onChange={v => setFilter('status', v)}
+          options={STATUS_OPTIONS}
+          allLabel="كل الحالات"
+        />
+      </FilterBar>
+
+      {/* ══════════════ DESKTOP: Numbered Pagination ════════════════ */}
       <div className="customers-table-view edara-card" style={{ overflow: 'auto' }}>
         <DataTable<Customer>
           columns={columns}
@@ -249,9 +377,8 @@ export default function CustomersPage() {
         />
       </div>
 
-      {/* ══════════════════ MOBILE: Infinite Scroll ═══════════════════════ */}
+      {/* ══════════════ MOBILE: Infinite Scroll ═══════════════════ */}
       <div className="customers-card-view">
-        {/* Loading: first page */}
         {mobileLoading && mobileCustomers.length === 0 ? (
           <div className="mobile-card-list">
             {[1, 2, 3, 4].map(i => (
@@ -288,10 +415,11 @@ export default function CustomersPage() {
                 }
                 badge={<Badge variant={c.is_active ? 'success' : 'danger'}>{c.is_active ? 'نشط' : 'معطل'}</Badge>}
                 metadata={[
-                  { label: 'نوع العميل', value: typeLabels[c.type] || c.type },
-                  { label: 'طريقة الدفع', value: paymentLabels[c.payment_terms as string] || c.payment_terms },
+                  { label: 'نوع العميل',   value: typeLabels[c.type] || c.type },
+                  { label: 'طريقة الدفع',  value: paymentLabels[c.payment_terms as string] || c.payment_terms },
                   ...(c.credit_limit > 0 ? [{ label: 'حد الائتمان', value: formatNumber(c.credit_limit), highlight: true }] : []),
                   ...((c as any).governorate?.name ? [{ label: 'المحافظة', value: (c as any).governorate.name }] : []),
+                  ...((c as any).assigned_rep?.full_name ? [{ label: 'المندوب', value: (c as any).assigned_rep.full_name }] : []),
                 ]}
                 actions={
                   <div className="flex gap-2" style={{ width: '100%' }}>
@@ -312,7 +440,6 @@ export default function CustomersPage() {
               />
             ))}
 
-            {/* Sentinel — يكتشفه الـ IntersectionObserver لتشغيل loadMore */}
             <div ref={sentinelRef} style={{ height: 8, flexShrink: 0 }} />
 
             {mobileLoading && mobileCustomers.length > 0 && (
@@ -332,7 +459,7 @@ export default function CustomersPage() {
         )}
       </div>
 
-      {/* ── Confirm Modal ──────────────────────────────────────── */}
+      {/* ── Confirm Modal ─────────────────────────────────────────── */}
       <ResponsiveModal
         open={!!confirmTarget}
         onClose={() => setConfirmTarget(null)}
@@ -355,14 +482,6 @@ export default function CustomersPage() {
       </ResponsiveModal>
 
       <style>{`
-        .customers-filter-row {
-          display: flex;
-          gap: var(--space-3);
-          flex-wrap: wrap;
-          align-items: flex-end;
-        }
-        .filter-select { min-width: 100px; flex: 1; }
-
         /* Desktop shows table, Mobile shows infinite cards */
         .customers-table-view { display: block; }
         .customers-card-view  { display: none; }
@@ -371,13 +490,6 @@ export default function CustomersPage() {
           .customers-table-view { display: none; }
           .customers-card-view  { display: block; }
           .desktop-only-btn     { display: none; }
-          .customers-filter-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: var(--space-2);
-          }
-          .customers-filter-row > div:first-child { grid-column: 1 / -1; }
-          .filter-select { font-size: var(--text-xs); width: 100%; flex: none; }
         }
 
         .mobile-card-list {
@@ -387,33 +499,19 @@ export default function CustomersPage() {
           padding: 0 0 var(--space-4);
         }
 
-        /* ── Infinite Scroll indicators ── */
         .infinite-loading {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: var(--space-2);
-          padding: var(--space-4);
-          color: var(--text-muted);
-          font-size: var(--text-sm);
+          display: flex; align-items: center; justify-content: center;
+          gap: var(--space-2); padding: var(--space-4);
+          color: var(--text-muted); font-size: var(--text-sm);
         }
-        .spin-icon {
-          animation: spin 1s linear infinite;
-          color: var(--color-primary);
-        }
+        .spin-icon { animation: spin 1s linear infinite; color: var(--color-primary); }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
         .infinite-end {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: var(--space-2);
-          padding: var(--space-3) var(--space-4);
-          color: var(--color-success);
-          font-size: var(--text-sm);
-          font-weight: 600;
-          background: var(--color-success-light);
-          border-radius: var(--radius-lg);
+          display: flex; align-items: center; justify-content: center;
+          gap: var(--space-2); padding: var(--space-3) var(--space-4);
+          color: var(--color-success); font-size: var(--text-sm); font-weight: 600;
+          background: var(--color-success-light); border-radius: var(--radius-lg);
           margin-top: var(--space-2);
         }
       `}</style>
