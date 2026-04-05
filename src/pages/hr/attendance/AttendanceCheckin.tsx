@@ -377,28 +377,23 @@ export default function AttendanceCheckin() {
   const executeWithGPS = useCallback(async (type: ActionType) => {
     // خطوة 1: جلب GPS
     setFlowState('locating')
-    const geoCoords = await geo.requestLocation()
+    const geoResult = await geo.requestLocation()
 
-    if (!geoCoords) {
-      // فشل GPS — الخطأ محفوظ في geo.error
-      if (geo.status === 'denied') {
-        setErrorMsg(geo.blockedMessage)
-      } else {
-        setErrorMsg(geo.error ?? 'فشل تحديد الموقع — حاول مرة أخرى')
-      }
+    if (!geoResult.ok) {
+      setErrorMsg(geoResult.message)
       setFlowState('error')
       return
     }
 
-    setPosition({ latitude: geoCoords.lat, longitude: geoCoords.lng, accuracy: geoCoords.accuracy })
+    setPosition({ latitude: geoResult.coords.lat, longitude: geoResult.coords.lng, accuracy: geoResult.coords.accuracy })
 
     // خطوة 2: RPC ذرية
     setFlowState('submitting')
     try {
       const result = await recordAttendanceGPS({
-        latitude:     geoCoords.lat,
-        longitude:    geoCoords.lng,
-        gps_accuracy: geoCoords.accuracy,
+        latitude:     geoResult.coords.lat,
+        longitude:    geoResult.coords.lng,
+        gps_accuracy: geoResult.coords.accuracy,
         log_type:     type,
         event_time:   new Date().toISOString(),
       })
@@ -471,13 +466,13 @@ export default function AttendanceCheckin() {
       return
     }
 
-    const geoCoords = await geo.requestLocation()
-    if (!geoCoords) {
+    const geoResult = await geo.requestLocation()
+    if (!geoResult.ok) {
       setTrackingMessage('تعذر إرسال نقطة تتبع الآن')
       return
     }
 
-    const nextPos: GeoPos = { latitude: geoCoords.lat, longitude: geoCoords.lng, accuracy: geoCoords.accuracy }
+    const nextPos: GeoPos = { latitude: geoResult.coords.lat, longitude: geoResult.coords.lng, accuracy: geoResult.coords.accuracy }
 
     try {
       const result = await recordAttendanceLocationPing({

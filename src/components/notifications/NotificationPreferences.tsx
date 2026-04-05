@@ -398,7 +398,9 @@ export default function NotificationPreferences() {
         {/* Unsupported banner */}
         {pushNotif.permission === 'unsupported' && (
           <div className="pref-push-info pref-push-warning">
-            ⚠️ متصفحك لا يدعم Push Notifications — جرّب Chrome أو Edge أو Firefox
+            {/iphone|ipad|ipod/i.test(navigator.userAgent)
+              ? '⚠️ Push Notifications على iPhone/iPad تتطلب تثبيت التطبيق من Safari: اضغط "مشاركة" ← "إضافة للشاشة الرئيسية" ثم افتح التطبيق من أيقونته'
+              : '⚠️ متصفحك لا يدعم Push Notifications — جرّب Chrome أو Edge أو Firefox'}
           </div>
         )}
 

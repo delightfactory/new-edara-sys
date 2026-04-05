@@ -8,6 +8,11 @@ export interface GeoCoords {
 
 export type GeoPermissionStatus = 'checking' | 'granted' | 'prompt' | 'denied' | 'unavailable'
 
+/** نتيجة طلب الموقع — إما إحداثيات أو خطأ مفصّل */
+export type GeoRequestResult =
+  | { ok: true;  coords: GeoCoords }
+  | { ok: false; reason: 'denied' | 'unavailable' | 'timeout' | 'unknown'; message: string }
+
 /** خطوات إرشادية مرئية لإصلاح حالة الحظر — مُهيكلة للعرض بصرياً */
 export interface BrowserGuideStep {
   step: number
@@ -22,8 +27,8 @@ export interface UseGeoPermissionReturn {
   coords: GeoCoords | null
   /** رسالة الخطأ المختصرة */
   error: string | null
-  /** طلب تحديد الموقع — يُرجع الإحداثيات أو null */
-  requestLocation: () => Promise<GeoCoords | null>
+  /** طلب تحديد الموقع — يُرجع الإحداثيات أو نتيجة الفشل */
+  requestLocation: () => Promise<GeoRequestResult>
   /** هل تم حظر الصلاحية نهائياً؟ */
   isBlocked: boolean
   /** إعادة فحص حالة الصلاحية (بعد تعديل المستخدم للإعدادات) */
@@ -209,17 +214,17 @@ export function useGeoPermission(): UseGeoPermissionReturn {
   }, [checkPermission])
 
   // ── طلب الموقع الفعلي ────────────────────────────────────────────────────
-  const requestLocation = useCallback(async (): Promise<GeoCoords | null> => {
+  const requestLocation = useCallback(async (): Promise<GeoRequestResult> => {
     if (!navigator.geolocation) {
       setStatus('unavailable')
       setError('جهازك لا يدعم خدمات تحديد الموقع')
-      return null
+      return { ok: false, reason: 'unavailable', message: 'جهازك لا يدعم خدمات تحديد الموقع' }
     }
 
     setIsLoading(true)
     setError(null)
 
-    return new Promise<GeoCoords | null>((resolve) => {
+    return new Promise<GeoRequestResult>((resolve) => {
 
       // Strategy: نحاول أولاً بدقة عالية، ثم بدقة عادية عند الفشل
       const tryGetPosition = (highAccuracy: boolean) => {
@@ -234,29 +239,34 @@ export function useGeoPermission(): UseGeoPermissionReturn {
             setStatus('granted')
             setError(null)
             setIsLoading(false)
-            resolve(result)
+            resolve({ ok: true, coords: result })
           },
           (err) => {
             if (err.code === err.PERMISSION_DENIED) {
+              const msg = getBlockedMessage(browserType.current)
               // رُفضت الصلاحية — لا نعيد المحاولة
               setStatus('denied')
-              setError(getBlockedMessage(browserType.current))
+              setError(msg)
               setIsLoading(false)
-              resolve(null)
+              resolve({ ok: false, reason: 'denied', message: msg })
 
             } else if (err.code === err.TIMEOUT && highAccuracy) {
               // انتهت المهلة بدقة عالية → نحاول بدقة عادية (أسرع داخل المباني)
               tryGetPosition(false)
 
             } else if (err.code === err.POSITION_UNAVAILABLE) {
-              setError('تعذّر تحديد الموقع — تأكد من تفعيل GPS في الجهاز ووجودك في مكان مفتوح')
+              const msg = 'تعذّر تحديد الموقع — تأكد من تفعيل GPS في الجهاز ووجودك في مكان مفتوح'
+              setError(msg)
               setIsLoading(false)
-              resolve(null)
+              resolve({ ok: false, reason: 'unavailable', message: msg })
 
             } else {
-              setError('حدث خطأ أثناء تحديد الموقع — حاول مرة أخرى')
+              const msg = err.code === err.TIMEOUT
+                ? 'انتهت مهلة تحديد الموقع — تأكد من تفعيل GPS وحاول مرة أخرى'
+                : 'حدث خطأ أثناء تحديد الموقع — حاول مرة أخرى'
+              setError(msg)
               setIsLoading(false)
-              resolve(null)
+              resolve({ ok: false, reason: 'timeout', message: msg })
             }
           },
           {

@@ -130,11 +130,12 @@ export default function VisitExecutionMode() {
     setIsStarting(true)
 
     try {
-      const coords = await geo.requestLocation()
-      if (!coords && geo.isBlocked) {
+      const geoResult = await geo.requestLocation()
+      if (!geoResult.ok && geoResult.reason === 'denied') {
         setIsStarting(false)
         return
       }
+      const coords = geoResult.ok ? geoResult.coords : null
 
       const now = new Date().toISOString()
       setStartTime(now)
@@ -171,8 +172,9 @@ export default function VisitExecutionMode() {
     if (!currentItem || !id) return
     setIsStarting(true)
     try {
-      const coords = await geo.requestLocation()
-      if (!coords && geo.isBlocked) { setIsStarting(false); return }
+      const geoResult = await geo.requestLocation()
+      if (!geoResult.ok && geoResult.reason === 'denied') { setIsStarting(false); return }
+      const coords = geoResult.ok ? geoResult.coords : null
       const now = new Date().toISOString()
       setStartTime(now)
       setStartGPS(coords)
@@ -203,7 +205,8 @@ export default function VisitExecutionMode() {
 
     try {
       // 1) GPS النهاية
-      const endCoords = await geo.requestLocation()
+      const geoResultEnd = await geo.requestLocation()
+      const endCoords = geoResultEnd.ok ? geoResultEnd.coords : null
       const endTime = new Date().toISOString()
 
       // 2) حساب المسافة

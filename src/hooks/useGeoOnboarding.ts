@@ -76,10 +76,27 @@ export function useGeoOnboarding(): UseGeoOnboardingReturn {
             setShowDialog(true)
           }, 2500)
         } else {
-          // Safari القديم لا يدعم permissions.query → نؤخر وعرضه
-          timerRef.current = setTimeout(() => {
-            setShowDialog(true)
-          }, 2500)
+          // Safari القديم لا يدعم permissions.query
+          // نكتشف الحالة بطلب صامت جداً (timeout: 200ms) — إذا كان مسموحاً سيُجيب فوراً
+          navigator.geolocation.getCurrentPosition(
+            () => {
+              // ✅ الإذن ممنوح — نسجّل ذلك ولا نزعج المستخدم
+              markAsShown()
+            },
+            (err) => {
+              if (err.code === err.PERMISSION_DENIED) {
+                // 🚫 محظور — نسجّل ولا نعرض dialog
+                markAsShown()
+              } else {
+                // ❓ TIMEOUT أو POSITION_UNAVAILABLE = لم يُجب بعد → prompt state
+                // نعرض dialog بعد تأخير قصير
+                timerRef.current = setTimeout(() => {
+                  setShowDialog(true)
+                }, 2500)
+              }
+            },
+            { enableHighAccuracy: false, timeout: 200, maximumAge: Infinity }
+          )
         }
       } catch {
         // في حالة الخطأ → نؤخر وعرضه بشكل احتياطي
@@ -115,7 +132,7 @@ export function useGeoOnboarding(): UseGeoOnboardingReturn {
     navigator.geolocation.getCurrentPosition(
       () => { /* تم منح الإذن — سيعمل كل شيء تلقائياً */ },
       () => { /* رُفض الإذن — البانر في الصفحات سيرشد المستخدم */ },
-      { enableHighAccuracy: false, timeout: 10_000, maximumAge: Infinity },
+      { enableHighAccuracy: false, timeout: 10_000, maximumAge: 60_000 },
     )
   }, [])
 

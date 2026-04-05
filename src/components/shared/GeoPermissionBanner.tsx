@@ -148,17 +148,17 @@ export default function GeoPermissionBanner({
     recheckPermission()
     // نعطي المتصفح لحظة لتحديث حالة الصلاحية
     await new Promise(r => setTimeout(r, 600))
-    const result = await requestLocation()
+    const geoResult = await requestLocation()
     setIsRetrying(false)
-    if (result && onLocationGranted) {
-      onLocationGranted(result)
+    if (geoResult.ok && onLocationGranted) {
+      onLocationGranted(geoResult.coords)
     }
   }, [recheckPermission, requestLocation, onLocationGranted])
 
   const handleRequestLocation = useCallback(async () => {
-    const result = await requestLocation()
-    if (result && onLocationGranted) {
-      onLocationGranted(result)
+    const geoResult = await requestLocation()
+    if (geoResult.ok && onLocationGranted) {
+      onLocationGranted(geoResult.coords)
     }
   }, [requestLocation, onLocationGranted])
 

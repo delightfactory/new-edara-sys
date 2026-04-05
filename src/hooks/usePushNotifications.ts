@@ -60,11 +60,27 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     setPermission(perm)
     useNotificationStore.getState().setPushPermission(perm)
 
-    // If already granted, fetch the existing subscription silently
+    // If already granted, fetch the existing subscription and sync with backend
     if (perm === 'granted') {
       navigator.serviceWorker.ready
         .then(reg => reg.pushManager.getSubscription())
-        .then(existing => setCurrentSubscription(existing))
+        .then(async (existing) => {
+          setCurrentSubscription(existing)
+          // Sync-check: إذا كان هناك subscription في المتصفح ولكن قد تكون غير محفوظة
+          // نُعيد الحفظ صامتاً لضمان الاتساق (idempotent — لا تُكرر السجل)
+          if (existing) {
+            try {
+              await NotificationsAPI.savePushSubscription(existing, {
+                deviceName: buildDeviceName(),
+                deviceType: detectDeviceType(),
+                browser: detectBrowser(),
+                userAgent: navigator.userAgent,
+              })
+            } catch {
+              // Non-critical — will retry on next mount or manual subscribe
+            }
+          }
+        })
         .catch(() => {
           // Non-critical — existing subscription may be null
         })

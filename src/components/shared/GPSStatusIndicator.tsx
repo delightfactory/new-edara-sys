@@ -64,18 +64,20 @@ export default function GPSStatusIndicator({
     setError('')
 
     // نستخدم الـ hook لطلب الموقع للاستفادة من retry strategy
-    geo.requestLocation().then(coords => {
-      if (!coords) {
-        if (geo.isBlocked || geo.status === 'denied') {
+    geo.requestLocation().then(geoResult => {
+      if (!geoResult.ok) {
+        if (geoResult.reason === 'denied') {
           setState('denied')
-          setError(geo.blockedMessage)
+          setError(geoResult.message)
         } else {
           setState('error')
-          setError(geo.error ?? 'تعذّر تحديد الموقع — حاول مرة أخرى')
+          setError(geoResult.message)
         }
         onCoordsChange(null)
         return
       }
+
+      const coords = geoResult.coords
 
       setState('success')
       onCoordsChange({ lat: coords.lat, lng: coords.lng, accuracy: coords.accuracy })
