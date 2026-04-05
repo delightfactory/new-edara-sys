@@ -338,10 +338,17 @@ function FilterBar({
       <div className={`fb-root${open ? ' fb-open' : ''}${activeCount > 0 ? ' fb-root-active' : ''}`}>
 
         {/* ── Header ─────────────────────────────────────────────────── */}
-        <button
-          type="button"
+        <div
+          role="button"
+          tabIndex={0}
           className="fb-header"
           onClick={toggle}
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              toggle()
+            }
+          }}
           aria-expanded={open}
           aria-controls="fb-body"
         >
@@ -390,7 +397,7 @@ function FilterBar({
               <ChevronDown size={14} />
             </div>
           </div>
-        </button>
+        </div>
 
         {/* ── Body (CSS Grid animation — no max-height jank) ────────── */}
         <div className="fb-body" id="fb-body" role="region" aria-hidden={!open}>

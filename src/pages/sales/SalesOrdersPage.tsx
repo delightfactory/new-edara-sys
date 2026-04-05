@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ShoppingCart, Plus, Eye, FileText, TrendingUp, DollarSign,
-  CheckCircle, Truck, AlertCircle, Loader2, CheckCircle2,
+  CheckCircle, Truck, AlertCircle, Loader2, CheckCircle2, Zap,
 } from 'lucide-react'
 import { useSalesOrders, useSalesStats, useProfiles, useGovernorates, useCities } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
@@ -16,6 +16,7 @@ import DataTable from '@/components/shared/DataTable'
 import DataCard from '@/components/ui/DataCard'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
+import SmartTransferDialog from '@/components/sales/SmartTransferDialog'
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -55,6 +56,7 @@ const PAGE_SIZE = 25
 export default function SalesOrdersPage() {
   const navigate = useNavigate()
   const can = useAuthStore(s => s.can)
+  const [smartTransferOpen, setSmartTransferOpen] = useState(false)
 
   // ── Filters (URL sync — Back يُستعيد الفلاتر تلقائياً) ──────────────────
   const { filters, setFilter, setFilters, reset, activeCount, filterKey } = useFilterState({
@@ -340,12 +342,27 @@ export default function SalesOrdersPage() {
       <PageHeader
         title="أوامر البيع"
         subtitle={desktopLoading ? '...' : `${totalCount.toLocaleString('ar-EG')} طلب`}
-        actions={can('sales.orders.create') ? (
-          <Button icon={<Plus size={16} />} onClick={() => navigate('/sales/orders/new')}
-            className="desktop-only-btn">
-            طلب جديد
-          </Button>
-        ) : undefined}
+        actions={
+          <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
+            {can('sales.orders.create') && (
+              <button
+                id="smart-transfer-btn"
+                className="smart-transfer-trigger desktop-only-btn"
+                onClick={() => setSmartTransferOpen(true)}
+                title="إنشاء تحويل ذكي من المسودات"
+              >
+                <Zap size={15} />
+                التحويل الذكي
+              </button>
+            )}
+            {can('sales.orders.create') && (
+              <Button icon={<Plus size={16} />} onClick={() => navigate('/sales/orders/new')}
+                className="desktop-only-btn">
+                طلب جديد
+              </Button>
+            )}
+          </div>
+        }
       />
 
       {/* ── KPI Cards (إجمالي عام — لا تتأثر بالفلاتر) ── */}
@@ -578,6 +595,28 @@ export default function SalesOrdersPage() {
         )}
       </div>
 
+      {/* ══ زر FAB للتحويل الذكي (موبايل فقط) ════════════════════ */}
+      {can('sales.orders.create') && (
+        <button
+          id="smart-transfer-fab"
+          className="smart-transfer-fab"
+          onClick={() => setSmartTransferOpen(true)}
+          aria-label="التحويل الذكي"
+        >
+          <Zap size={22} />
+        </button>
+      )}
+
+      {/* ══ نافذة التحويل الذكي ════════════════════════════════════════ */}
+      <SmartTransferDialog
+        open={smartTransferOpen}
+        onClose={() => setSmartTransferOpen(false)}
+        onSuccess={(_id) => {
+          // يمكن التوجه لصفحة التحويلات بعد الإنشاء
+          // navigate(`/inventory/transfers/${_id}`)
+        }}
+      />
+
       <style>{`
         /* ── KPI Grid ─────────────────────────────────────────────────── */
         .kpi-grid {
@@ -657,6 +696,60 @@ export default function SalesOrdersPage() {
           color: var(--color-success); font-size: var(--text-sm); font-weight: 600;
           background: var(--color-success-light); border-radius: var(--radius-lg);
           margin-top: var(--space-2);
+        }
+
+        /* ── زر التحويل الذكي (Desktop) ─────────────────────────────────── */
+        .smart-transfer-trigger {
+          display: flex; align-items: center; gap: var(--space-2);
+          padding: 0 var(--space-4);
+          height: 38px;
+          border-radius: var(--radius-xl);
+          border: 1.5px solid transparent;
+          background: linear-gradient(var(--bg-surface), var(--bg-surface)) padding-box,
+                      linear-gradient(135deg, var(--color-primary), #7c3aed) border-box;
+          color: var(--color-primary);
+          font-size: var(--text-sm);
+          font-weight: 700;
+          font-family: inherit;
+          cursor: pointer;
+          transition: all .18s;
+          white-space: nowrap;
+        }
+        .smart-transfer-trigger:hover {
+          background: linear-gradient(135deg, var(--color-primary), #7c3aed) border-box;
+          background: linear-gradient(135deg, var(--color-primary), #7c3aed);
+          color: #fff;
+          box-shadow: 0 4px 14px rgba(37,99,235,.3);
+          transform: translateY(-1px);
+        }
+        .smart-transfer-trigger svg {
+          filter: drop-shadow(0 0 4px rgba(37,99,235,.4));
+        }
+
+        /* ── FAB التحويل الذكي (Mobile فقط) ──────────────────────────────── */
+        .smart-transfer-fab {
+          display: none;
+          position: fixed;
+          bottom: calc(var(--bottom-nav-height, 64px) + var(--space-4) + 64px);
+          inset-inline-end: var(--space-4);
+          z-index: 155;
+          width: 50px; height: 50px;
+          border-radius: 50%;
+          border: none;
+          background: linear-gradient(135deg, var(--color-primary), #7c3aed);
+          color: #fff;
+          cursor: pointer;
+          box-shadow: 0 6px 20px rgba(37,99,235,.4);
+          align-items: center; justify-content: center;
+          transition: transform .2s, box-shadow .2s;
+          animation: fab-in .3s ease-out;
+        }
+        .smart-transfer-fab:hover { transform: scale(1.08); box-shadow: 0 8px 24px rgba(37,99,235,.5); }
+        .smart-transfer-fab:active { transform: scale(0.95); }
+        @keyframes fab-in { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        @media (max-width: 768px) {
+          .smart-transfer-fab { display: flex; }
         }
       `}</style>
     </div>
