@@ -116,6 +116,27 @@ export default function PWAUpdateManager() {
       }
     }
 
+    // ── عند عودة المستخدم للتطبيق (من الكاميرا / تبديل التطبيقات / ساعات غياب) ──
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== 'visible') return
+      const reg = registrationRef.current
+      if (!reg) return
+
+      // إذا كان SW منتظراً (ربما أغلق المستخدم الـ toast سابقاً) → أعد إظهار الـ toast
+      if (reg.waiting) {
+        showUpdateToast()
+        return
+      }
+
+      // وإلا: اطلب فحص تحديث جديد من السيرفر
+      reg.update().catch(() => {})
+    }
+
+    // ── عند استعادة الاتصال: التحديث قد يكون نزل على السيرفر أثناء الانقطاع ──
+    const handleOnline = () => {
+      registrationRef.current?.update().catch(() => {})
+    }
+
     // ── حارس controllerchange: reload فقط إذا طلبه المستخدم ──
     const handleControllerChange = () => {
       if (isUpdatingRef.current) {
@@ -123,12 +144,17 @@ export default function PWAUpdateManager() {
       }
       // وإلا: تجاهل تماماً — لا reload في الخلفية أبداً
     }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('online', handleOnline)
     navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange)
 
     setup()
 
     return () => {
       clearInterval(pollInterval)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('online', handleOnline)
       navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange)
     }
   }, [])
