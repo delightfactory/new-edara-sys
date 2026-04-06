@@ -11,14 +11,14 @@ import {
   getPositions,   createPosition,   updatePosition,
   getWorkLocations, createWorkLocation, updateWorkLocation,
   getPublicHolidays, createPublicHoliday, deletePublicHoliday,
-  getPenaltyRules,
+  getPenaltyRules, createPenaltyRule, updatePenaltyRule, setPenaltyRuleActive
 } from '@/lib/services/hr'
 import type {
   HRDepartment, HRDepartmentInput,
   HRPosition, HRPositionInput,
   HRWorkLocation, HRWorkLocationInput,
   HRPublicHoliday, HRPublicHolidayInput,
-  HRPenaltyRule,
+  HRPenaltyRule, HRPenaltyRuleInput,
   HRLeaveType, HRLeaveTypeInput,
 } from '@/lib/types/hr'
 import { useHRLeaveTypes, useCreateLeaveType, useUpdateLeaveType } from '@/hooks/useQueryHooks'
@@ -834,13 +834,43 @@ function HolidaysTab() {
 // TAB: Penalty Rules
 // ════════════════════════════════════════════
 function PenaltyRulesTab() {
+  const queryClient = useQueryClient()
   const { data: rules = [], isLoading } = useQuery({
     queryKey: ['hr-penalty-rules'],
     queryFn: getPenaltyRules,
   })
 
+  const createMut = useMutation({
+    mutationFn: createPenaltyRule,
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['hr-penalty-rules'] }) }
+  })
+  const updateMut = useMutation({
+    mutationFn: ({id, input}: {id: string, input: Partial<HRPenaltyRuleInput>}) => updatePenaltyRule(id, input),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['hr-penalty-rules'] }) }
+  })
+  const activeMut = useMutation({
+    mutationFn: ({id, isActive}: {id: string, isActive: boolean}) => setPenaltyRuleActive(id, isActive),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['hr-penalty-rules'] }) }
+  })
+
+  const [adding, setAdding] = useState(false)
+  const [editing, setEditing] = useState<HRPenaltyRule | null>(null)
+
+  const EMPTY: HRPenaltyRuleInput = {
+    name: '',
+    penalty_type: 'late',
+    min_minutes: 0,
+    max_minutes: null,
+    occurrence_from: 1,
+    occurrence_to: null,
+    deduction_type: 'warning',
+    is_active: true,
+    sort_order: 10
+  }
+  const [form, setForm] = useState<HRPenaltyRuleInput>(EMPTY)
+
   const PENALTY_TYPE_LABEL: Record<string, string> = {
-    late: 'تأخير', absence: 'غياب', early_leave: 'انصراف مبكر', unauthorized_exit: 'خروج غير مرخص',
+    late: 'تأخير', absent_unauthorized: 'غياب بدون استئذان', early_leave_unauthorized: 'انصراف مبكر', out_of_range: 'خروج عن النطاق',
   }
   const DEDUCTION_LABEL: Record<string, string> = {
     warning: 'إنذار', quarter_day: 'ربع يوم', half_day: 'نصف يوم', full_day: 'يوم كامل', none: 'بدون خصم',
@@ -848,35 +878,154 @@ function PenaltyRulesTab() {
 
   if (isLoading) return <div className="settings-loading">جارٍ التحميل...</div>
 
+  const startEdit = (r: HRPenaltyRule) => {
+    setEditing(r)
+    setForm({
+      name: r.name,
+      penalty_type: r.penalty_type,
+      min_minutes: r.min_minutes,
+      max_minutes: r.max_minutes,
+      occurrence_from: r.occurrence_from,
+      occurrence_to: r.occurrence_to,
+      deduction_type: r.deduction_type,
+      is_active: r.is_active,
+      sort_order: r.sort_order
+    })
+  }
+
+  const setF = (k: keyof HRPenaltyRuleInput) => (v: string | number | boolean | null) => setForm(p => ({ ...p, [k]: v as never }))
+
+  const handleSave = () => {
+    if (!form.name.trim()) { toast.error('يجب إدخال اسم للقاعدة'); return }
+    if (form.occurrence_from < 1) { toast.error('المرات يجب أن تبدأ من 1 أو أكثر'); return }
+    if (form.occurrence_to !== null && form.occurrence_to < form.occurrence_from) {
+      toast.error('نهاية المرات يجب أن تكون أكبر من البداية'); return
+    }
+
+    const payload = { ...form }
+    if (payload.penalty_type === 'absent_unauthorized') {
+      payload.min_minutes = 0
+      payload.max_minutes = null
+    } else if (payload.penalty_type === 'late') {
+      if (payload.min_minutes < 0) { toast.error('الدقائق يجب أن تكون 0 أو أكثر'); return }
+      if (payload.max_minutes !== null && payload.max_minutes <= payload.min_minutes) {
+        toast.error('أقصى دقائق يجب أن يكون أكبر من الأدنى'); return
+      }
+    }
+
+    if (adding) {
+      createMut.mutate(payload, {
+        onSuccess: () => { setAdding(false); setForm(EMPTY); toast.success('تمت إضافة القاعدة') },
+        onError: (e: Error) => toast.error(e.message)
+      })
+    } else if (editing) {
+      updateMut.mutate({ id: editing.id, input: payload }, {
+        onSuccess: () => { setEditing(null); toast.success('تم التحديث') },
+        onError: (e: Error) => toast.error(e.message)
+      })
+    }
+  }
+
+  const handleToggleActive = (r: HRPenaltyRule) => {
+    const msg = r.is_active ? 'تعطيل القاعدة سيمنع تطبيقها مستقبلاً. هل توافق؟' : 'إعادة التفعيل ستجعلها مطبقة من جديد. هل توافق؟'
+    if (!window.confirm(msg)) return
+    activeMut.mutate({ id: r.id, isActive: !r.is_active }, {
+      onSuccess: () => toast.success(r.is_active ? 'تم التعطيل' : 'تم التفعيل'),
+      onError: (e: Error) => toast.error(e.message)
+    })
+  }
+
+  const isEditable = (type: string) => type === 'late' || type === 'absent_unauthorized'
+
   return (
     <div>
-      <div style={{
-        padding: 'var(--space-3) var(--space-4)',
-        background: 'color-mix(in srgb, var(--color-info) 8%, transparent)',
-        border: '1px solid color-mix(in srgb, var(--color-info) 20%, transparent)',
-        borderRadius: 'var(--radius-md)',
-        fontSize: 'var(--text-xs)',
-        color: 'var(--text-muted)',
-        marginBottom: 'var(--space-4)',
-      }}>
-        قواعد الجزاءات تُطبَّق تلقائياً بدالة <code>process_attendance_penalties()</code>. لتعديل قاعدة، تواصل مع المدير التقني.
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+        <div style={{
+          padding: 'var(--space-3)',
+          background: 'color-mix(in srgb, var(--color-info) 8%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--color-info) 20%, transparent)',
+          borderRadius: 'var(--radius-md)',
+          fontSize: 'var(--text-xs)',
+          color: 'var(--text-muted)'
+        }}>
+          💡 <strong>معلومة تشغيلية:</strong> التعديل يُؤثر على الحضور المُدخل مستقبلاً ولا يُعيد معالجة الأيام المغلقة تلقائياً. التعطيل آمن ويحفظ التسلسل التاريخي.
+        </div>
+        <Button icon={<Plus size={15} />} onClick={() => { setAdding(true); setEditing(null); setForm(EMPTY) }}>قاعدة جديدة</Button>
       </div>
+
+      {(adding || editing) && (
+        <div className="form-card" style={{ marginBottom: 'var(--space-4)' }}>
+          <div className="form-card-title">{adding ? 'إضافة قاعدة جزاء' : 'تعديل قاعدة جزاء'}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-3)' }}>
+            <Input label="اسم القاعدة *" required value={form.name} onChange={e => setF('name')(e.target.value)} disabled={createMut.isPending || updateMut.isPending} />
+            
+            <Select label="التصنيف *" value={form.penalty_type} onChange={e => setF('penalty_type')(e.target.value)} disabled={editing !== null || createMut.isPending || updateMut.isPending}>
+              <option value="late">تأخير</option>
+              <option value="absent_unauthorized">غياب بدون استئذان</option>
+            </Select>
+
+            <Input type="number" label="من تكرار رقم *" required value={form.occurrence_from.toString()} onChange={e => setF('occurrence_from')(Number(e.target.value) || 1)} disabled={createMut.isPending || updateMut.isPending} />
+            <Input type="number" label="إلى التكرار (مفتوح إذا فارغ)" value={form.occurrence_to?.toString() ?? ''} onChange={e => setF('occurrence_to')(e.target.value ? Number(e.target.value) : null)} disabled={createMut.isPending || updateMut.isPending} />
+
+            {form.penalty_type === 'late' && (
+              <>
+                <Input type="number" label="من دقائق *" required value={form.min_minutes.toString()} onChange={e => setF('min_minutes')(Number(e.target.value) || 0)} disabled={createMut.isPending || updateMut.isPending} />
+                <Input type="number" label="إلى دقائق (مفتوح إذا فارغ)" value={form.max_minutes?.toString() ?? ''} onChange={e => setF('max_minutes')(e.target.value ? Number(e.target.value) : null)} disabled={createMut.isPending || updateMut.isPending} />
+              </>
+            )}
+
+            <Select label="قيمة الجزاء *" value={form.deduction_type} onChange={e => setF('deduction_type')(e.target.value)} disabled={createMut.isPending || updateMut.isPending}>
+              <option value="none">بدون خصم (None)</option>
+              <option value="warning">إنذار (Warning)</option>
+              <option value="quarter_day">ربع يوم (0.25)</option>
+              <option value="half_day">نصف يوم (0.50)</option>
+              <option value="full_day">يوم كامل (1.0)</option>
+            </Select>
+
+            <Input type="number" label="أولوية الفرز (Sort Order)" required value={form.sort_order.toString()} onChange={e => setF('sort_order')(Number(e.target.value) || 10)} disabled={createMut.isPending || updateMut.isPending} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-2)', marginTop: 'var(--space-4)' }}>
+            <Button variant="ghost" onClick={() => { setAdding(false); setEditing(null) }}>إلغاء</Button>
+            <Button onClick={handleSave} disabled={createMut.isPending || updateMut.isPending}>
+              {createMut.isPending || updateMut.isPending ? 'جاري الحفظ...' : 'حفظ القاعدة'}
+            </Button>
+          </div>
+        </div>
+      )}
+
       <DataTable
         columns={[
-          { key: 'type', label: 'نوع المخالفة', render: (r: any) => <Badge variant="warning">{PENALTY_TYPE_LABEL[r.penalty_type] ?? r.penalty_type}</Badge> },
-          { key: 'range', label: 'النطاق (دقيقة)', render: (r: any) => `${r.min_minutes != null ? r.min_minutes : '—'} ${r.max_minutes != null ? `– ${r.max_minutes}` : '+'} دقيقة` },
-          { key: 'ded', label: 'الجزاء', render: (r: any) => <strong>{DEDUCTION_LABEL[r.deduction_type] ?? r.deduction_type}</strong> },
-          { key: 'occ', label: 'مرات السماح/شهر', render: (r: any) => r.occurrence_from }
+          { key: 'name', label: 'القاعدة', render: (r: HRPenaltyRule) => <strong>{r.name}</strong> },
+          { key: 'type', label: 'النوع', render: (r: HRPenaltyRule) => <Badge variant="warning">{PENALTY_TYPE_LABEL[r.penalty_type] ?? r.penalty_type}</Badge> },
+          { key: 'range', label: 'الدقائق', render: (r: HRPenaltyRule) => `${r.min_minutes != null ? r.min_minutes : '—'} ${r.max_minutes != null ? `– ${r.max_minutes}` : '+'}` },
+          { key: 'occ', label: 'التكرار', render: (r: HRPenaltyRule) => `من المرة ${r.occurrence_from}${r.occurrence_to ? ` إلى ${r.occurrence_to}` : '+'}` },
+          { key: 'ded', label: 'الجزاء', render: (r: HRPenaltyRule) => <strong>{DEDUCTION_LABEL[r.deduction_type] ?? r.deduction_type}</strong> },
+          { key: 'stat', label: 'الحالة', render: (r: HRPenaltyRule) => <Badge variant={r.is_active ? 'success' : 'neutral'}>{r.is_active ? 'فعال' : 'معطل'}</Badge> },
+          {
+            key: 'actions', label: 'إجراءات', render: (r: HRPenaltyRule) => (
+              <div style={{ display: 'flex', gap: 6, opacity: isEditable(r.penalty_type) ? 1 : 0.5 }}>
+                <Button size="sm" variant="ghost" icon={<Edit2 size={14} />} disabled={!isEditable(r.penalty_type)} onClick={() => startEdit(r)} />
+                <Button size="sm" variant="ghost" icon={r.is_active ? <ToggleRight size={14} color="var(--color-success)" /> : <ToggleLeft size={14} />} disabled={!isEditable(r.penalty_type)} onClick={() => handleToggleActive(r)} />
+              </div>
+            )
+          }
         ]}
         data={rules}
         keyField="id"
-        dataCardMapping={(r: any) => ({
-          title: PENALTY_TYPE_LABEL[r.penalty_type] ?? r.penalty_type,
-          subtitle: `نجاوز المسموح: القطع من المرة ${r.occurrence_from}`,
-          badge: <Badge variant="warning">{DEDUCTION_LABEL[r.deduction_type] ?? r.deduction_type}</Badge>,
+        dataCardMapping={(r: HRPenaltyRule) => ({
+          title: r.name,
+          subtitle: PENALTY_TYPE_LABEL[r.penalty_type] ?? r.penalty_type,
+          badge: <Badge variant={r.is_active ? 'success' : 'neutral'}>{r.is_active ? 'فعال' : 'معطل'}</Badge>,
           metadata: [
-            { label: 'النطاق', value: `${r.min_minutes != null ? r.min_minutes : '—'} ${r.max_minutes != null ? `– ${r.max_minutes}` : '+'} دقيقة` }
-          ]
+            { label: 'الجزاء', value: DEDUCTION_LABEL[r.deduction_type] ?? r.deduction_type },
+            { label: 'التكرار', value: `المرة ${r.occurrence_from}` }
+          ],
+          actions: isEditable(r.penalty_type) ? (
+             <div style={{ display: 'flex', gap: 6 }}>
+                <Button size="sm" variant="ghost" icon={<Edit2 size={14} />} onClick={() => startEdit(r)} />
+                <Button size="sm" variant="ghost" icon={r.is_active ? <ToggleRight size={14} /> : <ToggleLeft size={14} />} onClick={() => handleToggleActive(r)} />
+             </div>
+          ) : undefined
         })}
       />
     </div>

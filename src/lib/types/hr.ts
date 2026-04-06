@@ -672,6 +672,18 @@ export interface HRPenaltyRule {
   created_at: string
 }
 
+export interface HRPenaltyRuleInput {
+  name: string
+  penalty_type: HRPenaltyType
+  min_minutes: number
+  max_minutes: number | null
+  occurrence_from: number
+  occurrence_to: number | null
+  deduction_type: HRDeductionType
+  is_active: boolean
+  sort_order: number
+}
+
 // ─────────────────────────────────────────────────────────────
 // 18. PENALTY INSTANCES — hr_penalty_instances
 // ─────────────────────────────────────────────────────────────

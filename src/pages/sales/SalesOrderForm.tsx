@@ -1247,12 +1247,12 @@ export default function SalesOrderForm() {
                 const isLow = p.stock_status === 'low'
                 const dot = isOut ? '🔴' : isLow ? '🟡' : '🟢'
                 return (
-                  <button key={p.id} disabled={isOut} onClick={() => selectSheetProduct(p)}
+                  <button key={p.id} onClick={() => selectSheetProduct(p)}
                     style={{
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                       padding: '12px 14px', borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--border-color)', cursor: isOut ? 'not-allowed' : 'pointer',
-                      background: 'var(--bg-surface)', opacity: isOut ? 0.5 : 1, textAlign: 'right',
+                      border: '1px solid var(--border-color)', cursor: 'pointer',
+                      background: 'var(--bg-surface)', textAlign: 'right',
                       gap: 12,
                     }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -1546,12 +1546,11 @@ function ProductComboCell({ productQuery, productResults, onSearch, onSelect, on
                 key={p.id}
                 onMouseDown={e => {
                   e.preventDefault()
-                  if (!isOut) onSelect(p)
+                  onSelect(p)
                 }}
                 style={{
                   padding: '10px 14px',
-                  cursor: isOut ? 'not-allowed' : 'pointer',
-                  opacity: isOut ? 0.5 : 1,
+                  cursor: 'pointer',
                   borderBottom: i < productResults.length - 1 ? '1px solid var(--border-color)' : 'none',
                   display: 'flex',
                   justifyContent: 'space-between',
@@ -1559,7 +1558,7 @@ function ProductComboCell({ productQuery, productResults, onSearch, onSelect, on
                   gap: 12,
                   transition: 'background 0.12s',
                 }}
-                onMouseEnter={e => { if (!isOut) e.currentTarget.style.background = 'var(--bg-hover)' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)' }}
                 onMouseLeave={e => (e.currentTarget.style.background = '')}
               >
                 {/* Product info */}

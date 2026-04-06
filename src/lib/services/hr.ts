@@ -15,7 +15,7 @@ import type {
   HRPublicHoliday, HRPublicHolidayInput,
   HRLeaveType, HRLeaveTypeInput, HRLeaveBalance, HRLeaveRequest, HRLeaveRequestInput,
   HRPermissionRequest, HRPermissionRequestInput,
-  HRPenaltyRule, HRPenaltyInstance,
+  HRPenaltyRule, HRPenaltyRuleInput, HRPenaltyInstance,
   HRPayrollPeriod, HRPayrollPeriodInput, HRPayrollRun, HRPayrollRunInput, HRPayrollLine,
   HRAdvance, HRAdvanceInput, HRAdvanceInstallment,
   HRAdvanceStatus,
@@ -936,6 +936,111 @@ export async function getPenaltyRules() {
     .order('sort_order')
   if (error) throw error
   return data as HRPenaltyRule[]
+}
+
+/** 
+ * Validates if the input overlaps with any existing rule of the same type.
+ * 'late': Overlap if both min_minutes..max_minutes AND occurrence_from..occurrence_to overlap.
+ * 'absent_unauthorized': Overlap if occurrence_from..occurrence_to overlap.
+ */
+export async function validatePenaltyRuleConflict(input: HRPenaltyRuleInput, excludeId?: string): Promise<boolean> {
+  const rules = await getPenaltyRules()
+  
+  for (const rule of rules) {
+    if (excludeId && rule.id === excludeId) continue
+    if (!rule.is_active || !input.is_active) continue
+    if (rule.penalty_type !== input.penalty_type) continue
+
+    const getEnd = (val: number | null) => val === null ? Infinity : val
+
+    // التكرار بنظام فترات مغلقة [occur_from, occur_to]
+    const occOverlap = Math.max(rule.occurrence_from, input.occurrence_from) <= 
+                       Math.min(getEnd(rule.occurrence_to), getEnd(input.occurrence_to))
+
+    if (input.penalty_type === 'absent_unauthorized') {
+      if (occOverlap) return true 
+    } else if (input.penalty_type === 'late') {
+      // הדקות بنظام فترات نصف مفتوحة [min_minutes, max_minutes) حسب منطق process_attendance_penalties 
+      // حيث الشرط هو: (max_minutes IS NULL OR v_minutes < max_minutes)
+      const minOverlap = Math.max(rule.min_minutes, input.min_minutes) < 
+                         Math.min(getEnd(rule.max_minutes), getEnd(input.max_minutes))
+      // For late, both minutes AND occurrences must overlap to be a conflict
+      if (occOverlap && minOverlap) return true
+    }
+  }
+  return false
+}
+
+// Strict layer validation 
+function guardPenaltyRuleInput(input: Partial<HRPenaltyRuleInput>) {
+  if (input.penalty_type && !['late', 'absent_unauthorized'].includes(input.penalty_type)) {
+    throw new Error('أنواع الجزاءات المسموح بإنشائها هي: التأخير، والغياب فقط.')
+  }
+  if (input.deduction_type && !['none', 'warning', 'quarter_day', 'half_day', 'full_day'].includes(input.deduction_type)) {
+    throw new Error('نوع الخصم المُختار غير مدعوم للمعالجة.')
+  }
+}
+
+export async function createPenaltyRule(input: HRPenaltyRuleInput) {
+  guardPenaltyRuleInput(input)
+  
+  const hasConflict = await validatePenaltyRuleConflict(input)
+  if (hasConflict) throw new Error('تعارض: توجد قاعدة فعالة متداخلة في نفس النطاق (التكرار أو الدقائق).')
+
+  const { data, error } = await supabase
+    .from('hr_penalty_rules')
+    .insert(input)
+    .select('*')
+    .single()
+  if (error) throw error
+  return data as HRPenaltyRule
+}
+
+export async function updatePenaltyRule(id: string, input: Partial<HRPenaltyRuleInput>) {
+  guardPenaltyRuleInput(input)
+
+  const rules = await getPenaltyRules()
+  const existing = rules.find(r => r.id === id)
+  if (!existing) throw new Error('القاعدة غير موجودة')
+  
+  if (!['late', 'absent_unauthorized'].includes(existing.penalty_type)) {
+    throw new Error('غير مسموح بتعديل الإعدادات لهذا النوع من المخالفات، فهو مدعوم للعرض فقط.')
+  }
+  
+  if (input.penalty_type && input.penalty_type !== existing.penalty_type) {
+    throw new Error('لا يُسمح بتغيير صنف المخالفة لقاعدة موجودة. يُرجى التعديل في نفس الصنف أو إنشاء قاعدة جديدة.')
+  }
+
+  const checkInput = { 
+      name: existing.name,
+      penalty_type: existing.penalty_type,
+      min_minutes: existing.min_minutes,
+      max_minutes: existing.max_minutes,
+      occurrence_from: existing.occurrence_from,
+      occurrence_to: existing.occurrence_to,
+      deduction_type: existing.deduction_type,
+      is_active: existing.is_active,
+      sort_order: existing.sort_order,
+      ...input 
+  } as HRPenaltyRuleInput
+
+  if (checkInput.is_active) {
+    const hasConflict = await validatePenaltyRuleConflict(checkInput, id)
+    if (hasConflict) throw new Error('تعارض: توجد قاعدة فعالة متداخلة مع هذه القيم.')
+  }
+
+  const { data, error } = await supabase
+    .from('hr_penalty_rules')
+    .update(input)
+    .eq('id', id)
+    .select('*')
+    .single()
+  if (error) throw error
+  return data as HRPenaltyRule
+}
+
+export async function setPenaltyRuleActive(id: string, is_active: boolean) {
+  return updatePenaltyRule(id, { is_active })
 }
 
 export async function getPenaltyInstances(params: {
