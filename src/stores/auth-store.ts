@@ -26,16 +26,53 @@ interface AuthState {
   reset: () => void
 }
 
-/**
- * ⚠️ NO persist middleware — الصلاحيات لا تُخزن في localStorage أبداً
- * تُجلب من DB عند كل تسجيل دخول عبر get_my_profile() RPC
- */
+// ─── Session Cache (sessionStorage) ───────────────────────────────────────────
+// يُحسّن تجربة العودة للتطبيق بعد تبديل التطبيقات أو إعادة تحميل الصفحة.
+// sessionStorage (لا localStorage): تُمسح عند إغلاق التاب، لا أثر أمني.
+// ⚠️ الصلاحيات لا تُخزن في localStorage أبداً — sessionStorage فقط.
+
+const CACHE_KEY = 'edara_auth_v1'
+
+interface AuthCache {
+  v: 1
+  profile: MyProfile
+  permissions: string[]
+}
+
+export function saveAuthCache(profile: MyProfile, permissions: string[]) {
+  try {
+    const cache: AuthCache = { v: 1, profile, permissions }
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify(cache))
+  } catch { /* تجاهل أخطاء sessionStorage (وضع التخفي أحياناً يمنع الكتابة) */ }
+}
+
+export function clearAuthCache() {
+  try { sessionStorage.removeItem(CACHE_KEY) } catch {}
+}
+
+function readAuthCache(): { profile: MyProfile; permissions: string[] } | null {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as AuthCache
+    if (parsed?.v === 1 && parsed.profile?.id && Array.isArray(parsed.permissions)) {
+      return { profile: parsed.profile, permissions: parsed.permissions }
+    }
+    return null
+  } catch { return null }
+}
+
+// يُقرأ مرة واحدة فقط عند بدء التطبيق
+const _cached = readAuthCache()
+
+// ─── Store ─────────────────────────────────────────────────────────────────────
 export const useAuthStore = create<AuthState>()((set, get) => ({
-  profile: null,
-  permissions: [],
-  isLoading: true,
-  isInitialized: false,
-  hasSession: false,
+  // إذا وُجد cache: ابدأ بحالة جاهزة فوراً بدون spinner
+  profile:          _cached?.profile      ?? null,
+  permissions:      _cached?.permissions  ?? [],
+  isLoading:        !_cached,   // لا spinner إذا عندنا cache
+  isInitialized:    !!_cached,  // جاهز فوراً إذا عندنا cache
+  hasSession:       !!_cached,
   profileLoadError: null,
 
   setProfile:     (profile)       => set({ profile }),
@@ -54,12 +91,15 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   canAny: (perms) => perms.some(p => get().can(p)),
   canAll: (perms) => perms.every(p => get().can(p)),
 
-  reset: () => set({
-    profile: null,
-    permissions: [],
-    isLoading: false,
-    isInitialized: false,
-    hasSession: false,
-    profileLoadError: null,
-  }),
+  reset: () => {
+    clearAuthCache()
+    set({
+      profile: null,
+      permissions: [],
+      isLoading: false,
+      isInitialized: false,
+      hasSession: false,
+      profileLoadError: null,
+    })
+  },
 }))

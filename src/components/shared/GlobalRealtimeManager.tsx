@@ -61,7 +61,9 @@ const DEBOUNCE_MS = 1500 // 1.5 ثانية — يمنع cascade refetch في bul
 
 export default function GlobalRealtimeManager() {
   const queryClient = useQueryClient()
-  const profile = useAuthStore(s => s.profile)
+  // نستخدم profile?.id فقط (لا الكائن كاملاً) — يمنع إعادة الاشتراك عند كل تحديث
+  // للـ profile object في الخلفية (background re-validation بعد page reload)
+  const profileId = useAuthStore(s => s.profile?.id)
   const pendingKeys = useRef<Set<string>>(new Set())
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -83,7 +85,7 @@ export default function GlobalRealtimeManager() {
   // ── قناة 1: الجداول العامة ─────────────────────────────
   useEffect(() => {
     // لا نشترك إلا عند وجود مستخدم مُسجّل
-    if (!profile) return
+    if (!profileId) return
 
     const tables = Object.keys(TABLE_QUERY_MAP)
 
@@ -119,14 +121,14 @@ export default function GlobalRealtimeManager() {
       if (timerRef.current) clearTimeout(timerRef.current)
       supabase.removeChannel(channel)
     }
-  }, [profile, queryClient, scheduleInvalidation])
+  }, [profileId, queryClient, scheduleInvalidation])
 
   // ── قناة 2: إشعارات المستخدم الحالي ───────────────────
   useEffect(() => {
-    if (!profile) return
+    if (!profileId) return
 
-    // profile.id هو الـ auth.users.id المرتبط بالمستخدم الحالي
-    const userId = profile.id
+    // profileId هو الـ auth.users.id المرتبط بالمستخدم الحالي
+    const userId = profileId
 
     const notificationChannel = supabase
       .channel(`notifications:${userId}`)
@@ -293,7 +295,7 @@ export default function GlobalRealtimeManager() {
       supabase.removeChannel(notificationChannel)
       useNotificationStore.getState().setRealtimeStatus('disconnected')
     }
-  }, [profile, queryClient])
+  }, [profileId, queryClient])
 
   // هذا المكوّن لا يعرض شيئاً — فقط يدير الاشتراكات
   return null

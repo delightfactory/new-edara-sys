@@ -16,15 +16,15 @@ interface Props {
 export function ProtectedRoute({ children, permission }: Props) {
   const profile = useAuthStore(s => s.profile)
   const isInitialized = useAuthStore(s => s.isInitialized)
-  const isLoading = useAuthStore(s => s.isLoading)
   const hasSession = useAuthStore(s => s.hasSession)
   const profileLoadError = useAuthStore(s => s.profileLoadError)
   const can = useAuthStore(s => s.can)
   const canAny = useAuthStore(s => s.canAny)
   const location = useLocation()
 
-  // انتظار التهيئة
-  if (!isInitialized || isLoading) {
+  // انتظار التهيئة الأولى فقط — إذا عندنا profile من الـ cache لا نُظهر spinner
+  // isLoading في الخلفية (إعادة تحقق) لا يوقف عرض المحتوى
+  if (!isInitialized && !profile) {
     return (
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',

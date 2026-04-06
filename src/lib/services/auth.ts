@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
-import { useAuthStore } from '@/stores/auth-store'
+import { useAuthStore, saveAuthCache, clearAuthCache } from '@/stores/auth-store'
 import type { MyProfile } from '@/lib/types/auth'
 import { captureError, trackAuthFailure, setUserContext } from '@/lib/monitoring/sentry'
 
@@ -57,6 +57,7 @@ export async function signIn(email: string, password: string) {
  * تسجيل الخروج
  */
 export async function signOut() {
+  clearAuthCache()
   await supabase.auth.signOut()
   useAuthStore.getState().reset()
   setUserContext(null)
@@ -131,6 +132,7 @@ export async function loadSession() {
     store.setPermissions(data.permissions ?? [])
     store.setProfileLoadError(null)
     setUserContext(data.id)
+    saveAuthCache(data, data.permissions ?? [])
 
     // تحديث last_login_at بدون انتظار — fire and forget مع قليل من التأخير
     // لتجنب تنافس الطلبات عند تسجيل الدخول
