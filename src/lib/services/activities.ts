@@ -426,7 +426,7 @@ export async function cancelVisitPlan(id: string, reason?: string): Promise<void
     .from('visit_plans')
     .update({ status: 'cancelled', cancellation_reason: reason ?? null })  // ✅ cancellation_reason
     .eq('id', id)
-    .not('status', 'eq', 'completed')
+    .in('status', ['draft', 'confirmed'])  // ✅ state-machine: لا إلغاء بعد in_progress/completed/cancelled
   if (error) throw error
 }
 
@@ -605,7 +605,7 @@ export async function cancelCallPlan(id: string, reason?: string): Promise<void>
     .from('call_plans')
     .update({ status: 'cancelled', cancellation_reason: reason ?? null })   // ✅ cancellation_reason
     .eq('id', id)
-    .not('status', 'eq', 'completed')
+    .in('status', ['draft', 'confirmed'])  // ✅ state-machine: لا إلغاء بعد in_progress/completed/cancelled
   if (error) throw error
 }
 

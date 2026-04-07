@@ -157,7 +157,7 @@ export default function SalesReturnDetail() {
                 تأكيد
               </Button>
             )}
-            {ret.status === 'draft' && (
+            {ret.status === 'draft' && can('sales.returns.cancel') && (
               <Button variant="danger" icon={<XCircle size={16} />} onClick={() => setShowCancel(true)} disabled={actionLoading}>
                 إلغاء
               </Button>
@@ -312,11 +312,13 @@ export default function SalesReturnDetail() {
               <CheckCircle size={16} /> تأكيد المرتجع
             </button>
           )}
-          <button type="button" className="btn btn-danger"
-            style={{ flex: can('sales.returns.confirm') ? '0 0 auto' : 1, paddingInline: 20, display: 'flex', alignItems: 'center', gap: 6 }}
-            onClick={() => setShowCancel(true)} disabled={actionLoading}>
-            <XCircle size={16} /> إلغاء
-          </button>
+          {can('sales.returns.cancel') && (
+            <button type="button" className="btn btn-danger"
+              style={{ flex: can('sales.returns.confirm') ? '0 0 auto' : 1, paddingInline: 20, display: 'flex', alignItems: 'center', gap: 6 }}
+              onClick={() => setShowCancel(true)} disabled={actionLoading}>
+              <XCircle size={16} /> إلغاء
+            </button>
+          )}
         </div>
       )}
 
