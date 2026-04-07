@@ -31,7 +31,7 @@ const TYPE_OPTIONS = [
 ]
 
 const STATUS_OPTIONS = [
-  { value: 'active',   label: 'نشط'   },
+  { value: 'all',      label: 'كل الحالات' },
   { value: 'inactive', label: 'معطل'  },
 ]
 
@@ -71,14 +71,13 @@ export default function CustomersPage() {
   const { data: governorates = [] } = useGovernorates()
   const { data: reps = [] }         = useProfiles()
 
-  // ── Computed params ────────────────────────────────────────────────
   const filterParams = useMemo(() => ({
     search:        filters.search        || undefined,
     type:          filters.type          || undefined,
     governorateId: filters.governorateId || undefined,
     cityId:        filters.cityId        || undefined,
     repId:         filters.repId         || undefined,
-    isActive:      filters.status === '' ? undefined : filters.status === 'active',
+    isActive:      filters.status === 'all' ? undefined : (filters.status === 'inactive' ? false : true),
   }), [filters])
 
   // إعادة ضبط الصفحات عند تغيير الفلاتر
@@ -161,8 +160,9 @@ export default function CustomersPage() {
     let primaryLabel   = 'عميل'
     let primaryVariant: StatVariant = 'default'
 
-    if (filters.status === 'active')   { primaryLabel = 'عميل نشط';  primaryVariant = 'success' }
+    if (filters.status === '')         { primaryLabel = 'عميل نشط';  primaryVariant = 'success' }
     if (filters.status === 'inactive') { primaryLabel = 'عميل معطل'; primaryVariant = 'danger'  }
+    if (filters.status === 'all')      { primaryLabel = 'عميل';      primaryVariant = 'default'  }
 
     // أضف سياق البعد الجغرافي إذا كان مُفعّلاً (يُغني عن كتابة اسم المحافظة)
     const govName  = filters.governorateId
@@ -364,7 +364,7 @@ export default function CustomersPage() {
           value={filters.status}
           onChange={v => setFilter('status', v)}
           options={STATUS_OPTIONS}
-          allLabel="كل الحالات"
+          allLabel="نشط (افتراضي)"
         />
       </FilterBar>
 

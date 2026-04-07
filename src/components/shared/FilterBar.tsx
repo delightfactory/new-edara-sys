@@ -414,20 +414,19 @@ function FilterBar({
 
         /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ROOT */
         .fb-root {
-          border: 1px solid var(--border-subtle, #e2e8f0);
+          border: 1px solid var(--border-primary);
           border-radius: var(--radius-xl, 12px);
-          background: var(--bg-surface, #fff);
+          background: var(--bg-surface);
           overflow: hidden;
           margin-bottom: var(--space-4, 1rem);
-          box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+          box-shadow: var(--shadow-sm);
           transition: box-shadow 0.2s, border-color 0.2s;
         }
         .fb-root:focus-within {
-          box-shadow: 0 2px 8px rgba(37,99,235,0.08);
+          box-shadow: 0 2px 8px rgba(37,99,235,0.10);
         }
         .fb-open {
-          border-color: var(--color-primary, #2563eb);
-          border-color: rgba(37,99,235,0.25);
+          border-color: rgba(37,99,235,0.30);
         }
 
         /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ HEADER */
@@ -524,9 +523,9 @@ function FilterBar({
           gap: 5px;
           padding: 5px 10px;
           border-radius: var(--radius-lg, 8px);
-          border: 1px solid var(--border-default, #e2e8f0);
-          background: var(--bg-surface, #fff);
-          color: var(--text-secondary, #334155);
+          border: 1px solid var(--border-primary);
+          background: var(--bg-surface);
+          color: var(--text-secondary);
           font-size: var(--text-xs, .75rem);
           font-family: inherit;
           cursor: pointer;
@@ -544,8 +543,8 @@ function FilterBar({
           display: grid;
           grid-template-rows: 0fr;
           transition: grid-template-rows 0.28s cubic-bezier(.4,0,.2,1);
-          border-top: 0px solid var(--border-subtle, #e2e8f0);
-          background: var(--bg-base, #f8fafc);
+          border-top: 0px solid var(--border-primary);
+          background: var(--bg-surface-2);
         }
         .fb-open .fb-body {
           grid-template-rows: 1fr;
@@ -587,9 +586,9 @@ function FilterBar({
           width: 100%;
           height: 40px;
           padding: 0 calc(var(--space-3) + 22px) 0 var(--space-3);
-          border: 1.5px solid var(--border-default, #e2e8f0);
+          border: 1.5px solid var(--border-primary);
           border-radius: var(--radius-lg, 8px);
-          background: var(--bg-surface, #fff);
+          background: var(--bg-input, var(--bg-surface));
           color: var(--text-primary);
           font-size: var(--text-sm);
           font-family: inherit;
@@ -613,14 +612,14 @@ function FilterBar({
           width: 22px; height: 22px;
           border-radius: 50%;
           border: none;
-          background: var(--neutral-200, #e2e8f0);
+          background: var(--bg-secondary);
           color: var(--text-muted);
           cursor: pointer;
           transition: all 0.15s;
           z-index: 1;
         }
         .fb-clear-btn:hover {
-          background: var(--neutral-300, #cbd5e1);
+          background: var(--border-primary);
           color: var(--text-primary);
         }
 
@@ -669,10 +668,10 @@ function FilterBar({
 
         .fb-select {
           height: 40px;
-          padding: 0 var(--space-3) 0 28px; /* left for chevron + clear */
-          border: 1.5px solid var(--border-default, #e2e8f0);
+          padding: 0 var(--space-3) 0 28px;
+          border: 1.5px solid var(--border-primary);
           border-radius: var(--radius-lg, 8px);
-          background: var(--bg-surface, #fff);
+          background: var(--bg-input, var(--bg-surface));
           color: var(--text-primary);
           font-size: var(--text-sm);
           font-family: inherit;
@@ -681,6 +680,10 @@ function FilterBar({
           outline: none;
           width: 100%;
           transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+        }
+        .fb-select option {
+          background: var(--bg-surface);
+          color: var(--text-primary);
         }
         .fb-select:focus {
           border-color: var(--color-primary);
@@ -691,10 +694,7 @@ function FilterBar({
         /* حالة التفعيل */
         .fb-select-active .fb-select {
           border-color: var(--color-primary);
-          background: linear-gradient(180deg,
-            rgba(37,99,235,.04) 0%,
-            var(--bg-surface) 100%
-          );
+          background: var(--bg-accent);
           color: var(--color-primary);
           font-weight: 600;
         }
@@ -720,7 +720,7 @@ function FilterBar({
           width: 18px; height: 18px;
           border-radius: 50%;
           border: none;
-          background: rgba(37,99,235,.15);
+          background: var(--color-primary-light);
           color: var(--color-primary);
           cursor: pointer;
           transition: all 0.15s;
@@ -740,9 +740,9 @@ function FilterBar({
           align-items: center;
           gap: var(--space-2);
           padding: 0 var(--space-3);
-          border: 1.5px solid var(--border-default, #e2e8f0);
+          border: 1.5px solid var(--border-primary);
           border-radius: var(--radius-lg, 8px);
-          background: var(--bg-surface, #fff);
+          background: var(--bg-input, var(--bg-surface));
           cursor: pointer;
           transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
         }
@@ -752,10 +752,7 @@ function FilterBar({
         }
         .fb-select-active.fb-daterange-wrap {
           border-color: var(--color-primary);
-          background: linear-gradient(180deg,
-            rgba(37,99,235,.04) 0%,
-            var(--bg-surface) 100%
-          );
+          background: var(--bg-accent);
         }
         .fb-daterange-icon {
           color: var(--text-muted);
@@ -807,6 +804,10 @@ function FilterBar({
           cursor: pointer;
           filter: invert(30%);
         }
+        [data-theme="dark"] .fb-date-input::-webkit-calendar-picker-indicator {
+          filter: invert(75%);
+          opacity: 0.65;
+        }
         .fb-daterange-sep {
           color: var(--text-muted);
           font-size: var(--text-xs);
@@ -817,14 +818,17 @@ function FilterBar({
           width: 14px; height: 14px;
           border-radius: 50%;
           border: none;
-          background: var(--neutral-200);
+          background: var(--bg-secondary);
           color: var(--text-muted);
           cursor: pointer;
           padding: 0;
           flex-shrink: 0;
           transition: all 0.12s;
         }
-        .fb-inline-clear:hover { background: var(--neutral-300); }
+        .fb-inline-clear:hover {
+          background: var(--border-primary);
+          color: var(--text-primary);
+        }
 
         /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ TOGGLE */
         .fb-toggle {
@@ -834,8 +838,8 @@ function FilterBar({
           height: 40px;
           padding: 0 var(--space-3);
           border-radius: var(--radius-lg, 8px);
-          border: 1.5px solid var(--border-default, #e2e8f0);
-          background: var(--bg-surface, #fff);
+          border: 1.5px solid var(--border-primary);
+          background: var(--bg-input, var(--bg-surface));
           cursor: pointer;
           transition: all 0.15s;
           white-space: nowrap;
@@ -845,27 +849,34 @@ function FilterBar({
         .fb-toggle:hover { border-color: var(--color-primary); }
         .fb-toggle-on {
           border-color: var(--color-primary);
-          background: var(--color-primary-light);
+          background: var(--bg-active);
         }
         .fb-toggle-track {
           width: 30px; height: 17px;
           border-radius: 9999px;
-          background: var(--neutral-300);
+          background: var(--bg-secondary);
+          border: 1px solid var(--border-primary);
           position: relative;
-          transition: background 0.2s;
+          transition: background 0.2s, border-color 0.2s;
           flex-shrink: 0;
         }
-        .fb-toggle-track-on { background: var(--color-primary); }
+        .fb-toggle-track-on {
+          background: var(--color-primary);
+          border-color: var(--color-primary);
+        }
         .fb-toggle-thumb {
           position: absolute;
           top: 2px; right: 2px;
-          width: 13px; height: 13px;
+          width: 11px; height: 11px;
           border-radius: 50%;
-          background: #fff;
-          box-shadow: 0 1px 3px rgba(0,0,0,.25);
-          transition: right 0.18s cubic-bezier(.4,0,.2,1);
+          background: var(--text-secondary);
+          box-shadow: 0 1px 3px rgba(0,0,0,.3);
+          transition: right 0.18s cubic-bezier(.4,0,.2,1), background 0.18s;
         }
-        .fb-toggle-track-on .fb-toggle-thumb { right: calc(100% - 15px); }
+        .fb-toggle-track-on .fb-toggle-thumb {
+          right: calc(100% - 13px);
+          background: #fff;
+        }
         .fb-toggle-label {
           font-size: var(--text-sm);
           color: var(--text-primary);
@@ -889,7 +900,7 @@ function FilterBar({
           content: '';
           flex: 1;
           height: 1px;
-          background: var(--border-subtle);
+          background: var(--border-primary);
         }
         .fb-divider-label {
           font-size: 10px;
@@ -907,9 +918,8 @@ function FilterBar({
           gap: 6px;
           flex-wrap: nowrap;
           margin-right: var(--space-1);
-          /* separator visual */
           padding-right: var(--space-3);
-          border-right: 1px solid var(--border-subtle);
+          border-right: 1px solid var(--border-primary);
           overflow: hidden;
         }
 
@@ -946,30 +956,30 @@ function FilterBar({
           opacity: 0.85;
         }
 
-        /* Variants */
+        /* Variants — dark-mode-safe: no --neutral-* */
         .fb-stat-default {
-          background: var(--neutral-100, #f1f5f9);
-          border-color: var(--neutral-200, #e2e8f0);
-          color: var(--neutral-700, #334155);
+          background: var(--bg-secondary);
+          border-color: var(--border-primary);
+          color: var(--text-secondary);
         }
         .fb-stat-success {
           background: var(--color-success-light, rgba(22,163,74,.1));
-          border-color: rgba(22,163,74,.2);
+          border-color: rgba(22,163,74,.25);
           color: var(--color-success, #16a34a);
         }
         .fb-stat-warning {
           background: var(--color-warning-light, rgba(217,119,6,.1));
-          border-color: rgba(217,119,6,.2);
+          border-color: rgba(217,119,6,.25);
           color: var(--color-warning, #d97706);
         }
         .fb-stat-danger {
           background: var(--color-danger-light, rgba(220,38,38,.08));
-          border-color: rgba(220,38,38,.15);
+          border-color: rgba(220,38,38,.2);
           color: var(--color-danger, #dc2626);
         }
         .fb-stat-info {
           background: var(--color-info-light, rgba(2,132,199,.08));
-          border-color: rgba(2,132,199,.15);
+          border-color: rgba(2,132,199,.2);
           color: var(--color-info, #0284c7);
         }
 
@@ -979,9 +989,9 @@ function FilterBar({
           width: 52px; height: 12px;
           border-radius: 4px;
           background: linear-gradient(90deg,
-            var(--neutral-200) 25%,
-            var(--neutral-100) 50%,
-            var(--neutral-200) 75%
+            var(--bg-secondary) 25%,
+            var(--border-primary) 50%,
+            var(--bg-secondary) 75%
           );
           background-size: 200% 100%;
           animation: shimmer 1.2s infinite;
