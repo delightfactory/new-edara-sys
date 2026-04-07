@@ -26,6 +26,7 @@ import PageHeader from '@/components/shared/PageHeader'
 import Button from '@/components/ui/Button'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
 import PermissionGuard from '@/components/shared/PermissionGuard'
+import CustomerCreditChip from '@/components/shared/CustomerCreditChip'
 
 // ── Step definitions ──────────────────────────────────────────────
 const STEPS = [
@@ -336,7 +337,7 @@ export default function SalesOrderForm() {
     if (q.length < 2) { setCustomerResults([]); return }
     const { data } = await supabase
       .from('customers')
-      .select('id, name, code, phone, payment_terms, credit_limit, credit_days')
+      .select('id, name, code, phone, payment_terms, credit_limit, credit_days, current_balance')
       .eq('is_active', true)
       .or(`name.ilike.%${q}%,code.ilike.%${q}%,phone.ilike.%${q}%`)
       .limit(10)
@@ -702,12 +703,21 @@ export default function SalesOrderForm() {
             <Combobox
               placeholder="ابحث بالاسم أو الكود أو الهاتف..."
               value={selectedCustomer?.code || ''}
-              items={customerResults.map(c => ({
-                id: c.id,
-                primary: c.name,
-                secondary: c.code,
-                meta: c.phone || undefined,
-              }))}
+              items={customerResults.map(c => {
+                const available = (c.credit_limit ?? 0) > 0
+                  ? Math.max(0, (c.credit_limit ?? 0) - (c.current_balance ?? 0))
+                  : null
+                const overLimit = available !== null && (c.current_balance ?? 0) >= (c.credit_limit ?? 0)
+                return {
+                  id: c.id,
+                  primary: c.name,
+                  secondary: c.code,
+                  meta: available !== null
+                    ? (overLimit ? `⚠️ تجاوز الحد` : `متاح: ${formatNumber(available)} ج.م`)
+                    : (c.phone || undefined),
+                  _creditWarning: overLimit,
+                } as any
+              })}
               onSearch={searchCustomers}
               onSelect={item => {
                 const c = customerResults.find(c => c.id === item.id)
@@ -719,7 +729,6 @@ export default function SalesOrderForm() {
             />
           </div>
 
-          {/* Customer info strip */}
           {selectedCustomer && (
             <div style={{ gridColumn: '1 / -1', display: 'flex', flexWrap: 'wrap', gap: 12 }}>
               {selectedCustomer.phone && (
@@ -731,9 +740,13 @@ export default function SalesOrderForm() {
                   selectedCustomer.payment_terms === 'credit' ? `آجل${selectedCustomer.credit_days ? ` — ${selectedCustomer.credit_days} يوم` : ''}` : selectedCustomer.payment_terms
                 } />
               )}
-              {selectedCustomer.credit_limit && selectedCustomer.credit_limit > 0 && (
-                <InfoPill label="حد الائتمان" value={`${formatNumber(selectedCustomer.credit_limit)} ج.م`} warn />
-              )}
+              <CustomerCreditChip
+                payment_terms={selectedCustomer.payment_terms as string}
+                credit_limit={selectedCustomer.credit_limit ?? 0}
+                credit_days={selectedCustomer.credit_days}
+                current_balance={(selectedCustomer as any).current_balance ?? 0}
+                mode="card"
+              />
             </div>
           )}
 

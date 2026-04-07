@@ -61,6 +61,9 @@ function PanelContent({ onClose }: { onClose: () => void }) {
 
   return (
     <>
+      {/* Drag handle — mobile only */}
+      <div className="np-drag-handle" aria-hidden="true" />
+
       {/* Header */}
       <div className="np-header">
         <div className="np-header-start">
@@ -158,6 +161,7 @@ function PanelContent({ onClose }: { onClose: () => void }) {
               compact
               onRead={id => markRead.mutate(id)}
               onArchive={id => archive.mutate(id)}
+              onClose={onClose}               // ← إغلاق تلقائي عند النقر
             />
           ))
         )}
@@ -243,10 +247,10 @@ export default function NotificationPanel() {
           position: fixed;
           inset: 0;
           z-index: var(--z-overlay, 190);
-          background: rgba(0,0,0,0.4);
-          backdrop-filter: blur(4px);
-          -webkit-backdrop-filter: blur(4px);
-          animation: np-fade-in 0.25s ease;
+          background: rgba(0,0,0,0.45);
+          backdrop-filter: blur(3px);
+          -webkit-backdrop-filter: blur(3px);
+          animation: np-fade-in 0.22s ease;
         }
 
         @keyframes np-fade-in {
@@ -284,18 +288,34 @@ export default function NotificationPanel() {
         /* ── Panel shell — Mobile bottom sheet ── */
         .np-panel--mobile {
           top: auto;
-          bottom: var(--bottom-nav-height, 64px);
+          bottom: 0;                              /* تمتد للأسفل بالكامل */
           inset-inline-end: 0;
           inset-inline-start: 0;
           width: 100%;
           border-radius: 20px 20px 0 0;
-          max-height: 75vh;
+          max-height: 80vh;
+          padding-bottom: env(safe-area-inset-bottom, 0px); /* iPhone notch */
           animation: np-slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         @keyframes np-slide-up {
           from { transform: translateY(100%); }
           to   { transform: translateY(0); }
+        }
+
+        /* Drag handle */
+        .np-drag-handle {
+          display: none;
+        }
+        .np-panel--mobile .np-drag-handle {
+          display: block;
+          width: 36px;
+          height: 4px;
+          border-radius: 2px;
+          background: var(--border-primary);
+          margin: 10px auto 2px;
+          flex-shrink: 0;
+          opacity: 0.6;
         }
 
         /* ── Header ── */
@@ -306,7 +326,6 @@ export default function NotificationPanel() {
           padding: var(--space-4);
           border-bottom: 1px solid var(--border-primary);
           flex-shrink: 0;
-          background: linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-app, #f8fafc) 100%);
         }
         .np-header-start {
           display: flex;
@@ -314,7 +333,7 @@ export default function NotificationPanel() {
           gap: var(--space-2);
         }
         .np-header-icon {
-          color: var(--primary, #2563eb);
+          color: var(--color-primary, #2563eb);
         }
         .np-title {
           font-size: var(--text-base, 15px);
@@ -324,7 +343,7 @@ export default function NotificationPanel() {
         .np-title-badge {
           font-size: 10px;
           font-weight: 700;
-          background: var(--primary, #2563eb);
+          background: var(--color-primary, #2563eb);
           color: #fff;
           padding: 1px 6px;
           border-radius: 9px;
@@ -461,22 +480,25 @@ export default function NotificationPanel() {
           padding: var(--space-3) var(--space-4);
           border-top: 1px solid var(--border-primary);
           flex-shrink: 0;
+          display: flex;
+          gap: var(--space-2);
         }
         .np-footer-btn {
-          width: 100%;
+          flex: 1;
           padding: var(--space-2) 0;
-          border: none;
-          background: none;
+          border: 1px solid var(--border-primary);
+          background: transparent;
           font-family: var(--font-sans);
           font-size: var(--text-sm, 14px);
           font-weight: 600;
-          color: var(--primary, #2563eb);
+          color: var(--color-primary, #2563eb);
           cursor: pointer;
           border-radius: 8px;
-          transition: background 0.15s;
+          transition: background 0.15s, border-color 0.15s;
         }
         .np-footer-btn:hover {
           background: rgba(37,99,235,0.06);
+          border-color: rgba(37,99,235,0.3);
         }
       `}</style>
     </>,

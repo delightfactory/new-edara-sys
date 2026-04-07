@@ -17,6 +17,7 @@ import DataCard from '@/components/ui/DataCard'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
+import CustomerCreditChip from '@/components/shared/CustomerCreditChip'
 
 const typeLabels:    Record<string, string>                      = { retail: 'تجزئة', wholesale: 'جملة', distributor: 'موزع' }
 const typeBadge:    Record<string, 'neutral' | 'info' | 'primary'> = { retail: 'neutral', wholesale: 'info', distributor: 'primary' }
@@ -259,7 +260,18 @@ export default function CustomersPage() {
     },
     { key: 'rep',    label: 'المندوب',     hideOnMobile: true, render: (c: Customer) => (c as any).assigned_rep?.full_name || <span style={{ color: 'var(--text-muted)' }}>—</span> },
     { key: 'payment',label: 'الدفع',       hideOnMobile: true, render: (c: Customer) => <Badge variant={paymentBadge[c.payment_terms as string] || 'neutral'}>{paymentLabels[c.payment_terms as string] || c.payment_terms}</Badge> },
-    { key: 'credit', label: 'حد الائتمان', hideOnMobile: true, render: (c: Customer) => c.credit_limit > 0 ? <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{formatNumber(c.credit_limit)}</span> : <span style={{ color: 'var(--text-muted)' }}>—</span> },
+    {
+      key: 'credit', label: 'الائتمان المتاح', hideOnMobile: true,
+      render: (c: Customer) => (
+        <CustomerCreditChip
+          payment_terms={c.payment_terms as string}
+          credit_limit={c.credit_limit}
+          credit_days={c.credit_days}
+          current_balance={c.current_balance ?? 0}
+          mode="compact"
+        />
+      ),
+    },
     { key: 'status', label: 'الحالة', render: (c: Customer) => <Badge variant={c.is_active ? 'success' : 'danger'}>{c.is_active ? 'نشط' : 'معطل'}</Badge> },
     {
       key: 'actions', label: 'إجراءات', width: 100,
@@ -417,9 +429,20 @@ export default function CustomersPage() {
                 metadata={[
                   { label: 'نوع العميل',   value: typeLabels[c.type] || c.type },
                   { label: 'طريقة الدفع',  value: paymentLabels[c.payment_terms as string] || c.payment_terms },
-                  ...(c.credit_limit > 0 ? [{ label: 'حد الائتمان', value: formatNumber(c.credit_limit), highlight: true }] : []),
                   ...((c as any).governorate?.name ? [{ label: 'المحافظة', value: (c as any).governorate.name }] : []),
                   ...((c as any).assigned_rep?.full_name ? [{ label: 'المندوب', value: (c as any).assigned_rep.full_name }] : []),
+                  {
+                    label: 'الائتمان',
+                    value: (
+                      <CustomerCreditChip
+                        payment_terms={c.payment_terms as string}
+                        credit_limit={c.credit_limit}
+                        credit_days={c.credit_days}
+                        current_balance={c.current_balance ?? 0}
+                        mode="inline"
+                      />
+                    ),
+                  },
                 ]}
                 actions={
                   <div className="flex gap-2" style={{ width: '100%' }}>

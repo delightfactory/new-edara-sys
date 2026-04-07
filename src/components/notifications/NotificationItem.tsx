@@ -65,6 +65,7 @@ interface NotificationItemProps {
   onRead?:    (id: string) => void
   onArchive?: (id: string) => void
   onDelete?:  (id: string) => void
+  onClose?:   () => void          // ← إغلاق البانل بعد الانتقال
   compact?: boolean
 }
 
@@ -75,6 +76,7 @@ export default function NotificationItem({
   onRead,
   onArchive,
   onDelete,
+  onClose,
   compact = false,
 }: NotificationItemProps) {
   const navigate = useNavigate()
@@ -84,6 +86,7 @@ export default function NotificationItem({
     if (!notification.isRead) onRead?.(notification.id)
     if (resolvedActionUrl) {
       navigate(resolvedActionUrl)
+      onClose?.()          // ← إغلاق تلقائي فور الانتقال
     }
   }
 
@@ -203,10 +206,10 @@ export default function NotificationItem({
           padding: var(--space-2) var(--space-3);
         }
         .ni-item--read {
-          opacity: 0.65;
+          opacity: 0.8;
         }
         .ni-item--read:hover {
-          opacity: 0.85;
+          opacity: 1;
         }
         .ni-item--read .ni-title {
           font-weight: 500;

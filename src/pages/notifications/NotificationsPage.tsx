@@ -132,14 +132,14 @@ export default function NotificationsPage() {
           transform: scale(1.1);
         }
 
-        /* Animated indicator */
+        /* Animated indicator — RTL-safe */
         .npage-tab-indicator {
           position: absolute;
           bottom: -1px;
-          left: var(--space-3);
-          right: var(--space-3);
-          height: 2px;
-          background: var(--primary, #2563eb);
+          inset-inline-start: var(--space-3);
+          inset-inline-end: var(--space-3);
+          height: 2.5px;
+          background: var(--color-primary, #2563eb);
           border-radius: 2px 2px 0 0;
           animation: npage-indicator-slide 0.25s ease;
         }
@@ -180,8 +180,8 @@ export default function NotificationsPage() {
           }
 
           .npage-tab-indicator {
-            left: var(--space-2);
-            right: var(--space-2);
+            inset-inline-start: var(--space-1);
+            inset-inline-end: var(--space-1);
           }
 
           .npage-settings {
