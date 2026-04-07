@@ -15,6 +15,7 @@ import ScrollToTopButton from '@/components/shared/ScrollToTop'
 import LoginPage from '@/pages/auth/LoginPage'
 import UnauthorizedPage from '@/pages/auth/UnauthorizedPage'
 import DashboardPage from '@/pages/dashboard/DashboardPage'
+import ReportsRedirect from '@/pages/reports/ReportsRedirect'  // tiny, role-based redirect, not lazy
 
 // Settings Pages — lazy loaded
 const UsersPage = lazy(() => import('@/pages/settings/users/UsersPage'))
@@ -115,6 +116,14 @@ const PlanTemplatesPage      = lazy(() => import('@/pages/activities/PlanTemplat
 
 // Notifications
 const NotificationsPage = lazy(() => import('@/pages/notifications/NotificationsPage'))
+
+// Reports — Phase 1
+const ReportsLayout       = lazy(() => import('@/pages/reports/ReportsLayout'))
+const ReportsOverviewPage = lazy(() => import('@/pages/reports/OverviewPage'))
+const SalesPage           = lazy(() => import('@/pages/reports/SalesPage'))
+const ReceivablesPage     = lazy(() => import('@/pages/reports/ReceivablesPage'))
+const TreasuryPage        = lazy(() => import('@/pages/reports/TreasuryPage'))
+const CustomerHealthPage  = lazy(() => import('@/pages/reports/CustomerHealthPage'))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -370,6 +379,47 @@ export default function App() {
                   </Suspense>
                 </ProtectedRoute>
               } />
+
+              {/* Reports — Phase 1
+                  Permission topology (per 75_analytics_schema_wave1.sql RLS):
+                  overview:     reports.sales OR reports.view_all
+                  sales:        reports.sales OR reports.view_all
+                  receivables:  reports.sales OR reports.targets OR reports.view_all
+                  treasury:     reports.sales OR reports.financial OR reports.view_all
+                  customers:    reports.sales OR reports.view_all
+              */}
+              <Route path="reports" element={
+                <ProtectedRoute permission={['reports.sales', 'reports.financial', 'reports.view_all']}>
+                  <Suspense fallback={<LazyFallback />}><ReportsLayout /></Suspense>
+                </ProtectedRoute>
+              }>
+                <Route index element={<ReportsRedirect />} />
+                <Route path="overview"    element={
+                  <ProtectedRoute permission={['reports.sales', 'reports.view_all']}>
+                    <Suspense fallback={<LazyFallback />}><ReportsOverviewPage /></Suspense>
+                  </ProtectedRoute>
+                } />
+                <Route path="sales"       element={
+                  <ProtectedRoute permission={['reports.sales', 'reports.view_all']}>
+                    <Suspense fallback={<LazyFallback />}><SalesPage /></Suspense>
+                  </ProtectedRoute>
+                } />
+                <Route path="receivables" element={
+                  <ProtectedRoute permission={['reports.sales', 'reports.targets', 'reports.view_all']}>
+                    <Suspense fallback={<LazyFallback />}><ReceivablesPage /></Suspense>
+                  </ProtectedRoute>
+                } />
+                <Route path="treasury"    element={
+                  <ProtectedRoute permission={['reports.sales', 'reports.financial', 'reports.view_all']}>
+                    <Suspense fallback={<LazyFallback />}><TreasuryPage /></Suspense>
+                  </ProtectedRoute>
+                } />
+                <Route path="customers"   element={
+                  <ProtectedRoute permission={['reports.sales', 'reports.view_all']}>
+                    <Suspense fallback={<LazyFallback />}><CustomerHealthPage /></Suspense>
+                  </ProtectedRoute>
+                } />
+              </Route>
 
               {/* Settings */}
               <Route path="settings/users" element={

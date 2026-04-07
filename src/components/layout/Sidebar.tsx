@@ -128,7 +128,21 @@ const sections: NavSection[] = [
   {
     label: 'أدوات',
     items: [
-      { id: 'reports', label: 'التقارير', icon: BarChart3, path: '/reports', permission: PERMISSIONS.REPORTS_SALES, comingSoon: true },
+      { id: 'reports', label: 'التقارير', icon: BarChart3,
+        // show the group if the user can access at least ONE report tab
+        permission: [PERMISSIONS.REPORTS_SALES, PERMISSIONS.REPORTS_FINANCIAL, PERMISSIONS.REPORTS_VIEW_ALL],
+        children: [
+          // overview & sales: sales OR view_all
+          { label: 'نظرة عامة',        path: '/reports/overview',    permission: [PERMISSIONS.REPORTS_SALES, PERMISSIONS.REPORTS_VIEW_ALL] },
+          { label: 'المبيعات',          path: '/reports/sales',       permission: [PERMISSIONS.REPORTS_SALES, PERMISSIONS.REPORTS_VIEW_ALL] },
+          // receivables: targets OR sales OR view_all
+          { label: 'المستحقات (AR)',    path: '/reports/receivables', permission: [PERMISSIONS.REPORTS_SALES, PERMISSIONS.REPORTS_TARGETS, PERMISSIONS.REPORTS_VIEW_ALL] },
+          // treasury: financial OR sales OR view_all
+          { label: 'الخزينة',           path: '/reports/treasury',    permission: [PERMISSIONS.REPORTS_FINANCIAL, PERMISSIONS.REPORTS_SALES, PERMISSIONS.REPORTS_VIEW_ALL] },
+          // customers: sales OR view_all
+          { label: 'صحة العملاء',       path: '/reports/customers',   permission: [PERMISSIONS.REPORTS_SALES, PERMISSIONS.REPORTS_VIEW_ALL] },
+        ],
+      },
       {
         id: 'hr-self', label: 'الخدمات الذاتية', icon: Users,
         children: [

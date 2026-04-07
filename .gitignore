@@ -82,3 +82,12 @@ coverage/
 .claude/
 .agents/skills/
 .gemini/
+
+# ============================================================
+# Operational Scripts & Temp Data (may contain credentials)
+# ============================================================
+run_gl_scaffolding*.cjs
+run_remediation*.cjs
+resume_backfill*.cjs
+run_backfill*.js
+supabase/.temp/
