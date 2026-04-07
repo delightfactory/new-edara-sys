@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import { supabase } from '@/lib/supabase/client'
+import { getMyWarehouses } from '@/lib/services/inventory'
 import {
   getPurchaseReturn,
   createPurchaseReturn,
@@ -187,6 +188,7 @@ export default function PurchaseReturnForm() {
   const { id } = useParams<{ id?: string }>()
   const navigate = useNavigate()
   const can = useAuthStore(s => s.can)
+  const isAdmin = can('inventory.read_all')
 
   const isNew = !id
   const [loading, setLoading]     = useState(!isNew)
@@ -206,6 +208,7 @@ export default function PurchaseReturnForm() {
   const [selectedSupplier, setSelectedSupplier]         = useState<Supplier | null>(null)
   const [supplierResults, setSupplierResults]           = useState<Supplier[]>([])
   const [warehouses, setWarehouses]                     = useState<Warehouse[]>([])
+  const [myWarehouses, setMyWarehouses]                 = useState<Warehouse[]>([])
   const [productResults, setProductResults]             = useState<any[]>([])
   const [activeProductIdx, setActiveProductIdx]         = useState<number | null>(null)
   // [Bug-2 Fix] invoice UUID combobox state
@@ -215,6 +218,11 @@ export default function PurchaseReturnForm() {
   useEffect(() => {
     supabase.from('warehouses').select('id, name').eq('is_active', true).order('name')
       .then(({ data }) => setWarehouses(data as Warehouse[] || []))
+    // نجلب دائماً — حتى لو isAdmin
+    getMyWarehouses().then(whs => {
+      setMyWarehouses(whs)
+      if (isNew && whs.length > 0) setWarehouseId(whs[0].id)
+    }).catch(() => {})
   }, [])
 
   const searchSuppliers = useCallback(async (q: string) => {
@@ -516,7 +524,7 @@ export default function PurchaseReturnForm() {
               disabled={isReadOnly}
             >
               <option value="">-- اختر المخزن --</option>
-              {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+              {(isAdmin ? warehouses : (myWarehouses.length > 0 ? myWarehouses : warehouses)).map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
             </select>
           </div>
 

@@ -55,7 +55,20 @@ export default function ExpensesPage() {
 
   // ── Create ──
   const openCreate = () => {
-    setForm({ amount: 0, description: '', payment_source: 'vault', expense_date: new Date().toISOString().split('T')[0] })
+    // تعيين ذكي: إذا المستخدم لديه عهدة → custody افتراضي، وإلا → vault
+    const myCustody = custodyAccounts.find(c => c.employee_id === userId)
+    const defaultSource: PaymentSource = myCustody ? 'custody' : 'vault'
+    const defaultCustodyId = myCustody?.id || (custodyAccounts.length === 1 ? custodyAccounts[0].id : null)
+    const defaultVaultId = !myCustody && vaults.length === 1 ? vaults[0].id : null
+
+    setForm({
+      amount: 0, description: '',
+      payment_source: defaultSource,
+      expense_date: new Date().toISOString().split('T')[0],
+      ...(defaultSource === 'custody'
+        ? { custody_id: defaultCustodyId, vault_id: null }
+        : { vault_id: defaultVaultId, custody_id: null }),
+    })
     setReceiptFile(null); setCreateOpen(true)
   }
 

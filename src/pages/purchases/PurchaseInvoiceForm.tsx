@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import { supabase } from '@/lib/supabase/client'
+import { getMyWarehouses } from '@/lib/services/inventory'
 import {
   getPurchaseInvoice,
   createPurchaseInvoice,
@@ -260,6 +261,7 @@ export default function PurchaseInvoiceForm() {
   const { id } = useParams<{ id?: string }>()
   const navigate = useNavigate()
   const can = useAuthStore(s => s.can)
+  const isAdmin = can('inventory.read_all')
 
   const isNew = !id
   const [loading, setLoading] = useState(!isNew)
@@ -343,9 +345,17 @@ export default function PurchaseInvoiceForm() {
 
   // ─── Warehouse list ─────────────────────────────────────────────────
   const [warehouses, setWarehouses] = useState<Warehouse[]>([])
+  const [myWarehouses, setMyWarehouses] = useState<Warehouse[]>([])
   useEffect(() => {
+    // جلب كل المخازن للقائمة + مخازن المستخدم للافتراضي
     supabase.from('warehouses').select('id, name').eq('is_active', true).order('name')
       .then(({ data }) => setWarehouses(data as Warehouse[] || []))
+    // نجلب دائماً — حتى لو isAdmin — لأن الأدمن قد يملك مخزناً شخصياً
+    getMyWarehouses().then(whs => {
+      setMyWarehouses(whs)
+      // تعيين المخزن الافتراضي للفاتورة الجديدة
+      if (isNew && whs.length > 0) setWarehouseId(whs[0].id)
+    }).catch(() => {})
   }, [])
 
   // ─── Product search ─────────────────────────────────────────────────
@@ -779,7 +789,7 @@ export default function PurchaseInvoiceForm() {
               disabled={readOnly || mode === 'bill' || (mode === 'draft' && showReceivePanel)}
             >
               <option value="">— اختر المخزن —</option>
-              {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+              {(isAdmin ? warehouses : (myWarehouses.length > 0 ? myWarehouses : warehouses)).map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
             </select>
           </div>
 

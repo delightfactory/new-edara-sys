@@ -177,7 +177,13 @@ export default function AdjustmentsPage() {
 
 
   const openCreate = async () => {
-    setCreateForm({ warehouse_id: '', type: 'count', reason: '' })
+    // تعيين ذكي: من cache أو من الخادم مباشرة إن لم تكتمل بعد
+    let resolvedMyWh = myWarehouses
+    if (resolvedMyWh.length === 0) {
+      try { resolvedMyWh = await getMyWarehouses() } catch { resolvedMyWh = [] }
+    }
+    const defaultWhId = resolvedMyWh.length > 0 ? resolvedMyWh[0].id : ''
+    setCreateForm({ warehouse_id: defaultWhId, type: 'count', reason: '' })
     setCreateItems([{ product_id: '', system_qty: 0, actual_qty: 0, qty_change: 0, unit_cost: 0, notes: '' }])
     setProductNames({})
     setCreateModal(true)

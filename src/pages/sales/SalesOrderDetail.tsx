@@ -13,6 +13,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import { useWarehouses, useInvalidate } from '@/hooks/useQueryHooks'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase/client'
+import { getMyWarehouses } from '@/lib/services/inventory'
 import {
   getSalesOrder,
   confirmSalesOrderWithWarehouse,
@@ -104,6 +105,14 @@ export default function SalesOrderDetail() {
   const [cancelReason, setCancelReason] = useState('')
 
   const { data: warehouses = [] } = useWarehouses({ isActive: true })
+  const isAdmin = can('inventory.read_all')
+
+  // مخازن المستخدم — cached React Query (نجلب دائماً حتى لو isAdmin)
+  const { data: myWarehouses = [] } = useQuery({
+    queryKey: ['my-warehouses'],
+    queryFn: () => getMyWarehouses(),
+    staleTime: 5 * 60 * 1000,
+  })
 
   const loadOrder = useCallback(async () => {
     if (!id) return
@@ -386,7 +395,17 @@ export default function SalesOrderDetail() {
           )}
           {order.status === 'draft' && can('sales.orders.confirm') && (
             <ActionBtn icon={<CheckCircle size={13} />} label="تأكيد" primary
-              onClick={() => { setConfirmWarehouseId(''); setShowConfirmModal(true) }}
+              onClick={async () => {
+                // تعيين ذكي: من cache أو من الخادم مباشرة إن لم تكتمل بعد
+                let resolvedMyWh = myWarehouses as typeof myWarehouses
+                if (resolvedMyWh.length === 0) {
+                  try { resolvedMyWh = await getMyWarehouses() } catch { resolvedMyWh = [] }
+                }
+                const defaultWh = resolvedMyWh.length > 0 ? resolvedMyWh[0].id : ''
+                setConfirmWarehouseId(defaultWh)
+                setShowConfirmModal(true)
+                if (defaultWh) checkStockAvailability(defaultWh)
+              }}
               disabled={actionLoading} />
           )}
           {order.status === 'confirmed' && can('sales.orders.deliver') && (
@@ -624,7 +643,7 @@ export default function SalesOrderDetail() {
             <select className="form-select" value={confirmWarehouseId}
               onChange={e => checkStockAvailability(e.target.value)}>
               <option value="">— اختر المخزن —</option>
-              {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+              {(isAdmin ? warehouses : (myWarehouses.length > 0 ? myWarehouses : warehouses)).map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
             </select>
           </div>
 

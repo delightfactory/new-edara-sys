@@ -149,10 +149,12 @@ export default function TransfersPage() {
 
   // React Query — cached & shared
   const { data: warehouses = [] } = useWarehouses()
-  const { data: myWarehousesData = [] } = useQuery({
+  const { data: myWarehousesData = [], isLoading: myWhLoading } = useQuery({
     queryKey: ['my-warehouses'],
     queryFn: () => getMyWarehouses(),
     staleTime: 5 * 60 * 1000,
+    // نجلب دائماً — حتى لو كان المستخدم أدمن 
+    // لأن الأدمن قد يملك مخزناً شخصياً ويجب تعيينه افتراضياً
   })
   const myWarehouses = myWarehousesData as Warehouse[]
 
@@ -185,13 +187,25 @@ export default function TransfersPage() {
 
 
   // ─── Create Modal Helpers ───
-  const myWhId = myWarehouses.length === 1 ? myWarehouses[0].id : ''
+  // تعيين المخزن الافتراضي: الأول من مخازن المستخدم
+  const myWhId = myWarehouses.length > 0 ? myWarehouses[0].id : ''
+  // قفل فقط إذا كان غير أدمن + مخزن واحد — أدمن بمخزن شخصي يحصل على افتراضي لكن يظل الحقل قابل للتغيير
+  const myWhLocked = !isAdmin && myWarehouses.length === 1
 
   const openCreate = async () => {
     const defaultDir: 'push' | 'pull' = 'push'
+
+    // تعيين ذكي: نقرأ مخازن المستخدم — من cache أو من الخادم مباشرة إن لزم
+    let resolvedMyWh = myWarehouses
+    if (resolvedMyWh.length === 0) {
+      try { resolvedMyWh = await getMyWarehouses() } catch { resolvedMyWh = [] }
+    }
+    // الافتراضي يعتمد على myWarehouses فقط — بغض النظر عن صلاحية الأدمن
+    const defaultId = resolvedMyWh.length > 0 ? resolvedMyWh[0].id : ''
+
     // Push: from = مخزني, Pull: to = مخزني
     setCreateForm({
-      from_warehouse_id: !isAdmin && myWhId ? myWhId : '',
+      from_warehouse_id: defaultId,
       to_warehouse_id: '',
       notes: '',
     })
@@ -204,7 +218,7 @@ export default function TransfersPage() {
   // عند تغيير الاتجاه: إعادة تعيين المخازن
   const handleDirectionChange = (newDir: 'push' | 'pull') => {
     setDirection(newDir)
-    if (!isAdmin && myWhId) {
+    if (myWhId) {
       if (newDir === 'push') {
         setCreateForm(f => ({ ...f, from_warehouse_id: myWhId, to_warehouse_id: f.to_warehouse_id === myWhId ? '' : f.to_warehouse_id }))
       } else {
@@ -591,8 +605,8 @@ export default function TransfersPage() {
               {/* Push + غير أدمن: مقفول على مخزني */}
               <select className="form-select" value={createForm.from_warehouse_id}
                 onChange={e => handleSourceWarehouseChange(e.target.value)}
-                disabled={!isAdmin && direction === 'push' && !!myWhId}
-                style={!isAdmin && direction === 'push' && !!myWhId ? { background: 'var(--bg-secondary)', fontWeight: 600 } : {}}
+              disabled={myWhLocked && direction === 'push'}
+                style={myWhLocked && direction === 'push' ? { background: 'var(--bg-secondary)', fontWeight: 600 } : {}}
               >
                 <option value="">اختر</option>
                 {(direction === 'push' && !isAdmin
@@ -606,8 +620,8 @@ export default function TransfersPage() {
               {/* Pull + غير أدمن: مقفول على مخزني */}
               <select className="form-select" value={createForm.to_warehouse_id}
                 onChange={e => setCreateForm(f => ({ ...f, to_warehouse_id: e.target.value }))}
-                disabled={!isAdmin && direction === 'pull' && !!myWhId}
-                style={!isAdmin && direction === 'pull' && !!myWhId ? { background: 'var(--bg-secondary)', fontWeight: 600 } : {}}
+                disabled={myWhLocked && direction === 'pull'}
+                style={myWhLocked && direction === 'pull' ? { background: 'var(--bg-secondary)', fontWeight: 600 } : {}}
               >
                 <option value="">اختر</option>
                 {(direction === 'pull' && !isAdmin
