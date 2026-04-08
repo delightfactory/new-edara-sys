@@ -3,12 +3,41 @@ import { getAuthUserId } from '@/lib/services/_get-user-id'
 import type {
   Product, ProductInput, ProductUnit, ProductUnitInput,
   ProductCategory, Brand, Unit,
-  ProductBundle, ProductBundleItem
+  ProductBundle, ProductBundleItem,
+  ProductCostMetrics
 } from '@/lib/types/master-data'
 
 // ============================================================
 // Products — المنتجات
 // ============================================================
+
+/**
+ * جلب مقاييس التكلفة للمنتجات بناء على المخزون الفعلي - تتطلب صلاحية finance.view_costs
+ */
+export async function getProductCostMetrics(productIds?: string[]) {
+  if (productIds && productIds.length === 0) return {}
+
+  const { data, error } = await supabase.rpc('get_product_cost_metrics', {
+    p_product_ids: productIds && productIds.length > 0 ? productIds : null
+  })
+
+  if (error) {
+    if (error.message.includes('finance.view_costs')) {
+       // Silent swallow for unauthorized users, just return empty
+       return {}
+    }
+    throw error
+  }
+
+  const metricsMap: Record<string, ProductCostMetrics> = {}
+  if (data) {
+    data.forEach((m: any) => {
+      metricsMap[m.product_id] = m as ProductCostMetrics
+    })
+  }
+
+  return metricsMap
+}
 
 /**
  * جلب المنتجات مع التصفية والترقيم
@@ -29,7 +58,7 @@ export async function getProducts(params?: {
   let query = supabase
     .from('products')
     .select(`
-      *,
+      id, sku, name, barcode, category_id, brand_id, base_unit_id, selling_price, tax_rate, description, image_url, is_active, min_stock_level, created_at, updated_at,
       category:product_categories(id, name),
       brand:brands(id, name),
       base_unit:units!products_base_unit_id_fkey(id, name, symbol)
@@ -54,7 +83,7 @@ export async function getProducts(params?: {
   if (error) throw error
 
   return {
-    data: data as Product[],
+    data: data as any as Product[],
     count: count || 0,
     page,
     pageSize,
@@ -69,7 +98,7 @@ export async function getProduct(id: string) {
   const { data, error } = await supabase
     .from('products')
     .select(`
-      *,
+      id, sku, name, barcode, category_id, brand_id, base_unit_id, selling_price, tax_rate, description, image_url, is_active, min_stock_level, created_at, updated_at,
       category:product_categories(id, name),
       brand:brands(id, name),
       base_unit:units!products_base_unit_id_fkey(id, name, symbol),
@@ -78,7 +107,7 @@ export async function getProduct(id: string) {
     .eq('id', id)
     .single()
   if (error) throw error
-  return data as Product
+  return data as any as Product
 }
 
 /**

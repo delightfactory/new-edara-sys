@@ -15,6 +15,7 @@ import {
   updatePurchaseReturn,
   confirmPurchaseReturn,
 } from '@/lib/services/purchase-returns'
+import { getProductCostMetrics } from '@/lib/services/products'
 import { formatNumber } from '@/lib/utils/format'
 import type {
   PurchaseReturn,
@@ -238,7 +239,7 @@ export default function PurchaseReturnForm() {
     const { data } = await supabase
       .from('products')
       .select(`
-        id, name, sku, last_purchase_price, cost_price, tax_rate, base_unit_id,
+        id, name, sku, tax_rate, base_unit_id,
         base_unit:units!products_base_unit_id_fkey(id, name, symbol),
         product_units(id, unit_id, conversion_factor, selling_price, is_purchase_unit, unit:units(id, name, symbol))
       `)
@@ -309,10 +310,28 @@ export default function PurchaseReturnForm() {
 
   // ─── Product select (per line) ────────────────────────────
 
-  const selectProduct = (idx: number, prod: any) => {
+  const selectProduct = async (idx: number, prod: any) => {
     const baseUnit = prod.base_unit || {}
     const purchaseUnits = (prod.product_units || []).filter((u: any) => u.is_purchase_unit)
-    const baseLpp = prod.last_purchase_price ?? prod.cost_price ?? 0
+
+    // Fallback: last_purchase_price -> global_wac -> cost_price -> 0
+    // All three come from the RPC (never from the products query)
+    let baseLpp: number = 0
+    if (can('finance.view_costs')) {
+      try {
+        const metrics = await getProductCostMetrics([prod.id])
+        const m = metrics[prod.id]
+        if (m) {
+          if (m.last_purchase_price != null) {
+            baseLpp = m.last_purchase_price
+          } else if (m.global_wac != null) {
+            baseLpp = m.global_wac
+          } else if (m.cost_price != null) {
+            baseLpp = m.cost_price
+          }
+        }
+      } catch { /* ignore — user gets 0 */ }
+    }
 
     const allUnits = [
       { unit_id: prod.base_unit_id, unit_name: baseUnit.name || '', unit_symbol: baseUnit.symbol || '', conversion_factor: 1, purchase_price: baseLpp },
@@ -709,7 +728,7 @@ export default function PurchaseReturnForm() {
                                 >
                                   <div style={{ fontWeight: 600, fontSize: '0.82rem' }}>{p.name}</div>
                                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                                    {p.sku} — آخر سعر: {formatNumber(p.last_purchase_price ?? p.cost_price ?? 0)} ج.م
+                                    {p.sku}
                                   </div>
                                 </div>
                               ))}

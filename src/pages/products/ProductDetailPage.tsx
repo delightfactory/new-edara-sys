@@ -6,9 +6,9 @@ import {
   Layers, Box, ShoppingBag, Truck as TruckIcon, AlertTriangle, FileText,
   Warehouse as WarehouseIcon,
 } from 'lucide-react'
-import { getProduct, getProductUnits } from '@/lib/services/products'
+import { getProduct, getProductUnits, getProductCostMetrics } from '@/lib/services/products'
 import { useAuthStore } from '@/stores/auth-store'
-import type { Product, ProductUnit } from '@/lib/types/master-data'
+import type { Product, ProductUnit, ProductCostMetrics } from '@/lib/types/master-data'
 
 export default function ProductDetailPage() {
   const { id } = useParams()
@@ -17,6 +17,7 @@ export default function ProductDetailPage() {
 
   const [loading, setLoading] = useState(true)
   const [product, setProduct] = useState<Product | null>(null)
+  const [metrics, setMetrics] = useState<ProductCostMetrics | null>(null)
   const [units, setUnits] = useState<ProductUnit[]>([])
   const [tab, setTab] = useState<'info' | 'pricing' | 'units' | 'desc'>('info')
 
@@ -27,6 +28,12 @@ export default function ProductDetailPage() {
         const [p, u] = await Promise.all([getProduct(id), getProductUnits(id)])
         setProduct(p)
         setUnits(u)
+        
+        if (can('finance.view_costs')) {
+          getProductCostMetrics([id])
+            .then(res => res[id] && setMetrics(res[id]))
+            .catch(() => {})
+        }
       } catch { toast.error('فشل تحميل بيانات المنتج') }
       finally { setLoading(false) }
     }
@@ -50,8 +57,9 @@ export default function ProductDetailPage() {
   )
 
   const canViewCosts = can('finance.view_costs')
-  const margin = canViewCosts && product.selling_price > 0 && product.cost_price > 0
-    ? ((product.selling_price - product.cost_price) / product.selling_price * 100).toFixed(1)
+  const actualCost = metrics?.global_wac ?? metrics?.cost_price ?? product.cost_price ?? 0
+  const margin = canViewCosts && product.selling_price > 0 && actualCost > 0
+    ? ((product.selling_price - actualCost) / product.selling_price * 100).toFixed(1)
     : null
 
   // Build tab list dynamically
@@ -116,13 +124,13 @@ export default function ProductDetailPage() {
               {product.selling_price.toLocaleString('ar-EG-u-nu-latn')} ج.م
             </span>
           </div>
-          {canViewCosts && product.cost_price > 0 && (
+          {canViewCosts && actualCost != null && (
             <div style={{
               background: 'var(--bg-surface-2)', border: '1px solid var(--border-primary)',
               borderRadius: 8, padding: '6px 12px', fontSize: 13,
             }}>
               <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>التكلفة  </span>
-              <span style={{ fontWeight: 700 }}>{product.cost_price.toLocaleString('ar-EG-u-nu-latn')}</span>
+              <span style={{ fontWeight: 700 }}>{actualCost.toLocaleString('ar-EG-u-nu-latn')}</span>
             </div>
           )}
           {margin && (
@@ -181,7 +189,40 @@ export default function ProductDetailPage() {
         {tab === 'pricing' && (
           <div className="edara-card" style={{ padding: 'var(--space-5)' }}>
             <InfoRow icon={DollarSign} label="سعر البيع" value={product.selling_price.toLocaleString('ar-EG', { minimumFractionDigits: 2 })} highlight />
-            {canViewCosts && <InfoRow icon={DollarSign} label="سعر التكلفة" value={product.cost_price.toLocaleString('ar-EG', { minimumFractionDigits: 2 })} />}
+            {canViewCosts && (
+              <>
+                <InfoRow icon={DollarSign} label="متوسط التكلفة العام (WAC)" value={
+                  (metrics?.global_wac != null
+                    ? metrics.global_wac
+                    : (metrics?.cost_price ?? product.cost_price ?? 0)
+                  ).toLocaleString('ar-EG', { minimumFractionDigits: 2 })
+                } />
+                <InfoRow icon={DollarSign} label="آخر سعر شراء" value={
+                  (metrics?.last_purchase_price ?? product.last_purchase_price) != null
+                    ? (metrics?.last_purchase_price ?? product.last_purchase_price ?? 0).toLocaleString('ar-EG', { minimumFractionDigits: 2 })
+                    : '—'
+                } />
+                <InfoRow icon={DollarSign} label="تكلفة مرجعية (Cost Price)" value={(metrics?.cost_price ?? product.cost_price ?? 0).toLocaleString('ar-EG', { minimumFractionDigits: 2 })} />
+                
+                {/* Warehouse breakdown */}
+                {metrics && metrics.warehouse_breakdown && metrics.warehouse_breakdown.length > 0 && (
+                  <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border-color)' }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12 }}>تفصيل المخزون والتكلفة :</div>
+                    <div style={{ display: 'grid', gap: 10 }}>
+                      {metrics.warehouse_breakdown.map((wb, i) => (
+                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: 12, background: 'var(--bg-surface-2)', borderRadius: 8, fontSize: 13 }}>
+                          <span style={{ fontWeight: 600 }}>{wb.warehouse_name}</span>
+                          <div style={{ display: 'flex', gap: 16, color: 'var(--text-secondary)' }}>
+                            <span>الكمية: {wb.quantity}</span>
+                            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>التكلفة: {wb.wac.toLocaleString('ar-EG', { minimumFractionDigits: 2 })}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
             <InfoRow icon={Percent} label="نسبة الضريبة" value={product.tax_rate > 0 ? `%${product.tax_rate}` : 'معفى'} />
             {canViewCosts && margin && <InfoRow icon={Percent} label="هامش الربح" value={`%${margin}`} highlight />}
           </div>

@@ -107,7 +107,8 @@ export interface Product {
   brand_id: string | null
   base_unit_id: string
   selling_price: number
-  cost_price: number
+  cost_price?: number | null
+  last_purchase_price?: number | null
   tax_rate: number
   description: string | null
   image_url: string | null
@@ -136,6 +137,24 @@ export interface ProductInput {
   image_url?: string | null
   is_active?: boolean
   min_stock_level?: number
+}
+
+export interface WarehouseCostBreakdown {
+  warehouse_id: string
+  warehouse_name: string
+  quantity: number
+  total_cost_value: number
+  wac: number
+}
+
+export interface ProductCostMetrics {
+  product_id: string
+  global_quantity: number
+  global_total_cost_value: number
+  global_wac: number | null  // NULL when product has no stock
+  warehouse_breakdown: WarehouseCostBreakdown[]
+  cost_price: number | null
+  last_purchase_price: number | null
 }
 
 export interface ProductUnit {

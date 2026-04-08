@@ -1,11 +1,11 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Plus, BoxesIcon, ToggleLeft, ToggleRight, Edit, Tag, DollarSign } from 'lucide-react'
 import { toggleProductActive } from '@/lib/services/products'
 import { useProducts, useCategories, useBrands, useInvalidate } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
-import type { Product } from '@/lib/types/master-data'
+import type { Product, ProductCostMetrics } from '@/lib/types/master-data'
 import { formatCurrency } from '@/lib/utils/format'
 import PageHeader from '@/components/shared/PageHeader'
 import SearchInput from '@/components/shared/SearchInput'
@@ -40,6 +40,16 @@ export default function ProductsPage() {
   const products = result?.data ?? []
   const totalPages = result?.totalPages ?? 1
   const totalCount = result?.count ?? 0
+
+  const [metrics, setMetrics] = useState<Record<string, ProductCostMetrics>>({})
+  useEffect(() => {
+    if (products.length > 0 && can('finance.view_costs')) {
+      const productIds = products.map(p => p.id)
+      import('@/lib/services/products').then(s => s.getProductCostMetrics(productIds))
+        .then(res => setMetrics(res))
+        .catch(() => {}) // silently fail if not authorized
+    }
+  }, [products, can])
 
   const handleToggle = (p: Product) => setConfirmTarget(p)
   const executeToggle = async () => {
@@ -110,7 +120,7 @@ export default function ProductsPage() {
             { key: 'category', label: 'التصنيف', hideOnMobile: true, render: p => p.category?.name || '—' },
             { key: 'brand', label: 'العلامة', hideOnMobile: true, render: p => p.brand?.name || '—' },
             { key: 'selling_price', label: 'سعر البيع', render: p => <span style={{ fontWeight: 600 }}>{formatCurrency(p.selling_price)}</span> },
-            ...(can('finance.view_costs') ? [{ key: 'cost_price' as const, label: 'التكلفة', hideOnMobile: true, render: (p: Product) => <span style={{ color: 'var(--text-secondary)' }}>{formatCurrency(p.cost_price)}</span> }] : []),
+            ...(can('finance.view_costs') ? [{ key: 'cost_price' as const, label: 'التكلفة', hideOnMobile: true, render: (p: Product) => <span style={{ color: 'var(--text-secondary)' }}>{formatCurrency(metrics[p.id]?.global_wac ?? metrics[p.id]?.cost_price ?? p.cost_price ?? 0)}</span> }] : []),
             { key: 'is_active', label: 'الحالة', render: p => <Badge variant={p.is_active ? 'success' : 'danger'}>{p.is_active ? 'نشط' : 'معطل'}</Badge> },
             {
               key: 'actions', label: 'إجراءات', width: 120,
@@ -191,7 +201,7 @@ export default function ProductsPage() {
                   { label: 'سعر البيع', value: formatCurrency(p.selling_price), highlight: true },
                   ...(p.category?.name ? [{ label: 'التصنيف', value: p.category.name }] : []),
                   ...(p.brand?.name ? [{ label: 'العلامة', value: p.brand.name }] : []),
-                  ...(can('finance.view_costs') ? [{ label: 'التكلفة', value: formatCurrency(p.cost_price) }] : []),
+                  ...(can('finance.view_costs') ? [{ label: 'التكلفة', value: formatCurrency(metrics[p.id]?.global_wac ?? metrics[p.id]?.cost_price ?? p.cost_price ?? 0) }] : []),
                 ]}
                 actions={
                   <div className="flex gap-2" style={{ width: '100%' }}>

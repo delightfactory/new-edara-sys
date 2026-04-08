@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
@@ -19,6 +20,7 @@ import {
   billPurchaseInvoice,
   paySupplier,
 } from '@/lib/services/purchases'
+import { getProductCostMetrics } from '@/lib/services/products'
 import { cancelPurchaseInvoice } from '@/lib/services/purchase-returns'
 import { getVaults } from '@/lib/services/vaults'
 import { formatNumber } from '@/lib/utils/format'
@@ -56,12 +58,12 @@ const sCard: React.CSSProperties = {
 }
 const grid2: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(2, 1fr)',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
   gap: 16,
 }
 const grid3: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(3, 1fr)',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
   gap: 16,
 }
 
@@ -193,6 +195,129 @@ function InlineCombobox({ placeholder, items, onSearch, onSelect, onClear, selec
   )
 }
 
+// ─── PurchaseProductComboCell — Portal-based product search for table rows ─────
+/**
+ * مخصص فقط لخلية المنتج في جدول البنود.
+ * يستخدم createPortal لرسم القائمة المنسدلة في document.body
+ * حتى لا يُقطع بـ overflow:auto على حاوية الجدول.
+ * لا يُعدَّل InlineCombobox الخاص باختيار المورد.
+ */
+interface PurchaseProductComboCellProps {
+  productQuery: string
+  productResults: any[]
+  onSearch: (q: string) => void
+  onSelect: (p: any) => void
+  onFocus: () => void
+  onBlur: () => void
+}
+
+function PurchaseProductComboCell({
+  productQuery, productResults, onSearch, onSelect, onFocus, onBlur,
+}: PurchaseProductComboCellProps) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [dropPos, setDropPos] = useState<{ top: number; left: number; width: number } | null>(null)
+
+  // احسب موضع الـ dropdown كلما تغيرت النتائج
+  useEffect(() => {
+    if (productResults.length === 0) { setDropPos(null); return }
+    if (!inputRef.current) return
+    const rect = inputRef.current.getBoundingClientRect()
+    setDropPos({
+      top: rect.bottom + window.scrollY + 4,
+      left: rect.left + window.scrollX,
+      width: Math.max(rect.width, 300),
+    })
+  }, [productResults])
+
+  // أعد الحساب عند Scroll أو Resize
+  useEffect(() => {
+    if (!dropPos) return
+    const recalc = () => {
+      if (!inputRef.current) return
+      const rect = inputRef.current.getBoundingClientRect()
+      setDropPos({
+        top: rect.bottom + window.scrollY + 4,
+        left: rect.left + window.scrollX,
+        width: Math.max(rect.width, 300),
+      })
+    }
+    window.addEventListener('scroll', recalc, true)
+    window.addEventListener('resize', recalc)
+    return () => {
+      window.removeEventListener('scroll', recalc, true)
+      window.removeEventListener('resize', recalc)
+    }
+  }, [dropPos])
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <div style={{ position: 'relative' }}>
+        <Search size={13} style={{
+          position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+          color: 'var(--text-muted)', pointerEvents: 'none',
+        }} />
+        <input
+          ref={inputRef}
+          className="form-input"
+          placeholder="ابحث عن منتج..."
+          value={productQuery}
+          style={{ paddingRight: 28, fontSize: '0.875rem', padding: '6px 28px 6px 8px' }}
+          onChange={e => onSearch(e.target.value)}
+          onFocus={onFocus}
+          onBlur={onBlur}
+          autoComplete="off"
+        />
+      </div>
+
+      {/* Portal Dropdown — يُرسَم في document.body خارج أي overflow container */}
+      {dropPos && productResults.length > 0 && createPortal(
+        <div style={{
+          position: 'absolute',
+          top: dropPos.top,
+          left: dropPos.left,
+          width: dropPos.width,
+          zIndex: 9999,
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-color)',
+          borderRadius: 10,
+          boxShadow: '0 16px 48px rgba(0,0,0,0.16)',
+          maxHeight: 300,
+          overflowY: 'auto',
+        }}>
+          {productResults.map((p, i) => (
+            <div
+              key={p.id}
+              onMouseDown={e => { e.preventDefault(); onSelect(p) }}
+              style={{
+                padding: '10px 14px',
+                cursor: 'pointer',
+                borderBottom: i < productResults.length - 1 ? '1px solid var(--border-color)' : 'none',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 12,
+                transition: 'background 0.12s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)' }}
+              onMouseLeave={e => (e.currentTarget.style.background = '')}
+            >
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600, fontSize: '0.875rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {p.name}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'monospace', marginTop: 2 }}>
+                  {p.sku}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>,
+        document.body
+      )}
+    </div>
+  )
+}
+
 // ─────────────────────────────────────────────
 // Line item state type
 // ─────────────────────────────────────────────
@@ -282,7 +407,7 @@ export default function PurchaseInvoiceForm() {
     if (q.length < 2) { setSheetResults([]); return }
     const { data } = await supabase
       .from('products')
-      .select(`id, name, sku, last_purchase_price, cost_price, tax_rate,
+      .select(`id, name, sku, tax_rate,
         base_unit_id,
         base_unit:units!products_base_unit_id_fkey(id, name, symbol),
         product_units(id, unit_id, conversion_factor, selling_price, is_purchase_unit, unit:units(id, name, symbol))`)
@@ -292,10 +417,28 @@ export default function PurchaseInvoiceForm() {
     setSheetResults(data || [])
   }, [])
 
-  const selectSheetProduct = (p: any) => {
+  const selectSheetProduct = async (p: any) => {
     const baseUnitId = p.base_unit_id || ''
     const baseSymbol = p.base_unit?.symbol || p.base_unit?.name || ''
-    const basePrice  = p.last_purchase_price ?? p.cost_price ?? 0
+
+    // Fallback: last_purchase_price -> global_wac -> cost_price -> 0
+    // All three come from the RPC (never from the products query)
+    let basePrice: number = 0
+    if (can('finance.view_costs')) {
+      try {
+        const metrics = await getProductCostMetrics([p.id])
+        const m = metrics[p.id]
+        if (m) {
+          if (m.last_purchase_price != null) {
+            basePrice = m.last_purchase_price
+          } else if (m.global_wac != null) {
+            basePrice = m.global_wac
+          } else if (m.cost_price != null) {
+            basePrice = m.cost_price
+          }
+        }
+      } catch { /* ignore — user gets 0 */ }
+    }
     const allUnits: AvailableUnit[] = []
     if (p.base_unit_id) allUnits.push({ unit_id: p.base_unit_id, unit_name: p.base_unit?.name || '', unit_symbol: baseSymbol, conversion_factor: 1, purchase_price: null })
     for (const pu of (p.product_units || [])) {
@@ -361,13 +504,14 @@ export default function PurchaseInvoiceForm() {
   // ─── Product search ─────────────────────────────────────────────────
   const [productResults, setProductResults] = useState<any[]>([])
   const [activeProductIdx, setActiveProductIdx] = useState<number | null>(null)
+  const [productQuery, setProductQuery] = useState('')
 
   const searchProducts = useCallback(async (q: string) => {
     if (q.length < 2) { setProductResults([]); return }
     const { data } = await supabase
       .from('products')
       .select(`
-        id, name, sku, last_purchase_price, cost_price, tax_rate,
+        id, name, sku, tax_rate,
         base_unit_id,
         base_unit:units!products_base_unit_id_fkey(id, name, symbol),
         product_units(
@@ -518,11 +662,29 @@ export default function PurchaseInvoiceForm() {
   // Decide whether to show Receive panel (draft invoice that exists in DB)
   const showReceivePanel = mode === 'draft' && !!id
 
-  // ─── [Fix 2 & 3] Select product: correct pricing + build unit list ─────────────
-  const selectProduct = (lineIdx: number, p: any) => {
+  // ─── [Fix 2 & 3 & Metrics] Select product: correct pricing + build unit list ─────────────
+  const selectProduct = async (lineIdx: number, p: any) => {
     const baseUnitId = p.base_unit_id || ''
     const baseSymbol = p.base_unit?.symbol || p.base_unit?.name || ''
-    const basePrice  = p.last_purchase_price ?? p.cost_price ?? 0   // [Fix 2]
+
+    // Fallback: last_purchase_price -> global_wac -> cost_price -> 0
+    // All three come from the RPC (never from the products query)
+    let basePrice: number = 0
+    if (can('finance.view_costs')) {
+      try {
+        const metrics = await getProductCostMetrics([p.id])
+        const m = metrics[p.id]
+        if (m) {
+          if (m.last_purchase_price != null) {
+            basePrice = m.last_purchase_price
+          } else if (m.global_wac != null) {
+            basePrice = m.global_wac
+          } else if (m.cost_price != null) {
+            basePrice = m.cost_price
+          }
+        }
+      } catch { /* ignore — user gets 0 */ }
+    }
 
     const allUnits: AvailableUnit[] = []
     if (p.base_unit_id) {
@@ -578,6 +740,7 @@ export default function PurchaseInvoiceForm() {
     })
   }
   const removeDraftLine = (idx: number) => setDraftLines(p => p.filter((_, i) => i !== idx))
+  const resetDraftLine  = (idx: number) => setDraftLines(prev => { const copy = [...prev]; copy[idx] = newDraftLine(); return copy })
   const addDraftLine    = () => setDraftLines(p => [...p, newDraftLine()])
 
   // ─── Save Draft ─────────────────────────────────────────────────────
@@ -897,8 +1060,8 @@ export default function PurchaseInvoiceForm() {
           </div>
         )}
 
-        {/* Table */}
-        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+        {/* Table — hidden on mobile, replaced by cards below */}
+        <div className="hide-mobile" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', minWidth: showReceivePanel ? 860 : 760 }}>
             <thead>
               <tr style={{
@@ -945,58 +1108,45 @@ export default function PurchaseInvoiceForm() {
                     {/* ── Product cell ── */}
                     <td style={{ padding: '10px 12px 10px 20px' }}>
                       {line.product_id ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                          <span style={{ fontWeight: 600, fontSize: '0.875rem', lineHeight: 1.3 }}>
-                            {line.productName}
-                          </span>
-                          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'monospace', letterSpacing: '0.03em' }}>
-                            {line.productSku}
-                          </span>
-                        </div>
+                        // المنتج مختار — في الوضع القابل للتعديل يظهر زر X للتغيير
+                        !isReceiveMode && !readOnly && mode !== 'bill' ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontWeight: 600, fontSize: '0.875rem', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {line.productName}
+                              </div>
+                              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'monospace', letterSpacing: '0.03em' }}>
+                                {line.productSku}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => resetDraftLine(idx)}
+                              title="تغيير المنتج"
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 3, borderRadius: 4, flexShrink: 0 }}
+                              onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-danger)')}
+                              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+                            >
+                              <X size={13} />
+                            </button>
+                          </div>
+                        ) : (
+                          // عرض للقراءة فقط (وضع الاستلام / bill / readonly)
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <span style={{ fontWeight: 600, fontSize: '0.875rem', lineHeight: 1.3 }}>{line.productName}</span>
+                            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'monospace', letterSpacing: '0.03em' }}>{line.productSku}</span>
+                          </div>
+                        )
                       ) : (
                         mode !== 'readonly' && mode !== 'bill' && (
-                          <div style={{ position: 'relative' }}>
-                            {activeProductIdx === idx ? (
-                              <InlineCombobox
-                                placeholder="ابحث عن منتج..."
-                                items={productResults.map(p => ({
-                                  id: p.id, primary: p.name, secondary: p.sku,
-                                  meta: p.last_purchase_price
-                                    ? `آخر سعر: ${p.last_purchase_price} ج.م`
-                                    : p.cost_price ? `تكلفة: ${p.cost_price} ج.م` : undefined,
-                                }))}
-                                onSearch={searchProducts}
-                                onSelect={item => {
-                                  const p = productResults.find(p => p.id === item.id)
-                                  if (p) selectProduct(idx, p)
-                                }}
-                                selected={false}
-                              />
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => setActiveProductIdx(idx)}
-                                style={{
-                                  display: 'flex', alignItems: 'center', gap: 6,
-                                  background: 'var(--bg-hover)',
-                                  border: '1.5px dashed var(--border-color)',
-                                  borderRadius: 8, padding: '7px 12px', cursor: 'pointer',
-                                  color: 'var(--text-muted)', fontSize: '0.82rem', width: '100%',
-                                  textAlign: 'right', transition: 'all 0.15s',
-                                }}
-                                onMouseEnter={e => {
-                                  e.currentTarget.style.borderColor = 'var(--color-primary)'
-                                  e.currentTarget.style.color = 'var(--color-primary)'
-                                }}
-                                onMouseLeave={e => {
-                                  e.currentTarget.style.borderColor = 'var(--border-color)'
-                                  e.currentTarget.style.color = 'var(--text-muted)'
-                                }}
-                              >
-                                <Search size={13} /> اختر منتج
-                              </button>
-                            )}
-                          </div>
+                          <PurchaseProductComboCell
+                            productQuery={activeProductIdx === idx ? productQuery : ''}
+                            productResults={activeProductIdx === idx ? productResults : []}
+                            onSearch={q => { setActiveProductIdx(idx); setProductQuery(q); searchProducts(q) }}
+                            onSelect={p => { selectProduct(idx, p); setProductQuery(''); setActiveProductIdx(null) }}
+                            onFocus={() => setActiveProductIdx(idx)}
+                            onBlur={() => setTimeout(() => { setActiveProductIdx(null); setProductQuery('') }, 150)}
+                          />
                         )
                       )}
                     </td>
@@ -1172,6 +1322,142 @@ export default function PurchaseInvoiceForm() {
           </table>
         </div>
 
+        {/* ── Mobile Cards (≤768px) — بديل الجدول، يغطي جميع الأوضاع ── */}
+        <div className="show-mobile" style={{ display: 'none', flexDirection: 'column' }}>
+          {(() => {
+            /* وضع المسودة / الإنشاء (new أو draft قبل showReceivePanel) */
+            if (!showReceivePanel && !readOnly && mode !== 'bill') {
+              const editableLines = draftLines.filter(l => l.product_id)
+              if (editableLines.length === 0) return (
+                <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+                  <Package size={32} style={{ margin: '0 auto 10px', display: 'block', opacity: 0.3 }} />
+                  لا توجد بنود — اضغط «إضافة منتج»
+                </div>
+              )
+              return editableLines.map((line, cardIdx) => {
+                const idx = draftLines.indexOf(line)
+                return (
+                  <div key={line._key} style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', background: cardIdx % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.012)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.9rem', lineHeight: 1.3 }}>{line.productName}</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'monospace', marginTop: 2 }}>{line.productSku}</div>
+                      </div>
+                      <button type="button" onClick={() => resetDraftLine(idx)} title="تغيير المنتج"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '4px 6px', borderRadius: 4, flexShrink: 0 }}>
+                        <X size={15} />
+                      </button>
+                    </div>
+                    <div style={{ marginBottom: 10 }}>
+                      <FieldLabel>الوحدة</FieldLabel>
+                      {line.available_units.length > 1 ? (
+                        <select className="form-select" value={line.unit_id || ''} onChange={e => changeUnit(idx, e.target.value)}>
+                          {line.available_units.map(u => (
+                            <option key={u.unit_id} value={u.unit_id}>{u.unit_symbol || u.unit_name}{u.conversion_factor !== 1 ? ` ×${u.conversion_factor}` : ''}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <div className="form-input" style={{ background: 'var(--bg-surface-2)', cursor: 'default', color: 'var(--text-secondary)' }}>{line.unitLabel || '—'}</div>
+                      )}
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                      <div>
+                        <FieldLabel>الكمية</FieldLabel>
+                        <input className="form-input" type="number" inputMode="decimal" min={1} step="any" value={line.ordered_quantity} onChange={e => updateDraftLine(idx, 'ordered_quantity', Number(e.target.value))} />
+                      </div>
+                      <div>
+                        <FieldLabel>السعر (ج.م)</FieldLabel>
+                        <input className="form-input" type="number" inputMode="decimal" min={0} step="any" value={line.unit_price} onChange={e => updateDraftLine(idx, 'unit_price', Number(e.target.value))} />
+                      </div>
+                      <div>
+                        <FieldLabel>خصم %</FieldLabel>
+                        <input className="form-input" type="number" inputMode="decimal" min={0} max={100} step="0.1" value={line.discount_rate} onChange={e => updateDraftLine(idx, 'discount_rate', Number(e.target.value))} />
+                      </div>
+                      <div>
+                        <FieldLabel>ضريبة %</FieldLabel>
+                        <input className="form-input" type="number" inputMode="decimal" min={0} max={100} step="0.1" value={line.tax_rate} onChange={e => updateDraftLine(idx, 'tax_rate', Number(e.target.value))} />
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10, borderTop: '1px dashed var(--border-color)' }}>
+                      <button type="button" onClick={() => removeDraftLine(idx)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-danger)', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <Trash2 size={14} /> حذف
+                      </button>
+                      <div style={{ textAlign: 'left' }}>
+                        {line.lineDiscount > 0 && <div style={{ fontSize: '0.72rem', color: 'var(--color-danger)' }}>خصم: -{formatNumber(line.lineDiscount)} ج.م</div>}
+                        <div style={{ fontWeight: 700, color: 'var(--color-primary)', fontVariantNumeric: 'tabular-nums' }}>{formatNumber(line.lineTotal)} ج.م</div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })
+            }
+
+            /* وضع الاستلام (showReceivePanel = mode === 'draft' && !!id) */
+            if (showReceivePanel) {
+              return receiveLines.map((rl, idx) => {
+                const totalLine = Math.round(rl.received_quantity * rl.unit_price * (1 - rl.discount_rate / 100) * (1 + rl.tax_rate / 100) * 100) / 100
+                return (
+                  <div key={rl._key} style={{ padding: '16px', borderBottom: '1px solid var(--border-color)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{rl.productName}</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'monospace', marginTop: 2 }}>{rl.productSku}</div>
+                      </div>
+                      <span style={{ padding: '2px 8px', borderRadius: 6, background: 'var(--bg-surface-2)', fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600, flexShrink: 0, marginRight: 4 }}>{rl.unitLabel || '—'}</span>
+                    </div>
+                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(100,116,139,0.07)', fontSize: '0.85rem', marginBottom: 10, display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>الكمية المطلوبة</span>
+                      <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{rl.ordered_quantity}</span>
+                    </div>
+                    <div style={{ marginBottom: 10 }}>
+                      <FieldLabel>الكمية المستلمة فعلياً</FieldLabel>
+                      <input className="form-input" type="number" inputMode="decimal" min={0} step="any"
+                        value={rl.received_quantity}
+                        style={{ fontWeight: 700, borderColor: rl.received_quantity > rl.ordered_quantity ? 'var(--color-danger)' : rl.received_quantity > 0 ? 'var(--color-success)' : 'var(--color-primary)' }}
+                        onChange={e => { const v = Number(e.target.value); setReceiveLines(prev => prev.map((l, i) => i === idx ? { ...l, received_quantity: v } : l)) }}
+                      />
+                      {rl.received_quantity > rl.ordered_quantity && (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-danger)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <AlertTriangle size={12} /> تجاوز المطلوب ({rl.ordered_quantity})
+                        </div>
+                      )}
+                      {rl.received_quantity > 0 && rl.received_quantity < rl.ordered_quantity && (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-warning)', marginTop: 4 }}>⚠ استلام جزئي</div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, borderTop: '1px dashed var(--border-color)', fontSize: '0.82rem' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>
+                        {formatNumber(rl.unit_price)} ج.م{rl.discount_rate > 0 && ` • خصم ${rl.discount_rate}%`}{rl.tax_rate > 0 && ` • ضريبة ${rl.tax_rate}%`}
+                      </span>
+                      <span style={{ fontWeight: 700, color: 'var(--color-primary)', fontVariantNumeric: 'tabular-nums' }}>{formatNumber(totalLine)} ج.م</span>
+                    </div>
+                  </div>
+                )
+              })
+            }
+
+            /* وضع bill / readonly — قراءة فقط */
+            return draftLines.map((line, cardIdx) => (
+              <div key={line._key} style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', background: cardIdx % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.012)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.9rem', lineHeight: 1.3 }}>{line.productName}</div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'monospace', marginTop: 2 }}>{line.productSku}</div>
+                  </div>
+                  <span style={{ padding: '2px 8px', borderRadius: 6, background: 'var(--bg-surface-2)', fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600, flexShrink: 0 }}>{line.unitLabel || '—'}</span>
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 6 }}>
+                  {line.ordered_quantity} × {formatNumber(line.unit_price)} ج.م{line.discount_rate > 0 && ` — خصم ${line.discount_rate}%`}{line.tax_rate > 0 && ` — ضريبة ${line.tax_rate}%`}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', fontWeight: 700, color: 'var(--color-primary)', fontVariantNumeric: 'tabular-nums' }}>
+                  {formatNumber(line.lineTotal)} ج.م
+                </div>
+              </div>
+            ))
+          })()}
+        </div>
+
         {/* Totals footer */}
         <div style={{
           padding: '16px 24px',
@@ -1179,7 +1465,7 @@ export default function PurchaseInvoiceForm() {
           background: 'linear-gradient(135deg, var(--bg-surface-2) 0%, var(--bg-surface) 100%)',
           display: 'flex', justifyContent: 'flex-end',
         }}>
-          <div style={{
+          <div className="purch-totals-inner" style={{
             display: 'grid', gridTemplateColumns: 'auto auto',
             gap: '8px 28px', fontSize: '0.875rem',
             background: 'var(--bg-surface)', borderRadius: 10,
@@ -1373,8 +1659,8 @@ export default function PurchaseInvoiceForm() {
                     <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{p.name}</div>
                     <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontFamily: 'monospace' }}>{p.sku}</div>
                   </div>
-                  <div style={{ flexShrink: 0, fontWeight: 700, color: 'var(--color-primary)', fontSize: 'var(--text-sm)', fontVariantNumeric: 'tabular-nums' }}>
-                    {formatNumber(p.last_purchase_price ?? p.cost_price ?? 0)} ج.م
+                  <div style={{ flexShrink: 0, fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                    سيتم تحديد السعر
                   </div>
                 </button>
               ))}
@@ -1546,7 +1832,7 @@ export default function PurchaseInvoiceForm() {
       )}
 
       {/* ══════ Action Bar ══════ */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 8, flexWrap: 'wrap' }}>
+      <div className="purch-action-bar" style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 8, flexWrap: 'wrap' }}>
         <Button variant="ghost" onClick={() => navigate('/purchases/invoices')}>
           رجوع
         </Button>
@@ -1631,9 +1917,20 @@ export default function PurchaseInvoiceForm() {
 
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .hide-mobile { display: block; }
-        @media (max-width: 640px) {
-          .hide-mobile { display: none; }
+        /* ── Mobile ≤768px ── */
+        @media (max-width: 768px) {
+          .hide-mobile         { display: none !important; }
+          .show-mobile         { display: flex !important; }
+          .desktop-only-btn    { display: none !important; }
+          .mobile-only-btn     { display: inline-flex !important; }
+          .purch-action-bar    { flex-direction: column-reverse !important; gap: 8px !important; }
+          .purch-action-bar > * { width: 100% !important; justify-content: center !important; }
+          .purch-totals-inner  { width: 100% !important; }
+        }
+        @media (min-width: 769px) {
+          .show-mobile         { display: none !important; }
+          .mobile-only-btn     { display: none !important; }
+          .hide-mobile         { display: block; }
         }
       `}</style>
     </div>

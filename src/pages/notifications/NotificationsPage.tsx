@@ -82,7 +82,6 @@ export default function NotificationsPage() {
           overflow-x: hidden;
         }
 
-        /* ── Tab bar ── */
         .npage-tabs {
           display: flex;
           gap: 0;
@@ -90,7 +89,7 @@ export default function NotificationsPage() {
           border-bottom: 1px solid var(--border-primary);
           padding: 0 var(--space-6);
           position: sticky;
-          top: var(--app-bar-height, 0);
+          top: 0;
           z-index: var(--z-sticky, 10);
           width: 100%;
           max-width: 100%;
@@ -168,6 +167,7 @@ export default function NotificationsPage() {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
             scrollbar-width: none;
+            top: var(--app-bar-height, 0);
           }
           .npage-tabs::-webkit-scrollbar { display: none; }
 

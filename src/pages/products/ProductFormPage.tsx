@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { ArrowRight, Save, Loader2 } from 'lucide-react'
-import { getProduct, createProduct, updateProduct, getCategories, getBrands, getUnits, getProductUnits, saveProductUnits } from '@/lib/services/products'
+import { getProduct, createProduct, updateProduct, getCategories, getBrands, getUnits, getProductUnits, saveProductUnits, getProductCostMetrics } from '@/lib/services/products'
 import { useAuthStore } from '@/stores/auth-store'
 import type { Product, ProductInput, ProductCategory, Brand, Unit, ProductUnit } from '@/lib/types/master-data'
 
@@ -35,6 +35,8 @@ export default function ProductFormPage() {
     is_active: true,
     min_stock_level: 0,
   })
+  // Track whether cost_price was fetched via finance RPC (only update it if user has access)
+  const [costPriceLoaded, setCostPriceLoaded] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -44,15 +46,29 @@ export default function ProductFormPage() {
       setUnits(uts)
       if (id) {
         try {
-          const p = await getProduct(id)
-          setForm({
+          const [p, pUnits] = await Promise.all([getProduct(id), getProductUnits(id)])
+          // Base form: intentionally omit cost_price — will be loaded via finance RPC if authorized
+          setForm(prev => ({
+            ...prev,
             sku: p.sku, name: p.name, barcode: p.barcode || '',
             category_id: p.category_id, brand_id: p.brand_id, base_unit_id: p.base_unit_id,
-            selling_price: p.selling_price, cost_price: p.cost_price, tax_rate: p.tax_rate,
+            selling_price: p.selling_price, tax_rate: p.tax_rate,
             description: p.description || '', image_url: p.image_url || '',
             is_active: p.is_active, min_stock_level: p.min_stock_level,
-          })
-          const pUnits = await getProductUnits(id)
+          }))
+
+          // Load cost_price separately only if user is authorized — avoids accidental zeroing
+          if (canViewCosts) {
+            try {
+              const metrics = await getProductCostMetrics([id])
+              const cp = metrics[id]?.cost_price
+              if (cp != null) {
+                setForm(prev => ({ ...prev, cost_price: cp }))
+                setCostPriceLoaded(true)
+              }
+            } catch { /* finance RPC failed, leave cost_price at 0 */ }
+          }
+
           setProductUnits(pUnits.map(u => ({
             unit_id: u.unit_id, conversion_factor: u.conversion_factor,
             selling_price: u.selling_price, is_purchase_unit: u.is_purchase_unit, is_sales_unit: u.is_sales_unit,
@@ -72,7 +88,15 @@ export default function ProductFormPage() {
     }
     setSaving(true)
     try {
-      const data = isEdit ? await updateProduct(id!, form) : await createProduct(form)
+      // Build payload — exclude cost_price from update if user can't view/edit it
+      // This prevents accidental zeroing when cost_price wasn't loaded
+      const payload: Partial<ProductInput> = isEdit
+        ? {
+            ...form,
+            ...(canViewCosts && costPriceLoaded ? {} : { cost_price: undefined }),
+          }
+        : form
+      const data = isEdit ? await updateProduct(id!, payload) : await createProduct(form)
       // Save product units
       if (productUnits.length > 0) {
         await saveProductUnits(data.id, productUnits)
