@@ -123,7 +123,12 @@ const ReportsOverviewPage = lazy(() => import('@/pages/reports/OverviewPage'))
 const SalesPage           = lazy(() => import('@/pages/reports/SalesPage'))
 const ReceivablesPage     = lazy(() => import('@/pages/reports/ReceivablesPage'))
 const TreasuryPage        = lazy(() => import('@/pages/reports/TreasuryPage'))
-const CustomerHealthPage  = lazy(() => import('@/pages/reports/CustomerHealthPage'))
+const CustomerHealthPage     = lazy(() => import('@/pages/reports/CustomerHealthPage'))
+const RepPerformancePage     = lazy(() => import('@/pages/reports/RepPerformancePage'))
+const ProductPerformancePage = lazy(() => import('@/pages/reports/ProductPerformancePage'))
+const ChurnRiskPage          = lazy(() => import('@/pages/reports/ChurnRiskPage'))
+const GeographyPage          = lazy(() => import('@/pages/reports/GeographyPage'))
+const TargetAttainmentPage   = lazy(() => import('@/pages/reports/TargetAttainmentPage'))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -389,7 +394,7 @@ export default function App() {
                   customers:    reports.sales OR reports.view_all
               */}
               <Route path="reports" element={
-                <ProtectedRoute permission={['reports.sales', 'reports.financial', 'reports.view_all']}>
+                <ProtectedRoute permission={['reports.sales', 'reports.financial', 'reports.targets', 'reports.view_all']}>
                   <Suspense fallback={<LazyFallback />}><ReportsLayout /></Suspense>
                 </ProtectedRoute>
               }>
@@ -417,6 +422,31 @@ export default function App() {
                 <Route path="customers"   element={
                   <ProtectedRoute permission={['reports.sales', 'reports.view_all']}>
                     <Suspense fallback={<LazyFallback />}><CustomerHealthPage /></Suspense>
+                  </ProtectedRoute>
+                } />
+                <Route path="reps" element={
+                  <ProtectedRoute permission={['reports.sales', 'reports.view_all']}>
+                    <Suspense fallback={<LazyFallback />}><RepPerformancePage /></Suspense>
+                  </ProtectedRoute>
+                } />
+                <Route path="products" element={
+                  <ProtectedRoute permission={['reports.sales', 'reports.view_all']}>
+                    <Suspense fallback={<LazyFallback />}><ProductPerformancePage /></Suspense>
+                  </ProtectedRoute>
+                } />
+                <Route path="churn-risk" element={
+                  <ProtectedRoute permission={['reports.sales', 'reports.view_all']}>
+                    <Suspense fallback={<LazyFallback />}><ChurnRiskPage /></Suspense>
+                  </ProtectedRoute>
+                } />
+                <Route path="geography" element={
+                  <ProtectedRoute permission={['reports.sales', 'reports.view_all']}>
+                    <Suspense fallback={<LazyFallback />}><GeographyPage /></Suspense>
+                  </ProtectedRoute>
+                } />
+                <Route path="target-attainment" element={
+                  <ProtectedRoute permission={['reports.targets', 'reports.view_all']}>
+                    <Suspense fallback={<LazyFallback />}><TargetAttainmentPage /></Suspense>
                   </ProtectedRoute>
                 } />
               </Route>

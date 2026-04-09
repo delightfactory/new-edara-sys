@@ -8,7 +8,7 @@ import MetricCard from '@/components/reports/MetricCard'
 import SkeletonCard from '@/components/reports/SkeletonCard'
 import SystemHealthBar from '@/components/reports/SystemHealthBar'
 import ReportFilterBar, { type DateRange } from '@/components/reports/ReportFilterBar'
-import { TrendingUp, Wallet, BarChart3, Users2 } from 'lucide-react'
+import { TrendingUp, Wallet, BarChart3, Users2, Package, AlertTriangle, MapPin, Target, UserCheck } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 function toISO(d: Date) { return d.toISOString().split('T')[0] }
@@ -153,7 +153,12 @@ export default function OverviewPage() {
           { to: '/reports/sales',       label: 'تقرير المبيعات',   desc: 'الإيرادات — المرتجعات — الكميات', icon: TrendingUp, color: 'var(--color-success)' },
           { to: '/reports/receivables', label: 'المستحقات (AR)',    desc: 'تحصيلات منسوبة لتاريخ البيع',     icon: BarChart3,  color: 'var(--color-info)' },
           { to: '/reports/treasury',    label: 'الخزينة',           desc: 'تدفق نقدي موثق خزينياً',          icon: Wallet,    color: 'var(--color-primary)' },
-          { to: '/reports/customers',   label: 'صحة العملاء',       desc: 'الخمول — التكرار — القيمة',       icon: Users2,    color: 'var(--color-warning)' },
+          { to: '/reports/customers',         label: 'صحة العملاء',       desc: 'الخمول — التكرار — القيمة',        icon: Users2,        color: 'var(--color-warning)'  },
+          { to: '/reports/reps',              label: 'أداء المندوبين',   desc: 'إيراد — مرتجعات — عملاء بالمندوب', icon: UserCheck,     color: 'var(--color-primary)'  },
+          { to: '/reports/products',          label: 'أداء المنتجات',    desc: 'إيراد — كميات — حصة السوق',        icon: Package,       color: 'var(--color-info)'     },
+          { to: '/reports/churn-risk',        label: 'خطر الخمود',       desc: 'VIP — مخلص — معرض للخطر — خامد',   icon: AlertTriangle, color: 'var(--color-warning)'  },
+          { to: '/reports/geography',         label: 'التحليل الجغرافى', desc: 'محافظة — مدينة — منطقة',           icon: MapPin,        color: 'var(--color-success)'  },
+          { to: '/reports/target-attainment', label: 'إنجاز الأهداف',    desc: 'فعلى مقابل مستهدف — الاتجاه',      icon: Target,        color: '#f59e0b'                },
         ].map(item => {
           const Icon = item.icon
           return (

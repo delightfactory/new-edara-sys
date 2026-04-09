@@ -130,17 +130,23 @@ const sections: NavSection[] = [
     items: [
       { id: 'reports', label: 'التقارير', icon: BarChart3,
         // show the group if the user can access at least ONE report tab
-        permission: [PERMISSIONS.REPORTS_SALES, PERMISSIONS.REPORTS_FINANCIAL, PERMISSIONS.REPORTS_VIEW_ALL],
+        permission: [PERMISSIONS.REPORTS_SALES, PERMISSIONS.REPORTS_FINANCIAL, PERMISSIONS.REPORTS_TARGETS, PERMISSIONS.REPORTS_VIEW_ALL],
         children: [
           // overview & sales: sales OR view_all
-          { label: 'نظرة عامة',        path: '/reports/overview',    permission: [PERMISSIONS.REPORTS_SALES, PERMISSIONS.REPORTS_VIEW_ALL] },
-          { label: 'المبيعات',          path: '/reports/sales',       permission: [PERMISSIONS.REPORTS_SALES, PERMISSIONS.REPORTS_VIEW_ALL] },
+          { label: 'نظرة عامة',          path: '/reports/overview',          permission: [PERMISSIONS.REPORTS_SALES, PERMISSIONS.REPORTS_VIEW_ALL] },
+          { label: 'المبيعات',            path: '/reports/sales',             permission: [PERMISSIONS.REPORTS_SALES, PERMISSIONS.REPORTS_VIEW_ALL] },
           // receivables: targets OR sales OR view_all
-          { label: 'المستحقات (AR)',    path: '/reports/receivables', permission: [PERMISSIONS.REPORTS_SALES, PERMISSIONS.REPORTS_TARGETS, PERMISSIONS.REPORTS_VIEW_ALL] },
+          { label: 'المستحقات (AR)',      path: '/reports/receivables',       permission: [PERMISSIONS.REPORTS_SALES, PERMISSIONS.REPORTS_TARGETS, PERMISSIONS.REPORTS_VIEW_ALL] },
           // treasury: financial OR sales OR view_all
-          { label: 'الخزينة',           path: '/reports/treasury',    permission: [PERMISSIONS.REPORTS_FINANCIAL, PERMISSIONS.REPORTS_SALES, PERMISSIONS.REPORTS_VIEW_ALL] },
+          { label: 'الخزينة',             path: '/reports/treasury',          permission: [PERMISSIONS.REPORTS_FINANCIAL, PERMISSIONS.REPORTS_SALES, PERMISSIONS.REPORTS_VIEW_ALL] },
           // customers: sales OR view_all
-          { label: 'صحة العملاء',       path: '/reports/customers',   permission: [PERMISSIONS.REPORTS_SALES, PERMISSIONS.REPORTS_VIEW_ALL] },
+          { label: 'صحة العملاء',         path: '/reports/customers',         permission: [PERMISSIONS.REPORTS_SALES, PERMISSIONS.REPORTS_VIEW_ALL] },
+          // Wave 2 pages
+          { label: 'أداء المندوبين',      path: '/reports/reps',              permission: [PERMISSIONS.REPORTS_SALES, PERMISSIONS.REPORTS_VIEW_ALL] },
+          { label: 'أداء المنتجات',       path: '/reports/products',          permission: [PERMISSIONS.REPORTS_SALES, PERMISSIONS.REPORTS_VIEW_ALL] },
+          { label: 'خطر الخمود',          path: '/reports/churn-risk',        permission: [PERMISSIONS.REPORTS_SALES, PERMISSIONS.REPORTS_VIEW_ALL] },
+          { label: 'التحليل الجغرافى',    path: '/reports/geography',         permission: [PERMISSIONS.REPORTS_SALES, PERMISSIONS.REPORTS_VIEW_ALL] },
+          { label: 'إنجاز الأهداف',       path: '/reports/target-attainment', permission: [PERMISSIONS.REPORTS_TARGETS, PERMISSIONS.REPORTS_VIEW_ALL] },
         ],
       },
       {

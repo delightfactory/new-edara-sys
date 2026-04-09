@@ -93,16 +93,23 @@ export interface TrustStateRow {
  *   'treasury'         → treasury components only, accepts reports.financial
  *   'sales'            → sales components only, requires reports.sales
  *   'ar'               → AR components only, accepts reports.targets
- *   'customers'        → customer_health components only, requires reports.sales
+ *   'customers'        → customer_health + customer_risk, requires reports.sales
+ *   'targets'          → target_attainment components, accepts reports.targets OR reports.sales
  */
 export async function analyticsGetTrustState(
-  domain?: 'all' | 'treasury' | 'sales' | 'ar' | 'customers'
+  domain?: 'all' | 'treasury' | 'sales' | 'ar' | 'customers' | 'targets'
 ): Promise<TrustStateRow[]> {
   const { data, error } = await supabase.rpc('analytics_get_trust_state', {
     p_domain: domain ?? null,
   })
   if (error) mapRpcError(error, domain)
   return (data as TrustStateRow[]) ?? []
+}
+
+export async function analyticsRefreshNow(): Promise<boolean> {
+  const { data, error } = await supabase.rpc('analytics_refresh_now')
+  if (error) mapRpcError(error, 'all')
+  return Boolean(data)
 }
 
 // ─── 3. Sales ────────────────────────────────────────────────────────────────
@@ -282,4 +289,244 @@ export async function analyticsCustomerHealthSummary(
   if (error) mapRpcError(error)
   const d = data as { stats: CustomerHealthStats; rows: CustomerHealthRow[] }
   return { stats: d?.stats ?? {} as CustomerHealthStats, rows: d?.rows ?? [] }
+}
+
+// ─── 7. Rep Performance ──────────────────────────────────────────────────────
+
+export interface RepPerformanceSummary {
+  total_reps:          number
+  total_revenue:       number
+  total_returns_value: number
+  avg_revenue_per_rep: number
+}
+
+export interface RepPerformanceRow {
+  rep_id:             string
+  rep_name:           string
+  branch_name:        string
+  net_revenue:        number
+  returns_value:      number
+  return_rate_pct:    number
+  net_qty:            number
+  distinct_customers: number
+  rank:               number
+}
+
+export async function analyticsRepPerformanceSummary(
+  dateFrom: string,
+  dateTo: string
+): Promise<RepPerformanceSummary> {
+  const { data, error } = await supabase.rpc('analytics_rep_performance_summary', {
+    p_date_from: dateFrom,
+    p_date_to:   dateTo,
+  })
+  if (error) mapRpcError(error, 'sales')
+  return (data as RepPerformanceSummary) ?? {} as RepPerformanceSummary
+}
+
+export async function analyticsRepPerformanceTable(
+  dateFrom: string,
+  dateTo: string
+): Promise<RepPerformanceRow[]> {
+  const { data, error } = await supabase.rpc('analytics_rep_performance_table', {
+    p_date_from: dateFrom,
+    p_date_to:   dateTo,
+  })
+  if (error) mapRpcError(error, 'sales')
+  return (data as RepPerformanceRow[]) ?? []
+}
+
+// ─── 8. Product Performance ──────────────────────────────────────────────────
+
+export interface ProductPerformanceSummary {
+  total_products:      number
+  total_revenue:       number
+  top_product_revenue: number
+}
+
+export interface ProductPerformanceRow {
+  product_id:         string
+  product_name:       string
+  category_name:      string
+  net_revenue:        number
+  net_qty:            number
+  return_rate_pct:    number
+  distinct_customers: number
+  revenue_share_pct:  number
+}
+
+export async function analyticsProductPerformanceSummary(
+  dateFrom: string,
+  dateTo: string,
+  categoryId?: string
+): Promise<ProductPerformanceSummary> {
+  const { data, error } = await supabase.rpc('analytics_product_performance_summary', {
+    p_date_from:   dateFrom,
+    p_date_to:     dateTo,
+    p_category_id: categoryId ?? null,
+  })
+  if (error) mapRpcError(error, 'sales')
+  return (data as ProductPerformanceSummary) ?? {} as ProductPerformanceSummary
+}
+
+export async function analyticsProductPerformanceTable(
+  dateFrom: string,
+  dateTo: string,
+  categoryId?: string,
+  limit = 50
+): Promise<ProductPerformanceRow[]> {
+  const { data, error } = await supabase.rpc('analytics_product_performance_table', {
+    p_date_from:   dateFrom,
+    p_date_to:     dateTo,
+    p_category_id: categoryId ?? null,
+    p_limit:       limit,
+  })
+  if (error) mapRpcError(error, 'sales')
+  return (data as ProductPerformanceRow[]) ?? []
+}
+
+// ─── 9. Customer Risk (RFM) ──────────────────────────────────────────────────
+
+export interface CustomerRiskStats {
+  total:         number
+  vip:           number
+  loyal:         number
+  engaged:       number
+  at_risk:       number
+  dormant:       number
+  avg_rfm_score: number
+}
+
+export interface CustomerRiskRow {
+  customer_id:    string
+  customer_name:  string | null
+  risk_label:     string
+  rfm_score:      number
+  recency_days:   number | null
+  frequency_l90d: number
+  monetary_l90d:  number
+}
+
+export async function analyticsCustomerRiskSummary(
+  asOfDate: string,
+  riskLabel?: string
+): Promise<CustomerRiskStats> {
+  const { data, error } = await supabase.rpc('analytics_customer_risk_summary', {
+    p_as_of_date: asOfDate,
+    p_risk_label: riskLabel ?? null,
+  })
+  if (error) mapRpcError(error, 'customers')
+  return (data as CustomerRiskStats) ?? {} as CustomerRiskStats
+}
+
+export async function analyticsCustomerRiskList(
+  asOfDate: string,
+  riskLabel?: string,
+  repId?: string,
+  limit = 50
+): Promise<CustomerRiskRow[]> {
+  const { data, error } = await supabase.rpc('analytics_customer_risk_list', {
+    p_as_of_date: asOfDate,
+    p_risk_label: riskLabel ?? null,
+    p_rep_id:     repId ?? null,
+    p_limit:      limit,
+  })
+  if (error) mapRpcError(error, 'customers')
+  return (data as CustomerRiskRow[]) ?? []
+}
+
+// ─── 10. Geography ───────────────────────────────────────────────────────────
+
+export type GeoLevel = 'governorate' | 'city' | 'area'
+
+export interface GeographySummary {
+  total_revenue: number
+  covered_areas: number
+  // zero_revenue_areas مُستبعَد: يحتاج حسابًا حقيقيًا من population العملاء (مؤجّل)
+}
+
+export interface GeographyRow {
+  geo_id:            string
+  geo_name:          string
+  parent_name:       string | null
+  net_revenue:       number
+  customer_count:    number
+  transaction_count: number
+  revenue_share_pct: number
+}
+
+export async function analyticsGeographySummary(
+  dateFrom: string,
+  dateTo: string,
+  level: GeoLevel = 'governorate'
+): Promise<GeographySummary> {
+  const { data, error } = await supabase.rpc('analytics_geography_summary', {
+    p_date_from: dateFrom,
+    p_date_to:   dateTo,
+    p_level:     level,
+  })
+  if (error) mapRpcError(error, 'sales')
+  return (data as GeographySummary) ?? {} as GeographySummary
+}
+
+export async function analyticsGeographyTable(
+  dateFrom: string,
+  dateTo: string,
+  level: GeoLevel = 'governorate'
+): Promise<GeographyRow[]> {
+  const { data, error } = await supabase.rpc('analytics_geography_table', {
+    p_date_from: dateFrom,
+    p_date_to:   dateTo,
+    p_level:     level,
+  })
+  if (error) mapRpcError(error, 'sales')
+  return (data as GeographyRow[]) ?? []
+}
+
+// ─── 11. Target Attainment ───────────────────────────────────────────────────
+
+export interface TargetAttainmentStats {
+  total_targets:       number
+  achieved:            number
+  on_track:            number
+  at_risk:             number
+  behind:              number
+  avg_achievement_pct: number
+}
+
+export interface TargetAttainmentRow {
+  target_id:       string
+  target_name:     string
+  type_code:       string
+  scope:           string
+  rep_name:        string | null
+  branch_name:     string | null
+  period_start:    string
+  period_end:      string
+  target_value:    number
+  achieved_value:  number | null
+  achievement_pct: number | null
+  trend:           string
+}
+
+export async function analyticsTargetAttainmentSummary(
+  asOfDate: string
+): Promise<TargetAttainmentStats> {
+  const { data, error } = await supabase.rpc('analytics_target_attainment_summary', {
+    p_as_of_date: asOfDate,
+  })
+  if (error) mapRpcError(error, 'targets')
+  return (data as TargetAttainmentStats) ?? {} as TargetAttainmentStats
+}
+
+export async function analyticsTargetAttainmentTable(
+  asOfDate: string,
+  scope?: string
+): Promise<TargetAttainmentRow[]> {
+  const { data, error } = await supabase.rpc('analytics_target_attainment_table', {
+    p_as_of_date: asOfDate,
+    p_scope:      scope ?? null,
+  })
+  if (error) mapRpcError(error, 'targets')
+  return (data as TargetAttainmentRow[]) ?? []
 }

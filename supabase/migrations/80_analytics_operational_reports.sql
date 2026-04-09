@@ -117,10 +117,21 @@ CREATE TABLE IF NOT EXISTS analytics.fact_geography_daily (
   transaction_count  integer NOT NULL DEFAULT 0,
 
   created_at         timestamptz DEFAULT now(),
-  updated_at         timestamptz DEFAULT now(),
-
-  CONSTRAINT fact_geo_daily_unique UNIQUE (date, governorate_id, city_id, area_id)
+  updated_at         timestamptz DEFAULT now()
+  -- NOTE: no inline UNIQUE constraint here — NULLable geo columns require an
+  -- expression index with COALESCE to make ON CONFLICT work correctly.
+  -- See CREATE UNIQUE INDEX below.
 );
+
+-- Expression-based unique index so that NULL geo IDs are treated as a sentinel
+-- value rather than being "always distinct" (PostgreSQL NULL ≠ NULL in UNIQUE).
+CREATE UNIQUE INDEX IF NOT EXISTS fact_geo_daily_unique_idx
+  ON analytics.fact_geography_daily (
+    date,
+    COALESCE(governorate_id, '00000000-0000-0000-0000-000000000000'::uuid),
+    COALESCE(city_id,        '00000000-0000-0000-0000-000000000000'::uuid),
+    COALESCE(area_id,        '00000000-0000-0000-0000-000000000000'::uuid)
+  );
 
 CREATE INDEX IF NOT EXISTS idx_fact_geo_date
   ON analytics.fact_geography_daily (date);
@@ -141,6 +152,7 @@ GRANT ALL    ON analytics.fact_geography_daily TO service_role;
 -- snapshot_customer_risk
 ALTER TABLE analytics.snapshot_customer_risk ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS snap_cust_risk_read ON analytics.snapshot_customer_risk;
 CREATE POLICY snap_cust_risk_read ON analytics.snapshot_customer_risk
   FOR SELECT TO authenticated
   USING (
@@ -151,6 +163,7 @@ CREATE POLICY snap_cust_risk_read ON analytics.snapshot_customer_risk
 -- snapshot_target_attainment
 ALTER TABLE analytics.snapshot_target_attainment ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS snap_target_attain_read ON analytics.snapshot_target_attainment;
 CREATE POLICY snap_target_attain_read ON analytics.snapshot_target_attainment
   FOR SELECT TO authenticated
   USING (
@@ -165,6 +178,7 @@ CREATE POLICY snap_target_attain_read ON analytics.snapshot_target_attainment
 -- fact_geography_daily
 ALTER TABLE analytics.fact_geography_daily ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS fact_geo_daily_read ON analytics.fact_geography_daily;
 CREATE POLICY fact_geo_daily_read ON analytics.fact_geography_daily
   FOR SELECT TO authenticated
   USING (
@@ -372,7 +386,12 @@ BEGIN
   JOIN public.customers c ON c.id = f.customer_id
   WHERE f.date = ANY(p_target_dates)
   GROUP BY f.date, c.area_id, c.city_id, c.governorate_id
-  ON CONFLICT (date, governorate_id, city_id, area_id) DO UPDATE SET
+  ON CONFLICT (
+    date,
+    COALESCE(governorate_id, '00000000-0000-0000-0000-000000000000'::uuid),
+    COALESCE(city_id,        '00000000-0000-0000-0000-000000000000'::uuid),
+    COALESCE(area_id,        '00000000-0000-0000-0000-000000000000'::uuid)
+  ) DO UPDATE SET
     net_revenue       = EXCLUDED.net_revenue,
     return_value      = EXCLUDED.return_value,
     tax_amount        = EXCLUDED.tax_amount,
@@ -486,17 +505,21 @@ BEGIN
     SELECT analytics.detect_affected_dates(v_watermark) INTO v_target_dates;
 
     IF array_length(v_target_dates, 1) IS NOT NULL THEN
-      -- Wave 1: existing jobs
+      -- Wave 1: facts مرتبطة بتواريخ حركة المبيعات/التحصيل
       CALL analytics.orchestrate_incremental_refresh(v_run_id_1, 'fact_sales_daily_grain',                             v_target_dates);
       CALL analytics.orchestrate_incremental_refresh(v_run_id_2, 'fact_financial_ledgers_daily',                       v_target_dates);
       CALL analytics.orchestrate_incremental_refresh(v_run_id_3, 'fact_treasury_cashflow_daily',                       v_target_dates);
       CALL analytics.orchestrate_incremental_refresh(v_run_id_4, 'fact_ar_collections_attributed_to_origin_sale_date', v_target_dates);
       CALL analytics.orchestrate_incremental_refresh(v_run_id_5, 'snapshot_customer_health',                           v_target_dates);
-      -- Wave 2: depends on Wave 1 (snapshot_customer_risk needs snapshot_customer_health)
-      CALL analytics.orchestrate_incremental_refresh(v_run_id_6, 'snapshot_customer_risk',     v_target_dates);
-      CALL analytics.orchestrate_incremental_refresh(v_run_id_7, 'snapshot_target_attainment', v_target_dates);
-      CALL analytics.orchestrate_incremental_refresh(v_run_id_8, 'fact_geography_daily',        v_target_dates);
+      -- Wave 2: يعتمد على Wave 1 (snapshot_customer_risk يحتاج snapshot_customer_health)
+      CALL analytics.orchestrate_incremental_refresh(v_run_id_6, 'snapshot_customer_risk', v_target_dates);
+      CALL analytics.orchestrate_incremental_refresh(v_run_id_8, 'fact_geography_daily',   v_target_dates);
     END IF;
+
+    -- snapshot_target_attainment: مستقل عن دورة المبيعات — يُشغَّل دائمًا لـ CURRENT_DATE
+    -- لأن recalculate_all_active_targets() يكتب target_progress لـ CURRENT_DATE فقط،
+    -- وdetect_affected_dates لا تراقب target_progress، فلا يمكن الاعتماد على v_target_dates هنا.
+    CALL analytics.orchestrate_incremental_refresh(v_run_id_7, 'snapshot_target_attainment', ARRAY[CURRENT_DATE]);
 
     SELECT COUNT(*) INTO v_failed_subjobs
     FROM analytics.etl_runs
@@ -574,9 +597,11 @@ BEGIN
       CALL analytics.orchestrate_incremental_refresh(gen_random_uuid(), 'fact_ar_collections_attributed_to_origin_sale_date', v_chunk_dates);
       CALL analytics.orchestrate_incremental_refresh(gen_random_uuid(), 'snapshot_customer_health',                           v_chunk_dates);
       -- Wave 2 jobs (snapshot_customer_risk depends on snapshot_customer_health)
-      CALL analytics.orchestrate_incremental_refresh(gen_random_uuid(), 'snapshot_customer_risk',     v_chunk_dates);
-      CALL analytics.orchestrate_incremental_refresh(gen_random_uuid(), 'snapshot_target_attainment', v_chunk_dates);
-      CALL analytics.orchestrate_incremental_refresh(gen_random_uuid(), 'fact_geography_daily',        v_chunk_dates);
+      CALL analytics.orchestrate_incremental_refresh(gen_random_uuid(), 'snapshot_customer_risk', v_chunk_dates);
+      CALL analytics.orchestrate_incremental_refresh(gen_random_uuid(), 'fact_geography_daily',   v_chunk_dates);
+      -- snapshot_target_attainment مُستبعَدة من الـ backfill لأن target_progress
+      -- تحتوي فقط CURRENT_DATE (تُكتب بـ recalculate_all_active_targets).
+      -- لا توجد بيانات تاريخية يُمكن إعادة بنائها لأيام سابقة.
 
       v_chunks_done  := v_chunks_done + 1;
       v_chunk_start  := v_chunk_end + 1;
@@ -726,21 +751,23 @@ BEGIN
   END IF;
 
   RETURN (
-    SELECT jsonb_build_object(
-      'total_products',      COUNT(DISTINCT f.product_id),
-      'total_revenue',       COALESCE(SUM(f.net_tax_exclusive_revenue), 0),
-      'top_product_revenue', COALESCE(MAX(sub.prod_rev), 0)
+    WITH filtered AS (
+      -- Apply date + optional category filter once, then aggregate per product
+      SELECT
+        f.product_id,
+        SUM(f.net_tax_exclusive_revenue) AS prod_rev
+      FROM analytics.fact_sales_daily_grain f
+      LEFT JOIN public.products pr ON pr.id = f.product_id
+      WHERE f.date BETWEEN p_date_from AND p_date_to
+        AND (p_category_id IS NULL OR pr.category_id = p_category_id)
+      GROUP BY f.product_id
     )
-    FROM analytics.fact_sales_daily_grain f
-    LEFT JOIN public.products pr ON pr.id = f.product_id
-    LEFT JOIN (
-      SELECT product_id, SUM(net_tax_exclusive_revenue) AS prod_rev
-      FROM analytics.fact_sales_daily_grain
-      WHERE date BETWEEN p_date_from AND p_date_to
-      GROUP BY product_id
-    ) sub ON sub.product_id = f.product_id
-    WHERE f.date BETWEEN p_date_from AND p_date_to
-      AND (p_category_id IS NULL OR pr.category_id = p_category_id)
+    SELECT jsonb_build_object(
+      'total_products',      COUNT(*),
+      'total_revenue',       COALESCE(SUM(prod_rev), 0),
+      'top_product_revenue', COALESCE(MAX(prod_rev), 0)
+    )
+    FROM filtered
   );
 EXCEPTION
   WHEN undefined_table THEN RAISE EXCEPTION 'analytics_not_deployed';
@@ -778,9 +805,13 @@ BEGIN
 
   RETURN QUERY
   WITH total AS (
-    SELECT NULLIF(SUM(net_tax_exclusive_revenue), 0) AS grand_total
-    FROM analytics.fact_sales_daily_grain
-    WHERE date BETWEEN p_date_from AND p_date_to
+    -- Grand total is scoped to the same category filter so revenue_share_pct
+    -- means "share within selected category" (or all-sales share when no category).
+    SELECT NULLIF(SUM(f.net_tax_exclusive_revenue), 0) AS grand_total
+    FROM analytics.fact_sales_daily_grain f
+    LEFT JOIN public.products pr ON pr.id = f.product_id
+    WHERE f.date BETWEEN p_date_from AND p_date_to
+      AND (p_category_id IS NULL OR pr.category_id = p_category_id)
   ),
   agg AS (
     SELECT
@@ -808,7 +839,7 @@ BEGIN
     )                                                          AS return_rate_pct,
     a.dist_cust,
     ROUND(COALESCE((a.net_rev / t.grand_total) * 100, 0), 1) AS revenue_share_pct
-  FROM agg a, total t
+  FROM agg a CROSS JOIN total t
   LEFT JOIN public.products          pr ON pr.id = a.product_id
   LEFT JOIN public.product_categories pc ON pc.id = pr.category_id
   ORDER BY a.net_rev DESC
@@ -935,15 +966,16 @@ BEGIN
 
   RETURN (
     SELECT jsonb_build_object(
-      'total_revenue',  COALESCE(SUM(net_revenue), 0),
-      'covered_areas',  COUNT(DISTINCT
+      'total_revenue', COALESCE(SUM(net_revenue), 0),
+      'covered_areas', COUNT(DISTINCT
         CASE p_level
           WHEN 'area' THEN area_id::text
           WHEN 'city' THEN city_id::text
           ELSE             governorate_id::text
         END
-      ),
-      'zero_revenue_areas', 0
+      )
+      -- zero_revenue_areas مُستبعَد مؤقتًا: يحتاج population جغرافية من customers
+      -- لحساب صحيح. إبقاء 0 hardcoded يُعطي KPI مضلل.
     )
     FROM analytics.fact_geography_daily
     WHERE date BETWEEN p_date_from AND p_date_to
@@ -1133,6 +1165,112 @@ EXCEPTION
 END;
 $$;
 GRANT EXECUTE ON FUNCTION public.analytics_target_attainment_table(date, text) TO authenticated;
+
+-- ─────────────────────────────────────────────────────────────
+-- 24b. RPC: analytics_product_categories
+--
+--   يُعيد قائمة التصنيفات النشطة مُقيَّدة بـ reports.sales / reports.view_all
+--   بدل القراءة المباشرة من product_categories التي تتطلب products.read.
+--   هذا يضمن أن مستخدمي reports.sales يحصلون على الفلتر دون Privilege Escalation.
+-- ─────────────────────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION public.analytics_product_categories()
+RETURNS TABLE (id uuid, name text)
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public, analytics
+AS $$
+BEGIN
+  IF NOT check_permission(auth.uid(), 'reports.sales')
+     AND NOT check_permission(auth.uid(), 'reports.view_all') THEN
+    RAISE EXCEPTION 'analytics_unauthorized:domain=sales';
+  END IF;
+
+  RETURN QUERY
+  SELECT pc.id, pc.name
+  FROM public.product_categories pc
+  WHERE pc.is_active = true
+  ORDER BY pc.name;
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.analytics_product_categories() TO authenticated;
+
+-- ─────────────────────────────────────────────────────────────
+-- 25. Update analytics_get_trust_state to include Wave 2 components
+--
+--   Adds 'targets' domain (authorises reports.targets users),
+--   extends LIKE filters for:
+--     customers → also matches snapshot_customer_risk
+--     sales     → also matches fact_geography_daily
+--     targets   → matches snapshot_target_attainment
+-- ─────────────────────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION public.analytics_get_trust_state(
+  p_domain  text DEFAULT NULL
+)
+RETURNS TABLE (
+  component_name    text,
+  status            text,
+  drift_value       numeric,
+  last_completed_at timestamptz,
+  is_stale          boolean
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, analytics
+AS $$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_has_view_all   boolean := check_permission(v_uid, 'reports.view_all');
+  v_has_sales      boolean := check_permission(v_uid, 'reports.sales');
+  v_has_financial  boolean := check_permission(v_uid, 'reports.financial');
+  v_has_targets    boolean := check_permission(v_uid, 'reports.targets');
+  v_authorized     boolean := false;
+BEGIN
+  IF v_has_view_all THEN
+    v_authorized := true;
+  ELSIF p_domain = 'treasury' THEN
+    v_authorized := v_has_financial OR v_has_sales;
+  ELSIF p_domain = 'ar' THEN
+    v_authorized := v_has_targets OR v_has_sales;
+  ELSIF p_domain = 'targets' THEN
+    -- target-attainment report is accessible to targets OR sales users
+    v_authorized := v_has_targets OR v_has_sales;
+  ELSE
+    -- 'all' | 'sales' | 'customers' | NULL → sales required
+    v_authorized := v_has_sales;
+  END IF;
+
+  IF NOT v_authorized THEN
+    RAISE EXCEPTION 'analytics_unauthorized:domain=%', COALESCE(p_domain, 'all');
+  END IF;
+
+  RETURN QUERY
+  SELECT t.component_name, t.status, t.drift_value, t.last_completed_at, t.is_stale
+  FROM analytics.get_system_trust_state() t
+  WHERE
+    p_domain IS NULL
+    OR p_domain = 'all'
+    OR (p_domain = 'treasury'  AND t.component_name LIKE '%treasury%')
+    OR (p_domain = 'sales'     AND (t.component_name LIKE '%sales%'
+                                    OR t.component_name LIKE '%geography%'
+                                    OR t.component_name = 'GLOBAL_SWEEP'))
+    OR (p_domain = 'ar'        AND t.component_name LIKE '%ar_collection%')
+    OR (p_domain = 'customers' AND (t.component_name LIKE '%customer_health%'
+                                    OR t.component_name LIKE '%customer_risk%'))
+    OR (p_domain = 'targets'   AND t.component_name LIKE '%target_attainment%');
+
+EXCEPTION
+  WHEN SQLSTATE 'P0001' THEN
+    RAISE;
+  WHEN undefined_function THEN
+    RETURN QUERY SELECT
+      'analytics_engine'::text, 'NOT_DEPLOYED'::text,
+      NULL::numeric, NULL::timestamptz, true;
+  WHEN undefined_table THEN
+    RETURN QUERY SELECT
+      'analytics_engine'::text, 'NOT_DEPLOYED'::text,
+      NULL::numeric, NULL::timestamptz, true;
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.analytics_get_trust_state(text) TO authenticated;
 
 -- ─────────────────────────────────────────────────────────────
 -- Verification (run after applying migration):

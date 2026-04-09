@@ -1,8 +1,12 @@
 import type { TrustStateRow } from '@/hooks/useSystemTrustState'
-import { AnalyticsUnauthorizedError, AnalyticsNotDeployedError } from '@/lib/services/analyticsClient'
+import { AnalyticsUnauthorizedError, AnalyticsNotDeployedError, analyticsRefreshNow } from '@/lib/services/analyticsClient'
 import TrustStateBadge from './TrustStateBadge'
 import FreshnessIndicator from './FreshnessIndicator'
 import { RefreshCw, AlertTriangle, Lock, Database } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
+import { useQueryClient } from '@tanstack/react-query'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface Props {
   trustRows: TrustStateRow[] | undefined
@@ -20,6 +24,9 @@ const COMPONENT_LABELS: Record<string, string> = {
   'fact_ar_collections_attributed_to_origin_sale_date':   'تحصيلات AR',
   'snapshot_customer_health':                              'صحة العملاء',
   'fact_financial_ledgers_daily':                         'السجل المالي',
+  'fact_geography_daily':                                 'التحليل الجغرافي',
+  'snapshot_customer_risk':                               'خطر الخمود',
+  'snapshot_target_attainment':                           'إنجاز الأهداف',
   'GLOBAL_SWEEP':                                          'المحرك الكلي',
 }
 
@@ -56,6 +63,28 @@ function classifyError(err: Error): { icon: typeof AlertTriangle; color: string;
 }
 
 export default function SystemHealthBar({ trustRows, isLoading, error }: Props) {
+  const queryClient = useQueryClient()
+  const hasAdminRefresh = useAuthStore(s => s.can('reports.view_all'))
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    const toastId = toast.loading('جارِ تشغيل محرك التحديث الجذري...')
+    try {
+      const started = await analyticsRefreshNow()
+      if (started) {
+        toast.success('تم التحديث بنجاح', { id: toastId })
+        void queryClient.invalidateQueries({ queryKey: ['analytics', 'system-trust-state'] })
+      } else {
+        toast.success('المحرك يعمل بالفعل', { id: toastId })
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'فشل التحديث والتزامن', { id: toastId })
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
+
   const visibleRows = trustRows?.filter(r => r.component_name !== 'GLOBAL_SWEEP') ?? []
   const anyBlocked = visibleRows.some(r => r.status === 'BLOCKED' || r.status === 'FAILED')
   const anyStale   = visibleRows.some(r => r.is_stale)
@@ -115,6 +144,26 @@ export default function SystemHealthBar({ trustRows, isLoading, error }: Props) 
       ))}
       {visibleRows.length === 0 && (
         <span style={{ color: 'var(--text-muted)' }}>لا توجد بيانات حتى الآن — شغّل sweep أولاً</span>
+      )}
+      
+      {hasAdminRefresh && (
+        <button 
+          onClick={handleRefresh}
+          disabled={isRefreshing || isLoading}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '4px',
+            background: 'var(--color-primary)', color: 'white',
+            border: 'none', borderRadius: 'var(--radius-sm)',
+            padding: 'var(--space-1) var(--space-3)',
+            fontSize: 'var(--text-xs)', cursor: (isRefreshing || isLoading) ? 'not-allowed' : 'pointer',
+            opacity: (isRefreshing || isLoading) ? 0.6 : 1,
+            marginRight: 'auto', // Pushes button to the far left in RTL layout
+            fontWeight: 500, transition: 'all 0.2s',
+          }}
+        >
+          <RefreshCw size={12} className={isRefreshing ? "animate-spin" : ""} />
+          تحديث الآن
+        </button>
       )}
     </div>
   )
