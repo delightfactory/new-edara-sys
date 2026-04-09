@@ -966,19 +966,19 @@ BEGIN
 
   RETURN (
     SELECT jsonb_build_object(
-      'total_revenue', COALESCE(SUM(net_revenue), 0),
+      'total_revenue', COALESCE(SUM(fg.net_revenue), 0),
       'covered_areas', COUNT(DISTINCT
         CASE p_level
-          WHEN 'area' THEN area_id::text
-          WHEN 'city' THEN city_id::text
-          ELSE             governorate_id::text
+          WHEN 'area' THEN fg.area_id::text
+          WHEN 'city' THEN fg.city_id::text
+          ELSE             fg.governorate_id::text
         END
       )
       -- zero_revenue_areas مُستبعَد مؤقتًا: يحتاج population جغرافية من customers
       -- لحساب صحيح. إبقاء 0 hardcoded يُعطي KPI مضلل.
     )
-    FROM analytics.fact_geography_daily
-    WHERE date BETWEEN p_date_from AND p_date_to
+    FROM analytics.fact_geography_daily fg
+    WHERE fg.date BETWEEN p_date_from AND p_date_to
   );
 EXCEPTION
   WHEN undefined_table THEN RAISE EXCEPTION 'analytics_not_deployed';
@@ -1014,61 +1014,67 @@ BEGIN
     RAISE EXCEPTION 'analytics_unauthorized:domain=sales';
   END IF;
 
-  SELECT NULLIF(SUM(net_revenue), 0)
+  SELECT NULLIF(SUM(fg.net_revenue), 0)
   INTO   v_grand_total
-  FROM   analytics.fact_geography_daily
-  WHERE  date BETWEEN p_date_from AND p_date_to;
+  FROM   analytics.fact_geography_daily fg
+  WHERE  fg.date BETWEEN p_date_from AND p_date_to;
 
   IF p_level = 'area' THEN
     RETURN QUERY
-    SELECT
-      fg.area_id                                                           AS geo_id,
-      COALESCE(ar.name, fg.area_id::text)                                 AS geo_name,
-      ci.name                                                              AS parent_name,
-      COALESCE(SUM(fg.net_revenue), 0)                                    AS net_revenue,
-      COALESCE(SUM(fg.customer_count), 0)::bigint                         AS customer_count,
-      COALESCE(SUM(fg.transaction_count), 0)::bigint                      AS transaction_count,
-      ROUND(COALESCE((SUM(fg.net_revenue) / v_grand_total) * 100, 0), 1) AS revenue_share_pct
-    FROM analytics.fact_geography_daily fg
-    LEFT JOIN public.areas  ar ON ar.id = fg.area_id
-    LEFT JOIN public.cities ci ON ci.id = ar.city_id
-    WHERE fg.date BETWEEN p_date_from AND p_date_to
-    GROUP BY fg.area_id, ar.name, ci.name
-    ORDER BY net_revenue DESC;
+    SELECT * FROM (
+      SELECT
+        fg.area_id                                                           AS geo_id,
+        COALESCE(ar.name, fg.area_id::text)                                 AS geo_name,
+        ci.name                                                              AS parent_name,
+        COALESCE(SUM(fg.net_revenue), 0)                                    AS net_revenue,
+        COALESCE(SUM(fg.customer_count), 0)::bigint                         AS customer_count,
+        COALESCE(SUM(fg.transaction_count), 0)::bigint                      AS transaction_count,
+        ROUND(COALESCE((SUM(fg.net_revenue) / v_grand_total) * 100, 0), 1) AS revenue_share_pct
+      FROM analytics.fact_geography_daily fg
+      LEFT JOIN public.areas  ar ON ar.id = fg.area_id
+      LEFT JOIN public.cities ci ON ci.id = ar.city_id
+      WHERE fg.date BETWEEN p_date_from AND p_date_to
+      GROUP BY fg.area_id, ar.name, ci.name
+    ) q
+    ORDER BY q.net_revenue DESC;
 
   ELSIF p_level = 'city' THEN
     RETURN QUERY
-    SELECT
-      fg.city_id                                                           AS geo_id,
-      COALESCE(ci.name, fg.city_id::text)                                 AS geo_name,
-      go.name                                                              AS parent_name,
-      COALESCE(SUM(fg.net_revenue), 0)                                    AS net_revenue,
-      COALESCE(SUM(fg.customer_count), 0)::bigint                         AS customer_count,
-      COALESCE(SUM(fg.transaction_count), 0)::bigint                      AS transaction_count,
-      ROUND(COALESCE((SUM(fg.net_revenue) / v_grand_total) * 100, 0), 1) AS revenue_share_pct
-    FROM analytics.fact_geography_daily fg
-    LEFT JOIN public.cities       ci ON ci.id = fg.city_id
-    LEFT JOIN public.governorates go ON go.id = ci.governorate_id
-    WHERE fg.date BETWEEN p_date_from AND p_date_to
-    GROUP BY fg.city_id, ci.name, go.name
-    ORDER BY net_revenue DESC;
+    SELECT * FROM (
+      SELECT
+        fg.city_id                                                           AS geo_id,
+        COALESCE(ci.name, fg.city_id::text)                                 AS geo_name,
+        go.name                                                              AS parent_name,
+        COALESCE(SUM(fg.net_revenue), 0)                                    AS net_revenue,
+        COALESCE(SUM(fg.customer_count), 0)::bigint                         AS customer_count,
+        COALESCE(SUM(fg.transaction_count), 0)::bigint                      AS transaction_count,
+        ROUND(COALESCE((SUM(fg.net_revenue) / v_grand_total) * 100, 0), 1) AS revenue_share_pct
+      FROM analytics.fact_geography_daily fg
+      LEFT JOIN public.cities       ci ON ci.id = fg.city_id
+      LEFT JOIN public.governorates go ON go.id = ci.governorate_id
+      WHERE fg.date BETWEEN p_date_from AND p_date_to
+      GROUP BY fg.city_id, ci.name, go.name
+    ) q
+    ORDER BY q.net_revenue DESC;
 
   ELSE
     -- Default: governorate
     RETURN QUERY
-    SELECT
-      fg.governorate_id                                                    AS geo_id,
-      COALESCE(go.name, fg.governorate_id::text)                          AS geo_name,
-      NULL::text                                                           AS parent_name,
-      COALESCE(SUM(fg.net_revenue), 0)                                    AS net_revenue,
-      COALESCE(SUM(fg.customer_count), 0)::bigint                         AS customer_count,
-      COALESCE(SUM(fg.transaction_count), 0)::bigint                      AS transaction_count,
-      ROUND(COALESCE((SUM(fg.net_revenue) / v_grand_total) * 100, 0), 1) AS revenue_share_pct
-    FROM analytics.fact_geography_daily fg
-    LEFT JOIN public.governorates go ON go.id = fg.governorate_id
-    WHERE fg.date BETWEEN p_date_from AND p_date_to
-    GROUP BY fg.governorate_id, go.name
-    ORDER BY net_revenue DESC;
+    SELECT * FROM (
+      SELECT
+        fg.governorate_id                                                    AS geo_id,
+        COALESCE(go.name, fg.governorate_id::text)                          AS geo_name,
+        NULL::text                                                           AS parent_name,
+        COALESCE(SUM(fg.net_revenue), 0)                                    AS net_revenue,
+        COALESCE(SUM(fg.customer_count), 0)::bigint                         AS customer_count,
+        COALESCE(SUM(fg.transaction_count), 0)::bigint                      AS transaction_count,
+        ROUND(COALESCE((SUM(fg.net_revenue) / v_grand_total) * 100, 0), 1) AS revenue_share_pct
+      FROM analytics.fact_geography_daily fg
+      LEFT JOIN public.governorates go ON go.id = fg.governorate_id
+      WHERE fg.date BETWEEN p_date_from AND p_date_to
+      GROUP BY fg.governorate_id, go.name
+    ) q
+    ORDER BY q.net_revenue DESC;
   END IF;
 
 EXCEPTION
