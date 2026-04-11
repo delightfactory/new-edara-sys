@@ -4,7 +4,7 @@ import type { ElementType } from 'react'
 interface Props {
   status: string | null  // accepts raw RPC-returned string; cfg lookup guards unknown values
   /** 'treasury' changes the VERIFIED wording */
-  domain?: 'treasury' | 'sales' | 'ar' | 'customers' | 'default'
+  domain?: 'treasury' | 'sales' | 'ar' | 'customers' | 'profit_overview' | 'branch_profitability' | 'allocation_quality' | 'default'
   size?: 'sm' | 'md'
 }
 

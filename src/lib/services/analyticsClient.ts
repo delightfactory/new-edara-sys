@@ -97,7 +97,7 @@ export interface TrustStateRow {
  *   'targets'          → target_attainment components, accepts reports.targets OR reports.sales
  */
 export async function analyticsGetTrustState(
-  domain?: 'all' | 'treasury' | 'sales' | 'ar' | 'customers' | 'targets'
+  domain?: 'all' | 'treasury' | 'sales' | 'ar' | 'customers' | 'targets' | 'profit_overview' | 'branch_profitability' | 'allocation_quality'
 ): Promise<TrustStateRow[]> {
   const { data, error } = await supabase.rpc('analytics_get_trust_state', {
     p_domain: domain ?? null,

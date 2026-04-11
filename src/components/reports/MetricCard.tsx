@@ -9,7 +9,7 @@ interface MetricCardProps {
   status: string | null  // accepts raw string from RPC; TrustStateBadge handles type narrowing
   lastCompletedAt?: string | null
   isStale?: boolean
-  domain?: 'treasury' | 'sales' | 'ar' | 'customers' | 'default'
+  domain?: 'treasury' | 'sales' | 'ar' | 'customers' | 'profit_overview' | 'branch_profitability' | 'allocation_quality' | 'default'
   subtitle?: string
   icon?: ReactNode
   /** secondary value shown below the main one */

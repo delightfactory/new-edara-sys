@@ -10,8 +10,7 @@ import SystemHealthBar from '@/components/reports/SystemHealthBar'
 import ReportFilterBar, { type DateRange } from '@/components/reports/ReportFilterBar'
 import { TrendingUp, Wallet, BarChart3, Users2, Package, AlertTriangle, MapPin, Target, UserCheck } from 'lucide-react'
 import { Link } from 'react-router-dom'
-
-function toISO(d: Date) { return d.toISOString().split('T')[0] }
+import { toLocalISODate } from '@/lib/utils/date'
 
 const today = new Date()
 const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
@@ -21,7 +20,7 @@ const FMT = new Intl.NumberFormat('ar-EG', { maximumFractionDigits: 0 })
 const fmt = (n: number | undefined | null) => n != null ? FMT.format(n) + ' ج.م' : '—'
 
 export default function OverviewPage() {
-  const [range, setRange] = useState<DateRange>({ from: toISO(monthStart), to: toISO(monthEnd) })
+  const [range, setRange] = useState<DateRange>({ from: toLocalISODate(monthStart), to: toLocalISODate(monthEnd) })
   const filters = { dateFrom: range.from, dateTo: range.to }
 
   const { data: trustRows, isLoading: trustLoading, error: trustError } = useSystemTrustState('all')

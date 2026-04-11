@@ -1,5 +1,6 @@
 import { Calendar, ChevronDown } from 'lucide-react'
 import { useState } from 'react'
+import { normalizeDateRange, toLocalISODate } from '@/lib/utils/date'
 
 export interface DateRange {
   from: string
@@ -18,20 +19,16 @@ const PRESETS = [
   { label: 'هذا الشهر', days: 0, mode: 'current-month' as const },
 ]
 
-function toISO(d: Date) {
-  return d.toISOString().split('T')[0]
-}
-
 function applyPreset(days: number, mode?: 'current-month') {
   const now = new Date()
   if (mode === 'current-month') {
     const from = new Date(now.getFullYear(), now.getMonth(), 1)
     const to = new Date(now.getFullYear(), now.getMonth() + 1, 0) // last day of month
-    return { from: toISO(from), to: toISO(to) }
+    return normalizeDateRange(toLocalISODate(from), toLocalISODate(to))
   }
   const from = new Date(now)
   from.setDate(now.getDate() - days + 1)
-  return { from: toISO(from), to: toISO(now) }
+  return normalizeDateRange(toLocalISODate(from), toLocalISODate(now))
 }
 
 export default function ReportFilterBar({ value, onChange }: Props) {
@@ -78,7 +75,7 @@ export default function ReportFilterBar({ value, onChange }: Props) {
         <input
           type="date"
           value={value.from}
-          onChange={e => onChange({ ...value, from: e.target.value })}
+          onChange={e => onChange(normalizeDateRange(e.target.value, value.to))}
           style={{
             padding: '4px 8px',
             borderRadius: 'var(--radius-sm)',
@@ -94,7 +91,7 @@ export default function ReportFilterBar({ value, onChange }: Props) {
         <input
           type="date"
           value={value.to}
-          onChange={e => onChange({ ...value, to: e.target.value })}
+          onChange={e => onChange(normalizeDateRange(value.from, e.target.value))}
           style={{
             padding: '4px 8px',
             borderRadius: 'var(--radius-sm)',

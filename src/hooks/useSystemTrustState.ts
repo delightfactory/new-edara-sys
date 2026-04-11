@@ -8,7 +8,7 @@ import {
 
 export type { TrustStateRow }
 
-export type TrustDomain = 'all' | 'treasury' | 'sales' | 'ar' | 'customers' | 'targets'
+export type TrustDomain = 'all' | 'treasury' | 'sales' | 'ar' | 'customers' | 'targets' | 'profit_overview' | 'branch_profitability' | 'allocation_quality'
 
 export type TrustStatus =
   | 'VERIFIED'

@@ -130,6 +130,16 @@ const ChurnRiskPage          = lazy(() => import('@/pages/reports/ChurnRiskPage'
 const GeographyPage          = lazy(() => import('@/pages/reports/GeographyPage'))
 const TargetAttainmentPage   = lazy(() => import('@/pages/reports/TargetAttainmentPage'))
 
+// Reports — Profitability (Phases 1-3)
+const ProfitabilityLayout = lazy(() => import('@/pages/reports/profitability/ProfitabilityLayout'))
+const ProfitDashboard = lazy(() => import('@/pages/reports/profitability/ProfitDashboard'))
+const ProductProfitabilityPage = lazy(() => import('@/pages/reports/profitability/ProductProfitabilityPage'))
+const CustomerProfitabilityPage = lazy(() => import('@/pages/reports/profitability/CustomerProfitabilityPage'))
+const RepProfitabilityPage = lazy(() => import('@/pages/reports/profitability/RepProfitabilityPage'))
+const BranchDirectProfitPage = lazy(() => import('@/pages/reports/profitability/BranchDirectProfitPage'))
+const BranchFinalProfitPage = lazy(() => import('@/pages/reports/profitability/BranchFinalProfitPage'))
+const AllocationQualityPage = lazy(() => import('@/pages/reports/profitability/AllocationQualityPage'))
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -449,6 +459,19 @@ export default function App() {
                     <Suspense fallback={<LazyFallback />}><TargetAttainmentPage /></Suspense>
                   </ProtectedRoute>
                 } />
+                <Route path="profitability" element={
+                  <ProtectedRoute permission={['reports.financial', 'reports.view_all']}>
+                    <Suspense fallback={<LazyFallback />}><ProfitabilityLayout /></Suspense>
+                  </ProtectedRoute>
+                }>
+                  <Route index element={<ProfitDashboard />} />
+                  <Route path="products" element={<ProductProfitabilityPage />} />
+                  <Route path="customers" element={<CustomerProfitabilityPage />} />
+                  <Route path="reps" element={<RepProfitabilityPage />} />
+                  <Route path="branch-direct" element={<BranchDirectProfitPage />} />
+                  <Route path="branch-final" element={<BranchFinalProfitPage />} />
+                  <Route path="quality" element={<AllocationQualityPage />} />
+                </Route>
               </Route>
 
               {/* Settings */}

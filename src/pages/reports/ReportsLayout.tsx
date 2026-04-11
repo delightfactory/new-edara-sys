@@ -1,7 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { usePageTitle } from '@/components/layout/PageTitleContext'
 import { useEffect } from 'react'
-import { BarChart3, TrendingUp, Wallet, Users2, LayoutDashboard, Package, AlertTriangle, MapPin, Target, UserCheck } from 'lucide-react'
+import { BarChart3, TrendingUp, Wallet, Users2, LayoutDashboard, Package, AlertTriangle, MapPin, Target, UserCheck, LineChart } from 'lucide-react'
 import AnalyticsGate from '@/components/reports/AnalyticsGate'
 
 const TABS = [
@@ -15,6 +15,7 @@ const TABS = [
   { to: '/reports/churn-risk',        label: 'خطر الخمود',      icon: AlertTriangle },
   { to: '/reports/geography',         label: 'جغرافى',          icon: MapPin        },
   { to: '/reports/target-attainment', label: 'إنجاز الأهداف',   icon: Target        },
+  { to: '/reports/profitability',     label: 'الربحية',         icon: LineChart     },
 ]
 
 export default function ReportsLayout() {
