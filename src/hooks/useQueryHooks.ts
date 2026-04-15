@@ -31,6 +31,7 @@ import { getExpenses, getPaymentReceipts, getExpenseCategories } from '@/lib/ser
 import { getUsers, getRoles } from '@/lib/services/users'
 import { getAuditLogs } from '@/lib/services/settings'
 import { getChartOfAccounts, getJournalEntries } from '@/lib/services/finance'
+import { fetchFinancialSummary, fetchTrialBalanceDetail } from '@/lib/services/financialBalanceSheet'
 import { getSuppliers } from '@/lib/services/suppliers'
 import {
   getActivityTypes, getTargetTypes,
@@ -1707,3 +1708,25 @@ export function useDeleteCallPlanTemplateMutation() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['call-plan-templates'] }),
   })
 }
+
+// ════════════════════════════════════════════════════════════
+// Financial Balance Sheet & Trial Balance
+// ════════════════════════════════════════════════════════════
+
+export function useFinancialSummary(asOfDate: string, periodStart?: string) {
+  return useQuery({
+    queryKey: ['financial-summary', asOfDate, periodStart],
+    queryFn: () => fetchFinancialSummary(asOfDate, periodStart),
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+export function useTrialBalanceDetail(asOfDate: string, showParents: boolean, enabled: boolean) {
+  return useQuery({
+    queryKey: ['trial-balance-detail', asOfDate, showParents],
+    queryFn: () => fetchTrialBalanceDetail(asOfDate, showParents),
+    staleTime: 5 * 60 * 1000,
+    enabled,
+  })
+}
+

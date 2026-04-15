@@ -101,6 +101,7 @@ const sections: NavSection[] = [
           { label: 'شجرة الحسابات', path: '/finance/accounts', permission: PERMISSIONS.FINANCE_JOURNAL_READ },
           { label: 'القيود المحاسبية', path: '/finance/journals', permission: PERMISSIONS.FINANCE_JOURNAL_READ },
           { label: 'دفتر الحسابات', path: '/finance/ledger', permission: PERMISSIONS.FINANCE_LEDGER_READ },
+          { label: 'الميزان المالي', path: '/finance/balance-sheet', permission: PERMISSIONS.FINANCE_JOURNAL_READ },
           { label: 'قواعد الموافقات', path: '/finance/approval-rules', permission: PERMISSIONS.SETTINGS_UPDATE },
         ],
       },

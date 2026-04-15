@@ -60,6 +60,7 @@ const ChartOfAccountsPage = lazy(() => import('@/pages/finance/ChartOfAccountsPa
 const JournalsPage = lazy(() => import('@/pages/finance/JournalsPage'))
 const LedgerPage = lazy(() => import('@/pages/finance/LedgerPage'))
 const ApprovalRulesPage = lazy(() => import('@/pages/finance/ApprovalRulesPage'))
+const FinancialBalanceSheetPage = lazy(() => import('@/pages/finance/FinancialBalanceSheetPage'))
 
 // Sales Pages — lazy loaded
 const SalesOrdersPage = lazy(() => import('@/pages/sales/SalesOrdersPage'))
@@ -333,6 +334,9 @@ export default function App() {
               } />
               <Route path="finance/approval-rules" element={
                 <ProtectedRoute permission="settings.update"><Suspense fallback={<LazyFallback />}><ApprovalRulesPage /></Suspense></ProtectedRoute>
+              } />
+              <Route path="finance/balance-sheet" element={
+                <ProtectedRoute permission="finance.journal.read"><Suspense fallback={<LazyFallback />}><FinancialBalanceSheetPage /></Suspense></ProtectedRoute>
               } />
 
               {/* Branches */}
