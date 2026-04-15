@@ -72,6 +72,7 @@ const sections: NavSection[] = [
           { label: 'التحويلات', path: '/inventory/transfers', permission: [PERMISSIONS.INVENTORY_TRANSFERS_READ, PERMISSIONS.INVENTORY_TRANSFERS_CREATE] },
           { label: 'التسويات', path: '/inventory/adjustments', permission: [PERMISSIONS.INVENTORY_ADJUSTMENTS_READ, PERMISSIONS.INVENTORY_ADJUSTMENTS_CREATE] },
           { label: 'حركات المخزون', path: '/inventory/movements', permission: PERMISSIONS.INVENTORY_READ },
+          { label: 'تقييم المخزون', path: '/inventory/valuation', permission: PERMISSIONS.FINANCE_VIEW_COSTS },
         ],
       },
       {

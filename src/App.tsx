@@ -47,6 +47,7 @@ const BranchesPage = lazy(() => import('@/pages/branches/BranchesPage'))
 const BundlesPage = lazy(() => import('@/pages/products/BundlesPage'))
 const BrandsPage = lazy(() => import('@/pages/products/BrandsPage'))
 const StockMovementsPage = lazy(() => import('@/pages/inventory/StockMovementsPage'))
+const InventoryValuationPage = lazy(() => import('@/pages/inventory/InventoryValuationPage'))
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'))
 
 // Finance Pages — lazy loaded
@@ -256,6 +257,9 @@ export default function App() {
               } />
               <Route path="inventory/movements" element={
                 <ProtectedRoute permission="inventory.read"><Suspense fallback={<LazyFallback />}><StockMovementsPage /></Suspense></ProtectedRoute>
+              } />
+              <Route path="inventory/valuation" element={
+                <ProtectedRoute permission="finance.view_costs"><Suspense fallback={<LazyFallback />}><InventoryValuationPage /></Suspense></ProtectedRoute>
               } />
 
               {/* Sales */}

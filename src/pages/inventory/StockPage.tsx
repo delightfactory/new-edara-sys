@@ -37,7 +37,7 @@ export default function StockPage() {
   const totalCount = result?.count ?? 0
 
   const outOfStock  = stock.filter(s => s.available_quantity <= 0).length
-  const lowStock    = stock.filter(s => s.available_quantity > 0 && s.quantity <= 0).length
+  const lowStock    = stock.filter(s => s.available_quantity > 0 && s.product && s.quantity <= (s.product as any).min_stock_level).length
 
   return (
     <div className="page-container animate-enter">

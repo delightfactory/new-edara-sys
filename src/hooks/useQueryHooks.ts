@@ -193,6 +193,70 @@ export function useAdjustments(params?: Parameters<typeof getAdjustments>[0]) {
   })
 }
 
+// ── Inventory Valuation & Analytics ──────────────────────────
+import {
+  getInventoryValuationSummary,
+  getInventoryByWarehouse,
+  getInventoryByCategory,
+  getInventoryMovementAnalysis,
+  getInventoryDeadStockSummary,
+  getInventoryABCAnalysis,
+} from '@/lib/services/inventoryValuation'
+
+const VALUATION_STALE = 5 * 60 * 1000 // 5 minutes
+const ANALYTICS_STALE = 10 * 60 * 1000 // 10 minutes
+
+export function useInventoryValuationSummary() {
+  return useQuery({
+    queryKey: ['inventory-valuation-summary'],
+    queryFn: getInventoryValuationSummary,
+    staleTime: VALUATION_STALE,
+  })
+}
+
+export function useInventoryByWarehouse() {
+  return useQuery({
+    queryKey: ['inventory-by-warehouse'],
+    queryFn: getInventoryByWarehouse,
+    staleTime: VALUATION_STALE,
+  })
+}
+
+export function useInventoryByCategory() {
+  return useQuery({
+    queryKey: ['inventory-by-category'],
+    queryFn: getInventoryByCategory,
+    staleTime: VALUATION_STALE,
+  })
+}
+
+export function useInventoryMovementAnalysis(opts?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: ['inventory-movement-analysis'],
+    queryFn: getInventoryMovementAnalysis,
+    staleTime: ANALYTICS_STALE,
+    enabled: opts?.enabled ?? true,
+  })
+}
+
+export function useInventoryDeadStockSummary(opts?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: ['inventory-dead-stock-summary'],
+    queryFn: getInventoryDeadStockSummary,
+    staleTime: ANALYTICS_STALE,
+    enabled: opts?.enabled ?? true,
+  })
+}
+
+export function useInventoryABCAnalysis(opts?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: ['inventory-abc-analysis'],
+    queryFn: getInventoryABCAnalysis,
+    staleTime: ANALYTICS_STALE,
+    enabled: opts?.enabled ?? true,
+  })
+}
+
 // ════════════════════════════════════════════
 // 3. CUSTOMERS — العملاء
 // ════════════════════════════════════════════

@@ -29,15 +29,23 @@ interface SalesStats {
 
 // ── Fetchers ─────────────────────────────────────────────────
 async function fetchOverviewStats(): Promise<OverviewStats> {
-  const [customers, products, warehouses, stock, salesPending, purchasePending, lowStock] = await Promise.all([
+  const [customers, products, warehouses, stock, salesPending, purchasePending] = await Promise.all([
     supabase.from('customers').select('id', { count: 'estimated', head: true }).eq('is_active', true),
     supabase.from('products').select('id', { count: 'estimated', head: true }).eq('is_active', true),
     supabase.from('warehouses').select('id', { count: 'estimated', head: true }).eq('is_active', true),
     supabase.from('stock').select('id', { count: 'estimated', head: true }),
     supabase.from('sales_orders').select('id', { count: 'estimated', head: true }).in('status', ['confirmed', 'partially_delivered']),
     supabase.from('purchase_invoices').select('id', { count: 'estimated', head: true }).eq('status', 'pending'),
-    supabase.from('stock').select('id', { count: 'estimated', head: true }).lt('quantity', 10).gt('quantity', 0),
   ])
+
+  // استخدام RPC get_low_stock بدلاً من عتبة ثابتة — يقارن بالحد الأدنى الفعلي لكل منتج
+  const { data: lowStockRows } = await supabase.rpc('get_low_stock', {
+    p_warehouse_id: null, p_offset: 0, p_limit: 1,
+  })
+  const lowStockCount = (lowStockRows && lowStockRows.length > 0)
+    ? Number((lowStockRows as any[])[0].total_count)
+    : 0
+
   return {
     activeCustomers: customers.count ?? 0,
     activeProducts: products.count ?? 0,
@@ -45,7 +53,7 @@ async function fetchOverviewStats(): Promise<OverviewStats> {
     stockItems: stock.count ?? 0,
     pendingSalesOrders: salesPending.count ?? 0,
     pendingPurchaseInvoices: purchasePending.count ?? 0,
-    lowStockItems: lowStock.count ?? 0,
+    lowStockItems: lowStockCount,
   }
 }
 

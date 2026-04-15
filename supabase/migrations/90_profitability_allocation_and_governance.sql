@@ -543,7 +543,11 @@ DECLARE
 BEGIN
 
     -- ══════════════════════════════════════════════════════════
-    -- BRANCH 1: fact_sales_daily_grain (من 88 — بدون تغيير)
+    -- BRANCH 1: fact_sales_daily_grain
+    -- يطابق صافي الإيراد التحليلي مع الدفتر وفق البنية المحاسبية الحالية:
+    --   4100 إيراد إجمالي
+    -- - 4300 خصومات مبيعات
+    -- - 4200 مرتجعات مبيعات
     -- ══════════════════════════════════════════════════════════
     IF p_job_name = 'fact_sales_daily_grain' THEN
         SELECT COALESCE(SUM(net_tax_exclusive_revenue), 0) INTO v_analytics_rev_val FROM analytics.fact_sales_daily_grain WHERE date = ANY(p_target_dates);
@@ -562,7 +566,7 @@ BEGIN
             JOIN public.journal_entries     je  ON je.source_id = so.id AND je.source_type = 'sales_order'
             JOIN public.journal_entry_lines jel ON je.id = jel.entry_id
             JOIN public.chart_of_accounts   coa ON coa.id = jel.account_id
-            WHERE je.status = 'posted' AND coa.code IN ('4100', '2200', '1200')
+            WHERE je.status = 'posted' AND coa.code IN ('4100', '4300', '2200', '1200')
             GROUP BY 1, 2
         ),
         gl_returns AS (
@@ -581,6 +585,7 @@ BEGIN
         )
         SELECT
             COALESCE((SELECT SUM(cr_sum)  FROM gl_agg     WHERE code = '4100'), 0)
+            - COALESCE((SELECT SUM(cr_debit) FROM gl_agg  WHERE code = '4300'), 0)
             - COALESCE((SELECT SUM(ret_debit) FROM gl_returns WHERE code = '4200'), 0),
             COALESCE((SELECT SUM(cr_sum)  FROM gl_agg     WHERE code = '2200'), 0),
             COALESCE((SELECT SUM(cr_debit) FROM gl_agg    WHERE code = '1200'), 0)
