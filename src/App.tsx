@@ -34,6 +34,7 @@ const PriceListsPage = lazy(() => import('@/pages/products/PriceListsPage'))
 const CustomersPage = lazy(() => import('@/pages/customers/CustomersPage'))
 const CustomerDetailPage = lazy(() => import('@/pages/customers/CustomerDetailPage'))
 const CustomerFormPage = lazy(() => import('@/pages/customers/CustomerFormPage'))
+const CreditManagementPage = lazy(() => import('@/pages/credit/CreditManagementPage'))
 const SuppliersPage = lazy(() => import('@/pages/suppliers/SuppliersPage'))
 const SupplierDetailPage = lazy(() => import('@/pages/suppliers/SupplierDetailPage'))
 const SupplierFormPage = lazy(() => import('@/pages/suppliers/SupplierFormPage'))
@@ -221,6 +222,11 @@ export default function App() {
               } />
               <Route path="customers/:id/edit" element={
                 <ProtectedRoute permission="customers.update"><Suspense fallback={<LazyFallback />}><CustomerFormPage /></Suspense></ProtectedRoute>
+              } />
+
+              {/* Credit Management — إدارة الائتمان */}
+              <Route path="credit" element={
+                <ProtectedRoute permission={['customers.read', 'customers.read_all']}><Suspense fallback={<LazyFallback />}><CreditManagementPage /></Suspense></ProtectedRoute>
               } />
 
               {/* Suppliers */}

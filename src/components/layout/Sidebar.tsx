@@ -57,7 +57,14 @@ const sections: NavSection[] = [
           { label: 'مرتجعات المشتريات', path: '/purchases/returns', permission: 'procurement.returns.read' },
         ],
       },
-      { id: 'customers', label: 'العملاء', icon: Users, path: '/customers', permission: [PERMISSIONS.CUSTOMERS_READ, PERMISSIONS.CUSTOMERS_CREATE] },
+      {
+        id: 'customers', label: 'العملاء', icon: Users,
+        permission: [PERMISSIONS.CUSTOMERS_READ, PERMISSIONS.CUSTOMERS_CREATE],
+        children: [
+          { label: 'قائمة العملاء',  path: '/customers', permission: [PERMISSIONS.CUSTOMERS_READ, PERMISSIONS.CUSTOMERS_CREATE] },
+          { label: '🏦 إدارة الائتمان', path: '/credit', permission: [PERMISSIONS.CUSTOMERS_READ, 'customers.read_all'] },
+        ],
+      },
       { id: 'suppliers', label: 'الموردين', icon: Truck, path: '/suppliers', permission: [PERMISSIONS.SUPPLIERS_READ, PERMISSIONS.SUPPLIERS_CREATE] },
     ],
   },
