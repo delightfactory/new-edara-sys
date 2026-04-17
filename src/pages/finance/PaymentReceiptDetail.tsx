@@ -15,6 +15,7 @@ import Button from '@/components/ui/Button'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
 import Badge from '@/components/ui/Badge'
 import { useState } from 'react'
+import { DocumentActions } from '@/features/output/components/DocumentActions'
 
 // ══════════════════════════════════════════════════════════════
 // Config
@@ -235,21 +236,23 @@ export default function PaymentReceiptDetail() {
           </div>
         </div>
 
-        {/* Action buttons — pending only */}
-        {canConfirm && (
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Button size="sm" onClick={openConfirm} icon={<Check size={13} />}>
-              {isSelfCashCustody && !isAdmin ? 'تأكيد استلام النقدية' : 'تأكيد الاستلام'}
-            </Button>
-            {/* الرفض للإدارة فقط — المندوب لا يرفض إيصاله (يُعاد لدور الإدارة) */}
-            {isAdmin && (
-              <Button variant="danger" size="sm" onClick={() => { setRejectReason(''); setRejectOpen(true) }}
-                icon={<XCircle size={13} />}>
-                رفض
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <DocumentActions kind="payment-receipt" entityId={receipt.id} />
+          
+          {canConfirm && (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Button size="sm" onClick={openConfirm} icon={<Check size={13} />}>
+                {isSelfCashCustody && !isAdmin ? 'تأكيد استلام النقدية' : 'تأكيد الاستلام'}
               </Button>
-            )}
-          </div>
-        )}
+              {isAdmin && (
+                <Button variant="danger" size="sm" onClick={() => { setRejectReason(''); setRejectOpen(true) }}
+                  icon={<XCircle size={13} />}>
+                  رفض
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Amount Hero ── */}

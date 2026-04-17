@@ -1,0 +1,109 @@
+/* ═══════════════════════════════════════════════════════════════════
+   EDARA Print Base — Professional Output Foundation
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Screen isolation ───────────────────────────────────────────── */
+@media print {
+  body:not(.is-preview-route) > #root {
+    display: none !important;
+  }
+
+  .output-print-root {
+    display: block !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    color: #000;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body.is-preview-route {
+    background: white !important;
+  }
+}
+
+/* ── Base document container ────────────────────────────────────── */
+.output-document {
+  box-sizing: border-box;
+  background: #ffffff;
+  color: #111111;
+  direction: var(--doc-dir, rtl);
+
+  /* Professional Arabic print typography */
+  font-family: 'IBM Plex Sans Arabic', 'Noto Sans Arabic', 'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Table base ─────────────────────────────────────────────────── */
+.output-document table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+}
+
+.output-document th,
+.output-document td {
+  padding: 4px 7px;
+  border: 0.5pt solid #d0d0d0;
+  vertical-align: middle;
+  font-size: 9.5pt;
+}
+
+.output-document thead th {
+  background: #f2f2f2;
+  font-weight: 700;
+  font-size: 9pt;
+  border-bottom: 1.5pt solid #999;
+  white-space: nowrap;
+}
+
+.output-document tbody tr:nth-child(even) td {
+  background: #fafafa;
+}
+
+/* Tight rows for dense data tables */
+.output-document table.dense th,
+.output-document table.dense td {
+  padding: 2.5px 5px;
+  font-size: 8.5pt;
+}
+
+/* ── Page break utilities ───────────────────────────────────────── */
+@media print {
+  .page-break-before { page-break-before: always; break-before: page; }
+  .page-break-after  { page-break-after: always;  break-after: page; }
+  .no-page-break     { page-break-inside: avoid;  break-inside: avoid; }
+}
+
+/* ── Hidden in print / screen ───────────────────────────────────── */
+@media print {
+  .screen-only { display: none !important; }
+}
+.print-only { display: none; }
+@media print {
+  .print-only { display: revert; }
+}
+
+/* ── Divider lines ──────────────────────────────────────────────── */
+.output-document hr {
+  border: none;
+  border-top: 0.75pt solid #cccccc;
+  margin: 6px 0;
+}
+.output-document hr.thick {
+  border-top: 1.5pt solid #222222;
+}
+.output-document hr.dashed {
+  border-top: 1pt dashed #999999;
+}

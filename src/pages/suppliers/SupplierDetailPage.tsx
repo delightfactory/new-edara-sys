@@ -18,6 +18,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import type { Supplier, SupplierContact, SupplierPaymentReminder } from '@/lib/types/master-data'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
 import Button from '@/components/ui/Button'
+import { DocumentActions } from '@/features/output/components/DocumentActions'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -365,6 +366,7 @@ function PaymentsTab({ supplierId, supplierName, currentBalance, refreshSupplier
                 <th className="hide-mobile">الخزينة</th>
                 <th className="hide-mobile">ملاحظات</th>
                 <th>الحالة</th>
+                <th style={{ width: 100 }}></th>
               </tr>
             </thead>
             <tbody>
@@ -394,6 +396,11 @@ function PaymentsTab({ supplierId, supplierName, currentBalance, refreshSupplier
                         <><CheckCircle size={10} style={{ display: 'inline', marginLeft: 3 }} />مُرحَّل</>
                       ) : 'مُعكوس'}
                     </span>
+                  </td>
+                  <td style={{ textAlign: 'left' }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <DocumentActions kind="payment-voucher" entityId={v.id} />
+                    </div>
                   </td>
                 </tr>
               ))}

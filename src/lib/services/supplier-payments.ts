@@ -145,3 +145,16 @@ export async function createSupplierPayment(
   if (error) throw error
   return data as string   // UUID السند المُنشأ
 }
+
+/**
+ * جلب سند صرف مورد محدد بالكامل
+ */
+export async function getSupplierPaymentVoucher(id: string): Promise<SupplierPaymentVoucher> {
+  const { data, error } = await supabase
+    .from('supplier_payment_vouchers')
+    .select(SELECT_VOUCHER)
+    .eq('id', id)
+    .single()
+  if (error) throw error
+  return data as SupplierPaymentVoucher
+}

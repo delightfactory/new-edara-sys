@@ -1,0 +1,74 @@
+/* ═══════════════════════════════════════════════════════════════════
+   EDARA Print A4 — Standard & Report Layouts
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Standard Layout (A4 Portrait / Landscape) ──────────────────── */
+.layout-standard {
+  max-width: var(--profile-width, 210mm);
+  margin: 0 auto;
+  box-shadow: 0 2px 18px rgba(0,0,0,0.12);   /* screen preview only */
+  padding: var(--profile-pad-t, 12mm) var(--profile-pad-r, 13mm) var(--profile-pad-b, 12mm) var(--profile-pad-l, 13mm);
+  min-height: var(--profile-height, 297mm);
+  position: relative;
+  background: #ffffff;
+}
+
+@media print {
+  .layout-standard {
+    box-shadow: none;
+    margin: 0;
+    padding: 0;
+    min-height: 0;
+  }
+
+  /* fixed-header / fixed-footer spacer trick */
+  .layout-standard thead.print-header-spacer th {
+    height: var(--header-height, 88px);
+    border: none;
+    padding: 0;
+    background: transparent;
+  }
+  .layout-standard tfoot.print-footer-spacer td {
+    height: var(--footer-height, 60px);
+    border: none;
+    padding: 0;
+  }
+
+  .layout-standard-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--header-height, 88px);
+    background: #ffffff;
+    padding: 6mm 13mm 3mm;
+    box-sizing: border-box;
+  }
+
+  .layout-standard-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--footer-height, 60px);
+    background: #ffffff;
+    padding: 3mm 13mm 5mm;
+    box-sizing: border-box;
+  }
+
+  /* Repeat table header across pages for long tables */
+  .output-document thead {
+    display: table-header-group;
+  }
+  .output-document tfoot {
+    display: table-footer-group;
+  }
+}
+
+/* ── Screen preview for header/footer ───────────────────────────── */
+.layout-standard-header {
+  padding-bottom: 6px;
+}
+.layout-standard-footer {
+  padding-top: 6px;
+}

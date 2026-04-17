@@ -3,8 +3,10 @@ import { createRoot } from 'react-dom/client'
 import App from './App'
 import './styles/main.css'
 import { initSentry } from '@/lib/monitoring/sentry'
+import { bootOutputPlatform } from '@/features/output/boot'
 
 initSentry()
+bootOutputPlatform()
 
 async function cleanupDevServiceWorkers() {
   if (!import.meta.env.DEV) return

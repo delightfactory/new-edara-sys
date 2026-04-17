@@ -9,6 +9,7 @@ import {
   CheckCircle2, XOctagon, AlertCircle, ImageIcon,
 } from 'lucide-react'
 import ProofUploadButton from '@/components/ui/ProofUploadButton'
+import { DocumentActions } from '@/features/output/components/DocumentActions'
 import { useAuthStore } from '@/stores/auth-store'
 import { useWarehouses, useInvalidate } from '@/hooks/useQueryHooks'
 import { useQuery } from '@tanstack/react-query'
@@ -424,6 +425,9 @@ export default function SalesOrderDetail() {
             <ActionBtn icon={<XCircle size={13} />} label="إلغاء" danger
               onClick={() => setShowCancelModal(true)} disabled={actionLoading} />
           )}
+
+          <div style={{ width: 1, background: 'var(--border-primary)', margin: '0 4px', flexShrink: 0 }} />
+          <DocumentActions kind="sales-order" entityId={id!} />
         </div>
       </div>
 

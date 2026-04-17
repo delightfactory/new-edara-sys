@@ -9,6 +9,7 @@ import PageHeader from '@/components/shared/PageHeader'
 import DataTable from '@/components/shared/DataTable'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
+import { DocumentActions } from '@/features/output/components/DocumentActions'
 
 type LedgerTab = 'customers' | 'suppliers'
 
@@ -178,7 +179,10 @@ export default function LedgerPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
                   <div>
                     <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 4 }}>كشف حساب</div>
-                    <div style={{ fontWeight: 700, fontSize: 'var(--text-lg)' }}>{selectedName}</div>
+                    <div style={{ fontWeight: 700, fontSize: 'var(--text-lg)', display: 'flex', gap: '12px', alignItems: 'center' }}>
+                      <span>{selectedName}</span>
+                      <DocumentActions kind="account-statement" entityId={selectedId} params={{ type: tab }} />
+                    </div>
                   </div>
                   <div style={{ textAlign: 'left' }}>
                     <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 4 }}>الرصيد الحالي</div>

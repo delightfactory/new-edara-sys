@@ -1,0 +1,67 @@
+/* ═══════════════════════════════════════════════════════════════════
+   EDARA Print Report — Multi-Page Report Layout
+   ═══════════════════════════════════════════════════════════════════ */
+
+.layout-report {
+  max-width: var(--profile-width, 297mm);
+  margin: 0 auto;
+  box-shadow: 0 2px 18px rgba(0,0,0,0.12);
+  padding: var(--profile-pad-t, 10mm) var(--profile-pad-r, 14mm) var(--profile-pad-b, 10mm) var(--profile-pad-l, 14mm);
+  min-height: var(--profile-height, 210mm);
+  position: relative;
+  background: #ffffff;
+}
+
+/* ── Denser rows for report tables ─────────────────────────────── */
+.layout-report .output-document th,
+.layout-report .output-document td,
+.layout-report th,
+.layout-report td {
+  padding: 3.5px 6px;
+  font-size: 8.5pt;
+}
+
+.layout-report thead th {
+  padding: 4px 6px;
+  font-size: 8.5pt;
+  background: #ececec;
+  border-bottom: 1.5pt solid #888;
+}
+
+/* ── Clean page breaks for report tables ────────────────────────── */
+@media print {
+  .layout-report {
+    box-shadow: none;
+    margin: 0;
+    padding: 0;
+    min-height: 0;
+  }
+
+  /* Repeated header */
+  .layout-standard-header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: var(--header-height, 80px);
+    background: #ffffff;
+    padding: 5mm 14mm 2mm;
+    box-sizing: border-box;
+  }
+
+  .layout-report th {
+    background: #ececec !important;
+  }
+
+  /* Keep table rows together */
+  .layout-report tbody tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Space for fixed header */
+  .layout-report thead.print-header-spacer th {
+    height: var(--header-height, 80px);
+    border: none;
+    padding: 0;
+    background: transparent;
+  }
+}

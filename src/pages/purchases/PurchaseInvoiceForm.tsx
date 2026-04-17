@@ -36,6 +36,7 @@ import type {
 import PageHeader from '@/components/shared/PageHeader'
 import Button from '@/components/ui/Button'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
+import { DocumentActions } from '@/features/output/components/DocumentActions'
 
 // ── Step definitions (new/draft mode only) ─────────────────────────
 const STEPS = [
@@ -880,8 +881,9 @@ export default function PurchaseInvoiceForm() {
           'فاتورة نهائية — للقراءة فقط'
         }
         actions={
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             {invoice && <StatusBadge status={invoice.status} />}
+            {invoice && <DocumentActions kind="purchase-invoice" entityId={invoice.id} />}
             <Button variant="ghost" onClick={() => navigate('/purchases/invoices')}>
               <ArrowRight size={16} /> رجوع
             </Button>

@@ -144,6 +144,9 @@ const BranchDirectProfitPage = lazy(() => import('@/pages/reports/profitability/
 const BranchFinalProfitPage = lazy(() => import('@/pages/reports/profitability/BranchFinalProfitPage'))
 const AllocationQualityPage = lazy(() => import('@/pages/reports/profitability/AllocationQualityPage'))
 
+// Output & Documents
+const DocumentPreviewRoute = lazy(() => import('@/features/output/components/DocumentPreviewRoute'))
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -631,6 +634,18 @@ export default function App() {
               } />
 
             </Route>
+
+            {/* Protected — Out of AppLayout (isolated for printing) */}
+            <Route
+              path="/documents/:kind/:id/preview"
+              element={
+                <ProtectedRoute>
+                  <Suspense fallback={<LazyFallback />}>
+                    <DocumentPreviewRoute />
+                  </Suspense>
+                </ProtectedRoute>
+              }
+            />
 
               {/* 404 */}
               <Route path="*" element={
