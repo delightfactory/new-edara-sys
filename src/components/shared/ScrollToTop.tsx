@@ -158,6 +158,15 @@ export default function ScrollToTopButton() {
               transform 0.1s linear;
           }
         }
+        /* ═══ HIDE IN PRINT + PREVIEW ROUTE ═══════════════════════ */
+        /* Never shown when printing any page */
+        @media print {
+          .stt-btn { display: none !important; }
+        }
+        /* Never shown inside the document preview page */
+        .is-preview-route .stt-btn {
+          display: none !important;
+        }
       `}</style>
     </>
   )
