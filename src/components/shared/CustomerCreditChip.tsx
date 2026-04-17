@@ -108,7 +108,7 @@ export default function CustomerCreditChip({
         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>الائتمان</span>
         <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>غير محدود</span>
         {hasDebt && (
-          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#d97706', marginRight: 'auto' }}>
+          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#d97706', marginInlineStart: 'auto' }}>
             مديون: {formatNumber(state.balance)} ج.م
           </span>
         )}
@@ -151,7 +151,7 @@ export default function CustomerCreditChip({
           {formatNumber(s.available)}
         </span>
         <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)' }}>ج.م</span>
-        <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginRight: 'auto' }}>
+        <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginInlineStart: 'auto' }}>
           / {formatNumber(s.limit)}
         </span>
       </div>
@@ -190,7 +190,7 @@ export default function CustomerCreditChip({
           fontSize: '0.6rem', fontWeight: 700, color: s.accent,
           background: `${s.accent}18`, padding: '1px 5px', borderRadius: 99,
         }}>{s.labelShort}</span>
-        <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', marginRight: 'auto' }}>
+        <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', marginInlineStart: 'auto' }}>
           من {formatNumber(s.limit)} • {Math.round(s.usedPct * 100)}%
         </span>
       </div>

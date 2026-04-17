@@ -156,6 +156,7 @@ const sections: NavSection[] = [
           { label: 'خطر الخمود',          path: '/reports/churn-risk',        permission: [PERMISSIONS.REPORTS_SALES, PERMISSIONS.REPORTS_VIEW_ALL] },
           { label: 'التحليل الجغرافى',    path: '/reports/geography',         permission: [PERMISSIONS.REPORTS_SALES, PERMISSIONS.REPORTS_VIEW_ALL] },
           { label: 'إنجاز الأهداف',       path: '/reports/target-attainment', permission: [PERMISSIONS.REPORTS_TARGETS, PERMISSIONS.REPORTS_VIEW_ALL] },
+          { label: 'التزام المندوبين الائتماني', path: '/reports/credit-commitment', permission: [PERMISSIONS.REPORTS_SALES, PERMISSIONS.REPORTS_VIEW_ALL] },
         ],
       },
       {

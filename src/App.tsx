@@ -127,11 +127,12 @@ const SalesPage           = lazy(() => import('@/pages/reports/SalesPage'))
 const ReceivablesPage     = lazy(() => import('@/pages/reports/ReceivablesPage'))
 const TreasuryPage        = lazy(() => import('@/pages/reports/TreasuryPage'))
 const CustomerHealthPage     = lazy(() => import('@/pages/reports/CustomerHealthPage'))
-const RepPerformancePage     = lazy(() => import('@/pages/reports/RepPerformancePage'))
-const ProductPerformancePage = lazy(() => import('@/pages/reports/ProductPerformancePage'))
-const ChurnRiskPage          = lazy(() => import('@/pages/reports/ChurnRiskPage'))
-const GeographyPage          = lazy(() => import('@/pages/reports/GeographyPage'))
-const TargetAttainmentPage   = lazy(() => import('@/pages/reports/TargetAttainmentPage'))
+const RepPerformancePage          = lazy(() => import('@/pages/reports/RepPerformancePage'))
+const ProductPerformancePage      = lazy(() => import('@/pages/reports/ProductPerformancePage'))
+const ChurnRiskPage               = lazy(() => import('@/pages/reports/ChurnRiskPage'))
+const GeographyPage               = lazy(() => import('@/pages/reports/GeographyPage'))
+const TargetAttainmentPage        = lazy(() => import('@/pages/reports/TargetAttainmentPage'))
+const RepCreditCommitmentPage     = lazy(() => import('@/pages/reports/RepCreditCommitmentPage'))
 
 // Reports — Profitability (Phases 1-3)
 const ProfitabilityLayout = lazy(() => import('@/pages/reports/profitability/ProfitabilityLayout'))
@@ -471,6 +472,11 @@ export default function App() {
                 <Route path="target-attainment" element={
                   <ProtectedRoute permission={['reports.targets', 'reports.view_all']}>
                     <Suspense fallback={<LazyFallback />}><TargetAttainmentPage /></Suspense>
+                  </ProtectedRoute>
+                } />
+                <Route path="credit-commitment" element={
+                  <ProtectedRoute permission={['reports.sales', 'reports.view_all']}>
+                    <Suspense fallback={<LazyFallback />}><RepCreditCommitmentPage /></Suspense>
                   </ProtectedRoute>
                 } />
                 <Route path="profitability" element={

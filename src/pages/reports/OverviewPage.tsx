@@ -8,7 +8,7 @@ import MetricCard from '@/components/reports/MetricCard'
 import SkeletonCard from '@/components/reports/SkeletonCard'
 import SystemHealthBar from '@/components/reports/SystemHealthBar'
 import ReportFilterBar, { type DateRange } from '@/components/reports/ReportFilterBar'
-import { TrendingUp, Wallet, BarChart3, Users2, Package, AlertTriangle, MapPin, Target, UserCheck } from 'lucide-react'
+import { TrendingUp, Wallet, BarChart3, Users2, Package, AlertTriangle, MapPin, Target, UserCheck, ShieldCheck } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { toLocalISODate } from '@/lib/utils/date'
 
@@ -158,6 +158,7 @@ export default function OverviewPage() {
           { to: '/reports/churn-risk',        label: 'خطر الخمود',       desc: 'VIP — مخلص — معرض للخطر — خامد',   icon: AlertTriangle, color: 'var(--color-warning)'  },
           { to: '/reports/geography',         label: 'التحليل الجغرافى', desc: 'محافظة — مدينة — منطقة',           icon: MapPin,        color: 'var(--color-success)'  },
           { to: '/reports/target-attainment', label: 'إنجاز الأهداف',    desc: 'فعلى مقابل مستهدف — الاتجاه',      icon: Target,        color: '#f59e0b'                },
+          { to: '/reports/credit-commitment', label: 'التزام ائتمان المندوبين', desc: 'محفظة — مديونية منشأة — تحصيلات', icon: ShieldCheck,   color: '#7c3aed'                },
         ].map(item => {
           const Icon = item.icon
           return (

@@ -275,9 +275,12 @@ export default function CustomerCreditPanel({
       <div style={{
         display: 'flex',
         borderBottom: `1px solid var(--border-primary)`,
-        overflow: 'hidden',
+        overflowX: 'auto',
+        overflowY: 'hidden',
         flexShrink: 0,
-      }}>
+        scrollbarWidth: 'none',   /* Firefox */
+        WebkitOverflowScrolling: 'touch',
+      } as React.CSSProperties}>
         {tabs.map(tab => (
           <button
             key={tab.id}
@@ -364,11 +367,12 @@ export default function CustomerCreditPanel({
 
       {/* ── Footer Links ──────────────────────────────────────── */}
       <div style={{
-        padding:     '10px 16px',
-        borderTop:   `1px solid var(--border-primary)`,
-        display:     'flex',
-        gap:         8,
-        flexShrink:  0,
+        padding:            '10px 16px',
+        paddingBottom:      'max(10px, env(safe-area-inset-bottom, 10px))',
+        borderTop:          `1px solid var(--border-primary)`,
+        display:            'flex',
+        gap:                8,
+        flexShrink:         0,
       }}>
         <a
           href={`/customers/${customer.id}`}
@@ -484,7 +488,8 @@ function InvoicesTab({ orders, creditDays }: {
             </div>
 
             <div style={{
-              display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(70px, 1fr))',
               gap: 4, fontSize: 'var(--text-xs)',
             }}>
               <div>
