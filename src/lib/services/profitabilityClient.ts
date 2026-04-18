@@ -9,7 +9,8 @@ import type {
   BranchFinalNetProfitResult,
   AllocationQualityReportResult,
   ProfitabilityFilterParams,
-  GranularProfitabilityFilterParams
+  GranularProfitabilityFilterParams,
+  CustomerProfitabilityFilterParams
 } from '@/lib/types/profitability'
 
 // Helper to map errors precisely matching the analytics client logic
@@ -69,13 +70,14 @@ export async function getGrossProfitByProduct({ date_from, date_to, branch_id, g
   return results
 }
 
-export async function getGrossProfitByCustomer({ date_from, date_to, branch_id, granularity = 'daily', limit_count = 100 }: GranularProfitabilityFilterParams): Promise<GrossProfitGrainResult[]> {
+export async function getGrossProfitByCustomer({ date_from, date_to, branch_id, granularity = 'daily', limit_count = 100, customer_id }: GranularProfitabilityFilterParams): Promise<GrossProfitGrainResult[]> {
   const { data, error } = await supabase.rpc('analytics_gross_profit_by_customer', {
     date_from,
     date_to,
     p_branch_id: branch_id || null,
     p_granularity: granularity,
     p_limit_count: limit_count,
+    p_customer_id: customer_id || null,
   })
   if (error) mapRpcError(error, 'gross_profit_customer')
 
@@ -92,6 +94,16 @@ export async function getGrossProfitByCustomer({ date_from, date_to, branch_id, 
     }
   }
   return results
+}
+
+/**
+ * Customer-specific profitability entry point.
+ * Uses CustomerProfitabilityFilterParams to enforce that only granularity values
+ * accepted by analytics_gross_profit_by_customer are passed ('aggregate'|'daily'|'monthly').
+ * customer_id is required (enforced by type).
+ */
+export async function getCustomerProfitability({ customer_id, date_from, date_to, granularity = 'monthly', branch_id }: CustomerProfitabilityFilterParams): Promise<GrossProfitGrainResult[]> {
+  return getGrossProfitByCustomer({ date_from, date_to, branch_id, granularity, customer_id, limit_count: 500 })
 }
 
 export async function getGrossProfitByRep({ date_from, date_to, branch_id, granularity = 'daily', limit_count = 100 }: GranularProfitabilityFilterParams): Promise<GrossProfitGrainResult[]> {

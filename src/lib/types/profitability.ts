@@ -9,9 +9,30 @@ export interface ProfitabilityFilterParams {
 }
 
 export interface GranularProfitabilityFilterParams extends ProfitabilityFilterParams {
-  granularity?: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+  granularity?: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly' | 'aggregate';
+  limit_count?: number;
+  customer_id?: string | null;
+}
+
+/**
+ * Granularity values accepted by analytics_gross_profit_by_customer (migration 100).
+ * Narrower than the full GranularProfitabilityFilterParams.granularity union.
+ */
+export type CustomerProfitabilityGranularity = 'aggregate' | 'daily' | 'monthly'
+
+/**
+ * Filter params for the customer-specific profitability path.
+ * Uses CustomerProfitabilityGranularity to prevent passing granularity values
+ * ('weekly', 'quarterly', 'yearly') that analytics_gross_profit_by_customer rejects at runtime.
+ * Other profitability functions (getProfitTrend, getGrossProfitByProduct, etc.) keep
+ * using the broader GranularProfitabilityFilterParams.
+ */
+export interface CustomerProfitabilityFilterParams extends ProfitabilityFilterParams {
+  customer_id: string;                          // required (not optional) for customer path
+  granularity?: CustomerProfitabilityGranularity;
   limit_count?: number;
 }
+
 
 // ----------------------------------------------------------------------------
 // Phase 1 Results
