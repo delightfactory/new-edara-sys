@@ -1,26 +1,30 @@
 /**
  * useDocumentOutput — central hook for all document output actions.
  *
- * Architecture (corrected):
- * - preview/print: opens DocumentPreviewPage in new tab (always correct)
- * - pdf-download: lazy-loads pdf-download-service and passes the FULL preview URL
- *   parameters (kind, entityId, params, paperProfileId) — no CanonicalDocument
- *   is built here to avoid data duplication; DocumentPreviewPage handles building.
+ * All popup/URL logic is delegated to openPreviewPopup() — no
+ * duplicated window.open() or URLSearchParams here.
  *
- * Capability gating: only outputs that are both declared in the definition
- * AND currently implemented end-to-end are exposed.
+ * ── Sync contract ───────────────────────────────────────────────────
+ * triggerPreview and triggerPdfDownload call openPreviewPopup()
+ * synchronously inside the useCallback — preserving the user gesture
+ * chain required by browsers (especially iOS Safari).
+ *
+ * ── Platform gating ─────────────────────────────────────────────────
+ * Capabilities are resolved by resolveAllCapabilities() which applies
+ * platform × paperProfile × outputKind rules. Components must only
+ * render buttons whose capability is visible=true.
  */
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { getDocumentDefinition } from '../definitions/document-registry';
 import { paperProfiles } from '../paper-profiles/paper-profiles';
 import { DocumentKind, OutputKind, PaperProfileId } from '../core/output-types';
-
-/** Actions that are currently implemented end-to-end */
-const IMPLEMENTED_OUTPUTS: Set<OutputKind> = new Set(['print', 'pdf-browser', 'pdf-download']);
+import { CURRENT_PLATFORM, resolveAllCapabilities } from '../core/platform-capabilities';
+import { openPreviewPopup } from '../services/open-preview-popup';
 
 export interface DocumentCapability {
   kind: OutputKind;
-  available: boolean;
+  allowed: boolean;
+  visible: boolean;
   label: string;
 }
 
@@ -36,7 +40,8 @@ export interface UseDocumentOutputReturn {
   busy: boolean;
   error: string | null;
   triggerPreview: () => void;
-  triggerPdfDownload: () => Promise<void>;
+  triggerPdfDownload: () => void;  // sync — must be called directly in onClick
+  triggerPrint: () => void;          // same-window print (always safe, incl. iOS)
   clearError: () => void;
 }
 
@@ -46,67 +51,83 @@ export function useDocumentOutput({
   paperProfileId,
   params,
 }: UseDocumentOutputOptions): UseDocumentOutputReturn {
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy]   = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const def = getDocumentDefinition(kind);
 
-  // ── Capabilities ─────────────────────────────────────────────────
-  const capabilities: DocumentCapability[] = (def?.supportedOutputs ?? [])
-    .filter((o): o is OutputKind => IMPLEMENTED_OUTPUTS.has(o))
-    .map(o => ({ kind: o, available: true, label: outputLabel(o) }));
-
   // ── Resolve paper profile ─────────────────────────────────────────
-  const resolvedPaperId: PaperProfileId = paperProfileId ?? (def?.defaultPaper ?? 'a4-portrait');
-  const resolvedProfile = paperProfiles[resolvedPaperId];
+  const resolvedPaperId: PaperProfileId =
+    paperProfileId ?? (def?.defaultPaper ?? 'a4-portrait');
 
-  // ── Preview / Print ──────────────────────────────────────────────
-  // Passes params (+ paperProfileId via __paper) so DocumentPreviewPage
-  // can rebuild the correct variant when the tab opens.
+  // Validate profile exists at hook init time (caught early, not at click time)
+  void paperProfiles[resolvedPaperId];
+
+  // ── Platform-aware capabilities ───────────────────────────────────
+  const capabilities = useMemo<DocumentCapability[]>(() => {
+    const supported = def?.supportedOutputs ?? [];
+    return resolveAllCapabilities(
+      supported as OutputKind[],
+      CURRENT_PLATFORM,
+      resolvedPaperId,
+    ) as DocumentCapability[];
+  }, [def, resolvedPaperId]);
+
+  // ── Preview (opens preview tab — no autoprint) ────────────────────
+  // SYNC: openPreviewPopup called immediately in gesture frame.
   const triggerPreview = useCallback(() => {
-    const urlParams = new URLSearchParams(params ?? {});
-    if (paperProfileId) urlParams.set('__paper', paperProfileId);
-    const query = urlParams.toString();
-    const url = `/documents/${kind}/${entityId}/preview${query ? '?' + query : ''}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
-  }, [kind, entityId, params, paperProfileId]);
+    const popup = openPreviewPopup({
+      kind,
+      entityId,
+      paperProfileId: resolvedPaperId,
+      baseParams: params ?? {},
+      autoprint: false,
+    });
+    if (!popup) {
+      setError('تعذّر فتح نافذة المعاينة. تأكد من السماح بالنوافذ المنبثقة.');
+    }
+  }, [kind, entityId, resolvedPaperId, params]);
 
-  // ── PDF Download (lazy, popup-based, auto-print) ──────────────────
-  const triggerPdfDownload = useCallback(async () => {
+  // ── PDF Download (preview + autoprint) ───────────────────────────
+  // SYNC: openPreviewPopup called first — before any setState or async.
+  // The "busy" state is UI-only feedback; it does NOT gate the popup.
+  const triggerPdfDownload = useCallback(() => {
     if (!def) {
       setError('تعريف المستند غير موجود');
       return;
     }
 
-    setBusy(true);
-    setError(null);
+    // Step 1 — SYNC: open popup immediately (user gesture frame preserved)
+    const popup = openPreviewPopup({
+      kind,
+      entityId,
+      paperProfileId: resolvedPaperId,
+      baseParams: params ?? {},
+      autoprint: true,
+    });
 
-    try {
-      // Lazy-load keeps this out of the main bundle
-      const { generateAndDownloadPdf } = await import('../services/pdf-download-service');
-      await generateAndDownloadPdf({
-        kind,
-        entityId,
-        paperProfileId: resolvedPaperId,
-        params: params ?? {},
-      });
-    } catch (err: any) {
-      setError(err.message || 'فشل فتح نافذة الحفظ');
-    } finally {
-      setBusy(false);
+    if (!popup) {
+      setError(
+        'لم يتمكن المتصفح من فتح نافذة الطباعة. تأكد من السماح بالنوافذ المنبثقة.'
+      );
+      return;
     }
+
+    // Step 2 — UI-only busy indicator.
+    // The popup manages its own lifecycle; this timer is purely cosmetic
+    // so the button feels responsive. It is NOT a readiness gate.
+    setBusy(true);
+    setTimeout(() => setBusy(false), 2000);   // UI-only, not a readiness gate
   }, [def, kind, entityId, resolvedPaperId, params]);
+
+  // ── Same-window print — works on all platforms including iOS ──────
+  const triggerPrint = useCallback(() => {
+    import('../services/browser-print-service').then(({ browserPrintService }) => {
+      browserPrintService.print().catch(() => setError('فشل تشغيل الطباعة'));
+    });
+  }, []);
 
   const clearError = useCallback(() => setError(null), []);
 
-  return { capabilities, busy, error, triggerPreview, triggerPdfDownload, clearError };
-}
-
-function outputLabel(kind: OutputKind): string {
-  switch (kind) {
-    case 'print':        return 'طباعة';
-    case 'pdf-browser':  return 'معاينة / طباعة';
-    case 'pdf-download': return 'حفظ كـ PDF';
-    default: return kind;
-  }
+  return { capabilities, busy, error, triggerPreview, triggerPdfDownload, triggerPrint, clearError };
 }

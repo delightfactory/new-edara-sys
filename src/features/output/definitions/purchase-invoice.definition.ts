@@ -154,7 +154,10 @@ export const purchaseInvoiceDefinition: DocumentDefinition = {
         direction,
         locale,
         company: branding,
-        parties: [],
+        // Canonical parties preserved — matching A4 model.
+        parties: invoice.supplier
+          ? [{ role: 'المورد', name: invoice.supplier.name || '—', code: invoice.supplier.code }]
+          : [],
         meta: [
           { label: 'رقم الفاتورة', value: invoice.number, dir: 'ltr' as const },
           { label: 'التاريخ', value: formatDate(invoice.invoice_date) },

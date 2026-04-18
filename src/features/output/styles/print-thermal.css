@@ -1,20 +1,47 @@
 /* ═══════════════════════════════════════════════════════════════════
-   EDARA Print Thermal — 80mm Receipt Layout
+   EDARA Print Thermal — 80mm / 58mm Receipt Layout
+   ═══════════════════════════════════════════════════════════════════
+
+   CRITICAL: Screen preview ≠ Print surface
+   ──────────────────────────────────────────────────────────────────
+   - Screen: .layout-thermal fills available width (fit-to-width),
+     no literal 80mm box on mobile screen.
+   - Print:  @page sets physical paper width; .layout-thermal enforces
+     the narrow width at DOM level.
+
+   PDF fallback policy — explicit:
+   ──────────────────────────────────────────────────────────────────
+   @page { size: 80mm auto } is honoured by:
+     ✅ Chrome/Edge on Desktop (physical width applies)
+     ❌ iOS Safari — ignored, renders A4
+     ❌ Firefox — partially ignored, unreliable
+     ❌ Android Chrome — marginally supported, inconsistent
+   → THEREFORE: platform-capabilities.ts gates pdf-download to
+     desktop-only for thermal profiles.
    ═══════════════════════════════════════════════════════════════════ */
 
-/* ── Container ──────────────────────────────────────────────────── */
+/* ── Screen: fit-to-width preview ───────────────────────────────── */
+/* On screen, the thermal layout fills the available container.
+   We do NOT render it as a literal 80mm-wide strip on a mobile screen —
+   that is unreadable and visually broken. The physical width only
+   matters during actual paper output (print). */
 .layout-thermal {
-  width: var(--profile-width, 80mm);
+  /* Screen: unconstrained by profile width; fills the preview surface */
+  width: 100%;
+  max-width: 480px;        /* hard cap so it doesn't bloat on desktop screen preview */
   margin: 0 auto;
-  box-shadow: 0 0 8px rgba(0,0,0,0.15);     /* screen preview only */
-  padding: var(--profile-pad-t, 3mm) var(--profile-pad-r, 3mm) var(--profile-pad-b, 4mm) var(--profile-pad-l, 3mm);
+  padding: var(--profile-pad-t, 4mm) var(--profile-pad-r, 4mm) var(--profile-pad-b, 5mm) var(--profile-pad-l, 4mm);
   background: #ffffff;
+  box-sizing: border-box;
 
-  /* Tighter thermal typography */
+  /* Thermal-native typography */
   font-family: 'IBM Plex Sans Arabic', 'Noto Sans Arabic', 'Cairo', Tahoma, Arial, sans-serif;
   font-size: 9pt;
-  line-height: 1.35;
+  line-height: 1.4;
   color: #000;
+
+  /* Screen-only shadow to distinguish the receipt from the background */
+  box-shadow: 0 1px 12px rgba(0, 0, 0, 0.12);
 }
 
 /* ── Table overrides for thermal ────────────────────────────────── */
@@ -30,6 +57,10 @@
   border: none;
   border-bottom: 0.5pt solid #ddd;
   vertical-align: middle;
+  /* No text-overflow truncation in table cells either */
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .layout-thermal thead th {
@@ -37,12 +68,13 @@
   border-bottom: 1pt solid #000;
   background: transparent;
   font-size: 8pt;
+  white-space: nowrap;   /* headers can stay on one line */
 }
 
 /* ── Dividers ───────────────────────────────────────────────────── */
 .layout-thermal .th-divider {
   border: none;
-  border-top: 1pt dashed #333;
+  border-top: 1pt dashed #aaa;
   margin: 4px 0;
 }
 .layout-thermal .th-divider-solid {
@@ -56,14 +88,15 @@
   text-align: center;
 }
 
-/* ── KV rows in thermal (label: value on same line) ─────────────── */
+/* ── KV rows (label: value, same line) ──────────────────────────── */
 .layout-thermal .th-kv-row {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 1.5px 0;
+  padding: 2px 0;
   font-size: 8.5pt;
-  gap: 4px;
+  gap: 6px;
+  /* Allow rows to wrap if content is very long */
 }
 .layout-thermal .th-kv-row .th-kv-label {
   color: #444;
@@ -73,19 +106,25 @@
 .layout-thermal .th-kv-row .th-kv-value {
   font-weight: 600;
   text-align: end;
+  /* Full wrapping — NO truncation */
   word-break: break-word;
+  overflow-wrap: anywhere;
+  flex: 1;
+  min-width: 0;
 }
 
-/* ── Total row in thermal ───────────────────────────────────────── */
+/* ── Grand total row — maximum visual prominence ────────────────── */
 .layout-thermal .th-total-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 3px 0;
-  font-size: 10pt;
+  padding: 4px 0;
+  font-size: 11pt;          /* largest on the receipt */
   font-weight: 800;
-  border-top: 1.5pt solid #000;
-  margin-top: 3px;
+  border-top: 2pt solid #000;
+  border-bottom: 1pt solid #000;
+  margin-top: 4px;
+  margin-bottom: 2px;
 }
 
 /* ── Footer text ────────────────────────────────────────────────── */
@@ -93,31 +132,74 @@
   text-align: center;
   font-size: 7.5pt;
   color: #555;
-  margin-top: 4px;
+  margin-top: 3px;
+  word-break: break-word;
 }
 
-/* ── Print rules ────────────────────────────────────────────────── */
+/* ── Hide images (production thermal default) ───────────────────── */
+.layout-thermal.hide-images img {
+  display: none !important;
+}
+
+/* ── Monochrome — applies to all colour sources including images ─── */
+.layout-thermal.monochrome {
+  /* Text and borders already #000 in thermal */
+}
+.layout-thermal.monochrome * {
+  color: #000 !important;
+  background-color: transparent !important;
+  /* Preserve semantic border colours but force to black */
+  border-color: #000 !important;
+}
+/* Images in monochrome mode — desaturate via CSS filter */
+.layout-thermal.monochrome img {
+  filter: grayscale(100%) contrast(120%);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   PRINT SURFACE — physical thermal paper
+   These rules OVERRIDE the screen rules above and enforce the real
+   thermal-paper width.
+   ══════════════════════════════════════════════════════════════════ */
 @media print {
   .layout-thermal {
-    box-shadow: none;
-    margin: 0;
-    width: var(--profile-width, 80mm);
+    /* Use the CSS var set by DocumentPreviewPage from profile.size.width */
+    width: var(--profile-width, 80mm) !important;
+    max-width: var(--profile-width, 80mm) !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+
+    /* Ensure content fills the roll and doesn't leave whitespace */
+    min-height: 0;
+  }
+
+  /* Prevent the body/page from imposing A4 margins on thermal.
+   *
+   * NOTE: 'body.thermal-print html' was an invalid selector (html cannot
+   * be a descendant of body in the DOM). Corrected below:
+   *   - 'html:has(body.thermal-print)' targets the html element when
+   *     body carries the class (supported in all modern browsers).
+   *   - A plain 'body.thermal-print' rule handles the body itself.
+   */
+  html:has(body.thermal-print),
+  body.thermal-print {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* The output root must not have horizontal overflow when thermal.
+   * --thermal-max-width is set by ThermalLayout via inline style;
+   * here it is ACTUALLY consumed as the max-width constraint.
+   * If the var is absent, falls back to the profile width. */
+  .output-print-root[data-paper^="thermal"] {
+    width: var(--profile-width, 80mm) !important;
+    max-width: var(--thermal-max-width, var(--profile-width, 80mm)) !important;
+    overflow: visible !important;
+    margin: 0 !important;
   }
 
   .layout-thermal-header,
   .layout-thermal-footer {
     position: static;
   }
-}
-
-/* ── Hide images if requested ───────────────────────────────────── */
-.layout-thermal.hide-images img {
-  display: none !important;
-}
-
-/* ── Monochrome override ────────────────────────────────────────── */
-.layout-thermal.monochrome * {
-  color: #000 !important;
-  background-color: transparent !important;
-  border-color: #000 !important;
 }

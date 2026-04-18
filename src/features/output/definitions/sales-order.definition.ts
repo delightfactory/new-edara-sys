@@ -132,7 +132,9 @@ export const salesOrderDefinition: DocumentDefinition = {
         direction,
         locale,
         company: branding,
-        parties: [],
+        // Parties are preserved in the canonical model for consistency with A4.
+        // ThermalLayout renders them only if present; KV rows handle the detailed display.
+        parties,
         meta: [
           { label: 'رقم الطلب', value: order.order_number || '—', dir: 'ltr' as const },
           { label: 'التاريخ', value: formatDate(order.order_date) },
@@ -233,7 +235,9 @@ export const salesOrderDefinition: DocumentDefinition = {
         tax: order.tax_amount > 0 ? `${formatNumber(order.tax_amount)} ${branding.currencySymbol}` : undefined,
         total: `${formatNumber(order.total_amount)} ${branding.currencySymbol}`,
         paid: order.paid_amount > 0 ? `${formatNumber(order.paid_amount)} ${branding.currencySymbol}` : undefined,
-        remaining: `${formatNumber(remaining)} ${branding.currencySymbol}`,
+        // Only show remaining if it is actually non-zero.
+        // Showing "0.00 ج.م" when fully paid is misleading on printed documents.
+        remaining: remaining > 0 ? `${formatNumber(remaining)} ${branding.currencySymbol}` : undefined,
       },
       notes: order.notes ? [order.notes] : undefined,
       approvals

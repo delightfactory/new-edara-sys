@@ -75,8 +75,12 @@ export const paperProfiles: Record<PaperProfileId, PaperProfile> = {
     footerPolicy: 'last-page-only',
     isThermal: true,
     thermalConstraints: {
+      // maxWidth is applied as CSS var --thermal-max-width on .layout-thermal
       maxWidth: '54mm',
-      hideImages: false,
+      // Production thermal printers: images cause paper jams or blank squares.
+      // Set to false only for branded receipt printers that support rasterised logos.
+      hideImages: true,
+      // monochrome: strips all colour — thermal rollers are B&W only
       monochrome: true,
     },
   },
@@ -92,8 +96,10 @@ export const paperProfiles: Record<PaperProfileId, PaperProfile> = {
     footerPolicy: 'last-page-only',
     isThermal: true,
     thermalConstraints: {
+      // maxWidth is applied as CSS var --thermal-max-width on .layout-thermal
       maxWidth: '72mm',
-      hideImages: false,
+      // Production default: images suppressed for thermal-80mm path.
+      hideImages: true,
       monochrome: true,
     },
   },

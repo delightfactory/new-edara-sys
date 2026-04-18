@@ -1,15 +1,32 @@
 /**
  * DocumentActions — Output Hub Component
  *
- * Capability-driven component: shows only the outputs that are both declared
- * by the document definition AND implemented end-to-end in this platform.
+ * Capability-driven: shows only outputs that are both declared by the
+ * document definition AND allowed for the current platform (via
+ * resolveAllCapabilities in useDocumentOutput).
  *
- * Currently implemented outputs:
- *   - pdf-browser / print → opens DocumentPreviewPage in new tab
- *   - pdf-download        → client-side PDF (lazy-loaded service)
+ * ── Semantic honesty ────────────────────────────────────────────────
+ * Every button's label MUST match its actual behaviour:
  *
- * NOT shown yet (pending Batch 2):
- *   - csv, xlsx, pdf-archive
+ *   "معاينة / طباعة"  → opens preview tab (user prints manually)
+ *   "حفظ كـ PDF"      → opens preview tab with __autoprint=1
+ *                        (browser print dialog fires automatically —
+ *                         user selects "Save as PDF")
+ *
+ * On iOS, the gating layer removes pdf-download and pdf-browser from
+ * capabilities, so only "print" (triggerPreview) is visible.
+ * The button label reads "معاينة / طباعة" — not "حفظ PDF" —
+ * because the actual behaviour IS preview → manual print.
+ *
+ * ── Print vs Preview on iOS ─────────────────────────────────────────
+ * On iOS the 'print' capability is mapped to triggerPreview (popup).
+ * This is correct: there is no same-window print path from the caller
+ * context (DocumentActions lives inside the main app shell, not in
+ * the isolated preview page). The preview tab opened is where the
+ * user actually triggers print.
+ *
+ * If you need a same-window print (inside DocumentPreviewPage itself),
+ * use browserPrintService.print() directly.
  */
 import React, { useState, useRef, useEffect } from 'react';
 import { DocumentKind, PaperProfileId } from '../core/output-types';
@@ -21,7 +38,7 @@ interface DocumentActionsProps {
   className?: string;
   paperProfileId?: PaperProfileId;
   params?: Record<string, string>;
-  /** Compact mode: just one icon button that opens a dropdown */
+  /** Compact mode: one icon button + dropdown for additional actions */
   compact?: boolean;
 }
 
@@ -67,8 +84,14 @@ export function DocumentActions({
   params,
   compact = false,
 }: DocumentActionsProps) {
-  const { capabilities, busy, error, triggerPreview, triggerPdfDownload, clearError } =
-    useDocumentOutput({ kind, entityId, paperProfileId, params });
+  const {
+    capabilities,
+    busy,
+    error,
+    triggerPreview,
+    triggerPdfDownload,
+    clearError,
+  } = useDocumentOutput({ kind, entityId, paperProfileId, params });
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -85,11 +108,26 @@ export function DocumentActions({
     return () => document.removeEventListener('mousedown', handler);
   }, [dropdownOpen]);
 
-  const hasPrint = capabilities.some(c => c.kind === 'pdf-browser' || c.kind === 'print');
+  // ── Derive visible capabilities ────────────────────────────────────
+  // 'print' and 'pdf-browser' both map to triggerPreview (open preview tab).
+  // They are semantically identical from the caller's perspective.
+  const hasPrint       = capabilities.some(c => c.kind === 'pdf-browser' || c.kind === 'print');
   const hasPdfDownload = capabilities.some(c => c.kind === 'pdf-download');
-  const hasMultiple = hasPrint && hasPdfDownload;
+  const hasMultiple    = hasPrint && hasPdfDownload;
 
-  // ── Compact: single icon button + dropdown ────────────────────────
+  // ── Determine the correct label for the primary button ─────────────
+  // If pdf-download is also available, the primary button is "معاينة / طباعة"
+  // (to distinguish it from the "حفظ كـ PDF" option).
+  // If pdf-download is NOT available (e.g. iOS), the label stays "معاينة / طباعة"
+  // — which is an honest description of what the action does.
+  // NOTE: We do NOT label it "حفظ PDF" on platforms where the popup will
+  // just produce a print dialog.
+  const primaryLabel = 'معاينة / طباعة';
+
+  // ── No capabilities at all (shouldn't happen in practice) ──────────
+  if (!hasPrint && !hasPdfDownload) return null;
+
+  // ── Compact or multi-action: split button + dropdown ───────────────
   if (compact || hasMultiple) {
     return (
       <div
@@ -97,14 +135,14 @@ export function DocumentActions({
         className={`document-actions ${className || ''}`}
         style={{ position: 'relative', display: 'inline-block' }}
       >
-        {/* Primary action: Preview/Print */}
         <div style={{ display: 'flex', alignItems: 'stretch' }}>
+          {/* Primary: preview/print — opens preview tab */}
           {hasPrint && (
             <button
               onClick={triggerPreview}
               disabled={busy}
               className="btn btn-secondary"
-              title="معاينة / طباعة"
+              title="يفتح صفحة المعاينة — اطبع أو احفظ كـ PDF من هناك"
               style={{
                 display: 'flex', alignItems: 'center', gap: '6px',
                 padding: '6px 12px',
@@ -114,17 +152,19 @@ export function DocumentActions({
               }}
             >
               {busy ? <IconSpinner /> : <IconPrint />}
-              <span>طباعة</span>
+              <span>{primaryLabel}</span>
             </button>
           )}
 
-          {/* Dropdown toggle */}
+          {/* Dropdown toggle — only when pdf-download is also available */}
           {hasMultiple && (
             <button
               onClick={() => setDropdownOpen(v => !v)}
               disabled={busy}
               className="btn btn-secondary"
-              title="إجراءات أخرى"
+              title="إجراءات إضافية"
+              aria-haspopup="true"
+              aria-expanded={dropdownOpen}
               style={{
                 display: 'flex', alignItems: 'center',
                 padding: '6px 8px',
@@ -137,13 +177,13 @@ export function DocumentActions({
           )}
         </div>
 
-        {/* Dropdown menu */}
+        {/* Dropdown: pdf-download option */}
         {dropdownOpen && hasMultiple && (
           <div style={{
             position: 'absolute',
             top: 'calc(100% + 4px)',
             insetInlineStart: 0,
-            minWidth: '160px',
+            minWidth: '200px',
             background: 'white',
             border: '1px solid #e0e0e0',
             borderRadius: '6px',
@@ -154,12 +194,15 @@ export function DocumentActions({
           }}>
             {hasPdfDownload && (
               <button
-                onClick={async () => {
+                onClick={() => {
+                  // SYNC: triggerPdfDownload calls openPreviewPopup internally
+                  // before any async. Dropdown close happens after — this is safe
+                  // because setDropdownOpen is a local state update, not an await.
                   setDropdownOpen(false);
-                  await triggerPdfDownload();
+                  triggerPdfDownload();
                 }}
                 disabled={busy}
-                title="يفتح نافذة الطباعة مع خيار حفظ كـ PDF — قد يختلف السلوك حسب المتصفح"
+                title="يفتح نافذة الطباعة تلقائياً — اختر 'حفظ كـ PDF' من حوار الطباعة"
                 style={{
                   width: '100%', textAlign: 'start',
                   display: 'flex', alignItems: 'center', gap: '8px',
@@ -172,13 +215,14 @@ export function DocumentActions({
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
               >
                 <IconDownload />
+                {/* Honest label: this opens a print dialog where user saves as PDF */}
                 <span>حفظ كـ PDF</span>
               </button>
             )}
           </div>
         )}
 
-        {/* Inline error toast */}
+        {/* Inline error feedback */}
         {error && (
           <div
             onClick={clearError}
@@ -203,28 +247,38 @@ export function DocumentActions({
           </div>
         )}
 
-        {/* Spinner keyframe */}
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     );
   }
 
-  // ── Single-action fallback: just Preview/Print ────────────────────
+  // ── Single action (print only — e.g. iOS, or document with 1 capability) ──
+  // The label is always "معاينة / طباعة" regardless of platform.
+  // We do NOT show "حفظ PDF" here even on desktop — that only appears in the
+  // dropdown above (hasMultiple path). This prevents the label being printed
+  // in the UI but the action being "open a print dialog". The dropdown tooltip
+  // makes the mechanism clear.
   return (
     <div className={`document-actions ${className || ''}`} style={{ display: 'inline-block' }}>
       <button
         onClick={triggerPreview}
         disabled={busy}
         className="btn btn-secondary"
-        title="معاينة / طباعة المستند"
+        title="يفتح صفحة المعاينة — اطبع أو احفظ كـ PDF من هناك"
         style={{
           display: 'flex', alignItems: 'center', gap: '6px',
           padding: '6px 14px', fontSize: '13px',
         }}
       >
-        <IconPrint />
-        <span>معاينة / طباعة</span>
+        {busy ? <IconSpinner /> : <IconPrint />}
+        <span>{primaryLabel}</span>
       </button>
+      {error && (
+        <div onClick={clearError} style={{ fontSize: '11px', color: '#c00', marginTop: '4px', cursor: 'pointer' }}>
+          ⚠ {error}
+        </div>
+      )}
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }
