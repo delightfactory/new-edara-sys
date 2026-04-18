@@ -44,15 +44,28 @@ interface CommittedState {
 // Uses the document's own date (issuedAt) as the primary date component.
 // Falls back to today only if the document has no date — making the
 // saved PDF filename meaningful and professionally consistent.
+//
+// Format: «عنوان المستند — اسم العميل — رقم المستند — التاريخ»
+// Example: «أمر بيع — أحمد للتجارة — SO-1042 — 2026-01-15»
 function buildDocTitle(doc: CanonicalDocument): string {
   const parts: string[] = [];
-  if (doc.title)  parts.push(doc.title);
+  if (doc.title) parts.push(doc.title);
+
+  // Primary party = first entry in parties (customer / supplier / account holder)
+  // Available for: sales-order, purchase-invoice, payment-receipt,
+  //                payment-voucher, account-statement.
+  const primaryParty = doc.parties?.[0]?.name;
+  if (primaryParty && primaryParty !== '—') parts.push(primaryParty);
+
   if (doc.number) parts.push(doc.number);
+
   // Prefer document date; fall back to wall-clock today.
   const dateStr = doc.issuedAt ?? new Date().toISOString().split('T')[0];
   parts.push(dateStr);
+
   return parts.join(' — ');
 }
+
 
 // SVG icon components (no emoji as primary UI element)
 const PrintIcon = () => (
