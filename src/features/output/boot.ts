@@ -4,6 +4,9 @@ import { salesOrderDefinition } from './definitions/sales-order.definition';
 import { accountStatementDefinition } from './definitions/account-statement.definition';
 import { purchaseInvoiceDefinition } from './definitions/purchase-invoice.definition';
 import { paymentVoucherDefinition } from './definitions/payment-voucher.definition';
+import { creditPortfolioReportDefinition } from './definitions/credit-portfolio-report.definition';
+import { repCreditCommitmentReportDefinition } from './definitions/rep-credit-commitment-report.definition';
+import { repCreditCommitmentDetailReportDefinition } from './definitions/rep-credit-commitment-detail-report.definition';
 
 let isBooted = false;
 
@@ -19,6 +22,10 @@ export function bootOutputPlatform(): void {
   registerDocumentDefinition(accountStatementDefinition);
   registerDocumentDefinition(purchaseInvoiceDefinition);
   registerDocumentDefinition(paymentVoucherDefinition);
+  registerDocumentDefinition(creditPortfolioReportDefinition);
+  registerDocumentDefinition(repCreditCommitmentReportDefinition);
+  registerDocumentDefinition(repCreditCommitmentDetailReportDefinition);
 
   isBooted = true;
 }
+

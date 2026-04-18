@@ -82,92 +82,95 @@ export interface CreditUpdatePatch {
   credit_days:   number
 }
 
-// ─────────────────────────────────────────────────────────────
-// 1. getCreditCustomers
-//    pagination حقيقي server-side بفلتر payment_terms != 'cash'
-// ─────────────────────────────────────────────────────────────
-
-const CREDIT_PAGE_SIZE = 25
-
 export async function getCreditCustomers(params?: {
-  search?:       string
-  paymentTerms?: 'credit' | 'mixed' | ''
-  repId?:        string
-  page?:         number
+  search?:            string
+  paymentTerms?:      'credit' | 'mixed' | ''
+  repId?:             string
+  balanceState?:      'all' | 'with-balance-only' | 'near-limit' | 'exceeded' | 'no-limit'
+  currentBalanceMin?: number
+  currentBalanceMax?: number
+  creditLimitMin?:    number
+  creditLimitMax?:    number
+  sortBy?:            'name' | 'current_balance_desc' | 'available_asc' | 'utilization_desc' | 'overdue_count_desc'
+  page?:              number
+  pageSize?:          number
 }): Promise<CreditCustomerPage> {
   const page = params?.page || 1
-  const from = (page - 1) * CREDIT_PAGE_SIZE
-  const to   = from + CREDIT_PAGE_SIZE - 1
+  const pageSize = params?.pageSize || 25
+  const offset = (page - 1) * pageSize
 
-  let query = supabase
-    .from('customers')
-    .select(
-      `id, code, name, payment_terms, credit_limit, credit_days,
-       current_balance, is_active, assigned_rep_id,
-       assigned_rep:profiles!customers_assigned_rep_id_fkey(id, full_name)`,
-      { count: 'exact' }
-    )
-    .neq('payment_terms', 'cash')
-    .eq('is_active', true)
-    .order('name', { ascending: true })
-    .range(from, to)
+  const { data, error } = await supabase.rpc('get_filtered_credit_customers', {
+    p_search:              params?.search || null,
+    p_payment_terms:       params?.paymentTerms || null,
+    p_rep_id:              params?.repId || null,
+    p_balance_state:       params?.balanceState || 'all',
+    p_current_balance_min: params?.currentBalanceMin ?? null,
+    p_current_balance_max: params?.currentBalanceMax ?? null,
+    p_credit_limit_min:    params?.creditLimitMin ?? null,
+    p_credit_limit_max:    params?.creditLimitMax ?? null,
+    p_sort_by:             params?.sortBy || 'name',
+    p_limit:               pageSize,
+    p_offset:              offset
+  })
 
-  if (params?.paymentTerms) {
-    query = query.eq('payment_terms', params.paymentTerms)
-  }
-  if (params?.search) {
-    query = query.or(
-      `name.ilike.%${params.search}%,code.ilike.%${params.search}%`
-    )
-  }
-  if (params?.repId) {
-    query = query.eq('assigned_rep_id', params.repId)
-  }
-
-  const { data, error, count } = await query
   if (error) throw error
 
+  const rows = (data || []) as any[]
+  const totalCount = rows.length > 0 ? Number(rows[0].total_count) : 0
+
   return {
-    data:       (data || []) as unknown as CreditCustomerRow[],
-    count:      count || 0,
+    data:       rows.map(r => ({
+      id:              r.id,
+      code:            r.code,
+      name:            r.name,
+      payment_terms:   r.payment_terms,
+      credit_limit:    Number(r.credit_limit) || 0,
+      credit_days:     Number(r.credit_days) || 0,
+      current_balance: Number(r.current_balance) || 0,
+      is_active:       r.is_active,
+      assigned_rep_id: r.assigned_rep_id,
+      assigned_rep:    r.assigned_rep
+    })) as CreditCustomerRow[],
+    count:      totalCount,
     page,
-    pageSize:   CREDIT_PAGE_SIZE,
-    totalPages: Math.ceil((count || 0) / CREDIT_PAGE_SIZE),
+    pageSize,
+    totalPages: Math.ceil(totalCount / pageSize),
   }
 }
 
 // ─────────────────────────────────────────────────────────────
 // 2. getCreditPortfolioKPIs
 //    التجميع يتم كليًا في SQL عبر RPC — لا تجميع JavaScript
-//
-//    التعريفات المعتمدة:
-//      totalLimit           = SUM(credit_limit)                  للعملاء ذوي حد صالح
-//      totalUsed            = SUM(current_balance)               كل غير النقديين
-//      totalAvailable       = SUM(GREATEST(0, limit - balance))  لكل عميل
-//      countExceeded        = COUNT WHERE balance > limit         أكبر صارم
-//      countNearLimit       = COUNT WHERE balance/limit >= 0.8   ولم يتجاوز
-//      totalCreditCustomers = COUNT(*)                           كل غير النقديين النشطين
-//
-//    المصدر: customers.current_balance فقط — لا customer_ledger
 // ─────────────────────────────────────────────────────────────
 
-export async function getCreditPortfolioKPIs(): Promise<CreditPortfolioKPIs> {
-  const { data, error } = await supabase.rpc('get_credit_portfolio_kpis')
+export async function getCreditPortfolioKPIs(filters?: {
+  search?:            string
+  paymentTerms?:      'credit' | 'mixed' | ''
+  repId?:             string
+  balanceState?:      'all' | 'with-balance-only' | 'near-limit' | 'exceeded' | 'no-limit'
+  currentBalanceMin?: number
+  currentBalanceMax?: number
+  creditLimitMin?:    number
+  creditLimitMax?:    number
+}): Promise<CreditPortfolioKPIs> {
+  const { data, error } = await supabase.rpc('get_filtered_credit_kpis', {
+    p_search:              filters?.search || null,
+    p_payment_terms:       filters?.paymentTerms || null,
+    p_rep_id:              filters?.repId || null,
+    p_balance_state:       filters?.balanceState || 'all',
+    p_current_balance_min: filters?.currentBalanceMin ?? null,
+    p_current_balance_max: filters?.currentBalanceMax ?? null,
+    p_credit_limit_min:    filters?.creditLimitMin ?? null,
+    p_credit_limit_max:    filters?.creditLimitMax ?? null,
+  })
 
   if (error) {
-    // إذا لم يكن الـ RPC موجوداً بعد نرجع إلى SQL aggregation مؤقتاً
-    // (fallback آمن حتى تُطبَّق الـ migration)
-    return getCreditPortfolioKPIsFallback()
+    console.error('Failed to fetch filtered credit KPIs:', error)
+    throw new Error('فشل جلب المؤشرات الائتمانية. يرجى التأكد من تحديث قاعدة البيانات (RPC get_filtered_credit_kpis).')
   }
 
-  const row = data as {
-    total_limit:            number
-    total_used:             number
-    total_available:        number
-    count_exceeded:         number
-    count_near_limit:       number
-    total_credit_customers: number
-  }
+  // RPC returns a single row
+  const row = (data as any[])[0] || {}
 
   return {
     totalLimit:           Number(row.total_limit)            || 0,
@@ -176,61 +179,6 @@ export async function getCreditPortfolioKPIs(): Promise<CreditPortfolioKPIs> {
     countExceeded:        Number(row.count_exceeded)         || 0,
     countNearLimit:       Number(row.count_near_limit)       || 0,
     totalCreditCustomers: Number(row.total_credit_customers) || 0,
-  }
-}
-
-/**
- * getCreditPortfolioKPIsFallback
- * يُستخدم عند غياب الـ RPC — يُجري التجميع بطلب SELECT واحد وتجميع SQL-side
- * عبر Supabase aggregate functions
- *
- * ملاحظة: لا نجمّع في JavaScript — نجلب مجاميع SQL مباشرة
- */
-async function getCreditPortfolioKPIsFallback(): Promise<CreditPortfolioKPIs> {
-  // نجلب الأعمدة الضرورية فقط — التجميع يتم في قاعدة البيانات
-  // عبر Supabase JSON columns وليس صفوف كاملة
-  const { data, error } = await supabase
-    .from('customers')
-    .select('credit_limit, current_balance')
-    .neq('payment_terms', 'cash')
-    .eq('is_active', true)
-
-  if (error) throw error
-
-  // التجميع هنا ضرورة بسبب غياب RPC فقط — ليس المسار الرئيسي
-  const rows = (data || []) as { credit_limit: number; current_balance: number }[]
-
-  let totalLimit     = 0
-  let totalUsed      = 0
-  let totalAvailable = 0
-  let countExceeded  = 0
-  let countNearLimit = 0
-
-  for (const r of rows) {
-    const limit   = r.credit_limit   || 0
-    const balance = r.current_balance || 0
-
-    totalUsed  += balance
-
-    if (limit > 0) {
-      totalLimit     += limit
-      totalAvailable += Math.max(0, limit - balance)   // GREATEST(0, limit - balance)
-
-      if (balance > limit) {                           // أكبر صارم
-        countExceeded++
-      } else if (balance / limit >= 0.8) {
-        countNearLimit++
-      }
-    }
-  }
-
-  return {
-    totalLimit,
-    totalUsed,
-    totalAvailable,
-    countExceeded,
-    countNearLimit,
-    totalCreditCustomers: rows.length,
   }
 }
 

@@ -80,10 +80,10 @@ const KPI_STYLES = `
 // ─────────────────────────────────────────────────────────────
 // Component
 // ─────────────────────────────────────────────────────────────
-export default function CreditKPIBar() {
+export default function CreditKPIBar({ filters }: { filters?: any }) {
   const { data: kpis, isLoading } = useQuery({
-    queryKey: ['credit-portfolio-kpis'],
-    queryFn:  getCreditPortfolioKPIs,
+    queryKey: ['credit-portfolio-kpis', filters],
+    queryFn:  () => getCreditPortfolioKPIs(filters),
     staleTime: 5 * 60_000,
   })
 

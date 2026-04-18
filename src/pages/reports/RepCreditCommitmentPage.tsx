@@ -1,17 +1,17 @@
 /**
- * RepCreditCommitmentPage.tsx — v4
+ * RepCreditCommitmentPage.tsx — v5
  * تقرير الالتزام الائتماني لمسؤولي المحافظ
  *
- * v4 — إصلاحات Dark Mode + التجاوب:
- *   - كل الألوان الثابتة (hex) أُبدلت بـ CSS variables من tokens.css
- *   - الجدول يتحول إلى cards على الشاشات الصغيرة (≤768px)
- *   - Drawer يظهر من جهة اليمين (RTL صحيح) على desktop
- *     وكـ bottom-sheet على mobile
- *   - KPI grid تحسينات للشاشات الضيقة
- *   - إزالة backdrop-filter لأنه غير موثوق عبر كل المتصفحات
+ * v5 — فلاتر احترافية + Drawer فلاتر كاملة + Output Platform:
+ *   - فلاتر الصفحة الرئيسية (client-side على dataset الصغير)
+ *   - DrawerFilterBar داخل RepDetailDrawer
+ *   - customersOnlyWithBalance: true افتراضياً
+ *   - DocumentActions في header الصفحة
+ *   - DocumentActions في header الـ Drawer
+ *   - تقارير منفصلة لكل مستوى
  */
 
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   getRepCreditCommitmentReport,
@@ -19,6 +19,8 @@ import {
   type RepCreditCommitmentRow,
   type RepCreditDetailRow,
 } from '@/lib/services/rep-credit'
+import { DocumentActions } from '@/features/output/components/DocumentActions'
+import { computeCreditState } from '@/components/shared/CustomerCreditChip'
 
 // ─────────────────────────────────────────────────────────────
 // Helpers
@@ -40,8 +42,194 @@ function payLabel(term: string | null): string {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Static styles — only layout / non-color values here.
-// All colors use CSS custom properties so dark-mode is automatic.
+// Filter Models
+// ─────────────────────────────────────────────────────────────
+
+interface PageFilters {
+  repSearch:         string
+  includeUnassigned: boolean
+  overdueOnly:       boolean
+  portfolioMin:      string
+  portfolioMax:      string
+  createdDebtMin:    string
+  createdDebtMax:    string
+  collectionsMin:    string
+  collectionsMax:    string
+  sortBy:            'none' | 'portfolio_desc' | 'created_debt_desc' | 'collections_desc' | 'overdue_desc' | 'rep_name_asc'
+}
+
+const DEFAULT_PAGE_FILTERS: PageFilters = {
+  repSearch:         '',
+  includeUnassigned: true,
+  overdueOnly:       false,
+  portfolioMin:      '',
+  portfolioMax:      '',
+  createdDebtMin:    '',
+  createdDebtMax:    '',
+  collectionsMin:    '',
+  collectionsMax:    '',
+  sortBy:            'none',
+}
+
+type CustomerState = 'all' | 'exceeded' | 'near-limit' | 'within-limit' | 'no-limit'
+type DrawerSection = 'all' | 'customers' | 'orders' | 'receipts'
+
+interface DrawerFilters {
+  search:                 string
+  customersOnlyWithBalance: boolean
+  customerPaymentTerms:   'all' | 'credit' | 'mixed' | 'cash'
+  customerState:          CustomerState
+  sections:               DrawerSection
+}
+
+const DEFAULT_DRAWER_FILTERS: DrawerFilters = {
+  search:                 '',
+  customersOnlyWithBalance: true,
+  customerPaymentTerms:   'all',
+  customerState:          'all',
+  sections:               'all',
+}
+
+// تحويل DrawerFilters لـ params في DocumentActions
+function drawerFiltersToParams(f: DrawerFilters, repName: string, isUnassigned: boolean): Record<string, string> {
+  const p: Record<string, string> = {}
+  if (f.search)                        p['search']                 = f.search
+  if (!f.customersOnlyWithBalance)     p['customersOnlyWithBalance'] = 'false'
+  if (f.customerPaymentTerms !== 'all') p['customerPaymentTerms']  = f.customerPaymentTerms
+  if (f.customerState        !== 'all') p['customerState']          = f.customerState
+  if (f.sections             !== 'all') p['sections']               = f.sections
+  p['repName']       = repName
+  p['isUnassigned']  = isUnassigned ? 'true' : 'false'
+  return p
+}
+
+// تحويل PageFilters لـ params في DocumentActions
+function pageFiltersToParams(f: PageFilters): Record<string, string> {
+  const p: Record<string, string> = {}
+  if (f.repSearch)          p['repSearch']        = f.repSearch
+  if (!f.includeUnassigned) p['includeUnassigned'] = 'false'
+  if (f.overdueOnly)        p['overdueOnly']       = 'true'
+  if (f.portfolioMin)       p['portfolioMin']      = f.portfolioMin
+  if (f.portfolioMax)       p['portfolioMax']      = f.portfolioMax
+  if (f.createdDebtMin)     p['createdDebtMin']    = f.createdDebtMin
+  if (f.createdDebtMax)     p['createdDebtMax']    = f.createdDebtMax
+  if (f.collectionsMin)     p['collectionsMin']    = f.collectionsMin
+  if (f.collectionsMax)     p['collectionsMax']    = f.collectionsMax
+  if (f.sortBy !== 'none')  p['sortBy']            = f.sortBy
+  return p
+}
+
+// ─────────────────────────────────────────────────────────────
+// Row Filtering
+// ─────────────────────────────────────────────────────────────
+
+function applyPageFilters(rows: RepCreditCommitmentRow[], f: PageFilters): RepCreditCommitmentRow[] {
+  let result = [...rows]
+
+  if (f.repSearch) {
+    const q = f.repSearch.toLowerCase().trim()
+    result = result.filter(r => r.rep_name.toLowerCase().includes(q))
+  }
+  if (!f.includeUnassigned) {
+    result = result.filter(r => !r.is_unassigned)
+  }
+  if (f.overdueOnly) {
+    result = result.filter(r => r.overdue_customers_count > 0)
+  }
+  if (f.portfolioMin) result = result.filter(r => r.portfolio_balance >= parseFloat(f.portfolioMin))
+  if (f.portfolioMax) result = result.filter(r => r.portfolio_balance <= parseFloat(f.portfolioMax))
+  if (f.createdDebtMin) result = result.filter(r => r.created_debt >= parseFloat(f.createdDebtMin))
+  if (f.createdDebtMax) result = result.filter(r => r.created_debt <= parseFloat(f.createdDebtMax))
+  if (f.collectionsMin) result = result.filter(r => r.confirmed_collections >= parseFloat(f.collectionsMin))
+  if (f.collectionsMax) result = result.filter(r => r.confirmed_collections <= parseFloat(f.collectionsMax))
+
+  if (f.sortBy !== 'none') {
+    result.sort((a, b) => {
+      switch (f.sortBy) {
+        case 'portfolio_desc':    return b.portfolio_balance - a.portfolio_balance
+        case 'created_debt_desc': return b.created_debt - a.created_debt
+        case 'collections_desc':  return b.confirmed_collections - a.confirmed_collections
+        case 'overdue_desc':      return b.overdue_customers_count - a.overdue_customers_count
+        case 'rep_name_asc':      return a.rep_name.localeCompare(b.rep_name, 'ar')
+        default: return 0
+      }
+    })
+  }
+
+  return result
+}
+
+function deriveFilteredSummary(rows: RepCreditCommitmentRow[]) {
+  const realReps = rows.filter(r => !r.is_unassigned)
+  return {
+    totalReps:                 realReps.length,
+    totalPortfolio:            rows.reduce((s, r) => s + r.portfolio_balance, 0),
+    totalCreatedDebt:          realReps.reduce((s, r) => s + r.created_debt, 0),
+    totalConfirmedCollections: realReps.reduce((s, r) => s + r.confirmed_collections, 0),
+    hasUnassigned:             rows.some(r => r.is_unassigned),
+    unassignedBalance:         rows.find(r => r.is_unassigned)?.portfolio_balance ?? 0,
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Drawer Customer/Order/Receipt filtering
+// ─────────────────────────────────────────────────────────────
+
+function filterCustomers(customers: RepCreditDetailRow[], f: DrawerFilters): RepCreditDetailRow[] {
+  let result = [...customers]
+  if (f.customersOnlyWithBalance) {
+    result = result.filter(c => (c.amount_1 ?? 0) > 0)
+  }
+  if (f.search) {
+    const q = f.search.toLowerCase().trim()
+    result = result.filter(c =>
+      c.entity_name.toLowerCase().includes(q) || (c.entity_ref ?? '').toLowerCase().includes(q)
+    )
+  }
+  if (f.customerPaymentTerms !== 'all') {
+    result = result.filter(c => c.status_text === f.customerPaymentTerms)
+  }
+  if (f.customerState !== 'all') {
+    result = result.filter(c => {
+      const st = computeCreditState({
+        payment_terms:   c.status_text ?? 'cash',
+        credit_limit:    c.amount_2 ?? 0,
+        current_balance: c.amount_1 ?? 0,
+      })
+      switch (f.customerState) {
+        case 'exceeded':
+          return st.type === 'credit' && (c.amount_1 ?? 0) > (c.amount_2 ?? 0)
+        case 'near-limit':
+          return st.type === 'credit' && st.usedPct >= 0.8 && st.usedPct <= 1
+        case 'within-limit':
+          return st.type === 'credit' && st.usedPct < 0.8
+        case 'no-limit':
+          return st.type === 'no_limit'
+        default: return true
+      }
+    })
+  }
+  return result
+}
+
+function filterOrders(orders: RepCreditDetailRow[], f: DrawerFilters): RepCreditDetailRow[] {
+  if (!f.search) return orders
+  const q = f.search.toLowerCase().trim()
+  return orders.filter(o =>
+    (o.entity_ref ?? '').toLowerCase().includes(q) || o.entity_name.toLowerCase().includes(q)
+  )
+}
+
+function filterReceipts(receipts: RepCreditDetailRow[], f: DrawerFilters): RepCreditDetailRow[] {
+  if (!f.search) return receipts
+  const q = f.search.toLowerCase().trim()
+  return receipts.filter(r =>
+    (r.entity_ref ?? '').toLowerCase().includes(q) || r.entity_name.toLowerCase().includes(q)
+  )
+}
+
+// ─────────────────────────────────────────────────────────────
+// Static styles
 // ─────────────────────────────────────────────────────────────
 
 const css = {
@@ -55,8 +243,6 @@ const css = {
     minHeight: '100%',
     background: 'var(--bg-app)',
   },
-
-  // Header
   pageTitle: {
     fontSize: 'var(--text-2xl)',
     fontWeight: 700,
@@ -69,8 +255,6 @@ const css = {
     marginTop: 'var(--space-1)',
     margin: 'var(--space-1) 0 0',
   },
-
-  // KPI grid
   kpiGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
@@ -101,8 +285,6 @@ const css = {
     fontSize: 'var(--text-xs)',
     color: 'var(--text-muted)',
   },
-
-  // Warning banner
   warningBanner: {
     background: 'var(--color-warning-light)',
     border: '1px solid var(--color-warning)',
@@ -117,8 +299,6 @@ const css = {
     color: 'var(--color-warning)',
     lineHeight: 1.6,
   },
-
-  // Error banner
   errorBanner: {
     background: 'var(--color-danger-light)',
     border: '1px solid var(--color-danger)',
@@ -127,8 +307,22 @@ const css = {
     fontSize: 'var(--text-sm)',
     color: 'var(--color-danger)',
   },
-
-  // Table wrapper
+  // Filters bar
+  filterBar: {
+    background: 'var(--bg-surface)',
+    border: '1px solid var(--border-primary)',
+    borderRadius: 'var(--radius-lg)',
+    padding: 'var(--space-4)',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 'var(--space-3)',
+  },
+  filterRow: {
+    display: 'flex',
+    gap: 'var(--space-3)',
+    flexWrap: 'wrap' as const,
+    alignItems: 'center',
+  },
   tableWrapper: {
     background: 'var(--bg-surface)',
     border: '1px solid var(--border-primary)',
@@ -157,8 +351,6 @@ const css = {
     color: 'var(--text-primary)',
     verticalAlign: 'middle' as const,
   },
-
-  // Mobile card (replaces table row on small screens)
   mobileCard: (isUnassigned: boolean) => ({
     background: 'var(--bg-surface)',
     border: `1px solid var(--border-primary)`,
@@ -193,8 +385,6 @@ const css = {
     fontWeight: 700,
     color: 'var(--text-primary)',
   },
-
-  // Badge
   badge: (bg: string, color: string) => ({
     display: 'inline-flex',
     alignItems: 'center',
@@ -207,8 +397,6 @@ const css = {
     color: color,
     whiteSpace: 'nowrap' as const,
   }),
-
-  // Unassigned badge (always amber, theme-aware via opacity)
   unassignedBadge: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -220,16 +408,12 @@ const css = {
     background: 'var(--color-warning-light)',
     color: 'var(--color-warning)',
   },
-
-  // Drawer overlay
   overlay: {
     position: 'fixed' as const,
     inset: 0,
     background: 'var(--overlay-bg)',
     zIndex: 'var(--z-overlay)',
   },
-
-  // Drawer panel — from the RIGHT in RTL
   drawer: (isMobile: boolean) => isMobile
     ? {
         position: 'fixed' as const,
@@ -250,7 +434,7 @@ const css = {
         top: 0,
         right: 0,
         height: '100%',
-        width: 'min(800px, 92vw)',
+        width: 'min(820px, 94vw)',
         background: 'var(--modal-bg)',
         boxShadow: 'var(--shadow-xl)',
         zIndex: 'var(--z-modal)',
@@ -258,7 +442,6 @@ const css = {
         flexDirection: 'column' as const,
         overflowY: 'auto' as const,
       },
-
   drawerHeader: {
     padding: 'var(--space-5) var(--space-6)',
     borderBottom: '1px solid var(--border-primary)',
@@ -269,14 +452,15 @@ const css = {
     top: 0,
     background: 'var(--modal-bg)',
     zIndex: 1,
+    gap: 'var(--space-3)',
+    flexWrap: 'wrap' as const,
   },
   drawerBody: {
     padding: 'var(--space-5) var(--space-6)',
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: 'var(--space-8)',
+    gap: 'var(--space-6)',
   },
-
   closeBtn: {
     border: 'none',
     background: 'transparent',
@@ -289,7 +473,6 @@ const css = {
     transition: 'color var(--transition-fast)',
     flexShrink: 0,
   },
-
   sectionTitle: {
     fontSize: 'var(--text-sm)',
     fontWeight: 700,
@@ -299,8 +482,6 @@ const css = {
     alignItems: 'center',
     gap: 'var(--space-2)',
   },
-
-  // Inner tables (inside drawer)
   innerTableWrapper: {
     border: '1px solid var(--border-primary)',
     borderRadius: 'var(--radius-md)',
@@ -326,8 +507,6 @@ const css = {
     color: 'var(--text-primary)',
     verticalAlign: 'middle' as const,
   },
-
-  // Notice boxes
   notice: (type: 'warning' | 'info') => ({
     background: type === 'warning' ? 'var(--color-warning-light)' : 'var(--color-info-light)',
     border: `1px solid ${type === 'warning' ? 'var(--color-warning)' : 'var(--color-info)'}`,
@@ -337,7 +516,6 @@ const css = {
     color: type === 'warning' ? 'var(--color-warning)' : 'var(--color-info)',
     lineHeight: 1.7,
   }),
-
   emptyRow: {
     padding: 'var(--space-6)',
     textAlign: 'center' as const,
@@ -346,7 +524,6 @@ const css = {
     background: 'var(--bg-surface-2)',
     borderRadius: 'var(--radius-md)',
   },
-
   skeleton: {
     background: 'var(--bg-surface-2)',
     borderRadius: 'var(--radius-md)',
@@ -357,7 +534,7 @@ const css = {
 }
 
 // ─────────────────────────────────────────────────────────────
-// useIsMobile — simple hook
+// useIsMobile
 // ─────────────────────────────────────────────────────────────
 
 function useIsMobile(): boolean {
@@ -387,11 +564,11 @@ function Skeleton({ rows = 5 }: { rows?: number }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Inner tables
+// Inner tables — Customer / Order / Receipt
 // ─────────────────────────────────────────────────────────────
 
-function CustomerTable({ customers }: { customers: RepCreditDetailRow[] }) {
-  if (customers.length === 0) return <div style={css.emptyRow}>لا يوجد عملاء</div>
+function CustomerTable({ customers, label }: { customers: RepCreditDetailRow[]; label: string }) {
+  if (customers.length === 0) return <div style={css.emptyRow}>لا يوجد عملاء مطابقون للفلتر</div>
   return (
     <div style={{ overflowX: 'auto' }}>
       <table style={css.innerTable}>
@@ -433,7 +610,7 @@ function CustomerTable({ customers }: { customers: RepCreditDetailRow[] }) {
 }
 
 function OrderTable({ orders }: { orders: RepCreditDetailRow[] }) {
-  if (orders.length === 0) return <div style={css.emptyRow}>لا توجد فواتير مفتوحة</div>
+  if (orders.length === 0) return <div style={css.emptyRow}>لا توجد فواتير مطابقة للفلتر</div>
   return (
     <div style={{ overflowX: 'auto' }}>
       <table style={css.innerTable}>
@@ -480,7 +657,7 @@ function OrderTable({ orders }: { orders: RepCreditDetailRow[] }) {
 }
 
 function ReceiptTable({ receipts }: { receipts: RepCreditDetailRow[] }) {
-  if (receipts.length === 0) return <div style={css.emptyRow}>لا توجد تحصيلات مؤكدة</div>
+  if (receipts.length === 0) return <div style={css.emptyRow}>لا توجد تحصيلات مطابقة للفلتر</div>
   return (
     <div style={{ overflowX: 'auto' }}>
       <table style={css.innerTable}>
@@ -512,7 +689,164 @@ function ReceiptTable({ receipts }: { receipts: RepCreditDetailRow[] }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Drawer
+// DrawerFilterBar — شريط الفلاتر داخل الـ Drawer
+// ─────────────────────────────────────────────────────────────
+
+function DrawerFilterBar({
+  filters,
+  onChange,
+  isUnassigned,
+}: {
+  filters:      DrawerFilters
+  onChange:     (f: DrawerFilters) => void
+  isUnassigned: boolean
+}) {
+  const [showAdvanced, setShowAdvanced] = React.useState(false)
+
+  const hasActive =
+    filters.search !== ''                  ||
+    !filters.customersOnlyWithBalance      ||
+    filters.customerPaymentTerms !== 'all' ||
+    filters.customerState !== 'all'        ||
+    filters.sections !== 'all'
+
+  const update = (patch: Partial<DrawerFilters>) => onChange({ ...filters, ...patch })
+
+  return (
+    <div style={{
+      background: 'var(--bg-surface-2)',
+      border: '1px solid var(--border-primary)',
+      borderRadius: 'var(--radius-md)',
+      padding: 'var(--space-3)',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 'var(--space-2)',
+    }}>
+      {/* الصف الأول */}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        {/* بحث */}
+        <div style={{ position: 'relative', flex: '1 1 180px' }}>
+          <span style={{
+            position: 'absolute', insetInlineStart: 8,
+            top: '50%', transform: 'translateY(-50%)',
+            color: 'var(--text-muted)', fontSize: '0.8rem', pointerEvents: 'none',
+          }}>🔍</span>
+          <input
+            type="text"
+            placeholder="بحث باسم / كود..."
+            value={filters.search}
+            onChange={e => update({ search: e.target.value })}
+            className="form-input"
+            style={{ paddingInlineStart: 28, width: '100%', fontSize: 'var(--text-xs)' }}
+          />
+        </div>
+
+        {/* الأقسام */}
+        <select
+          value={filters.sections}
+          onChange={e => update({ sections: e.target.value as DrawerSection })}
+          className="form-input"
+          style={{ fontSize: 'var(--text-xs)', minWidth: 110 }}
+        >
+          <option value="all">كل الأقسام</option>
+          <option value="customers">العملاء فقط</option>
+          {!isUnassigned && <option value="orders">الفواتير فقط</option>}
+          {!isUnassigned && <option value="receipts">التحصيلات فقط</option>}
+        </select>
+
+        {/* زر الفلاتر المتقدمة */}
+        <button
+          onClick={() => setShowAdvanced(v => !v)}
+          className={`cm-pager-btn`}
+          style={{
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            fontSize: 'var(--text-xs)',
+            background: showAdvanced ? 'var(--color-primary-light)' : 'var(--bg-surface)',
+            borderColor: showAdvanced ? 'var(--color-primary)' : 'var(--border-primary)',
+            color: showAdvanced ? 'var(--color-primary)' : 'var(--text-secondary)',
+          }}
+        >
+          ⚙ العملاء
+          {hasActive && (
+            <span style={{
+              background: 'var(--color-primary)',
+              color: '#fff',
+              borderRadius: 99,
+              padding: '1px 5px',
+              fontSize: '0.6rem',
+              fontWeight: 800,
+            }}>!</span>
+          )}
+        </button>
+
+        {/* إعادة تعيين */}
+        {hasActive && (
+          <button
+            onClick={() => onChange(DEFAULT_DRAWER_FILTERS)}
+            className="cm-pager-btn"
+            style={{ fontSize: 'var(--text-xs)', color: 'var(--color-danger)', borderColor: 'var(--color-danger)', flexShrink: 0 }}
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      {/* ── فلاتر العملاء المتقدمة ── */}
+      {showAdvanced && (
+        <div style={{
+          borderTop: '1px solid var(--border-primary)',
+          paddingTop: 'var(--space-2)',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+          gap: 'var(--space-2)',
+        }}>
+          {/* لديهم رصيد فقط */}
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-xs)', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={filters.customersOnlyWithBalance}
+              onChange={e => update({ customersOnlyWithBalance: e.target.checked })}
+            />
+            <span>لديهم رصيد {'>'} 0 فقط</span>
+          </label>
+
+          {/* نوع الدفع */}
+          <select
+            value={filters.customerPaymentTerms}
+            onChange={e => update({ customerPaymentTerms: e.target.value as any })}
+            className="form-input"
+            style={{ fontSize: 'var(--text-xs)' }}
+          >
+            <option value="all">كل طرق الدفع</option>
+            <option value="credit">آجل فقط</option>
+            <option value="mixed">مختلط فقط</option>
+            <option value="cash">نقدي فقط</option>
+          </select>
+
+          {/* حالة الائتمان */}
+          <select
+            value={filters.customerState}
+            onChange={e => update({ customerState: e.target.value as CustomerState })}
+            className="form-input"
+            style={{ fontSize: 'var(--text-xs)' }}
+          >
+            <option value="all">كل الحالات</option>
+            <option value="exceeded">تجاوزوا الحد</option>
+            <option value="near-limit">قريبون من الحد</option>
+            <option value="within-limit">ضمن الحد</option>
+            <option value="no-limit">بلا حد ائتماني</option>
+          </select>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────
+// RepDetailDrawer — مُحسَّن كاملاً
 // ─────────────────────────────────────────────────────────────
 
 interface DrawerProps {
@@ -524,6 +858,8 @@ interface DrawerProps {
 
 function RepDetailDrawer({ repId, repName, isUnassigned, onClose }: DrawerProps) {
   const isMobile = useIsMobile()
+  const [drawerFilters, setDrawerFilters] = React.useState<DrawerFilters>(DEFAULT_DRAWER_FILTERS)
+  const [paper, setPaper] = React.useState<'a4-landscape' | 'a4-portrait'>('a4-landscape')
 
   const { data, isLoading, error } = useQuery({
     queryKey:  ['rep-credit-detail', repId],
@@ -537,6 +873,27 @@ function RepDetailDrawer({ repId, repName, isUnassigned, onClose }: DrawerProps)
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
   }, [onClose])
+
+  // تطبيق الفلاتر بعد التحميل
+  const showCustomers = drawerFilters.sections === 'all' || drawerFilters.sections === 'customers'
+  const showOrders    = !isUnassigned && (drawerFilters.sections === 'all' || drawerFilters.sections === 'orders')
+  const showReceipts  = !isUnassigned && (drawerFilters.sections === 'all' || drawerFilters.sections === 'receipts')
+
+  const filteredCustomers = useMemo(() =>
+    data && showCustomers ? filterCustomers(data.customers, drawerFilters) : [],
+    [data, drawerFilters, showCustomers]
+  )
+  const filteredOrders = useMemo(() =>
+    data && showOrders ? filterOrders(data.orders, drawerFilters) : [],
+    [data, drawerFilters, showOrders]
+  )
+  const filteredReceipts = useMemo(() =>
+    data && showReceipts ? filterReceipts(data.receipts, drawerFilters) : [],
+    [data, drawerFilters, showReceipts]
+  )
+
+  const entityId = isUnassigned ? '__unassigned__' : (repId ?? '__unassigned__')
+  const printParams = drawerFiltersToParams(drawerFilters, repName, isUnassigned)
 
   return (
     <>
@@ -552,9 +909,9 @@ function RepDetailDrawer({ repId, repName, isUnassigned, onClose }: DrawerProps)
         aria-modal="true"
         aria-label={isUnassigned ? 'تفاصيل: العملاء غير المسندين' : `تفاصيل: ${repName}`}
       >
-        {/* Header */}
+        {/* ── Header ── */}
         <div style={css.drawerHeader}>
-          <div>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' as const }}>
               {isUnassigned && (
                 <span style={css.unassignedBadge}>⚠ غير مسند</span>
@@ -569,10 +926,33 @@ function RepDetailDrawer({ repId, repName, isUnassigned, onClose }: DrawerProps)
                 : `مسؤول المحفظة — ${repName}`}
             </p>
           </div>
-          <button onClick={onClose} style={css.closeBtn} aria-label="إغلاق">✕</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            {/* Paper Selector */}
+            <select
+              value={paper}
+              onChange={e => setPaper(e.target.value as 'a4-landscape' | 'a4-portrait')}
+              title="اختر المقاس"
+              style={{
+                padding: '4px 8px', fontSize: '12px',
+                border: '1px solid var(--border-primary)', borderRadius: '4px'
+              }}
+            >
+              <option value="a4-landscape">A4 بالعرض</option>
+              <option value="a4-portrait">A4 بالطول</option>
+            </select>
+            {/* زر الطباعة في Header الـ Drawer */}
+            <DocumentActions
+              kind="rep-credit-commitment-detail-report"
+              entityId={entityId}
+              params={printParams}
+              paperProfileId={paper}
+              compact={true}
+            />
+            <button onClick={onClose} style={css.closeBtn} aria-label="إغلاق">✕</button>
+          </div>
         </div>
 
-        {/* Body */}
+        {/* ── Body ── */}
         <div style={css.drawerBody}>
 
           {/* تنبيه الصف الصناعي */}
@@ -587,6 +967,13 @@ function RepDetailDrawer({ repId, repName, isUnassigned, onClose }: DrawerProps)
             </div>
           )}
 
+          {/* ── Filter Bar ── */}
+          <DrawerFilterBar
+            filters={drawerFilters}
+            onChange={setDrawerFilters}
+            isUnassigned={isUnassigned}
+          />
+
           {isLoading && <Skeleton rows={8} />}
 
           {error && (
@@ -598,42 +985,54 @@ function RepDetailDrawer({ repId, repName, isUnassigned, onClose }: DrawerProps)
           {data && (
             <>
               {/* القسم 1: العملاء */}
-              <div>
-                <div style={css.sectionTitle}>
-                  <span>👥</span>
-                  <span>
-                    {isUnassigned
-                      ? `العملاء غير المسندين — رصيد قائم (${data.customers.length})`
-                      : `العملاء المسندون حالياً (${data.customers.length})`}
-                  </span>
+              {showCustomers && (
+                <div>
+                  <div style={css.sectionTitle}>
+                    <span>👥</span>
+                    <span>
+                      {isUnassigned
+                        ? `العملاء غير المسندين — رصيد قائم (${filteredCustomers.length})`
+                        : `العملاء المسندون${drawerFilters.customersOnlyWithBalance ? ' (برصيد)' : ''} (${filteredCustomers.length})`}
+                    </span>
+                  </div>
+                  {/* التوضيح أسفل العنوان عند عرض الكل */}
+                  {!drawerFilters.customersOnlyWithBalance && !isUnassigned && (
+                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', margin: '0 0 var(--space-2)' }}>
+                      ℹ️ يشمل عملاء رصيدهم صفر — الافتراضي: برصيد {'>'} 0 فقط
+                    </p>
+                  )}
+                  <div style={css.innerTableWrapper}>
+                    <CustomerTable customers={filteredCustomers} label="العملاء" />
+                  </div>
                 </div>
-                <div style={css.innerTableWrapper}>
-                  <CustomerTable customers={data.customers} />
-                </div>
-              </div>
+              )}
 
               {/* القسم 2 & 3: للمسؤولين الحقيقيين فقط */}
               {!isUnassigned && (
                 <>
-                  <div>
-                    <div style={css.sectionTitle}>
-                      <span>📄</span>
-                      <span>الفواتير المنشأة بواسطته — صافي متبقٍ ({data.orders.length})</span>
+                  {showOrders && (
+                    <div>
+                      <div style={css.sectionTitle}>
+                        <span>📄</span>
+                        <span>الفواتير المنشأة بواسطته — صافي متبقٍ ({filteredOrders.length})</span>
+                      </div>
+                      <div style={css.innerTableWrapper}>
+                        <OrderTable orders={filteredOrders} />
+                      </div>
                     </div>
-                    <div style={css.innerTableWrapper}>
-                      <OrderTable orders={data.orders} />
-                    </div>
-                  </div>
+                  )}
 
-                  <div>
-                    <div style={css.sectionTitle}>
-                      <span>💳</span>
-                      <span>التحصيلات المؤكدة بواسطته ({data.receipts.length})</span>
+                  {showReceipts && (
+                    <div>
+                      <div style={css.sectionTitle}>
+                        <span>💳</span>
+                        <span>التحصيلات المؤكدة بواسطته ({filteredReceipts.length})</span>
+                      </div>
+                      <div style={css.innerTableWrapper}>
+                        <ReceiptTable receipts={filteredReceipts} />
+                      </div>
                     </div>
-                    <div style={css.innerTableWrapper}>
-                      <ReceiptTable receipts={data.receipts} />
-                    </div>
-                  </div>
+                  )}
                 </>
               )}
             </>
@@ -645,7 +1044,7 @@ function RepDetailDrawer({ repId, repName, isUnassigned, onClose }: DrawerProps)
 }
 
 // ─────────────────────────────────────────────────────────────
-// MobileRepCard — table row → card on small screens
+// MobileRepCard
 // ─────────────────────────────────────────────────────────────
 
 function MobileRepCard({
@@ -664,7 +1063,6 @@ function MobileRepCard({
       tabIndex={0}
       onKeyDown={e => { if (e.key === 'Enter') onClick() }}
     >
-      {/* Header row */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         {isUnass ? (
           <span style={css.unassignedBadge}>⚠ غير مسند</span>
@@ -680,7 +1078,6 @@ function MobileRepCard({
         )}
       </div>
 
-      {/* Stats grid */}
       <div style={css.mobileCardGrid}>
         <div style={css.mobileCardField}>
           <span style={css.mobileCardLabel}>محفظة المتابعة</span>
@@ -723,6 +1120,9 @@ export default function RepCreditCommitmentPage() {
   const isMobile = useIsMobile()
   const [selectedRow, setSelectedRow] = useState<RepCreditCommitmentRow | null>(null)
   const [hoveredId, setHoveredId] = useState<string | null>(null)
+  const [pageFilters, setPageFilters] = useState<PageFilters>(DEFAULT_PAGE_FILTERS)
+  const [showPageAdvanced, setShowPageAdvanced] = useState(false)
+  const [paper, setPaper] = useState<'a4-landscape' | 'a4-portrait'>('a4-landscape')
 
   const { data, isLoading, error } = useQuery({
     queryKey:  ['rep-credit-commitment'],
@@ -736,32 +1136,240 @@ export default function RepCreditCommitmentPage() {
 
   const handleClose = useCallback(() => setSelectedRow(null), [])
 
-  const rows    = data?.rows    ?? []
-  const summary = data?.summary
+  const allRows = data?.rows ?? []
+
+  // تطبيق الفلاتر على الـ rows
+  const rows    = useMemo(() => applyPageFilters(allRows, pageFilters), [allRows, pageFilters])
+  const summary = useMemo(() => deriveFilteredSummary(rows), [rows])
 
   const rowKey = (r: RepCreditCommitmentRow) => r.rep_id ?? '__unassigned__'
 
+  const updatePageFilter = useCallback(<K extends keyof PageFilters>(key: K, value: PageFilters[K]) => {
+    setPageFilters(prev => ({ ...prev, [key]: value }))
+  }, [])
+
+  const pageFilterCount =
+    (pageFilters.repSearch ? 1 : 0) +
+    (!pageFilters.includeUnassigned ? 1 : 0) +
+    (pageFilters.overdueOnly ? 1 : 0) +
+    (pageFilters.portfolioMin ? 1 : 0) + (pageFilters.portfolioMax ? 1 : 0) +
+    (pageFilters.createdDebtMin ? 1 : 0) + (pageFilters.createdDebtMax ? 1 : 0) +
+    (pageFilters.collectionsMin ? 1 : 0) + (pageFilters.collectionsMax ? 1 : 0) +
+    (pageFilters.sortBy !== 'none' ? 1 : 0)
+
+  const printParams = pageFiltersToParams(pageFilters)
+
   return (
     <>
-      {/* Shimmer keyframe injected once */}
       <style>{`
         @keyframes shimmer {
           0%   { background-position: 200% 0; }
           100% { background-position: -200% 0; }
         }
+        .cm-pager-btn {
+          padding: 7px 14px;
+          border: 1px solid var(--border-primary);
+          border-radius: 8px;
+          background: var(--bg-surface);
+          color: var(--text-primary);
+          font-family: var(--font-sans);
+          font-size: var(--text-xs);
+          font-weight: 600;
+          cursor: pointer;
+          min-height: 32px;
+          transition: background 0.15s;
+        }
+        .cm-pager-btn:hover { background: var(--bg-surface-2); }
       `}</style>
 
       <div style={css.page} dir="rtl">
 
-        {/* Page Header */}
-        <div>
-          <h1 style={css.pageTitle}>التزام مسؤولي المحافظ الائتمانية</h1>
-          <p style={css.pageSubtitle}>
-            تحليل محافظ المتابعة، المديونية المنشأة، والتحصيلات لكل مسؤول محفظة
-          </p>
+        {/* ── Page Header ── */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+          <div>
+            <h1 style={css.pageTitle}>التزام مسؤولي المحافظ الائتمانية</h1>
+            <p style={css.pageSubtitle}>
+              تحليل محافظ المتابعة، المديونية المنشأة، والتحصيلات لكل مسؤول محفظة
+            </p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <select
+              value={paper}
+              onChange={e => setPaper(e.target.value as 'a4-landscape' | 'a4-portrait')}
+              title="اختر مقاس الورقة للطباعة"
+              style={{
+                padding: '6px 10px', fontSize: '13px',
+                border: '1px solid var(--border-primary)', borderRadius: '4px', background: '#fff'
+              }}
+            >
+              <option value="a4-landscape">📄 A4 بالعرض</option>
+              <option value="a4-portrait">📄 A4 بالطول</option>
+            </select>
+            {/* زر الطباعة للصفحة الرئيسية */}
+            <DocumentActions
+              kind="rep-credit-commitment-report"
+              entityId="all"
+              params={printParams}
+              paperProfileId={paper}
+              compact={true}
+            />
+          </div>
         </div>
 
-        {/* KPI Cards skeleton */}
+        {/* ── فلاتر الصفحة الرئيسية ── */}
+        <div style={css.filterBar}>
+          <div style={css.filterRow}>
+            {/* بحث المندوب */}
+            <div style={{ position: 'relative', flex: '1 1 200px' }}>
+              <span style={{
+                position: 'absolute', insetInlineStart: 9,
+                top: '50%', transform: 'translateY(-50%)',
+                color: 'var(--text-muted)', fontSize: '0.8rem', pointerEvents: 'none',
+              }}>🔍</span>
+              <input
+                type="text"
+                placeholder="بحث باسم المسؤول..."
+                value={pageFilters.repSearch}
+                onChange={e => updatePageFilter('repSearch', e.target.value)}
+                className="form-input"
+                style={{ paddingInlineStart: 29, width: '100%', fontSize: 'var(--text-sm)' }}
+              />
+            </div>
+
+            {/* ترتيب */}
+            <select
+              value={pageFilters.sortBy}
+              onChange={e => updatePageFilter('sortBy', e.target.value as PageFilters['sortBy'])}
+              className="form-input"
+              style={{ minWidth: 160 }}
+            >
+              <option value="none">الترتيب الافتراضي</option>
+              <option value="portfolio_desc">المحفظة (تنازلياً)</option>
+              <option value="created_debt_desc">المديونية (تنازلياً)</option>
+              <option value="collections_desc">التحصيلات (تنازلياً)</option>
+              <option value="overdue_desc">المتأخرون (تنازلياً)</option>
+              <option value="rep_name_asc">الاسم (أبجدي)</option>
+            </select>
+
+            {/* المتأخرون فقط */}
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-sm)', cursor: 'pointer', flexShrink: 0 }}>
+              <input
+                type="checkbox"
+                checked={pageFilters.overdueOnly}
+                onChange={e => updatePageFilter('overdueOnly', e.target.checked)}
+              />
+              <span>المتأخرون فقط</span>
+            </label>
+
+            {/* إظهار غير مسند */}
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-sm)', cursor: 'pointer', flexShrink: 0 }}>
+              <input
+                type="checkbox"
+                checked={pageFilters.includeUnassigned}
+                onChange={e => updatePageFilter('includeUnassigned', e.target.checked)}
+              />
+              <span>إظهار "غير مسند"</span>
+            </label>
+
+            {/* زر الفلاتر الرقمية */}
+            <button
+              onClick={() => setShowPageAdvanced(v => !v)}
+              className="cm-pager-btn"
+              style={{
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                background: showPageAdvanced ? 'var(--color-primary-light)' : 'var(--bg-surface)',
+                borderColor: showPageAdvanced ? 'var(--color-primary)' : 'var(--border-primary)',
+                color: showPageAdvanced ? 'var(--color-primary)' : 'var(--text-secondary)',
+              }}
+            >
+              ⚙ نطاقات
+              {pageFilterCount > 0 && (
+                <span style={{
+                  background: 'var(--color-primary)', color: '#fff',
+                  borderRadius: 99, padding: '1px 5px', fontSize: '0.6rem', fontWeight: 800,
+                }}>{pageFilterCount}</span>
+              )}
+            </button>
+
+            {/* إعادة تعيين */}
+            {pageFilterCount > 0 && (
+              <button
+                onClick={() => setPageFilters(DEFAULT_PAGE_FILTERS)}
+                className="cm-pager-btn"
+                style={{ flexShrink: 0, color: 'var(--color-danger)', borderColor: 'var(--color-danger)' }}
+              >
+                ✕ تعيين
+              </button>
+            )}
+          </div>
+
+          {/* ── الفلاتر الرقمية المتقدمة ── */}
+          {showPageAdvanced && (
+            <div style={{
+              borderTop: '1px solid var(--border-primary)',
+              paddingTop: 'var(--space-3)',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: 'var(--space-3)',
+            }}>
+              {/* نطاق المحفظة */}
+              <div>
+                <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                  محفظة المتابعة (ج.م)
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <input type="number" min="0" placeholder="من" dir="ltr"
+                    value={pageFilters.portfolioMin}
+                    onChange={e => updatePageFilter('portfolioMin', e.target.value)}
+                    className="form-input" style={{ width: '50%', fontSize: 'var(--text-xs)' }} />
+                  <input type="number" min="0" placeholder="إلى" dir="ltr"
+                    value={pageFilters.portfolioMax}
+                    onChange={e => updatePageFilter('portfolioMax', e.target.value)}
+                    className="form-input" style={{ width: '50%', fontSize: 'var(--text-xs)' }} />
+                </div>
+              </div>
+
+              {/* نطاق المديونية */}
+              <div>
+                <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                  المديونية المنشأة (ج.م)
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <input type="number" min="0" placeholder="من" dir="ltr"
+                    value={pageFilters.createdDebtMin}
+                    onChange={e => updatePageFilter('createdDebtMin', e.target.value)}
+                    className="form-input" style={{ width: '50%', fontSize: 'var(--text-xs)' }} />
+                  <input type="number" min="0" placeholder="إلى" dir="ltr"
+                    value={pageFilters.createdDebtMax}
+                    onChange={e => updatePageFilter('createdDebtMax', e.target.value)}
+                    className="form-input" style={{ width: '50%', fontSize: 'var(--text-xs)' }} />
+                </div>
+              </div>
+
+              {/* نطاق التحصيلات */}
+              <div>
+                <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                  التحصيلات المؤكدة (ج.م)
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <input type="number" min="0" placeholder="من" dir="ltr"
+                    value={pageFilters.collectionsMin}
+                    onChange={e => updatePageFilter('collectionsMin', e.target.value)}
+                    className="form-input" style={{ width: '50%', fontSize: 'var(--text-xs)' }} />
+                  <input type="number" min="0" placeholder="إلى" dir="ltr"
+                    value={pageFilters.collectionsMax}
+                    onChange={e => updatePageFilter('collectionsMax', e.target.value)}
+                    className="form-input" style={{ width: '50%', fontSize: 'var(--text-xs)' }} />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── KPI Cards skeleton ── */}
         {isLoading && (
           <div style={css.kpiGrid}>
             {[1, 2, 3, 4].map(i => (
@@ -775,8 +1383,8 @@ export default function RepCreditCommitmentPage() {
           </div>
         )}
 
-        {/* KPI Cards */}
-        {summary && (
+        {/* ── KPI Cards (مشتقة من الـ rows المفلترة) ── */}
+        {!isLoading && rows.length > 0 && (
           <>
             <div style={css.kpiGrid}>
               <div style={css.kpiCard('var(--color-primary)')}>
@@ -804,7 +1412,7 @@ export default function RepCreditCommitmentPage() {
               </div>
             </div>
 
-            {/* Unassigned warning banner */}
+            {/* Unassigned warning */}
             {summary.hasUnassigned && (
               <div style={css.warningBanner}>
                 <span style={{ fontSize: '1.4rem', flexShrink: 0 }}>⚠</span>
@@ -819,19 +1427,26 @@ export default function RepCreditCommitmentPage() {
           </>
         )}
 
-        {/* Error */}
+        {/* ── Error ── */}
         {error && (
           <div style={css.errorBanner}>
             حدث خطأ عند تحميل التقرير. يرجى إعادة المحاولة.
           </div>
         )}
 
-        {/* ── Mobile Cards ─────────────────────────────────── */}
+        {/* ── مؤشر الفلترة ── */}
+        {!isLoading && allRows.length > 0 && allRows.length !== rows.length && (
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', textAlign: 'center' }}>
+            يُعرض <strong style={{ color: 'var(--text-primary)' }}>{rows.length}</strong> من {allRows.length} مسؤول
+          </div>
+        )}
+
+        {/* ── Mobile Cards ── */}
         {isMobile && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
             {isLoading && <Skeleton rows={5} />}
             {!isLoading && rows.length === 0 && (
-              <div style={css.emptyRow}>لا توجد بيانات</div>
+              <div style={css.emptyRow}>لا توجد بيانات مطابقة للفلتر</div>
             )}
             {rows.map(row => (
               <MobileRepCard
@@ -843,7 +1458,7 @@ export default function RepCreditCommitmentPage() {
           </div>
         )}
 
-        {/* ── Desktop Table ─────────────────────────────────── */}
+        {/* ── Desktop Table ── */}
         {!isMobile && (
           <div style={css.tableWrapper}>
             <table style={css.table}>
@@ -867,7 +1482,7 @@ export default function RepCreditCommitmentPage() {
                 {!isLoading && rows.length === 0 && (
                   <tr>
                     <td colSpan={7} style={{ ...css.td, textAlign: 'center', color: 'var(--text-muted)' }}>
-                      لا توجد بيانات
+                      لا توجد بيانات مطابقة للفلتر
                     </td>
                   </tr>
                 )}
@@ -892,7 +1507,6 @@ export default function RepCreditCommitmentPage() {
                       onMouseEnter={() => setHoveredId(key)}
                       onMouseLeave={() => setHoveredId(null)}
                     >
-                      {/* المسؤول */}
                       <td style={css.td}>
                         {isUnass ? (
                           <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
@@ -907,18 +1521,12 @@ export default function RepCreditCommitmentPage() {
                           </span>
                         )}
                       </td>
-
-                      {/* العملاء */}
-                      <td style={{ ...css.td, textAlign: 'center', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      <td style={{ ...css.td, textAlign: 'center', fontWeight: 600 }}>
                         {row.customers_count}
                       </td>
-
-                      {/* بأرصدة */}
                       <td style={{ ...css.td, textAlign: 'center', fontWeight: 600, color: 'var(--color-info)' }}>
                         {row.customers_with_balance}
                       </td>
-
-                      {/* متأخرون */}
                       <td style={{ ...css.td, textAlign: 'center' }}>
                         {row.overdue_customers_count > 0 ? (
                           <span style={css.badge('var(--color-danger-light)', 'var(--color-danger)')}>
@@ -928,13 +1536,9 @@ export default function RepCreditCommitmentPage() {
                           <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>—</span>
                         )}
                       </td>
-
-                      {/* محفظة المتابعة */}
                       <td style={{ ...css.td, fontWeight: 700, color: 'var(--color-info)' }}>
                         {fmt(row.portfolio_balance)}
                       </td>
-
-                      {/* المديونية المنشأة */}
                       <td style={css.td}>
                         {isUnass ? (
                           <span style={{ color: 'var(--text-muted)', fontSize: 'var(--text-xs)' }}>لا ينطبق</span>
@@ -944,8 +1548,6 @@ export default function RepCreditCommitmentPage() {
                           </span>
                         )}
                       </td>
-
-                      {/* التحصيلات */}
                       <td style={css.td}>
                         {isUnass ? (
                           <span style={{ color: 'var(--text-muted)', fontSize: 'var(--text-xs)' }}>لا ينطبق</span>
@@ -963,7 +1565,7 @@ export default function RepCreditCommitmentPage() {
           </div>
         )}
 
-        {/* Detail Drawer */}
+        {/* ── Detail Drawer ── */}
         {selectedRow && (
           <RepDetailDrawer
             repId={selectedRow.rep_id}

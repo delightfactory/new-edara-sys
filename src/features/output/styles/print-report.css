@@ -21,11 +21,18 @@
   font-size: 8.5pt;
 }
 
-.layout-report thead th {
+.layout-report thead:not(.print-header-spacer) th {
   padding: 4px 6px;
   font-size: 8.5pt;
   background: #ececec;
   border-bottom: 1.5pt solid #888;
+}
+
+/* ── Spacer Enforcer ── */
+.layout-report thead.print-header-spacer th {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
 }
 
 /* ── Clean page breaks for report tables ────────────────────────── */
@@ -38,7 +45,7 @@
   }
 
   /* Repeated header */
-  .layout-standard-header {
+  .layout-report-header {
     position: fixed;
     top: 0; left: 0; right: 0;
     height: var(--header-height, 80px);
@@ -47,7 +54,7 @@
     box-sizing: border-box;
   }
 
-  .layout-report th {
+  .layout-report table:not(.no-print-bg) thead:not(.print-header-spacer) th {
     background: #ececec !important;
   }
 
@@ -59,9 +66,9 @@
 
   /* Space for fixed header */
   .layout-report thead.print-header-spacer th {
-    height: var(--header-height, 80px);
-    border: none;
-    padding: 0;
-    background: transparent;
+    height: var(--header-height, 80px) !important;
+    border: none !important;
+    padding: 0 !important;
+    background: transparent !important;
   }
 }

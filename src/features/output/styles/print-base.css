@@ -64,7 +64,7 @@
   font-weight: 700;
   font-size: 9pt;
   border-bottom: 1.5pt solid #999;
-  white-space: nowrap;
+  /* Removed white-space: nowrap; to allow dense column headers to wrap */
 }
 
 .output-document tbody tr:nth-child(even) td {

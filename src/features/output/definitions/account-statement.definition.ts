@@ -2,7 +2,7 @@ import { DocumentDefinition } from './document-definition';
 import { resolveCompanyBranding } from '../branding/branding-resolver';
 import { getCustomerLedger, getCustomerBalance, getSupplierLedger, getSupplierBalance } from '@/lib/services/finance';
 import { supabase } from '@/lib/supabase/client';
-import { formatDateTime, formatNumber } from '@/lib/utils/format';
+import { formatDate, formatDateTime, formatNumber } from '@/lib/utils/format';
 
 const sourceLabel: Record<string, string> = {
   sales_order: 'طلب بيع',
@@ -74,7 +74,7 @@ export const accountStatementDefinition: DocumentDefinition = {
     const rows = sortedLedger.map((entry: any) => {
       const isDebit = entry.type === 'debit';
       return {
-        date: formatDateTime(entry.created_at),
+        date: formatDate(entry.created_at),
         source: sourceLabel[entry.source_type] || entry.source_type,
         desc: entry.description || '—',
         debit: isDebit ? formatNumber(entry.amount) : '',
@@ -92,7 +92,7 @@ export const accountStatementDefinition: DocumentDefinition = {
     return {
       kind: 'account-statement',
       title: titleStr,
-      issuedAt: formatDateTime(new Date().toISOString()),
+      issuedAt: formatDate(new Date().toISOString()),
       direction,
       locale,
       company: branding,

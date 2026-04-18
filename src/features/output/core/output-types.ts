@@ -15,6 +15,9 @@ export type DocumentKind =
   | 'sales-invoice'
   | 'purchase-invoice'
   | 'account-statement'
+  | 'credit-portfolio-report'
+  | 'rep-credit-commitment-report'
+  | 'rep-credit-commitment-detail-report'
   | 'report';
 
 export type PaperProfileId =

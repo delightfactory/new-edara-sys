@@ -30,7 +30,7 @@ export function ReportLayout({ document, profile }: { document: CanonicalDocumen
           <tr>
             <th style={{ border: 'none', padding: 0 }}>
               {/* ── Repeating Report Header ──────────────────────── */}
-              <div className="layout-standard-header" style={{ paddingBottom: '4px' }}>
+              <div className="layout-report-header" style={{ paddingBottom: '4px' }}>
                 <div style={{
                   display: 'flex',
                   justifyContent: 'space-between',

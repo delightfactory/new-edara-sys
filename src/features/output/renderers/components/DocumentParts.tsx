@@ -30,8 +30,8 @@ export function DocumentMetaBlock({ meta, dir }: { meta?: CanonicalDocument['met
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))',
-      gap: '5px',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
+      gap: '6px',
       marginTop: '8px',
     }}>
       {meta.map((item, idx) => (
@@ -43,12 +43,15 @@ export function DocumentMetaBlock({ meta, dir }: { meta?: CanonicalDocument['met
             borderRadius: '3px',
             background: '#f8f8f8',
             direction: item.dir || dir,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
           }}
         >
-          <div style={{ fontSize: '7.5pt', color: '#666', marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div style={{ fontSize: '7.5pt', color: '#666', marginBottom: '2px', lineHeight: 1.2 }}>
             {item.label}
           </div>
-          <div style={{ fontWeight: 700, fontSize: '9pt', wordBreak: 'break-word' }}>
+          <div style={{ fontWeight: 700, fontSize: '9pt', wordBreak: 'break-word', lineHeight: 1.3 }}>
             {item.value}
           </div>
         </div>

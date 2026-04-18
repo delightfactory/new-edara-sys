@@ -1,7 +1,7 @@
 import { DocumentDefinition } from './document-definition';
 import { resolveCompanyBranding } from '../branding/branding-resolver';
 import { getPaymentReceipt } from '@/lib/services/payments';
-import { formatDate } from '@/lib/utils/format';
+import { formatDate, formatNumber } from '@/lib/utils/format';
 
 export const paymentReceiptDefinition: DocumentDefinition = {
   kind: 'payment-receipt',
@@ -40,13 +40,13 @@ export const paymentReceiptDefinition: DocumentDefinition = {
         { label: 'رقم الإيصال', value: receipt.number, dir: 'ltr' as const },
         { label: 'التاريخ', value: formatDate(receipt.created_at) },
         { label: 'طريقة الدفع', value: receipt.payment_method === 'cash' ? 'نقدي' : receipt.payment_method === 'bank_transfer' ? 'تحويل بنكي' : receipt.payment_method },
-        { label: 'المبلغ', value: `${receipt.amount} ${branding.currencySymbol}` },
+        { label: 'المبلغ', value: `${formatNumber(receipt.amount)} ${branding.currencySymbol}` },
       ],
       sections: [
         {
           type: 'plain-text',
           title: 'مبلغ وقدره',
-          content: `${receipt.amount} ${branding.currencyCode}`,
+          content: `${formatNumber(receipt.amount)} ${branding.currencySymbol}`,
           dir: 'rtl'
         },
         {
@@ -62,7 +62,7 @@ export const paymentReceiptDefinition: DocumentDefinition = {
         }
       ],
       totals: {
-        total: `${receipt.amount} ${branding.currencySymbol}`
+        total: `${formatNumber(receipt.amount)} ${branding.currencySymbol}`
       },
       approvals: receipt.collected_by_profile?.full_name ? [
         { label: 'المستلم (أمين الخزنة)', value: receipt.collected_by_profile.full_name },

@@ -1,26 +1,16 @@
 /**
- * CreditManagementPage — صفحة إدارة الائتمان (Responsive v2)
+ * CreditManagementPage — صفحة إدارة الائتمان v3
  *
- * Mobile-first: الجدول يتحول لبطاقات على الشاشات < 768px
- *
- * غرفة قيادة ائتمانية تشمل:
- *   - شريط KPIs للمحفظة (6 مؤشرات)
- *   - جدول العملاء على الديسكتوب + بطاقات على الموبايل
- *   - بحث وفلتر طريقة الدفع (server-side)
- *   - مؤشر تأخر: طلب واحد لـ 25 عميل في الصفحة فقط
- *   - لوحة جانبية (Drawer) مع إغلاق بـ Escape والخلفية
- *
- * الصلاحيات:
- *   customers.read أو customers.read_all  → رؤية الصفحة
- *   customers.credit.update               → تبويب التعديل
- *
- * الأداء:
- *   - getCreditCustomers() يضمن COUNT صحيح على عملاء الائتمان لا الكل
- *   - getOverdueBatch() يعمل على 25 ID فقط (مطابق لصفحة الجدول)
- *   - لا N+1 في أي تفاعل
+ * الجديد في v3:
+ *   - filter model احترافي كامل مع advanced filters قابل للطي
+ *   - server-side: search, paymentTerms, repId, balanceState,
+ *     currentBalanceMin/Max, creditLimitMin/Max, sortBy
+ *   - DocumentActions مدمج في الـ Header للطباعة/PDF
+ *   - كل تغيير فلتر يعيد page إلى 1
+ *   - الطباعة تعتمد على كل النتائج المطابقة للفلاتر (لا page الحالية)
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useQuery, useQueryClient }          from '@tanstack/react-query'
 
 import {
@@ -33,7 +23,70 @@ import { computeCreditState }   from '@/components/shared/CustomerCreditChip'
 import CreditKPIBar             from '@/components/credit/CreditKPIBar'
 import CustomerCreditPanel      from '@/components/credit/CustomerCreditPanel'
 import { formatNumber }         from '@/lib/utils/format'
+import { DocumentActions }      from '@/features/output/components/DocumentActions'
 import type { Customer }        from '@/lib/types/master-data'
+import { supabase }             from '@/lib/supabase/client'
+
+// ─────────────────────────────────────────────────────────────
+// Filter Model
+// ─────────────────────────────────────────────────────────────
+
+type BalanceState = 'all' | 'with-balance-only' | 'near-limit' | 'exceeded' | 'no-limit'
+type SortBy       = 'name' | 'current_balance_desc' | 'available_asc' | 'utilization_desc' | 'overdue_count_desc'
+
+interface CreditFilters {
+  search:            string
+  paymentTerms:      '' | 'credit' | 'mixed'
+  repId:             string
+  balanceState:      BalanceState
+  currentBalanceMin: string
+  currentBalanceMax: string
+  creditLimitMin:    string
+  creditLimitMax:    string
+  sortBy:            SortBy
+}
+
+const DEFAULT_FILTERS: CreditFilters = {
+  search:            '',
+  paymentTerms:      '',
+  repId:             '',
+  balanceState:      'all',
+  currentBalanceMin: '',
+  currentBalanceMax: '',
+  creditLimitMin:    '',
+  creditLimitMax:    '',
+  sortBy:            'name',
+}
+
+function hasAdvancedFilters(f: CreditFilters): boolean {
+  return (
+    f.balanceState      !== 'all' ||
+    f.currentBalanceMin !== ''    ||
+    f.currentBalanceMax !== ''    ||
+    f.creditLimitMin    !== ''    ||
+    f.creditLimitMax    !== ''    ||
+    f.sortBy            !== 'name'
+  )
+}
+
+// ─────────────────────────────────────────────────────────────
+// تحويل الفلاتر إلى params لـ DocumentActions
+// (سلاسل نصية فقط لأن params في الـ hook من نوع Record<string, string>)
+// ─────────────────────────────────────────────────────────────
+
+function filtersToParams(f: CreditFilters): Record<string, string> {
+  const p: Record<string, string> = {}
+  if (f.search)            p['search']            = f.search
+  if (f.paymentTerms)      p['paymentTerms']       = f.paymentTerms
+  if (f.repId)             p['repId']              = f.repId
+  if (f.balanceState !== 'all') p['balanceState']  = f.balanceState
+  if (f.currentBalanceMin) p['currentBalanceMin']  = f.currentBalanceMin
+  if (f.currentBalanceMax) p['currentBalanceMax']  = f.currentBalanceMax
+  if (f.creditLimitMin)    p['creditLimitMin']     = f.creditLimitMin
+  if (f.creditLimitMax)    p['creditLimitMax']     = f.creditLimitMax
+  if (f.sortBy !== 'name') p['sortBy']             = f.sortBy
+  return p
+}
 
 // ─────────────────────────────────────────────────────────────
 // Page
@@ -41,35 +94,71 @@ import type { Customer }        from '@/lib/types/master-data'
 export default function CreditManagementPage() {
   const qc = useQueryClient()
 
-  // ── Filter / Search State ──────────────────────────────────
-  const [search,       setSearch]       = useState('')
-  const [inputValue,   setInputValue]   = useState('')
-  const [paymentTerms, setPaymentTerms] = useState<'' | 'credit' | 'mixed'>('')
-  const [page,         setPage]         = useState(1)
+  // ── Filter State ──────────────────────────────────────────
+  const [filters,        setFilters]        = useState<CreditFilters>(DEFAULT_FILTERS)
+  const [inputValue,     setInputValue]     = useState('')
+  const [page,           setPage]           = useState(1)
+  const [paper,          setPaper]          = useState<'a4-landscape' | 'a4-portrait'>('a4-landscape')
+  const [showAdvanced,   setShowAdvanced]   = useState(false)
+
+  // جلب قائمة المندوبين للفلتر
+  const { data: repsData } = useQuery({
+    queryKey: ['profiles-for-credit-filter'],
+    queryFn:  async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .eq('status', 'active')
+        .order('full_name')
+      return data || []
+    },
+    staleTime: 10 * 60_000,
+  })
 
   // Debounced search — 350ms
+  const searchTimer = useRef<ReturnType<typeof setTimeout>>()
   useEffect(() => {
-    const t = setTimeout(() => { setSearch(inputValue); setPage(1) }, 350)
-    return () => clearTimeout(t)
+    clearTimeout(searchTimer.current)
+    searchTimer.current = setTimeout(() => {
+      setFilters(prev => ({ ...prev, search: inputValue }))
+      setPage(1)
+    }, 350)
+    return () => clearTimeout(searchTimer.current)
   }, [inputValue])
 
-  // ── Customers Query — pagination حقيقي server-side ─────────
+  // أي تغيير فلتر يعيد page إلى 1
+  const updateFilter = useCallback(<K extends keyof CreditFilters>(
+    key: K,
+    value: CreditFilters[K]
+  ) => {
+    setFilters(prev => ({ ...prev, [key]: value }))
+    setPage(1)
+  }, [])
+
+  // ── Customers Query ───────────────────────────────────────
   const { data: result, isLoading } = useQuery({
-    queryKey: ['credit-customers', { search, paymentTerms, page }],
+    queryKey: ['credit-customers', { ...filters, page }],
     queryFn:  () => getCreditCustomers({
-      search:       search  || undefined,
-      paymentTerms: paymentTerms || undefined,
+      search:            filters.search            || undefined,
+      paymentTerms:      filters.paymentTerms      || undefined,
+      repId:             filters.repId             || undefined,
+      balanceState:      filters.balanceState !== 'all' ? filters.balanceState : undefined,
+      currentBalanceMin: filters.currentBalanceMin ? parseFloat(filters.currentBalanceMin) : undefined,
+      currentBalanceMax: filters.currentBalanceMax ? parseFloat(filters.currentBalanceMax) : undefined,
+      creditLimitMin:    filters.creditLimitMin    ? parseFloat(filters.creditLimitMin)    : undefined,
+      creditLimitMax:    filters.creditLimitMax    ? parseFloat(filters.creditLimitMax)    : undefined,
+      sortBy:            filters.sortBy !== 'name' ? filters.sortBy : undefined,
       page,
     }),
     staleTime:       2 * 60_000,
     placeholderData: (prev: any) => prev,
   })
 
-  const customers    = result?.data       ?? []
-  const totalPages   = result?.totalPages ?? 1
-  const totalCount   = result?.count      ?? 0
+  const customers  = result?.data       ?? []
+  const totalPages = result?.totalPages ?? 1
+  const totalCount = result?.count      ?? 0
 
-  // ── Overdue Batch — بالضبط 25 ID من الصفحة الحالية ─────────
+  // ── Overdue Batch ─────────────────────────────────────────
   const customerIds = customers.map(c => c.id)
 
   const { data: overdueMap } = useQuery<Record<string, OverdueInfo>>({
@@ -79,7 +168,7 @@ export default function CreditManagementPage() {
     enabled:   customerIds.length > 0,
   })
 
-  // ── Selected Customer (Drawer) ──────────────────────────────
+  // ── Selected Customer (Drawer) ────────────────────────────
   const [selectedCustomer, setSelectedCustomer] = useState<CreditCustomerRow | null>(null)
 
   const handleRowClick = useCallback((c: CreditCustomerRow) => {
@@ -94,7 +183,7 @@ export default function CreditManagementPage() {
     qc.invalidateQueries({ queryKey: ['overdue-batch'] })
   }, [qc])
 
-  // ── Escape key — إغلاق الـ Drawer ──────────────────────────
+  // ── Escape key ────────────────────────────────────────────
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && selectedCustomer) closePanel()
@@ -103,63 +192,268 @@ export default function CreditManagementPage() {
     return () => window.removeEventListener('keydown', onKey)
   }, [selectedCustomer, closePanel])
 
-  // ─────────────────────────────────────────────────────────────
+  const activeFilterCount =
+    (filters.paymentTerms      ? 1 : 0) +
+    (filters.repId             ? 1 : 0) +
+    (filters.balanceState !== 'all' ? 1 : 0) +
+    (filters.currentBalanceMin ? 1 : 0) +
+    (filters.currentBalanceMax ? 1 : 0) +
+    (filters.creditLimitMin    ? 1 : 0) +
+    (filters.creditLimitMax    ? 1 : 0) +
+    (filters.sortBy !== 'name' ? 1 : 0)
+
+  const printParams = filtersToParams(filters)
+
+  // ─────────────────────────────────────────────────────────
   return (
     <div id="credit-management-page" className="cm-page animate-enter">
 
-      {/* ── Page Header ─────────────────────────────────────── */}
+      {/* ── Page Header ────────────────────────────────────── */}
       <div className="cm-header">
         <div>
           <h1 className="cm-title">🏦 إدارة الائتمان</h1>
           <p className="cm-subtitle">المحفظة الائتمانية للعملاء الآجلين والمختلطين</p>
         </div>
 
-        <button
-          id="credit-refresh-btn"
-          onClick={() => {
-            qc.invalidateQueries({ queryKey: ['credit-customers'] })
-            qc.invalidateQueries({ queryKey: ['credit-portfolio-kpis'] })
-          }}
-          className="cm-refresh-btn"
-        >
-          ↺ تحديث
-        </button>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* ── Paper Selector ────────────────────────────── */}
+          <select 
+            value={paper} 
+            onChange={e => setPaper(e.target.value as any)}
+            className="filter-select"
+            title="اختر مقاس الورقة للطباعة"
+            style={{ 
+              padding: '6px 12px', 
+              fontSize: '13px', 
+              borderRadius: '4px', 
+              border: '1px solid #ddd',
+              backgroundColor: '#fff',
+              outline: 'none',
+              cursor: 'pointer'
+            }}
+          >
+            <option value="a4-landscape">📄 A4 بالعرض</option>
+            <option value="a4-portrait">📄 A4 بالطول</option>
+          </select>
+
+          {/* ── Print / PDF Actions ─────────────────────── */}
+          <DocumentActions
+            kind="credit-portfolio-report"
+            entityId="all"
+            paperProfileId={paper}
+            params={printParams}
+            compact={true}
+          />
+
+          <button
+            id="credit-refresh-btn"
+            onClick={() => {
+              qc.invalidateQueries({ queryKey: ['credit-customers'] })
+              qc.invalidateQueries({ queryKey: ['credit-portfolio-kpis'] })
+            }}
+            className="cm-refresh-btn"
+          >
+            ↺ تحديث
+          </button>
+        </div>
       </div>
 
-      {/* ── KPI Bar ──────────────────────────────────────────── */}
-      <CreditKPIBar />
+      {/* ── KPI Bar ────────────────────────────────────────── */}
+      <CreditKPIBar filters={{
+        search:            filters.search            || undefined,
+        paymentTerms:      filters.paymentTerms      || undefined,
+        repId:             filters.repId             || undefined,
+        balanceState:      filters.balanceState !== 'all' ? filters.balanceState : undefined,
+        currentBalanceMin: filters.currentBalanceMin ? parseFloat(filters.currentBalanceMin) : undefined,
+        currentBalanceMax: filters.currentBalanceMax ? parseFloat(filters.currentBalanceMax) : undefined,
+        creditLimitMin:    filters.creditLimitMin    ? parseFloat(filters.creditLimitMin)    : undefined,
+        creditLimitMax:    filters.creditLimitMax    ? parseFloat(filters.creditLimitMax)    : undefined,
+      }} />
 
-      {/* ── Filters & Search ─────────────────────────────────── */}
-      <div className="cm-filters">
-        {/* بحث */}
-        <div style={{ position: 'relative', flex: '1 1 220px' }}>
-          <span style={{
-            position: 'absolute', insetInlineStart: 10,
-            top: '50%', transform: 'translateY(-50%)',
-            color: 'var(--text-muted)', pointerEvents: 'none',
-          }}>🔍</span>
-          <input
-            id="credit-search"
-            type="text"
-            placeholder="ابحث باسم العميل أو الكود..."
-            value={inputValue}
-            onChange={e => setInputValue(e.target.value)}
-            className="form-input"
-            style={{ paddingInlineStart: 32, width: '100%' }}
-          />
+      {/* ── Filters ─────────────────────────────────────────── */}
+      <div className="cm-filters-container">
+
+        {/* ── الصف الأول: بحث + طريقة الدفع + المندوب ─── */}
+        <div className="cm-filters-row1">
+
+          {/* بحث */}
+          <div style={{ position: 'relative', flex: '1 1 220px' }}>
+            <span style={{
+              position: 'absolute', insetInlineStart: 10,
+              top: '50%', transform: 'translateY(-50%)',
+              color: 'var(--text-muted)', pointerEvents: 'none',
+            }}>🔍</span>
+            <input
+              id="credit-search"
+              type="text"
+              placeholder="ابحث باسم العميل أو الكود..."
+              value={inputValue}
+              onChange={e => setInputValue(e.target.value)}
+              className="form-input"
+              style={{ paddingInlineStart: 32, width: '100%' }}
+            />
+          </div>
+
+          {/* طريقة الدفع */}
+          <select
+            id="credit-filter-terms"
+            value={filters.paymentTerms}
+            onChange={e => updateFilter('paymentTerms', e.target.value as '' | 'credit' | 'mixed')}
+            className="form-input cm-filter-select"
+          >
+            <option value="">الآجل والمختلط</option>
+            <option value="credit">آجل فقط</option>
+            <option value="mixed">مختلط فقط</option>
+          </select>
+
+          {/* المندوب */}
+          <select
+            id="credit-filter-rep"
+            value={filters.repId}
+            onChange={e => updateFilter('repId', e.target.value)}
+            className="form-input cm-filter-select"
+          >
+            <option value="">كل المندوبين</option>
+            {(repsData ?? []).map((r: any) => (
+              <option key={r.id} value={r.id}>{r.full_name}</option>
+            ))}
+          </select>
+
+          {/* زر الفلاتر المتقدمة */}
+          <button
+            id="credit-advanced-toggle"
+            onClick={() => setShowAdvanced(v => !v)}
+            className={`cm-pager-btn${hasAdvancedFilters(filters) ? ' cm-advanced-active' : ''}`}
+            style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            <span>⚙</span>
+            <span>متقدم</span>
+            {activeFilterCount > 0 && (
+              <span style={{
+                background: 'var(--color-primary)',
+                color: '#fff',
+                borderRadius: 99,
+                padding: '1px 6px',
+                fontSize: '0.65rem',
+                fontWeight: 800,
+              }}>{activeFilterCount}</span>
+            )}
+          </button>
+
+          {/* إعادة تعيين — فقط إذا هناك فلاتر فعالة */}
+          {activeFilterCount > 0 && (
+            <button
+              id="credit-reset-filters"
+              onClick={() => {
+                setFilters(DEFAULT_FILTERS)
+                setInputValue('')
+                setPage(1)
+              }}
+              className="cm-pager-btn"
+              style={{ flexShrink: 0, color: 'var(--color-danger)', borderColor: 'var(--color-danger)' }}
+            >
+              ✕ إعادة تعيين
+            </button>
+          )}
         </div>
 
-        {/* فلتر طريقة الدفع — server-side */}
-        <select
-          id="credit-filter-terms"
-          value={paymentTerms}
-          onChange={e => { setPaymentTerms(e.target.value as any); setPage(1) }}
-          className="form-input cm-filter-select"
-        >
-          <option value="">الآجل والمختلط</option>
-          <option value="credit">آجل فقط</option>
-          <option value="mixed">مختلط فقط</option>
-        </select>
+        {/* ── الصف الثاني: الفلاتر المتقدمة ─────────────── */}
+        {showAdvanced && (
+          <div className="cm-filters-advanced">
+            {/* حالة الرصيد */}
+            <div className="cm-filter-group">
+              <label className="cm-filter-label">حالة الائتمان</label>
+              <select
+                id="credit-filter-balance-state"
+                value={filters.balanceState}
+                onChange={e => updateFilter('balanceState', e.target.value as BalanceState)}
+                className="form-input cm-filter-select"
+                style={{ width: '100%' }}
+              >
+                <option value="all">الكل</option>
+                <option value="with-balance-only">لديهم رصيد {'>'} 0</option>
+                <option value="near-limit">قريبون من الحد (≥80%)</option>
+                <option value="exceeded">تجاوزوا الحد</option>
+                <option value="no-limit">بلا حد ائتماني</option>
+              </select>
+            </div>
+
+            {/* ترتيب النتائج */}
+            <div className="cm-filter-group">
+              <label className="cm-filter-label">ترتيب النتائج</label>
+              <select
+                id="credit-filter-sort"
+                value={filters.sortBy}
+                onChange={e => updateFilter('sortBy', e.target.value as SortBy)}
+                className="form-input cm-filter-select"
+                style={{ width: '100%' }}
+              >
+                <option value="name">الاسم (أبجدي)</option>
+                <option value="current_balance_desc">الرصيد (تنازلياً)</option>
+                <option value="available_asc">المتاح (تصاعدياً)</option>
+                <option value="utilization_desc">الاستخدام % (تنازلياً)</option>
+              </select>
+            </div>
+
+            {/* نطاق الرصيد الحالي */}
+            <div className="cm-filter-group">
+              <label className="cm-filter-label">الرصيد الحالي (ج.م)</label>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <input
+                  id="credit-filter-bal-min"
+                  type="number"
+                  min="0"
+                  placeholder="من"
+                  dir="ltr"
+                  value={filters.currentBalanceMin}
+                  onChange={e => updateFilter('currentBalanceMin', e.target.value)}
+                  className="form-input"
+                  style={{ width: '50%' }}
+                />
+                <input
+                  id="credit-filter-bal-max"
+                  type="number"
+                  min="0"
+                  placeholder="إلى"
+                  dir="ltr"
+                  value={filters.currentBalanceMax}
+                  onChange={e => updateFilter('currentBalanceMax', e.target.value)}
+                  className="form-input"
+                  style={{ width: '50%' }}
+                />
+              </div>
+            </div>
+
+            {/* نطاق الحد الائتماني */}
+            <div className="cm-filter-group">
+              <label className="cm-filter-label">الحد الائتماني (ج.م)</label>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <input
+                  id="credit-filter-limit-min"
+                  type="number"
+                  min="0"
+                  placeholder="من"
+                  dir="ltr"
+                  value={filters.creditLimitMin}
+                  onChange={e => updateFilter('creditLimitMin', e.target.value)}
+                  className="form-input"
+                  style={{ width: '50%' }}
+                />
+                <input
+                  id="credit-filter-limit-max"
+                  type="number"
+                  min="0"
+                  placeholder="إلى"
+                  dir="ltr"
+                  value={filters.creditLimitMax}
+                  onChange={e => updateFilter('creditLimitMax', e.target.value)}
+                  className="form-input"
+                  style={{ width: '50%' }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Info Bar ─────────────────────────────────────────── */}
@@ -230,7 +524,6 @@ export default function CreditManagementPage() {
 
             {/* ── Pagination ─────────────────────────────────── */}
             <div className="cm-pagination">
-              {/* RTL: السابق = صفحة أصغر = يسار في رقمي = يمين في القراءة → السهم ‹ */}
               <button
                 id="credit-prev-page"
                 onClick={() => setPage(p => Math.max(1, p - 1))}
@@ -333,22 +626,60 @@ export default function CreditManagementPage() {
         }
         .cm-refresh-btn:hover { background: var(--bg-surface-2); }
 
-        /* ── Filters ─────────────────────── */
-        .cm-filters {
+        /* ── Filters Container ────────────── */
+        .cm-filters-container {
+          background: var(--bg-surface);
+          border: 1px solid var(--border-primary);
+          border-radius: 12px;
+          padding: var(--space-4);
+          margin-bottom: var(--space-3);
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-3);
+        }
+        .cm-filters-row1 {
           display: flex;
           gap: var(--space-3);
-          margin-bottom: var(--space-3);
           flex-wrap: wrap;
           align-items: center;
         }
         .cm-filter-select {
           width: auto;
-          min-width: 150px;
+          min-width: 140px;
+          flex-shrink: 0;
         }
-        @media (max-width: 480px) {
-          .cm-filters           { flex-direction: column; }
-          .cm-filters > div     { flex: unset !important; width: 100%; }
-          .cm-filter-select     { width: 100% !important; min-width: unset; }
+        @media (max-width: 640px) {
+          .cm-filters-row1 { flex-direction: column; align-items: stretch; }
+          .cm-filter-select { min-width: unset; width: 100% !important; }
+        }
+
+        /* ── Advanced Filters Panel ──────── */
+        .cm-filters-advanced {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: var(--space-3);
+          border-top: 1px solid var(--border-primary);
+          padding-top: var(--space-3);
+          animation: fade-in 0.15s ease;
+        }
+        @keyframes fade-in {
+          from { opacity: 0; transform: translateY(-4px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .cm-filter-group {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .cm-filter-label {
+          font-size: var(--text-xs);
+          font-weight: 600;
+          color: var(--text-secondary);
+        }
+        .cm-advanced-active {
+          background: var(--color-primary-light) !important;
+          border-color: var(--color-primary) !important;
+          color: var(--color-primary) !important;
         }
 
         /* ── Info Bar ────────────────────── */
@@ -660,7 +991,7 @@ function CreditMobileCard({
         </span>
       </div>
 
-      {/* ── Row 2: Meta — Code, Rep, Terms, Days ─── */}
+      {/* ── Row 2: Meta ─── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
         {customer.code && (
           <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontFeatureSettings: '"tnum"' }}>
@@ -686,7 +1017,7 @@ function CreditMobileCard({
         ) : null}
       </div>
 
-      {/* ── Row 3: Financial Figures 2-column ─── */}
+      {/* ── Row 3: Financial ─── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
         <div style={{ background: 'var(--bg-surface)', borderRadius: 8, padding: '7px 10px' }}>
           <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: 2 }}>الرصيد</div>
@@ -712,7 +1043,7 @@ function CreditMobileCard({
         )}
       </div>
 
-      {/* ── Row 4: Progress bar + Overdue ─── */}
+      {/* ── Row 4: Progress + Overdue ─── */}
       {state.type === 'credit' ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ flex: 1, height: 5, borderRadius: 99, background: 'var(--bg-surface)', overflow: 'hidden' }}>

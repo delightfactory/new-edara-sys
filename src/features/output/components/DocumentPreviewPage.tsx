@@ -329,6 +329,13 @@ export function DocumentPreviewPage({ kind, entityId }: DocumentPreviewPageProps
 
         {/* Right: action buttons */}
         <div className="pab-right">
+          {/* Print guidance note if landscape */}
+          {profile.id === 'a4-landscape' && (
+            <span style={{ fontSize: '11px', color: '#666', marginInlineEnd: '10px' }} className="hide-on-mobile">
+              💡 تأكد من اختيار (Landscape) في نافذة الطباعة
+            </span>
+          )}
+
           {/* Print button — always shown (works on all platforms) */}
           <button
             id="btn-print"
@@ -486,6 +493,7 @@ export function DocumentPreviewPage({ kind, entityId }: DocumentPreviewPageProps
 
           /* ─── Narrow mobile (≤ 480px) ─────────────────────────────── */
           @media (max-width: 480px) {
+            .hide-on-mobile { display: none !important; }
             .preview-action-bar {
               padding: 6px 10px;
               min-height: 48px;

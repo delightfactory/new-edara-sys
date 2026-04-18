@@ -20,7 +20,13 @@ export function DocumentRenderer({ document, profile }: DocumentRendererProps) {
     return <ThermalLayout document={document} profile={profile} />;
   }
 
-  if (document.kind === 'report' || document.kind === 'account-statement') {
+  if (
+    document.kind === 'report' ||
+    document.kind === 'account-statement' ||
+    document.kind === 'credit-portfolio-report' ||
+    document.kind === 'rep-credit-commitment-report' ||
+    document.kind === 'rep-credit-commitment-detail-report'
+  ) {
     return <ReportLayout document={document} profile={profile} />;
   }
 
