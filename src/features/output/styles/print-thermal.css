@@ -141,10 +141,7 @@
   display: none !important;
 }
 
-/* ── Monochrome — applies to all colour sources including images ─── */
-.layout-thermal.monochrome {
-  /* Text and borders already #000 in thermal */
-}
+/* Text and borders already #000 in thermal (monochrome applied globally below) */
 .layout-thermal.monochrome * {
   color: #000 !important;
   background-color: transparent !important;
@@ -188,14 +185,13 @@
   }
 
   /* The output root must not have horizontal overflow when thermal.
-   * --thermal-max-width is set by ThermalLayout via inline style;
-   * here it is ACTUALLY consumed as the max-width constraint.
-   * If the var is absent, falls back to the profile width. */
+   * We apply profile-width to both root and layout to ensure the entire physical paper
+   * is filled. Inner padding organically controls the printable content width (e.g. 72mm). */
   .output-print-root[data-paper^="thermal"] {
     width: var(--profile-width, 80mm) !important;
-    max-width: var(--thermal-max-width, var(--profile-width, 80mm)) !important;
+    max-width: var(--profile-width, 80mm) !important;
     overflow: visible !important;
-    margin: 0 !important;
+    margin: 0 auto !important;
   }
 
   .layout-thermal-header,

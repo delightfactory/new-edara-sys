@@ -9,7 +9,6 @@ export interface PaperProfile {
   fontScale: number;
   isThermal?: boolean;
   thermalConstraints?: {
-    maxWidth: string;
     hideImages?: boolean;
     monochrome?: boolean;
   };
@@ -57,7 +56,6 @@ export const paperProfiles: Record<PaperProfileId, PaperProfile> = {
     fontScale: 0.85,
     isThermal: true,
     thermalConstraints: {
-      maxWidth: '54mm',
       hideImages: true,
       monochrome: true,
     },
@@ -71,7 +69,6 @@ export const paperProfiles: Record<PaperProfileId, PaperProfile> = {
     fontScale: 0.95,
     isThermal: true,
     thermalConstraints: {
-      maxWidth: '72mm',
       hideImages: true,
       monochrome: true,
     },

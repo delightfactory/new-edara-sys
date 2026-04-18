@@ -12,14 +12,13 @@ import { PaperProfile } from '../../paper-profiles/paper-profiles';
    - Totals are visually prominent (largest font, bold border).
    - monochrome affects images via CSS filter (not just color).
    - hideImages defaults true in production thermal profiles.
-   - thermalConstraints.maxWidth applied as --thermal-max-width CSS var.
+   - Physical width is set solely by profile.size.width; inner content width organically results from internal padding, removing the need for a separate max-width var.
    ═══════════════════════════════════════════════════════════════════ */
 
 export function ThermalLayout({ document, profile }: { document: CanonicalDocument; profile: PaperProfile }) {
   const dir = document.direction;
   const monochrome = profile.thermalConstraints?.monochrome ?? true;
   const hideImages = profile.thermalConstraints?.hideImages ?? true;
-  const maxWidth = profile.thermalConstraints?.maxWidth ?? '72mm';
 
   const monoClass = monochrome ? 'monochrome' : '';
   const hideImgClass = hideImages ? 'hide-images' : '';
@@ -29,7 +28,6 @@ export function ThermalLayout({ document, profile }: { document: CanonicalDocume
       className={`output-document layout-thermal ${monoClass} ${hideImgClass}`}
       style={{
         '--doc-dir': dir,
-        '--thermal-max-width': maxWidth,
       } as React.CSSProperties}
       dir={dir}
       data-paper={profile.id}
