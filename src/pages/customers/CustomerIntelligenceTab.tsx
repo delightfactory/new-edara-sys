@@ -1,4 +1,4 @@
-﻿import React from 'react'
+import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   useCustomer360Summary,
@@ -214,7 +214,7 @@ function ExecutiveSummarySection({ kpis }: { kpis: Customer360Kpis | undefined }
         <BarChartIcon size={16} /> الملخص التنفيذي
         <FreshnessIndicator label="مباشر" />
       </h3>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 'var(--space-3)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 'var(--space-3)' }}>
         <StatCard title="صافي الإيراد" value={(kpis.net_revenue ?? 0).toLocaleString('ar-EG-u-nu-latn')} suffix="ج.م" />
         <StatCard title="إجمالي المحصل" value={(kpis.total_collected ?? 0).toLocaleString('ar-EG-u-nu-latn')} suffix="ج.م" />
         <StatCard title="الرصيد المعلق" value={Math.abs(kpis.outstanding_balance || 0).toLocaleString()} suffix="ج.م" color={(kpis.outstanding_balance || 0) > 0 ? 'var(--color-danger)' : 'var(--color-success)'} />
@@ -249,9 +249,10 @@ function CommercialHistorySection({ data }: { data: CustomerSalesByMonth[] }) {
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
             <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} tickLine={false} axisLine={false} />
+            <YAxis orientation="right" tick={{ fill: 'var(--text-muted)', fontSize: 10 }} tickFormatter={(val) => Intl.NumberFormat('en-US', { notation: 'compact' }).format(val)} axisLine={false} tickLine={false} width={40} />
             <Tooltip 
               cursor={{ fill: 'var(--bg-surface-2)' }}
-              contentStyle={{ borderRadius: 8, border: '1px solid var(--border-primary)', fontSize: 12, textAlign: 'right' }}
+              contentStyle={{ borderRadius: 8, border: '1px solid var(--border-primary)', fontSize: 12, textAlign: 'right', direction: 'rtl' }}
               formatter={(value: number) => [`${value.toLocaleString()} ج.م`, '']}
             />
             <ReferenceLine y={avg} stroke="var(--color-warning)" strokeDasharray="3 3" />
@@ -271,7 +272,7 @@ function TopProductsSection({ data }: { data: CustomerTopProduct[] }) {
     'مستمر': { badge: 'badge-success', color: 'var(--color-success)' },
   } as const
 
-  const RANK_COLORS = ['#f59e0b', '#64748b', '#b45309']  // gold, silver, bronze
+  const RANK_COLORS = ['var(--color-warning)', 'var(--text-muted)', 'var(--color-info)']  // gold(warning), silver(muted), bronze(info)
 
   const fmt = (n: number) => n.toLocaleString('ar-EG-u-nu-latn')
   const fmtDate = (d: string | null) =>
@@ -459,7 +460,7 @@ function CategoryMixSection({ data }: { data: CustomerCategoryMix[] }) {
             </PieChart>
           </ResponsiveContainer>
         </div>
-        <div style={{ flex: 1.5, minWidth: 0, overflow: 'hidden' }}>
+        <div style={{ flex: 1.5, minWidth: 220, overflow: 'hidden' }}>
           <table className="data-table" style={{ background: 'transparent' }}>
              <thead>
                <tr>
@@ -498,6 +499,20 @@ function ArAgingSection({ data }: { data: CustomerArAgingBucket[] }) {
     '90+':   'var(--color-danger-dark, #7f1d1d)',
   }
 
+  const totalDebt = data.reduce((sum, d) => sum + Number(d.amount), 0)
+
+  if (totalDebt === 0) {
+    return (
+      <div className="edara-card" style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', background: 'var(--color-success-light, #f0fdf4)', border: '1px dashed var(--color-success)' }}>
+        <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--color-success)', color: 'var(--color-on-success, #fff)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+          <Check size={20} />
+        </div>
+        <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: 'var(--color-success)' }}>الرصيد المتأخر مُسدد بالكامل</h3>
+        <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-secondary)' }}>تاريخ دفع ممتاز واستقرار ائتماني</p>
+      </div>
+    )
+  }
+
   return (
     <div className="edara-card" style={{ padding: 'var(--space-4)' }}>
       <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>أعمار الديون (AR Aging)</h3>
@@ -512,11 +527,11 @@ function ArAgingSection({ data }: { data: CustomerArAgingBucket[] }) {
           )
         })}
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 6, flexWrap: 'wrap' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 'var(--space-3)' }}>
         {data.map(d => (
-          <div key={d.bucket} style={{ fontSize: 11, textAlign: 'center' }}>
+          <div key={d.bucket} style={{ fontSize: 11, textAlign: 'center', background: 'var(--bg-surface-2)', padding: '8px', borderRadius: 8 }}>
             <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{Number(d.amount).toLocaleString()}</div>
-            <div style={{ color: 'var(--text-muted)' }}>{d.bucket} ({d.invoice_count})</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 10 }}>{d.bucket} ({d.invoice_count})</div>
           </div>
         ))}
       </div>
@@ -617,17 +632,18 @@ function ProfitabilitySection({ data }: { data: GrossProfitGrainResult[] | null 
         <DollarSign size={16} color="var(--color-success)" /> تحليل الربحية 
         <FreshnessIndicator date={data[data.length - 1]?.period} label="T-1" />
       </h3>
-      <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-        <StatCard title="إجمالي الإيراد" value={sumRevenue.toLocaleString()} suffix="ج.م" style={{ flex: 1, minWidth: 110 }} />
-        <StatCard title="مجمل الربح" value={sumProfit.toLocaleString()} suffix="ج.م" style={{ flex: 1, minWidth: 110 }} />
-        <StatCard title="هامش الربح" value={`${margin}%`} color={Number(margin) < 10 ? 'var(--color-danger)' : 'var(--color-success)'} style={{ flex: 1, minWidth: 110 }} />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 'var(--space-3)', marginBottom: 20 }}>
+        <StatCard title="إجمالي الإيراد" value={sumRevenue.toLocaleString()} suffix="ج.م" style={{ width: '100%' }} />
+        <StatCard title="مجمل الربح" value={sumProfit.toLocaleString()} suffix="ج.م" style={{ width: '100%' }} />
+        <StatCard title="هامش الربح" value={`${margin}%`} color={Number(margin) < 10 ? 'var(--color-danger)' : 'var(--color-success)'} style={{ width: '100%' }} />
       </div>
       <div style={{ height: 200, width: '100%' }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-secondary)" />
             <XAxis dataKey="period" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} tickFormatter={(val) => val.substring(0, 7)} />
-            <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12, textAlign: 'right' }} formatter={(v: number) => [`${v.toLocaleString()} ج.م`, '']} />
+            <YAxis orientation="right" tick={{ fill: 'var(--text-muted)', fontSize: 10 }} tickFormatter={(val) => Intl.NumberFormat('en-US', { notation: 'compact' }).format(val)} axisLine={false} tickLine={false} width={40} />
+            <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12, textAlign: 'right', direction: 'rtl' }} formatter={(v: number) => [`${v.toLocaleString()} ج.م`, '']} />
             <Line type="monotone" dataKey="gross_profit" name="مجمل الربح" stroke="var(--color-success)" strokeWidth={3} dot={{ r: 4 }} />
             <Line type="monotone" dataKey="net_cogs" name="التكلفة" stroke="var(--color-danger)" strokeWidth={2} dot={false} strokeDasharray="4 4" />
           </LineChart>
@@ -696,26 +712,28 @@ function LedgerPreviewSection({ ledger, customerId }: { ledger: { data: { pages:
           <List size={16} /> كشف الحساب المختصر
         </h3>
       </div>
-      <table className="data-table" style={{ borderTop: '1px solid var(--border-secondary)' }}>
-        <thead style={{ background: 'var(--bg-surface-2)' }}>
-          <tr>
-            <th style={{ fontSize: 11 }}>التاريخ</th>
-            <th style={{ fontSize: 11 }}>مدين</th>
-            <th style={{ fontSize: 11 }}>دائن</th>
-            <th style={{ fontSize: 11 }}>الرصيد</th>
-          </tr>
-        </thead>
-        <tbody>
-          {allEntries.map((e) => (
-            <tr key={e.id}>
-              <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{new Date(e.created_at).toLocaleDateString('ar-EG-u-nu-latn', { month: 'short', day: 'numeric' })}</td>
-              <td style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{e.type === 'debit' ? Number(e.amount).toLocaleString() : ''}</td>
-              <td style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-success)' }}>{e.type === 'credit' ? Number(e.amount).toLocaleString() : ''}</td>
-              <td style={{ fontSize: 12, fontWeight: 700 }}>{Number(e.running_balance).toLocaleString()}</td>
+      <div style={{ padding: '0 12px 12px', overflowX: 'auto' }}>
+        <table className="data-table" style={{ borderTop: '1px solid var(--border-secondary)', margin: 0 }}>
+          <thead style={{ background: 'var(--bg-surface-2)' }}>
+            <tr>
+              <th style={{ fontSize: 11 }}>التاريخ</th>
+              <th style={{ fontSize: 11 }}>مدين</th>
+              <th style={{ fontSize: 11 }}>دائن</th>
+              <th style={{ fontSize: 11 }}>الرصيد</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {allEntries.map((e) => (
+              <tr key={e.id}>
+                <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{new Date(e.created_at).toLocaleDateString('ar-EG-u-nu-latn', { month: 'short', day: 'numeric' })}</td>
+                <td style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{e.type === 'debit' ? Number(e.amount).toLocaleString() : ''}</td>
+                <td style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-success)' }}>{e.type === 'credit' ? Number(e.amount).toLocaleString() : ''}</td>
+                <td style={{ fontSize: 12, fontWeight: 700 }}>{Number(e.running_balance).toLocaleString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       {ledger.hasNextPage && (
         <div style={{ padding: '8px 12px', borderTop: '1px solid var(--border-secondary)', textAlign: 'center' }}>
           <button onClick={() => ledger.fetchNextPage()} disabled={ledger.isFetchingNextPage} className="btn" style={{ fontSize: 11, background: 'transparent', border: 'none', color: 'var(--color-primary)', fontWeight: 600, cursor: 'pointer' }}>

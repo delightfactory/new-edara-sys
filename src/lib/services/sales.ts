@@ -88,7 +88,7 @@ export async function getSalesSettings(): Promise<SalesSettings> {
 
 const SALES_ORDER_SELECT = `
   *,
-  customer:customers(id, name, code, phone, payment_terms, credit_limit, credit_days),
+  customer:customers(id, name, code, phone, mobile, latitude, longitude, payment_terms, credit_limit, credit_days),
   rep:profiles!sales_orders_rep_id_fkey(id, full_name),
   created_by_profile:profiles!sales_orders_created_by_id_fkey(id, full_name),
   branch:branches(id, name),
@@ -174,7 +174,7 @@ export async function getSalesOrders(params?: {
     .from('sales_orders')
     .select(`
       *,
-      customer:customers(id, name, code, phone, payment_terms, credit_limit, credit_days),
+      customer:customers(id, name, code, phone, mobile, latitude, longitude, payment_terms, credit_limit, credit_days),
       rep:profiles!sales_orders_rep_id_fkey(id, full_name),
       branch:branches(id, name),
       warehouse:warehouses(id, name)

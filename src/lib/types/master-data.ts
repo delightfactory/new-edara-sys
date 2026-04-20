@@ -1004,7 +1004,7 @@ export interface SalesOrder {
   updated_at: string
 
   // joined
-  customer?: Pick<Customer, 'id' | 'name' | 'code' | 'phone' | 'payment_terms' | 'credit_limit' | 'credit_days'>
+  customer?: Pick<Customer, 'id' | 'name' | 'code' | 'phone' | 'mobile' | 'latitude' | 'longitude' | 'payment_terms' | 'credit_limit' | 'credit_days'>
   rep?: { id: string; full_name: string }
   created_by_profile?: { id: string; full_name: string }
   branch?: Pick<Branch, 'id' | 'name'>

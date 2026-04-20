@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, type ReactNode } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
@@ -116,13 +116,14 @@ export default function CustomerDetailPage() {
             <ArrowRight size={14} /> رجوع
           </button>
           
-          <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <h1 style={{ fontSize: 18, fontWeight: 800, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <h1 style={{ fontSize: 18, fontWeight: 800, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
               {customer.name}
             </h1>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'monospace', direction: 'ltr' }}>
-              {customer.code}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace', direction: 'ltr' }}>
+                {customer.code}
+              </span>
             
             {/* Health Badge */}
             {summary.health ? (
@@ -139,9 +140,26 @@ export default function CustomerDetailPage() {
                 آخر تعامل: منذ {summary.health.recency_days} يوم
               </span>
             )}
+            </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {/* Quick Actions for Ops */}
+            {(customer.latitude && customer.longitude) && (
+              <button onClick={(e) => { e.stopPropagation(); window.open(`https://www.google.com/maps/search/?api=1&query=${customer.latitude},${customer.longitude}`, '_blank') }}
+                title="موقع العميل"
+                style={{ background: 'var(--bg-surface-2)', border: '1px solid var(--border-secondary)', borderRadius: '50%', width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary)', cursor: 'pointer', flexShrink: 0 }}>
+                <MapPin size={14} />
+              </button>
+            )}
+            {(customer.mobile || customer.phone) && (
+              <a href={`tel:${customer.mobile || customer.phone}`}
+                title="اتصال"
+                style={{ background: 'var(--bg-surface-2)', border: '1px solid var(--border-secondary)', borderRadius: '50%', width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary)', cursor: 'pointer', flexShrink: 0 }}>
+                <Phone size={14} />
+              </a>
+            )}
+
             {/* Balancing Info */}
             <div className="hide-mobile" style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
               <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>الرصيد الحالي</div>
@@ -155,6 +173,7 @@ export default function CustomerDetailPage() {
 
             {can('customers.update') && (
               <button onClick={() => navigate(`/customers/${id}/edit`)}
+                className="hide-mobile"
                 style={{ background: 'var(--color-primary)', color: 'var(--color-on-primary, #fff)', border: 'none', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, flexShrink: 0 }}>
                 <Edit size={14} /> تعديل
               </button>

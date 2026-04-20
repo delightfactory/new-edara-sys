@@ -1,7 +1,7 @@
-﻿import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Plus, Users, ToggleLeft, ToggleRight, Eye, Phone, Loader2, CheckCircle2 } from 'lucide-react'
+import { Plus, Users, ToggleLeft, ToggleRight, Eye, Phone, Loader2, CheckCircle2, MapPin, PhoneCall } from 'lucide-react'
 import { toggleCustomerActive } from '@/lib/services/customers'
 import { getCities } from '@/lib/services/geography'
 import { useCustomers, useGovernorates, useProfiles, useInvalidate, useCities } from '@/hooks/useQueryHooks'
@@ -445,17 +445,31 @@ export default function CustomersPage() {
                   },
                 ]}
                 actions={
-                  <div className="flex gap-2" style={{ width: '100%' }}>
-                    <Button variant="secondary" size="sm" onClick={() => navigate(`/customers/${c.id}`)}
-                      style={{ flex: 1, justifyContent: 'center' }}>
-                      <Eye size={14} /> عرض
-                    </Button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+                    {((c.latitude && c.longitude) || (c.mobile || c.phone)) && (
+                      <div className="flex gap-2" style={{ width: '100%' }}>
+                        {c.latitude && c.longitude && (
+                          <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); window.open(`https://www.google.com/maps/search/?api=1&query=${c.latitude},${c.longitude}`, '_blank') }}
+                            style={{ flex: 1, justifyContent: 'center' }}>
+                            <MapPin size={14} /> موقع
+                          </Button>
+                        )}
+                        {(c.mobile || c.phone) && (
+                          <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); window.location.href = `tel:${c.mobile || c.phone}` }}
+                            style={{ flex: 1, justifyContent: 'center' }}>
+                            <PhoneCall size={14} /> اتصال
+                          </Button>
+                        )}
+                      </div>
+                    )}
                     {can('customers.update') && (
-                      <Button variant={c.is_active ? 'danger' : 'success'} size="sm"
-                        onClick={() => handleToggle(c)}
-                        style={{ flex: 1, justifyContent: 'center' }}>
-                        {c.is_active ? <><ToggleLeft size={14} /> تعطيل</> : <><ToggleRight size={14} /> تفعيل</>}
-                      </Button>
+                      <div className="flex gap-2" style={{ width: '100%' }}>
+                        <Button variant={c.is_active ? 'danger' : 'success'} size="sm"
+                          onClick={(e) => { e.stopPropagation(); handleToggle(c); }}
+                          style={{ flex: 1, justifyContent: 'center' }}>
+                          {c.is_active ? <><ToggleLeft size={14} /> تعطيل</> : <><ToggleRight size={14} /> تفعيل</>}
+                        </Button>
+                      </div>
                     )}
                   </div>
                 }

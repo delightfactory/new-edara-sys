@@ -1,8 +1,8 @@
-﻿import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ShoppingCart, Plus, Eye, FileText, TrendingUp, DollarSign,
-  CheckCircle, Truck, AlertCircle, Loader2, CheckCircle2, Zap,
+  CheckCircle, Truck, AlertCircle, Loader2, CheckCircle2, Zap, MapPin, PhoneCall
 } from 'lucide-react'
 import { useSalesOrders, useSalesStats, useProfiles, useGovernorates, useCities } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
@@ -566,10 +566,23 @@ export default function SalesOrdersPage() {
                           </span>
                         </div>
                       )}
-                      <Button variant="secondary" size="sm" style={{ width: '100%', justifyContent: 'center' }}
-                        onClick={() => navigate(`/sales/orders/${o.id}`)}>
-                        <Eye size={14} /> عرض التفاصيل
-                      </Button>
+                      
+                      {((o.customer?.latitude && o.customer?.longitude) || (o.customer?.mobile || o.customer?.phone)) && (
+                        <div className="flex gap-2" style={{ width: '100%' }}>
+                          {o.customer?.latitude && o.customer?.longitude && (
+                            <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); window.open(`https://www.google.com/maps/search/?api=1&query=${o.customer?.latitude},${o.customer?.longitude}`, '_blank') }}
+                              style={{ flex: 1, justifyContent: 'center' }}>
+                              <MapPin size={14} /> الخريطة
+                            </Button>
+                          )}
+                          {(o.customer?.mobile || o.customer?.phone) && (
+                            <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); window.location.href = `tel:${o.customer?.mobile || o.customer?.phone}` }}
+                              style={{ flex: 1, justifyContent: 'center' }}>
+                              <PhoneCall size={14} /> اتصال
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   }
                   onClick={() => navigate(`/sales/orders/${o.id}`)}
