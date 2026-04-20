@@ -1,9 +1,9 @@
-import type { Activity } from '@/lib/types/activities'
+﻿import type { Activity } from '@/lib/types/activities'
 import ActivityStatusBadge from './ActivityStatusBadge'
 
 function formatArabicDate(dateStr: string): string {
   try {
-    return new Date(dateStr).toLocaleDateString('ar-EG', {
+    return new Date(dateStr).toLocaleDateString('ar-EG-u-nu-latn', {
       day: 'numeric', month: 'short', year: 'numeric',
     })
   } catch {

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * TargetPayoutsPage — HR Payroll: حساب وتثبيت مكافآت الأهداف
  * Run & Review History model
  * - يقرأ target_id من query string إذا جاء من TargetDetail
@@ -18,11 +18,11 @@ import Button from '@/components/ui/Button'
 
 function fmtN(n: number, currency = false) {
   return currency
-    ? `${n.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م`
-    : n.toLocaleString('ar-EG', { maximumFractionDigits: 2 })
+    ? `${n.toLocaleString('en-US', { maximumFractionDigits: 0 })} ج.م`
+    : n.toLocaleString('en-US', { maximumFractionDigits: 2 })
 }
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' })
+  return new Date(d).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
 export default function TargetPayoutsPage() {
@@ -296,7 +296,7 @@ export default function TargetPayoutsPage() {
                         {p.period?.name ?? (selectedPeriod?.name ?? '—')}
                       </div>
                       <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                        {new Date(p.computed_at).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {new Date(p.computed_at).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </div>
                     </td>
                     {/* Achievement */}

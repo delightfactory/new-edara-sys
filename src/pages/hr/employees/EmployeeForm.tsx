@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
 import { UserPlus, UserCog, Link, AlertCircle } from 'lucide-react'
 import type {
   HREmployee, HREmployeeInput, HRGender, HRMaritalStatus, HRDayOfWeek, HRAttendancePolicyMode,
@@ -746,7 +746,7 @@ export default function EmployeeForm({ open, onClose, employee, onToast }: Props
                 (form.transport_allowance || 0) +
                 (form.housing_allowance || 0) +
                 (form.other_allowances || 0)
-              ).toLocaleString('ar-EG')} ج.م
+              ).toLocaleString('en-US')} ج.م
             </strong>
           </div>
         </div>

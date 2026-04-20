@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react'
+﻿import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Plus, Users, ToggleLeft, ToggleRight, Eye, Phone, Loader2, CheckCircle2 } from 'lucide-react'
@@ -184,7 +184,7 @@ export default function CustomersPage() {
     const result: ReturnType<typeof useMemo<any>> = [
       {
         label:   primaryLabel,
-        value:   totalCount.toLocaleString('ar-EG'),
+        value:   totalCount.toLocaleString('en-US'),
         variant: primaryVariant,
         loading: desktopLoading,
       },
@@ -202,7 +202,7 @@ export default function CustomersPage() {
       if (!filters.status && activeInPage > 0 && activeInPage < desktopCustomers.length) {
         result.push({
           label:   'نشط',
-          value:   activeInPage.toLocaleString('ar-EG'),
+          value:   activeInPage.toLocaleString('en-US'),
           variant: 'success' as const,
         })
       }
@@ -211,7 +211,7 @@ export default function CustomersPage() {
       if (!filters.status && inactiveInPage > 0) {
         result.push({
           label:   'معطل',
-          value:   inactiveInPage.toLocaleString('ar-EG'),
+          value:   inactiveInPage.toLocaleString('en-US'),
           variant: 'danger' as const,
         })
       }
@@ -220,7 +220,7 @@ export default function CustomersPage() {
       if (creditInPage > 0) {
         result.push({
           label:   'آجل',
-          value:   creditInPage.toLocaleString('ar-EG'),
+          value:   creditInPage.toLocaleString('en-US'),
           variant: 'warning' as const,
         })
       }
@@ -295,7 +295,7 @@ export default function CustomersPage() {
     <div className="page-container animate-enter">
       <PageHeader
         title="العملاء"
-        subtitle={desktopLoading ? '...' : `${totalCount.toLocaleString('ar-EG')} عميل`}
+        subtitle={desktopLoading ? '...' : `${totalCount.toLocaleString('en-US')} عميل`}
         actions={can('customers.create') ? (
           <Button icon={<Plus size={16} />} onClick={() => navigate('/customers/new')}
             className="desktop-only-btn">
@@ -475,7 +475,7 @@ export default function CustomersPage() {
             {!mobileLoading && !hasMoreMobile && mobileCustomers.length > 0 && (
               <div className="infinite-end">
                 <CheckCircle2 size={16} />
-                <span>جميع العملاء ({mobileCustomers.length.toLocaleString('ar-EG')})</span>
+                <span>جميع العملاء ({mobileCustomers.length.toLocaleString('en-US')})</span>
               </div>
             )}
           </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { Calendar, Edit2, Check, X, Clock, MapPin, AlertCircle } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -148,7 +148,7 @@ function ManualEditModal({ day, onClose, onSaved }: EditModalProps) {
         <div>
           <strong style={{ fontSize: 'var(--text-sm)' }}>{day.employee?.full_name ?? '—'}</strong>
           <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginRight: 8 }}>
-            {new Date(day.shift_date).toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' })}
+            {new Date(day.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'long' })}
           </span>
         </div>
 
@@ -525,7 +525,7 @@ export default function AttendancePage() {
                 columns={[
                   {
                     key: 'date', label: 'التاريخ',
-                    render: d => new Date(d.shift_date).toLocaleDateString('ar-EG', { weekday: 'short', day: 'numeric', month: 'short' }),
+                    render: d => new Date(d.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'short', day: 'numeric', month: 'short' }),
                     width: 120,
                   },
                   {
@@ -594,7 +594,7 @@ export default function AttendancePage() {
                 <DataCard
                   key={d.id}
                   title={d.employee?.full_name ?? '—'}
-                  subtitle={new Date(d.shift_date).toLocaleDateString('ar-EG', { weekday: 'short', day: 'numeric', month: 'short' })}
+                  subtitle={new Date(d.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'short', day: 'numeric', month: 'short' })}
                   badge={<Badge variant={STATUS_VARIANT[d.status]}>{STATUS_LABEL[d.status]}</Badge>}
                   leading={
                     <div style={{

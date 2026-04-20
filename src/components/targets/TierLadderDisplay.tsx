@@ -1,4 +1,4 @@
-import React from 'react'
+﻿import React from 'react'
 import type { TargetRewardTier } from '@/lib/types/activities'
 
 interface TierLadderDisplayProps {
@@ -53,7 +53,7 @@ export default function TierLadderDisplay({
             padding: '4px 12px',
             borderRadius: '99px'
           }}>
-            المتوقع: {estimatedReward.toLocaleString('ar-EG', { maximumFractionDigits: 1 })}
+            المتوقع: {estimatedReward.toLocaleString('en-US', { maximumFractionDigits: 1 })}
           </span>
         )}
       </div>
@@ -82,9 +82,9 @@ export default function TierLadderDisplay({
           let tierValueStr = ''
           if (rewardType === 'fixed') {
             const val = ((rewardBaseValue || 0) * tier.reward_pct) / 100
-            tierValueStr = val.toLocaleString('ar-EG', { maximumFractionDigits: 1 })
+            tierValueStr = val.toLocaleString('en-US', { maximumFractionDigits: 1 })
           } else if (rewardType === 'percentage') {
-            tierValueStr = `${tier.reward_pct.toLocaleString('ar-EG', { maximumFractionDigits: 1 })}%`
+            tierValueStr = `${tier.reward_pct.toLocaleString('en-US', { maximumFractionDigits: 1 })}%`
           }
 
           return (
@@ -112,7 +112,7 @@ export default function TierLadderDisplay({
                     {tier.label || `شريحة ${idx + 1}`}
                   </div>
                   <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                    إنجاز: <strong style={{ color: 'var(--text-secondary)' }}>{tier.threshold_pct.toLocaleString('ar-EG', { maximumFractionDigits: 1 })}%</strong>
+                    إنجاز: <strong style={{ color: 'var(--text-secondary)' }}>{tier.threshold_pct.toLocaleString('en-US', { maximumFractionDigits: 1 })}%</strong>
                   </div>
                 </div>
               </div>
@@ -123,7 +123,7 @@ export default function TierLadderDisplay({
                 </div>
                 {isNext && (
                   <div style={{ fontSize: '11px', color: 'var(--color-warning)', marginTop: '4px' }}>
-                    باقي {(tier.threshold_pct - currentAchievementPct).toLocaleString('ar-EG', { maximumFractionDigits: 1 })}% للوصول
+                    باقي {(tier.threshold_pct - currentAchievementPct).toLocaleString('en-US', { maximumFractionDigits: 1 })}% للوصول
                   </div>
                 )}
               </div>

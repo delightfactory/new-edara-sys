@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, Fragment } from 'react'
+﻿import { useState, useRef, useCallback, Fragment } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowRight, UserCog, User, FileText, Calendar,
@@ -1159,7 +1159,7 @@ function StatementContent({ statement, year, month }: { statement: EmployeeLiveS
   )
 
   const monthLabel = period?.month_name
-    ?? new Date(year, month - 1).toLocaleString('ar-EG', { month: 'long', year: 'numeric' })
+    ?? new Date(year, month - 1).toLocaleString('en-US', { month: 'long', year: 'numeric' })
 
   return (
     <div>
@@ -1457,15 +1457,15 @@ function ContractsTab({ employeeId }: { employeeId: string }) {
           <DataTable
             columns={[
               { key: 'type', label: 'نوع العقد', render: (c: any) => <Badge variant="info">{CONTRACT_TYPE_LABEL[c.contract_type as HRContractType]}</Badge> },
-              { key: 'start', label: 'تاريخ البداية', render: (c: any) => new Date(c.start_date).toLocaleDateString('ar-EG') },
-              { key: 'end', label: 'تاريخ النهاية', render: (c: any) => c.end_date ? new Date(c.end_date).toLocaleDateString('ar-EG') : 'مفتوح' },
+              { key: 'start', label: 'تاريخ البداية', render: (c: any) => new Date(c.start_date).toLocaleDateString('ar-EG-u-nu-latn') },
+              { key: 'end', label: 'تاريخ النهاية', render: (c: any) => c.end_date ? new Date(c.end_date).toLocaleDateString('ar-EG-u-nu-latn') : 'مفتوح' },
               { key: 'salary', label: 'الراتب الأساسي', render: (c: any) => <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{formatNumber(c.base_salary)} ج.م</span> }
             ]}
             data={contracts}
             keyField="id"
             dataCardMapping={(c: any) => ({
               title: CONTRACT_TYPE_LABEL[c.contract_type as HRContractType],
-              subtitle: `${new Date(c.start_date).toLocaleDateString('ar-EG')} — ${c.end_date ? new Date(c.end_date).toLocaleDateString('ar-EG') : 'مفتوح'}`,
+              subtitle: `${new Date(c.start_date).toLocaleDateString('ar-EG-u-nu-latn')} — ${c.end_date ? new Date(c.end_date).toLocaleDateString('ar-EG-u-nu-latn') : 'مفتوح'}`,
               badge: <Badge variant="info">{CONTRACT_TYPE_LABEL[c.contract_type as HRContractType]}</Badge>,
               metadata: [{ label: 'الراتب', value: `${formatNumber(c.base_salary)} ج.م`, highlight: true }]
             })}
@@ -1494,7 +1494,7 @@ function ContractsTab({ employeeId }: { employeeId: string }) {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-2)' }}>
                   <div>
                     <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-                      {new Date(s.effective_date).toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' })}
+                      {new Date(s.effective_date).toLocaleDateString('ar-EG-u-nu-latn', { month: 'long', year: 'numeric' })}
                     </span>
                     {s.change_reason && (
                       <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: 2 }}>{s.change_reason}</div>
@@ -1671,7 +1671,7 @@ function AdvancesTab({ employeeId }: { employeeId: string }) {
           <>
             <DataTable
               columns={[
-                { key: 'num', label: 'رقم السلفة', render: (a: any) => <div><div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontFamily: 'monospace' }}>{a.number}</div><div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{new Date(a.created_at).toLocaleDateString('ar-EG')}</div></div> },
+                { key: 'num', label: 'رقم السلفة', render: (a: any) => <div><div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontFamily: 'monospace' }}>{a.number}</div><div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{new Date(a.created_at).toLocaleDateString('ar-EG-u-nu-latn')}</div></div> },
                 { key: 'amount', label: 'المبلغ', render: (a: any) => <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatNumber(a.amount)}</span> },
                 { key: 'rem', label: 'المتبقي', render: (a: any) => <span style={{ fontVariantNumeric: 'tabular-nums', color: (a.remaining_amount ?? 0) > 0 ? 'var(--color-warning)' : 'var(--color-success)' }}>{formatNumber(a.remaining_amount ?? 0)}</span> },
                 { key: 'inst', label: 'القسط/شهر', render: (a: any) => <span style={{ fontVariantNumeric: 'tabular-nums' }}>{a.monthly_installment ? formatNumber(a.monthly_installment) : '—'}</span> },
@@ -1682,7 +1682,7 @@ function AdvancesTab({ employeeId }: { employeeId: string }) {
               keyField="id"
               dataCardMapping={(a: any) => ({
                 title: `سلفة ${a.number}`,
-                subtitle: new Date(a.created_at).toLocaleDateString('ar-EG'),
+                subtitle: new Date(a.created_at).toLocaleDateString('ar-EG-u-nu-latn'),
                 badge: <Badge variant={ADV_VARIANT[a.status] ?? 'neutral'}>{ADV_STATUS[a.status] ?? a.status}</Badge>,
                 metadata: [
                   { label: 'المبلغ', value: formatNumber(a.amount) },
@@ -2006,8 +2006,8 @@ function PenaltiesTab({ employeeId }: { employeeId: string }) {
         ) : (
           <DataTable
             columns={[
-              { key: 'rule', label: 'القاعدة / التاريخ', render: (p: any) => <div><div style={{ fontWeight: 600 }}>{p.penalty_rule?.name ?? '—'}</div><div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{p.attendance_day_id ? `مرتبط بيوم حضور` : `تاريخ التسجيل: ${new Date(p.created_at).toLocaleDateString('ar-EG')}`}</div></div> },
-              { key: 'date', label: 'التاريخ', render: (p: any) => new Date(p.created_at).toLocaleDateString('ar-EG') },
+              { key: 'rule', label: 'القاعدة / التاريخ', render: (p: any) => <div><div style={{ fontWeight: 600 }}>{p.penalty_rule?.name ?? '—'}</div><div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{p.attendance_day_id ? `مرتبط بيوم حضور` : `تاريخ التسجيل: ${new Date(p.created_at).toLocaleDateString('ar-EG-u-nu-latn')}`}</div></div> },
+              { key: 'date', label: 'التاريخ', render: (p: any) => new Date(p.created_at).toLocaleDateString('ar-EG-u-nu-latn') },
               { key: 'ded', label: 'الخصم', render: (p: any) => <span style={{ fontVariantNumeric: 'tabular-nums', color: p.is_overridden ? 'var(--text-muted)' : 'var(--color-danger)', textDecoration: p.is_overridden ? 'line-through' : 'none' }}>{p.deduction_days.toFixed(2)} يوم</span> },
               { key: 'status', label: 'الحالة', render: (p: any) => p.is_overridden ? <Badge variant="success">مُعفى</Badge> : <Badge variant="danger">مفعّل</Badge> },
               { key: 'actions', label: '', align: 'end', render: (p: any) => (!p.is_overridden && can('hr.employees.edit')) ? <Button size="sm" variant="ghost" onClick={() => { setOverrideId(p.id); setOverrideReason('') }}>إعفاء</Button> : null }
@@ -2017,7 +2017,7 @@ function PenaltiesTab({ employeeId }: { employeeId: string }) {
             rowStyle={(p: any) => ({ opacity: p.is_overridden ? 0.6 : 1 })}
             dataCardMapping={(p: any) => ({
               title: p.penalty_rule?.name ?? 'جزاء مخصص',
-              subtitle: new Date(p.created_at).toLocaleDateString('ar-EG'),
+              subtitle: new Date(p.created_at).toLocaleDateString('ar-EG-u-nu-latn'),
               badge: p.is_overridden ? <Badge variant="success">مُعفى</Badge> : <Badge variant="danger">مفعّل</Badge>,
               metadata: [{ label: 'الخصم', value: `${p.deduction_days.toFixed(2)} يوم`, highlight: !p.is_overridden }],
               actions: (!p.is_overridden && can('hr.employees.edit')) ? <Button size="sm" variant="secondary" onClick={() => { setOverrideId(p.id); setOverrideReason('') }} style={{ width: '100%', justifyContent: 'center' }}>إعفاء من الجزاء</Button> : undefined
@@ -2118,7 +2118,7 @@ function DelegationsTab({ employee }: { employee: HREmployee }) {
   const permLabel = (perms: string[]) =>
     perms.map(p => DELEGATABLE.find(x => x.value === p)?.label ?? p).join('، ')
 
-  const fmtD = (d: string) => new Date(d).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' })
+  const fmtD = (d: string) => new Date(d).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short', year: 'numeric' })
   const now = new Date().toISOString()
 
   const togglePermission = (perm: string) => {

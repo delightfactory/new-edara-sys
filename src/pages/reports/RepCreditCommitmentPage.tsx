@@ -1,4 +1,4 @@
-/**
+﻿/**
  * RepCreditCommitmentPage.tsx — v5
  * تقرير الالتزام الائتماني لمسؤولي المحافظ
  *
@@ -27,7 +27,7 @@ import { computeCreditState } from '@/components/shared/CustomerCreditChip'
 // ─────────────────────────────────────────────────────────────
 
 function fmt(n: number): string {
-  return n.toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 const PAY_LABELS: Record<string, string> = {

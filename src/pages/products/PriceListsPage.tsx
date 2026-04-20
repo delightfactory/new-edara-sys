@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { Plus, Edit, Trash2, Tags, Loader2, LinkIcon, Unlink, ToggleLeft, ToggleRight, Star } from 'lucide-react'
 import { getPriceLists, createPriceList, updatePriceList, getPriceListItems, addPriceListItem, deletePriceListItem, getPriceListAssignments, assignPriceList, unassignPriceList } from '@/lib/services/price-lists'
@@ -187,7 +187,7 @@ export default function PriceListsPage() {
     return a.entity_id.substring(0, 8) + '...'
   }
 
-  const formatPrice = (v: number) => v.toLocaleString('ar-EG', { minimumFractionDigits: 2 })
+  const formatPrice = (v: number) => v.toLocaleString('en-US', { minimumFractionDigits: 2 })
 
   const isExpired = (l: PriceList) => l.valid_to && new Date(l.valid_to) < new Date()
 

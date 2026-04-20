@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useSystemTrustState, useTrustForComponent } from '@/hooks/useSystemTrustState'
 import { useCustomerHealthSummary, type CustomerHealthRow } from '@/hooks/useCustomerHealth'
 import MetricCard from '@/components/reports/MetricCard'
@@ -10,7 +10,7 @@ import { Users2, UserX, ActivitySquare } from 'lucide-react'
 
 function toISO(d: Date) { return d.toISOString().split('T')[0] }
 const today = toISO(new Date())
-const FMT = new Intl.NumberFormat('ar-EG', { maximumFractionDigits: 0 })
+const FMT = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
 const fmt = (n: number | undefined | null) => n != null ? FMT.format(n) : '—'
 const fmtCur = (n: number | undefined | null) => n != null ? fmt(n) + ' ج.م' : '—'
 

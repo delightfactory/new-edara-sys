@@ -1,4 +1,4 @@
-/**
+﻿/**
  * TargetDetail — عرض تفاصيل الهدف + إدارته بالكامل
  *
  * يعرض: Progress Widget + Forecast Cards + Progress Timeline
@@ -33,12 +33,12 @@ import TargetCustomersSection from '@/components/targets/TargetCustomersSection'
 import TargetRewardEditModal from '@/components/targets/TargetRewardEditModal'
 
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' })
+  return new Date(d).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 function fmtUnit(n: number, unit?: string) {
-  if (unit === 'currency') return `${n.toLocaleString('ar-EG', { maximumFractionDigits: 0 })} ج.م`
+  if (unit === 'currency') return `${n.toLocaleString('en-US', { maximumFractionDigits: 0 })} ج.م`
   if (unit === 'percent') return `${n.toFixed(1)}%`
-  return n.toLocaleString('ar-EG', { maximumFractionDigits: 0 })
+  return n.toLocaleString('en-US', { maximumFractionDigits: 0 })
 }
 
 const SCOPE_AR: Record<string, string> = {
@@ -385,7 +385,7 @@ export default function TargetDetail() {
                     <tr key={p.id} style={{ borderBottom: '1px solid var(--border-secondary)' }}>
                       <td style={{ padding: '12px' }}>
                         <div style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
-                          {new Date(p.computed_at).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}
+                          {new Date(p.computed_at).toLocaleDateString('ar-EG-u-nu-latn', { year: 'numeric', month: 'long', day: 'numeric' })}
                         </div>
                         {/* [P2 FIX] عرض اسم الفترة المقروء بدل period_id الخام */}
                         <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
@@ -438,7 +438,7 @@ export default function TargetDetail() {
               return (
                 <div key={p.id || i} className="td-progress-bar-item">
                   <div className="td-progress-bar-date">
-                    {new Date(p.snapshot_date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' })}
+                    {new Date(p.snapshot_date).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short' })}
                   </div>
                   <div className="td-progress-bar-track">
                     <div
@@ -600,7 +600,7 @@ export default function TargetDetail() {
                   <div className="td-adj-header">
                     <span className="td-adj-field">{FIELD_AR[adj.field_changed] ?? adj.field_changed}</span>
                     <span className="td-adj-date">
-                      {new Date(adj.adjusted_at).toLocaleDateString('ar-EG', {
+                      {new Date(adj.adjusted_at).toLocaleDateString('ar-EG-u-nu-latn', {
                         day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
                       })}
                     </span>
@@ -859,7 +859,7 @@ function ContributingActivities({ target, navigate }: { target: any; navigate: (
           const cat     = (act as any).type?.category ?? ''
           const icon    = CAT_ICON_MAP[cat] ?? <Clock size={14} />
           const outcome = OUTCOME_LABELS[act.outcome_type] ?? act.outcome_type
-          const date    = new Date(act.activity_date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' })
+          const date    = new Date(act.activity_date).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short' })
           return (
             <div
               key={act.id}

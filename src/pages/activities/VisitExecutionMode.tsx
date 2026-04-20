@@ -1,4 +1,4 @@
-/**
+﻿/**
  * VisitExecutionMode — وضع التنفيذ الذكي للمندوب
  * شاشة مخصصة للتنفيذ الميداني (Mobile-first):
  *
@@ -367,7 +367,7 @@ export default function VisitExecutionMode() {
           <ArrowLeft size={20} />
         </button>
         <div className="vem-header-info">
-          <span className="vem-header-title">خطة {new Date(plan.plan_date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' })}</span>
+          <span className="vem-header-title">خطة {new Date(plan.plan_date).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short' })}</span>
           <span className="vem-header-progress">مكتمل {stats.done}/{stats.total}</span>
         </div>
         <div className="vem-progress-bar">

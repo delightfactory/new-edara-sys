@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useSystemTrustState, useTrustForComponent } from '@/hooks/useSystemTrustState'
 import { useSalesSummary } from '@/hooks/useSalesGrain'
 import { useTreasurySummary } from '@/hooks/useTreasuryCashflow'
@@ -16,7 +16,7 @@ const today = new Date()
 const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
 const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0)
 
-const FMT = new Intl.NumberFormat('ar-EG', { maximumFractionDigits: 0 })
+const FMT = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
 const fmt = (n: number | undefined | null) => n != null ? FMT.format(n) + ' ج.م' : '—'
 
 export default function OverviewPage() {

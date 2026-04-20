@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom'
+﻿import { useParams, useNavigate } from 'react-router-dom'
 import {
   useVisitPlan, useVisitPlanItems,
   useConfirmVisitPlan, useCancelVisitPlan,
@@ -28,7 +28,7 @@ import type {
 } from '@/lib/types/activities'
 
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' })
+  return new Date(d).toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
 function tomorrow(): string {
@@ -220,7 +220,7 @@ export default function VisitPlanDetail() {
       },
       {
         onSuccess: () => {
-          toast.success(`تمت إعادة الجدولة إلى ${new Date(rescheduleDate).toLocaleDateString('ar-EG')}`)
+          toast.success(`تمت إعادة الجدولة إلى ${new Date(rescheduleDate).toLocaleDateString('ar-EG-u-nu-latn')}`)
           setRescheduleItem(null)
         },
         onError:   (e: any) => toast.error(e?.message || 'فشل إعادة الجدولة'),
@@ -611,7 +611,7 @@ export default function VisitPlanDetail() {
               {item.status === 'rescheduled' && item.reschedule_to && (
                 <div className="vp-item-reschedule-badge">
                   <Calendar size={11} />
-                  أُعيدت جدولته إلى: {new Date(item.reschedule_to).toLocaleDateString('ar-EG')}
+                  أُعيدت جدولته إلى: {new Date(item.reschedule_to).toLocaleDateString('ar-EG-u-nu-latn')}
                 </div>
               )}
               {/* Skip reason */}

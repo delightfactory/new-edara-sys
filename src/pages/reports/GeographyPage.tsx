@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useSystemTrustState, useTrustForComponent, type TrustStatus } from '@/hooks/useSystemTrustState'
 import { useGeographySummary, useGeographyTable, type GeographyRow, type GeoLevel } from '@/hooks/useGeographyPerformance'
 import MetricCard from '@/components/reports/MetricCard'
@@ -13,7 +13,7 @@ function toISO(d: Date) { return d.toISOString().split('T')[0] }
 const today = new Date()
 const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
 const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0)
-const FMT = new Intl.NumberFormat('ar-EG', { maximumFractionDigits: 0 })
+const FMT = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
 const fmt = (n: number | undefined | null) => n != null ? FMT.format(n) : '—'
 const fmtCur = (n: number | undefined | null) => n != null ? fmt(n) + ' ج.م' : '—'
 const fmtPct = (n: number | undefined | null) => n != null ? FMT.format(n) + '%' : '—'

@@ -1,4 +1,4 @@
-import React from 'react'
+﻿import React from 'react'
 
 interface RewardEstimateChipProps {
   hasReward?: boolean
@@ -60,7 +60,7 @@ export default function RewardEstimateChip({
       color: txColor, padding: pad, borderRadius: '99px',
       fontSize: fs, fontWeight: 600, whiteSpace: 'nowrap'
     }} title="المكافأة التقديرية بناءً على الإنجاز الحالي للهدف">
-      💰 المتوقع: {estimatedReward ? estimatedReward.toLocaleString('ar-EG', { maximumFractionDigits: 1 }) : '0'} 
+      💰 المتوقع: {estimatedReward ? estimatedReward.toLocaleString('en-US', { maximumFractionDigits: 1 }) : '0'} 
     </span>
   )
 }

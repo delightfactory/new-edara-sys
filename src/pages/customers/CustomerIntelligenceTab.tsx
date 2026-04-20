@@ -1,4 +1,4 @@
-import React from 'react'
+﻿import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   useCustomer360Summary,
@@ -31,7 +31,7 @@ function FreshnessIndicator({ date, label }: { date?: string | null, label: stri
   return (
     <div className="flex items-center gap-1 text-xs text-muted" style={{ fontSize: 10 }}>
       <Clock size={10} />
-      {label}: {new Date(date).toLocaleDateString('ar-EG')}
+      {label}: {new Date(date).toLocaleDateString('ar-EG-u-nu-latn')}
     </div>
   )
 }
@@ -275,7 +275,7 @@ function TopProductsSection({ data }: { data: CustomerTopProduct[] }) {
 
   const fmt = (n: number) => n.toLocaleString('ar-EG-u-nu-latn')
   const fmtDate = (d: string | null) =>
-    d ? new Date(d).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
+    d ? new Date(d).toLocaleDateString('ar-EG-u-nu-latn', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
 
   const maxVal = Math.max(...data.map(p => Number(p.total_value)), 1)
 
@@ -584,7 +584,7 @@ function PaymentBehaviorSection({ data }: { data: CustomerPaymentBehavior }) {
           <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>أحدث الدفعات</div>
           {recent.slice(0,5).map((r) => (
             <div key={r.number} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '8px 0', borderBottom: '1px solid var(--border-secondary)' }}>
-              <div style={{ color: 'var(--text-muted)', width: 60 }}>{new Date(r.date).toLocaleDateString('ar-EG', {month: 'short', day: 'numeric'})}</div>
+              <div style={{ color: 'var(--text-muted)', width: 60 }}>{new Date(r.date).toLocaleDateString('ar-EG-u-nu-latn', {month: 'short', day: 'numeric'})}</div>
               <div style={{ flex: 1, textAlign: 'center', color: 'var(--color-primary)' }}>{PM_LABEL[r.payment_method] ?? r.payment_method}</div>
               <div style={{ fontWeight: 700, textAlign: 'start', fontVariantNumeric: 'tabular-nums' }}>{Number(r.amount).toLocaleString()} ج.م</div>
             </div>
@@ -653,7 +653,7 @@ function TimelineSection({ timeline }: { timeline: { data: { pages: CustomerTime
             <div key={evt.event_id} style={{ position: 'relative', marginBottom: 16, paddingRight: 16 }}>
               <div style={{ position: 'absolute', right: -15, top: 4, width: 10, height: 10, borderRadius: '50%', background: 'var(--color-primary)', border: '2px solid var(--bg-surface)' }} />
               <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>
-                {new Date(evt.event_ts).toLocaleString('ar-EG')}
+                {new Date(evt.event_ts).toLocaleString('ar-EG-u-nu-latn')}
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: 13, fontWeight: 600 }}>{evt.title}</span>
@@ -708,7 +708,7 @@ function LedgerPreviewSection({ ledger, customerId }: { ledger: { data: { pages:
         <tbody>
           {allEntries.map((e) => (
             <tr key={e.id}>
-              <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{new Date(e.created_at).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' })}</td>
+              <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{new Date(e.created_at).toLocaleDateString('ar-EG-u-nu-latn', { month: 'short', day: 'numeric' })}</td>
               <td style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{e.type === 'debit' ? Number(e.amount).toLocaleString() : ''}</td>
               <td style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-success)' }}>{e.type === 'credit' ? Number(e.amount).toLocaleString() : ''}</td>
               <td style={{ fontSize: 12, fontWeight: 700 }}>{Number(e.running_balance).toLocaleString()}</td>

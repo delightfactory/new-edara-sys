@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ActivityDetail — Wave A Upgraded
  * - employee name (from service join)
  * - duration_minutes + distance_meters display
@@ -36,7 +36,7 @@ const QUESTION_TYPE_AR: Record<string, string> = {
 }
 
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString('ar-EG', {
+  return new Date(d).toLocaleDateString('ar-EG-u-nu-latn', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   })
 }
@@ -273,7 +273,7 @@ export default function ActivityDetail() {
               {activity.call_detail.callback_at && (
                 <div>
                   <div className="act-detail-label">موعد الرد</div>
-                  <div>{new Date(activity.call_detail.callback_at).toLocaleString('ar-EG')}</div>
+                  <div>{new Date(activity.call_detail.callback_at).toLocaleString('ar-EG-u-nu-latn')}</div>
                 </div>
               )}
               {activity.call_detail.call_recording_url && (

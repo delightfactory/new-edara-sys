@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from 'react'
+﻿import { useState, useEffect, type ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
@@ -260,11 +260,11 @@ export default function CustomerDetailPage() {
             <InfoItem icon={CreditCard} label="حد الائتمان" value={customer.credit_limit > 0 ? customer.credit_limit.toLocaleString('ar-EG-u-nu-latn') : '—'} />
             <InfoItem icon={Calendar} label="أيام السداد" value={customer.credit_days > 0 ? `${customer.credit_days} يوم` : '—'} />
             <InfoItem icon={Wallet} label="الرصيد الافتتاحي"
-              value={(customer.opening_balance ?? 0).toLocaleString('ar-EG', { minimumFractionDigits: 2 })} />
+              value={(customer.opening_balance ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })} />
             <InfoItem icon={Wallet} label="الرصيد الحالي"
               value={
                 <span style={{ fontWeight: 700, color: (customer.current_balance ?? 0) > 0 ? 'var(--color-danger)' : (customer.current_balance ?? 0) < 0 ? 'var(--color-primary)' : 'var(--color-success)' }}>
-                  {(customer.current_balance ?? 0).toLocaleString('ar-EG', { minimumFractionDigits: 2 })}
+                  {(customer.current_balance ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                 </span>
               } />
             <InfoItem icon={Tag} label="قائمة الأسعار" value={customer.price_list?.name} />
@@ -471,7 +471,7 @@ function CustomerActivitiesTab({ customerId, navigate }: { customerId: string; n
               const catIcon = CAT_ICON[act.type?.category ?? ''] ?? '📋'
               const outLabel = OUTCOME_AR[act.outcome_type] ?? act.outcome_type
               const outColor = OUTCOME_COLOR[act.outcome_type] ?? 'var(--text-secondary)'
-              const date = new Date(act.activity_date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' })
+              const date = new Date(act.activity_date).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short' })
               const time = act.start_time ? new Date(act.start_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : ''
               return (
                 <div

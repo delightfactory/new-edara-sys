@@ -1,4 +1,4 @@
-import type { Target, TargetProgress, TargetTrend } from '@/lib/types/activities'
+﻿import type { Target, TargetProgress, TargetTrend } from '@/lib/types/activities'
 import ActivityStatusBadge from './ActivityStatusBadge'
 
 interface TargetProgressWidgetProps {
@@ -25,9 +25,9 @@ const TREND_BAR_COLOR: Record<TargetTrend, string> = {
 }
 
 function fmtNumber(n: number, unit?: string): string {
-  if (unit === 'currency') return `${n.toLocaleString('ar-EG')} ج`
+  if (unit === 'currency') return `${n.toLocaleString('en-US')} ج`
   if (unit === 'percent')  return `${n.toFixed(1)}%`
-  return n.toLocaleString('ar-EG')
+  return n.toLocaleString('en-US')
 }
 
 export default function TargetProgressWidget({

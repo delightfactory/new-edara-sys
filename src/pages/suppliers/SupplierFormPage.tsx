@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { ArrowRight, Save, Loader2, Trash2, Plus, Edit, Check, Clock, AlertTriangle, CreditCard, Building, Users as UsersIcon, Bell } from 'lucide-react'
@@ -183,7 +183,7 @@ export default function SupplierFormPage() {
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: 'var(--space-2) var(--space-3)', background: 'var(--bg-surface-2)', borderRadius: 'var(--radius-md)' }}>
             <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>الرصيد الحالي</span>
-            <span style={{ fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--color-success)' }}>{(supplierBalance || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2 })}</span>
+            <span style={{ fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--color-success)' }}>{(supplierBalance || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
           </div>
         </div>
       )}

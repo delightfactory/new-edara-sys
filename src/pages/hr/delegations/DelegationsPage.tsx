@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Trash2, UserCheck, Clock, Shield } from 'lucide-react'
 import { getDelegations, createDelegation, cancelDelegation, getEmployees } from '@/lib/services/hr'
@@ -117,7 +117,7 @@ export default function DelegationsPage() {
   }
 
   const now = new Date().toISOString()
-  const formatDate = (d: string) => new Date(d).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' })
+  const formatDate = (d: string) => new Date(d).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short', year: 'numeric' })
   const permLabel = (perms: string[]) =>
     perms.map(p => DELEGATABLE_PERMISSIONS.find(x => x.value === p)?.label ?? p).join('، ')
 

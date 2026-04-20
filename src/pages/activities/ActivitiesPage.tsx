@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+﻿import { useState, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Activity, Plus, Eye, Trash2, MapPin, Phone, CheckSquare } from 'lucide-react'
 import { toast } from 'sonner'
@@ -21,7 +21,7 @@ const CATEGORY_ICON: Record<string, React.ReactNode> = {
 }
 
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' })
+  return new Date(d).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 export default function ActivitiesPage() {

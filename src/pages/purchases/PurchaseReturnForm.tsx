@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+﻿import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
@@ -627,7 +627,7 @@ export default function PurchaseReturnForm() {
           {returnData.confirmed_at && (
             <div style={{ marginTop: 12, fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', gap: 8, alignItems: 'center' }}>
               <CheckCircle size={13} />
-              تم التأكيد بتاريخ: {new Date(returnData.confirmed_at).toLocaleString('ar-EG')}
+              تم التأكيد بتاريخ: {new Date(returnData.confirmed_at).toLocaleString('ar-EG-u-nu-latn')}
             </div>
           )}
         </div>

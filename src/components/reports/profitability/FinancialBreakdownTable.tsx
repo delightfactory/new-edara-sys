@@ -1,4 +1,4 @@
-import React from 'react'
+﻿import React from 'react'
 
 export interface ColumnDef<T> {
   key: Extract<keyof T, string> | string
@@ -17,7 +17,7 @@ interface FinancialBreakdownTableProps<T> {
 
 export function formatCurrency(v: number | null | undefined): string {
   if (v === null || v === undefined) return '—'
-  return new Intl.NumberFormat('ar-EG', {
+  return new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(v)

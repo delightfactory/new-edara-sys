@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
@@ -188,21 +188,21 @@ export default function ProductDetailPage() {
         {/* ══ TAB: Pricing ══ */}
         {tab === 'pricing' && (
           <div className="edara-card" style={{ padding: 'var(--space-5)' }}>
-            <InfoRow icon={DollarSign} label="سعر البيع" value={product.selling_price.toLocaleString('ar-EG', { minimumFractionDigits: 2 })} highlight />
+            <InfoRow icon={DollarSign} label="سعر البيع" value={product.selling_price.toLocaleString('en-US', { minimumFractionDigits: 2 })} highlight />
             {canViewCosts && (
               <>
                 <InfoRow icon={DollarSign} label="متوسط التكلفة العام (WAC)" value={
                   (metrics?.global_wac != null
                     ? metrics.global_wac
                     : (metrics?.cost_price ?? product.cost_price ?? 0)
-                  ).toLocaleString('ar-EG', { minimumFractionDigits: 2 })
+                  ).toLocaleString('en-US', { minimumFractionDigits: 2 })
                 } />
                 <InfoRow icon={DollarSign} label="آخر سعر شراء" value={
                   (metrics?.last_purchase_price ?? product.last_purchase_price) != null
-                    ? (metrics?.last_purchase_price ?? product.last_purchase_price ?? 0).toLocaleString('ar-EG', { minimumFractionDigits: 2 })
+                    ? (metrics?.last_purchase_price ?? product.last_purchase_price ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })
                     : '—'
                 } />
-                <InfoRow icon={DollarSign} label="تكلفة مرجعية (Cost Price)" value={(metrics?.cost_price ?? product.cost_price ?? 0).toLocaleString('ar-EG', { minimumFractionDigits: 2 })} />
+                <InfoRow icon={DollarSign} label="تكلفة مرجعية (Cost Price)" value={(metrics?.cost_price ?? product.cost_price ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })} />
                 
                 {/* Warehouse breakdown */}
                 {metrics && metrics.warehouse_breakdown && metrics.warehouse_breakdown.length > 0 && (
@@ -214,7 +214,7 @@ export default function ProductDetailPage() {
                           <span style={{ fontWeight: 600 }}>{wb.warehouse_name}</span>
                           <div style={{ display: 'flex', gap: 16, color: 'var(--text-secondary)' }}>
                             <span>الكمية: {wb.quantity}</span>
-                            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>التكلفة: {wb.wac.toLocaleString('ar-EG', { minimumFractionDigits: 2 })}</span>
+                            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>التكلفة: {wb.wac.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
                           </div>
                         </div>
                       ))}

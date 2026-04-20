@@ -1,4 +1,4 @@
-/**
+﻿/**
  * CustomerReengagementPage.tsx
  *
  * صفحة قرار تشغيلية: أولويات إعادة الاستهداف
@@ -29,7 +29,7 @@ import PageHeader from '@/components/shared/PageHeader'
 
 // ─── Formatters ───────────────────────────────────────────────
 
-const FMT = new Intl.NumberFormat('ar-EG', { maximumFractionDigits: 0 })
+const FMT = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
 const fmt    = (n: number | null | undefined) => n != null ? FMT.format(n) : '—'
 const fmtCur = (n: number | null | undefined) => n != null ? fmt(n) + ' ج.م' : '—'
 
@@ -329,7 +329,7 @@ export default function CustomerReengagementPage() {
   const filterStats = useMemo(() => [
     {
       label:   'عميل مستهدف',
-      value:   listLoading ? '...' : rows.length >= 100 ? '100+' : rows.length.toLocaleString('ar-EG'),
+      value:   listLoading ? '...' : rows.length >= 100 ? '100+' : rows.length.toLocaleString('en-US'),
       variant: 'info' as const,
       loading: listLoading,
     },
@@ -372,7 +372,7 @@ export default function CustomerReengagementPage() {
         subtitle={
           listLoading
             ? 'جاري التحميل...'
-            : `${rows.length >= 100 ? 'أول ١٠٠' : rows.length.toLocaleString('ar-EG')} عميل مُحدَّد`
+            : `${rows.length >= 100 ? 'أول 100' : rows.length.toLocaleString('en-US')} عميل مُحدَّد`
         }
       />
 
@@ -459,7 +459,7 @@ export default function CustomerReengagementPage() {
           <span className="rp-table-title">قائمة العملاء — مرتبة بالأولوية</span>
           {!listLoading && (
             <span className="rp-table-count">
-              {rows.length} عميل {rows.length >= 100 ? '(أول ١٠٠)' : ''}
+              {rows.length} عميل {rows.length >= 100 ? '(أول 100)' : ''}
             </span>
           )}
         </div>

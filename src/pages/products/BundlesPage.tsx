@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { Package, Plus, Edit, Loader2, Trash2 } from 'lucide-react'
 import { getBundles, createBundle, updateBundle } from '@/lib/services/products'
@@ -134,7 +134,7 @@ export default function BundlesPage() {
                 <span className={`badge ${b.is_active ? 'badge-success' : 'badge-danger'}`}>{b.is_active ? 'نشط' : 'معطل'}</span>
               </div>
               <div style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--color-primary)', marginBottom: 'var(--space-2)' }}>
-                {b.price.toLocaleString('ar-EG', { minimumFractionDigits: 2 })} ج.م
+                {b.price.toLocaleString('en-US', { minimumFractionDigits: 2 })} ج.م
               </div>
               <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 'var(--space-3)' }}>
                 {b.items?.length || 0} منتج

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * TargetForm — Wizard من 7 خطوات لإنشاء الهدف
  * المسار الوحيد: createTargetWithRewards()
  * الحقول المؤجلة (مُقصودًا): parent_target_id, auto_split, split_basis
@@ -88,7 +88,7 @@ function defaultDates(period: TargetPeriod) {
 }
 
 
-function fmtN(n: number) { return n.toLocaleString('ar-EG', { maximumFractionDigits: 2 }) }
+function fmtN(n: number) { return n.toLocaleString('en-US', { maximumFractionDigits: 2 }) }
 
 // ── Component ─────────────────────────────────────────────────
 
@@ -490,10 +490,10 @@ export default function TargetForm() {
             <label className="form-label">الحد الأدنى {unitLabel && <span className="tf-unit-badge">{unitLabel}</span>}<span style={{ color: 'var(--text-muted)', fontWeight: 400 }}> (اختياري)</span></label>
             <input type="number" className="form-input" value={minValue}
               onChange={e => setMinValue(e.target.value)}
-              placeholder={suggestedMin ? `اقتراح: ${suggestedMin.toLocaleString('ar-EG')}` : '—'} min="0" step="any" />
+              placeholder={suggestedMin ? `اقتراح: ${suggestedMin.toLocaleString('en-US')}` : '—'} min="0" step="any" />
             {suggestedMin > 0 && !minValue && (
               <button type="button" className="tf-suggest-btn" onClick={() => setMinValue(String(suggestedMin))}>
-                استخدام 80% ← {suggestedMin.toLocaleString('ar-EG')}
+                استخدام 80% ← {suggestedMin.toLocaleString('en-US')}
               </button>
             )}
           </div>
@@ -501,10 +501,10 @@ export default function TargetForm() {
             <label className="form-label">هدف التمدد {unitLabel && <span className="tf-unit-badge">{unitLabel}</span>}<span style={{ color: 'var(--text-muted)', fontWeight: 400 }}> (اختياري)</span></label>
             <input type="number" className="form-input" value={stretchValue}
               onChange={e => setStretchValue(e.target.value)}
-              placeholder={suggestedStretch ? `اقتراح: ${suggestedStretch.toLocaleString('ar-EG')}` : '—'} min="0" step="any" />
+              placeholder={suggestedStretch ? `اقتراح: ${suggestedStretch.toLocaleString('en-US')}` : '—'} min="0" step="any" />
             {suggestedStretch > 0 && !stretchValue && (
               <button type="button" className="tf-suggest-btn" onClick={() => setStretchValue(String(suggestedStretch))}>
-                استخدام 120% ← {suggestedStretch.toLocaleString('ar-EG')}
+                استخدام 120% ← {suggestedStretch.toLocaleString('en-US')}
               </button>
             )}
           </div>

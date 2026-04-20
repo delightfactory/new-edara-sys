@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ActivityForm — إنشاء نشاط + تعديل + حفظ call_details إذا category = call
  *
  * call_details flow:
@@ -425,7 +425,7 @@ export default function ActivityForm({ prefillPlanItemId, prefillPlanType }: Act
             <div className="flex flex-col gap-2">
               {recentActivities.map(act => {
                 const outcomeLabel = getOutcomeOptions((act as any).type?.category).find(o => o.value === act.outcome_type)?.label ?? act.outcome_type
-                const date = new Date(act.activity_date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' })
+                const date = new Date(act.activity_date).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short' })
                 return (
                   <div key={act.id} className="flex justify-between text-[11px]">
                     <span className="text-secondary">• {(act as any).type?.name}</span>
@@ -493,7 +493,7 @@ export default function ActivityForm({ prefillPlanItemId, prefillPlanType }: Act
                 <option value="">— بدون ربط —</option>
                 {customerOrders.map(o => (
                   <option key={o.id} value={o.id}>
-                    {o.order_number} • {o.total_amount?.toLocaleString('ar-EG')} ج.م ({o.status === 'draft' ? 'مسودة' : o.status === 'confirmed' ? 'مؤكد' : o.status === 'delivered' ? 'مسلّم' : 'مكتمل'})
+                    {o.order_number} • {o.total_amount?.toLocaleString('en-US')} ج.م ({o.status === 'draft' ? 'مسودة' : o.status === 'confirmed' ? 'مؤكد' : o.status === 'delivered' ? 'مسلّم' : 'مكتمل'})
                   </option>
                 ))}
               </select>

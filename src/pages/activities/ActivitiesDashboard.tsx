@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ActivitiesDashboard — لوحة الأنشطة الذكية بثلاثة مستويات
  *
  * مندوب   → خطة اليوم + أهدافه + نشاطاته + callbacks
@@ -129,7 +129,7 @@ function RepDashboard() {
             صباح الخير{currentEmployee?.full_name ? `، ${currentEmployee.full_name.split(' ')[0]}` : ''}
           </div>
           <div className="rep-greeting-date">
-            {new Date().toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' })}
+            {new Date().toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'long' })}
           </div>
         </div>
       </div>
@@ -200,7 +200,7 @@ function RepDashboard() {
           </div>
           <div className="act-dash-stat-body">
             <div className="act-dash-stat-value">
-              {monthSales > 0 ? monthSales.toLocaleString('ar-EG', { maximumFractionDigits: 0 }) : '—'}
+              {monthSales > 0 ? monthSales.toLocaleString('en-US', { maximumFractionDigits: 0 }) : '—'}
             </div>
             <div className="act-dash-stat-label">مبيعات الشهر</div>
           </div>
@@ -214,7 +214,7 @@ function RepDashboard() {
           </div>
           <div className="act-dash-stat-body">
             <div className="act-dash-stat-value">
-              {monthCollection > 0 ? monthCollection.toLocaleString('ar-EG', { maximumFractionDigits: 0 }) : '—'}
+              {monthCollection > 0 ? monthCollection.toLocaleString('en-US', { maximumFractionDigits: 0 }) : '—'}
             </div>
             <div className="act-dash-stat-label">تحصيلات الشهر</div>
           </div>
@@ -477,7 +477,7 @@ function SupervisorDashboard() {
                     <div className="sup-perf-cell">{rep.calls_count}</div>
                     <div className="sup-perf-cell">
                       {rep.sales_value > 0
-                        ? rep.sales_value.toLocaleString('ar-EG', { maximumFractionDigits: 0 })
+                        ? rep.sales_value.toLocaleString('en-US', { maximumFractionDigits: 0 })
                         : '—'}
                     </div>
                     <div className="sup-perf-cell">
@@ -563,8 +563,8 @@ function ManagerDashboard() {
       {/* ── KPI Cards ── */}
       <div className="mgr-kpi-grid">
         {[
-          { icon: <MapPin size={20} />, value: totalVisits.toLocaleString('ar-EG'), label: 'زيارات الشهر', color: 'primary' },
-          { icon: <Phone size={20} />, value: totalCalls.toLocaleString('ar-EG'), label: 'مكالمات الشهر', color: 'success' },
+          { icon: <MapPin size={20} />, value: totalVisits.toLocaleString('en-US'), label: 'زيارات الشهر', color: 'primary' },
+          { icon: <Phone size={20} />, value: totalCalls.toLocaleString('en-US'), label: 'مكالمات الشهر', color: 'success' },
           { icon: <BarChart3 size={20} />, value: totalSales > 0 ? `${(totalSales/1000).toFixed(1)}ك` : '—', label: 'مبيعات الشهر', color: 'warning' },
           { icon: <Target size={20} />, value: totalCollect > 0 ? `${(totalCollect/1000).toFixed(1)}ك` : '—', label: 'تحصيلات الشهر', color: 'target' },
         ].map((kpi, i) => (
@@ -631,7 +631,7 @@ function ManagerDashboard() {
                       <div>
                         <div className="font-bold text-sm">{topRep.employee_name}</div>
                         <div className="text-xs text-muted">
-                          مبيعات: {topRep.sales_value?.toLocaleString('ar-EG', { maximumFractionDigits: 0 }) ?? '—'}
+                          مبيعات: {topRep.sales_value?.toLocaleString('en-US', { maximumFractionDigits: 0 }) ?? '—'}
                         </div>
                       </div>
                     </div>
@@ -679,7 +679,7 @@ export default function ActivitiesDashboard() {
   const canCreate    = can(PERMISSIONS.ACTIVITIES_CREATE)
 
   const dashboardTitle = isManager ? 'لوحة الإدارة' : isSupervisor ? 'لوحة المشرف' : 'لوحتي'
-  const dashboardSub   = new Date().toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' })
+  const dashboardSub   = new Date().toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'long' })
 
   return (
     <div className="page-container animate-enter">

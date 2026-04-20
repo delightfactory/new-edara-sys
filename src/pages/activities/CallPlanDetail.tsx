@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom'
+﻿import { useParams, useNavigate } from 'react-router-dom'
 import {
   useCallPlan, useCallPlanItems,
   useConfirmCallPlan, useCancelCallPlan,
@@ -20,7 +20,7 @@ import { CardSkeleton } from '@/components/ui/Skeleton'
 import type { CallPlanItemInput, PlanItemPurposeType, PlanPriority } from '@/lib/types/activities'
 
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' })
+  return new Date(d).toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
 function tomorrow(): string {

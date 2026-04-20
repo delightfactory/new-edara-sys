@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { Award, Minus, AlertTriangle, Plus, CheckCircle, XCircle } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -191,7 +191,7 @@ export default function AdjustmentsPage() {
       hideOnMobile: true,
       render: (r: HRPayrollAdjustment) => (
         <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-          {new Date(r.effective_date).toLocaleDateString('ar-EG')}
+          {new Date(r.effective_date).toLocaleDateString('ar-EG-u-nu-latn')}
         </span>
       ),
     },

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import {
   Settings, Building2, Briefcase, MapPin, Calendar, AlertTriangle,
   Plus, Edit2, Check, X, Save, ToggleLeft, ToggleRight, Trash2, BookOpen
@@ -811,7 +811,7 @@ function HolidaysTab() {
         <DataTable
           columns={[
             { key: 'name', label: 'العطلة', render: (h: any) => <strong>{h.name}</strong> },
-            { key: 'date', label: 'التاريخ', render: (h: any) => new Date(h.holiday_date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' }) },
+            { key: 'date', label: 'التاريخ', render: (h: any) => new Date(h.holiday_date).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' }) },
             { key: 'type', label: 'نوع', render: (h: any) => <Badge variant={h.is_recurring ? 'info' : 'neutral'}>{h.is_recurring ? 'سنوية' : 'مرة واحدة'}</Badge> },
             { key: 'actions', label: '', align: 'end', render: (h: any) => <Button size="sm" variant="ghost" icon={<Trash2 size={13} />} onClick={() => handleDelete(h)} loading={deleteMut.isPending} style={{ color: 'var(--color-danger)' }} /> }
           ]}
@@ -819,7 +819,7 @@ function HolidaysTab() {
           keyField="id"
           dataCardMapping={(h: any) => ({
             title: h.name,
-            subtitle: new Date(h.holiday_date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' }),
+            subtitle: new Date(h.holiday_date).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' }),
             badge: <Badge variant={h.is_recurring ? 'info' : 'neutral'}>{h.is_recurring ? 'سنوية' : 'مرة واحدة'}</Badge>,
             metadata: [],
             actions: <Button size="sm" variant="ghost" onClick={() => handleDelete(h)} loading={deleteMut.isPending} style={{ color: 'var(--color-danger)', width: '100%', justifyContent: 'center', border: '1px solid color-mix(in srgb, var(--color-danger) 20%, transparent)' }}><Trash2 size={13} style={{ marginInlineEnd: 4 }} /> حذف</Button>

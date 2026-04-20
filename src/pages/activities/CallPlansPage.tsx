@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+﻿import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth-store'
 import { useCallPlans, useConfirmCallPlan, useCancelCallPlan } from '@/hooks/useQueryHooks'
@@ -14,7 +14,7 @@ import ActivityStatusBadge from '@/components/shared/ActivityStatusBadge'
 import type { CallPlan, PlanStatus } from '@/lib/types/activities'
 
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString('ar-EG', { weekday: 'short', day: 'numeric', month: 'short' })
+  return new Date(d).toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'short', day: 'numeric', month: 'short' })
 }
 
 export default function CallPlansPage() {

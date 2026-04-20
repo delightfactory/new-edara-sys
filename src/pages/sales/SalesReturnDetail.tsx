@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
@@ -192,7 +192,7 @@ export default function SalesReturnDetail() {
               )}
               {ret.confirmed_at && (
                 <InfoRow icon={<Clock size={14} />} label="تاريخ التأكيد"
-                  value={new Date(ret.confirmed_at).toLocaleDateString('ar-EG', { hour: '2-digit', minute: '2-digit' })} />
+                  value={new Date(ret.confirmed_at).toLocaleDateString('ar-EG-u-nu-latn', { hour: '2-digit', minute: '2-digit' })} />
               )}
             </div>
           </div>

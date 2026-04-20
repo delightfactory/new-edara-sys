@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { Clock, Plus, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -21,7 +21,7 @@ const STATUS_VARIANT: Record<string, 'warning' | 'success' | 'danger'> = {
 }
 
 const fmtDate = (d: string) =>
-  new Date(d).toLocaleDateString('ar-EG', { weekday: 'short', day: 'numeric', month: 'short' })
+  new Date(d).toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'short', day: 'numeric', month: 'short' })
 const fmtTime = (t: string) => {
   const [h, m] = t.split(':')
   const hr = parseInt(h)

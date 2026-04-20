@@ -1,4 +1,4 @@
-import React from 'react'
+﻿import React from 'react'
 import type { TargetCustomer } from '@/lib/types/activities'
 
 interface TargetCustomersSectionProps {
@@ -7,7 +7,7 @@ interface TargetCustomersSectionProps {
 
 const formatDate = (d: string | null) => {
   if (!d) return ''
-  return new Date(d).toLocaleDateString('ar-EG', { month: 'short', year: 'numeric' })
+  return new Date(d).toLocaleDateString('ar-EG-u-nu-latn', { month: 'short', year: 'numeric' })
 }
 
 export default function TargetCustomersSection({ customers }: TargetCustomersSectionProps) {
@@ -66,10 +66,10 @@ export default function TargetCustomersSection({ customers }: TargetCustomersSec
                     {c.customer?.code && <span style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginTop: '2px' }}>{c.customer.code}</span>}
                   </td>
                   <td style={{ padding: '12px 20px', fontSize: '14px', color: 'var(--text-primary)' }}>
-                    {c.baseline_value != null ? c.baseline_value.toLocaleString('ar-EG', { maximumFractionDigits: 1 }) : '—'}
+                    {c.baseline_value != null ? c.baseline_value.toLocaleString('en-US', { maximumFractionDigits: 1 }) : '—'}
                   </td>
                   <td style={{ padding: '12px 20px', fontSize: '14px', color: 'var(--text-primary)' }}>
-                    {c.baseline_category_count != null ? c.baseline_category_count.toLocaleString('ar-EG') : '—'}
+                    {c.baseline_category_count != null ? c.baseline_category_count.toLocaleString('en-US') : '—'}
                   </td>
                   <td style={{ padding: '12px 20px', fontSize: '13px', color: 'var(--text-secondary)' }}>
                     {periodStr}

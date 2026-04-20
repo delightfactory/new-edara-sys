@@ -1,4 +1,4 @@
-import type { TrustStatus } from '@/hooks/useSystemTrustState'
+﻿import type { TrustStatus } from '@/hooks/useSystemTrustState'
 import TrustStateBadge from './TrustStateBadge'
 import FreshnessIndicator from './FreshnessIndicator'
 import type { ReactNode } from 'react'
@@ -21,7 +21,7 @@ interface MetricCardProps {
 function formatNum(v: string | number | null): string {
   if (v === null || v === undefined) return '—'
   if (typeof v === 'string') return v
-  return new Intl.NumberFormat('ar-EG', {
+  return new Intl.NumberFormat('en-US', {
     maximumFractionDigits: 0,
   }).format(v)
 }

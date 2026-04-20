@@ -1,4 +1,4 @@
-import React from 'react'
+﻿import React from 'react'
 import type { TargetRewardSummary } from '@/lib/types/activities'
 
 interface RewardConfigCardProps {
@@ -67,8 +67,8 @@ export default function RewardConfigCard({ summary }: RewardConfigCardProps) {
             </div>
             <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>
               {summary.reward_type === 'fixed' 
-                ? summary.reward_base_value.toLocaleString('ar-EG', { maximumFractionDigits: 1 })
-                : `${summary.reward_base_value.toLocaleString('ar-EG', { maximumFractionDigits: 1 })}%`}
+                ? summary.reward_base_value.toLocaleString('en-US', { maximumFractionDigits: 1 })
+                : `${summary.reward_base_value.toLocaleString('en-US', { maximumFractionDigits: 1 })}%`}
             </div>
           </div>
         )}

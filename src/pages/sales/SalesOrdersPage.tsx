@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react'
+﻿import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ShoppingCart, Plus, Eye, FileText, TrendingUp, DollarSign,
@@ -192,7 +192,7 @@ export default function SalesOrdersPage() {
     const result: { label: string; value: string | number; variant: V; loading?: boolean }[] = [
       {
         label: contextLabel,
-        value: totalCount.toLocaleString('ar-EG'),
+        value: totalCount.toLocaleString('en-US'),
         variant: primaryVariant,
         loading: desktopLoading,
       },
@@ -214,14 +214,14 @@ export default function SalesOrdersPage() {
         desktopOrders.map(o => o.customer_id).filter(Boolean)
       ).size
       if (uniqueCustomers > 1) {
-        result.push({ label: 'عميل', value: uniqueCustomers.toLocaleString('ar-EG'), variant: 'default' })
+        result.push({ label: 'عميل', value: uniqueCustomers.toLocaleString('en-US'), variant: 'default' })
       }
 
       // ملغي — فقط عند غياب فلتر الحالة
       if (!filters.status) {
         const cancelledCount = desktopOrders.filter(o => o.status === 'cancelled').length
         if (cancelledCount > 0) {
-          result.push({ label: 'ملغي', value: cancelledCount.toLocaleString('ar-EG'), variant: 'danger' })
+          result.push({ label: 'ملغي', value: cancelledCount.toLocaleString('en-US'), variant: 'danger' })
         }
       }
 
@@ -230,7 +230,7 @@ export default function SalesOrdersPage() {
         const confirmedCount = productive.length
         const confirmedRatio = desktopOrders.length > 0 ? confirmedCount / desktopOrders.length : 0
         if (confirmedCount > 0 && confirmedRatio < 1) {
-          result.push({ label: 'منتج', value: confirmedCount.toLocaleString('ar-EG'), variant: 'success' })
+          result.push({ label: 'منتج', value: confirmedCount.toLocaleString('en-US'), variant: 'success' })
         }
       }
     }
@@ -341,7 +341,7 @@ export default function SalesOrdersPage() {
     <div className="page-container animate-enter">
       <PageHeader
         title="أوامر البيع"
-        subtitle={desktopLoading ? '...' : `${totalCount.toLocaleString('ar-EG')} طلب`}
+        subtitle={desktopLoading ? '...' : `${totalCount.toLocaleString('en-US')} طلب`}
         actions={
           <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
             {can('sales.orders.create') && (
@@ -379,28 +379,28 @@ export default function SalesOrdersPage() {
             <div className="kpi-icon kpi-neutral"><FileText size={16} /></div>
             <div className="kpi-body">
               <div className="kpi-label">مسودة</div>
-              <div className="kpi-value">{(globalStats.statusCounts.draft ?? 0).toLocaleString('ar-EG')}</div>
+              <div className="kpi-value">{(globalStats.statusCounts.draft ?? 0).toLocaleString('en-US')}</div>
             </div>
           </div>
           <div className="kpi-card">
             <div className="kpi-icon kpi-info"><CheckCircle size={16} /></div>
             <div className="kpi-body">
               <div className="kpi-label">مؤكد</div>
-              <div className="kpi-value">{(globalStats.statusCounts.confirmed ?? 0).toLocaleString('ar-EG')}</div>
+              <div className="kpi-value">{(globalStats.statusCounts.confirmed ?? 0).toLocaleString('en-US')}</div>
             </div>
           </div>
           <div className="kpi-card">
             <div className="kpi-icon kpi-success"><Truck size={16} /></div>
             <div className="kpi-body">
               <div className="kpi-label">مُسلّم</div>
-              <div className="kpi-value">{(globalStats.statusCounts.delivered ?? 0).toLocaleString('ar-EG')}</div>
+              <div className="kpi-value">{(globalStats.statusCounts.delivered ?? 0).toLocaleString('en-US')}</div>
             </div>
           </div>
           <div className="kpi-card">
             <div className="kpi-icon kpi-danger"><AlertCircle size={16} /></div>
             <div className="kpi-body">
               <div className="kpi-label">ملغي</div>
-              <div className="kpi-value">{(globalStats.statusCounts.cancelled ?? 0).toLocaleString('ar-EG')}</div>
+              <div className="kpi-value">{(globalStats.statusCounts.cancelled ?? 0).toLocaleString('en-US')}</div>
             </div>
           </div>
         </div>
@@ -588,7 +588,7 @@ export default function SalesOrdersPage() {
             {!mobileLoading && !hasMoreMobile && mobileOrders.length > 0 && (
               <div className="infinite-end">
                 <CheckCircle2 size={16} />
-                <span>جميع الطلبات ({mobileOrders.length.toLocaleString('ar-EG')})</span>
+                <span>جميع الطلبات ({mobileOrders.length.toLocaleString('en-US')})</span>
               </div>
             )}
           </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+﻿import React, { useState } from 'react'
 import { useProfitSummary } from '@/hooks/useProfitability'
 import { useSystemTrustState, useTrustForComponent } from '@/hooks/useSystemTrustState'
 import MetricCard from '@/components/reports/MetricCard'
@@ -84,7 +84,7 @@ export default function ProfitDashboard() {
         <div style={{ background: 'var(--bg-surface)', padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--primary-light)'}}>
            <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-4)' }}>صافي الربح النهائي</h3>
            <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--color-primary-dark)' }}>
-             {isLoading ? '...' : new Intl.NumberFormat('ar-EG').format(summary?.net_profit ?? 0)}
+             {isLoading ? '...' : new Intl.NumberFormat('en-US').format(summary?.net_profit ?? 0)}
              <span style={{ fontSize: '1rem', color: 'var(--text-muted)', marginInlineStart: 'var(--space-2)', fontWeight: 500 }}>ج.م</span>
            </div>
            {summary && summary.net_revenue > 0 && (

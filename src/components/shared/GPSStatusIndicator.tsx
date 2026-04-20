@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+﻿import { useState, useCallback } from 'react'
 import useGeoPermission from '@/hooks/useGeoPermission'
 
 interface GPSCoords {
@@ -128,7 +128,7 @@ export default function GPSStatusIndicator({
       {/* تحذير بُعد عن العميل */}
       {hasCoords && farFromClient && (
         <div className="gps-warn">
-          ⚠ أنت على بُعد {distance?.toLocaleString('ar-EG')} م من موقع العميل
+          ⚠ أنت على بُعد {distance?.toLocaleString('en-US')} م من موقع العميل
         </div>
       )}
 

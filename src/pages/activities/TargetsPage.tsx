@@ -1,4 +1,4 @@
-/**
+﻿/**
  * TargetsPage — قائمة الأهداف
  *
  * وضعان:
@@ -23,11 +23,11 @@ import { buildTargetListItems } from '@/lib/services/targets'
 import type { Target as TargetRow, TargetScope, TargetPeriod, TargetFilters, TargetListItem } from '@/lib/types/activities'
 
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' })
+  return new Date(d).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 function fmtNumber(n: number | null | undefined) {
   if (n == null || isNaN(Number(n))) return '—'
-  return Number(n).toLocaleString('ar-EG', { maximumFractionDigits: 1 })
+  return Number(n).toLocaleString('en-US', { maximumFractionDigits: 1 })
 }
 
 const SCOPE_AR: Record<TargetScope, string> = {

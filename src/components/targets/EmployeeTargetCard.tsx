@@ -1,4 +1,4 @@
-import React from 'react'
+﻿import React from 'react'
 import { Target, TrendingUp, TrendingDown, Minus, Gift, ChevronRight } from 'lucide-react'
 import type { TargetListItem } from '@/lib/types/activities'
 import RewardEstimateChip from './RewardEstimateChip'
@@ -9,7 +9,7 @@ interface EmployeeTargetCardProps {
 }
 
 function fmtN(n: number) {
-  return n.toLocaleString('ar-EG', { maximumFractionDigits: 1 })
+  return n.toLocaleString('en-US', { maximumFractionDigits: 1 })
 }
 
 export default function EmployeeTargetCard({ target, onClick }: EmployeeTargetCardProps) {
@@ -91,7 +91,7 @@ export default function EmployeeTargetCard({ target, onClick }: EmployeeTargetCa
             {target.period_end && (
               <>
                 <span style={{ color: 'var(--border-color)' }}>•</span>
-                <span>ينتهي {new Date(target.period_end).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' })}</span>
+                <span>ينتهي {new Date(target.period_end).toLocaleDateString('ar-EG-u-nu-latn', { month: 'short', day: 'numeric' })}</span>
               </>
             )}
           </div>

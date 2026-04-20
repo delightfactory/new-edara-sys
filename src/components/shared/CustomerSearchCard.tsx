@@ -1,4 +1,4 @@
-import { Plus, MapPin, Phone, CreditCard, Calendar, Check, Navigation } from 'lucide-react'
+﻿import { Plus, MapPin, Phone, CreditCard, Calendar, Check, Navigation } from 'lucide-react'
 import type { CustomerSearchResult } from '@/hooks/useCustomerSearch'
 
 interface CustomerSearchCardProps {
@@ -105,10 +105,10 @@ export default function CustomerSearchCard({
           <div className="csc-row csc-financial">
             <CreditCard size={13} />
             <span className={hasDebt ? 'csc-debt' : ''}>
-              الرصيد: {customer.current_balance.toLocaleString('ar-EG')} ج.م
+              الرصيد: {customer.current_balance.toLocaleString('en-US')} ج.م
             </span>
             <span className="csc-separator">|</span>
-            <span>حد: {customer.credit_limit.toLocaleString('ar-EG')}</span>
+            <span>حد: {customer.credit_limit.toLocaleString('en-US')}</span>
           </div>
         )}
 
