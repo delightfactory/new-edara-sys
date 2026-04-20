@@ -133,6 +133,7 @@ const ChurnRiskPage               = lazy(() => import('@/pages/reports/ChurnRisk
 const GeographyPage               = lazy(() => import('@/pages/reports/GeographyPage'))
 const TargetAttainmentPage        = lazy(() => import('@/pages/reports/TargetAttainmentPage'))
 const RepCreditCommitmentPage     = lazy(() => import('@/pages/reports/RepCreditCommitmentPage'))
+const CustomerReengagementPage    = lazy(() => import('@/pages/reports/CustomerReengagementPage'))
 
 // Reports — Profitability (Phases 1-3)
 const ProfitabilityLayout = lazy(() => import('@/pages/reports/profitability/ProfitabilityLayout'))
@@ -222,7 +223,7 @@ export default function App() {
                 <ProtectedRoute permission="customers.create"><Suspense fallback={<LazyFallback />}><CustomerFormPage /></Suspense></ProtectedRoute>
               } />
               <Route path="customers/:id" element={
-                <ProtectedRoute permission="customers.read"><Suspense fallback={<LazyFallback />}><CustomerDetailPage /></Suspense></ProtectedRoute>
+                <ProtectedRoute permission={['customers.read', 'customers.read_all']}><Suspense fallback={<LazyFallback />}><CustomerDetailPage /></Suspense></ProtectedRoute>
               } />
               <Route path="customers/:id/edit" element={
                 <ProtectedRoute permission="customers.update"><Suspense fallback={<LazyFallback />}><CustomerFormPage /></Suspense></ProtectedRoute>
@@ -480,6 +481,11 @@ export default function App() {
                 <Route path="credit-commitment" element={
                   <ProtectedRoute permission={['reports.sales', 'reports.view_all']}>
                     <Suspense fallback={<LazyFallback />}><RepCreditCommitmentPage /></Suspense>
+                  </ProtectedRoute>
+                } />
+                <Route path="reengagement" element={
+                  <ProtectedRoute permission={['reports.sales', 'reports.view_all']}>
+                    <Suspense fallback={<LazyFallback />}><CustomerReengagementPage /></Suspense>
                   </ProtectedRoute>
                 } />
                 <Route path="profitability" element={

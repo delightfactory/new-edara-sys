@@ -156,6 +156,7 @@ export default function OverviewPage() {
           { to: '/reports/reps',              label: 'أداء المندوبين',   desc: 'إيراد — مرتجعات — عملاء بالمندوب', icon: UserCheck,     color: 'var(--color-primary)'  },
           { to: '/reports/products',          label: 'أداء المنتجات',    desc: 'إيراد — كميات — حصة السوق',        icon: Package,       color: 'var(--color-info)'     },
           { to: '/reports/churn-risk',        label: 'خطر الخمود',       desc: 'VIP — مخلص — معرض للخطر — خامد',   icon: AlertTriangle, color: 'var(--color-warning)'  },
+          { to: '/reports/reengagement',      label: 'إعادة الاستهداف', desc: 'أولويات تشغيلية — Champion Lost',    icon: Target,        color: '#e11d48'                },
           { to: '/reports/geography',         label: 'التحليل الجغرافى', desc: 'محافظة — مدينة — منطقة',           icon: MapPin,        color: 'var(--color-success)'  },
           { to: '/reports/target-attainment', label: 'إنجاز الأهداف',    desc: 'فعلى مقابل مستهدف — الاتجاه',      icon: Target,        color: '#f59e0b'                },
           { to: '/reports/credit-commitment', label: 'التزام ائتمان المندوبين', desc: 'محفظة — مديونية منشأة — تحصيلات', icon: ShieldCheck,   color: '#7c3aed'                },

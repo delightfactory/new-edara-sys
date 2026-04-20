@@ -1,7 +1,7 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useMatch } from 'react-router-dom'
 import { usePageTitle } from '@/components/layout/PageTitleContext'
 import { useEffect } from 'react'
-import { BarChart3, TrendingUp, Wallet, Users2, LayoutDashboard, Package, AlertTriangle, MapPin, Target, UserCheck, LineChart, ShieldCheck } from 'lucide-react'
+import { BarChart3, TrendingUp, Wallet, Users2, LayoutDashboard, Package, AlertTriangle, MapPin, Target, UserCheck, LineChart, ShieldCheck, RefreshCcw } from 'lucide-react'
 import AnalyticsGate from '@/components/reports/AnalyticsGate'
 
 const TABS = [
@@ -16,12 +16,17 @@ const TABS = [
   { to: '/reports/geography',         label: 'جغرافى',          icon: MapPin        },
   { to: '/reports/target-attainment', label: 'إنجاز الأهداف',   icon: Target        },
   { to: '/reports/credit-commitment', label: 'التزام المندوبين', icon: ShieldCheck    },
+  { to: '/reports/reengagement',      label: 'إعادة الاستهداف', icon: RefreshCcw    },
   { to: '/reports/profitability',     label: 'الربحية',         icon: LineChart     },
 ]
 
 export default function ReportsLayout() {
   const { setTitle } = usePageTitle()
   useEffect(() => setTitle('التقارير'), [])
+
+  // الصفحات التشغيلية المستقلة عن analytics engine
+  // تعمل دائماً بغض النظر عن حالة analytics — لا تمر بـ AnalyticsGate
+  const isOperationalPage = !!useMatch('/reports/reengagement')
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', gap: 0 }}>
@@ -67,12 +72,19 @@ export default function ReportsLayout() {
         })}
       </div>
 
-      {/* Page content — gated behind analytics availability probe */}
+      {/* Page content
+          - الصفحات التشغيلية المستقلة: تعرض Outlet مباشرة
+          - الصفحات Analytics: تمر بـ AnalyticsGate */}
       <div style={{ flex: 1, padding: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-        <AnalyticsGate>
+        {isOperationalPage ? (
           <Outlet />
-        </AnalyticsGate>
+        ) : (
+          <AnalyticsGate>
+            <Outlet />
+          </AnalyticsGate>
+        )}
       </div>
+
 
       <style>{`
         @keyframes shimmer {
