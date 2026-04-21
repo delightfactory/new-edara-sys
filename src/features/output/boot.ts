@@ -7,6 +7,7 @@ import { paymentVoucherDefinition } from './definitions/payment-voucher.definiti
 import { creditPortfolioReportDefinition } from './definitions/credit-portfolio-report.definition';
 import { repCreditCommitmentReportDefinition } from './definitions/rep-credit-commitment-report.definition';
 import { repCreditCommitmentDetailReportDefinition } from './definitions/rep-credit-commitment-detail-report.definition';
+import { reengagementReportDefinition } from './definitions/reengagement-report.definition';
 
 let isBooted = false;
 
@@ -25,6 +26,7 @@ export function bootOutputPlatform(): void {
   registerDocumentDefinition(creditPortfolioReportDefinition);
   registerDocumentDefinition(repCreditCommitmentReportDefinition);
   registerDocumentDefinition(repCreditCommitmentDetailReportDefinition);
+  registerDocumentDefinition(reengagementReportDefinition);
 
   isBooted = true;
 }

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * CustomerReengagementPage.tsx
  *
  * صفحة قرار تشغيلية: أولويات إعادة الاستهداف
@@ -8,9 +8,10 @@
  *   - تُستخدم FilterBar الاحترافي (نفس مكون صفحة العملاء)
  *   - تُستخدم useFilterState (urlSync) للفلاتر
  *   - زر Customer 360 محمي بـ customers.read/customers.read_all
+ *   - زر الطباعة/التصدير يمرر الفلاتر فقط → المنظومة تجلب البيانات
  */
 
-import { useMemo, useEffect } from 'react'
+import { useMemo, useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { usePageTitle } from '@/components/layout/PageTitleContext'
 import {
@@ -23,9 +24,11 @@ import {
 import { useFilterState } from '@/hooks/useFilterState'
 import { useGovernorates, useCities, useProfiles } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
-import { Users, ExternalLink } from 'lucide-react'
+import { Users, ExternalLink, Printer, Download, FileDown, X, AlertTriangle } from 'lucide-react'
 import FilterBar from '@/components/shared/FilterBar'
 import PageHeader from '@/components/shared/PageHeader'
+import { useDocumentOutput } from '@/features/output/hooks/useDocumentOutput'
+import { downloadAsCSV } from '@/lib/utils/export'
 
 // ─── Formatters ───────────────────────────────────────────────
 
@@ -123,6 +126,348 @@ function SkeletonRows({ count = 5 }: { count?: number }) {
         <div key={i} className="skeleton-row" style={{ height: '48px', borderRadius: '8px' }} />
       ))}
     </div>
+  )
+}
+
+// ─── Export Drawer ─────────────────────────────────────────────
+
+type Section360 = 'kpis' | 'products' | 'payment' | 'recommendations' | 'aging'
+
+const SECTIONS_360_CONFIG: { id: Section360; label: string; hint: string; defaultOn: boolean }[] = [
+  { id: 'kpis',            label: 'الملخص التنفيذي',      hint: 'مؤشرات الإيراد، الائتمان، المرتجعات',   defaultOn: true  },
+  { id: 'recommendations', label: 'التوصيات الذكية',       hint: 'تنبيهات تشغيلية مخصصة لكل عميل',          defaultOn: true  },
+  { id: 'payment',         label: 'سلوك السداد',           hint: 'التأخير، توزيع طرق الدفع',               defaultOn: true  },
+  { id: 'products',        label: 'أبرز المنتجات',          hint: 'أكثر 8 منتجات مسحوباً',                  defaultOn: true  },
+  { id: 'aging',           label: 'أعمار الديون',           hint: 'توزيع المديونية 0-30 · 31-60 · 61-90 · 90+', defaultOn: false },
+]
+
+interface ExportDrawerProps {
+  isOpen: boolean
+  onClose: () => void
+  rowCount: number
+  canSee360: boolean
+  filters: Record<string, any>
+  rows: ReengagementRow[]
+}
+
+function ExportDrawer({ isOpen, onClose, rowCount, canSee360, filters, rows }: ExportDrawerProps) {
+  const [include360, setInclude360] = useState(false)
+  const [sections, setSections] = useState<Set<Section360>>(
+    new Set(SECTIONS_360_CONFIG.filter(s => s.defaultOn).map(s => s.id))
+  )
+  const LIMIT_360 = 30
+
+  const toggleSection = (id: Section360) => {
+    setSections(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  // Build params from current filters + 360 options
+  const buildParams = (): Record<string, string> => {
+    const params: Record<string, string> = {}
+    if (filters.dateFrom)      params.dateFrom      = filters.dateFrom
+    if (filters.dateTo)        params.dateTo        = filters.dateTo
+    if (filters.repId)         params.repId         = filters.repId
+    if (filters.governorateId) params.governorateId = filters.governorateId
+    if (filters.cityId)        params.cityId        = filters.cityId
+    if (filters.priority)      params.priority      = filters.priority
+    if (filters.customerType)  params.customerType  = filters.customerType
+    params.activeOnly    = String(filters.activeOnly !== false)
+    params.include360    = include360 && canSee360 ? '1' : '0'
+    params.limit360      = String(LIMIT_360)
+    params.sections360   = [...sections].join(',')
+    return params
+  }
+
+  const outputParams = buildParams()
+
+  const { triggerPreview, triggerPdfDownload, busy, error, clearError } = useDocumentOutput({
+    kind:           'reengagement-report',
+    entityId:       'current',
+    paperProfileId: 'a4-portrait',
+    params:         outputParams,
+  })
+
+  const handleCsvExport = useCallback(() => {
+    if (!rows.length) return
+    const headers = [
+      { key: 'customer_name'      as const, label: 'اسم العميل' },
+      { key: 'customer_code'      as const, label: 'كود العميل' },
+      { key: 'customer_type'      as const, label: 'النوع' },
+      { key: 'priority_label'     as const, label: 'الأولوية' },
+      { key: 'rep_name'           as const, label: 'المندوب' },
+      { key: 'governorate_name'   as const, label: 'المحافظة' },
+      { key: 'city_name'          as const, label: 'المدينة' },
+      { key: 'historical_revenue' as const, label: 'القيمة التاريخية' },
+      { key: 'recency_days'       as const, label: 'أيام منذ آخر شراء' },
+      { key: 'outstanding_balance'as const, label: 'الرصيد' },
+      { key: 'order_count'        as const, label: 'عدد الطلبات' },
+    ]
+    downloadAsCSV(
+      rows as any[],
+      `اعادة_الاستهداف_${new Date().toISOString().slice(0, 10)}.csv`,
+      headers,
+    )
+    onClose()
+  }, [rows, onClose])
+
+  if (!isOpen) return null
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
+          zIndex: 'var(--z-modal-backdrop, 200)' as any,
+          backdropFilter: 'blur(3px)',
+        }}
+      />
+
+      {/* Drawer */}
+      <div style={{
+        position: 'fixed',
+        bottom: 0, right: 0, top: 0,
+        width: 'min(420px, 95vw)',
+        background: 'var(--bg-surface)',
+        borderInlineStart: '1px solid var(--border-primary)',
+        zIndex: 'var(--z-modal, 210)' as any,
+        display: 'flex', flexDirection: 'column',
+        boxShadow: '-8px 0 32px rgba(0,0,0,0.15)',
+        animation: 'rp-drawer-in 0.25s ease-out',
+      }}>
+
+        {/* ── Drawer Header ─────────────────────────────────────── */}
+        <div style={{
+          padding: 'var(--space-4) var(--space-5)',
+          borderBottom: '1px solid var(--border-primary)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          background: 'var(--bg-surface-2)',
+          flexShrink: 0,
+        }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--text-primary)' }}>
+              طباعة وتصدير التقرير
+            </div>
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 2 }}>
+              {rowCount} عميل مستهدف
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--text-muted)', padding: 6, borderRadius: 6,
+              display: 'flex', alignItems: 'center',
+            }}
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* ── Drawer Body ────────────────────────────────────────── */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-5)' }}>
+
+          {/* ── Section: 360° Toggle ─────────────────────────────── */}
+          {canSee360 ? (
+            <div style={{
+              padding: 'var(--space-4)',
+              background: include360 ? 'var(--color-primary-light)' : 'var(--bg-surface-2)',
+              border: `1.5px solid ${include360 ? 'var(--color-primary)' : 'var(--border-primary)'}`,
+              borderRadius: 'var(--radius-lg, 12px)',
+              marginBottom: 'var(--space-4)',
+              transition: 'all 0.2s',
+            }}>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={include360}
+                  onChange={e => setInclude360(e.target.checked)}
+                  style={{ width: 18, height: 18, accentColor: 'var(--color-primary)', marginTop: 2, flexShrink: 0 }}
+                />
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--text-primary)' }}>
+                    تضمين بيانات 360° لكل عميل
+                  </div>
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: 3, lineHeight: 1.5 }}>
+                    تقرير تفصيلي كامل يشمل الملخص التنفيذي، المنتجات، السداد، والتوصيات الذكية
+                  </div>
+                </div>
+              </label>
+
+              {/* Warning if > 30 */}
+              {include360 && rowCount > LIMIT_360 && (
+                <div style={{
+                  marginTop: 'var(--space-3)',
+                  padding: 'var(--space-3)',
+                  background: 'var(--color-warning-light)',
+                  border: '1px solid var(--color-warning)',
+                  borderRadius: 8,
+                  display: 'flex', gap: 8, alignItems: 'flex-start',
+                  fontSize: 'var(--text-xs)',
+                }}>
+                  <AlertTriangle size={15} color="var(--color-warning)" style={{ flexShrink: 0, marginTop: 1 }} />
+                  <span style={{ color: 'var(--text-primary)', lineHeight: 1.6 }}>
+                    سيتم تضمين بيانات 360 <strong>لأول {LIMIT_360} عميل فقط</strong> حسب ترتيب الأولوية.
+                    باقي العملاء ({rowCount - LIMIT_360}) سيظهرون بالبيانات الأساسية.
+                  </span>
+                </div>
+              )}
+
+              {/* Section toggles */}
+              {include360 && (
+                <div style={{ marginTop: 'var(--space-3)' }}>
+                  <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 'var(--space-2)' }}>
+                    الأقسام المطلوبة:
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                    {SECTIONS_360_CONFIG.map(sec => (
+                      <label key={sec.id} style={{
+                        display: 'flex', alignItems: 'flex-start', gap: 'var(--space-2)',
+                        cursor: 'pointer', padding: '6px 8px',
+                        background: sections.has(sec.id) ? 'rgba(37,99,235,0.06)' : 'transparent',
+                        borderRadius: 6, transition: 'background 0.15s',
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={sections.has(sec.id)}
+                          onChange={() => toggleSection(sec.id)}
+                          style={{ width: 16, height: 16, accentColor: 'var(--color-primary)', marginTop: 2, flexShrink: 0 }}
+                        />
+                        <div>
+                          <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>
+                            {sec.label}
+                          </div>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{sec.hint}</div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{
+              padding: 'var(--space-3)',
+              background: 'var(--bg-surface-2)',
+              border: '1px solid var(--border-primary)',
+              borderRadius: 8, marginBottom: 'var(--space-4)',
+              fontSize: 'var(--text-xs)', color: 'var(--text-muted)',
+            }}>
+              بيانات 360° غير متاحة — تحتاج صلاحية عرض ملفات العملاء.
+            </div>
+          )}
+
+          {/* Error Feedback */}
+          {error && (
+            <div
+              onClick={clearError}
+              style={{
+                padding: 'var(--space-3)', background: 'var(--color-danger-light)',
+                border: '1px solid var(--color-danger)', borderRadius: 8,
+                fontSize: 'var(--text-xs)', color: 'var(--color-danger)',
+                cursor: 'pointer', marginBottom: 'var(--space-3)',
+              }}
+            >
+              ⚠ {error} — انقر للإغلاق
+            </div>
+          )}
+        </div>
+
+        {/* ── Drawer Footer: Action Buttons ──────────────────────── */}
+        <div style={{
+          padding: 'var(--space-4) var(--space-5)',
+          borderTop: '1px solid var(--border-primary)',
+          display: 'flex', flexDirection: 'column', gap: 'var(--space-2)',
+          background: 'var(--bg-surface-2)',
+          flexShrink: 0,
+        }}>
+          {/* Guard: 360 enabled but no sections selected */}
+          {include360 && sections.size === 0 && (
+            <div style={{
+              padding: 'var(--space-3)',
+              background: 'var(--color-warning-light)',
+              border: '1px solid var(--color-warning)',
+              borderRadius: 8,
+              fontSize: 'var(--text-xs)', color: 'var(--text-primary)',
+              lineHeight: 1.5,
+            }}>
+              <strong>اختر قسمًا واحدًا على الأقل</strong> لتضمينه في بيانات 360° أو
+              أوقف خيار 360° لطباعة التقرير الأساسي.
+            </div>
+          )}
+
+          {/* Print / Preview */}
+          <button
+            onClick={() => { triggerPreview(); onClose() }}
+            disabled={busy || (include360 && sections.size === 0)}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)',
+              padding: '12px var(--space-4)',
+              background: 'var(--color-primary)', color: '#fff',
+              border: 'none', borderRadius: 'var(--radius-md, 8px)',
+              fontSize: 'var(--text-sm)', fontWeight: 700,
+              cursor: (busy || (include360 && sections.size === 0)) ? 'not-allowed' : 'pointer',
+              transition: 'opacity 0.15s',
+              opacity: (busy || (include360 && sections.size === 0)) ? 0.5 : 1,
+              width: '100%',
+            }}
+          >
+            <Printer size={16} />
+            معاينة / طباعة
+          </button>
+
+          {/* Save as PDF */}
+          <button
+            onClick={() => { triggerPdfDownload(); onClose() }}
+            disabled={busy || (include360 && sections.size === 0)}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)',
+              padding: '10px var(--space-4)',
+              background: 'var(--bg-surface)', color: 'var(--color-primary)',
+              border: '1.5px solid var(--color-primary)', borderRadius: 'var(--radius-md, 8px)',
+              fontSize: 'var(--text-sm)', fontWeight: 600,
+              cursor: (busy || (include360 && sections.size === 0)) ? 'not-allowed' : 'pointer',
+              transition: 'all 0.15s', width: '100%',
+              opacity: (include360 && sections.size === 0) ? 0.5 : 1,
+            }}
+          >
+            <Download size={15} />
+            حفظ كـ PDF
+          </button>
+
+          {/* CSV Export */}
+          <button
+            onClick={handleCsvExport}
+            disabled={!rows.length}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)',
+              padding: '10px var(--space-4)',
+              background: 'transparent', color: 'var(--text-secondary)',
+              border: '1px solid var(--border-primary)', borderRadius: 'var(--radius-md, 8px)',
+              fontSize: 'var(--text-sm)', fontWeight: 600,
+              cursor: rows.length ? 'pointer' : 'not-allowed',
+              width: '100%', opacity: rows.length ? 1 : 0.5,
+            }}
+          >
+            <FileDown size={15} />
+            تصدير CSV (القائمة الأساسية)
+          </button>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes rp-drawer-in {
+          from { transform: translateX(100%); opacity: 0.6; }
+          to   { transform: translateX(0);    opacity: 1;   }
+        }
+      `}</style>
+    </>
   )
 }
 
@@ -277,6 +622,8 @@ export default function CustomerReengagementPage() {
   const can = useAuthStore(s => s.can)
   const canSee360 = can('customers.read') || can('customers.read_all')
 
+  // ── Export Drawer ────────────────────────────────────────
+  const [drawerOpen, setDrawerOpen] = useState(false)
   // ── Filter State (URL-synced) ─────────────────────────────
   const { filters, setFilter, setFilters, reset, activeCount } = useFilterState({
     defaults: FILTER_DEFAULTS,
@@ -366,6 +713,16 @@ export default function CustomerReengagementPage() {
   return (
     <div className="page-container animate-enter">
 
+      {/* ── Export Drawer ─────────────────────────────────── */}
+      <ExportDrawer
+        isOpen={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        rowCount={rows.length}
+        canSee360={canSee360}
+        filters={filters}
+        rows={rows}
+      />
+
       {/* ── Page Header ──────────────────────────────────── */}
       <PageHeader
         title="أولويات إعادة الاستهداف"
@@ -373,6 +730,26 @@ export default function CustomerReengagementPage() {
           listLoading
             ? 'جاري التحميل...'
             : `${rows.length >= 100 ? 'أول 100' : rows.length.toLocaleString('en-US')} عميل مُحدَّد`
+        }
+        actions={
+          !listLoading && rows.length > 0 ? (
+            <button
+              id="rp-export-btn"
+              onClick={() => setDrawerOpen(true)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)',
+                padding: '8px 16px',
+                background: 'var(--color-primary)', color: '#fff',
+                border: 'none', borderRadius: 'var(--radius-md, 8px)',
+                fontSize: 'var(--text-sm)', fontWeight: 700, cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(37,99,235,0.3)',
+                transition: 'all 0.15s',
+              }}
+            >
+              <Printer size={15} />
+              طباعة / تصدير
+            </button>
+          ) : undefined
         }
       />
 

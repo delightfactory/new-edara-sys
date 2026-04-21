@@ -4,6 +4,7 @@ import { PaperProfile } from '../paper-profiles/paper-profiles';
 import { StandardLayout } from './layouts/StandardLayout';
 import { ThermalLayout } from './layouts/ThermalLayout';
 import { ReportLayout } from './layouts/ReportLayout';
+import { ReengagementReportLayout } from './layouts/ReengagementReportLayout';
 
 import '../styles/print-base.css';
 import '../styles/print-a4.css';
@@ -28,6 +29,10 @@ export function DocumentRenderer({ document, profile }: DocumentRendererProps) {
     document.kind === 'rep-credit-commitment-detail-report'
   ) {
     return <ReportLayout document={document} profile={profile} />;
+  }
+
+  if (document.kind === 'reengagement-report') {
+    return <ReengagementReportLayout document={document} profile={profile} />;
   }
 
   return <StandardLayout document={document} profile={profile} />;

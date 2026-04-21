@@ -18,6 +18,7 @@ export type DocumentKind =
   | 'credit-portfolio-report'
   | 'rep-credit-commitment-report'
   | 'rep-credit-commitment-detail-report'
+  | 'reengagement-report'
   | 'report';
 
 export type PaperProfileId =

@@ -61,6 +61,15 @@ export type DocumentSection =
       type: 'compact-items';
       title?: string;
       items: CompactItem[];
+    }
+  | {
+      /**
+       * Customer card section — used exclusively by ReengagementReportLayout.
+       * Other layouts never encounter this section type.
+       */
+      type: 'customer-card';
+      title?: string;
+      customers: CustomerCardEntry[];
     };
 
 export interface DocumentColumn {
@@ -81,4 +90,77 @@ export interface DocumentTotals {
   total?: string;
   paid?: string;
   remaining?: string;
+}
+
+// ─── Customer Card Types (for ReengagementReportLayout) ──────────────────────
+
+/** One product row inside a customer card */
+export interface CustomerCardProduct {
+  name: string;
+  category: string | null;
+  totalValue: string;
+  orderCount: number;
+  lastPurchase: string | null;
+  status: string;
+}
+
+/** AR Aging bucket for customer card */
+export interface CustomerCardAgingBucket {
+  bucket: string;
+  amount: number;
+}
+
+/** Payment behavior summary for customer card */
+export interface CustomerCardPaymentBehavior {
+  avgDelayDays: number | null;
+  cashPct: number;
+  chequePct: number;
+  transferPct: number;
+}
+
+/** One 360° recommendation item */
+export interface CustomerCardRecommendation {
+  severity: 'critical' | 'warning' | 'opportunity' | 'positive' | 'info';
+  title: string;
+  reason?: string | null;
+}
+
+/** KPI summary for a single customer (360°) */
+export interface CustomerCardKpis {
+  netRevenue: number | null;
+  totalCollected: number | null;
+  orderCount: number | null;
+  returnRatePct: number | null;
+  creditUtilizationPct: number | null;
+  customerSinceDays: number | null;
+  outstandingBalance: number | null;
+}
+
+/** Full entry for one customer in a reengagement report card */
+export interface CustomerCardEntry {
+  // ── Basic fields (always present) ───────────────────────────
+  customerId: string;
+  customerName: string;
+  customerCode: string | null;
+  customerType: string;
+  priorityLabel: string;       // e.g. 'CHAMPION_LOST'
+  priorityDisplay: string;     // e.g. '🔴 Champion Lost'
+  priorityAccent: string;      // hex color for the priority
+  repName: string;
+  governorate: string;
+  city: string;
+  historicalRevenue: number;
+  revenueL90d: number;
+  recencyDays: number | null;
+  lastOrderDate: string | null;
+  outstandingBalance: number;
+  orderCount: number;
+  valueTier: string;
+
+  // ── 360° sections (null = not requested; Error = fetch failed) ──
+  kpis360?: CustomerCardKpis | null | 'error';
+  products360?: CustomerCardProduct[] | null | 'error';
+  paymentBehavior360?: CustomerCardPaymentBehavior | null | 'error';
+  recommendations360?: CustomerCardRecommendation[] | null | 'error';
+  arAging360?: CustomerCardAgingBucket[] | null | 'error';
 }
