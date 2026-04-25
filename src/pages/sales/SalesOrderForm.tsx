@@ -17,6 +17,7 @@ import {
   saveSalesOrderItems, recalcOrderTotals,
 } from '@/lib/services/sales'
 import { getCustomerBranches } from '@/lib/services/customers'
+import { getProductPrice } from '@/lib/services/price-lists'
 import { formatNumber } from '@/lib/utils/format'
 import type {
   SalesOrderInput, SalesOrderItemInput,
@@ -54,6 +55,7 @@ interface LineItem {
   quantity: number
   base_quantity: number
   unit_price: number
+  priceOverridden: boolean  // تم تعديل السعر يدوياً — لا يُعاد تسعيره تلقائياً
   discount_percent: number
   discount_amount: number
   tax_rate: number
@@ -69,7 +71,8 @@ function newLine(): LineItem {
     unit_id: '', unitLabel: '', available_units: [],
     base_unit_id: '', base_unit_label: '',
     conversion_factor: 1, quantity: 1, base_quantity: 1,
-    unit_price: 0, discount_percent: 0, discount_amount: 0,
+    unit_price: 0, priceOverridden: false,
+    discount_percent: 0, discount_amount: 0,
     tax_rate: 0, tax_amount: 0, line_total: 0,
     availableQty: Infinity,
   }
@@ -253,27 +256,49 @@ export default function SalesOrderForm() {
     if (!error) setSheetResults(data || [])
   }, [])
 
-  const selectSheetProduct = (p: any) => {
+  const selectSheetProduct = async (p: any) => {
     const taxRate = settings?.taxEnabled ? (p.tax_rate ?? settings?.defaultTaxRate ?? 0) : 0
     const allUnits: ProductUnit[] = []
     if (p.base_unit) allUnits.push({ id: '__base__', product_id: p.id, unit_id: p.base_unit_id, conversion_factor: 1, selling_price: p.selling_price, is_purchase_unit: true, is_sales_unit: true, created_at: '', unit: p.base_unit })
     for (const pu of (p.product_units || [])) { if (pu.unit_id !== p.base_unit_id) allUnits.push(pu) }
     const def = allUnits[0]
+    const defaultUnitId = def?.unit_id || p.base_unit_id
+    const fallbackPrice = def?.selling_price ?? p.selling_price ?? 0
+
+    // ① تعيين السعر الأصلي فوراً
     setSheetLine(calcLine({
       ...newLine(),
       product_id: p.id, productName: p.name, productSku: p.sku,
-      unit_id: def?.unit_id || p.base_unit_id,
+      unit_id: defaultUnitId,
       unitLabel: def?.unit?.symbol || def?.unit?.name || '',
       available_units: allUnits,
       base_unit_id: p.base_unit_id,
       base_unit_label: p.base_unit?.symbol || p.base_unit?.name || '',
       conversion_factor: def?.conversion_factor || 1,
-      unit_price: def?.selling_price ?? p.selling_price ?? 0,
+      unit_price: fallbackPrice,
       tax_rate: taxRate,
       availableQty: typeof p.available_qty === 'number' ? p.available_qty : Infinity,
     }))
     setSheetQuery('')
     setSheetResults([])
+
+    // ② تحديث من قائمة الأسعار (async — race-condition safe + customer guard)
+    const requestedQty = 1
+    const requestedCustomerId = customerIdRef.current  // تجميد هوية العميل قبل await
+    const resolvedPrice = await resolveCustomerPrice(p.id, defaultUnitId, requestedQty, fallbackPrice)
+    if (resolvedPrice !== fallbackPrice) {
+      setSheetLine(prev => {
+        if (
+          !prev ||
+          customerIdRef.current !== requestedCustomerId ||
+          prev.product_id !== p.id ||
+          prev.unit_id !== defaultUnitId ||
+          prev.quantity !== requestedQty ||
+          prev.priceOverridden
+        ) return prev
+        return calcLine({ ...prev, unit_price: resolvedPrice })
+      })
+    }
   }
 
   const confirmSheetLine = () => {
@@ -288,6 +313,9 @@ export default function SalesOrderForm() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
   const [customerResults, setCustomerResults] = useState<Customer[]>([])
   const [customerBranches, setCustomerBranches] = useState<CustomerBranch[]>([])
+  // Finding 1: ref دائمًا يحمل العميل المرتبط فعلاً بالطلب الحالي
+  // يُستخدم في حراس نتائج async لمنع تطبيق سعر عميل قديم
+  const customerIdRef = useRef<string>('')
 
   // Product search per row
   const [productQuery, setProductQuery] = useState('')
@@ -345,23 +373,58 @@ export default function SalesOrderForm() {
   }, [])
 
   const selectCustomer = async (c: Customer) => {
+    customerIdRef.current = c.id  // Finding 1: تحديث فوري قبل أي await
     setSelectedCustomer(c)
     setForm(f => ({ ...f, customer_id: c.id, delivery_address_id: null }))
     setCustomerResults([])
     const branches = await getCustomerBranches(c.id).catch(() => [])
+    // Finding 1: إذا تغيّر العميل أثناء انتظار الفروع — تجاهل النتيجة
+    if (customerIdRef.current !== c.id) return
     setCustomerBranches(branches)
-    // Auto-select primary branch
     const primary = branches.find(b => b.is_primary)
     if (primary) {
-      setForm(f => ({ ...f, delivery_address_id: primary.id }))
+      // تحقق مزدوج: ref + form.customer_id لضمان عدم تلوث عنوان تسليم عميل آخر
+      setForm(f => f.customer_id === c.id ? { ...f, delivery_address_id: primary.id } : f)
     }
+    // Finding 1+5: إعادة تسعير البنود بـ c.id مباشرةً (تجاوز closure القديم لـ form.customer_id)
+    setLines(prev => {
+      const draft = [...prev]
+      draft.forEach((line, i) => {
+        if (line.product_id && line.unit_id && !line.priceOverridden) {
+          resolveCustomerPrice(line.product_id, line.unit_id, line.quantity, line.unit_price, c.id)
+            .then(p => {
+              setLines(curr => {
+                // Finding 1: تحقق أن العميل الحالي ما زال c.id
+                if (customerIdRef.current !== c.id) return curr
+                if (curr.some(l => l._key === line._key) === false) return curr
+                const copy = [...curr]
+                const target = copy[i]
+                if (
+                  !target ||
+                  target._key         !== line._key ||
+                  target.product_id   !== line.product_id ||
+                  target.unit_id      !== line.unit_id ||
+                  target.quantity     !== line.quantity ||
+                  target.priceOverridden
+                ) return curr
+                copy[i] = calcLine({ ...target, unit_price: p })
+                return copy
+              })
+            })
+            .catch(() => {})
+        }
+      })
+      return draft
+    })
   }
 
   const clearCustomer = () => {
+    customerIdRef.current = ''  // Finding 1: مسح فوري
     setSelectedCustomer(null)
     setForm(f => ({ ...f, customer_id: '', delivery_address_id: null }))
     setCustomerBranches([])
     setCustomerResults([])
+    // عند مسح العميل نُبقي الأسعار الحالية كما هي
   }
 
   // ─── Product search — uses RPC search_products_with_stock ───
@@ -375,7 +438,30 @@ export default function SalesOrderForm() {
     if (!error) setProductResults(data || [])
   }, [])
 
-  const selectProduct = (lineIdx: number, p: any) => {
+  // ─── resolveCustomerPrice — تسعير بأولوية قائمة الأسعار ─────────────
+  // ترتيب الأولوية (من الـ RPC): قائمة العميل → مدينة → محافظة → افتراضية → سعر المنتج
+  // تُعيد fallbackPrice إذا لم يوجد عميل أو فشل RPC (سلوك آمن — لا تُعطل الإضافة)
+  // customerIdOverride: يستخدم بدل form.customer_id في حالة توقيت تحديث setState (selectCustomer)
+  const resolveCustomerPrice = useCallback(async (
+    productId: string,
+    unitId: string,
+    qty: number,
+    fallbackPrice: number,
+    customerIdOverride?: string
+  ): Promise<number> => {
+    const effectiveCustomerId = customerIdOverride ?? form.customer_id
+    if (!effectiveCustomerId) return fallbackPrice
+    try {
+      const price = await getProductPrice(productId, effectiveCustomerId, unitId, qty)
+      // نقبل أي رقم حقيقي — بما فيه الصفر (قد يكون سعراً مقصوداً)
+      if (typeof price === 'number' && Number.isFinite(price)) return price
+      return fallbackPrice
+    } catch {
+      return fallbackPrice
+    }
+  }, [form.customer_id])
+
+  const selectProduct = async (lineIdx: number, p: any) => {
     const taxRate = settings?.taxEnabled ? (p.tax_rate ?? settings?.defaultTaxRate ?? 0) : 0
 
     // Build units list: base unit first, then all additional units
@@ -393,7 +479,12 @@ export default function SalesOrderForm() {
     }
 
     const def = allUnits[0]
+    const defaultUnitId = def?.unit_id || p.base_unit_id
+    const fallbackPrice = def?.selling_price ?? p.selling_price ?? 0
 
+    // ① تعيين السعر الأصلي فوراً (لا تُعيق UI)
+    // نحتفظ بالـ _key الحالي للحارس اللاحق
+    const snapKey = lines[lineIdx]?._key
     setLines(prev => {
       const copy = [...prev]
       copy[lineIdx] = calcLine({
@@ -401,15 +492,15 @@ export default function SalesOrderForm() {
         product_id: p.id,
         productName: p.name,
         productSku: p.sku,
-        unit_id: def?.unit_id || p.base_unit_id,
+        unit_id: defaultUnitId,
         unitLabel: def?.unit?.symbol || def?.unit?.name || '',
         available_units: allUnits,
         base_unit_id: p.base_unit_id,
         base_unit_label: p.base_unit?.symbol || p.base_unit?.name || '',
         conversion_factor: def?.conversion_factor || 1,
-        unit_price: def?.selling_price ?? p.selling_price ?? 0,
+        unit_price: fallbackPrice,
+        priceOverridden: false,  // Finding 7: سعر نظيف عند اختيار منتج جديد
         tax_rate: taxRate,
-        // حفظ الكمية المتاحة للتحذير لاحقاً
         availableQty: typeof p.available_qty === 'number' ? p.available_qty : Infinity,
       })
       return copy
@@ -417,32 +508,132 @@ export default function SalesOrderForm() {
     setProductQuery('')
     setProductResults([])
     setActiveProductIdx(null)
+
+    // ② تحديث السعر من قائمة أسعار العميل (async — race-condition safe + _key guard + customer guard)
+    const requestedQty = 1
+    const requestedCustomerId = customerIdRef.current  // Finding 1: تجميد هوية العميل قبل await
+    const resolvedPrice = await resolveCustomerPrice(p.id, defaultUnitId, requestedQty, fallbackPrice)
+    if (resolvedPrice !== fallbackPrice) {
+      setLines(prev => {
+        const copy = [...prev]
+        const target = copy[lineIdx]
+        if (
+          !target ||
+          customerIdRef.current !== requestedCustomerId ||  // Finding 1: تغيير العميل بعد بدء الطلب
+          target._key       !== snapKey ||
+          target.product_id !== p.id ||
+          target.unit_id   !== defaultUnitId ||
+          target.quantity  !== requestedQty ||
+          target.priceOverridden
+        ) return prev
+        copy[lineIdx] = calcLine({ ...target, unit_price: resolvedPrice })
+        return copy
+      })
+    }
   }
 
   // ─── Line helpers ───
   const updateLine = (idx: number, field: keyof LineItem, value: any) => {
     setLines(prev => {
       const copy = [...prev]
-      copy[idx] = calcLine({ ...copy[idx], [field]: value })
+      // Finding 2: إذا عدّل السعر يدوياً => ضع priceOverridden=true
+      const overrideFlag = field === 'unit_price' ? { priceOverridden: true } : {}
+      copy[idx] = calcLine({ ...copy[idx], [field]: value, ...overrideFlag })
       return copy
     })
+    // إعادة تسعير عند تغيير الكمية (شرائح min_qty / max_qty) — فقط إذا لم يكن السعر معدلاً
+    if (field === 'quantity' && form.customer_id) {
+      const snapLine = lines[idx]
+      const requestedQty = value as number
+      const requestedCustomerId = customerIdRef.current  // Finding 1: تجميد هوية العميل
+      if (snapLine?.product_id && snapLine?.unit_id && !snapLine.priceOverridden) {
+        resolveCustomerPrice(snapLine.product_id, snapLine.unit_id, requestedQty, snapLine.unit_price)
+          .then(resolvedPrice => {
+            setLines(prev => {
+              const copy = [...prev]
+              const target = copy[idx]
+              if (
+                !target ||
+                customerIdRef.current !== requestedCustomerId ||  // Finding 1
+                target._key     !== snapLine._key ||
+                target.product_id !== snapLine.product_id ||
+                target.unit_id   !== snapLine.unit_id ||
+                target.quantity  !== requestedQty ||
+                target.priceOverridden
+              ) return prev
+              copy[idx] = calcLine({ ...target, unit_price: resolvedPrice })
+              return copy
+            })
+          })
+          .catch(() => { /* سلوك آمن */ })
+      }
+    }
   }
 
-  const changeUnit = (lineIdx: number, unitId: string) => {
+  const changeUnit = async (lineIdx: number, unitId: string) => {
+    // نقرأ السطر الحالي قبل أي تحديث
+    const snapLine = lines[lineIdx]
+    const pu = snapLine?.available_units.find(u => u.unit_id === unitId)
+    if (!pu) return
+
+    // Finding 2: إذا عدّل المستخدم السعر يدوياً، غيّر الوحدة والتحويل فقط ولا تلمس السعر
+    if (snapLine.priceOverridden) {
+      setLines(prev => {
+        const copy = [...prev]
+        const line = copy[lineIdx]
+        if (!line || line._key !== snapLine._key) return prev
+        copy[lineIdx] = calcLine({
+          ...line,
+          unit_id: unitId,
+          unitLabel: pu.unit?.symbol || pu.unit?.name || '',
+          conversion_factor: pu.conversion_factor,
+          // unit_price يبقى كما هو — priceOverridden محفوظ
+        })
+        return copy
+      })
+      return  // لا RPC — السعر يدوي
+    }
+
+    const fallbackPrice = pu.selling_price ?? snapLine.unit_price
+
+    // ① تحديث الوحدة فوراً بالسعر الأصلي
     setLines(prev => {
       const copy = [...prev]
       const line = copy[lineIdx]
-      const pu = line.available_units.find(u => u.unit_id === unitId)
-      if (!pu) return prev
+      if (!line) return prev
       copy[lineIdx] = calcLine({
         ...line,
         unit_id: unitId,
         unitLabel: pu.unit?.symbol || pu.unit?.name || '',
         conversion_factor: pu.conversion_factor,
-        unit_price: pu.selling_price ?? line.unit_price,
+        unit_price: fallbackPrice,
       })
       return copy
     })
+
+    // ② إعادة تسعير من قائمة الأسعار (race-condition safe + _key guard + priceOverridden guard + customer guard)
+    if (snapLine?.product_id) {
+      const requestedQty = snapLine.quantity
+      const requestedCustomerId = customerIdRef.current  // Finding 1: تجميد هوية العميل
+      const resolvedPrice = await resolveCustomerPrice(snapLine.product_id, unitId, requestedQty, fallbackPrice)
+      if (resolvedPrice !== fallbackPrice) {
+        setLines(prev => {
+          const copy = [...prev]
+          const target = copy[lineIdx]
+          if (
+            !target ||
+            customerIdRef.current !== requestedCustomerId ||  // Finding 1
+            target._key       !== snapLine._key ||
+            target.product_id !== snapLine.product_id ||
+            target.unit_id   !== unitId ||
+            target.quantity  !== requestedQty ||
+            target.priceOverridden
+          ) return prev
+          copy[lineIdx] = calcLine({ ...target, unit_price: resolvedPrice })
+          return copy
+        })
+      }
+    }
   }
 
   const removeLine = (idx: number) => setLines(p => p.filter((_, i) => i !== idx))
@@ -473,6 +664,7 @@ export default function SalesOrderForm() {
           delivery_address_id: order.delivery_address_id,
           notes: order.notes,
         })
+        customerIdRef.current = order.customer_id  // Finding 2: تحديث الـ ref عند تحميل طلب للتعديل
         if (order.customer) {
           setSelectedCustomer(order.customer as any)
           const branches = await getCustomerBranches(order.customer_id).catch(() => [])
@@ -493,6 +685,7 @@ export default function SalesOrderForm() {
             quantity: i.quantity,
             base_quantity: i.base_quantity,
             unit_price: i.unit_price,
+            priceOverridden: true,  // أسعار محفوظة — لا تُعاد تسعيرها تلقائياً
             discount_percent: i.discount_percent,
             discount_amount: i.discount_amount,
             tax_rate: i.tax_rate,
@@ -537,6 +730,7 @@ export default function SalesOrderForm() {
       try {
         setFormLoading(true)
         const src = await getSalesOrder(copyFromId)
+        customerIdRef.current = src.customer_id  // Finding 2: تحديث الـ ref عند نسخ طلب
         setForm(f => ({
           ...f,
           customer_id:         src.customer_id,
@@ -570,6 +764,7 @@ export default function SalesOrderForm() {
             quantity:          item.quantity,
             base_quantity:     item.base_quantity || item.quantity,
             unit_price:        item.unit_price,
+            priceOverridden:   true,  // أسعار منسوخة — لا تُعاد تسعيرها تلقائياً
             discount_percent:  item.discount_percent || 0,
             discount_amount:   item.discount_amount  || 0,
             tax_rate:          item.tax_rate          || 0,
@@ -1297,9 +1492,42 @@ export default function SalesOrderForm() {
                 <label className="form-label">الوحدة</label>
                 <select className="form-select" value={sheetLine.unit_id}
                   onChange={e => {
-                    const pu = sheetLine.available_units.find(u => u.unit_id === e.target.value)
-                    if (pu) setSheetLine(calcLine({ ...sheetLine, unit_id: e.target.value, unitLabel: pu.unit?.symbol || pu.unit?.name || '', conversion_factor: pu.conversion_factor, unit_price: pu.selling_price ?? sheetLine.unit_price }))
-                  }}>
+                    const newUnitId = e.target.value
+                    const pu = sheetLine.available_units.find(u => u.unit_id === newUnitId)
+                    if (!pu) return
+                     if (sheetLine.priceOverridden) {
+                       setSheetLine(calcLine({
+                         ...sheetLine,
+                         unit_id: newUnitId,
+                         unitLabel: pu.unit?.symbol || pu.unit?.name || '',
+                         conversion_factor: pu.conversion_factor,
+                       }))
+                       return
+                     }
+
+                     const fallbackPrice = pu.selling_price ?? sheetLine.unit_price
+                     setSheetLine(calcLine({ ...sheetLine, unit_id: newUnitId, unitLabel: pu.unit?.symbol || pu.unit?.name || '', conversion_factor: pu.conversion_factor, unit_price: fallbackPrice }))
+                     const snapProductId = sheetLine.product_id
+                     const requestedQty  = sheetLine.quantity
+                     const requestedCustomerId = customerIdRef.current
+                     resolveCustomerPrice(snapProductId, newUnitId, requestedQty, fallbackPrice)
+                       .then(resolvedPrice => {
+                         if (resolvedPrice !== fallbackPrice) {
+                           setSheetLine(prev => {
+                             if (
+                               !prev ||
+                               customerIdRef.current !== requestedCustomerId ||
+                               prev.product_id !== snapProductId ||
+                               prev.unit_id !== newUnitId ||
+                               prev.quantity !== requestedQty ||
+                               prev.priceOverridden
+                             ) return prev
+                             return calcLine({ ...prev, unit_price: resolvedPrice })
+                           })
+                         }
+                       })
+                       .catch(() => {})
+                   }}>
                   {sheetLine.available_units.map(u => (
                     <option key={u.unit_id} value={u.unit_id}>{u.unit?.symbol || u.unit?.name}{u.conversion_factor !== 1 ? ` ×${u.conversion_factor}` : ''}</option>
                   ))}
@@ -1312,23 +1540,49 @@ export default function SalesOrderForm() {
                 <input type="number" inputMode="decimal" enterKeyHint="next" className="form-input" min={0.01} step={1}
                   value={sheetLine.quantity}
                   style={isFinite(sheetLine.availableQty) && sheetLine.quantity > sheetLine.availableQty ? { borderColor: 'var(--color-danger)' } : undefined}
-                  onChange={e => setSheetLine(calcLine({ ...sheetLine, quantity: Number(e.target.value) }))} />
-                {isFinite(sheetLine.availableQty) && sheetLine.quantity > sheetLine.availableQty && (
-                  <div style={{ fontSize: '0.7rem', color: 'var(--color-danger)', marginTop: 4 }}>⚠️ متاح: {formatNumber(sheetLine.availableQty)}</div>
-                )}
-              </div>
-              <div className="form-group">
-                <label className="form-label">السعر (ج.م)</label>
-                <input type="number" inputMode="decimal" enterKeyHint="next" className="form-input" min={0} step={0.01}
-                  disabled={!canEditPrice}
-                  value={sheetLine.unit_price}
-                  onChange={e => setSheetLine(calcLine({ ...sheetLine, unit_price: Number(e.target.value) }))} />
-              </div>
-            </div>
-            <PermissionGuard permission="sales.discounts.override" mode="disable" disabledTitle={`الحد الأقصى للخصم ${maxDiscount}%`}>
-              <div className="form-group">
-                <label className="form-label">خصم %</label>
-                <input type="number" inputMode="decimal" enterKeyHint="done" className="form-input" min={0}
+                  onChange={e => {
+                    const newQty = Number(e.target.value)
+                    setSheetLine(calcLine({ ...sheetLine, quantity: newQty }))
+                    // إعادة تسعير عند تغيير الكمية — فقط إذا لم يُعدَّل السعر يدوياً
+                    if (!sheetLine.priceOverridden) {
+                     const snapProductId = sheetLine.product_id
+                     const snapUnitId    = sheetLine.unit_id
+                     const requestedCustomerId = customerIdRef.current
+                     resolveCustomerPrice(snapProductId, snapUnitId, newQty, sheetLine.unit_price)
+                       .then(resolvedPrice => {
+                         if (resolvedPrice !== sheetLine.unit_price) {
+                           setSheetLine(prev => {
+                             if (
+                               !prev ||
+                               customerIdRef.current !== requestedCustomerId ||
+                               prev.product_id !== snapProductId ||
+                               prev.unit_id !== snapUnitId ||
+                               prev.quantity !== newQty ||
+                               prev.priceOverridden
+                             ) return prev
+                             return calcLine({ ...prev, unit_price: resolvedPrice })
+                           })
+                         }
+                       })
+                       .catch(() => {})
+                     }
+                   }} />
+                 {isFinite(sheetLine.availableQty) && sheetLine.quantity > sheetLine.availableQty && (
+                   <div style={{ fontSize: '0.7rem', color: 'var(--color-danger)', marginTop: 4 }}>⚠️ متاح: {formatNumber(sheetLine.availableQty)}</div>
+                 )}
+               </div>
+               <div className="form-group">
+                 <label className="form-label">السعر (ج.م)</label>
+                 <input type="number" inputMode="decimal" enterKeyHint="next" className="form-input" min={0} step={0.01}
+                   disabled={!canEditPrice}
+                   value={sheetLine.unit_price}
+                   onChange={e => setSheetLine(calcLine({ ...sheetLine, unit_price: Number(e.target.value), priceOverridden: true }))} />
+               </div>
+             </div>
+             <PermissionGuard permission="sales.discounts.override" mode="disable" disabledTitle={`الحد الأقصى للخصم ${maxDiscount}%`}>
+               <div className="form-group">
+                 <label className="form-label">خصم %</label>
+                 <input type="number" inputMode="decimal" enterKeyHint="done" className="form-input" min={0}
                   max={canOverrideDiscount ? 100 : maxDiscount}
                   value={sheetLine.discount_percent}
                   onChange={e => {

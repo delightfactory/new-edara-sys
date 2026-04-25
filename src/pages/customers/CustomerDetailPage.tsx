@@ -143,7 +143,7 @@ export default function CustomerDetailPage() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
             {/* Quick Actions for Ops */}
             {(customer.latitude && customer.longitude) && (
               <button onClick={(e) => { e.stopPropagation(); window.open(`https://www.google.com/maps/search/?api=1&query=${customer.latitude},${customer.longitude}`, '_blank') }}
@@ -160,7 +160,7 @@ export default function CustomerDetailPage() {
               </a>
             )}
 
-            {/* Balancing Info */}
+            {/* Balancing Info — desktop only (too wide for mobile header) */}
             <div className="hide-mobile" style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
               <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>الرصيد الحالي</div>
               <div style={{ 
@@ -171,11 +171,18 @@ export default function CustomerDetailPage() {
               </div>
             </div>
 
+            {/* Edit button — icon-only on mobile, labeled on desktop */}
             {can('customers.update') && (
-              <button onClick={() => navigate(`/customers/${id}/edit`)}
-                className="hide-mobile"
-                style={{ background: 'var(--color-primary)', color: 'var(--color-on-primary, #fff)', border: 'none', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, flexShrink: 0 }}>
-                <Edit size={14} /> تعديل
+              <button
+                id="btn-edit-customer"
+                onClick={() => navigate(`/customers/${id}/edit`)}
+                title="تعديل بيانات العميل"
+                style={{ background: 'var(--color-primary)', color: 'var(--color-on-primary, #fff)', border: 'none', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontWeight: 600, flexShrink: 0 }}
+              >
+                {/* Icon always visible */}
+                <Edit size={14} />
+                {/* Label hidden on mobile via utility class */}
+                <span className="hide-mobile" style={{ fontSize: 13, whiteSpace: 'nowrap' }}>تعديل</span>
               </button>
             )}
           </div>

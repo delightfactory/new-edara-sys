@@ -456,6 +456,22 @@
 /* ── Visibility helpers ───────────────────────────────────────── */
 .mobile-only-btn { display: none; } /* hidden on desktop, shown in mobile MQ below */
 
+/* ── Adaptive Edit Button (icon-only on mobile, labeled on desktop) ── */
+/* Desktop: normal padding with label */
+#btn-edit-customer {
+  padding: 8px 14px;
+}
+/* Mobile: square icon-only pill */
+@media (max-width: 768px) {
+  #btn-edit-customer {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 50%;
+    min-width: 36px;
+  }
+}
+
 /* ── Global FAB (Floating Action Button) ──────────────────────── */
 /* Hidden on desktop by default — shown only inside mobile media query below */
 .fab { display: none; }

@@ -155,6 +155,23 @@ export async function deletePriceListItem(id: string) {
   if (error) throw error
 }
 
+/**
+ * تحديث بند سعر (السعر، الحد الأدنى، الحد الأقصى)
+ */
+export async function updatePriceListItem(
+  id: string,
+  payload: { price?: number; min_qty?: number; max_qty?: number | null }
+) {
+  const { data, error } = await supabase
+    .from('price_list_items')
+    .update(payload)
+    .eq('id', id)
+    .select(`*, product:products(id, name, sku), unit:units(id, name, symbol)`)
+    .single()
+  if (error) throw error
+  return data as PriceListItem
+}
+
 // ============================================================
 // Price List Assignments — ربط قوائم الأسعار
 // ============================================================
