@@ -69,7 +69,8 @@ BEGIN
   -- ══════════════════════════════════════════════════════════
   v_clearance := check_payroll_attendance_clearance(
     v_period.start_date,
-    v_period.end_date
+    v_period.end_date,
+    v_run.branch_id
   );
 
   IF NOT (v_clearance ->> 'cleared')::BOOLEAN THEN

@@ -473,6 +473,22 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'code', 'NO_OPEN_DAY', 'error', 'لا يوجد يوم عمل مفتوح للتتبع');
   END IF;
 
+  -- [GUARD] Check manual lock and payroll lock
+  IF COALESCE(v_day.is_manually_locked, false) = true THEN
+    RETURN jsonb_build_object('success', false, 'code', 'MANUALLY_LOCKED', 'error', 'اليوم مقفل إدارياً');
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM hr_payroll_runs pr
+    JOIN hr_payroll_periods pp ON pp.id = pr.period_id
+    JOIN hr_payroll_lines pl ON pl.payroll_run_id = pr.id
+    WHERE pl.employee_id = v_employee.id
+      AND pr.status IN ('approved', 'paid')
+      AND v_shift_date BETWEEN pp.start_date AND pp.end_date
+  ) THEN
+    RETURN jsonb_build_object('success', false, 'code', 'PAYROLL_LOCKED', 'error', 'اليوم مرتبط بمسير رواتب مغلق');
+  END IF;
+
   -- ★ GPS accuracy threshold (Wave 39 logic — unchanged)
   -- استخدام location_in_id من سجل اليوم (لا work_location_id من الموظف)
   SELECT COALESCE(value::NUMERIC, 100)
@@ -655,13 +671,22 @@ BEGIN
   -- ── كشف الانقطاعات الجديدة (unchanged from Wave 35) ─────
   -- active → stale (لا تكتب stale فوق outside_zone)
   WITH stale_days AS (
-    SELECT id, employee_id, last_tracking_ping_at
-    FROM hr_attendance_days
+    SELECT id, employee_id, last_tracking_ping_at, shift_date
+    FROM hr_attendance_days d
     WHERE punch_in_time IS NOT NULL
       AND punch_out_time IS NULL
       AND tracking_status = 'active'
       AND last_tracking_ping_at IS NOT NULL
       AND last_tracking_ping_at < now() - make_interval(mins => v_gap_minutes)
+      AND COALESCE(is_manually_locked, false) = false
+      AND NOT EXISTS (
+        SELECT 1 FROM hr_payroll_runs pr
+        JOIN hr_payroll_periods pp ON pp.id = pr.period_id
+        JOIN hr_payroll_lines pl ON pl.payroll_run_id = pr.id
+        WHERE pl.employee_id = d.employee_id
+          AND pr.status IN ('approved', 'paid')
+          AND d.shift_date BETWEEN pp.start_date AND pp.end_date
+      )
   )
   SELECT COUNT(*) INTO v_tracking_alerts FROM stale_days;
 
@@ -671,12 +696,7 @@ BEGIN
     review_status   = 'needs_review',
     updated_at      = now()
   WHERE id IN (
-    SELECT id FROM hr_attendance_days
-    WHERE punch_in_time IS NOT NULL
-      AND punch_out_time IS NULL
-      AND tracking_status = 'active'
-      AND last_tracking_ping_at IS NOT NULL
-      AND last_tracking_ping_at < now() - make_interval(mins => v_gap_minutes)
+    SELECT id FROM stale_days
   );
 
   -- رفع تنبيه tracking_gap للأيام المنقطعة (stale)
@@ -729,7 +749,16 @@ BEGIN
     AND p.permission_date <= CURRENT_DATE
     AND p.expected_return IS NOT NULL
     AND d.employee_id = p.employee_id
-    AND d.shift_date  = p.permission_date;
+    AND d.shift_date  = p.permission_date
+    AND COALESCE(d.is_manually_locked, false) = false
+    AND NOT EXISTS (
+      SELECT 1 FROM hr_payroll_runs pr
+      JOIN hr_payroll_periods pp ON pp.id = pr.period_id
+      JOIN hr_payroll_lines pl ON pl.payroll_run_id = pr.id
+      WHERE pl.employee_id = d.employee_id
+        AND pr.status IN ('approved', 'paid')
+        AND d.shift_date BETWEEN pp.start_date AND pp.end_date
+    );
 
   PERFORM upsert_attendance_alert(
     p.employee_id,
@@ -878,7 +907,16 @@ BEGIN
   THEN
     UPDATE hr_attendance_days
     SET review_status = 'needs_review', updated_at = now()
-    WHERE id = v_day_id;
+    WHERE id = v_day_id
+      AND COALESCE(is_manually_locked, false) = false
+      AND NOT EXISTS (
+        SELECT 1 FROM hr_payroll_runs pr
+        JOIN hr_payroll_periods pp ON pp.id = pr.period_id
+        JOIN hr_payroll_lines pl ON pl.payroll_run_id = pr.id
+        WHERE pl.employee_id = hr_attendance_days.employee_id
+          AND pr.status IN ('approved', 'paid')
+          AND hr_attendance_days.shift_date BETWEEN pp.start_date AND pp.end_date
+      );
 
     -- تنبيه جديد يعبر عن "عودة متأخرة" — لا "بلا عودة"
     PERFORM upsert_attendance_alert(

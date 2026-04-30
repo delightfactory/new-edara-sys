@@ -485,12 +485,14 @@ import {
   createLeaveRequest, updateLeaveRequestStatus,
   getAdvances, requestAdvance, disburseAdvance, updateAdvanceStatus,
   getPayrollRuns, getPayrollLines, getPayrollPeriods,
-  createPayrollPeriod, createPayrollRun, calculateEmployeePayroll, approvePayrollRun,
+  createPayrollPeriod, createPayrollRun, calculatePayrollRun, approvePayrollRun,
   getPenaltyInstances, getPenaltyRules, overridePenalty,
   getCommissionRecords, getCommissionTargets, createCommissionTarget,
   getPublicHolidays,
   getAttendanceDays, upsertAttendanceDay,
   getMonthlyAttendanceSummary,
+  markDailyAbsences,
+  runAutoCheckout,
   getAttendanceReviewSummary,
   createEmployee, updateEmployee,
   createDepartment, createPosition,
@@ -498,6 +500,7 @@ import {
   getEmployeeSalaryHistory, createContract, getContracts,
   getPayrollAdjustments, createPayrollAdjustment, approvePayrollAdjustment,
   fetchMyPayslips,
+  getPayrollPayments, disbursePayrollPayment,
 } from '@/lib/services/hr'
 import type {
   HREmployeeInput, HRDepartmentInput, HRPositionInput,
@@ -575,10 +578,10 @@ export function useHRAttendanceAlerts(params?: Parameters<typeof getAttendanceAl
   })
 }
 
-export function useAttendanceReviewSummary(dateFrom?: string | null, dateTo?: string | null) {
+export function useAttendanceReviewSummary(dateFrom?: string | null, dateTo?: string | null, branchId?: string | null) {
   return useQuery({
-    queryKey: ['hr-attendance-review-summary', dateFrom, dateTo],
-    queryFn: () => getAttendanceReviewSummary(dateFrom!, dateTo!),
+    queryKey: ['hr-attendance-review-summary', dateFrom, dateTo, branchId],
+    queryFn: () => getAttendanceReviewSummary(dateFrom!, dateTo!, branchId),
     enabled: !!dateFrom && !!dateTo,
   })
 }
@@ -665,6 +668,44 @@ export function useHRMonthlyAttendanceSummary(
     queryKey: ['hr-attendance-summary', employeeId, year, month],
     queryFn: () => getMonthlyAttendanceSummary(employeeId!, year, month),
     enabled: !!employeeId,
+  })
+}
+
+/**
+ * رصد الغياب اليومي (يدويًا من الإدارة)
+ */
+export function useMarkDailyAbsences() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (targetDate?: string) => markDailyAbsences(targetDate),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hr-attendance-days'] })
+      queryClient.invalidateQueries({ queryKey: ['hr-attendance-days-admin'] })
+      queryClient.invalidateQueries({ queryKey: ['hr-attendance-review-summary'] })
+      queryClient.invalidateQueries({ queryKey: ['hr-attendance-summary'] })
+      queryClient.invalidateQueries({ queryKey: ['hr-payroll-runs'] })
+      queryClient.invalidateQueries({ queryKey: ['hr-payroll-lines'] })
+    },
+  })
+}
+
+/**
+ * الإغلاق التلقائي (يدويًا من الإدارة)
+ */
+export function useRunAutoCheckout() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (targetDate?: string) => runAutoCheckout(targetDate),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hr-attendance-days'] })
+      queryClient.invalidateQueries({ queryKey: ['hr-attendance-days-admin'] })
+      queryClient.invalidateQueries({ queryKey: ['hr-attendance-alerts'] })
+      queryClient.invalidateQueries({ queryKey: ['hr-attendance-review-summary'] })
+      queryClient.invalidateQueries({ queryKey: ['hr-attendance-summary'] })
+      queryClient.invalidateQueries({ queryKey: ['hr-leave-balances'] })
+      queryClient.invalidateQueries({ queryKey: ['hr-payroll-runs'] })
+      queryClient.invalidateQueries({ queryKey: ['hr-payroll-lines'] })
+    },
   })
 }
 
@@ -783,6 +824,12 @@ export function useUpdateLeaveRequestStatus() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['hr-leave-requests'] })
       queryClient.invalidateQueries({ queryKey: ['hr-leave-balances'] })
+      queryClient.invalidateQueries({ queryKey: ['hr-attendance-days'] })
+      queryClient.invalidateQueries({ queryKey: ['hr-attendance-days-admin'] })
+      queryClient.invalidateQueries({ queryKey: ['hr-attendance-review-summary'] })
+      queryClient.invalidateQueries({ queryKey: ['hr-attendance-summary'] })
+      queryClient.invalidateQueries({ queryKey: ['hr-payroll-runs'] })
+      queryClient.invalidateQueries({ queryKey: ['hr-payroll-lines'] })
     },
   })
 }
@@ -860,11 +907,9 @@ export function useCreatePayrollRun() {
 }
 
 /**
- * حساب مسير الرواتب — يستدعي calculate_employee_payroll لكل موظف نشط
- * الـ RPC يعمل بالموظف الواحد (p_employee_id, p_run_id)
- * نحسب الكل عبر loop — الـ DB transaction منفصل لكل موظف (تحمل جزئي)
+ * حساب مسير الرواتب بالكامل دفعة واحدة عبر الـ DB (calculate_payroll_run)
  *
- * onProgress: callback يُستدعى بعد كل موظف (للـ progress bar)
+ * onProgress: callback لعرض تقدم وهمي لحين انتهاء المعالجة في الخلفية
  */
 export function useCalculatePayrollRun() {
   const queryClient = useQueryClient()
@@ -876,24 +921,10 @@ export function useCalculatePayrollRun() {
       runId: string
       onProgress?: (done: number, total: number) => void
     }) => {
-      // جلب كل الموظفين النشطين
-      const { data: emps } = await supabase
-        .from('hr_employees')
-        .select('id')
-        .eq('status', 'active')
-      const employees = emps ?? []
-      let calculated = 0
-      let skipped = 0
-      for (let i = 0; i < employees.length; i++) {
-        try {
-          await calculateEmployeePayroll(employees[i].id, runId)
-          calculated++
-        } catch {
-          skipped++
-        }
-        onProgress?.(i + 1, employees.length)
-      }
-      return { calculated, skipped, total: employees.length }
+      onProgress?.(0, 1) // Indeterminate state indication
+      const result = await calculatePayrollRun(runId)
+      onProgress?.(1, 1)
+      return { calculated: result.calculated, skipped: 0, total: result.total_employees }
     },
     onSuccess: (_, { runId }) => {
       queryClient.invalidateQueries({ queryKey: ['hr-payroll-runs'] })
@@ -912,6 +943,25 @@ export function useApprovePayrollRun() {
   return useMutation({
     mutationFn: (runId: string) => approvePayrollRun(runId),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hr-payroll-runs'] })
+    },
+  })
+}
+
+export function useHRPayrollPayments(runId: string | null) {
+  return useQuery({
+    queryKey: ['hr-payroll-payments', runId],
+    queryFn: () => getPayrollPayments(runId!),
+    enabled: !!runId,
+  })
+}
+
+export function useDisbursePayrollPayment() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: import('@/lib/types/hr').DisbursePayrollInput) => disbursePayrollPayment(input),
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['hr-payroll-payments', vars.run_id] })
       queryClient.invalidateQueries({ queryKey: ['hr-payroll-runs'] })
     },
   })
@@ -1395,8 +1445,11 @@ export function useResolveAttendanceAlert() {
     mutationFn: ({ id, note }: { id: string; note?: string | null }) => resolveAttendanceAlert(id, note),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['hr-attendance-alerts'] })
+      qc.invalidateQueries({ queryKey: ['hr-attendance-days'] })
       qc.invalidateQueries({ queryKey: ['hr-attendance-days-admin'] })
       qc.invalidateQueries({ queryKey: ['hr-attendance-review-summary'] })
+      qc.invalidateQueries({ queryKey: ['hr-payroll-runs'] })
+      qc.invalidateQueries({ queryKey: ['hr-payroll-lines'] })
     },
   })
 }
@@ -1407,8 +1460,11 @@ export function useDismissAttendanceAlert() {
     mutationFn: ({ id, note }: { id: string; note?: string | null }) => dismissAttendanceAlert(id, note),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['hr-attendance-alerts'] })
+      qc.invalidateQueries({ queryKey: ['hr-attendance-days'] })
       qc.invalidateQueries({ queryKey: ['hr-attendance-days-admin'] })
       qc.invalidateQueries({ queryKey: ['hr-attendance-review-summary'] })
+      qc.invalidateQueries({ queryKey: ['hr-payroll-runs'] })
+      qc.invalidateQueries({ queryKey: ['hr-payroll-lines'] })
     },
   })
 }

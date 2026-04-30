@@ -38,7 +38,8 @@ BEGIN
   DELETE FROM hr_penalty_instances
   WHERE attendance_day_id = p_attendance_day_id
     AND payroll_run_id IS NULL   -- لم تُرحَّل في مسير
-    AND is_overridden = false;   -- لم تُتجاوَز يدويًا
+    AND is_overridden = false    -- لم تُتجاوَز يدويًا
+    AND COALESCE(is_manual, false) = false; -- حماية الجزاءات اليدوية
 
   GET DIAGNOSTICS v_deleted = ROW_COUNT;
 

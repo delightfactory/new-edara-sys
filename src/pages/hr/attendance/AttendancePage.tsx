@@ -1,5 +1,5 @@
-﻿import { useState } from 'react'
-import { Calendar, Edit2, Check, X, Clock, MapPin, AlertCircle } from 'lucide-react'
+import { useState } from 'react'
+import { Calendar, Edit2, Check, X, Clock, MapPin, AlertCircle, Lock, RefreshCcw } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { getAttendanceDays, upsertAttendanceDay } from '@/lib/services/hr'
@@ -372,7 +372,7 @@ export default function AttendancePage() {
           </div>
           <div style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', background: 'color-mix(in srgb, var(--color-danger) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--color-danger) 25%, transparent)' }}>
             <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>أيام غير مغلقة</div>
-            <div style={{ fontWeight: 800, fontSize: 'var(--text-xl)', color: 'var(--color-danger)' }}>{reviewSummary.open_day_unclosed}</div>
+            <div style={{ fontWeight: 800, fontSize: 'var(--text-xl)', color: 'var(--color-danger)' }}>{reviewSummary.unclosed_days}</div>
           </div>
           <div style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', background: 'color-mix(in srgb, var(--color-danger) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--color-danger) 25%, transparent)' }}>
             <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>تنبيهات مفتوحة</div>
@@ -558,7 +558,14 @@ export default function AttendancePage() {
                   },
                   {
                     key: 'status', label: 'الحالة',
-                    render: d => <Badge variant={STATUS_VARIANT[d.status]}>{STATUS_LABEL[d.status]}</Badge>
+                    render: d => (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <Badge variant={STATUS_VARIANT[d.status]}>{STATUS_LABEL[d.status]}</Badge>
+                        {d.is_manually_locked && <span title="مقفل إدارياً"><Lock size={12} style={{ color: 'var(--color-warning)' }} /></span>}
+                        {d.is_auto_checkout && <span title="إغلاق تلقائي" style={{ color: 'var(--color-info)' }}><Clock size={12} /></span>}
+                        {d.source_leave_request_id && d.leave_balance_restored && <span title="تمت تسوية الإجازة" style={{ color: 'var(--color-success)' }}><RefreshCcw size={12} /></span>}
+                      </div>
+                    )
                   },
                   {
                     key: 'review_status', label: 'المراجعة',
@@ -595,7 +602,14 @@ export default function AttendancePage() {
                   key={d.id}
                   title={d.employee?.full_name ?? '—'}
                   subtitle={new Date(d.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'short', day: 'numeric', month: 'short' })}
-                  badge={<Badge variant={STATUS_VARIANT[d.status]}>{STATUS_LABEL[d.status]}</Badge>}
+                  badge={
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Badge variant={STATUS_VARIANT[d.status]}>{STATUS_LABEL[d.status]}</Badge>
+                      {d.is_manually_locked && <span title="مقفل إدارياً"><Lock size={12} style={{ color: 'var(--color-warning)' }} /></span>}
+                      {d.is_auto_checkout && <span title="إغلاق تلقائي" style={{ color: 'var(--color-info)' }}><Clock size={12} /></span>}
+                      {d.source_leave_request_id && d.leave_balance_restored && <span title="تمت تسوية الإجازة" style={{ color: 'var(--color-success)' }}><RefreshCcw size={12} /></span>}
+                    </div>
+                  }
                   leading={
                     <div style={{
                       width: 40, height: 40, borderRadius: 'var(--radius-md)',
@@ -653,8 +667,12 @@ export default function AttendancePage() {
         onClose={() => setEditDay(null)}
         onSaved={() => {
           qc.invalidateQueries({ queryKey: ['hr-attendance-days-admin'] })
+          qc.invalidateQueries({ queryKey: ['hr-attendance-days'] })
           qc.invalidateQueries({ queryKey: ['hr-attendance-alerts'] })
           qc.invalidateQueries({ queryKey: ['hr-attendance-review-summary'] })
+          qc.invalidateQueries({ queryKey: ['hr-attendance-summary'] })
+          qc.invalidateQueries({ queryKey: ['hr-payroll-runs'] })
+          qc.invalidateQueries({ queryKey: ['hr-payroll-lines'] })
         }}
       />
       <CreateManualDayModal
@@ -663,8 +681,12 @@ export default function AttendancePage() {
         onClose={() => setCreateOpen(false)}
         onSaved={() => {
           qc.invalidateQueries({ queryKey: ['hr-attendance-days-admin'] })
+          qc.invalidateQueries({ queryKey: ['hr-attendance-days'] })
           qc.invalidateQueries({ queryKey: ['hr-attendance-alerts'] })
           qc.invalidateQueries({ queryKey: ['hr-attendance-review-summary'] })
+          qc.invalidateQueries({ queryKey: ['hr-attendance-summary'] })
+          qc.invalidateQueries({ queryKey: ['hr-payroll-runs'] })
+          qc.invalidateQueries({ queryKey: ['hr-payroll-lines'] })
         }}
       />
     </div>

@@ -988,12 +988,13 @@ BEGIN
     AND shift_date  BETWEEN v_month_start AND v_month_end;
 
   -- إجمالي خصومات الجزاءات بالأيام
-  SELECT COALESCE(SUM(deduction_days), 0)
+  SELECT COALESCE(SUM(pi.deduction_days), 0)
   INTO v_total_ded_days
-  FROM hr_penalty_instances
-  WHERE employee_id   = p_employee_id
-    AND NOT is_overridden
-    AND created_at    BETWEEN v_month_start AND v_month_end + INTERVAL '1 day';
+  FROM hr_penalty_instances pi
+  JOIN hr_attendance_days ad ON ad.id = pi.attendance_day_id
+  WHERE pi.employee_id   = p_employee_id
+    AND NOT pi.is_overridden
+    AND ad.shift_date    BETWEEN v_month_start AND v_month_end;
 
   -- أرصدة الإجازات
   SELECT jsonb_agg(jsonb_build_object(

@@ -652,17 +652,33 @@ export async function getMonthlyAttendanceSummary(
   return data as MonthlyAttendanceSummary
 }
 
+export async function markDailyAbsences(targetDate?: string) {
+  const params = targetDate ? { p_target_date: targetDate } : {}
+  const { error } = await supabase.rpc('mark_daily_absences', params)
+  if (error) throw error
+}
+
+export async function runAutoCheckout(targetDate?: string) {
+  const params = targetDate ? { p_target_date: targetDate } : {}
+  const { error } = await supabase.rpc('run_auto_checkout', params)
+  if (error) throw error
+}
+
 export async function scanAttendanceTrackingAlerts() {
   const { data, error } = await supabase.rpc('scan_attendance_tracking_alerts')
   if (error) throw error
   return data as { success: boolean; tracking_alerts: number; permission_alerts: number }
 }
 
-export async function getAttendanceReviewSummary(dateFrom: string, dateTo: string) {
-  const { data, error } = await supabase.rpc('get_attendance_review_summary', {
+export async function getAttendanceReviewSummary(dateFrom: string, dateTo: string, branchId?: string | null) {
+  const params: any = {
     p_date_from: dateFrom,
     p_date_to: dateTo,
-  })
+  }
+  if (branchId) {
+    params.p_branch_id = branchId
+  }
+  const { data, error } = await supabase.rpc('get_attendance_review_summary', params)
   if (error) throw error
   return data as HRAttendanceReviewSummary
 }
@@ -1170,6 +1186,15 @@ export async function calculateEmployeePayroll(
 }
 
 /**
+ * حساب مسير الرواتب بالكامل داخل قاعدة البيانات — عبر RPC
+ */
+export async function calculatePayrollRun(runId: string) {
+  const { data, error } = await supabase.rpc('calculate_payroll_run', { p_run_id: runId })
+  if (error) throw error
+  return data as { success: boolean; calculated: number; total_employees: number }
+}
+
+/**
  * اعتماد مسير الرواتب وإنشاء القيد المحاسبي — عبر RPC
  * يُنشئ journal_entry مفصل (Dr. 5310/5320/5330 / Cr. 2310/2320/2330/2340)
  * يرفض EXCEPTION إذا كان القيد غير متوازن
@@ -1180,9 +1205,38 @@ export async function approvePayrollRun(runId: string): Promise<PayrollApprovalR
     p_run_id:  runId,
     p_user_id: userId,
   })
-  if (error) throw error
   return data as PayrollApprovalResult
 }
+
+export async function getPayrollPayments(runId: string) {
+  const { data, error } = await supabase
+    .from('hr_payroll_payments')
+    .select(`
+      *,
+      vault:vaults(id, name, type),
+      creator:profiles!hr_payroll_payments_created_by_fkey(id, full_name),
+      void_user:profiles!hr_payroll_payments_voided_by_fkey(id, full_name)
+    `)
+    .eq('payroll_run_id', runId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data as any[]
+}
+
+export async function disbursePayrollPayment(input: import('@/lib/types/hr').DisbursePayrollInput) {
+  const userId = await getAuthUserId()
+  const { data, error } = await supabase.rpc('disburse_payroll_payment', {
+    p_run_id: input.run_id,
+    p_vault_id: input.vault_id,
+    p_amount: input.amount,
+    p_payment_date: input.payment_date,
+    p_notes: input.notes,
+    p_user_id: userId,
+  })
+  if (error) throw error
+  return data
+}
+
 
 // ─────────────────────────────────────────────────────────────
 // ADVANCES — السلف

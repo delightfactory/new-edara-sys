@@ -413,6 +413,10 @@ export interface HRAttendanceDay {
   reviewed_by: string | null
   reviewed_at: string | null        // TIMESTAMPTZ
   notes: string | null
+  is_manually_locked?: boolean
+  source_leave_request_id?: string | null
+  leave_balance_restored?: boolean
+  leave_balance_restored_at?: string | null
   created_at: string
   updated_at: string
   // joined
@@ -439,6 +443,10 @@ export interface HRAttendanceDayInput {
   day_value?: number
   review_status?: HRReviewStatus
   notes?: string | null
+  is_manually_locked?: boolean
+  source_leave_request_id?: string | null
+  leave_balance_restored?: boolean
+  leave_balance_restored_at?: string | null
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -697,6 +705,7 @@ export interface HRPenaltyInstance {
   occurrence_in_month: number       // INTEGER
   deduction_type: HRDeductionType
   deduction_days: number            // NUMERIC(4,4): 0.25, 0.5, 1.0
+  deduction_minutes?: number        // INTEGER
   notes: string | null
   is_overridden: boolean
   overridden_by: string | null
@@ -766,6 +775,43 @@ export interface HRPayrollRunInput {
   branch_id?: string | null
   notes?: string | null
 }
+
+// ─────────────────────────────────────────────────────────────
+// 19. PAYROLL PAYMENTS — hr_payroll_payments
+// ─────────────────────────────────────────────────────────────
+
+export interface HRPayrollPayment {
+  id: string
+  payroll_run_id: string
+  vault_id: string
+  amount: number
+  payment_date: string
+  vault_txn_id: string | null
+  journal_entry_id: string | null
+  status: 'posted' | 'voided'
+  notes: string | null
+  voided_by: string | null
+  voided_at: string | null
+  void_reason: string | null
+  reversal_journal_entry_id: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+  
+  // joined
+  vault?: { id: string; name: string; type: string }
+  creator?: { id: string; full_name: string }
+  void_user?: { id: string; full_name: string }
+}
+
+export interface DisbursePayrollInput {
+  run_id: string
+  vault_id: string
+  amount: number
+  payment_date?: string
+  notes?: string | null
+}
+
 
 // ─────────────────────────────────────────────────────────────
 // 19. PAYROLL LINES — hr_payroll_lines
@@ -1028,6 +1074,7 @@ export interface HRAttendanceReviewSummary {
   auto_checkout_days: number
   tracking_gap_days: number
   open_day_unclosed: number
+  unclosed_days: number
   total_blocking_items: number
 }
 

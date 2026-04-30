@@ -132,6 +132,13 @@ export default function LeavesPage() {
     mutationFn: (id: string) => cancelLeaveRequest(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['hr-leave-requests'] })
+      qc.invalidateQueries({ queryKey: ['hr-leave-balances'] })
+      qc.invalidateQueries({ queryKey: ['hr-attendance-days'] })
+      qc.invalidateQueries({ queryKey: ['hr-attendance-days-admin'] })
+      qc.invalidateQueries({ queryKey: ['hr-attendance-review-summary'] })
+      qc.invalidateQueries({ queryKey: ['hr-attendance-summary'] })
+      qc.invalidateQueries({ queryKey: ['hr-payroll-runs'] })
+      qc.invalidateQueries({ queryKey: ['hr-payroll-lines'] })
       toast.success('تم إلغاء طلب الإجازة')
     },
     onError: (err: Error) => toast.error(err.message),

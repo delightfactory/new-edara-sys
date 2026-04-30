@@ -12,6 +12,9 @@ import {
   useCalculatePayrollRun,
   useHRAdjustments,
   useAttendanceReviewSummary,
+  useHRPayrollPayments,
+  useDisbursePayrollPayment,
+  useVaults,
 } from '@/hooks/useQueryHooks'
 import { updatePayrollLine } from '@/lib/services/hr'
 import type { HRPayrollRun, HRPayrollLine, HRPayrollRunStatus } from '@/lib/types/hr'
@@ -95,18 +98,32 @@ export default function PayrollRunDetail() {
   // DSN-07: row expand لعرض التفاصيل على الموبايل
   const [expandedLine, setExpandedLine] = useState<HRPayrollLine | null>(null)
 
+  // -- Disbursement Form State --
+  const [showDisburseModal, setShowDisburseModal] = useState(false)
+  const [disburseVaultId, setDisburseVaultId] = useState('')
+  const [disburseAmount, setDisburseAmount] = useState('')
+  const [disburseDate, setDisburseDate] = useState(new Date().toISOString().split('T')[0])
+  const [disburseNotes, setDisburseNotes] = useState('')
+
+  // جلب الخزائن النشطة
+  const { data: vaults = [] } = useVaults({ isActive: true })
+
   // جلب بيانات المسير (تحديث تلقائي كل 15 ثانية)
   const { data: runs = [], isLoading: runsLoading, dataUpdatedAt: runsUpdatedAt, refetch: refetchRuns } = useHRPayrollRuns()
   const run: HRPayrollRun | undefined = runs.find(r => r.id === runId)
   const periodStart = run?.period?.start_date ?? null
   const periodEnd = run?.period?.end_date ?? null
-  const { data: attendanceReview } = useAttendanceReviewSummary(periodStart, periodEnd)
+  const { data: attendanceReview } = useAttendanceReviewSummary(periodStart, periodEnd, run?.branch_id)
 
   // سطور الرواتب (تحديث تلقائي كل 15 ثانية)
   const { data: lines = [], isLoading: linesLoading, dataUpdatedAt: linesUpdatedAt, refetch: refetchLines } = useHRPayrollLines(runId ?? null)
 
   const lastUpdate = Math.max(runsUpdatedAt || 0, linesUpdatedAt || 0)
   const handleManualRefresh = () => { refetchRuns(); refetchLines() }
+
+  // دفعات مسير الرواتب
+  const { data: payments = [] } = useHRPayrollPayments(runId ?? null)
+  const disburseMut = useDisbursePayrollPayment()
 
   // mutation الاعتماد
   const approveMutation = useApprovePayrollRun()
@@ -158,6 +175,32 @@ export default function PayrollRunDetail() {
       } else {
         toast.error(`فشل الاعتماد: ${msg}`)
       }
+    }
+  }
+
+  const handleDisburse = async () => {
+    if (!runId || !disburseVaultId || !disburseAmount) return
+    const amountNum = parseFloat(disburseAmount)
+    if (isNaN(amountNum) || amountNum <= 0) {
+      toast.error('المبلغ غير صحيح')
+      return
+    }
+
+    try {
+      await disburseMut.mutateAsync({
+        run_id: runId,
+        vault_id: disburseVaultId,
+        amount: amountNum,
+        payment_date: disburseDate,
+        notes: disburseNotes || undefined,
+      })
+      toast.success('تم تسجيل الدفعة بنجاح وخصم المبلغ من الخزنة')
+      setShowDisburseModal(false)
+      setDisburseVaultId('')
+      setDisburseAmount('')
+      setDisburseNotes('')
+    } catch (err: any) {
+      toast.error(`فشل الصرف: ${err.message}`)
     }
   }
 
@@ -486,39 +529,11 @@ export default function PayrollRunDetail() {
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-            {attendanceReview.open_day_unclosed > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: 'var(--text-sm)' }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-danger)', flexShrink: 0 }} />
-                <span style={{ color: 'var(--color-danger)', fontWeight: 600 }}>{attendanceReview.open_day_unclosed}</span>
-                <span style={{ color: 'var(--text-secondary)' }}>يوم حضور غير مغلق (بدون تسجيل انصراف)</span>
-              </div>
-            )}
-            {attendanceReview.unresolved_days > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: 'var(--text-sm)' }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-warning)', flexShrink: 0 }} />
-                <span style={{ color: 'var(--color-warning)', fontWeight: 600 }}>{attendanceReview.unresolved_days}</span>
-                <span style={{ color: 'var(--text-secondary)' }}>يوم تحتاج مراجعة إدارية</span>
-              </div>
-            )}
-            {attendanceReview.permission_no_return > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: 'var(--text-sm)' }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-warning)', flexShrink: 0 }} />
-                <span style={{ color: 'var(--color-warning)', fontWeight: 600 }}>{attendanceReview.permission_no_return}</span>
-                <span style={{ color: 'var(--text-secondary)' }}>إذن خروج بدون تسجيل عودة</span>
-              </div>
-            )}
-            {attendanceReview.open_alerts > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: 'var(--text-sm)' }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-danger)', flexShrink: 0 }} />
-                <span style={{ color: 'var(--color-danger)', fontWeight: 600 }}>{attendanceReview.open_alerts}</span>
-                <span style={{ color: 'var(--text-secondary)' }}>تنبيه حضور مفتوح لم يُحل</span>
-                {attendanceReview.tracking_gap_days > 0 && (
-                  <span style={{ color: 'var(--text-muted)', fontSize: 'var(--text-xs)' }}>
-                    (منها {attendanceReview.tracking_gap_days} يوم بفجوة تتبع)
-                  </span>
-                )}
-              </div>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: 'var(--text-sm)' }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-danger)', flexShrink: 0 }} />
+              <span style={{ color: 'var(--color-danger)', fontWeight: 600 }}>يوجد {attendanceReview.unclosed_days} أيام حضور بدون انصراف</span>
+              <span style={{ color: 'var(--text-secondary)' }}>يرجى إغلاق أيام الحضور المفتوحة (تعديل يدوي) لتحديد أثرها المالي بدقة.</span>
+            </div>
           </div>
           <div style={{ marginTop: 'var(--space-3)', fontSize: 'var(--text-xs)', color: 'var(--text-muted)', borderTop: '1px solid color-mix(in srgb, var(--color-danger) 15%, transparent)', paddingTop: 'var(--space-2)' }}>
             ارجع لصفحة الحضور وأغلق هذه الحالات قبل اعتماد المسير.
@@ -596,6 +611,95 @@ export default function PayrollRunDetail() {
           }}>
             {run.journal_entry_id.slice(0, 16)}…
           </code>
+        </div>
+      )}
+
+      {/* ── قسم دفعات مسير الرواتب ── */}
+      {run?.status && ['approved', 'paid'].includes(run.status) && (
+        <div style={{
+          padding: 'var(--space-4)',
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-primary)',
+          borderRadius: 'var(--radius-lg)',
+          marginBottom: 'var(--space-4)',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)' }}>
+            <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <DollarSign size={18} style={{ color: 'var(--color-primary)' }} />
+              دفعات الرواتب المنصرفة
+            </h3>
+            {run.status === 'approved' && (
+              <PermissionGuard permission="hr.payroll.disburse">
+                <Button size="sm" onClick={() => {
+                  const totalPaid = payments.filter(p => p.status === 'posted').reduce((acc, p) => acc + (Number(p.amount) || 0), 0)
+                  const remaining = Math.max(0, run.total_net - totalPaid)
+                  setDisburseAmount(remaining.toString())
+                  setShowDisburseModal(true)
+                }}>
+                  تسجيل دفعة صرف
+                </Button>
+              </PermissionGuard>
+            )}
+          </div>
+          
+          <div style={{
+            display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-3)',
+            background: 'var(--bg-surface-2)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)',
+            marginBottom: 'var(--space-4)'
+          }}>
+            <div>
+              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>إجمالي المستحق</div>
+              <div style={{ fontWeight: 600, color: 'var(--color-primary)', fontVariantNumeric: 'tabular-nums' }}>{fmt(run.total_net)}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>المدفوع</div>
+              <div style={{ fontWeight: 600, color: 'var(--color-success)', fontVariantNumeric: 'tabular-nums' }}>
+                {fmt(payments.filter(p => p.status === 'posted').reduce((acc, p) => acc + (Number(p.amount) || 0), 0))}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>المتبقي (الرصيد الدائن)</div>
+              <div style={{ fontWeight: 600, color: 'var(--color-warning)', fontVariantNumeric: 'tabular-nums' }}>
+                {fmt(Math.max(0, run.total_net - payments.filter(p => p.status === 'posted').reduce((acc, p) => acc + (Number(p.amount) || 0), 0)))}
+              </div>
+            </div>
+          </div>
+
+          {payments.length > 0 ? (
+            <div style={{ overflowX: 'auto' }}>
+              <table className="edara-table">
+                <thead>
+                  <tr>
+                    <th>تاريخ الدفع</th>
+                    <th>الخزنة</th>
+                    <th style={{ textAlign: 'left' }}>المبلغ</th>
+                    <th>بواسطة</th>
+                    <th>ملاحظات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {payments.map(p => (
+                    <tr key={p.id}>
+                      <td style={{ fontVariantNumeric: 'tabular-nums' }}>{p.payment_date}</td>
+                      <td>
+                        <div style={{ fontWeight: 500 }}>{p.vault?.name}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{p.vault_txn_id?.slice(0,8)}...</div>
+                      </td>
+                      <td style={{ textAlign: 'left', fontWeight: 600, color: 'var(--color-success)', fontVariantNumeric: 'tabular-nums' }}>
+                        {fmt(p.amount)}
+                      </td>
+                      <td>{p.creator?.full_name}</td>
+                      <td style={{ color: 'var(--text-muted)' }}>{p.notes || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)', padding: 'var(--space-4)' }}>
+              لم يتم تسجيل أي دفعات حتى الآن.
+            </div>
+          )}
         </div>
       )}
 
@@ -735,6 +839,74 @@ export default function PayrollRunDetail() {
           />
           <div style={{ fontSize: 10, color: 'var(--color-warning)', opacity: 0.8 }}>
             ⚠ تجاوز الصافي يُلغي جميع الحسابات التلقائية لهذا الموظف
+          </div>
+        </div>
+      </ResponsiveModal>
+
+      {/* ── مودال صرف الرواتب ── */}
+      <ResponsiveModal
+        open={showDisburseModal}
+        onClose={() => setShowDisburseModal(false)}
+        title="تسجيل دفعة صرف رواتب"
+        size="sm"
+        footer={
+          <div style={{ display: 'flex', gap: 'var(--space-3)', width: '100%' }}>
+            <Button variant="secondary" onClick={() => setShowDisburseModal(false)} style={{ flex: 1 }}>إلغاء</Button>
+            <Button 
+              onClick={handleDisburse} 
+              loading={disburseMut.isPending} 
+              style={{ flex: 2, background: 'var(--color-success)', color: 'white' }}
+              disabled={!disburseVaultId || !disburseAmount}
+            >
+              صرف المبلغ واعتماد الدفعة
+            </Button>
+          </div>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', background: 'color-mix(in srgb, var(--color-warning) 10%, transparent)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
+            سيتم خصم المبلغ المُدخل من الخزنة المحددة وتسجيل قيد (Dr. 2310 / Cr. 11xx) لسداد استحقاق الرواتب. لا يمكن التراجع عن هذه العملية حالياً.
+          </div>
+          
+          <div className="edara-input-group">
+            <label className="edara-label">تاريخ الصرف</label>
+            <input 
+              className="edara-input" 
+              type="date" 
+              value={disburseDate} 
+              onChange={e => setDisburseDate(e.target.value)} 
+            />
+          </div>
+
+          <div className="edara-input-group">
+            <label className="edara-label">خزنة الصرف <span style={{color:'var(--color-danger)'}}>*</span></label>
+            <select 
+              className="edara-input" 
+              value={disburseVaultId} 
+              onChange={e => setDisburseVaultId(e.target.value)}
+            >
+              <option value="">-- اختر الخزنة --</option>
+              {vaults.filter(v => !run?.branch_id || !v.branch_id || v.branch_id === run.branch_id).map(v => (
+                <option key={v.id} value={v.id}>{v.name} (رصيد: {fmt(v.current_balance)})</option>
+              ))}
+            </select>
+          </div>
+
+          <Input
+            label="المبلغ" type="number"
+            value={disburseAmount}
+            onChange={e => setDisburseAmount(e.target.value)}
+            placeholder="0.00"
+          />
+
+          <div className="edara-input-group">
+            <label className="edara-label">ملاحظات (اختياري)</label>
+            <textarea 
+              className="edara-input" 
+              value={disburseNotes} 
+              onChange={e => setDisburseNotes(e.target.value)}
+              rows={2}
+            />
           </div>
         </div>
       </ResponsiveModal>
