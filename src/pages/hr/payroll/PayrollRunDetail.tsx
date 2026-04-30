@@ -23,6 +23,7 @@ import DataTable from '@/components/shared/DataTable'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
+import Select from '@/components/ui/Select'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
 import PermissionGuard from '@/components/shared/PermissionGuard'
 import { toast } from 'sonner'
@@ -863,49 +864,62 @@ export default function PayrollRunDetail() {
           </div>
         }
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-          <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)', background: 'color-mix(in srgb, var(--color-warning) 10%, transparent)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
-            سيتم خصم المبلغ المُدخل من الخزنة المحددة وتسجيل قيد (Dr. 2310 / Cr. 11xx) لسداد استحقاق الرواتب. لا يمكن التراجع عن هذه العملية حالياً.
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <div style={{ 
+            fontSize: 'var(--text-sm)', 
+            color: 'var(--color-warning)', 
+            background: 'color-mix(in srgb, var(--color-warning) 10%, transparent)', 
+            padding: 'var(--space-3)', 
+            borderRadius: 'var(--radius-md)',
+            borderLeft: '4px solid var(--color-warning)',
+            lineHeight: 1.5,
+          }}>
+            <strong>تنبيه: </strong>
+            سيتم خصم المبلغ المُدخل من الخزنة المحددة وتسجيل قيد استحقاق رواتب (Dr. 2310 / Cr. 11xx). لا يمكن التراجع عن هذه العملية حالياً.
           </div>
           
-          <div className="edara-input-group">
-            <label className="edara-label">تاريخ الصرف</label>
-            <input 
-              className="edara-input" 
-              type="date" 
-              value={disburseDate} 
-              onChange={e => setDisburseDate(e.target.value)} 
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+            <Input
+              label="تاريخ الصرف *"
+              type="date"
+              value={disburseDate}
+              onChange={e => setDisburseDate(e.target.value)}
+              required
+            />
+            
+            <Input
+              label="المبلغ المُراد صرفه *"
+              type="number"
+              value={disburseAmount}
+              onChange={e => setDisburseAmount(e.target.value)}
+              placeholder="0.00"
+              required
             />
           </div>
 
-          <div className="edara-input-group">
-            <label className="edara-label">خزنة الصرف <span style={{color:'var(--color-danger)'}}>*</span></label>
-            <select 
-              className="edara-input" 
-              value={disburseVaultId} 
-              onChange={e => setDisburseVaultId(e.target.value)}
-            >
-              <option value="">-- اختر الخزنة --</option>
-              {vaults.filter(v => !run?.branch_id || !v.branch_id || v.branch_id === run.branch_id).map(v => (
-                <option key={v.id} value={v.id}>{v.name} (رصيد: {fmt(v.current_balance)})</option>
-              ))}
-            </select>
-          </div>
-
-          <Input
-            label="المبلغ" type="number"
-            value={disburseAmount}
-            onChange={e => setDisburseAmount(e.target.value)}
-            placeholder="0.00"
+          <Select
+            label="خزنة الصرف *"
+            value={disburseVaultId}
+            onChange={e => setDisburseVaultId(e.target.value)}
+            required
+            options={vaults
+              .filter(v => !run?.branch_id || !v.branch_id || v.branch_id === run.branch_id)
+              .map(v => ({
+                value: v.id,
+                label: `${v.name} (رصيد: ${fmt(v.current_balance)})`
+              }))}
+            placeholder="-- اختر الخزنة للخصم --"
           />
 
-          <div className="edara-input-group">
-            <label className="edara-label">ملاحظات (اختياري)</label>
-            <textarea 
-              className="edara-input" 
-              value={disburseNotes} 
+          <div className="form-group">
+            <label className="form-label" htmlFor="disburseNotes">ملاحظات (اختياري)</label>
+            <textarea
+              id="disburseNotes"
+              className="form-input"
+              value={disburseNotes}
               onChange={e => setDisburseNotes(e.target.value)}
               rows={2}
+              placeholder="أي ملاحظات حول سبب الصرف أو المرجعية..."
             />
           </div>
         </div>
