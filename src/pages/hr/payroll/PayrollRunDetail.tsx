@@ -139,14 +139,14 @@ export default function PayrollRunDetail() {
   const hasAttendanceRisk = !!attendanceReview && attendanceReview.total_blocking_items > 0
   const canApprove = run && ['review', 'calculating'].includes(run.status) && !hasAttendanceRisk
 
-  const handleRecalculate = async () => {
+  const handleCalculatePayroll = async () => {
     if (!runId) return
     setRecalculating(true)
     try {
       const result = await calculateMut.mutateAsync({ runId })
-      toast.success(`✅ تم إعادة الحساب — ${result.calculated} موظف`)
+      toast.success(`✅ تم الحساب بنجاح — ${result.calculated} موظف`)
     } catch (err) {
-      toast.error(`فشل إعادة الحساب: ${err instanceof Error ? err.message : String(err)}`)
+      toast.error(`فشل الحساب: ${err instanceof Error ? err.message : String(err)}`)
     } finally {
       setRecalculating(false)
     }
@@ -411,6 +411,20 @@ export default function PayrollRunDetail() {
                 {STATUS_LABEL[run.status]}
               </Badge>
             )}
+            {run && ['draft', 'review'].includes(run.status) && (
+              <PermissionGuard permission="hr.payroll.calculate">
+                <Button
+                  size="sm"
+                  icon={<Calculator size={14} />}
+                  onClick={handleCalculatePayroll}
+                  loading={recalculating}
+                  disabled={hasAttendanceRisk}
+                  title={hasAttendanceRisk ? 'أغلق حالات الحضور أولاً لتتمكن من الحساب' : undefined}
+                >
+                  {run.status === 'draft' ? 'حساب المسير' : 'إعادة حساب'}
+                </Button>
+              </PermissionGuard>
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -476,14 +490,18 @@ export default function PayrollRunDetail() {
               اضغط "إعادة الحساب" لتضمينها في الراتب
             </div>
           </div>
-          <Button
-            size="sm"
-            icon={<Calculator size={14} />}
-            onClick={handleRecalculate}
-            loading={recalculating}
-          >
-            إعادة الحساب
-          </Button>
+          <PermissionGuard permission="hr.payroll.calculate">
+            <Button
+              size="sm"
+              icon={<Calculator size={14} />}
+              onClick={handleCalculatePayroll}
+              loading={recalculating}
+              disabled={hasAttendanceRisk}
+              title={hasAttendanceRisk ? 'أغلق حالات الحضور أولاً لتتمكن من الحساب' : undefined}
+            >
+              إعادة الحساب
+            </Button>
+          </PermissionGuard>
         </div>
       )}
 
@@ -500,22 +518,26 @@ export default function PayrollRunDetail() {
           <Edit3 size={13} style={{ color: 'var(--color-info)', flexShrink: 0 }} />
           <span>وضع المراجعة — يمكنك تعديل المكافآت والخصومات الإضافية لكل موظف قبل الاعتماد</span>
           {!hasPendingAdjustments && (
-            <Button
-              size="sm"
-              variant="ghost"
-              icon={<Calculator size={13} />}
-              onClick={handleRecalculate}
-              loading={recalculating}
-              style={{ marginInlineStart: 'auto', flexShrink: 0 }}
-            >
-              إعادة حساب
-            </Button>
+            <PermissionGuard permission="hr.payroll.calculate">
+              <Button
+                size="sm"
+                variant="ghost"
+                icon={<Calculator size={13} />}
+                onClick={handleCalculatePayroll}
+                loading={recalculating}
+                disabled={hasAttendanceRisk}
+                title={hasAttendanceRisk ? 'أغلق حالات الحضور أولاً لتتمكن من الحساب' : undefined}
+                style={{ marginInlineStart: 'auto', flexShrink: 0 }}
+              >
+                إعادة حساب
+              </Button>
+            </PermissionGuard>
           )}
         </div>
       )}
 
       {/* ── زر الاعتماد المالي ── */}
-      {hasAttendanceRisk && attendanceReview && (
+      {hasAttendanceRisk && attendanceReview && ['draft', 'review', 'calculating'].includes(run?.status || '') && (
         <div style={{
           padding: 'var(--space-4)',
           background: 'color-mix(in srgb, var(--color-danger) 7%, transparent)',
@@ -526,7 +548,7 @@ export default function PayrollRunDetail() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
             <AlertCircle size={18} style={{ color: 'var(--color-danger)', flexShrink: 0 }} />
             <div style={{ fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--color-danger)' }}>
-              توجد حالات حضور غير محسومة تمنع اعتماد المسير الآن
+              توجد حالات حضور غير محسومة تمنع حساب أو اعتماد المسير حالياً
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
@@ -537,7 +559,7 @@ export default function PayrollRunDetail() {
             </div>
           </div>
           <div style={{ marginTop: 'var(--space-3)', fontSize: 'var(--text-xs)', color: 'var(--text-muted)', borderTop: '1px solid color-mix(in srgb, var(--color-danger) 15%, transparent)', paddingTop: 'var(--space-2)' }}>
-            ارجع لصفحة الحضور وأغلق هذه الحالات قبل اعتماد المسير.
+            ارجع لصفحة الحضور وأغلق هذه الحالات قبل الحساب أو الاعتماد.
           </div>
         </div>
       )}
@@ -712,8 +734,25 @@ export default function PayrollRunDetail() {
           loading={linesLoading || runsLoading}
           keyField="id"
           emptyIcon={<Users size={40} />}
-          emptyTitle="لا توجد بيانات"
-          emptyText="لم يتم حساب الرواتب بعد — أو لا يوجد موظفون نشطون"
+          emptyTitle={run?.status === 'draft' ? 'لم يتم حساب المسير بعد' : 'لا توجد بيانات'}
+          emptyText={run?.status === 'draft' ? 'اضغط حساب المسير لتجميع بيانات الحضور والجزاءات والسلف والعمولات.' : 'لم يتم حساب الرواتب بعد — أو لا يوجد موظفون نشطون'}
+          emptyAction={
+            run?.status === 'draft' ? (
+              <PermissionGuard permission="hr.payroll.calculate">
+                <Button
+                  size="sm"
+                  icon={<Calculator size={14} />}
+                  onClick={handleCalculatePayroll}
+                  loading={recalculating}
+                  disabled={hasAttendanceRisk}
+                  title={hasAttendanceRisk ? 'أغلق حالات الحضور أولاً لتتمكن من الحساب' : undefined}
+                  style={{ marginTop: 'var(--space-3)' }}
+                >
+                  حساب المسير الآن
+                </Button>
+              </PermissionGuard>
+            ) : undefined
+          }
           onRowClick={r => setExpandedLine(r)}
         />
       </div>

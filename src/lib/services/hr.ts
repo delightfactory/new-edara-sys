@@ -450,6 +450,38 @@ export async function getAttendanceDays(params: {
   }
 }
 
+export async function getAttendancePeriodStats(params: {
+  employeeId?: string
+  dateFrom: string
+  dateTo: string
+}) {
+  const countByStatus = async (statuses?: string[]) => {
+    let query = supabase
+      .from('hr_attendance_days')
+      .select('id', { count: 'exact', head: true })
+      .gte('shift_date', params.dateFrom)
+      .lte('shift_date', params.dateTo)
+
+    if (params.employeeId) query = query.eq('employee_id', params.employeeId)
+    if (statuses?.length === 1) query = query.eq('status', statuses[0])
+    if (statuses && statuses.length > 1) query = query.in('status', statuses)
+
+    const { error, count } = await query
+    if (error) throw error
+    return count ?? 0
+  }
+
+  const [total, present, late, absent, onLeave] = await Promise.all([
+    countByStatus(),
+    countByStatus(['present']),
+    countByStatus(['late']),
+    countByStatus(['absent_unauthorized', 'absent_authorized']),
+    countByStatus(['on_leave']),
+  ])
+
+  return { total, present, late, absent, onLeave }
+}
+
 export async function getAttendanceAlerts(params?: {
   employeeId?: string
   dateFrom?: string

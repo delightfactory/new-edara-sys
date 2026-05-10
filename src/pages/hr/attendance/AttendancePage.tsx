@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Calendar, Edit2, Check, X, Clock, MapPin, AlertCircle, Lock, RefreshCcw } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { getAttendanceDays, upsertAttendanceDay } from '@/lib/services/hr'
+import { getAttendanceDays, getAttendancePeriodStats, upsertAttendanceDay } from '@/lib/services/hr'
 import { supabase as _supabase } from '@/lib/supabase/client'
 import { getEmployees } from '@/lib/services/hr'
 import {
@@ -64,6 +64,86 @@ const fmtTime = (ts?: string | null) => {
   return new Date(ts).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true })
 }
 
+function toLocalDatetimeString(isoString?: string | null) {
+  if (!isoString) return ''
+  const d = new Date(isoString)
+  if (isNaN(d.getTime())) return ''
+  const YYYY = d.getFullYear()
+  const MM = String(d.getMonth() + 1).padStart(2, '0')
+  const DD = String(d.getDate()).padStart(2, '0')
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mm = String(d.getMinutes()).padStart(2, '0')
+  return `${YYYY}-${MM}-${DD}T${hh}:${mm}`
+}
+
+const formatDetailNumber = (value: number) => value.toLocaleString('ar-EG-u-nu-latn', { maximumFractionDigits: 1 })
+
+const DETAIL_LABEL: Record<string, string> = {
+  distance: 'المسافة',
+  distance_meters: 'المسافة',
+  location: 'الموقع',
+  location_name: 'الموقع',
+  nearest_location: 'أقرب موقع',
+  accuracy: 'الدقة',
+  gps_accuracy: 'دقة GPS',
+  actual_accuracy: 'الدقة الفعلية',
+  required_accuracy: 'الدقة المطلوبة',
+  radius_meters: 'نطاق الموقع',
+  threshold: 'الحد المسموح',
+  minutes: 'الدقائق',
+  gap_minutes: 'مدة الانقطاع',
+  reason: 'السبب',
+  message: 'التفاصيل',
+  code: 'الكود',
+}
+
+const DISTANCE_KEYS = new Set(['distance', 'distance_meters', 'accuracy', 'gps_accuracy', 'actual_accuracy', 'required_accuracy', 'radius_meters', 'threshold'])
+const MINUTE_KEYS = new Set(['minutes', 'gap_minutes'])
+
+function formatAlertDetailValue(key: string, value: unknown) {
+  if (value == null || value === '') return '—'
+  if (typeof value === 'number') {
+    const formatted = formatDetailNumber(value)
+    if (DISTANCE_KEYS.has(key)) return `${formatted} م`
+    if (MINUTE_KEYS.has(key)) return `${formatted} د`
+    return formatted
+  }
+  if (typeof value === 'boolean') return value ? 'نعم' : 'لا'
+  if (typeof value === 'object') return JSON.stringify(value)
+  return String(value)
+}
+
+function formatAlertDetails(details: HRAttendanceAlert['details'], metadata?: HRAttendanceAlert['metadata']) {
+  const structuredDetails = metadata && Object.keys(metadata).length > 0 ? metadata : null
+  if (!details && !structuredDetails) return null
+  if (!structuredDetails) return details
+
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2) var(--space-3)' }}>
+      {details && (
+        <span style={{ flexBasis: '100%', color: 'var(--text-secondary)' }}>{details}</span>
+      )}
+      {Object.entries(structuredDetails).map(([key, value]) => (
+        <span
+          key={key}
+          style={{
+            display: 'inline-flex',
+            gap: 4,
+            alignItems: 'center',
+            padding: '2px 8px',
+            borderRadius: 'var(--radius-full)',
+            background: 'var(--bg-surface-2)',
+            maxWidth: '100%',
+          }}
+        >
+          <strong>{DETAIL_LABEL[key] ?? key.replace(/_/g, ' ')}</strong>
+          <span dir={typeof value === 'number' ? 'ltr' : undefined}>{formatAlertDetailValue(key, value)}</span>
+        </span>
+      ))}
+    </div>
+  )
+}
+
 // ─── Manual Edit Modal ─────────────────────────────────────
 interface EditModalProps {
   day: HRAttendanceDay | null
@@ -72,9 +152,15 @@ interface EditModalProps {
 }
 
 function ManualEditModal({ day, onClose, onSaved }: EditModalProps) {
-  const [punchIn,  setPunchIn]  = useState(day?.punch_in_time  ? new Date(day.punch_in_time).toISOString().slice(0, 16)  : '')
-  const [punchOut, setPunchOut] = useState(day?.punch_out_time ? new Date(day.punch_out_time).toISOString().slice(0, 16) : '')
+  const [punchIn,  setPunchIn]  = useState(toLocalDatetimeString(day?.punch_in_time))
+  const [punchOut, setPunchOut] = useState(toLocalDatetimeString(day?.punch_out_time))
   const [notes,    setNotes]    = useState(day?.notes ?? '')
+
+  useEffect(() => {
+    setPunchIn(toLocalDatetimeString(day?.punch_in_time))
+    setPunchOut(toLocalDatetimeString(day?.punch_out_time))
+    setNotes(day?.notes ?? '')
+  }, [day])
 
   const saveMut = useMutation({
     mutationFn: () => {
@@ -88,7 +174,10 @@ function ManualEditModal({ day, onClose, onSaved }: EditModalProps) {
       const punchInDate  = punchIn  ? new Date(punchIn)  : null
       const punchOutDate = punchOut ? new Date(punchOut) : null
 
-      // إذا تم تحديد وقت حضور → اعتبره حاضراً
+      if (punchInDate && punchOutDate && punchOutDate <= punchInDate) {
+        return Promise.reject(new Error('وقت الانصراف يجب أن يكون بعد وقت الحضور'))
+      }
+
       if (punchInDate) {
         status = 'present'
         dayValue = 1.0
@@ -118,15 +207,25 @@ function ManualEditModal({ day, onClose, onSaved }: EditModalProps) {
 
   if (!day) return null
 
+  const initialPunchIn = toLocalDatetimeString(day.punch_in_time)
+  const initialPunchOut = toLocalDatetimeString(day.punch_out_time)
+  const initialNotes = day.notes ?? ''
+  const hasChanges = punchIn !== initialPunchIn || punchOut !== initialPunchOut || notes !== initialNotes
+  const requestClose = () => {
+    if (hasChanges && !window.confirm('توجد تعديلات غير محفوظة. هل تريد إغلاق النافذة؟')) return
+    onClose()
+  }
+
   return (
     <ResponsiveModal
       open={!!day}
-      onClose={onClose}
+      onClose={requestClose}
       title="تعديل سجل حضور يدوي"
       size="sm"
+      disableOverlayClose={hasChanges}
       footer={
         <div style={{ display: 'flex', gap: 'var(--space-3)', width: '100%' }}>
-          <Button variant="secondary" onClick={onClose} style={{ flex: 1 }}>إلغاء</Button>
+          <Button variant="secondary" onClick={requestClose} style={{ flex: 1 }}>إلغاء</Button>
           <Button icon={<Check size={14} />} onClick={() => saveMut.mutate()} loading={saveMut.isPending} style={{ flex: 2 }}>
             حفظ التعديل
           </Button>
@@ -152,7 +251,7 @@ function ManualEditModal({ day, onClose, onSaved }: EditModalProps) {
           </span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--space-3)' }}>
           <Input
             label="وقت الحضور"
             type="datetime-local"
@@ -194,6 +293,21 @@ function CreateManualDayModal({ open, employees, onClose, onSaved }: CreateManua
   const [punchOut, setPunchOut] = useState('')
   const [notes, setNotes] = useState('')
 
+  const resetForm = () => {
+    setEmployeeId('')
+    setShiftDate(todayStr())
+    setPunchIn('')
+    setPunchOut('')
+    setNotes('')
+  }
+
+  const hasChanges = !!employeeId || shiftDate !== todayStr() || !!punchIn || !!punchOut || !!notes
+  const requestClose = () => {
+    if (hasChanges && !window.confirm('توجد بيانات غير محفوظة. هل تريد إغلاق النافذة؟')) return
+    resetForm()
+    onClose()
+  }
+
   const saveMut = useMutation({
     mutationFn: async () => {
       if (!employeeId) throw new Error('يرجى اختيار الموظف')
@@ -201,8 +315,16 @@ function CreateManualDayModal({ open, employees, onClose, onSaved }: CreateManua
 
       const punchInIso = punchIn ? new Date(`${shiftDate}T${punchIn}`).toISOString() : null
       const punchOutIso = punchOut ? new Date(`${shiftDate}T${punchOut}`).toISOString() : null
-      const effectiveHours = punchInIso && punchOutIso
-        ? Math.round(((new Date(punchOutIso).getTime() - new Date(punchInIso).getTime()) / 3600000) * 100) / 100
+      
+      const inDate = punchInIso ? new Date(punchInIso) : null
+      const outDate = punchOutIso ? new Date(punchOutIso) : null
+      
+      if (inDate && outDate && outDate <= inDate) {
+        throw new Error('وقت الانصراف يجب أن يكون بعد وقت الحضور')
+      }
+
+      const effectiveHours = inDate && outDate
+        ? Math.round(((outDate.getTime() - inDate.getTime()) / 3600000) * 100) / 100
         : null
 
       const input: HRAttendanceDayInput = {
@@ -221,11 +343,7 @@ function CreateManualDayModal({ open, employees, onClose, onSaved }: CreateManua
     },
     onSuccess: () => {
       toast.success('تم إنشاء اليوم اليدوي')
-      setEmployeeId('')
-      setShiftDate(todayStr())
-      setPunchIn('')
-      setPunchOut('')
-      setNotes('')
+      resetForm()
       onSaved()
       onClose()
     },
@@ -235,12 +353,13 @@ function CreateManualDayModal({ open, employees, onClose, onSaved }: CreateManua
   return (
     <ResponsiveModal
       open={open}
-      onClose={onClose}
+      onClose={requestClose}
       title="إضافة يوم حضور يدوي"
       size="sm"
+      disableOverlayClose={hasChanges}
       footer={
         <div style={{ display: 'flex', gap: 'var(--space-3)', width: '100%' }}>
-          <Button variant="secondary" onClick={onClose} style={{ flex: 1 }}>إلغاء</Button>
+          <Button variant="secondary" onClick={requestClose} style={{ flex: 1 }}>إلغاء</Button>
           <Button icon={<Check size={14} />} onClick={() => saveMut.mutate()} loading={saveMut.isPending} style={{ flex: 2 }}>
             حفظ اليوم
           </Button>
@@ -256,7 +375,7 @@ function CreateManualDayModal({ open, employees, onClose, onSaved }: CreateManua
           placeholder="اختر الموظف"
         />
         <Input label="التاريخ" type="date" value={shiftDate} onChange={e => setShiftDate(e.target.value)} />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--space-3)' }}>
           <Input label="وقت الحضور" type="time" value={punchIn} onChange={e => setPunchIn(e.target.value)} dir="ltr" />
           <Input label="وقت الانصراف" type="time" value={punchOut} onChange={e => setPunchOut(e.target.value)} dir="ltr" />
         </div>
@@ -278,6 +397,7 @@ export default function AttendancePage() {
   const [empFilter, setEmpFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [page, setPage] = useState(1)
+  const [showAllAlerts, setShowAllAlerts] = useState(false)
 
   // Edit state
   const [editDay, setEditDay] = useState<HRAttendanceDay | null>(null)
@@ -319,6 +439,15 @@ export default function AttendancePage() {
     }),
   })
 
+  const { data: periodStats, isLoading: statsLoading } = useQuery({
+    queryKey: ['hr-attendance-period-stats', dateFrom, dateTo, empFilter],
+    queryFn: () => getAttendancePeriodStats({
+      dateFrom,
+      dateTo,
+      employeeId: empFilter || undefined,
+    }),
+  })
+
   const { data: employees = [] } = useQuery({
     queryKey: ['hr-employees-list'],
     queryFn: () => getEmployees({ page: 1, pageSize: 300 }),
@@ -328,15 +457,10 @@ export default function AttendancePage() {
   const days = attendanceResult?.data ?? []
   const filtered = days  // FIX-04: الفلترة تتم في الـ Query الآن
 
-  // GAP-07: الإحصائيات من إجمالي count المرجع — تقديري بناء على الصفحة الحالية
-  const stats = {
-    present: days.filter(d => d.status === 'present').length,
-    late:    days.filter(d => d.status === 'late').length,
-    absent:  days.filter(d => d.status === 'absent_unauthorized' || d.status === 'absent_authorized').length,
-    onLeave: days.filter(d => d.status === 'on_leave').length,
-    total:   attendanceResult?.count ?? days.length,
-  }
-  const alertPreview = alerts.slice(0, 5)
+  const stats = periodStats ?? { present: 0, late: 0, absent: 0, onLeave: 0, total: 0 }
+  const alertPreview = showAllAlerts ? alerts : alerts.slice(0, 5)
+  const resolvingAlertId = resolveAlertMut.isPending ? resolveAlertMut.variables?.id : null
+  const dismissingAlertId = dismissAlertMut.isPending ? dismissAlertMut.variables?.id : null
 
   return (
     <div className="page-container animate-enter">
@@ -358,34 +482,34 @@ export default function AttendancePage() {
 
       {/* FIX-08: Responsive stat cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
-        <StatCard label="حاضر"   value={stats.present} color="var(--color-success)" icon={<Check size={18} />} />
-        <StatCard label="متأخر"  value={stats.late}    color="var(--color-warning)" icon={<Clock size={18} />} />
-        <StatCard label="غائب"   value={stats.absent}  color="var(--color-danger)"  icon={<X size={18} />} />
-        <StatCard label="إجازة"  value={stats.onLeave} color="var(--color-info)"    icon={<Calendar size={18} />} />
+        <StatCard label="حاضر"   value={stats.present} color="var(--color-success)" icon={<Check size={18} />} loading={statsLoading} sub={`من إجمالي ${stats.total}`} />
+        <StatCard label="متأخر"  value={stats.late}    color="var(--color-warning)" icon={<Clock size={18} />} loading={statsLoading} sub={`من إجمالي ${stats.total}`} />
+        <StatCard label="غائب"   value={stats.absent}  color="var(--color-danger)"  icon={<X size={18} />} loading={statsLoading} sub={`من إجمالي ${stats.total}`} />
+        <StatCard label="إجازة"  value={stats.onLeave} color="var(--color-info)"    icon={<Calendar size={18} />} loading={statsLoading} sub={`من إجمالي ${stats.total}`} />
       </div>
 
       {!!reviewSummary && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
           <div style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', background: 'color-mix(in srgb, var(--color-warning) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--color-warning) 25%, transparent)' }}>
             <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>أيام تحتاج مراجعة</div>
-            <div style={{ fontWeight: 800, fontSize: 'var(--text-xl)', color: 'var(--color-warning)' }}>{reviewSummary.unresolved_days}</div>
+            <div style={{ fontWeight: 700, fontSize: 'var(--text-xl)', color: 'var(--color-warning)' }}>{reviewSummary.unresolved_days}</div>
           </div>
           <div style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', background: 'color-mix(in srgb, var(--color-danger) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--color-danger) 25%, transparent)' }}>
             <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>أيام غير مغلقة</div>
-            <div style={{ fontWeight: 800, fontSize: 'var(--text-xl)', color: 'var(--color-danger)' }}>{reviewSummary.unclosed_days}</div>
+            <div style={{ fontWeight: 700, fontSize: 'var(--text-xl)', color: 'var(--color-danger)' }}>{reviewSummary.unclosed_days}</div>
           </div>
           <div style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', background: 'color-mix(in srgb, var(--color-danger) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--color-danger) 25%, transparent)' }}>
             <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>تنبيهات مفتوحة</div>
-            <div style={{ fontWeight: 800, fontSize: 'var(--text-xl)', color: 'var(--color-danger)' }}>{reviewSummary.open_alerts}</div>
+            <div style={{ fontWeight: 700, fontSize: 'var(--text-xl)', color: 'var(--color-danger)' }}>{reviewSummary.open_alerts}</div>
           </div>
           <div style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', background: 'color-mix(in srgb, var(--color-info) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--color-info) 25%, transparent)' }}>
             <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>أذونات بلا عودة</div>
-            <div style={{ fontWeight: 800, fontSize: 'var(--text-xl)', color: 'var(--color-info)' }}>{reviewSummary.permission_no_return}</div>
+            <div style={{ fontWeight: 700, fontSize: 'var(--text-xl)', color: 'var(--color-info)' }}>{reviewSummary.permission_no_return}</div>
           </div>
           {reviewSummary.tracking_gap_days > 0 && (
             <div style={{ padding: 'var(--space-4)', borderRadius: 'var(--radius-lg)', background: 'color-mix(in srgb, var(--color-warning) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--color-warning) 25%, transparent)' }}>
               <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>فجوات تتبع / خروج نطاق</div>
-              <div style={{ fontWeight: 800, fontSize: 'var(--text-xl)', color: 'var(--color-warning)' }}>{reviewSummary.tracking_gap_days}</div>
+              <div style={{ fontWeight: 700, fontSize: 'var(--text-xl)', color: 'var(--color-warning)' }}>{reviewSummary.tracking_gap_days}</div>
             </div>
           )}
         </div>
@@ -430,9 +554,9 @@ export default function AttendancePage() {
                     <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
                       {new Date(alert.started_at).toLocaleString('ar-EG-u-nu-latn')}
                     </div>
-                    {alert.details ? (
+                    {(alert.details || alert.metadata) ? (
                       <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>
-                        {typeof alert.details === 'string' ? alert.details : JSON.stringify(alert.details)}
+                        {formatAlertDetails(alert.details, alert.metadata)}
                       </div>
                     ) : null}
                   </div>
@@ -462,7 +586,8 @@ export default function AttendancePage() {
                       size="sm"
                       variant="secondary"
                       onClick={() => resolveAlertMut.mutate({ id: alert.id, note: 'تمت مراجعة الحالة' })}
-                      loading={resolveAlertMut.isPending}
+                      loading={resolvingAlertId === alert.id}
+                      disabled={!!resolvingAlertId || !!dismissingAlertId}
                     >
                       تم الحل
                     </Button>
@@ -470,7 +595,8 @@ export default function AttendancePage() {
                       size="sm"
                       variant="ghost"
                       onClick={() => dismissAlertMut.mutate({ id: alert.id, note: 'تم تجاوز التنبيه إداريًا' })}
-                      loading={dismissAlertMut.isPending}
+                      loading={dismissingAlertId === alert.id}
+                      disabled={!!resolvingAlertId || !!dismissingAlertId}
                     >
                       تجاهل مبرر
                     </Button>
@@ -479,6 +605,13 @@ export default function AttendancePage() {
               )
             })}
           </div>
+          {alerts.length > 5 && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 'var(--space-3)' }}>
+              <Button size="sm" variant="ghost" onClick={() => setShowAllAlerts(v => !v)}>
+                {showAllAlerts ? 'عرض أول 5 فقط' : `عرض كل التنبيهات (${alerts.length})`}
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
@@ -587,7 +720,7 @@ export default function AttendancePage() {
                     key: 'actions', label: '', width: 50,
                     render: d => (
                       <PermissionGuard permission="hr.attendance.edit">
-                        <Button size="sm" variant="ghost" icon={<Edit2 size={12} />} onClick={() => setEditDay(d)} />
+                        <Button size="sm" variant="ghost" aria-label="تعديل سجل الحضور" icon={<Edit2 size={12} />} onClick={() => setEditDay(d)} />
                       </PermissionGuard>
                     )
                   }

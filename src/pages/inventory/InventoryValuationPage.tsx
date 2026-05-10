@@ -14,7 +14,7 @@ import {
   PackageOpen, Warehouse, Tag, AlertTriangle, TrendingDown, RefreshCw,
   DollarSign, ShoppingBag, BarChart2, Package, Activity, Layers,
   Clock, AlertOctagon, Archive, Zap, AlertCircle, Search,
-  ArrowUpDown, ChevronUp, ChevronDown,
+  ArrowUpDown, ChevronUp, ChevronDown, ExternalLink,
 } from 'lucide-react'
 import {
   useInventoryValuationSummary, useInventoryByWarehouse, useInventoryByCategory,
@@ -230,7 +230,7 @@ function ValuationTab({ summary, summaryLoading, warehouses, whLoading, categori
         <div className="iv-section-header"><Warehouse size={16} /><span>توزيع القيمة حسب المخازن</span></div>
         {whLoading ? <div style={{ padding: 'var(--space-4)' }}>{[1,2,3].map(i => <div key={i} className="skeleton skeleton-row" style={{ marginBottom: 8 }} />)}</div>
         : !warehouses?.length ? <div className="iv-empty"><PackageOpen size={36} style={{ opacity: 0.3 }} /><span>لا توجد بيانات</span></div>
-        : <table className="iv-table"><thead><tr><th>المخزن</th><th>النوع</th><th>عدد المنتجات</th><th>الكمية</th><th>القيمة</th><th>النسبة</th></tr></thead><tbody>
+        : <table className="iv-table"><thead><tr><th>المخزن</th><th>النوع</th><th>عدد المنتجات</th><th>الكمية</th><th>القيمة</th><th>النسبة</th><th></th></tr></thead><tbody>
           {warehouses.map((wh: WarehouseInventory) => (
             <tr key={wh.warehouse_id}>
               <td style={{ fontWeight: 600 }}>{wh.warehouse_name}</td>
@@ -238,6 +238,16 @@ function ValuationTab({ summary, summaryLoading, warehouses, whLoading, categori
               <td>{formatNumber(wh.product_count)}</td><td>{formatNumber(wh.total_quantity)}</td>
               <td style={{ fontWeight: 600 }}>{formatCurrency(wh.total_value)}</td>
               <td><div className="iv-pct-bar-wrap"><div className="iv-pct-bar" style={{ width: `${Math.min(wh.value_percentage, 100)}%` }} /><span className="iv-pct-text">{formatPercent(wh.value_percentage)}</span></div></td>
+              <td>
+                <a
+                  href={`/inventory/stock?warehouseId=${wh.warehouse_id}`}
+                  className="iv-wh-link"
+                  title="عرض تفاصيل أرصدة هذا المخزن"
+                >
+                  <ExternalLink size={13} />
+                  عرض تفاصيل المخزن
+                </a>
+              </td>
             </tr>
           ))}
         </tbody></table>}
@@ -631,6 +641,18 @@ const STYLES = `
 .iv-abc-stats { display: flex; gap: var(--space-4); flex-wrap: wrap; }
 .iv-abc-stat-value { font-weight: 800; font-size: var(--text-base); font-variant-numeric: tabular-nums; }
 .iv-abc-stat-label { font-size: var(--text-xs); color: var(--text-muted); }
+
+/* Warehouse detail link */
+.iv-wh-link {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: var(--text-xs); font-weight: 600;
+  color: var(--color-primary); text-decoration: none;
+  padding: 3px 8px; border-radius: 6px;
+  border: 1px solid rgba(37,99,235,0.25);
+  background: rgba(37,99,235,0.05);
+  white-space: nowrap; transition: background 0.15s;
+}
+.iv-wh-link:hover { background: rgba(37,99,235,0.12); }
 
 /* Refresh spin */
 @keyframes iv-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }

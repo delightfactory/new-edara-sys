@@ -103,7 +103,6 @@ export default function ResponsiveModal({
     <div
       className={`rmodal-overlay ${isVisible ? 'rmodal-overlay--visible' : ''}`}
       onClick={disableOverlayClose ? undefined : requestClose}
-      aria-hidden="true"
     >
       <div
         ref={contentRef}

@@ -804,8 +804,8 @@ export default function AttendanceCheckin() {
           padding-top: var(--space-4);
         }
         .ci-header-title {
-          font-size: var(--text-lg); font-weight: 800;
-          color: var(--text-primary); letter-spacing: -0.02em;
+          font-size: var(--text-lg); font-weight: 700;
+          color: var(--text-primary);
         }
 
         /* ══ Online chip ══ */
@@ -938,7 +938,7 @@ export default function AttendanceCheckin() {
           background: color-mix(in srgb, var(--color-primary) 14%, transparent);
           border: 2px solid color-mix(in srgb, var(--color-primary) 28%, transparent);
           display: flex; align-items: center; justify-content: center;
-          font-size: 1.25rem; font-weight: 800; color: var(--color-primary);
+          font-size: 1.25rem; font-weight: 700; color: var(--color-primary);
         }
         .ci-emp-name  { font-weight: 700; font-size: var(--text-sm); color: var(--text-primary); }
         .ci-emp-meta  { font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px; }
@@ -972,7 +972,7 @@ export default function AttendanceCheckin() {
           animation: ci-ring-scale 2.5s ease-out infinite;
         }
         .ci-action-icon-wrap { color: #fff; display: flex; align-items: center; justify-content: center; }
-        .ci-action-label { font-size: var(--text-xl); font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; }
+        .ci-action-label { font-size: var(--text-xl); font-weight: 700; color: var(--text-primary); }
 
         /* ══ Spinner ══ */
         .ci-spinner {
@@ -1051,7 +1051,7 @@ export default function AttendanceCheckin() {
           display: flex; align-items: center; justify-content: center;
           color: var(--color-success);
         }
-        .ci-day-done-title { font-size: var(--text-xl); font-weight: 800; color: var(--text-primary); }
+        .ci-day-done-title { font-size: var(--text-xl); font-weight: 700; color: var(--text-primary); }
         .ci-day-done-meta  { font-size: var(--text-sm); color: var(--text-muted); }
 
         /* ══ GPS warning ══ */

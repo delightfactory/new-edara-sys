@@ -169,6 +169,8 @@ export async function getStock(params?: {
   search?: string
   page?: number
   pageSize?: number
+  // فلتر حالة الرصيد — لا يعمل مع lowStockOnly
+  stockStatus?: 'all' | 'with_stock' | 'out_of_stock' | 'reserved'
 }) {
   const page = params?.page || 1
   const pageSize = params?.pageSize || 50
@@ -210,15 +212,18 @@ export async function getStock(params?: {
       page,
       pageSize,
       totalPages: Math.ceil(totalCount / pageSize),
+      // البحث النصي غير مدعوم مع lowStockOnly — تطبيقه محلياً سيبحث داخل صفحة واحدة فقط ويضلل المستخدم
+      searchDisabledInLowStockMode: true,
     }
   }
 
+  // استخدام !inner لضمان صحة الفلترة على اسم/كود المنتج
   let query = supabase
     .from('stock')
     .select(`
       *,
       warehouse:warehouses(id, name, type),
-      product:products(id, name, sku, min_stock_level, base_unit:units!products_base_unit_id_fkey(id, name, symbol))
+      product:products!inner(id, name, sku, min_stock_level, base_unit:units!products_base_unit_id_fkey(id, name, symbol))
     `, { count: 'estimated' })
     .order('updated_at', { ascending: false })
     .range(from, to)
@@ -230,6 +235,23 @@ export async function getStock(params?: {
     query = query.eq('product_id', params.productId)
   }
 
+  // البحث بالاسم أو الكود SKU — يعمل على مستوى DB في المسار العادي فقط
+  if (params?.search?.trim()) {
+    const q = params.search.trim()
+    query = query.or(`name.ilike.%${q}%,sku.ilike.%${q}%`, { referencedTable: 'products' })
+  }
+
+  // فلتر حالة الرصيد — يعمل فقط في المسار العادي
+  if (params?.stockStatus && params.stockStatus !== 'all') {
+    if (params.stockStatus === 'with_stock') {
+      query = query.gt('available_quantity', 0)
+    } else if (params.stockStatus === 'out_of_stock') {
+      query = query.lte('available_quantity', 0)
+    } else if (params.stockStatus === 'reserved') {
+      query = query.gt('reserved_quantity', 0)
+    }
+  }
+
   const { data, error, count } = await query
   if (error) throw error
 
@@ -239,6 +261,7 @@ export async function getStock(params?: {
     page,
     pageSize,
     totalPages: Math.ceil((count || 0) / pageSize),
+    searchDisabledInLowStockMode: false,
   }
 }
 
