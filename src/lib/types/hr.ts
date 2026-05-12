@@ -762,6 +762,8 @@ export interface HRPayrollRun {
   paid_by: string | null
   paid_at: string | null            // TIMESTAMPTZ
   journal_entry_id: string | null
+  calculation_mode: 'interim' | 'final' | null
+  calculated_through_date: string | null
   notes: string | null
   created_by: string | null
   created_at: string

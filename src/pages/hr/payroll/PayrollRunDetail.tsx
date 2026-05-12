@@ -137,7 +137,18 @@ export default function PayrollRunDetail() {
   const hasPendingAdjustments = pendingAdj.length > 0
 
   const hasAttendanceRisk = !!attendanceReview && attendanceReview.total_blocking_items > 0
-  const canApprove = run && ['review', 'calculating'].includes(run.status) && !hasAttendanceRisk
+  
+  const todayCairo = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+  const isBeforePeriodEnd = periodEnd ? todayCairo < periodEnd : false
+
+  const isInterim = run?.calculation_mode === 'interim' 
+    || (run?.calculated_through_date != null && periodEnd && run.calculated_through_date < periodEnd)
+
+  const canApprove = run 
+    && ['review', 'calculating'].includes(run.status) 
+    && !hasAttendanceRisk
+    && !isInterim
+    && !isBeforePeriodEnd
 
   const handleCalculatePayroll = async () => {
     if (!runId) return
@@ -421,7 +432,9 @@ export default function PayrollRunDetail() {
                   disabled={hasAttendanceRisk}
                   title={hasAttendanceRisk ? 'أغلق حالات الحضور أولاً لتتمكن من الحساب' : undefined}
                 >
-                  {run.status === 'draft' ? 'حساب المسير' : 'إعادة حساب'}
+                  {run.status === 'draft' 
+                    ? (isBeforePeriodEnd ? 'حساب مبدئي حتى اليوم' : 'حساب المسير') 
+                    : (isBeforePeriodEnd ? 'تحديث الحساب المبدئي' : (isInterim ? 'حساب نهائي' : 'إعادة حساب'))}
                 </Button>
               </PermissionGuard>
             )}
@@ -438,6 +451,26 @@ export default function PayrollRunDetail() {
       />
 
       {/* ── بطاقات الإجماليات ── */}
+      {isInterim && run?.status === 'review' && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+          padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-md)',
+          background: 'color-mix(in srgb, var(--color-warning) 10%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--color-warning) 30%, transparent)',
+          marginBottom: 'var(--space-4)',
+        }}>
+          <AlertCircle size={20} style={{ color: 'var(--color-warning)', flexShrink: 0 }} />
+          <div>
+            <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--color-warning)' }}>
+              هذه أرقام مبدئية حتى {run.calculated_through_date} — غير قابلة للاعتماد.
+            </div>
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 2 }}>
+              أعد الحساب النهائي بعد نهاية الفترة لاعتماد المسير والصرف.
+            </div>
+          </div>
+        </div>
+      )}
+
       {run && (
         <div style={{
           display: 'grid',
