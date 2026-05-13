@@ -1670,17 +1670,20 @@ export async function deferInstallment(
   deferToMonth: number,
   deferToYear: number
 ): Promise<HRAdvanceInstallment> {
+  const { error: rpcError } = await supabase.rpc('defer_advance_installment', {
+    p_installment_id: installmentId,
+    p_new_due_year: deferToYear,
+    p_new_due_month: deferToMonth,
+    p_reason: reason
+  })
+  if (rpcError) throw rpcError
+
   const { data, error } = await supabase
     .from('hr_advance_installments')
-    .update({
-      status:           'deferred',
-      deferred_reason:  reason,
-      deferred_to_month: deferToMonth,
-      deferred_to_year:  deferToYear,
-    })
-    .eq('id', installmentId)
     .select('*')
+    .eq('id', installmentId)
     .single()
+
   if (error) throw error
   return data as HRAdvanceInstallment
 }
