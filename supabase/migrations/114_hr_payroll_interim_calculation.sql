@@ -206,9 +206,14 @@ BEGIN
     RAISE EXCEPTION 'لا يمكن حساب مسير لفترة لم تبدأ بعد.';
   END IF;
 
-  IF v_period.end_date > v_today THEN
+  IF v_period.end_date >= v_today THEN
+    IF v_today <= v_period.start_date THEN
+      RAISE EXCEPTION 'لا يمكن حساب مسير مبدئي قبل اكتمال أول يوم في الفترة.';
+    END IF;
+
     v_is_interim := true;
-    v_calc_date := v_today;
+    -- الحساب المبدئي يجب أن يقف عند آخر يوم مكتمل، لا اليوم الحالي المفتوح تشغيلياً.
+    v_calc_date := v_today - 1;
   ELSE
     v_calc_date := v_period.end_date;
   END IF;
@@ -449,9 +454,10 @@ BEGIN
         WHERE employee_id = p_employee_id AND reason LIKE '[ترحيل تلقائي]%' AND effective_date = v_next_month_start;
       END IF;
     ELSE
-      -- في الحساب المبدئي: إذا كان الراتب بالسالب، نتركه أو نصفّره شكلياً بدون ترحيل عجز فعلي لجدول التعديلات.
+      -- في الحساب المبدئي: إذا كان الراتب بالسالب، نصفّره شكلياً بدون إنشاء أو عرض عجز مرحّل فعلي.
       IF v_net < 0 THEN
-        v_deficit := ABS(v_net); v_net := 0;
+        v_deficit := 0;
+        v_net := 0;
       END IF;
     END IF;
 
@@ -539,9 +545,14 @@ BEGIN
     RAISE EXCEPTION 'لا يمكن حساب مسير لفترة لم تبدأ بعد.';
   END IF;
 
-  IF v_period.end_date > v_today THEN
+  IF v_period.end_date >= v_today THEN
+    IF v_today <= v_period.start_date THEN
+      RAISE EXCEPTION 'لا يمكن حساب مسير مبدئي قبل اكتمال أول يوم في الفترة.';
+    END IF;
+
     v_is_interim := true;
-    v_calc_date := v_today;
+    -- الحساب المبدئي يجب أن يقف عند آخر يوم مكتمل، لا اليوم الحالي المفتوح تشغيلياً.
+    v_calc_date := v_today - 1;
   ELSE
     v_calc_date := v_period.end_date;
   END IF;

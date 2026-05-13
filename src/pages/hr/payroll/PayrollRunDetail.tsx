@@ -139,7 +139,7 @@ export default function PayrollRunDetail() {
   const hasAttendanceRisk = !!attendanceReview && attendanceReview.total_blocking_items > 0
   
   const todayCairo = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
-  const isBeforePeriodEnd = periodEnd ? todayCairo < periodEnd : false
+  const isBeforePeriodEnd = periodEnd ? todayCairo <= periodEnd : false
 
   const isInterim = run?.calculation_mode === 'interim' 
     || (run?.calculated_through_date != null && periodEnd && run.calculated_through_date < periodEnd)
@@ -433,8 +433,8 @@ export default function PayrollRunDetail() {
                   title={hasAttendanceRisk ? 'أغلق حالات الحضور أولاً لتتمكن من الحساب' : undefined}
                 >
                   {run.status === 'draft' 
-                    ? (isBeforePeriodEnd ? 'حساب مبدئي حتى اليوم' : 'حساب المسير') 
-                    : (isBeforePeriodEnd ? 'تحديث الحساب المبدئي' : (isInterim ? 'حساب نهائي' : 'إعادة حساب'))}
+                    ? (isBeforePeriodEnd ? 'حساب مبدئي حتى أمس' : 'حساب المسير') 
+                    : (isBeforePeriodEnd ? 'تحديث الحساب المبدئي حتى أمس' : (isInterim ? 'حساب نهائي' : 'إعادة حساب'))}
                 </Button>
               </PermissionGuard>
             )}
