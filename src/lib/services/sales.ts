@@ -595,8 +595,45 @@ export async function confirmSalesOrderWithWarehouse(orderId: string, warehouseI
 
 
 // ============================================================
-// Sales Returns â€” Ø§Ù„Ù…Ø±ØªØ¬Ø¹Ø§Øª
+// Sales Returns — المرتجعات
 // ============================================================
+
+/**
+ * جلب الفواتير القابلة للمرتجع لعميل معين مع بنودها
+ */
+export async function getReturnableSalesOrdersForCustomer(customerId: string) {
+  const { data, error } = await supabase
+    .from('sales_orders')
+    .select(`
+      id, order_number, order_date, total_amount, returned_amount, payment_terms, created_at,
+      items:sales_order_items(
+        id, order_id, product_id, unit_id, delivered_quantity, returned_quantity, unit_price, line_total,
+        product:products(id, name, sku),
+        unit:units(id, name, symbol)
+      )
+    `)
+    .eq('customer_id', customerId)
+    .in('status', ['delivered', 'completed'])
+    .order('order_date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(25)
+
+  if (error) throw error
+
+  // Filter items in memory where available to return > 0
+  const orders = (data as any[]).map(order => {
+    const returnableItems = (order.items || []).filter((item: any) => {
+      return (item.delivered_quantity - item.returned_quantity) > 0
+    })
+    return {
+      ...order,
+      returnableItems
+    }
+  })
+
+  // Filter orders that actually have returnable items
+  return orders.filter(o => o.returnableItems.length > 0)
+}
 
 const SALES_RETURN_SELECT = `
   *,
