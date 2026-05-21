@@ -213,8 +213,14 @@ export default function SalesOrderDetail() {
   const creditAmount = deliverForm.paymentTerms === 'credit' ? remaining
     : deliverForm.paymentTerms === 'mixed' ? Math.max(remaining - deliverForm.cashAmount, 0) : 0
 
-  const canDeliverCredit = !creditInfo || creditInfo.credit_ok || deliverForm.overrideCredit
-    || (creditInfo.can_use_credit && creditAmount <= creditInfo.available_credit)
+  const canOverrideCredit = can('sales.orders.override_credit')
+  const creditHealthy = !!creditInfo && creditInfo.credit_ok && !creditInfo.has_overdue
+  const creditPolicyBlocked = !!creditInfo && creditAmount > 0 && (
+    creditInfo.has_overdue ||
+    !creditInfo.can_use_credit ||
+    creditAmount > creditInfo.available_credit
+  )
+  const canDeliverCredit = !creditPolicyBlocked || (deliverForm.overrideCredit && canOverrideCredit)
   const minCash = creditInfo ? Math.max(0, remaining - creditInfo.available_credit) : 0
 
   // هل طريقة الدفع المختارة نقدية فورية؟
@@ -711,8 +717,8 @@ export default function SalesOrderDetail() {
                   <User size={13} /> {creditInfo.customer_name}
                 </span>
                 <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 99,
-                  background: creditInfo.payment_terms === 'cash' ? 'var(--bg-secondary, #f3f4f6)' : creditInfo.credit_ok ? 'var(--color-success-light, #f0fdf4)' : 'var(--color-danger-light, #fef2f2)',
-                  color: creditInfo.payment_terms === 'cash' ? 'var(--text-muted, #6b7280)' : creditInfo.credit_ok ? 'var(--color-success, #16a34a)' : 'var(--color-danger, #dc2626)' }}>
+                  background: creditInfo.payment_terms === 'cash' ? 'var(--bg-secondary, #f3f4f6)' : creditHealthy ? 'var(--color-success-light, #f0fdf4)' : 'var(--color-danger-light, #fef2f2)',
+                  color: creditInfo.payment_terms === 'cash' ? 'var(--text-muted, #6b7280)' : creditHealthy ? 'var(--color-success, #16a34a)' : 'var(--color-danger, #dc2626)' }}>
                   {termLabels[creditInfo.payment_terms] || creditInfo.payment_terms}
                 </span>
               </div>
@@ -721,7 +727,7 @@ export default function SalesOrderDetail() {
                   <CreditTile label="الرصيد" value={`${formatNumber(creditInfo.current_balance)} ج.م`} />
                   <CreditTile label="الحد" value={`${formatNumber(creditInfo.credit_limit)} ج.م`} />
                   <CreditTile label="المتاح" value={`${formatNumber(creditInfo.available_credit)} ج.م`}
-                    color={creditInfo.credit_ok ? 'var(--color-success)' : 'var(--color-danger)'} />
+                    color={creditHealthy ? 'var(--color-success)' : 'var(--color-danger)'} />
                 </div>
               )}
               {creditInfo.has_overdue && (
@@ -731,10 +737,12 @@ export default function SalesOrderDetail() {
                 </div>
               )}
               <div style={{ padding: '7px 14px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 6,
-                color: creditInfo.credit_ok ? 'var(--color-success)' : 'var(--color-danger)',
-                background: creditInfo.credit_ok ? 'var(--color-success-light, #f0fdf4)' : 'var(--color-danger-light, #fef2f2)' }}>
-                {creditInfo.credit_ok
+                color: creditHealthy ? 'var(--color-success)' : 'var(--color-danger)',
+                background: creditHealthy ? 'var(--color-success-light, #f0fdf4)' : 'var(--color-danger-light, #fef2f2)' }}>
+                {creditHealthy
                   ? `✅ الائتمان متاح — ${formatNumber(creditInfo.available_credit)} ج.م`
+                  : creditInfo.has_overdue
+                  ? `❌ توجد فواتير متأخرة — يلزم صلاحية تخطي سياسة الائتمان`
                   : creditInfo.can_use_credit
                   ? `❌ تجاوز الحد — المطلوب ${formatNumber(remaining)} ج.م`
                   : '💵 عميل نقدي فقط'}
@@ -927,7 +935,7 @@ export default function SalesOrderDetail() {
               )}
 
               {/* Override Credit */}
-              {creditInfo && creditAmount > 0 && creditInfo.exceeds_limit && can('sales.orders.override_credit') && (
+              {creditInfo && creditAmount > 0 && (creditInfo.exceeds_limit || creditInfo.has_overdue) && canOverrideCredit && (
                 <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
                   <input type="checkbox" checked={deliverForm.overrideCredit}
                     onChange={e => setDeliverForm(f => ({ ...f, overrideCredit: e.target.checked }))} />
