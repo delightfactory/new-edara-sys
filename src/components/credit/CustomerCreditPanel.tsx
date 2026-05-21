@@ -322,7 +322,6 @@ export default function CustomerCreditPanel({
           loadingOrders ? <TabSkeleton /> : (
             <InvoicesTab
               orders={openOrders || []}
-              creditDays={customer.credit_days || 0}
             />
           )
         )}
@@ -439,9 +438,8 @@ function TabSkeleton() {
 }
 
 // ── Tab 1: الفواتير ───────────────────────────────────────────
-function InvoicesTab({ orders, creditDays }: {
+function InvoicesTab({ orders }: {
   orders: import('@/lib/services/credit').CreditOpenOrder[]
-  creditDays: number
 }) {
   if (!orders.length) {
     return (
@@ -457,8 +455,9 @@ function InvoicesTab({ orders, creditDays }: {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {orders.map(order => {
         const daysNum = order.days_since_delivery ?? 0
-        const isOverdue = daysNum > creditDays
-        const isWarn    = !isOverdue && creditDays > 0 && daysNum > creditDays * 0.7
+        const effectiveDays = order.credit_days_effective ?? 0
+        const isOverdue = order.days_overdue > 0
+        const isWarn    = !isOverdue && effectiveDays > 0 && daysNum > effectiveDays * 0.7
 
         const dayColor = isOverdue ? '#dc2626' : isWarn ? '#d97706' : '#16a34a'
 
@@ -480,10 +479,7 @@ function InvoicesTab({ orders, creditDays }: {
                 padding: '2px 8px', borderRadius: 99,
               }}>
                 {/* days_since_delivery دائمًا موجودة لأن كل الطلبات مسلَّمة */}
-                {order.days_since_delivery != null
-                  ? `${order.days_since_delivery} يوم`
-                  : '—'
-                }
+                {isOverdue ? `${order.days_overdue} يوم تأخير` : `${daysNum} يوم`}
               </span>
             </div>
 
@@ -524,6 +520,7 @@ function InvoicesTab({ orders, creditDays }: {
                 fontSize: 'var(--text-xs)', color: 'var(--text-muted)',
               }}>
                 تاريخ التسليم: {formatDate(order.delivered_at)}
+                {order.due_date ? ` • الاستحقاق: ${formatDate(order.due_date)}` : ''}
               </div>
             )}
           </div>

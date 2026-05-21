@@ -527,6 +527,27 @@ export async function cancelSalesOrder(orderId: string, reason?: string) {
   if (error) throw error
 }
 
+export async function updateSalesOrderDueDate(
+  orderId: string,
+  creditDays: number,
+  reason: string
+) {
+  const { data, error } = await supabase.rpc('update_sales_order_due_date', {
+    p_order_id: orderId,
+    p_credit_days: creditDays,
+    p_reason: reason,
+  })
+  if (error) throw error
+  return data as {
+    order_id: string
+    old_due_date: string | null
+    new_due_date: string
+    old_credit_days: number | null
+    new_credit_days: number
+    changed: boolean
+  }
+}
+
 // ============================================================
 // Smart Delivery RPCs â€” Ø¯ÙˆØ§Ù„ Ø§Ù„ØªØ³Ù„ÙŠÙ… Ø§Ù„Ø°ÙƒÙŠ (04b_delivery_rpcs)
 // ============================================================

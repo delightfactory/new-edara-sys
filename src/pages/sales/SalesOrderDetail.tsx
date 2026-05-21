@@ -20,6 +20,7 @@ import {
   confirmSalesOrderWithWarehouse,
   deliverSalesOrder,
   cancelSalesOrder,
+  updateSalesOrderDueDate,
   checkCustomerCredit,
   getUserPaymentOptions,
 } from '@/lib/services/sales'
@@ -104,6 +105,9 @@ export default function SalesOrderDetail() {
 
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
+  const [showDueDateModal, setShowDueDateModal] = useState(false)
+  const [dueDateCreditDays, setDueDateCreditDays] = useState(0)
+  const [dueDateReason, setDueDateReason] = useState('')
 
   const { data: warehouses = [] } = useWarehouses({ isActive: true })
   const isAdmin = can('inventory.read_all')
@@ -346,6 +350,55 @@ export default function SalesOrderDetail() {
     finally { setActionLoading(false) }
   }
 
+  const parseDateOnly = (value: string) => {
+    const [y, m, d] = value.slice(0, 10).split('-').map(Number)
+    return Date.UTC(y, m - 1, d)
+  }
+
+  const getCurrentCreditDays = (target: SalesOrder) => {
+    if (!target.delivered_at || !target.due_date) return 0
+    return Math.max(0, Math.round((parseDateOnly(target.due_date) - parseDateOnly(target.delivered_at)) / 86_400_000))
+  }
+
+  const getNewDueDate = () => {
+    if (!order?.delivered_at) return null
+    const delivered = new Date(parseDateOnly(order.delivered_at))
+    delivered.setUTCDate(delivered.getUTCDate() + dueDateCreditDays)
+    return delivered.toISOString().slice(0, 10)
+  }
+
+  const openDueDateModal = () => {
+    if (!order) return
+    setDueDateCreditDays(getCurrentCreditDays(order))
+    setDueDateReason('')
+    setShowDueDateModal(true)
+  }
+
+  const handleDueDateUpdate = async () => {
+    if (!order) return
+    if (!Number.isInteger(dueDateCreditDays) || dueDateCreditDays < 0 || dueDateCreditDays > 3650) {
+      toast.error('مدة الائتمان يجب أن تكون بين 0 و 3650 يوم')
+      return
+    }
+    if (!dueDateReason.trim()) {
+      toast.error('سبب التعديل مطلوب')
+      return
+    }
+
+    setActionLoading(true)
+    try {
+      const result = await updateSalesOrderDueDate(order.id, dueDateCreditDays, dueDateReason.trim())
+      toast.success(result.changed ? 'تم تعديل تاريخ الاستحقاق' : 'لا يوجد تغيير في تاريخ الاستحقاق')
+      setShowDueDateModal(false)
+      invalidate('sales-orders', 'credit-customers', 'credit-open-orders', 'sales-stats')
+      await loadOrder()
+    } catch (e: any) {
+      toast.error(e.message || 'فشل تعديل تاريخ الاستحقاق')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   // ── Loading / Not Found ────────────────────────────────────
   if (loading) return (
     <div style={{ padding: '16px', maxWidth: 800, margin: '0 auto' }}>
@@ -359,6 +412,13 @@ export default function SalesOrderDetail() {
   const sc = statusColors[order.status]
   const paidRatio = order.total_amount > 0 ? ((order.paid_amount || 0)) / order.total_amount : 0
   const itemCount = order.items?.length || 0
+  const canAdjustDueDate = can('customers.credit.update')
+    && ['delivered', 'partially_delivered'].includes(order.status)
+    && ['credit', 'mixed'].includes(order.payment_terms || '')
+    && remaining > 0
+    && !!order.delivered_at
+  const newDueDate = getNewDueDate()
+  const newDueDateIsOverdue = !!newDueDate && newDueDate < new Date().toISOString().slice(0, 10)
 
   // ══════════════════════════════════════════════════════════════
   // RENDER
@@ -418,6 +478,10 @@ export default function SalesOrderDetail() {
           {order.status === 'confirmed' && can('sales.orders.deliver') && (
             <ActionBtn icon={<Truck size={13} />} label="تسليم" primary
               onClick={openDeliverModal} disabled={actionLoading} />
+          )}
+          {canAdjustDueDate && (
+            <ActionBtn icon={<Clock size={13} />} label="تعديل الاستحقاق"
+              onClick={openDueDateModal} disabled={actionLoading} />
           )}
           {(order.status === 'delivered' || order.status === 'completed') && can('sales.returns.create') && (
             <ActionBtn icon={<RotateCcw size={13} />} label="مرتجع"
@@ -957,6 +1021,80 @@ export default function SalesOrderDetail() {
       </ResponsiveModal>
 
       {/* ══════════════════════════════════════════ CANCEL MODAL */}
+      <ResponsiveModal open={showDueDateModal} onClose={() => setShowDueDateModal(false)} title="تعديل تاريخ الاستحقاق">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+            gap: 8,
+            fontSize: 12,
+          }}>
+            <div style={{ padding: 10, borderRadius: 8, background: 'var(--bg-surface-2)' }}>
+              <div style={{ color: 'var(--text-muted)', marginBottom: 3 }}>تاريخ التسليم</div>
+              <div style={{ fontWeight: 700 }}>{order.delivered_at ? new Date(order.delivered_at).toLocaleDateString('ar-EG-u-nu-latn') : '—'}</div>
+            </div>
+            <div style={{ padding: 10, borderRadius: 8, background: 'var(--bg-surface-2)' }}>
+              <div style={{ color: 'var(--text-muted)', marginBottom: 3 }}>الاستحقاق الحالي</div>
+              <div style={{ fontWeight: 700 }}>{order.due_date ? new Date(order.due_date).toLocaleDateString('ar-EG-u-nu-latn') : '—'}</div>
+            </div>
+          </div>
+
+          <div>
+            <label className="form-label" style={{ fontSize: 12 }}>مدة الائتمان الجديدة بالأيام *</label>
+            <input
+              className="form-input"
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={3650}
+              step={1}
+              value={dueDateCreditDays}
+              onChange={e => setDueDateCreditDays(Math.max(0, Math.min(3650, Math.trunc(Number(e.target.value) || 0))))}
+            />
+            {newDueDate && (
+              <div style={{
+                marginTop: 6,
+                fontSize: 12,
+                color: newDueDateIsOverdue ? 'var(--color-danger)' : 'var(--text-muted)',
+              }}>
+                تاريخ الاستحقاق الجديد: {new Date(newDueDate).toLocaleDateString('ar-EG-u-nu-latn')}
+                {newDueDateIsOverdue ? ' — سيظل متأخراً' : ''}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="form-label" style={{ fontSize: 12 }}>سبب التعديل *</label>
+            <textarea
+              className="form-input"
+              rows={3}
+              value={dueDateReason}
+              onChange={e => setDueDateReason(e.target.value)}
+              placeholder="اكتب سبب تعديل مدة الائتمان لهذه الفاتورة..."
+            />
+          </div>
+
+          <div style={{
+            fontSize: 12,
+            color: 'var(--text-muted)',
+            background: 'var(--bg-surface-2)',
+            border: '1px solid var(--border-primary)',
+            borderRadius: 8,
+            padding: '8px 10px',
+          }}>
+            سيتم تعديل تاريخ استحقاق هذه الفاتورة فقط، ولن يتم تعديل دفتر العميل أو القيود أو المخزون أو مدة ائتمان العميل العامة.
+          </div>
+
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+            <button className="btn btn-secondary" onClick={() => setShowDueDateModal(false)}>إلغاء</button>
+            <button className="btn btn-primary" onClick={handleDueDateUpdate} disabled={actionLoading || !dueDateReason.trim()}>
+              <Clock size={14} />
+              {actionLoading ? 'جاري...' : 'حفظ التعديل'}
+            </button>
+          </div>
+        </div>
+      </ResponsiveModal>
+
       <ResponsiveModal open={showCancelModal} onClose={() => setShowCancelModal(false)} title="إلغاء الطلب">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <p style={{ color: 'var(--color-danger)', fontSize: 13, margin: 0 }}>

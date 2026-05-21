@@ -71,9 +71,12 @@ export interface CreditOpenOrder {
   paid_amount:         number
   returned_amount:     number
   delivered_at:        string | null
+  due_date:            string | null
   status:              string
   net_remaining:       number         // total_amount - paid_amount - returned_amount (من SQL)
   days_since_delivery: number | null  // من SQL: CURRENT_DATE - delivered_at::date
+  credit_days_effective: number | null
+  days_overdue:        number
 }
 
 export interface CreditUpdatePatch {
@@ -297,7 +300,7 @@ async function getOverdueBatchFallback(
 // ─────────────────────────────────────────────────────────────
 
 export async function getCreditOpenOrders(customerId: string): Promise<CreditOpenOrder[]> {
-  const { data, error } = await supabase.rpc('get_credit_open_orders', {
+  const { data, error } = await supabase.rpc('get_credit_open_orders_v2', {
     p_customer_id: customerId,
   })
 
@@ -313,18 +316,23 @@ export async function getCreditOpenOrders(customerId: string): Promise<CreditOpe
     paid_amount:         Number(row.paid_amount)     || 0,
     returned_amount:     Number(row.returned_amount) || 0,
     delivered_at:        row.delivered_at,
+    due_date:            row.due_date,
     status:              row.status,
     net_remaining:       Number(row.net_remaining)       || 0,
     days_since_delivery: row.days_since_delivery != null
       ? Number(row.days_since_delivery)
       : null,
+    credit_days_effective: row.credit_days_effective != null
+      ? Number(row.credit_days_effective)
+      : null,
+    days_overdue:        Number(row.days_overdue) || 0,
   })).filter(o => o.net_remaining > 0)
 }
 
 async function getCreditOpenOrdersFallback(customerId: string): Promise<CreditOpenOrder[]> {
   const { data, error } = await supabase
     .from('sales_orders')
-    .select('id, order_number, total_amount, paid_amount, returned_amount, delivered_at, status')
+    .select('id, order_number, total_amount, paid_amount, returned_amount, delivered_at, due_date, status')
     .eq('customer_id', customerId)
     // ✅ 'confirmed' مستبعد — المسلَّم فقط
     .in('status', ['delivered', 'partially_delivered'])
@@ -346,10 +354,19 @@ async function getCreditOpenOrdersFallback(customerId: string): Promise<CreditOp
     const netRemaining = total - paid - returned
 
     // حساب الأيام بـ UTC date arithmetic — متسق عبر المناطق الزمنية
-    const deliveredMs = Date.UTC(
-      ...((order.delivered_at as string).slice(0, 10).split('-').map(Number) as [number, number, number])
-    )
+    const [dy, dm, dd] = (order.delivered_at as string).slice(0, 10).split('-').map(Number)
+    const deliveredMs = Date.UTC(dy, dm - 1, dd)
     const daysSince = Math.floor((todayMs - deliveredMs) / (1000 * 60 * 60 * 24))
+    const dueDate = order.due_date as string | null
+    let daysOverdue = 0
+    let creditDaysEffective: number | null = null
+
+    if (dueDate) {
+      const [yy, mm, dd2] = dueDate.slice(0, 10).split('-').map(Number)
+      const dueMs = Date.UTC(yy, mm - 1, dd2)
+      daysOverdue = Math.max(0, Math.floor((todayMs - dueMs) / 86_400_000))
+      creditDaysEffective = Math.floor((dueMs - deliveredMs) / 86_400_000)
+    }
 
     return {
       id:                  order.id,
@@ -358,9 +375,12 @@ async function getCreditOpenOrdersFallback(customerId: string): Promise<CreditOp
       paid_amount:         paid,
       returned_amount:     returned,
       delivered_at:        order.delivered_at,
+      due_date:            dueDate,
       status:              order.status,
       net_remaining:       netRemaining,
       days_since_delivery: daysSince,
+      credit_days_effective: creditDaysEffective,
+      days_overdue:        daysOverdue,
     } as CreditOpenOrder
   }).filter(o => o.net_remaining > 0)
 }
