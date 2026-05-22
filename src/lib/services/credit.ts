@@ -79,6 +79,49 @@ export interface CreditOpenOrder {
   days_overdue:        number
 }
 
+export type OverdueInvoiceSortBy =
+  | 'days_overdue_desc'
+  | 'due_date_asc'
+  | 'remaining_desc'
+  | 'customer_name'
+
+export interface OverdueSalesInvoiceRow {
+  id:                       string
+  order_number:             string
+  customer_id:              string
+  customer_code:            string | null
+  customer_name:            string
+  assigned_rep_id:          string | null
+  assigned_rep_name:        string | null
+  order_rep_id:             string | null
+  order_rep_name:           string | null
+  payment_terms:            string
+  status:                   string
+  total_amount:             number
+  paid_amount:              number
+  returned_amount:          number
+  net_remaining:            number
+  delivered_at:             string | null
+  due_date:                 string
+  credit_days_effective:    number | null
+  days_since_delivery:      number | null
+  days_overdue:             number
+  overdue_bucket:           'new' | 'medium' | 'high' | 'critical'
+  last_due_date_changed_at: string | null
+  last_due_date_reason:     string | null
+}
+
+export interface OverdueSalesInvoicePage {
+  data:                   OverdueSalesInvoiceRow[]
+  count:                  number
+  page:                   number
+  pageSize:               number
+  totalPages:             number
+  totalOverdueAmount:     number
+  overdueCustomersCount:  number
+  maxDaysOverdue:         number
+}
+
 export interface CreditUpdatePatch {
   payment_terms: string
   credit_limit:  number
@@ -327,6 +370,71 @@ export async function getCreditOpenOrders(customerId: string): Promise<CreditOpe
       : null,
     days_overdue:        Number(row.days_overdue) || 0,
   })).filter(o => o.net_remaining > 0)
+}
+
+export async function getOverdueSalesInvoices(params?: {
+  search?:           string
+  repId?:            string
+  customerId?:       string
+  minDaysOverdue?:   number
+  sortBy?:           OverdueInvoiceSortBy
+  page?:             number
+  pageSize?:         number
+}): Promise<OverdueSalesInvoicePage> {
+  const page = params?.page || 1
+  const pageSize = params?.pageSize || 25
+  const offset = (page - 1) * pageSize
+
+  const { data, error } = await supabase.rpc('get_overdue_sales_invoices', {
+    p_search:           params?.search || null,
+    p_rep_id:           params?.repId || null,
+    p_customer_id:      params?.customerId || null,
+    p_min_days_overdue: params?.minDaysOverdue ?? null,
+    p_sort_by:          params?.sortBy || 'days_overdue_desc',
+    p_limit:            pageSize,
+    p_offset:           offset,
+  })
+
+  if (error) throw error
+
+  const rows = (data || []) as any[]
+  const first = rows[0]
+  const totalCount = first ? Number(first.total_count) || 0 : 0
+
+  return {
+    data: rows.map(row => ({
+      id:                       row.id,
+      order_number:             row.order_number,
+      customer_id:              row.customer_id,
+      customer_code:            row.customer_code,
+      customer_name:            row.customer_name,
+      assigned_rep_id:          row.assigned_rep_id,
+      assigned_rep_name:        row.assigned_rep_name,
+      order_rep_id:             row.order_rep_id,
+      order_rep_name:           row.order_rep_name,
+      payment_terms:            row.payment_terms,
+      status:                   row.status,
+      total_amount:             Number(row.total_amount) || 0,
+      paid_amount:              Number(row.paid_amount) || 0,
+      returned_amount:          Number(row.returned_amount) || 0,
+      net_remaining:            Number(row.net_remaining) || 0,
+      delivered_at:             row.delivered_at,
+      due_date:                 row.due_date,
+      credit_days_effective:    row.credit_days_effective != null ? Number(row.credit_days_effective) : null,
+      days_since_delivery:      row.days_since_delivery != null ? Number(row.days_since_delivery) : null,
+      days_overdue:             Number(row.days_overdue) || 0,
+      overdue_bucket:           row.overdue_bucket || 'new',
+      last_due_date_changed_at: row.last_due_date_changed_at,
+      last_due_date_reason:     row.last_due_date_reason,
+    })) as OverdueSalesInvoiceRow[],
+    count:                 totalCount,
+    page,
+    pageSize,
+    totalPages:            Math.max(1, Math.ceil(totalCount / pageSize)),
+    totalOverdueAmount:    first ? Number(first.total_overdue_amount) || 0 : 0,
+    overdueCustomersCount: first ? Number(first.overdue_customers_count) || 0 : 0,
+    maxDaysOverdue:        first ? Number(first.max_days_overdue) || 0 : 0,
+  }
 }
 
 async function getCreditOpenOrdersFallback(customerId: string): Promise<CreditOpenOrder[]> {

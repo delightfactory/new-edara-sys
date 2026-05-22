@@ -63,6 +63,7 @@ const sections: NavSection[] = [
         children: [
           { label: 'قائمة العملاء',  path: '/customers', permission: [PERMISSIONS.CUSTOMERS_READ, PERMISSIONS.CUSTOMERS_CREATE] },
           { label: '🏦 إدارة الائتمان', path: '/credit', permission: [PERMISSIONS.CUSTOMERS_READ, 'customers.read_all'] },
+          { label: 'الفواتير المتأخرة', path: '/credit/overdue', permission: [PERMISSIONS.CUSTOMERS_READ, 'customers.read_all', PERMISSIONS.SALES_ORDERS_READ, PERMISSIONS.SALES_ORDERS_READ_ALL] },
         ],
       },
       { id: 'suppliers', label: 'الموردين', icon: Truck, path: '/suppliers', permission: [PERMISSIONS.SUPPLIERS_READ, PERMISSIONS.SUPPLIERS_CREATE] },
