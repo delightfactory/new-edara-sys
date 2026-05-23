@@ -64,8 +64,9 @@ export default function MetricCard({
         transition: 'box-shadow 0.2s, transform 0.2s',
         position: 'relative',
         overflow: 'hidden',
+        minWidth: 0,
       }}
-      className="edara-card"
+      className="edara-card report-metric-card"
     >
       {/* Accent bar for warning */}
       {hasWarning && (
@@ -94,8 +95,8 @@ export default function MetricCard({
       )}
 
       {/* Header row */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+      <div className="report-metric-head" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 'var(--space-2)', minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', minWidth: 0 }}>
           {icon && (
             <span style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -107,7 +108,7 @@ export default function MetricCard({
               {icon}
             </span>
           )}
-          <div>
+          <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', fontWeight: 500 }}>{label}</div>
             {subtitle && <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{subtitle}</div>}
           </div>
@@ -144,6 +145,7 @@ export default function MetricCard({
             letterSpacing: '-1px',
             direction: 'ltr',
             textAlign: 'right',
+            overflowWrap: 'anywhere',
           }}>
             {formatNum(value)}
           </div>

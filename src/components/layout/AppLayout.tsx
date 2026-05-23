@@ -77,6 +77,9 @@ export default function AppLayout() {
             margin-inline-start: var(--sidebar-width);
             background: var(--bg-app);
             min-height: 100vh;
+            min-width: 0;
+            max-width: calc(100vw - var(--sidebar-width));
+            overflow-x: hidden;
             transition: margin-inline-start 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           }
 

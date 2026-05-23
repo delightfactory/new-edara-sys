@@ -88,7 +88,7 @@ export default function SystemHealthBar({ trustRows, isLoading, error }: Props) 
 
   if (isLoading) {
     return (
-      <div style={{
+      <div className="report-health-bar" style={{
         background: 'var(--bg-surface)',
         border: '1px solid var(--border-primary)',
         borderRadius: 'var(--radius-md)',
@@ -108,7 +108,7 @@ export default function SystemHealthBar({ trustRows, isLoading, error }: Props) 
   if (error) {
     const { icon: Icon, color, bg, message } = classifyError(error)
     return (
-      <div style={{
+      <div className="report-health-bar" style={{
         background: bg,
         border: `1px solid ${color}33`,
         borderRadius: 'var(--radius-md)',
@@ -126,7 +126,7 @@ export default function SystemHealthBar({ trustRows, isLoading, error }: Props) 
   }
 
   return (
-    <div style={{
+    <div className="report-health-bar" style={{
       background: anyBlocked ? 'rgba(220,38,38,0.04)' : anyStale ? 'rgba(217,119,6,0.04)' : 'var(--bg-surface)',
       border: `1px solid ${anyBlocked ? 'rgba(220,38,38,0.2)' : anyStale ? 'rgba(217,119,6,0.2)' : 'var(--border-primary)'}`,
       borderRadius: 'var(--radius-md)',

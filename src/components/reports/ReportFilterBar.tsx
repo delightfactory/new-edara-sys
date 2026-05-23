@@ -35,14 +35,16 @@ export default function ReportFilterBar({ value, onChange }: Props) {
   const [open, setOpen] = useState(false)
 
   return (
-    <div style={{
+    <div className="report-filter-bar" style={{
       display: 'flex',
       alignItems: 'center',
       gap: 'var(--space-3)',
       flexWrap: 'wrap',
+      minWidth: 0,
+      maxWidth: '100%',
     }}>
       {/* Preset buttons */}
-      <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+      <div className="report-filter-presets" style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', minWidth: 0 }}>
         {PRESETS.map(p => {
           const range = applyPreset(p.days, p.mode)
           const isActive = range.from === value.from && range.to === value.to
@@ -70,7 +72,7 @@ export default function ReportFilterBar({ value, onChange }: Props) {
       </div>
 
       {/* Custom date inputs */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+      <div className="report-filter-dates" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', minWidth: 0 }}>
         <Calendar size={14} color="var(--text-muted)" />
         <input
           type="date"
