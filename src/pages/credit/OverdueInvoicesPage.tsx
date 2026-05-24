@@ -14,6 +14,7 @@ import {
 
 import PageHeader from '@/components/shared/PageHeader'
 import DataTable from '@/components/shared/DataTable'
+import { DocumentActions } from '@/features/output/components/DocumentActions'
 import {
   getOverdueSalesInvoices,
   type OverdueInvoiceSortBy,
@@ -38,12 +39,22 @@ const DEFAULT_FILTERS: FilterState = {
 
 const PAGE_SIZE = 25
 
+function filtersToParams(f: FilterState): Record<string, string> {
+  const p: Record<string, string> = {}
+  if (f.search) p.search = f.search
+  if (f.repId) p.repId = f.repId
+  if (f.minDaysOverdue) p.minDaysOverdue = f.minDaysOverdue
+  if (f.sortBy !== DEFAULT_FILTERS.sortBy) p.sortBy = f.sortBy
+  return p
+}
+
 export default function OverdueInvoicesPage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS)
   const [searchInput, setSearchInput] = useState('')
   const [page, setPage] = useState(1)
+  const [paper, setPaper] = useState<'a4-landscape' | 'a4-portrait'>('a4-landscape')
   const searchTimer = useRef<ReturnType<typeof setTimeout>>()
 
   useEffect(() => {
@@ -85,6 +96,7 @@ export default function OverdueInvoicesPage() {
 
   const rows = result?.data ?? []
   const hasFilters = Boolean(filters.search || filters.repId || filters.minDaysOverdue || filters.sortBy !== DEFAULT_FILTERS.sortBy)
+  const printParams = useMemo(() => filtersToParams(filters), [filters])
 
   const setFilter = useCallback(<K extends keyof FilterState>(key: K, value: FilterState[K]) => {
     setFilters(prev => ({ ...prev, [key]: value }))
@@ -184,14 +196,32 @@ export default function OverdueInvoicesPage() {
           { label: 'الفواتير المتأخرة' },
         ]}
         actions={
-          <button
-            className="btn btn-secondary"
-            onClick={() => qc.invalidateQueries({ queryKey: ['overdue-sales-invoices'] })}
-            disabled={isFetching}
-          >
-            <RefreshCw size={16} />
-            تحديث
-          </button>
+          <div className="oi-header-actions">
+            <select
+              className="form-select oi-paper-select"
+              value={paper}
+              onChange={event => setPaper(event.target.value as typeof paper)}
+              title="اختر مقاس الورقة للطباعة"
+            >
+              <option value="a4-landscape">A4 بالعرض</option>
+              <option value="a4-portrait">A4 بالطول</option>
+            </select>
+            <DocumentActions
+              kind="overdue-invoices-report"
+              entityId="all"
+              paperProfileId={paper}
+              params={printParams}
+              compact
+            />
+            <button
+              className="btn btn-secondary"
+              onClick={() => qc.invalidateQueries({ queryKey: ['overdue-sales-invoices'] })}
+              disabled={isFetching}
+            >
+              <RefreshCw size={16} />
+              تحديث
+            </button>
+          </div>
         }
       />
 
@@ -315,6 +345,19 @@ export default function OverdueInvoicesPage() {
           display: grid;
           grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: var(--space-3);
+        }
+
+        .oi-header-actions {
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+          flex-wrap: wrap;
+        }
+
+        .oi-paper-select {
+          width: auto;
+          min-width: 130px;
+          min-height: 36px;
         }
 
         .oi-metric {

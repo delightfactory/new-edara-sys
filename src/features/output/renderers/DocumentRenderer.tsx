@@ -25,6 +25,7 @@ export function DocumentRenderer({ document, profile }: DocumentRendererProps) {
     document.kind === 'report' ||
     document.kind === 'account-statement' ||
     document.kind === 'credit-portfolio-report' ||
+    document.kind === 'overdue-invoices-report' ||
     document.kind === 'rep-credit-commitment-report' ||
     document.kind === 'rep-credit-commitment-detail-report'
   ) {

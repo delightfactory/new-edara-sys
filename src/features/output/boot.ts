@@ -5,6 +5,7 @@ import { accountStatementDefinition } from './definitions/account-statement.defi
 import { purchaseInvoiceDefinition } from './definitions/purchase-invoice.definition';
 import { paymentVoucherDefinition } from './definitions/payment-voucher.definition';
 import { creditPortfolioReportDefinition } from './definitions/credit-portfolio-report.definition';
+import { overdueInvoicesReportDefinition } from './definitions/overdue-invoices-report.definition';
 import { repCreditCommitmentReportDefinition } from './definitions/rep-credit-commitment-report.definition';
 import { repCreditCommitmentDetailReportDefinition } from './definitions/rep-credit-commitment-detail-report.definition';
 import { reengagementReportDefinition } from './definitions/reengagement-report.definition';
@@ -24,10 +25,10 @@ export function bootOutputPlatform(): void {
   registerDocumentDefinition(purchaseInvoiceDefinition);
   registerDocumentDefinition(paymentVoucherDefinition);
   registerDocumentDefinition(creditPortfolioReportDefinition);
+  registerDocumentDefinition(overdueInvoicesReportDefinition);
   registerDocumentDefinition(repCreditCommitmentReportDefinition);
   registerDocumentDefinition(repCreditCommitmentDetailReportDefinition);
   registerDocumentDefinition(reengagementReportDefinition);
 
   isBooted = true;
 }
-

@@ -16,6 +16,7 @@ export type DocumentKind =
   | 'purchase-invoice'
   | 'account-statement'
   | 'credit-portfolio-report'
+  | 'overdue-invoices-report'
   | 'rep-credit-commitment-report'
   | 'rep-credit-commitment-detail-report'
   | 'reengagement-report'
