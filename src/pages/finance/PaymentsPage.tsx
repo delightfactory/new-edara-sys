@@ -20,13 +20,14 @@ import PageHeader from '@/components/shared/PageHeader'
 import FilterBar from '@/components/shared/FilterBar'
 import type { FilterStat } from '@/components/shared/FilterBar'
 import DataTable from '@/components/shared/DataTable'
+import { CustomerLink, SalesOrderLink } from '@/components/shared/EntityLink'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
 import AsyncCombobox from '@/components/ui/AsyncCombobox'
 import type { ComboboxOption } from '@/components/ui/AsyncCombobox'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useIsAnyModalOpen } from '@/hooks/useModalStack'
 
 const PAYMENT_FILTER_DEFAULTS = {
@@ -575,22 +576,12 @@ export default function PaymentsPage() {
             {
               key: 'customer', label: 'العميل',
               render: r => (
-                <>
-                  <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>
-                    {r.customer?.name || '—'}
-                  </div>
-                  {r.customer?.code && (
-                    <div style={{
-                      fontSize: 'var(--text-xs)',
-                      color: 'var(--text-muted)',
-                      fontFamily: 'monospace',
-                      direction: 'ltr',
-                      textAlign: 'start',
-                    }}>
-                      {r.customer.code}
-                    </div>
-                  )}
-                </>
+                <CustomerLink
+                  id={r.customer?.id}
+                  name={r.customer?.name}
+                  code={r.customer?.code}
+                  style={{ fontSize: 'var(--text-sm)' }}
+                />
               ),
             },
             {
@@ -623,21 +614,14 @@ export default function PaymentsPage() {
             {
               key: 'sales_order', label: 'الفاتورة', hideOnMobile: true,
               render: r => r.sales_order ? (
-                <Link
-                  to={`/sales/${r.sales_order_id}`}
-                  onClick={e => e.stopPropagation()}
+                <SalesOrderLink
+                  id={r.sales_order_id}
+                  name={r.sales_order.order_number}
+                  showIcon
                   style={{
-                    color: 'var(--color-primary)',
                     fontSize: 'var(--text-sm)',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 'var(--space-1)',
-                    fontFamily: 'monospace',
-                    fontWeight: 600,
-                    direction: 'ltr',
-                  }}>
-                  {r.sales_order.order_number} <ExternalLink size={11} />
-                </Link>
+                  }}
+                />
               ) : (
                 <span style={{ color: 'var(--text-muted)' }}>—</span>
               ),
@@ -731,7 +715,9 @@ export default function PaymentsPage() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                     <div>
                       <div style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--color-primary)' }} dir="ltr">{r.number}</div>
-                      <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, marginTop: 2 }}>{r.customer?.name || '—'}</div>
+                      <div style={{ fontSize: 'var(--text-sm)', marginTop: 2 }}>
+                        <CustomerLink id={r.customer?.id} name={r.customer?.name} code={r.customer?.code} />
+                      </div>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
                       {sc && <Badge variant={sc.variant}>{sc.label}</Badge>}

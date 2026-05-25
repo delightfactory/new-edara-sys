@@ -17,6 +17,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import type { StockTransfer, Warehouse, TransferStatus } from '@/lib/types/master-data'
 import { formatNumber, formatCurrency, formatDateShort } from '@/lib/utils/format'
 import PageHeader from '@/components/shared/PageHeader'
+import { ProductLink, WarehouseLink } from '@/components/shared/EntityLink'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
@@ -415,8 +416,8 @@ export default function TransfersPage() {
                         {t.direction === 'push' ? <><Send size={10} /> إرسال</> : <><Download size={10} /> طلب</>}
                       </Badge>
                     </td>
-                    <td>{t.from_warehouse?.name || '—'}</td>
-                    <td>{t.to_warehouse?.name || '—'}</td>
+                    <td><WarehouseLink name={t.from_warehouse?.name} /></td>
+                    <td><WarehouseLink name={t.to_warehouse?.name} /></td>
                     <td className="hide-mobile" style={{ fontSize: 'var(--text-xs)' }}>{formatDateShort(t.created_at)}</td>
                     <td><Badge variant={statusMap[t.status]?.variant || 'neutral'}>{statusMap[t.status]?.label || t.status}</Badge></td>
                     <td>
@@ -456,7 +457,7 @@ export default function TransfersPage() {
                           <tbody>
                             {t.items.map((it: any) => (
                               <tr key={it.id}>
-                                <td>{it.product?.name || it.product_id}</td>
+                                <td><ProductLink id={it.product_id} name={it.product?.name || it.product_id} /></td>
                                 <td>{it.unit?.symbol || it.unit_id}</td>
                                 <td>{formatNumber(it.quantity)}</td>
                                 <td>{it.received_quantity ? formatNumber(it.received_quantity) : '—'}</td>
@@ -524,9 +525,9 @@ export default function TransfersPage() {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 8 }}>
                     <WarehouseIcon size={11} />
-                    <span>{t.from_warehouse?.name || '—'}</span>
+                    <span><WarehouseLink name={t.from_warehouse?.name} /></span>
                     <ArrowLeftRight size={10} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
-                    <span>{t.to_warehouse?.name || '—'}</span>
+                    <span><WarehouseLink name={t.to_warehouse?.name} /></span>
                   </div>
                   {/* Action buttons inline in card */}
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }} onClick={e => e.stopPropagation()}>

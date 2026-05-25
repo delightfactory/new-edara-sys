@@ -1,4 +1,4 @@
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
@@ -16,6 +16,7 @@ import ResponsiveModal from '@/components/ui/ResponsiveModal'
 import Badge from '@/components/ui/Badge'
 import { useState } from 'react'
 import { DocumentActions } from '@/features/output/components/DocumentActions'
+import { CustomerLink, SalesOrderLink } from '@/components/shared/EntityLink'
 
 // ══════════════════════════════════════════════════════════════
 // Config
@@ -231,7 +232,9 @@ export default function PaymentReceiptDetail() {
               <Badge variant={sc?.variant}>{sc?.label}</Badge>
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-              {receipt.customer?.name} • {formatDateTime(receipt.created_at)}
+              {receipt.customer ? (
+                <CustomerLink id={receipt.customer.id} name={receipt.customer.name} />
+              ) : '—'} • {formatDateTime(receipt.created_at)}
             </div>
           </div>
         </div>
@@ -285,22 +288,12 @@ export default function PaymentReceiptDetail() {
           <SectionHead icon={<Receipt size={14} />} title="بيانات الإيصال" />
           <InfoRow label="رقم الإيصال" value={receipt.number}  mono />
           <InfoRow label="العميل" value={
-            receipt.customer ? (
-              <Link to={`/customers/${receipt.customer.id}`}
-                style={{ color: 'var(--color-primary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
-                {receipt.customer.name}
-                <ExternalLink size={11} />
-              </Link>
-            ) : '—'
+            <CustomerLink id={receipt.customer?.id} name={receipt.customer?.name} showIcon />
           } />
-          <InfoRow label="كود العميل" value={receipt.customer?.code} mono />
+          <InfoRow label="كود العميل" value={<CustomerLink id={receipt.customer?.id} name={receipt.customer?.code} mono />} mono />
           <InfoRow label="الفاتورة المرتبطة" value={
             receipt.sales_order ? (
-              <Link to={`/sales/orders/${receipt.sales_order_id}`}
-                style={{ color: 'var(--color-primary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, direction: 'ltr' }}>
-                {receipt.sales_order.order_number}
-                <ExternalLink size={11} />
-              </Link>
+              <SalesOrderLink id={receipt.sales_order_id} name={receipt.sales_order.order_number} showIcon />
             ) : '—'
           } />
           <InfoRow label="تاريخ الإنشاء" value={formatDateTime(receipt.created_at)} />

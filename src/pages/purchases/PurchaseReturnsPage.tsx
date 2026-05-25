@@ -8,6 +8,7 @@ import { formatCurrency } from '@/lib/utils/format'
 import type { PurchaseReturnStatus } from '@/lib/types/master-data'
 import PageHeader from '@/components/shared/PageHeader'
 import DataTable from '@/components/shared/DataTable'
+import { SupplierLink, WarehouseLink } from '@/components/shared/EntityLink'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 
@@ -83,8 +84,8 @@ export default function PurchaseReturnsPage() {
         <DataTable<any>
           columns={[
             { key: 'number',      label: 'الرقم',      render: r => <span style={{ fontWeight: 700, fontFamily: 'monospace', color: 'var(--color-primary)', direction: 'ltr', display: 'inline-block' }}>{r.number}</span> },
-            { key: 'supplier',    label: 'المورد',     render: r => r.supplier?.name || '—' },
-            { key: 'warehouse',   label: 'المخزن',     hideOnMobile: true, render: r => r.warehouse?.name || '—' },
+            { key: 'supplier',    label: 'المورد',     render: r => <SupplierLink id={r.supplier?.id} name={r.supplier?.name} /> },
+            { key: 'warehouse',   label: 'المخزن',     hideOnMobile: true, render: r => <WarehouseLink name={r.warehouse?.name} /> },
             { key: 'return_date', label: 'التاريخ',    hideOnMobile: true, render: r => r.return_date },
             { key: 'total_amount',label: 'الإجمالي',   render: r => (
                 <span style={{ fontWeight: 700, color: 'var(--color-danger)', fontVariantNumeric: 'tabular-nums' }}>
@@ -154,12 +155,12 @@ export default function PurchaseReturnsPage() {
                   <div style={{ display: 'flex', gap: 12, fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
                     {r.supplier?.name && (
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <Building2 size={10} /> {r.supplier.name}
+                        <Building2 size={10} /> <SupplierLink id={r.supplier.id} name={r.supplier.name} />
                       </span>
                     )}
                     {r.warehouse?.name && (
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <Package size={10} /> {r.warehouse.name}
+                        <Package size={10} /> <WarehouseLink name={r.warehouse.name} />
                       </span>
                     )}
                     <span style={{ marginInlineStart: 'auto', color: 'var(--color-primary)', fontSize: '10px' }}>عرض التفاصيل ›</span>

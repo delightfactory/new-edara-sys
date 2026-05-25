@@ -8,6 +8,7 @@ import type { PurchaseInvoiceStatus } from '@/lib/types/master-data'
 import PageHeader from '@/components/shared/PageHeader'
 import SearchInput from '@/components/shared/SearchInput'
 import DataTable from '@/components/shared/DataTable'
+import { SupplierLink, WarehouseLink } from '@/components/shared/EntityLink'
 import DataCard from '@/components/ui/DataCard'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
@@ -100,15 +101,17 @@ export default function PurchaseInvoicesPage() {
             {
               key: 'supplier', label: 'المورد',
               render: inv => (
-                <>
-                  <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{inv.supplier?.name || '—'}</div>
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontFamily: 'monospace' }} dir="ltr">{inv.supplier?.code}</div>
-                </>
+                <SupplierLink
+                  id={inv.supplier?.id}
+                  name={inv.supplier?.name}
+                  code={inv.supplier?.code}
+                  style={{ fontSize: 'var(--text-sm)' }}
+                />
               ),
             },
             {
               key: 'warehouse', label: 'المخزن', hideOnMobile: true,
-              render: inv => <span style={{ color: 'var(--text-muted)' }}>{inv.warehouse?.name || '—'}</span>,
+              render: inv => <WarehouseLink name={inv.warehouse?.name} />,
             },
             {
               key: 'total_amount', label: 'الإجمالي', hideOnMobile: true,
@@ -189,7 +192,9 @@ export default function PurchaseInvoicesPage() {
             {invoices.map((inv: any) => (
               <DataCard
                 key={inv.id}
-                title={inv.supplier?.name || '—'}
+                title={
+                  <SupplierLink id={inv.supplier?.id} name={inv.supplier?.name} />
+                }
                 subtitle={
                   <span dir="ltr" style={{ fontFamily: 'monospace', fontSize: '0.7rem' }}>
                     {inv.number || 'مسودة'}
@@ -224,7 +229,7 @@ export default function PurchaseInvoicesPage() {
                   },
                   ...(inv.warehouse?.name ? [{
                     label: 'المخزن',
-                    value: inv.warehouse.name,
+                    value: <WarehouseLink name={inv.warehouse.name} />,
                   }] : []),
                 ]}
                 actions={

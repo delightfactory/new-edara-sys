@@ -9,6 +9,7 @@ import { getAdjustment, approveAdjustment, rejectAdjustment } from '@/lib/servic
 import { useAuthStore } from '@/stores/auth-store'
 import { formatNumber, formatDateShort } from '@/lib/utils/format'
 import type { StockAdjustment } from '@/lib/types/master-data'
+import { ProductLink, WarehouseLink } from '@/components/shared/EntityLink'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
@@ -153,7 +154,9 @@ export default function AdjustmentDetailPage() {
             </div>
             <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>المخزن</span>
           </div>
-          <div style={{ fontSize: 'var(--text-base)', fontWeight: 600 }}>{adjustment.warehouse?.name || '—'}</div>
+          <div style={{ fontSize: 'var(--text-base)', fontWeight: 600 }}>
+            <WarehouseLink name={adjustment.warehouse?.name} />
+          </div>
         </div>
 
         {/* عدد البنود */}
@@ -243,7 +246,9 @@ export default function AdjustmentDetailPage() {
               return (
                 <tr key={item.id}>
                   <td style={{ color: 'var(--text-muted)' }}>{idx + 1}</td>
-                  <td style={{ fontWeight: 500 }}>{item.product?.name || item.product_id}</td>
+                  <td style={{ fontWeight: 500 }}>
+                    <ProductLink id={item.product_id} name={item.product?.name || item.product_id} />
+                  </td>
                   <td className="hide-mobile" dir="ltr" style={{ fontFamily: 'monospace', fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{item.product?.sku || '—'}</td>
                   <td className="hide-mobile">{formatNumber(item.system_qty)}</td>
                   <td style={{ fontWeight: 600 }}>{formatNumber(item.actual_qty)}</td>

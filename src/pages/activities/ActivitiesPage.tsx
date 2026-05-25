@@ -9,6 +9,7 @@ import PageHeader from '@/components/shared/PageHeader'
 import SearchInput from '@/components/shared/SearchInput'
 import DataTable from '@/components/shared/DataTable'
 import PermissionGuard from '@/components/shared/PermissionGuard'
+import { CustomerLink } from '@/components/shared/EntityLink'
 import Button from '@/components/ui/Button'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
 import ActivityStatusBadge from '@/components/shared/ActivityStatusBadge'
@@ -207,7 +208,7 @@ export default function ActivitiesPage() {
                   </div>
                   {a.customer && (
                     <div className="text-xs text-muted mt-0.5">
-                      {a.customer.name}
+                      <CustomerLink id={a.customer.id} name={a.customer.name} />
                     </div>
                   )}
                 </>

@@ -14,6 +14,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import type { StockAdjustment, Warehouse, AdjustmentType } from '@/lib/types/master-data'
 import { formatNumber, formatDateShort } from '@/lib/utils/format'
 import PageHeader from '@/components/shared/PageHeader'
+import { ProductLink, WarehouseLink } from '@/components/shared/EntityLink'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
@@ -411,7 +412,7 @@ export default function AdjustmentsPage() {
                       <span dir="ltr" style={{ fontFamily: 'monospace', fontSize: 'var(--text-xs)', color: 'var(--color-primary)', cursor: 'pointer', textDecoration: 'underline' }}
                         onClick={() => navigate(`/inventory/adjustments/${a.id}`)}>{a.number}</span>
                     </td>
-                    <td>{a.warehouse?.name || '—'}</td>
+                    <td><WarehouseLink name={a.warehouse?.name} /></td>
                     <td><Badge variant="info">{typeMap[a.type] || a.type}</Badge></td>
                     <td className="hide-mobile" style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{(a as any).created_by_profile?.full_name || '—'}</td>
                     <td className="hide-mobile" style={{ fontSize: 'var(--text-xs)' }}>{formatDateShort(a.created_at)}</td>
@@ -441,7 +442,7 @@ export default function AdjustmentsPage() {
                           <tbody>
                             {a.items.map((it: any) => (
                               <tr key={it.id}>
-                                <td>{it.product?.name || it.product_id}</td>
+                                <td><ProductLink id={it.product_id} name={it.product?.name || it.product_id} /></td>
                                 <td>{formatNumber(it.system_qty)}</td>
                                 <td>{formatNumber(it.actual_qty)}</td>
                                 <td style={{
@@ -517,7 +518,7 @@ export default function AdjustmentsPage() {
                   <div style={{ display: 'flex', gap: 'var(--space-3)', fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginBottom: 8, flexWrap: 'wrap' }}>
                     {a.warehouse?.name && (
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <WarehouseIcon size={10} /> {a.warehouse.name}
+                        <WarehouseIcon size={10} /> <WarehouseLink name={a.warehouse.name} />
                       </span>
                     )}
                     {impact && impact.increases > 0 && (

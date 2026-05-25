@@ -7,6 +7,7 @@ import { formatNumber, formatCurrency } from '@/lib/utils/format'
 import PageHeader from '@/components/shared/PageHeader'
 import SearchInput from '@/components/shared/SearchInput'
 import DataTable from '@/components/shared/DataTable'
+import { ProductLink, WarehouseLink } from '@/components/shared/EntityLink'
 import Badge from '@/components/ui/Badge'
 
 // ── Status helpers ────────────────────────────────────────────
@@ -228,13 +229,10 @@ export default function StockPage() {
             {
               key: 'product', label: 'المنتج',
               render: s => (
-                <>
-                  <div style={{ fontWeight: 600 }}>{s.product?.name || '—'}</div>
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }} dir="ltr">{s.product?.sku}</div>
-                </>
+                <ProductLink id={s.product?.id} name={s.product?.name} code={s.product?.sku} />
               ),
             },
-            { key: 'warehouse', label: 'المخزن', render: s => s.warehouse?.name || '—' },
+            { key: 'warehouse', label: 'المخزن', render: s => <WarehouseLink name={s.warehouse?.name} /> },
             { key: 'quantity', label: 'الكمية', render: s => <span style={{ fontWeight: 600 }}>{formatNumber(s.quantity)}</span> },
             { key: 'reserved', label: 'المحجوز', hideOnMobile: true, render: s => formatNumber(s.reserved_quantity) },
             {
@@ -323,8 +321,7 @@ export default function StockPage() {
                   <div style={{ flex: 1, minWidth: 0, padding: 'var(--space-4)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: 'var(--text-sm)' }}>{s.product?.name || '—'}</div>
-                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontFamily: 'monospace' }} dir="ltr">{s.product?.sku}</div>
+                        <ProductLink id={s.product?.id} name={s.product?.name} code={s.product?.sku} style={{ fontSize: 'var(--text-sm)' }} />
                       </div>
                       <Badge variant={st.variant}>{st.variant !== 'success' && <AlertTriangle size={9} />} {st.label}</Badge>
                     </div>
@@ -343,7 +340,9 @@ export default function StockPage() {
                       </div>}
                       <div>
                         <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>المخزن</div>
-                        <div style={{ fontSize: 'var(--text-sm)', fontWeight: 500 }}>{s.warehouse?.name || '—'}</div>
+                        <div style={{ fontSize: 'var(--text-sm)', fontWeight: 500 }}>
+                          <WarehouseLink name={s.warehouse?.name} />
+                        </div>
                       </div>
                       {/* التكلفة تظهر للمخولين فقط */}
                       {canViewCosts && s.wac > 0 && <div>

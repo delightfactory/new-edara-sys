@@ -12,6 +12,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import { PERMISSIONS } from '@/lib/permissions/constants'
 import PageHeader from '@/components/shared/PageHeader'
 import ActivityStatusBadge from '@/components/shared/ActivityStatusBadge'
+import { CustomerLink, EmployeeLink } from '@/components/shared/EntityLink'
 import Button from '@/components/ui/Button'
 import { Edit2, MapPin, Clock, User, Phone, Ruler, ClipboardCheck, ExternalLink, XCircle } from 'lucide-react'
 import type { ChecklistResponse } from '@/lib/types/activities'
@@ -187,7 +188,9 @@ export default function ActivityDetail() {
             <span className="act-detail-label">
               <User size={14} /> الموظف
             </span>
-            <span className="act-detail-value">{activity.employee.full_name}</span>
+            <span className="act-detail-value">
+              <EmployeeLink id={activity.employee.id} name={activity.employee.full_name} />
+            </span>
           </div>
         )}
 
@@ -197,7 +200,9 @@ export default function ActivityDetail() {
             <span className="act-detail-label">
               <User size={14} /> العميل
             </span>
-            <span className="act-detail-value">{activity.customer.name}</span>
+            <span className="act-detail-value">
+              <CustomerLink id={activity.customer.id} name={activity.customer.name} />
+            </span>
           </div>
         )}
 

@@ -9,6 +9,7 @@ import { getTransfer, getMyWarehouses, shipTransfer, approveAndShipTransfer, rec
 import { useAuthStore } from '@/stores/auth-store'
 import { formatNumber, formatDateShort } from '@/lib/utils/format'
 import type { StockTransfer } from '@/lib/types/master-data'
+import { ProductLink, WarehouseLink } from '@/components/shared/EntityLink'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
@@ -179,7 +180,9 @@ export default function TransferDetailPage() {
             </div>
             <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>من مخزن</span>
           </div>
-          <div style={{ fontSize: 'var(--text-base)', fontWeight: 600 }}>{(transfer as any).from_warehouse?.name || '—'}</div>
+              <div style={{ fontSize: 'var(--text-base)', fontWeight: 600 }}>
+                <WarehouseLink name={(transfer as any).from_warehouse?.name} />
+              </div>
         </div>
 
         {/* إلى مخزن */}
@@ -190,7 +193,9 @@ export default function TransferDetailPage() {
             </div>
             <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>إلى مخزن</span>
           </div>
-          <div style={{ fontSize: 'var(--text-base)', fontWeight: 600 }}>{(transfer as any).to_warehouse?.name || '—'}</div>
+              <div style={{ fontSize: 'var(--text-base)', fontWeight: 600 }}>
+                <WarehouseLink name={(transfer as any).to_warehouse?.name} />
+              </div>
         </div>
 
         {/* عدد البنود */}
@@ -324,7 +329,9 @@ export default function TransferDetailPage() {
               {transfer.items?.map((item: any, idx: number) => (
                 <tr key={item.id}>
                   <td style={{ color: 'var(--text-muted)' }}>{idx + 1}</td>
-                  <td style={{ fontWeight: 500 }}>{item.product?.name || item.product_id}</td>
+                  <td style={{ fontWeight: 500 }}>
+                    <ProductLink id={item.product_id} name={item.product?.name || item.product_id} />
+                  </td>
                   <td className="hide-mobile" dir="ltr" style={{ fontFamily: 'monospace', fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{item.product?.sku || '—'}</td>
                   <td className="hide-mobile">{item.unit?.name || '—'}</td>
                   <td style={{ fontWeight: 600 }}>{formatNumber(item.quantity)}</td>
@@ -359,8 +366,7 @@ export default function TransferDetailPage() {
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 600, fontSize: 13 }}>{item.product?.name}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace', marginTop: 2 }}>{item.product?.sku}</div>
+                <ProductLink id={item.product_id} name={item.product?.name} code={item.product?.sku} style={{ fontSize: 13 }} />
                 {item.unit?.name && <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>{item.unit.name}</div>}
               </div>
               <div style={{ textAlign: 'left', flexShrink: 0 }}>

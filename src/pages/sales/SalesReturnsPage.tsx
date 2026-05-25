@@ -8,6 +8,7 @@ import { formatNumber } from '@/lib/utils/format'
 import PageHeader from '@/components/shared/PageHeader'
 import SearchInput from '@/components/shared/SearchInput'
 import DataTable from '@/components/shared/DataTable'
+import { CustomerLink, SalesOrderLink } from '@/components/shared/EntityLink'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 
@@ -83,13 +84,10 @@ export default function SalesReturnsPage() {
             {
               key: 'order', label: 'الفاتورة الأصلية',
               render: r => (
-                <span style={{ fontFamily: 'monospace', color: 'var(--color-primary)', cursor: 'pointer' }}
-                  onClick={e => { e.stopPropagation(); navigate(`/sales/orders/${r.order_id}`) }}>
-                  {r.order?.order_number || '—'}
-                </span>
+                <SalesOrderLink id={r.order_id} name={r.order?.order_number} />
               ),
             },
-            { key: 'customer', label: 'العميل', render: r => r.customer?.name || '—' },
+            { key: 'customer', label: 'العميل', render: r => <CustomerLink id={r.customer?.id} name={r.customer?.name} /> },
             {
               key: 'total', label: 'الإجمالي', hideOnMobile: true,
               render: r => (
@@ -154,9 +152,8 @@ export default function SalesReturnsPage() {
                     <div style={{ fontWeight: 700, fontFamily: 'monospace', fontSize: 'var(--text-sm)' }} dir="ltr">
                       {r.return_number}
                     </div>
-                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-primary)', marginTop: 2, cursor: 'pointer' }}
-                      onClick={e => { e.stopPropagation(); navigate(`/sales/orders/${r.order_id}`) }}>
-                      ← {r.order?.order_number || '—'}
+                    <div style={{ fontSize: 'var(--text-xs)', marginTop: 2 }}>
+                      <SalesOrderLink id={r.order_id} name={r.order?.order_number} />
                     </div>
                   </div>
                   <Badge variant={statusVariants[r.status]}>{statusLabels[r.status]}</Badge>
@@ -165,7 +162,7 @@ export default function SalesReturnsPage() {
                   <div style={{ display: 'flex', gap: 'var(--space-3)', fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
                     {r.customer?.name && (
                       <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                        <User size={10} /> {r.customer.name}
+                        <User size={10} /> <CustomerLink id={r.customer.id} name={r.customer.name} />
                       </span>
                     )}
                     <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>

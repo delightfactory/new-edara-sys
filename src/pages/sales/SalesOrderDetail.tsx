@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import ProofUploadButton from '@/components/ui/ProofUploadButton'
 import { DocumentActions } from '@/features/output/components/DocumentActions'
+import { CustomerLink, PaymentReceiptLink, ProductLink, WarehouseLink } from '@/components/shared/EntityLink'
 import { useAuthStore } from '@/stores/auth-store'
 import { useWarehouses, useInvalidate } from '@/hooks/useQueryHooks'
 import { useQuery } from '@tanstack/react-query'
@@ -449,7 +450,7 @@ export default function SalesOrderDetail() {
               </span>
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-              {order.customer?.name}
+              <CustomerLink id={order.customer?.id} name={order.customer?.name} />
             </div>
           </div>
         </div>
@@ -522,12 +523,12 @@ export default function SalesOrderDetail() {
         <div style={card}>
           <SectionHead icon={<FileText size={14} />} title="بيانات الطلب" />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px 16px' }}>
-            <InfoPair icon={<User size={12} />} label="العميل" value={order.customer?.name} />
+            <InfoPair icon={<User size={12} />} label="العميل" value={<CustomerLink id={order.customer?.id} name={order.customer?.name} />} />
             <InfoPair icon={<User size={12} />} label="المندوب" value={order.rep?.full_name || '—'} />
             <InfoPair icon={<Clock size={12} />} label="تاريخ الطلب" value={new Date(order.order_date).toLocaleDateString('ar-EG-u-nu-latn')} />
             <InfoPair icon={<Building2 size={12} />} label="الفرع" value={order.branch?.name || '—'} />
             <InfoPair icon={<Warehouse size={12} />} label="المخزن"
-              value={order.warehouse?.name || (order.status === 'draft' ? 'يُحدَّد عند التأكيد' : '—')}
+              value={order.warehouse?.name ? <WarehouseLink name={order.warehouse.name} /> : (order.status === 'draft' ? 'يُحدَّد عند التأكيد' : '—')}
               muted={!order.warehouse_id} />
             <InfoPair icon={<Banknote size={12} />} label="شروط الدفع"
               value={termLabels[order.payment_terms || ''] || order.payment_terms || '—'} />
@@ -591,7 +592,9 @@ export default function SalesOrderDetail() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span>{mIcon[r.payment_method] || '💳'}</span>
                         <div>
-                          <div style={{ fontSize: 12, fontWeight: 700, direction: 'ltr', display: 'inline-block' }}>#{r.number}</div>
+                          <div style={{ fontSize: 12, fontWeight: 700, direction: 'ltr', display: 'inline-block' }}>
+                            <PaymentReceiptLink id={r.id} name={`#${r.number}`} />
+                          </div>
                           <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>
                             {mLabel[r.payment_method] || r.payment_method} • {new Date(r.created_at).toLocaleDateString('ar-EG-u-nu-latn')}
                           </div>
@@ -673,8 +676,12 @@ export default function SalesOrderDetail() {
                 <div key={item.id} style={{ padding: '10px 0', borderTop: '1px solid var(--divider)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 2 }}>{item.product?.name}</div>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{item.product?.sku}</div>
+                      <ProductLink
+                        id={item.product_id}
+                        name={item.product?.name}
+                        code={item.product?.sku}
+                        style={{ fontSize: 13 }}
+                      />
                     </div>
                     <div style={{ textAlign: 'left', flexShrink: 0 }}>
                       <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--color-primary)', fontVariantNumeric: 'tabular-nums' }}>
@@ -1138,7 +1145,7 @@ function SectionHead({ icon, title }: { icon: React.ReactNode; title: string }) 
   )
 }
 
-function InfoPair({ icon, label, value, muted }: { icon?: React.ReactNode; label: string; value?: string | null; muted?: boolean }) {
+function InfoPair({ icon, label, value, muted }: { icon?: React.ReactNode; label: string; value?: React.ReactNode; muted?: boolean }) {
   return (
     <div style={{ minWidth: 0 }}>
       <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 3 }}>{icon} {label}</div>
