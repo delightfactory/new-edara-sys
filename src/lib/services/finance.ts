@@ -7,6 +7,20 @@ import type {
   ApprovalRule
 } from '@/lib/types/master-data'
 
+export type LedgerEntityType = 'customers' | 'suppliers'
+
+export interface LedgerEntity {
+  id: string
+  name: string
+  code: string
+  current_balance: number
+  is_active: boolean
+}
+
+function normalizeLedgerSearch(search?: string) {
+  return (search || '').trim().replace(/[%,()]/g, ' ')
+}
+
 // ============================================================
 // Chart of Accounts — شجرة الحسابات
 // ============================================================
@@ -51,6 +65,34 @@ export function buildAccountTree(accounts: ChartOfAccount[]): ChartOfAccount[] {
 /**
  * جلب حركات دفتر العميل
  */
+export async function searchLedgerEntities(
+  type: LedgerEntityType,
+  params?: { search?: string; limit?: number }
+) {
+  const table = type === 'customers' ? 'customers' : 'suppliers'
+  const search = normalizeLedgerSearch(params?.search)
+  const limit = Math.min(Math.max(params?.limit ?? 50, 10), 100)
+
+  let query = supabase
+    .from(table)
+    .select('id, name, code, current_balance, is_active')
+    .order('name', { ascending: true })
+    .limit(limit)
+
+  if (search) {
+    const searchableColumns = type === 'customers'
+      ? ['name', 'code', 'phone', 'mobile', 'tax_number']
+      : ['name', 'code', 'phone', 'email', 'tax_number']
+    query = query.or(searchableColumns.map(column => `${column}.ilike.%${search}%`).join(','))
+  } else {
+    query = query.or('is_active.eq.true,current_balance.neq.0')
+  }
+
+  const { data, error } = await query
+  if (error) throw error
+  return (data || []) as LedgerEntity[]
+}
+
 export async function getCustomerLedger(customerId: string, params?: {
   page?: number
   pageSize?: number
@@ -84,21 +126,32 @@ export async function getCustomerLedger(customerId: string, params?: {
  * جلب رصيد عميل واحد من العمود المُمَكيش (cached)
  */
 export async function getCustomerBalance(customerId: string) {
-  const { data, error } = await supabase
-    .from('customers')
-    .select('id, current_balance')
-    .eq('id', customerId)
-    .maybeSingle()
+  const [{ data, error }, ledgerCount, lastTransaction] = await Promise.all([
+    supabase
+      .from('customers')
+      .select('id, current_balance')
+      .eq('id', customerId)
+      .maybeSingle(),
+    supabase
+      .from('customer_ledger')
+      .select('id', { count: 'exact', head: true })
+      .eq('customer_id', customerId),
+    supabase
+      .from('customer_ledger')
+      .select('created_at')
+      .eq('customer_id', customerId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ])
   if (error) throw error
-  const ledgerCount = await supabase
-    .from('customer_ledger')
-    .select('id', { count: 'exact', head: true })
-    .eq('customer_id', customerId)
+  if (ledgerCount.error) throw ledgerCount.error
+  if (lastTransaction.error) throw lastTransaction.error
   return {
     customer_id: customerId,
     balance: data?.current_balance || 0,
     transaction_count: ledgerCount.count || 0,
-    last_transaction_at: null,
+    last_transaction_at: lastTransaction.data?.created_at || null,
   } as CustomerBalance
 }
 
@@ -159,17 +212,32 @@ export async function getSupplierLedger(supplierId: string, params?: {
  * جلب رصيد مورد واحد من العمود المُمَكيش (cached)
  */
 export async function getSupplierBalance(supplierId: string) {
-  const { data, error } = await supabase
-    .from('suppliers')
-    .select('id, current_balance')
-    .eq('id', supplierId)
-    .maybeSingle()
+  const [{ data, error }, ledgerCount, lastTransaction] = await Promise.all([
+    supabase
+      .from('suppliers')
+      .select('id, current_balance')
+      .eq('id', supplierId)
+      .maybeSingle(),
+    supabase
+      .from('supplier_ledger')
+      .select('id', { count: 'exact', head: true })
+      .eq('supplier_id', supplierId),
+    supabase
+      .from('supplier_ledger')
+      .select('created_at')
+      .eq('supplier_id', supplierId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ])
   if (error) throw error
+  if (ledgerCount.error) throw ledgerCount.error
+  if (lastTransaction.error) throw lastTransaction.error
   return {
     supplier_id: supplierId,
     balance: data?.current_balance || 0,
-    transaction_count: 0,
-    last_transaction_at: null,
+    transaction_count: ledgerCount.count || 0,
+    last_transaction_at: lastTransaction.data?.created_at || null,
   } as SupplierBalance
 }
 

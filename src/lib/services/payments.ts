@@ -13,9 +13,12 @@ import type {
  * جلب إيصالات الدفع مع التصفية والترقيم
  */
 export async function getPaymentReceipts(params?: {
+  search?: string
   status?: string
   customerId?: string
   branchId?: string
+  paymentMethod?: string
+  collectedBy?: string
   dateFrom?: string
   dateTo?: string
   page?: number
@@ -41,6 +44,26 @@ export async function getPaymentReceipts(params?: {
     .order('created_at', { ascending: false })
     .range(from, to)
 
+  const search = normalizePaymentSearch(params?.search)
+  if (search) {
+    const [customerIds, salesOrderIds] = await Promise.all([
+      findPaymentSearchCustomerIds(search),
+      findPaymentSearchSalesOrderIds(search),
+    ])
+
+    const orFilters = [
+      `number.ilike.%${search}%`,
+      `bank_reference.ilike.%${search}%`,
+      `check_number.ilike.%${search}%`,
+      `notes.ilike.%${search}%`,
+      ...(isNumericSearch(search) ? [`amount.eq.${Number(search)}`] : []),
+      ...(isUuid(search) ? [`id.eq.${search}`] : []),
+      ...(customerIds.length ? [`customer_id.in.(${customerIds.join(',')})`] : []),
+      ...(salesOrderIds.length ? [`sales_order_id.in.(${salesOrderIds.join(',')})`] : []),
+    ]
+
+    query = query.or(orFilters.join(','))
+  }
   if (params?.status) {
     query = query.eq('status', params.status)
   }
@@ -49,6 +72,12 @@ export async function getPaymentReceipts(params?: {
   }
   if (params?.branchId) {
     query = query.eq('branch_id', params.branchId)
+  }
+  if (params?.paymentMethod) {
+    query = query.eq('payment_method', params.paymentMethod)
+  }
+  if (params?.collectedBy) {
+    query = query.eq('collected_by', params.collectedBy)
   }
   if (params?.dateFrom) {
     query = query.gte('created_at', params.dateFrom)
@@ -67,6 +96,40 @@ export async function getPaymentReceipts(params?: {
     pageSize,
     totalPages: Math.ceil((count || 0) / pageSize),
   }
+}
+
+function normalizePaymentSearch(search?: string) {
+  return (search || '').trim().replace(/[%,()]/g, ' ')
+}
+
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+}
+
+function isNumericSearch(value: string) {
+  return /^\d+(\.\d{1,2})?$/.test(value)
+}
+
+async function findPaymentSearchCustomerIds(search: string) {
+  const { data, error } = await supabase
+    .from('customers')
+    .select('id')
+    .or(`name.ilike.%${search}%,code.ilike.%${search}%,phone.ilike.%${search}%,mobile.ilike.%${search}%,tax_number.ilike.%${search}%`)
+    .limit(100)
+
+  if (error) throw error
+  return (data || []).map(row => row.id as string)
+}
+
+async function findPaymentSearchSalesOrderIds(search: string) {
+  const { data, error } = await supabase
+    .from('sales_orders')
+    .select('id')
+    .ilike('order_number', `%${search}%`)
+    .limit(100)
+
+  if (error) throw error
+  return (data || []).map(row => row.id as string)
 }
 
 /**

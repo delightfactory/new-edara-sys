@@ -1,21 +1,24 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { toast } from 'sonner'
 import {
-  Receipt, Plus, Check, XCircle, Search,
-  ExternalLink, AlertCircle, Wallet, X, Info, FileText, ImageIcon,
+  Receipt, Plus, Check, XCircle,
+  ExternalLink, AlertCircle, Wallet, Info, FileText, ImageIcon,
 } from 'lucide-react'
 import ProofUploadButton from '@/components/ui/ProofUploadButton'
 import {
   createPaymentReceipt, confirmPaymentReceipt, rejectPaymentReceipt,
   uploadPaymentProof, getOpenOrdersForCustomer,
 } from '@/lib/services/payments'
-import { usePaymentReceipts, useVaults, useInvalidate } from '@/hooks/useQueryHooks'
+import { useBranches, usePaymentReceipts, useProfiles, useVaults, useInvalidate } from '@/hooks/useQueryHooks'
 import { supabase } from '@/lib/supabase/client'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/auth-store'
+import { useFilterState } from '@/hooks/useFilterState'
 import type { PaymentReceipt, PaymentReceiptInput, PaymentMethod } from '@/lib/types/master-data'
 import { formatCurrency, formatDateTime } from '@/lib/utils/format'
 import PageHeader from '@/components/shared/PageHeader'
+import FilterBar from '@/components/shared/FilterBar'
+import type { FilterStat } from '@/components/shared/FilterBar'
 import DataTable from '@/components/shared/DataTable'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
@@ -25,6 +28,18 @@ import AsyncCombobox from '@/components/ui/AsyncCombobox'
 import type { ComboboxOption } from '@/components/ui/AsyncCombobox'
 import { Link, useNavigate } from 'react-router-dom'
 import { useIsAnyModalOpen } from '@/hooks/useModalStack'
+
+const PAYMENT_FILTER_DEFAULTS = {
+  search:        '',
+  customerId:    '',
+  customer:      '',
+  status:        '',
+  paymentMethod: '',
+  collectedBy:   '',
+  branchId:      '',
+  dateFrom:      '',
+  dateTo:        '',
+}
 
 // ════════════════════════════════════════════════════════════
 // Types & Constants
@@ -181,15 +196,22 @@ export default function PaymentsPage() {
   }, [])
 
   // ── Filters & Pagination ──
-  const [page, setPage]                     = useState(1)
-  const [filterStatus, setFilterStatus]     = useState('')
-  const [filterCustomer, setFilterCustomer] = useState('')
-  const [filterDateFrom, setFilterDateFrom] = useState('')
-  const [filterDateTo, setFilterDateTo]     = useState('')
-  const hasFilters = !!(filterStatus || filterCustomer || filterDateFrom || filterDateTo)
+  const [page, setPage] = useState(1)
+  const { filters, setFilter, reset, activeCount, filterKey } = useFilterState({
+    defaults: PAYMENT_FILTER_DEFAULTS,
+    urlSync: true,
+  })
+
+  const hasFilters = activeCount > 0
+
+  useEffect(() => {
+    setPage(1)
+  }, [filterKey])
 
   // ── Vaults ──
   const { data: vaults = [] } = useVaults({ isActive: true })
+  const { data: branches = [] } = useBranches()
+  const { data: collectors = [] } = useProfiles()
 
   // ── My Custody ──
   const { data: myCustody } = useQuery({
@@ -211,14 +233,71 @@ export default function PaymentsPage() {
   // ── Receipts List ──
   const { data: result, isLoading: loading } = usePaymentReceipts({
     page, pageSize: 25,
-    status:     filterStatus   || undefined,
-    customerId: filterCustomer || undefined,
-    dateFrom:   filterDateFrom || undefined,
-    dateTo:     filterDateTo   || undefined,
+    search:        filters.search        || undefined,
+    customerId:    filters.customerId    || filters.customer || undefined,
+    status:        filters.status        || undefined,
+    paymentMethod: filters.paymentMethod || undefined,
+    collectedBy:   filters.collectedBy   || undefined,
+    branchId:      filters.branchId      || undefined,
+    dateFrom:      filters.dateFrom      || undefined,
+    dateTo:        filters.dateTo        || undefined,
   })
   const receipts   = result?.data       ?? []
   const totalPages = result?.totalPages ?? 0
   const totalCount = result?.count      ?? 0
+
+  const statusOptions = useMemo(() => [
+    { value: 'pending',   label: 'معلق' },
+    { value: 'confirmed', label: 'مؤكد' },
+    { value: 'rejected',  label: 'مرفوض' },
+  ], [])
+
+  const methodOptions = useMemo(() =>
+    PAYMENT_METHODS.map(m => ({ value: m.value, label: `${m.icon} ${m.label}` })),
+  [])
+
+  const collectorOptions = useMemo(() =>
+    collectors.map(p => ({ value: p.id, label: p.full_name })),
+  [collectors])
+
+  const branchOptions = useMemo(() =>
+    branches.map(b => ({ value: b.id, label: b.name })),
+  [branches])
+
+  const filterStats = useMemo(() => {
+    const stats: FilterStat[] = [
+      {
+        label: filters.status
+          ? (statusOptions.find(s => s.value === filters.status)?.label || 'إيصال')
+          : 'إيصال',
+        value: totalCount.toLocaleString('en-US'),
+        variant: filters.status === 'rejected'
+          ? 'danger' as const
+          : filters.status === 'confirmed'
+            ? 'success' as const
+            : filters.status === 'pending'
+              ? 'warning' as const
+              : 'default' as const,
+        loading,
+      },
+    ]
+
+    if (!loading && receipts.length > 0) {
+      const pendingInPage = receipts.filter(r => r.status === 'pending').length
+      const confirmedInPage = receipts.filter(r => r.status === 'confirmed').length
+      const totalAmount = receipts.reduce((sum, r) => sum + (Number(r.amount) || 0), 0)
+
+      if (!filters.status && pendingInPage > 0) {
+        stats.push({ label: 'معلق في الصفحة', value: pendingInPage.toLocaleString('en-US'), variant: 'warning' as const, loading: false })
+      }
+      if (!filters.status && confirmedInPage > 0) {
+        stats.push({ label: 'مؤكد في الصفحة', value: confirmedInPage.toLocaleString('en-US'), variant: 'success' as const, loading: false })
+      }
+      stats.push({ label: 'إجمالي الصفحة', value: formatCurrency(totalAmount), variant: 'info' as const, loading: false })
+    }
+
+    return stats
+  }, [filters.status, loading, receipts, statusOptions, totalCount])
 
   // ── Customer Search ──
   const loadCustomers = async (search: string): Promise<ComboboxOption[]> => {
@@ -418,76 +497,60 @@ export default function PaymentsPage() {
         }
       />
 
-      {/* ── شريط الفلترة ── */}
-      <div className="edara-card" style={{ padding: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
-        <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+      <FilterBar
+        title="فلاتر المدفوعات"
+        activeCount={activeCount}
+        onReset={reset}
+        stats={filterStats}
+      >
+        <FilterBar.Search
+          value={filters.search}
+          onChange={v => setFilter('search', v)}
+          placeholder="بحث برقم الإيصال، العميل، كود العميل، الفاتورة، المرجع، الشيك، المبلغ..."
+          fullWidth
+        />
 
-          {/* الحالة */}
-          <div className="form-group" style={{ margin: 0, minWidth: 140 }}>
-            <label className="form-label">الحالة</label>
-            <select className="form-select" value={filterStatus}
-              onChange={e => { setFilterStatus(e.target.value); setPage(1) }}>
-              <option value="">كل الحالات</option>
-              <option value="pending">معلق</option>
-              <option value="confirmed">مؤكد</option>
-              <option value="rejected">مرفوض</option>
-            </select>
-          </div>
+        <FilterBar.Select
+          label="الحالة"
+          value={filters.status}
+          onChange={v => setFilter('status', v)}
+          options={statusOptions}
+          allLabel="كل الحالات"
+        />
 
-          {/* العميل — نص حر لأن الفلتر يعمل بـ customerId text في الخدمة */}
-          <div className="form-group" style={{ margin: 0, minWidth: 220, flex: 1 }}>
-            <label className="form-label">بحث بالعميل</label>
-            <div style={{ position: 'relative' }}>
-              <Search size={14} style={{
-                position: 'absolute',
-                insetInlineEnd: 10,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: 'var(--text-muted)',
-                pointerEvents: 'none',
-              }} />
-              <input
-                className="form-input"
-                style={{ paddingInlineEnd: 32 }}
-                placeholder="اسم العميل..."
-                value={filterCustomer}
-                onChange={e => { setFilterCustomer(e.target.value); setPage(1) }}
-              />
-            </div>
-          </div>
+        <FilterBar.Select
+          label="طريقة الدفع"
+          value={filters.paymentMethod}
+          onChange={v => setFilter('paymentMethod', v)}
+          options={methodOptions}
+          allLabel="كل الطرق"
+        />
 
-          {/* من تاريخ */}
-          <div className="form-group" style={{ margin: 0 }}>
-            <label className="form-label">من</label>
-            <input className="form-input" type="date" dir="ltr"
-              value={filterDateFrom}
-              onChange={e => { setFilterDateFrom(e.target.value); setPage(1) }} />
-          </div>
+        <FilterBar.Select
+          label="المحصل"
+          value={filters.collectedBy}
+          onChange={v => setFilter('collectedBy', v)}
+          options={collectorOptions}
+          allLabel="كل المحصلين"
+        />
 
-          {/* إلى تاريخ */}
-          <div className="form-group" style={{ margin: 0 }}>
-            <label className="form-label">إلى</label>
-            <input className="form-input" type="date" dir="ltr"
-              value={filterDateTo}
-              onChange={e => { setFilterDateTo(e.target.value); setPage(1) }} />
-          </div>
+        <FilterBar.Select
+          label="الفرع"
+          value={filters.branchId}
+          onChange={v => setFilter('branchId', v)}
+          options={branchOptions}
+          allLabel="كل الفروع"
+        />
 
-          {/* مسح الفلاتر */}
-          {hasFilters && (
-            <Button variant="ghost" size="sm"
-              icon={<X size={14} />}
-              onClick={() => {
-                setFilterStatus('')
-                setFilterCustomer('')
-                setFilterDateFrom('')
-                setFilterDateTo('')
-                setPage(1)
-              }}>
-              مسح
-            </Button>
-          )}
-        </div>
-      </div>
+        <FilterBar.DateRange
+          label="تاريخ الإيصال"
+          from={filters.dateFrom}
+          to={filters.dateTo}
+          onFromChange={v => setFilter('dateFrom', v)}
+          onToChange={v => setFilter('dateTo', v)}
+          fullWidth
+        />
+      </FilterBar>
 
       {/* ── DESKTOP: DataTable ─────────────────────────── */}
       <div className="pay-table-view edara-card" style={{ overflow: 'hidden' }}>

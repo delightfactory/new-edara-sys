@@ -10,11 +10,14 @@ import {
   getCustomer, getCustomerBranches, getCustomerContacts, getCreditHistory
 } from '@/lib/services/customers'
 import { useActivities } from '@/hooks/useQueryHooks'
-import { useCustomer360Summary, useCustomer360ArAging } from '@/hooks/useCustomer360'
+import { useCustomer360Summary, useCustomer360ArAging, useCustomer360Ledger, useCustomer360Timeline } from '@/hooks/useCustomer360'
 import { useAuthStore } from '@/stores/auth-store'
 import type { Customer, CustomerBranch, CustomerContact, CustomerCreditHistory } from '@/lib/types/master-data'
 import { CustomerIntelligenceTab } from './CustomerIntelligenceTab'
 import { computeRecommendations } from '@/lib/utils/customer360-recommendations'
+import { DocumentActions } from '@/features/output/components/DocumentActions'
+import { formatCurrency } from '@/lib/utils/format'
+import type { CustomerTimelineEvent } from '@/lib/services/customer360'
 
 export default function CustomerDetailPage() {
   const { id } = useParams()
@@ -23,7 +26,7 @@ export default function CustomerDetailPage() {
 
   const [loading, setLoading] = useState(true)
   const [customer, setCustomer] = useState<Customer | null>(null)
-  const [tab, setTab] = useState<'analysis' | 'info' | 'branches' | 'activities'>('analysis')
+  const [tab, setTab] = useState<'analysis' | 'account' | 'info' | 'branches' | 'activities'>('analysis')
   const [branches, setBranches] = useState<CustomerBranch[]>([])
   const [contacts, setContacts] = useState<CustomerContact[]>([])
   const [creditHistory, setCreditHistory] = useState<CustomerCreditHistory[]>([])
@@ -209,6 +212,9 @@ export default function CustomerDetailPage() {
         <button className={`tab ${tab === 'info' ? 'active' : ''}`} onClick={() => setTab('info')}>
           <Building size={14} /> ملف العميل
         </button>
+        <button className={`tab ${tab === 'account' ? 'active' : ''}`} onClick={() => setTab('account')}>
+          <FileText size={14} /> {'\u0643\u0634\u0641 \u0627\u0644\u062d\u0633\u0627\u0628'}
+        </button>
         <button className={`tab ${tab === 'branches' ? 'active' : ''}`} onClick={() => setTab('branches')}>
           <MapPin size={14} /> الفروع
           {branches.length > 0 && <span className="badge badge-neutral" style={{ marginRight: 'var(--space-1)' }}>{branches.length}</span>}
@@ -220,6 +226,8 @@ export default function CustomerDetailPage() {
 
       {/* ═══════ TAB: ANALYSIS (360) ═══════ */}
       {tab === 'analysis' && <CustomerIntelligenceTab customer={customer} />}
+
+      {tab === 'account' && <CustomerAccountTab customer={customer} />}
 
       {/* ═══════ TAB: INFO ═══════ */}
       {tab === 'info' && (
@@ -408,6 +416,200 @@ export default function CustomerDetailPage() {
 
       {/* ═══════ TAB: ACTIVITIES ═══════ */}
       {tab === 'activities' && id && <CustomerActivitiesTab customerId={id} navigate={navigate} />}
+    </div>
+  )
+}
+
+function CustomerAccountTab({ customer }: { customer: Customer }) {
+  const ledger = useCustomer360Ledger(customer.id, 25)
+  const timeline = useCustomer360Timeline(customer.id, 50)
+  const pages = ledger.data?.pages || []
+  const entries = pages.flatMap(page => page)
+  const timelinePages = timeline.data?.pages || []
+  const events = timelinePages.flatMap(page => page)
+  const currentBalance = Number(customer.current_balance ?? 0)
+
+  const eventTypeLabel = (event: CustomerTimelineEvent) => {
+    const labels: Record<string, string> = {
+      order: '\u0641\u0627\u062a\u0648\u0631\u0629',
+      payment: '\u062a\u062d\u0635\u064a\u0644',
+      return: '\u0645\u0631\u062a\u062c\u0639',
+      activity: '\u0646\u0634\u0627\u0637',
+      credit_change: '\u062a\u063a\u064a\u064a\u0631 \u0627\u0626\u062a\u0645\u0627\u0646',
+    }
+    return labels[event.event_type] ?? event.event_type
+  }
+
+  const eventDocumentNo = (event: CustomerTimelineEvent) => (
+    event.extra?.order_number ||
+    event.extra?.return_number ||
+    event.extra?.number ||
+    event.source_id
+  )
+
+  const eventImpact = (event: CustomerTimelineEvent) => {
+    if (event.event_type === 'payment') {
+      return { label: '\u062a\u062d\u0635\u064a\u0644 / \u0633\u062f\u0627\u062f', className: 'badge-success' }
+    }
+    if (['order', 'return'].includes(event.event_type)) {
+      return { label: '\u0645\u0627\u0644\u064a / \u062f\u0641\u062a\u0631\u064a', className: 'badge-primary' }
+    }
+    return { label: '\u062a\u0634\u063a\u064a\u0644\u064a \u0641\u0642\u0637', className: 'badge-neutral' }
+  }
+
+  return (
+    <div style={{ padding: '0 12px', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+      <div className="edara-card" style={{ padding: 'var(--space-4)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <div>
+            <h3 style={{ fontSize: 16, fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <FileText size={16} /> {'\u0643\u0634\u0641 \u062d\u0633\u0627\u0628 \u0627\u0644\u0639\u0645\u064a\u0644'}
+            </h3>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+              {customer.code} - {entries.length} {'\u062d\u0631\u0643\u0629 \u0645\u0639\u0631\u0648\u0636\u0629'}
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <DocumentActions kind="account-statement" entityId={customer.id} params={{ type: 'customers' }} />
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{'\u0627\u0644\u0631\u0635\u064a\u062f \u0627\u0644\u062d\u0627\u0644\u064a'}</div>
+              <div style={{
+                fontSize: 20,
+                fontWeight: 900,
+                color: currentBalance > 0 ? 'var(--color-danger)' : currentBalance < 0 ? 'var(--color-primary)' : 'var(--color-success)',
+                fontVariantNumeric: 'tabular-nums',
+              }}>
+                {formatCurrency(Math.abs(currentBalance))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="edara-card" style={{ padding: 0, overflowX: 'auto' }}>
+        <div style={{ padding: 'var(--space-4)', borderBottom: '1px solid var(--border-primary)' }}>
+          <h3 style={{ fontSize: 15, fontWeight: 800, margin: 0 }}>
+            {'\u0643\u0644 \u0645\u0639\u0627\u0645\u0644\u0627\u062a \u0627\u0644\u0639\u0645\u064a\u0644'}
+          </h3>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+            {'\u064a\u0634\u0645\u0644 \u0627\u0644\u062a\u062d\u0635\u064a\u0644 \u0627\u0644\u0646\u0642\u062f\u064a \u0648\u0627\u0644\u0641\u0648\u0627\u062a\u064a\u0631 \u0648\u0627\u0644\u0623\u0646\u0634\u0637\u0629\u060c \u062d\u062a\u0649 \u0644\u0648 \u0644\u0645 \u062a\u0624\u062b\u0631 \u0639\u0644\u0649 \u0631\u0635\u064a\u062f \u0627\u0644\u0630\u0645\u0645'}
+          </div>
+        </div>
+        {timeline.isPending ? (
+          <div style={{ padding: 'var(--space-4)' }}>
+            {[1, 2, 3, 4].map(i => <div key={i} className="skeleton skeleton-row" style={{ marginBottom: 8 }} />)}
+          </div>
+        ) : events.length === 0 ? (
+          <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)' }}>
+            {'\u0644\u0627 \u062a\u0648\u062c\u062f \u0645\u0639\u0627\u0645\u0644\u0627\u062a \u0645\u0633\u062c\u0644\u0629'}
+          </div>
+        ) : (
+          <table className="data-table" style={{ margin: 0 }}>
+            <thead>
+              <tr>
+                <th>{'\u0627\u0644\u062a\u0627\u0631\u064a\u062e'}</th>
+                <th>{'\u0627\u0644\u0646\u0648\u0639'}</th>
+                <th>{'\u0627\u0644\u0645\u0633\u062a\u0646\u062f'}</th>
+                <th>{'\u0627\u0644\u062d\u0627\u0644\u0629'}</th>
+                <th>{'\u0627\u0644\u0623\u062b\u0631'}</th>
+                <th>{'\u0627\u0644\u0645\u0628\u0644\u063a'}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {events.map(event => (
+                <tr key={event.event_id}>
+                  <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{new Date(event.event_ts).toLocaleString('ar-EG-u-nu-latn')}</td>
+                  <td style={{ fontSize: 12, fontWeight: 700 }}>{eventTypeLabel(event)}</td>
+                  <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{eventDocumentNo(event)}</td>
+                  <td style={{ fontSize: 12 }}>{event.status}</td>
+                  <td style={{ fontSize: 12 }}>
+                    {(() => {
+                      const impact = eventImpact(event)
+                      return <span className={`badge ${impact.className}`}>{impact.label}</span>
+                    })()}
+                  </td>
+                  <td style={{ fontWeight: 800, fontVariantNumeric: 'tabular-nums' }}>
+                    {Number(event.amount || 0) !== 0 ? formatCurrency(Math.abs(Number(event.amount))) : ''}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {timeline.hasNextPage && (
+        <button
+          className="btn"
+          disabled={timeline.isFetchingNextPage}
+          onClick={() => timeline.fetchNextPage()}
+          style={{ alignSelf: 'center', minWidth: 200, background: 'var(--bg-surface)', border: '1px solid var(--border-primary)' }}
+        >
+          {timeline.isFetchingNextPage ? '\u062c\u0627\u0631\u064a \u0627\u0644\u062a\u062d\u0645\u064a\u0644...' : '\u062a\u062d\u0645\u064a\u0644 \u0645\u0639\u0627\u0645\u0644\u0627\u062a \u0623\u0643\u062b\u0631'}
+        </button>
+      )}
+
+      <div className="edara-card" style={{ padding: 0, overflowX: 'auto' }}>
+        <div style={{ padding: 'var(--space-4)', borderBottom: '1px solid var(--border-primary)' }}>
+          <h3 style={{ fontSize: 15, fontWeight: 800, margin: 0 }}>
+            {'\u0627\u0644\u0643\u0634\u0641 \u0627\u0644\u062f\u0641\u062a\u0631\u064a \u0644\u0644\u0630\u0645\u0645'}
+          </h3>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+            {'\u064a\u0639\u0631\u0636 \u0641\u0642\u0637 \u0627\u0644\u062d\u0631\u0643\u0627\u062a \u0627\u0644\u062a\u064a \u062a\u063a\u064a\u0631 \u0631\u0635\u064a\u062f \u0627\u0644\u0639\u0645\u064a\u0644'}
+          </div>
+        </div>
+        {ledger.isPending ? (
+          <div style={{ padding: 'var(--space-4)' }}>
+            {[1, 2, 3, 4].map(i => <div key={i} className="skeleton skeleton-row" style={{ marginBottom: 8 }} />)}
+          </div>
+        ) : entries.length === 0 ? (
+          <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)' }}>
+            {'\u0644\u0627 \u062a\u0648\u062c\u062f \u062d\u0631\u0643\u0627\u062a \u062f\u0641\u062a\u0631\u064a\u0629 \u0644\u0647\u0630\u0627 \u0627\u0644\u0639\u0645\u064a\u0644'}
+          </div>
+        ) : (
+          <table className="data-table" style={{ margin: 0 }}>
+            <thead>
+              <tr>
+                <th>{'\u0627\u0644\u062a\u0627\u0631\u064a\u062e'}</th>
+                <th>{'\u0627\u0644\u0645\u0635\u062f\u0631'}</th>
+                <th>{'\u0627\u0644\u0648\u0635\u0641'}</th>
+                <th>{'\u0645\u062f\u064a\u0646'}</th>
+                <th>{'\u062f\u0627\u0626\u0646'}</th>
+                <th>{'\u0627\u0644\u0631\u0635\u064a\u062f'}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {entries.map(entry => (
+                <tr key={entry.id}>
+                  <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{new Date(entry.created_at).toLocaleString('ar-EG-u-nu-latn')}</td>
+                  <td style={{ fontSize: 12 }}>{entry.source_type}</td>
+                  <td style={{ fontSize: 12, color: 'var(--text-secondary)', minWidth: 160 }}>{entry.description || '—'}</td>
+                  <td style={{ fontWeight: 700, color: 'var(--color-danger)', fontVariantNumeric: 'tabular-nums' }}>
+                    {entry.type === 'debit' ? formatCurrency(Number(entry.amount)) : ''}
+                  </td>
+                  <td style={{ fontWeight: 700, color: 'var(--color-success)', fontVariantNumeric: 'tabular-nums' }}>
+                    {entry.type === 'credit' ? formatCurrency(Number(entry.amount)) : ''}
+                  </td>
+                  <td style={{ fontWeight: 800, fontVariantNumeric: 'tabular-nums' }}>
+                    {formatCurrency(Number(entry.running_balance))}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {ledger.hasNextPage && (
+        <button
+          className="btn"
+          disabled={ledger.isFetchingNextPage}
+          onClick={() => ledger.fetchNextPage()}
+          style={{ alignSelf: 'center', minWidth: 180, background: 'var(--bg-surface)', border: '1px solid var(--border-primary)' }}
+        >
+          {ledger.isFetchingNextPage ? '\u062c\u0627\u0631\u064a \u0627\u0644\u062a\u062d\u0645\u064a\u0644...' : '\u062a\u062d\u0645\u064a\u0644 \u062d\u0631\u0643\u0627\u062a \u0623\u0643\u062b\u0631'}
+        </button>
+      )}
     </div>
   )
 }

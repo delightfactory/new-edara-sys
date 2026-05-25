@@ -1,8 +1,15 @@
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { BookText, Users, Truck, TrendingDown, TrendingUp, ArrowLeftRight } from 'lucide-react'
-import { getCustomerLedger, getCustomerBalance, getSupplierLedger, getSupplierBalance } from '@/lib/services/finance'
-import { supabase } from '@/lib/supabase/client'
+import {
+  getCustomerLedger,
+  getCustomerBalance,
+  getSupplierLedger,
+  getSupplierBalance,
+  searchLedgerEntities,
+  type LedgerEntity,
+} from '@/lib/services/finance'
+import { useDebounce } from '@/hooks/useDebounce'
 import type { CustomerLedgerEntry, CustomerBalance, SupplierLedgerEntry, SupplierBalance } from '@/lib/types/master-data'
 import { formatCurrency, formatDateTime } from '@/lib/utils/format'
 import PageHeader from '@/components/shared/PageHeader'
@@ -25,8 +32,9 @@ const sourceIcon: Record<string, string> = {
 
 export default function LedgerPage() {
   const [tab, setTab] = useState<LedgerTab>('customers')
-  const [entities, setEntities] = useState<{ id: string; name: string; code: string }[]>([])
+  const [entities, setEntities] = useState<LedgerEntity[]>([])
   const [search, setSearch] = useState('')
+  const debouncedSearch = useDebounce(search, 250)
   const [selectedId, setSelectedId] = useState('')
   const [selectedName, setSelectedName] = useState('')
   const [balance, setBalance] = useState<CustomerBalance | SupplierBalance | null>(null)
@@ -44,15 +52,13 @@ export default function LedgerPage() {
     const loadEntities = async () => {
       setEntitiesLoading(true); setSelectedId(''); setLedger([]); setBalance(null); setMobileView('list')
       try {
-        const table = tab === 'customers' ? 'customers' : 'suppliers'
-        const { data, error } = await supabase.from(table).select('id, name, code').eq('is_active', true).order('name').limit(500)
-        if (error) throw error
-        setEntities(data || [])
+        const data = await searchLedgerEntities(tab, { search: debouncedSearch, limit: debouncedSearch ? 75 : 50 })
+        setEntities(data)
       } catch { toast.error('فشل تحميل البيانات') }
       finally { setEntitiesLoading(false) }
     }
     loadEntities()
-  }, [tab])
+  }, [tab, debouncedSearch])
 
   const loadLedger = async (entityId: string, name: string, p = 1) => {
     setSelectedId(entityId); setSelectedName(name); setLoading(true); setPage(p); setMobileView('ledger')
@@ -67,10 +73,6 @@ export default function LedgerPage() {
     } catch { toast.error('فشل تحميل الدفتر') }
     finally { setLoading(false) }
   }
-
-  const filteredEntities = search
-    ? entities.filter(e => e.name.includes(search) || e.code.includes(search))
-    : entities
 
   const balanceValue = balance?.balance || 0
   const isDebt = balanceValue > 0
@@ -148,17 +150,27 @@ export default function LedgerPage() {
               <div style={{ padding: 'var(--space-4)' }}>
                 {[1, 2, 3, 4, 5].map(i => <div key={i} className="skeleton skeleton-row" style={{ marginBottom: 8 }} />)}
               </div>
-            ) : filteredEntities.length === 0 ? (
+            ) : entities.length === 0 ? (
               <div className="ledger-empty-list">لا توجد نتائج</div>
             ) : (
-              filteredEntities.map(e => (
+              entities.map(e => (
                 <div
                   key={e.id}
                   className={`ledger-entity-item ${selectedId === e.id ? 'active' : ''}`}
                   onClick={() => loadLedger(e.id, e.name)}
                 >
-                  <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{e.name}</div>
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontFamily: 'monospace' }} dir="ltr">{e.code}</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
+                    <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.name}</div>
+                    {!e.is_active && <Badge variant="warning">{'\u0645\u062a\u0648\u0642\u0641'}</Badge>}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginTop: 2 }}>
+                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontFamily: 'monospace' }} dir="ltr">{e.code}</div>
+                    {Number(e.current_balance || 0) !== 0 && (
+                      <div style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: Number(e.current_balance) > 0 ? 'var(--color-danger)' : 'var(--color-success)', fontVariantNumeric: 'tabular-nums' }}>
+                        {formatCurrency(Math.abs(Number(e.current_balance)))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))
             )}
