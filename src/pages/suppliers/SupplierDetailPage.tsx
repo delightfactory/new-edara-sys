@@ -93,6 +93,10 @@ function SupplierPayModal({ open, onClose, supplierId, supplierName, currentBala
 
   const outstanding = Math.max(0, currentBalance)
   const parsedAmt   = parseFloat(amount) || 0
+  const balanceAfter = currentBalance - parsedAmt
+  const currentAdvance = Math.max(0, -currentBalance)
+  const dueAfter = Math.max(0, balanceAfter)
+  const advanceAfter = Math.max(0, -balanceAfter)
 
   const handleSubmit = async () => {
     if (!parsedAmt || parsedAmt <= 0) { toast.error('المبلغ يجب أن يكون أكبر من صفر'); return }
@@ -142,21 +146,29 @@ function SupplierPayModal({ open, onClose, supplierId, supplierName, currentBala
           background: 'var(--bg-surface-2)', border: '1px solid var(--border-color)',
         }}>
           <div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 2 }}>إجمالي المستحق للمورد</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 2 }}>
+              {currentBalance < 0 ? 'رصيد مقدم حالي لدى المورد' : 'إجمالي المستحق للمورد'}
+            </div>
             <div style={{
               fontWeight: 800, fontVariantNumeric: 'tabular-nums',
-              color: outstanding > 0 ? 'var(--color-danger)' : 'var(--color-success)',
+              color: currentBalance < 0
+                ? 'var(--color-primary)'
+                : outstanding > 0 ? 'var(--color-danger)' : 'var(--color-success)',
             }}>
-              {fmt(outstanding)} ج.م
+              {fmt(currentBalance < 0 ? currentAdvance : outstanding)} ج.م
             </div>
           </div>
           <div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 2 }}>بعد الدفعة</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 2 }}>
+              {balanceAfter < 0 ? 'رصيد مقدم بعد الدفعة' : 'المستحق بعد الدفعة'}
+            </div>
             <div style={{
               fontWeight: 800, fontVariantNumeric: 'tabular-nums',
-              color: outstanding - parsedAmt > 0 ? 'var(--color-warning)' : 'var(--color-success)',
+              color: balanceAfter < 0
+                ? 'var(--color-primary)'
+                : balanceAfter > 0 ? 'var(--color-warning)' : 'var(--color-success)',
             }}>
-              {fmt(Math.max(0, outstanding - parsedAmt))} ج.م
+              {fmt(balanceAfter < 0 ? advanceAfter : dueAfter)} ج.م
             </div>
           </div>
         </div>
@@ -188,6 +200,17 @@ function SupplierPayModal({ open, onClose, supplierId, supplierName, currentBala
             }}>
               <AlertTriangle size={11} />
               سداد جزئي — سيتبقى {fmt(outstanding - parsedAmt)} ج.م
+            </div>
+          )}
+          {parsedAmt > 0 && balanceAfter < 0 && (
+            <div style={{
+              fontSize: '0.72rem', color: 'var(--color-primary)',
+              marginTop: 4, display: 'flex', alignItems: 'center', gap: 4,
+            }}>
+              <CheckCircle size={11} />
+              {currentBalance > 0
+                ? `سيُسجل ${fmt(advanceAfter)} ج.م كدفعة مقدمة بعد تسوية المستحق`
+                : `سيصبح رصيدك المقدم لدى المورد ${fmt(advanceAfter)} ج.م`}
             </div>
           )}
         </div>
@@ -283,6 +306,7 @@ function PaymentsTab({ supplierId, supplierName, currentBalance, refreshSupplier
   useEffect(() => { load() }, [supplierId])
 
   const outstanding = Math.max(0, currentBalance)
+  const advanceBalance = Math.max(0, -currentBalance)
 
   return (
     <div style={{ padding: '0 12px' }}>
@@ -293,12 +317,16 @@ function PaymentsTab({ supplierId, supplierName, currentBalance, refreshSupplier
         gap: 12, marginBottom: 'var(--space-4)',
       }}>
         <div className="stat-card">
-          <div className="stat-card-label">إجمالي المستحق</div>
+          <div className="stat-card-label">
+            {currentBalance < 0 ? 'رصيد مقدم لدى المورد' : 'إجمالي المستحق'}
+          </div>
           <div className="stat-card-value" style={{
-            color: outstanding > 0 ? 'var(--color-danger)' : 'var(--color-success)',
+            color: currentBalance < 0
+              ? 'var(--color-primary)'
+              : outstanding > 0 ? 'var(--color-danger)' : 'var(--color-success)',
             fontSize: 'var(--text-xl)',
           }}>
-            {fmt(outstanding)}
+            {fmt(currentBalance < 0 ? advanceBalance : outstanding)}
           </div>
         </div>
         <div className="stat-card">
@@ -315,14 +343,14 @@ function PaymentsTab({ supplierId, supplierName, currentBalance, refreshSupplier
         </div>
       </div>
 
-      {/* Guard: show pay button only if user can pay and balance > 0 */}
-      {can('procurement.invoices.pay') && outstanding > 0 && (
+      {/* Payment creation is available with permission even when this is an advance payment. */}
+      {can('procurement.invoices.pay') && (
         <div style={{ marginBottom: 'var(--space-4)' }}>
           <Button
             icon={<Plus size={16} />}
             onClick={() => setPayOpen(true)}
           >
-            دفعة جديدة للمورد
+            {outstanding > 0 ? 'دفعة جديدة للمورد' : 'دفعة مقدمة للمورد'}
           </Button>
         </div>
       )}
@@ -341,7 +369,7 @@ function PaymentsTab({ supplierId, supplierName, currentBalance, refreshSupplier
             <div style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
               لا توجد دفعات مسجلة لهذا المورد
             </div>
-            {can('procurement.invoices.pay') && outstanding > 0 && (
+            {can('procurement.invoices.pay') && (
               <button
                 onClick={() => setPayOpen(true)}
                 style={{
@@ -351,7 +379,8 @@ function PaymentsTab({ supplierId, supplierName, currentBalance, refreshSupplier
                   display: 'inline-flex', alignItems: 'center', gap: 6,
                 }}
               >
-                <Plus size={14} /> سجل أول دفعة
+                <Plus size={14} />
+                {outstanding > 0 ? 'سجل أول دفعة' : 'سجل دفعة مقدمة'}
               </button>
             )}
           </div>
