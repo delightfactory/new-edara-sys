@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ActivityForm — إنشاء نشاط + تعديل + حفظ call_details إذا category = call
  *
  * call_details flow:
@@ -214,6 +214,66 @@ export default function ActivityForm({ prefillPlanItemId, prefillPlanType }: Act
         setLoadingOrders(false)
       })
   }, [customerId, outcomeType])
+
+  const [resolvedPlanId, setResolvedPlanId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (planType === 'visit' && planItemId) {
+      supabase
+        .from('visit_plan_items')
+        .select('plan_id')
+        .eq('id', planItemId)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data?.plan_id) {
+            setResolvedPlanId(data.plan_id)
+          }
+        })
+    }
+  }, [planType, planItemId])
+
+  if (planType === 'visit' && planItemId) {
+    return (
+      <div className="page-container animate-enter">
+        <PageHeader
+          title="تنبيه: تنفيذ زيارة خطة"
+          subtitle="تسجيل الأنشطة للزيارات المخططة"
+          breadcrumbs={[
+            { label: 'الأنشطة', path: '/activities/list' },
+            { label: 'تنبيه' },
+          ]}
+        />
+        <div className="edara-card p-6 text-center text-amber-600 max-w-md mx-auto mt-8 flex flex-col items-center">
+          <h2 className="text-lg font-bold mb-2">تنبيه أمني وصحي للبيانات</h2>
+          <p className="text-sm text-secondary mb-6 leading-relaxed">
+            تنفيذ زيارات الخطة وتسجيل أنشطتها يتم حصرياً من شاشة "وضع التنفيذ الميداني" للزيارات، وذلك لضمان المزامنة الذرية والتحقق الجغرافي السليم للـ GPS.
+            لا يمكن استخدام هذا النموذج اليدوي لزيارة خطة.
+          </p>
+          <div className="flex flex-col gap-2 w-full">
+            <Button
+              onClick={() => {
+                if (resolvedPlanId) {
+                  navigate(`/activities/visit-plans/${resolvedPlanId}/execute`)
+                } else {
+                  navigate('/activities/visit-plans')
+                }
+              }}
+              className="w-full"
+            >
+              {resolvedPlanId ? 'الانتقال إلى شاشة تنفيذ الزيارة' : 'الذهاب إلى خطط الزيارات'}
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => navigate(-1)}
+              className="w-full"
+            >
+              العودة للصفحة السابقة
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // فلترة الأنواع بـ planType
   const availableTypes = activityTypes.filter(t => !planType || t.category === planType)

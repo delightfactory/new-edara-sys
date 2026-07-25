@@ -7,7 +7,7 @@
  * الخطوة 2: ضبط ترتيب + أولوية + غرض + وقت مخطط
  * الخطوة 3: معاينة + تأكيد
  */
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
@@ -17,12 +17,19 @@ import {
   useHREmployees,
   useVisitPlanTemplates,
   useVisitPlans,
+  useCreateVisitPlanAtomic,
 } from '@/hooks/useQueryHooks'
 import { useCustomerSearch } from '@/hooks/useCustomerSearch'
 import { useAuthStore } from '@/stores/auth-store'
 import { PERMISSIONS } from '@/lib/permissions/constants'
+import { VISITS_ATOMIC_EXECUTION } from '@/lib/config/features'
+import { VisitRpcTransportError } from '@/lib/services/activities'
+import { validateVisitPlanItems } from './visitPlanFormValidation'
+import type { SelectedCustomer, PlanItemPurposeType, PlanPriority } from './visitPlanFormTypes'
+import { PRIORITY_OPTIONS, PURPOSE_OPTIONS } from './visitPlanFormTypes'
+import VisitPlanItemEditor from './components/VisitPlanItemEditor'
+import CancelGuardModal from './components/CancelGuardModal'
 import PageHeader from '@/components/shared/PageHeader'
-import DataTable from '@/components/shared/DataTable'
 import Stepper from '@/components/ui/Stepper'
 import Button from '@/components/ui/Button'
 import { CardSkeleton } from '@/components/ui/Skeleton'
@@ -30,11 +37,29 @@ import CustomerSearchCard from '@/components/shared/CustomerSearchCard'
 import type {
   VisitPlanInput,
   VisitPlanItemInput,
-  PlanItemPurposeType,
-  PlanPriority,
 } from '@/lib/types/activities'
 import type { CustomerSearchResult } from '@/hooks/useCustomerSearch'
-import { Search, Plus, Trash2, GripVertical, MapPin, Clock, ArrowUp, ArrowDown, Check, ChevronLeft, ChevronRight, Users, ClipboardList, Settings2, Eye, Loader2 } from 'lucide-react'
+import { Search, Clock, ArrowUp, ArrowDown, Check, ChevronLeft, ChevronRight, Users, ClipboardList, Settings2, Eye, Loader2, MapPin, AlertTriangle } from 'lucide-react'
+
+// Helper: Local date validation without UTC shift (Cairo safe)
+export const getLocalTodayString = (): string => {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+export const isPastLocalDate = (dateStr: string): boolean => {
+  return dateStr < getLocalTodayString()
+}
+
+export const isUuid = (val: unknown): val is string =>
+  typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val)
+
+export const isObject = (val: unknown): val is Record<string, unknown> =>
+  typeof val === 'object' && val !== null
+
 
 // ── Step definitions ─────────────────────────────────────────
 const WIZARD_STEPS = [
@@ -51,40 +76,7 @@ const PLAN_TYPES = [
   { value: 'recurring' as const, label: 'متكررة', desc: 'خطة تتكرر تلقائياً' },
 ]
 
-const PURPOSE_OPTIONS: { value: PlanItemPurposeType; label: string }[] = [
-  { value: 'sales', label: 'مبيعات' },
-  { value: 'collection', label: 'تحصيل' },
-  { value: 'activation', label: 'تنشيط' },
-  { value: 'promotion', label: 'ترويج' },
-  { value: 'followup', label: 'متابعة' },
-  { value: 'service', label: 'خدمة' },
-]
-
-const PRIORITY_OPTIONS: { value: PlanPriority; label: string; color: string }[] = [
-  { value: 'high', label: 'عالية', color: 'var(--color-danger)' },
-  { value: 'normal', label: 'عادية', color: 'var(--color-primary)' },
-  { value: 'low', label: 'منخفضة', color: 'var(--text-muted)' },
-]
-
-// ── Selected customer item state ─────────────────────────────
-interface SelectedCustomer {
-  customerId: string
-  customerName: string
-  customerCode: string
-  phone: string | null
-  latitude: number | null
-  longitude: number | null
-  governorate: string | null
-  city: string | null
-  currentBalance: number
-  creditLimit: number
-  sequence: number
-  plannedTime: string
-  estimatedDuration: number
-  priority: PlanPriority
-  purposeType: PlanItemPurposeType | ''
-  purpose: string
-}
+// PURPOSE_OPTIONS و PRIORITY_OPTIONS مستوردة من visitPlanFormTypes
 
 export default function VisitPlanWizard() {
   const navigate = useNavigate()
@@ -102,14 +94,27 @@ export default function VisitPlanWizard() {
   // ── Mutations ──────────────────────────────────────────────
   const createPlan = useCreateVisitPlan()
   const addItem = useAddVisitPlanItem()
+  const createPlanAtomic = useCreateVisitPlanAtomic()
+
+  // ── Idempotency and Locking Refs ───────────────────────────
+  const isMutatingCreateRef = useRef(false)
+  const createOperationRef = useRef<import('@/lib/types/activities').CreateVisitPlanAtomicInput | null>(null)
+
+  // State for specific error tracking
+  const [errorState, setErrorState] = useState<'none' | 'retryable_transport' | 'terminal_validation' | 'malformed_success'>('none')
+
+  // ── Idempotency guard for navigation ─────────────────────
+  const suppressUnsavedGuardRef = useRef(false)
 
   // ── Wizard state ───────────────────────────────────────────
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
+  const [expandedCardId, setExpandedCardId] = useState<string | null>(null)
+  const [cancelGuardOpen, setCancelGuardOpen] = useState(false)
 
   // ── Step 0: Settings ───────────────────────────────────────
   const canAssignOthers = can(PERMISSIONS.VISIT_PLANS_READ_TEAM) || can(PERMISSIONS.VISIT_PLANS_READ_ALL)
-  const [planDate, setPlanDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [planDate, setPlanDate] = useState(() => getLocalTodayString())
   const [planType, setPlanType] = useState<'daily' | 'weekly' | 'campaign' | 'recurring'>('daily')
   const [employeeId, setEmployeeId] = useState('')
   const [templateId, setTemplateId] = useState('')
@@ -155,6 +160,10 @@ export default function VisitPlanWizard() {
         priority: 'normal',
         purposeType: '',
         purpose: '',
+        customerBranchId: null,
+        customerBranchName: null,
+        customerBranchResolved: true,
+        customerBranchHasCoordinates: cust.latitude != null && cust.longitude != null,
       },
     ])
   }, [selectedIds])
@@ -193,6 +202,53 @@ export default function VisitPlanWizard() {
     )
   }, [])
 
+  const handleBranchSelectionChange = useCallback((
+    customerId: string,
+    branchId: string | null,
+    branchName: string | null,
+    resolved: boolean,
+    hasCoordinates: boolean | null
+  ) => {
+    setSelectedCustomers(prev =>
+      prev.map(c =>
+        c.customerId === customerId
+          ? {
+              ...c,
+              customerBranchId: branchId,
+              customerBranchName: branchName,
+              customerBranchResolved: resolved,
+              customerBranchHasCoordinates: hasCoordinates,
+            }
+          : c
+      )
+    )
+  }, [])
+
+  // ── isDirty — تتبع شامل لأي تغيير ─────────────────────────
+  const initialEmployeeId = currentEmployee?.id ?? ''
+  const initialPlanDate = getLocalTodayString()
+  const isDirty =
+    selectedCustomers.length > 0 ||
+    notes.trim() !== '' ||
+    templateId !== '' ||
+    planDate !== initialPlanDate ||
+    planType !== 'daily' ||
+    (!!employeeId && employeeId !== initialEmployeeId)
+
+  // ── beforeunload حماية المسودة ─────────────────────────────
+  useEffect(() => {
+    if (!isDirty || saving || suppressUnsavedGuardRef.current) {
+      return
+    }
+    const handler = (e: BeforeUnloadEvent) => {
+      if (saving || suppressUnsavedGuardRef.current) return
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [isDirty, saving])
+
   // ── Step validation ────────────────────────────────────────
   function canProceed(): boolean {
     switch (step) {
@@ -210,24 +266,134 @@ export default function VisitPlanWizard() {
   }
 
   // ── Submit ─────────────────────────────────────────────────
+  const validateNewIntent = (): import('@/lib/types/activities').CreateVisitPlanAtomicInput | null => {
+    // 1. Rigorous Validation Checks
+    if (!employeeId) { toast.error('يجب تحديد الموظف'); return null }
+    if (!planDate) { toast.error('يجب تحديد تاريخ الخطة'); return null }
+    if (isPastLocalDate(planDate)) { toast.error('لا يمكن تحديد تاريخ في الماضي'); return null }
+    if (!['daily', 'weekly', 'campaign', 'recurring'].includes(planType)) { toast.error('نوع الخطة غير صالح'); return null }
+    if (hasDailyConflict) { toast.error('يوجد بالفعل خطة يومية لهذا الموظف في هذا التاريخ'); return null }
+
+    const itemsToValidate = selectedCustomers.map(c => ({
+      customerId: c.customerId,
+      customerName: c.customerName,
+      customerBranchId: c.customerBranchId,
+      sequence: c.sequence,
+      estimatedDuration: c.estimatedDuration,
+      plannedTime: c.plannedTime,
+      purposeType: c.purposeType,
+    }))
+
+    const valResult = validateVisitPlanItems(itemsToValidate)
+    if (!valResult.isValid) {
+      toast.error(valResult.error || 'خطأ في التحقق من البيانات')
+      return null
+    }
+
+    // منع حفظ الفرع غير المتحقق (إذا كان customerBranchId موجود و customerBranchResolved = false)
+    const unresolvedItem = selectedCustomers.find(c => c.customerBranchId && !c.customerBranchResolved)
+    if (unresolvedItem) {
+      toast.error(`يرجى التحقق من موقع زيارة العميل [${unresolvedItem.customerName}] أو اختيار الموقع الرئيسي`)
+      return null
+    }
+
+    const payloadItems = selectedCustomers.map(cust => ({
+      customer_id: cust.customerId,
+      customer_branch_id: cust.customerBranchId || null,
+      sequence: cust.sequence,
+      planned_time: cust.plannedTime || null,
+      estimated_duration_min: cust.estimatedDuration,
+      priority: cust.priority,
+      purpose: cust.purpose.trim() || null,
+      purpose_type: (cust.purposeType as PlanItemPurposeType) || null,
+    }))
+
+    return {
+      operationId: crypto.randomUUID(),
+      employeeId,
+      planDate,
+      planType,
+      notes: notes.trim() || null,
+      items: payloadItems,
+    }
+  }
+
+  const submitFrozenAtomicIntent = (frozenPayload: import('@/lib/types/activities').CreateVisitPlanAtomicInput) => {
+    createPlanAtomic.mutate(frozenPayload, {
+      onSuccess: (result) => {
+        if (result.ok === true && result.data?.plan_id) {
+          createOperationRef.current = null
+          setErrorState('none')
+          suppressUnsavedGuardRef.current = true
+          toast.success('تم إنشاء خطة الزيارات كمسودة بنجاح')
+          navigate(`/activities/visit-plans/${result.data.plan_id}`)
+        } else {
+          setErrorState('malformed_success')
+          toast.error('لم يتم إرجاع رقم الخطة من الخادم')
+        }
+      },
+      onError: (err: unknown) => {
+        if (err instanceof VisitRpcTransportError) {
+          setErrorState('retryable_transport')
+          toast.error('فشل الاتصال بالخادم. يمكنك إعادة المحاولة.')
+        } else {
+          setErrorState('terminal_validation')
+          createOperationRef.current = null
+          toast.error('تعذر إنشاء الخطة بسبب عدم استيفاء أحد الشروط. راجع البيانات ثم أعد المحاولة.')
+        }
+      },
+      onSettled: () => {
+        isMutatingCreateRef.current = false
+        setSaving(false)
+      }
+    })
+  }
+
   const handleCreate = async () => {
-    if (!employeeId) { toast.error('يجب تحديد الموظف'); return }
-    if (selectedCustomers.length === 0) { toast.error('يجب إضافة عميل واحد على الأقل'); return }
+    // 1. Double Click Lock Check
+    if (isMutatingCreateRef.current) return
+
+    // 2. Atomic Creation Path
+    if (VISITS_ATOMIC_EXECUTION) {
+      if (createOperationRef.current) {
+        // Retry path: bypass validations and resubmit the frozen intent
+        isMutatingCreateRef.current = true
+        setSaving(true)
+        submitFrozenAtomicIntent(createOperationRef.current)
+        return
+      }
+
+      // New intent path: validate and freeze payload
+      const frozenPayload = validateNewIntent()
+      if (!frozenPayload) return
+
+      isMutatingCreateRef.current = true
+      setSaving(true)
+      createOperationRef.current = frozenPayload
+      setErrorState('none')
+      submitFrozenAtomicIntent(frozenPayload)
+      return
+    }
+
+    // 3. Legacy Fallback Path
+    // Validate current intent state before initiating mutation
+    const validated = validateNewIntent()
+    if (!validated) return
+
+    isMutatingCreateRef.current = true
     setSaving(true)
 
     try {
-      // 1. Create the plan
       const planPayload: VisitPlanInput = {
         employee_id: employeeId,
         plan_date: planDate,
         plan_type: planType,
         template_id: templateId || null,
-        notes: notes || null,
+        notes: notes.trim() || null,
       }
 
       const plan = await createPlan.mutateAsync(planPayload)
 
-      // 2. Add items in parallel (Promise.all — أسرع بكثير مع 20+ عميل)
       await Promise.all(
         selectedCustomers.map(cust => {
           const itemPayload: VisitPlanItemInput = {
@@ -236,19 +402,19 @@ export default function VisitPlanWizard() {
             planned_time: cust.plannedTime || null,
             estimated_duration_min: cust.estimatedDuration,
             priority: cust.priority,
-            purpose: cust.purpose || null,
+            purpose: cust.purpose.trim() || null,
             purpose_type: (cust.purposeType as PlanItemPurposeType) || null,
           }
           return addItem.mutateAsync({ planId: plan.id, item: itemPayload })
         })
       )
 
-      // 3. حفظ كمسودة (بدون تأكيد تلقائي)
       toast.success('تم إنشاء خطة الزيارات كمسودة بنجاح')
-
       navigate(`/activities/visit-plans/${plan.id}`)
-    } catch (err: any) {
-      toast.error(err?.message || 'فشل إنشاء الخطة')
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'فشل إنشاء الخطة')
+    } finally {
+      isMutatingCreateRef.current = false
       setSaving(false)
     }
   }
@@ -259,31 +425,52 @@ export default function VisitPlanWizard() {
     const tmpl = templates.find(t => t.id === tmplId)
     if (!tmpl?.items || !Array.isArray(tmpl.items)) return
 
-    // القالب يخزّن customer_id + بيانات أساسية
-    // نبني البنود مباشرة من بيانات القالب
-    const newItems: SelectedCustomer[] = tmpl.items
-      .map((item: any, i: number) => {
-        if (!item.customer_id) return null
-        return {
-          customerId: item.customer_id,
-          customerName: item.customer_name || `عميل ${i + 1}`,
-          customerCode: item.customer_code || '',
-          phone: item.phone || null,
-          latitude: item.latitude ?? null,
-          longitude: item.longitude ?? null,
-          governorate: null,
-          city: null,
-          currentBalance: 0,
-          creditLimit: 0,
-          sequence: i + 1,
-          plannedTime: item.planned_time || '',
-          estimatedDuration: item.estimated_duration_min || 30,
-          priority: item.priority || 'normal',
-          purposeType: item.purpose_type || '',
-          purpose: item.purpose || '',
-        }
+    let ignoredCount = 0
+    const loadedCustIds = new Set<string>()
+    const newItems: SelectedCustomer[] = []
+
+    tmpl.items.forEach((item: unknown) => {
+      if (!isObject(item)) {
+        ignoredCount++
+        return
+      }
+      const customerId = typeof item.customer_id === 'string' && isUuid(item.customer_id) ? item.customer_id : null
+      if (!customerId || loadedCustIds.has(customerId)) {
+        ignoredCount++
+        return
+      }
+      loadedCustIds.add(customerId)
+
+      const customerBranchId = isUuid(item.customer_branch_id) ? item.customer_branch_id : null
+
+      newItems.push({
+        customerId,
+        customerName: typeof item.customer_name === 'string' ? item.customer_name : `عميل ${newItems.length + 1}`,
+        customerCode: typeof item.customer_code === 'string' ? item.customer_code : '',
+        phone: typeof item.phone === 'string' ? item.phone : null,
+        latitude: typeof item.latitude === 'number' ? item.latitude : null,
+        longitude: typeof item.longitude === 'number' ? item.longitude : null,
+        governorate: null,
+        city: null,
+        currentBalance: 0,
+        creditLimit: 0,
+        sequence: newItems.length + 1,
+        plannedTime: typeof item.planned_time === 'string' ? item.planned_time : '',
+        estimatedDuration: typeof item.estimated_duration_min === 'number' ? item.estimated_duration_min : 30,
+        priority: (typeof item.priority === 'string' && ['high', 'normal', 'low'].includes(item.priority)) ? (item.priority as PlanPriority) : 'normal',
+        purposeType: (typeof item.purpose_type === 'string' && ['sales', 'collection', 'activation', 'promotion', 'followup', 'service'].includes(item.purpose_type)) ? (item.purpose_type as PlanItemPurposeType) : '',
+        purpose: typeof item.purpose === 'string' ? item.purpose : '',
+        customerBranchId,
+        // الاسم يُحلّ لاحقاً عند فتح البطاقة وتحميل الفروع
+        customerBranchName: null,
+        customerBranchResolved: customerBranchId === null,
+        customerBranchHasCoordinates: customerBranchId === null ? (typeof item.latitude === 'number' && typeof item.longitude === 'number') : null,
       })
-      .filter(Boolean) as SelectedCustomer[]
+    })
+
+    if (ignoredCount > 0) {
+      toast.warning(`تم تجاهل ${ignoredCount} من البنود التالفة أو المكررة في القالب`)
+    }
 
     if (newItems.length > 0) {
       setSelectedCustomers(newItems)
@@ -292,6 +479,7 @@ export default function VisitPlanWizard() {
   }
 
   const selectedEmployee = allEmployees.find(e => e.id === employeeId)
+  const isLocked = saving || errorState === 'retryable_transport' || errorState === 'malformed_success'
 
   // ═══════════════════════════════════════════════════════════
   // RENDER
@@ -330,6 +518,7 @@ export default function VisitPlanWizard() {
                     value={planDate}
                     onChange={e => setPlanDate(e.target.value)}
                     required
+                    disabled={isLocked}
                   />
                 </div>
 
@@ -343,6 +532,7 @@ export default function VisitPlanWizard() {
                         type="button"
                         className={`vpw-type-chip${planType === pt.value ? ' vpw-type-chip--active' : ''}`}
                         onClick={() => setPlanType(pt.value)}
+                        disabled={isLocked}
                       >
                         <span className="vpw-type-chip-label">{pt.label}</span>
                         <span className="vpw-type-chip-desc">{pt.desc}</span>
@@ -359,6 +549,7 @@ export default function VisitPlanWizard() {
                       className="form-select"
                       value={employeeId}
                       onChange={e => setEmployeeId(e.target.value)}
+                      disabled={isLocked}
                     >
                       <option value="">-- اختر الموظف --</option>
                       {allEmployees.map(emp => (
@@ -381,6 +572,7 @@ export default function VisitPlanWizard() {
                       className="form-select"
                       value={templateId}
                       onChange={e => handleLoadTemplate(e.target.value)}
+                      disabled={isLocked}
                     >
                       <option value="">-- بدون قالب --</option>
                       {templates.map(t => (
@@ -399,6 +591,7 @@ export default function VisitPlanWizard() {
                     value={notes}
                     onChange={e => setNotes(e.target.value)}
                     placeholder="ملاحظات اختيارية على الخطة..."
+                    disabled={isLocked}
                   />
                 </div>
               </div>
@@ -430,6 +623,7 @@ export default function VisitPlanWizard() {
                   value={customerSearch.search}
                   onChange={e => customerSearch.setSearch(e.target.value)}
                   autoFocus
+                  disabled={isLocked}
                 />
                 {customerSearch.search && (
                   <span className="vpw-search-count">بحث نشط</span>
@@ -455,7 +649,7 @@ export default function VisitPlanWizard() {
                         key={cust.id}
                         customer={cust}
                         isSelected={selectedIds.has(cust.id)}
-                        onAdd={(c) => addCustomer(c)}
+                        onAdd={isLocked ? undefined : (c) => addCustomer(c)}
                         compact
                       />
                     ))}
@@ -464,7 +658,7 @@ export default function VisitPlanWizard() {
                         type="button"
                         className="vpw-load-more"
                         onClick={customerSearch.loadMore}
-                        disabled={customerSearch.isLoading}
+                        disabled={customerSearch.isLoading || isLocked}
                       >
                         {customerSearch.isLoading ? (
                           <><Loader2 size={14} className="vpw-spin" /> جاري التحميل...</>
@@ -497,107 +691,29 @@ export default function VisitPlanWizard() {
 
               <div className="vpw-items-list">
                 {selectedCustomers.map((cust, idx) => (
-                  <div key={cust.customerId} className="vpw-item-card">
-                    <div className="vpw-item-header">
-                      <div className="vpw-item-order">
-                        <button
-                          type="button"
-                          className="vpw-order-btn"
-                          onClick={() => moveUp(idx)}
-                          disabled={idx === 0}
-                          aria-label="تحريك للأعلى"
-                        >
-                          <ArrowUp size={14} />
-                        </button>
-                        <span className="vpw-item-seq">{cust.sequence}</span>
-                        <button
-                          type="button"
-                          className="vpw-order-btn"
-                          onClick={() => moveDown(idx)}
-                          disabled={idx === selectedCustomers.length - 1}
-                          aria-label="تحريك للأسفل"
-                        >
-                          <ArrowDown size={14} />
-                        </button>
-                      </div>
-                      <div className="vpw-item-name">
-                        <strong>{cust.customerName}</strong>
-                        <span className="vpw-item-code">{cust.customerCode}</span>
-                      </div>
-                      <button
-                        type="button"
-                        className="vpw-item-remove"
-                        onClick={() => removeCustomer(cust.customerId)}
-                        aria-label="حذف"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-
-                    <div className="vpw-item-fields">
-                      {/* الأولوية */}
-                      <div className="form-group vpw-field-sm">
-                        <label className="form-label">الأولوية</label>
-                        <select
-                          className="form-select"
-                          value={cust.priority}
-                          onChange={e => updateCustomerField(cust.customerId, 'priority', e.target.value as PlanPriority)}
-                        >
-                          {PRIORITY_OPTIONS.map(p => (
-                            <option key={p.value} value={p.value}>{p.label}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* غرض الزيارة */}
-                      <div className="form-group vpw-field-sm">
-                        <label className="form-label">الغرض</label>
-                        <select
-                          className="form-select"
-                          value={cust.purposeType}
-                          onChange={e => updateCustomerField(cust.customerId, 'purposeType', e.target.value as PlanItemPurposeType | '')}
-                        >
-                          <option value="">— غير محدد —</option>
-                          {PURPOSE_OPTIONS.map(p => (
-                            <option key={p.value} value={p.value}>{p.label}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* الوقت المخطط */}
-                      <div className="form-group vpw-field-sm">
-                        <label className="form-label flex items-center gap-1">
-                          <Clock size={12} className="text-muted" />
-                          الوقت
-                        </label>
-                        <input
-                          type="time"
-                          className="form-input"
-                          value={cust.plannedTime}
-                          onChange={e => updateCustomerField(cust.customerId, 'plannedTime', e.target.value)}
-                        />
-                      </div>
-
-                      {/* المدة المقدرة */}
-                      <div className="form-group vpw-field-sm">
-                        <label className="form-label">المدة (دقيقة)</label>
-                        <input
-                          type="number"
-                          className="form-input"
-                          value={cust.estimatedDuration}
-                          onChange={e => updateCustomerField(cust.customerId, 'estimatedDuration', Math.max(5, Number(e.target.value)))}
-                          min={5}
-                          max={480}
-                        />
-                      </div>
-                    </div>
-                  </div>
+                  <VisitPlanItemEditor
+                    key={cust.customerId}
+                    customer={cust}
+                    index={idx}
+                    total={selectedCustomers.length}
+                    isLocked={isLocked}
+                    isExpanded={expandedCardId === cust.customerId}
+                    onToggleExpand={(id) =>
+                      setExpandedCardId(prev => prev === id ? null : id)
+                    }
+                    onMoveUp={moveUp}
+                    onMoveDown={moveDown}
+                    onRemove={removeCustomer}
+                    onUpdate={updateCustomerField}
+                    onBranchSelectionChange={handleBranchSelectionChange}
+                  />
                 ))}
               </div>
             </div>
           )}
 
           {/* ═══════════ STEP 3: Review ═══════════ */}
+
           {step === 3 && (
             <div className="vpw-step vpw-step--review animate-enter">
               <div className="vpw-section-title">
@@ -622,6 +738,17 @@ export default function VisitPlanWizard() {
                   <span className="vpw-review-label">عدد العملاء</span>
                   <span className="vpw-review-value vpw-review-value--highlight">{selectedCustomers.length}</span>
                 </div>
+                {(() => {
+                  const highPriorityCount = selectedCustomers.filter(c => c.priority === 'high').length
+                  return highPriorityCount > 0 ? (
+                    <div className="vpw-review-row">
+                      <span className="vpw-review-label">عالية الأولوية</span>
+                      <span className="vpw-review-value" style={{ color: 'var(--color-danger)', fontWeight: 700 }}>
+                        {highPriorityCount}
+                      </span>
+                    </div>
+                  ) : null
+                })()}
                 {notes && (
                   <div className="vpw-review-row">
                     <span className="vpw-review-label">ملاحظات</span>
@@ -629,6 +756,32 @@ export default function VisitPlanWizard() {
                   </div>
                 )}
               </div>
+
+              {/* تحذير الفروع غير المتحقق منها (يمنع الحفظ) */}
+              {(() => {
+                const unresolvedCount = selectedCustomers.filter(c => c.customerBranchId && !c.customerBranchResolved).length
+                return unresolvedCount > 0 ? (
+                  <div className="vpw-gps-warning vpw-gps-warning--danger" style={{ background: 'var(--color-danger-light)', borderColor: 'var(--color-danger)', color: 'var(--color-danger)' }}>
+                    <AlertTriangle size={14} aria-hidden="true" />
+                    يوجد {unresolvedCount} {unresolvedCount === 1 ? 'فرع لم يتم التحقق منه بعد' : 'فروع لم يتم التحقق منها بعد'} — يرجى فتح البطاقات للتحقق أو الرجوع للموقع الرئيسي قبل الحفظ.
+                  </div>
+                ) : null
+              })()}
+
+              {/* تحذير إحداثيات GPS (تحذيري فقط) */}
+              {(() => {
+                const noGpsCount = selectedCustomers.filter(c => {
+                  if (!c.customerBranchId) return c.latitude == null || c.longitude == null
+                  if (c.customerBranchResolved) return c.customerBranchHasCoordinates === false
+                  return false // unresolved has its own banner
+                }).length
+                return noGpsCount > 0 ? (
+                  <div className="vpw-gps-warning">
+                    <AlertTriangle size={14} aria-hidden="true" />
+                    {noGpsCount} {noGpsCount === 1 ? 'بند بدون إحداثيات موقع' : 'بنود بدون إحداثيات موقع'} — لن يمنع ذلك الحفظ
+                  </div>
+                ) : null
+              })()}
 
               {/* Customer summary list */}
               <div className="vpw-review-items-title">بنود الزيارات</div>
@@ -639,21 +792,38 @@ export default function VisitPlanWizard() {
                     <div className="vpw-review-item-info">
                       <span className="vpw-review-item-name">{cust.customerName}</span>
                       <span className="vpw-review-item-meta">
+                        {/* الموقع */}
+                        <MapPin size={10} aria-hidden="true" style={{ display: 'inline', verticalAlign: 'middle', marginInlineEnd: '2px' }} />
+                        {cust.customerBranchId
+                          ? (cust.customerBranchName ?? 'فرع محدد — جاري التحقق')
+                          : 'الموقع الرئيسي'
+                        }
+                        {' · '}
                         {PRIORITY_OPTIONS.find(p => p.value === cust.priority)?.label || 'عادية'}
                         {cust.purposeType && ` · ${PURPOSE_OPTIONS.find(p => p.value === cust.purposeType)?.label}`}
                         {cust.plannedTime && ` · ${cust.plannedTime}`}
                       </span>
                     </div>
-                    <span className="vpw-review-item-duration">{cust.estimatedDuration} د</span>
+                    <span className="vpw-review-item-duration" dir="ltr">{cust.estimatedDuration}د</span>
                   </div>
                 ))}
               </div>
 
-              {/* Total duration */}
-              <div className="vpw-review-total">
-                <Clock size={16} />
-                إجمالي الوقت المقدر: {selectedCustomers.reduce((s, c) => s + c.estimatedDuration, 0)} دقيقة
-              </div>
+              {/* Total duration as h+m */}
+              {(() => {
+                const totalMin = selectedCustomers.reduce((s, c) => s + c.estimatedDuration, 0)
+                const hrs = Math.floor(totalMin / 60)
+                const mins = totalMin % 60
+                const label = hrs > 0
+                  ? `${hrs} ساعة${hrs === 1 ? '' : ''} ${mins > 0 ? `و${mins} دقيقة` : ''}`
+                  : `${mins} دقيقة`
+                return (
+                  <div className="vpw-review-total">
+                    <Clock size={16} aria-hidden="true" />
+                    إجمالي الوقت المقدر: {label}
+                  </div>
+                )
+              })()}
             </div>
           )}
         </div>
@@ -664,8 +834,12 @@ export default function VisitPlanWizard() {
             <Button
               type="button"
               variant="secondary"
-              onClick={() => setStep(s => s - 1)}
-              disabled={saving}
+              onClick={() => {
+                createOperationRef.current = null
+                setErrorState('none')
+                setStep(s => s - 1)
+              }}
+              disabled={saving || errorState === 'malformed_success'}
             >
               <ChevronRight size={16} />
               السابق
@@ -675,7 +849,14 @@ export default function VisitPlanWizard() {
             <Button
               type="button"
               variant="secondary"
-              onClick={() => navigate('/activities/visit-plans')}
+              onClick={() => {
+                if (isDirty) {
+                  setCancelGuardOpen(true)
+                } else {
+                  navigate('/activities/visit-plans')
+                }
+              }}
+              disabled={saving}
             >
               إلغاء
             </Button>
@@ -687,22 +868,114 @@ export default function VisitPlanWizard() {
             <Button
               type="button"
               onClick={() => setStep(s => s + 1)}
-              disabled={!canProceed()}
+              disabled={!canProceed() || isLocked}
             >
               التالي
               <ChevronLeft size={16} />
             </Button>
           ) : (
-            <Button
-              type="button"
-              onClick={handleCreate}
-              disabled={saving || selectedCustomers.length === 0}
-            >
-              {saving ? 'جاري الحفظ...' : '✅ حفظ كمسودة'}
-            </Button>
+            <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+              {errorState === 'retryable_transport' && (
+                <div className="vpw-error-retry-container" style={{
+                  marginBottom: 'var(--space-4)',
+                  padding: 'var(--space-4)',
+                  background: 'var(--color-danger-light)',
+                  border: '1px solid var(--color-danger)',
+                  borderRadius: 'var(--radius-lg)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 'var(--space-3)',
+                  width: '100%'
+                }}>
+                  <p style={{ margin: 0, fontSize: 'var(--text-sm)', color: 'var(--color-danger)', fontWeight: 600 }}>
+                    ❌ فشل الاتصال بالخادم. لحماية البيانات من التكرار، تم تجميد المدخلات الحالية. يمكنك إعادة المحاولة بنفس العملية.
+                  </p>
+                  <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+                    <Button type="button" onClick={handleCreate} disabled={saving}>
+                      إعادة المحاولة بنفس العملية
+                    </Button>
+                    <Button type="button" variant="secondary" onClick={() => {
+                      createOperationRef.current = null
+                      setErrorState('none')
+                    }} disabled={saving}>
+                      تعديل البيانات والبدء من جديد
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {errorState === 'terminal_validation' && (
+                <div className="vpw-error-retry-container" style={{
+                  marginBottom: 'var(--space-4)',
+                  padding: 'var(--space-4)',
+                  background: 'var(--color-danger-light)',
+                  border: '1px solid var(--color-danger)',
+                  borderRadius: 'var(--radius-lg)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 'var(--space-3)',
+                  width: '100%'
+                }}>
+                  <p style={{ margin: 0, fontSize: 'var(--text-sm)', color: 'var(--color-danger)', fontWeight: 600 }}>
+                    ❌ تعذر إنشاء الخطة بسبب عدم استيفاء أحد الشروط. راجع البيانات ثم أعد المحاولة.
+                  </p>
+                  <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+                    <Button type="button" onClick={() => setErrorState('none')} disabled={saving}>
+                      مراجعة البيانات
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {errorState === 'malformed_success' && (
+                <div className="vpw-error-retry-container" style={{
+                  marginBottom: 'var(--space-4)',
+                  padding: 'var(--space-4)',
+                  background: 'var(--color-danger-light)',
+                  border: '1px solid var(--color-danger)',
+                  borderRadius: 'var(--radius-lg)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 'var(--space-3)',
+                  width: '100%'
+                }}>
+                  <p style={{ margin: 0, fontSize: 'var(--text-sm)', color: 'var(--color-danger)', fontWeight: 600 }}>
+                    ⚠ استجاب الخادم بنجاح ولكن لم يتم استلام رقم الخطة المنشأة. يرجى التحقق من قائمة الخطط أو إعادة المحاولة للتأكيد.
+                  </p>
+                  <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+                    <Button type="button" onClick={handleCreate} disabled={saving}>
+                      إعادة محاولة نفس العملية
+                    </Button>
+                    <Button type="button" variant="secondary" onClick={() => navigate('/activities/visit-plans')} disabled={saving}>
+                      العودة لخطط الزيارات للتحقق
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {errorState === 'none' && (
+                <Button
+                  type="button"
+                  onClick={handleCreate}
+                  disabled={isLocked || selectedCustomers.length === 0}
+                  style={{ alignSelf: 'flex-end' }}
+                >
+                  {saving ? 'جاري الحفظ...' : '✅ حفظ كمسودة'}
+                </Button>
+              )}
+            </div>
           )}
         </div>
       </div>
+
+      {/* ═══════════ Cancel Guard Modal ═══════════ */}
+      <CancelGuardModal
+        open={cancelGuardOpen}
+        isSaving={saving}
+        onCancel={() => setCancelGuardOpen(false)}
+        onConfirmLeave={() => {
+          suppressUnsavedGuardRef.current = true
+          setCancelGuardOpen(false)
+          navigate('/activities/visit-plans')
+        }}
+      />
 
       {/* ═══════════ STYLES ═══════════ */}
       <style>{`
@@ -1224,6 +1497,22 @@ export default function VisitPlanWizard() {
           0% { background-position: 200% 0; }
           100% { background-position: -200% 0; }
         }
+
+        /* ── GPS Warning (Review Step) ── */
+        .vpw-gps-warning {
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+          padding: var(--space-3) var(--space-4);
+          background: var(--color-warning-light);
+          border: 1px solid var(--color-warning);
+          border-radius: var(--radius-md);
+          font-size: var(--text-sm);
+          font-weight: 600;
+          color: var(--color-warning);
+          margin-bottom: var(--space-3);
+        }
+        .vpw-gps-warning svg { flex-shrink: 0; }
       `}</style>
     </div>
   )

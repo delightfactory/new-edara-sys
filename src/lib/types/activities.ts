@@ -319,6 +319,12 @@ export interface VisitPlan {
   created_by: string
   created_at: string
   updated_at: string
+  organizational_branch_id: string | null  // ✅ الفرع التنظيمي للموظف
+  rescheduled_count: number                // ✅ عدد البنود المعاد جدولتها
+  closure_pct: number                      // ✅ نسبة معالجة وإغلاق البنود
+  administrative_closed_at: string | null  // ✅ وقت الإغلاق الإداري
+  administrative_closed_by: string | null  // ✅ معرف من قام بالإغلاق
+  administrative_close_reason: string | null // ✅ سبب الإغلاق الإداري
   // joined
   employee?: { id: string; full_name: string; branch_id: string | null }
   template?: Pick<VisitPlanTemplate, 'id' | 'name'> | null
@@ -357,6 +363,34 @@ export interface VisitPlanItem {
   reschedule_to: string | null
   created_at: string
   updated_at: string
+  customer_branch_id: string | null        // ✅ فرع العميل المخصص للبند
+  expected_location_source: LocationSource | null // ✅ مصدر الإحداثيات المتوقعة
+  expected_location_id: string | null      // ✅ معرف موقع العميل الجغرافي
+  expected_lat: number | null              // ✅ خط العرض المتوقع
+  expected_lng: number | null              // ✅ خط الطول المتوقع
+  start_lat: number | null                 // ✅ خط العرض لبدء الزيارة
+  start_lng: number | null                 // ✅ خط الطول لبدء الزيارة
+  start_accuracy_m: number | null          // ✅ دقة موقع البدء
+  start_distance_m: number | null          // ✅ المسافة عند بدء الزيارة
+  end_lat: number | null                   // ✅ خط العرض لنهاية الزيارة
+  end_lng: number | null                   // ✅ خط الطول لنهاية الزيارة
+  end_accuracy_m: number | null            // ✅ دقة موقع النهاية
+  end_distance_m: number | null            // ✅ المسافة عند نهاية الزيارة
+  server_started_at: string | null         // ✅ وقت البدء الرسمي بالخادم
+  server_completed_at: string | null       // ✅ وقت النهاية الرسمي بالخادم
+  client_started_at: string | null         // ✅ وقت البدء على جهاز المندوب
+  client_completed_at: string | null       // ✅ وقت النهاية على جهاز المندوب
+  device_timezone: string | null           // ✅ المنطقة الزمنية للجهاز الميداني
+  gps_validation_status: GpsValidationStatus // ✅ حالة التحقق التلقائي للـ GPS
+  gps_review_status: GpsReviewStatus       // ✅ حالة المراجعة الإدارية للمشرف
+  gps_exception_reason: string | null      // ✅ مبرر التجاوز الجغرافي للمندوب
+  gps_exception_requested_by: string | null // ✅ معرف المندوب مقدم الطلب
+  gps_exception_reviewed_by: string | null  // ✅ معرف المشرف مراجع الطلب
+  gps_exception_reviewed_at: string | null  // ✅ وقت مراجعة الاستثناء الجغرافي
+  rescheduled_from_item_id: string | null  // ✅ البند المصدر المعاد جدولته
+  replacement_item_id: string | null       // ✅ البند البديل الجديد
+  reschedule_reason: string | null         // ✅ سبب إعادة الجدولة
+  stale_since: string | null               // ✅ وقت تعثر البند
   // joined
   customer?: {
     id: string
@@ -371,6 +405,7 @@ export interface VisitPlanItem {
 
 export interface VisitPlanItemInput {
   customer_id: string
+  customer_branch_id?: string | null
   sequence: number                         // ✅ sequence
   planned_time?: string | null
   estimated_duration_min?: number          // ✅ estimated_duration_min
@@ -968,4 +1003,330 @@ export interface ChecklistResponseInput {
   question_id: string
   answer_value?: string | null
   answer_json?: any | null
+}
+
+// ─── Phase F additions: Atomic RPCs Unions and Types ───────────
+
+export type GpsValidationStatus = 'not_checked' | 'passed' | 'failed_distance' | 'failed_accuracy' | 'no_coordinates'
+export type GpsReviewStatus = 'not_required' | 'pending' | 'approved' | 'rejected'
+export type LocationSource = 'customer' | 'customer_branch'
+
+export type VisitOutcomeType =
+  | 'visited'
+  | 'order_placed'
+  | 'collection'
+  | 'refused'
+  | 'closed'
+  | 'promotion'
+  | 'exploratory'
+  | 'followup_scheduled'
+  | 'info_only'
+  | 'agreed_order'
+  | 'promised_payment'
+  | 'followup_visit'
+  | 'not_interested'
+
+export type VisitStoragePath = string & { readonly __brand: unique symbol }
+
+export interface PhotoResponse {
+  storage_path: VisitStoragePath
+}
+
+export interface VisitCompletionChecklistScalarResponseInput {
+  template_id: string
+  question_id: string
+  answer_value: string
+  answer_json?: null
+}
+
+export interface VisitCompletionChecklistMultiChoiceResponseInput {
+  template_id: string
+  question_id: string
+  answer_value?: null
+  answer_json: string[]
+}
+
+export interface VisitCompletionChecklistPhotoResponseInput {
+  template_id: string
+  question_id: string
+  answer_value?: null
+  answer_json: PhotoResponse
+}
+
+export type VisitCompletionChecklistResponseInput =
+  | VisitCompletionChecklistScalarResponseInput
+  | VisitCompletionChecklistMultiChoiceResponseInput
+  | VisitCompletionChecklistPhotoResponseInput
+
+// discriminated RPC result unions
+export type VisitOperationName =
+  | 'create_visit_plan_atomic'
+  | 'confirm_visit_plan_atomic'
+  | 'cancel_visit_plan_atomic'
+  | 'reorder_visit_plan_items_atomic'
+  | 'close_visit_plan_administratively_atomic'
+  | 'start_visit_item_atomic'
+  | 'complete_visit_item_atomic'
+  | 'skip_visit_item_atomic'
+  | 'reschedule_visit_item_atomic'
+  | 'reschedule_visit_item_to_date_atomic'
+  | 'close_visit_day_missed_atomic'
+  | 'add_visit_plan_item_atomic'
+  | 'delete_visit_plan_item_atomic'
+export interface VisitRpcError {
+  code: string
+  message: string
+}
+
+export interface VisitRpcSuccess<T> {
+  ok: true
+  operation_id: string
+  operation: VisitOperationName
+  replayed: boolean
+  data: T
+}
+
+export interface VisitRpcFailure {
+  ok: false
+  operation_id: string
+  operation: VisitOperationName
+  replayed: boolean
+  error: VisitRpcError
+}
+
+export type VisitRpcResult<T> = VisitRpcSuccess<T> | VisitRpcFailure
+
+// input interfaces for the 9 RPCs
+export interface CreateVisitPlanItemInput {
+  customer_id: string
+  customer_branch_id: string | null
+  sequence: number
+  planned_time: string | null
+  estimated_duration_min: number
+  priority: PlanPriority
+  purpose: string | null
+  purpose_type: PlanItemPurposeType | null
+}
+
+export interface CreateVisitPlanAtomicInput {
+  operationId: string
+  employeeId: string
+  planDate: string
+  planType: 'daily' | 'weekly' | 'campaign' | 'recurring'
+  notes: string | null
+  items: CreateVisitPlanItemInput[]
+}
+
+export interface ConfirmVisitPlanAtomicInput {
+  operationId: string
+  planId: string
+}
+
+export interface CancelVisitPlanAtomicInput {
+  operationId: string
+  planId: string
+  reason: string
+}
+
+export interface ReorderVisitPlanItemInput {
+  item_id: string
+  sequence: number
+}
+
+export interface ReorderVisitPlanItemsAtomicInput {
+  operationId: string
+  planId: string
+  items: ReorderVisitPlanItemInput[]
+}
+
+export interface CloseVisitPlanAdministrativelyAtomicInput {
+  operationId: string
+  planId: string
+  reason: string
+}
+
+export interface StartVisitItemAtomicInput {
+  operationId: string
+  itemId: string
+  startLat: number | null
+  startLng: number | null
+  startAccuracyM: number | null
+  clientStartedAt: string
+  deviceTimezone: string
+}
+
+export interface CompleteVisitItemAtomicInput {
+  operationId: string
+  itemId: string
+  endLat: number | null
+  endLng: number | null
+  endAccuracyM: number | null
+  clientCompletedAt: string
+  deviceTimezone: string
+  outcomeType: VisitOutcomeType
+  outcomeNotes: string | null
+  responses: VisitCompletionChecklistResponseInput[]
+  orderId: string | null
+  collectionId: string | null
+  gpsExceptionReason: string | null
+}
+
+export interface SkipVisitItemAtomicInput {
+  operationId: string
+  itemId: string
+  skipReason: string
+  clientEventAt: string
+  deviceTimezone: string
+}
+
+export interface RescheduleVisitItemAtomicInput {
+  operationId: string
+  itemId: string
+  targetPlanId: string
+  rescheduleReason: string
+  plannedTime: string | null
+  clientEventAt: string
+  deviceTimezone: string
+}
+
+export interface RescheduleVisitItemToDateAtomicInput {
+  operationId: string
+  itemId: string
+  targetDate: string
+  rescheduleReason: string
+  plannedTime: string | null
+  clientEventAt: string
+  deviceTimezone: string
+}
+
+export interface CloseVisitDayMissedAtomicInput {
+  operationId: string
+  planId: string
+  closeReason: string
+  clientEventAt: string
+  deviceTimezone: string
+}
+
+export interface AddVisitPlanItemAtomicInput {
+  operationId: string
+  planId: string
+  customerId: string
+  customerBranchId?: string | null
+  purpose?: string | null
+  purposeType?: PlanItemPurposeType | null
+  priority?: PlanPriority
+  plannedTime?: string | null
+  estimatedDurationMin?: number
+  clientEventAt?: string
+  deviceTimezone?: string
+}
+
+export interface DeleteVisitPlanItemAtomicInput {
+  operationId: string
+  itemId: string
+  clientEventAt?: string
+  deviceTimezone?: string
+}
+
+// result interfaces matching v_result_data in the migrations
+export interface CreateVisitPlanAtomicResult {
+  plan_id: string
+  employee_id: string
+  plan_date: string
+  status: PlanStatus
+  total_customers: number
+  items: {
+    id: string
+    customer_id: string
+    sequence: number
+    status: PlanItemStatus
+  }[]
+}
+
+export interface ConfirmVisitPlanAtomicResult {
+  plan_id: string
+  status: PlanStatus
+  confirmed_at: string | null
+  confirmed_by: string | null
+}
+
+export interface CancelVisitPlanAtomicResult {
+  plan_id: string
+  status: PlanStatus
+  cancellation_reason: string | null
+}
+
+export interface ReorderVisitPlanItemsAtomicResult {
+  plan_id: string
+  items: {
+    id: string
+    sequence: number
+  }[]
+}
+
+export interface CloseVisitPlanAdministrativelyAtomicResult {
+  plan_id: string
+  status: PlanStatus
+  skipped_count: number
+  administrative_closed_by: string | null
+  administrative_closed_at: string | null
+  administrative_close_reason: string | null
+}
+
+export interface StartVisitItemAtomicResult {
+  item_id: string
+  status: PlanItemStatus
+  server_started_at: string | null
+  start_distance_m: number | null
+  gps_validation_status: GpsValidationStatus
+  plan_id: string
+  plan_status: PlanStatus
+}
+
+export interface CompleteVisitItemAtomicResult {
+  item_id: string
+  status: PlanItemStatus
+  activity_id: string | null
+  gps_validation_status: GpsValidationStatus
+  gps_review_status: GpsReviewStatus
+  plan_id: string
+  plan_status: PlanStatus
+}
+
+export interface SkipVisitItemAtomicResult {
+  item_id: string
+  status: PlanItemStatus
+  skip_reason: string | null
+  plan_id: string
+  plan_status: PlanStatus
+}
+
+export interface RescheduleVisitItemAtomicResult {
+  source_item_id: string
+  source_status: PlanItemStatus
+  new_item_id: string
+  new_status: PlanItemStatus
+  source_plan_id: string
+  target_plan_id: string
+}
+
+export interface RescheduleVisitItemToDateAtomicResult {
+  target_plan_id: string
+  new_item_id: string
+}
+
+export interface CloseVisitDayMissedAtomicResult {
+  plan_id: string
+  status: PlanStatus
+}
+
+export interface AddVisitPlanItemAtomicResult {
+  item_id: string
+  plan_id: string
+  sequence: number
+}
+
+export interface DeleteVisitPlanItemAtomicResult {
+  item_id: string
+  plan_id: string
 }

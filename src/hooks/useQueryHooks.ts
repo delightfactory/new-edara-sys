@@ -58,6 +58,16 @@ import {
   createChecklistQuestion, updateChecklistQuestion, deleteChecklistQuestion,
   createVisitPlanTemplate, updateVisitPlanTemplate, deleteVisitPlanTemplate,
   createCallPlanTemplate, updateCallPlanTemplate, deleteCallPlanTemplate,
+  // Phase F: Atomic RPCs
+  skipVisitItemAtomic,
+  rescheduleVisitItemToDateAtomic,
+  closeVisitDayMissedAtomic,
+  confirmVisitPlanAtomic,
+  cancelVisitPlanAtomic,
+  createVisitPlanAtomic,
+  reorderVisitPlanItemsAtomic,
+  addVisitPlanItemAtomic,
+  deleteVisitPlanItemAtomic,
 } from '@/lib/services/activities'
 import type {
   ActivityInput, CallDetailInput,
@@ -588,10 +598,11 @@ export function useAttendanceReviewSummary(dateFrom?: string | null, dateTo?: st
 
 // ── List pages (staleTime: 30s default) ──────────────────────
 
-export function useHREmployees(params?: Parameters<typeof getEmployees>[0]) {
+export function useHREmployees(params?: Parameters<typeof getEmployees>[0], enabled = true) {
   return useQuery({
     queryKey: ['hr-employees', params],
     queryFn: () => getEmployees(params),
+    enabled,
   })
 }
 
@@ -1108,10 +1119,11 @@ export function useActivity(id: string | null | undefined) {
 
 // ── Visit Plans Queries ───────────────────────────────────────
 
-export function useVisitPlans(params?: Parameters<typeof getVisitPlans>[0]) {
+export function useVisitPlans(params?: Parameters<typeof getVisitPlans>[0], enabled = true) {
   return useQuery({
     queryKey: ['visit-plans', params],
     queryFn: () => getVisitPlans(params),
+    enabled,
   })
 }
 
@@ -1347,6 +1359,140 @@ export function useUpdateVisitPlanItem() {
   return useMutation({
     mutationFn: ({ itemId, input, planId }: { itemId: string; input: any; planId: string }) =>
       updateVisitPlanItem(itemId, input),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['visit-plan', vars.planId] })
+      qc.invalidateQueries({ queryKey: ['visit-plan-items', vars.planId] })
+    },
+  })
+}
+
+export function useSkipVisitItemAtomic() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ input, planId }: { input: import('@/lib/types/activities').SkipVisitItemAtomicInput; planId: string }) => {
+      const result = await skipVisitItemAtomic(input)
+      if (!result.ok) throw new Error(result.error?.message || 'Failed to skip visit item atomically')
+      return result
+    },
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['visit-plan', vars.planId] })
+      qc.invalidateQueries({ queryKey: ['visit-plan-items', vars.planId] })
+    },
+  })
+}
+
+export function useRescheduleVisitItemToDateAtomic() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ input, planId }: { input: import('@/lib/types/activities').RescheduleVisitItemToDateAtomicInput; planId: string }) => {
+      const result = await rescheduleVisitItemToDateAtomic(input)
+      if (!result.ok) throw new Error(result.error?.message || 'Failed to reschedule visit item atomically')
+      return result
+    },
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['visit-plan', vars.planId] })
+      qc.invalidateQueries({ queryKey: ['visit-plan-items', vars.planId] })
+    },
+  })
+}
+
+export function useCloseVisitDayMissedAtomic() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ input, planId }: { input: import('@/lib/types/activities').CloseVisitDayMissedAtomicInput; planId: string }) => {
+      const result = await closeVisitDayMissedAtomic(input)
+      if (!result.ok) throw new Error(result.error?.message || 'Failed to close visit day atomically')
+      return result
+    },
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['visit-plan', vars.planId] })
+      qc.invalidateQueries({ queryKey: ['visit-plan-items', vars.planId] })
+    },
+  })
+}
+
+export function useConfirmVisitPlanAtomic() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: import('@/lib/types/activities').ConfirmVisitPlanAtomicInput) => {
+      const result = await confirmVisitPlanAtomic(input)
+      if (!result.ok) throw new Error(result.error?.message || 'فشلت العملية الذرية لتأكيد الخطة')
+      return result
+    },
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['visit-plans'] })
+      qc.invalidateQueries({ queryKey: ['visit-plan', vars.planId] })
+    },
+  })
+}
+
+export function useCancelVisitPlanAtomic() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: import('@/lib/types/activities').CancelVisitPlanAtomicInput) => {
+      const result = await cancelVisitPlanAtomic(input)
+      if (!result.ok) throw new Error(result.error?.message || 'فشلت العملية الذرية لإلغاء الخطة')
+      return result
+    },
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['visit-plans'] })
+      qc.invalidateQueries({ queryKey: ['visit-plan', vars.planId] })
+    },
+  })
+}
+
+export function useCreateVisitPlanAtomic() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: import('@/lib/types/activities').CreateVisitPlanAtomicInput) => {
+      const result = await createVisitPlanAtomic(input)
+      if (!result.ok) throw new Error(result.error?.message || 'فشلت عملية إنشاء الخطة الذرية')
+      return result
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['visit-plans'] })
+    },
+  })
+}
+
+export function useReorderVisitPlanItemsAtomic() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: import('@/lib/types/activities').ReorderVisitPlanItemsAtomicInput) => {
+      const result = await reorderVisitPlanItemsAtomic(input)
+      if (!result.ok) throw new Error(result.error?.message || 'فشلت عملية إعادة الترتيب الذرية')
+      return result
+    },
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['visit-plan', vars.planId] })
+      qc.invalidateQueries({ queryKey: ['visit-plan-items', vars.planId] })
+    },
+  })
+}
+
+export function useAddVisitPlanItemAtomic() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: import('@/lib/types/activities').AddVisitPlanItemAtomicInput) => {
+      const result = await addVisitPlanItemAtomic(input)
+      if (!result.ok) throw new Error(result.error?.message || 'فشلت إضافة البند ذرياً')
+      return result
+    },
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['visit-plan', vars.planId] })
+      qc.invalidateQueries({ queryKey: ['visit-plan-items', vars.planId] })
+    },
+  })
+}
+
+export function useDeleteVisitPlanItemAtomic() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ input, planId }: { input: import('@/lib/types/activities').DeleteVisitPlanItemAtomicInput; planId: string }) => {
+      const result = await deleteVisitPlanItemAtomic(input)
+      if (!result.ok) throw new Error(result.error?.message || 'فشل حذف البند ذرياً')
+      return result
+    },
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ['visit-plan', vars.planId] })
       qc.invalidateQueries({ queryKey: ['visit-plan-items', vars.planId] })

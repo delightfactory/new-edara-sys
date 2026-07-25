@@ -140,6 +140,8 @@ export const PERMISSIONS = {
   VISIT_PLANS_CANCEL:         'visit_plans.cancel',
   VISIT_PLANS_UPDATE:         'visit_plans.update',
   VISIT_PLANS_UPDATE_OWN:     'visit_plans.update_own',
+  VISIT_PLANS_CLOSE_ADMINISTRATIVE: 'visit_plans.close_administrative',
+  VISIT_PLANS_REVIEW_GPS:     'visit_plans.review_gps',
 
   // Call Plans
   CALL_PLANS_CREATE:          'call_plans.create',
@@ -376,6 +378,8 @@ export const PERMISSION_GROUPS = [
       { key: PERMISSIONS.VISIT_PLANS_CANCEL,       label: 'إلغاء خطة زيارات' },
       { key: PERMISSIONS.VISIT_PLANS_UPDATE,        label: 'تعديل خطة زيارات (مشرف/مدير)' },
       { key: PERMISSIONS.VISIT_PLANS_UPDATE_OWN,    label: 'تعديل مسودة خطتي (مندوب)' },
+      { key: PERMISSIONS.VISIT_PLANS_CLOSE_ADMINISTRATIVE, label: 'إغلاق إداري لخطة الزيارات' },
+      { key: PERMISSIONS.VISIT_PLANS_REVIEW_GPS,     label: 'مراجعة استثناءات GPS' },
       { key: PERMISSIONS.CALL_PLANS_CREATE,        label: 'إنشاء خطة مكالمات' },
       { key: PERMISSIONS.CALL_PLANS_READ_OWN,      label: 'عرض خطط مكالماتي' },
       { key: PERMISSIONS.CALL_PLANS_READ_TEAM,     label: 'عرض خطط مكالمات الفريق' },

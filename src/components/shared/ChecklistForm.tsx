@@ -1,6 +1,8 @@
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import type { ChecklistQuestion, ChecklistResponseInput } from '@/lib/types/activities'
 import { Star, Camera, HelpCircle } from 'lucide-react'
+import { toast } from 'sonner'
+import { compressImage } from '@/lib/utils/imageCompressor'
 
 interface ChecklistFormProps {
   /** أسئلة الاستبيان */
@@ -14,19 +16,73 @@ interface ChecklistFormProps {
   /** عند تغيير أي إجابة */
   onChange?: (responses: ChecklistResponseInput[], isComplete: boolean) => void
   /** إجابات سابقة (للتعديل) */
-  initialValues?: Record<string, string | any>
+  initialValues?: Record<string, unknown>
   /** وضع القراءة فقط */
   readOnly?: boolean
+  /** وضع الصور */
+  photoMode?: 'local-blob'
+  /** عند التقاط وحفظ صورة محلياً */
+  onPhotoCapture?: (
+    questionId: string,
+    blob: Blob,
+    meta: { mimeType: string; extension: string; size: number; checksum: string }
+  ) => Promise<{ local_blob_id: string }>
+  /** دالة تحميل الصورة للمعاينة */
+  loadLocalPhoto?: (localBlobId: string) => Promise<Blob | null>
 }
 
-/**
- * ChecklistForm — نموذج أسئلة الاستبيان
- *
- * يدعم 7 أنواع أسئلة:
- * text, number, yes_no, single_choice, multi_choice, rating, photo
- *
- * الأسئلة الإجبارية تمنع زر "الإنهاء" حتى الإجابة عليها.
- */
+interface LocalImagePreviewProps {
+  localBlobId: string
+  loadLocalPhoto?: (localBlobId: string) => Promise<Blob | null>
+}
+
+export function LocalImagePreview({ localBlobId, loadLocalPhoto }: LocalImagePreviewProps) {
+  const [objectUrl, setObjectUrl] = useState<string | null>(null)
+  const [error, setError] = useState<boolean>(false)
+
+  useEffect(() => {
+    let active = true
+    let url: string | null = null
+
+    async function load() {
+      if (!loadLocalPhoto) {
+        setError(true)
+        return
+      }
+      try {
+        const blob = await loadLocalPhoto(localBlobId)
+        if (blob && active) {
+          url = URL.createObjectURL(blob)
+          setObjectUrl(url)
+        } else if (active) {
+          setError(true)
+        }
+      } catch (err) {
+        if (active) setError(true)
+      }
+    }
+
+    load()
+
+    return () => {
+      active = false
+      if (url) {
+        URL.revokeObjectURL(url)
+      }
+    }
+  }, [localBlobId, loadLocalPhoto])
+
+  if (error) {
+    return <div className="chk-photo-error">فشل تحميل المعاينة</div>
+  }
+
+  if (!objectUrl) {
+    return <div className="chk-photo-loading">جاري التحميل...</div>
+  }
+
+  return <img src={objectUrl} alt="صورة ملتقطة" className="chk-photo-preview" />
+}
+
 export default function ChecklistForm({
   questions,
   activityId,
@@ -35,14 +91,35 @@ export default function ChecklistForm({
   onChange,
   initialValues = {},
   readOnly = false,
+  photoMode = 'local-blob',
+  onPhotoCapture,
+  loadLocalPhoto
 }: ChecklistFormProps) {
-  const [answers, setAnswers] = useState<Record<string, string | any>>(() => {
-    const init: Record<string, string | any> = {}
+  const [answers, setAnswers] = useState<Record<string, unknown>>(() => {
+    const init: Record<string, unknown> = {}
+    const vals = initialValues || {}
     for (const q of questions) {
-      init[q.id] = initialValues[q.id] ?? (q.default_value ?? '')
+      init[q.id] = vals[q.id] ?? (q.default_value ?? '')
     }
     return init
   })
+
+  useEffect(() => {
+    const vals = initialValues || {}
+    setAnswers(prev => {
+      let changed = false
+      const updated = { ...prev }
+      for (const q of questions) {
+        if (vals[q.id] !== undefined && prev[q.id] !== vals[q.id]) {
+          updated[q.id] = vals[q.id]
+          changed = true
+        }
+      }
+      return changed ? updated : prev
+    })
+  }, [initialValues, questions])
+
+  const [processingQuestions, setProcessingQuestions] = useState<Record<string, boolean>>({})
 
   // حساب الاكتمال
   const requiredQuestions = useMemo(
@@ -66,40 +143,267 @@ export default function ChecklistForm({
     }).length
   }, [questions, answers])
 
+  // التحقق من صحة إعداد الـ photoMode والـ handler لمرة واحدة في وضع التحرير فقط
+  const isPhotoSetupInvalid = !readOnly && photoMode === 'local-blob' && !onPhotoCapture
+  const loggedRef = useRef(false)
+
+  useEffect(() => {
+    if (isPhotoSetupInvalid && !loggedRef.current) {
+      console.error('onPhotoCapture handler is required when photoMode is local-blob')
+      loggedRef.current = true
+    }
+  }, [isPhotoSetupInvalid])
+
   // بناء الردود
-  const buildResponses = useCallback((): ChecklistResponseInput[] => {
-    return questions.map(q => ({
-      activity_id: activityId,
-      template_id: templateId,
-      question_id: q.id,
-      answer_value: typeof answers[q.id] === 'string' ? answers[q.id] : null,
-      answer_json: typeof answers[q.id] !== 'string' ? answers[q.id] : null,
-    })).filter(r => r.answer_value || r.answer_json)
+  const getTypedResponses = useCallback((): ChecklistResponseInput[] => {
+    const list: ChecklistResponseInput[] = []
+    for (const q of questions) {
+      const val = answers[q.id]
+      if (val !== undefined && val !== null && val !== '') {
+        if (typeof val === 'string') {
+          list.push({
+            activity_id: activityId,
+            template_id: templateId,
+            question_id: q.id,
+            answer_value: val,
+            answer_json: null
+          })
+        } else {
+          list.push({
+            activity_id: activityId,
+            template_id: templateId,
+            question_id: q.id,
+            answer_value: null,
+            answer_json: val as Record<string, unknown> | string[]
+          })
+        }
+      }
+    }
+    return list
   }, [questions, activityId, templateId, answers])
 
-  const handleChange = useCallback((questionId: string, value: any) => {
-    setAnswers(prev => ({ ...prev, [questionId]: value }))
+  const buildResponses = useCallback((): ChecklistResponseInput[] => {
+    return getTypedResponses()
+  }, [getTypedResponses])
+
+  const handleChange = useCallback((questionId: string, value: unknown) => {
+    setAnswers(prev => {
+      if (prev[questionId] === value) return prev
+      return { ...prev, [questionId]: value }
+    })
   }, [])
 
-  // إبلاغ الـ parent بالتغيير — خارج setAnswers لتجنب setState أثناء render
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const onChangeRef = useRef(onChange)
   useEffect(() => {
-    if (!onChange) return
-    const responses = questions.map(q => ({
-      activity_id: activityId,
-      template_id: templateId,
-      question_id: q.id,
-      answer_value: typeof answers[q.id] === 'string' ? answers[q.id] : null,
-      answer_json: typeof answers[q.id] !== 'string' ? answers[q.id] : null,
-    })).filter(r => r.answer_value || r.answer_json)
+    onChangeRef.current = onChange
+  }, [onChange])
+
+  // إبلاغ الـ parent بالتغيير
+  useEffect(() => {
+    if (!onChangeRef.current) return
+    const responses = getTypedResponses()
 
     const allRequired = requiredQuestions.every(q => {
       const val = answers[q.id]
       return val !== undefined && val !== null && val !== '' && !(Array.isArray(val) && val.length === 0)
     })
 
-    onChange(responses, allRequired)
-  }, [answers])
+    onChangeRef.current(responses, allRequired)
+  }, [answers, getTypedResponses, requiredQuestions])
+
+  // معالجة التقاط صورة
+  const handlePhotoCaptureClick = async (questionId: string) => {
+    if (processingQuestions[questionId]) return
+    if (!onPhotoCapture) return
+
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/jpeg,image/png'
+    input.capture = 'environment'
+
+    input.onchange = async (e: Event) => {
+      const target = e.target as HTMLInputElement
+      const file = target.files?.[0]
+      if (!file) return
+
+      setProcessingQuestions(prev => ({ ...prev, [questionId]: true }))
+      try {
+        const result = await compressImage(file)
+        const captureRes = await onPhotoCapture(questionId, result.blob, {
+          mimeType: result.mimeType,
+          extension: result.extension,
+          size: result.sizeBytes,
+          checksum: result.checksum
+        })
+        handleChange(questionId, { local_blob_id: captureRes.local_blob_id })
+      } catch (err: unknown) {
+        const errMsg = err instanceof Error ? err.message : 'فشل معالجة وحفظ الصورة'
+        console.error('Photo capture error:', err)
+        toast.error(errMsg)
+      } finally {
+        setProcessingQuestions(prev => ({ ...prev, [questionId]: false }))
+      }
+    }
+
+    input.click()
+  }
+
+  // دالة المساعدة لرسم المدخلات
+  const renderInput = (q: ChecklistQuestion, value: unknown) => {
+    switch (q.question_type) {
+      case 'text':
+        return (
+          <textarea
+            className="chk-textarea"
+            value={(value as string) ?? ''}
+            onChange={e => handleChange(q.id, e.target.value)}
+            placeholder="اكتب إجابتك..."
+            rows={2}
+            readOnly={readOnly}
+          />
+        )
+
+      case 'number':
+        return (
+          <input
+            className="chk-input"
+            type="number"
+            value={(value as string) ?? ''}
+            onChange={e => handleChange(q.id, e.target.value)}
+            placeholder={q.hint_text || 'أدخل رقماً'}
+            min={q.min_value ?? undefined}
+            max={q.max_value ?? undefined}
+            readOnly={readOnly}
+          />
+        )
+
+      case 'yes_no':
+        return (
+          <div className="chk-toggle-group">
+            <button
+              type="button"
+              className={`chk-toggle ${value === 'yes' ? 'chk-toggle--active chk-toggle--yes' : ''}`}
+              onClick={() => !readOnly && handleChange(q.id, value === 'yes' ? '' : 'yes')}
+            >
+              نعم ✓
+            </button>
+            <button
+              type="button"
+              className={`chk-toggle ${value === 'no' ? 'chk-toggle--active chk-toggle--no' : ''}`}
+              onClick={() => !readOnly && handleChange(q.id, value === 'no' ? '' : 'no')}
+            >
+              لا ✗
+            </button>
+          </div>
+        )
+
+      case 'single_choice': {
+        const options = parseOptions(q.options)
+        return (
+          <div className="chk-choices">
+            {options.map(opt => (
+              <button
+                key={opt}
+                type="button"
+                className={`chk-choice ${value === opt ? 'chk-choice--selected' : ''}`}
+                onClick={() => !readOnly && handleChange(q.id, value === opt ? '' : opt)}
+              >
+                {value === opt && '● '}{opt}
+              </button>
+            ))}
+          </div>
+        )
+      }
+
+      case 'multi_choice': {
+        const options = parseOptions(q.options)
+        const selected = Array.isArray(value) ? (value as string[]) : []
+        return (
+          <div className="chk-choices">
+            {options.map(opt => (
+              <button
+                key={opt}
+                type="button"
+                className={`chk-choice ${selected.includes(opt) ? 'chk-choice--selected' : ''}`}
+                onClick={() => {
+                  if (readOnly) return
+                  const next = selected.includes(opt)
+                    ? selected.filter((s: string) => s !== opt)
+                    : [...selected, opt]
+                  handleChange(q.id, next)
+                }}
+              >
+                {selected.includes(opt) ? '☑ ' : '☐ '}{opt}
+              </button>
+            ))}
+          </div>
+        )
+      }
+
+      case 'rating': {
+        const rating = parseInt(String(value)) || 0
+        return (
+          <div className="chk-rating">
+            {[1, 2, 3, 4, 5].map(star => (
+              <button
+                key={star}
+                type="button"
+                className={`chk-star ${star <= rating ? 'chk-star--filled' : ''}`}
+                onClick={() => !readOnly && handleChange(q.id, star === rating ? '' : String(star))}
+              >
+                <Star size={24} fill={star <= rating ? 'currentColor' : 'none'} />
+              </button>
+            ))}
+            {rating > 0 && <span className="chk-rating-text">{rating}/5</span>}
+          </div>
+        )
+      }
+
+      case 'photo': {
+        const isBlobObj = (val: unknown): val is { local_blob_id: string } => {
+          return !!val && typeof val === 'object' && 'local_blob_id' in val && typeof (val as Record<string, unknown>).local_blob_id === 'string'
+        }
+        const hasBlob = isBlobObj(value)
+        const isProcessing = !!processingQuestions[q.id]
+
+        if (isPhotoSetupInvalid) {
+          return (
+            <div className="chk-photo">
+              <button type="button" className="chk-photo-btn chk-photo-btn--disabled" disabled>
+                <Camera size={20} />
+                التقاط الصور معطل حالياً بسبب خطأ في الإعداد
+              </button>
+            </div>
+          )
+        }
+
+        return (
+          <div className="chk-photo">
+            <button
+              type="button"
+              className={`chk-photo-btn ${isProcessing ? 'chk-photo-btn--processing' : ''}`}
+              onClick={() => !readOnly && handlePhotoCaptureClick(q.id)}
+              disabled={readOnly || isProcessing}
+              aria-busy={isProcessing}
+            >
+              <Camera size={20} />
+              {isProcessing ? 'جاري معالجة وحفظ الصورة...' : hasBlob ? 'تغيير الصورة' : 'التقاط صورة'}
+            </button>
+            {hasBlob && (
+              <LocalImagePreview
+                key={value.local_blob_id}
+                localBlobId={value.local_blob_id}
+                loadLocalPhoto={loadLocalPhoto}
+              />
+            )}
+          </div>
+        )
+      }
+
+      default:
+        return null
+    }
+  }
 
   return (
     <div className="chk-form">
@@ -132,12 +436,12 @@ export default function ChecklistForm({
           )}
 
           <div className="chk-q-input">
-            {renderInput(q, answers[q.id], handleChange, readOnly)}
+            {renderInput(q, answers[q.id])}
           </div>
         </div>
       ))}
 
-      {/* زر الإرسال (اختياري — يتحكم الـ parent عادةً) */}
+      {/* زر الإرسال (اختياري) */}
       {onComplete && (
         <button
           className={`chk-submit ${isComplete ? 'chk-submit--ready' : 'chk-submit--disabled'}`}
@@ -154,165 +458,18 @@ export default function ChecklistForm({
   )
 }
 
-// ── Render helpers ────────────────────────────────────────────
-
-function renderInput(
-  q: ChecklistQuestion,
-  value: any,
-  onChange: (id: string, val: any) => void,
-  readOnly: boolean
-) {
-  switch (q.question_type) {
-    case 'text':
-      return (
-        <textarea
-          className="chk-textarea"
-          value={value ?? ''}
-          onChange={e => onChange(q.id, e.target.value)}
-          placeholder="اكتب إجابتك..."
-          rows={2}
-          readOnly={readOnly}
-        />
-      )
-
-    case 'number':
-      return (
-        <input
-          className="chk-input"
-          type="number"
-          value={value ?? ''}
-          onChange={e => onChange(q.id, e.target.value)}
-          placeholder={q.hint_text || 'أدخل رقماً'}
-          min={q.min_value ?? undefined}
-          max={q.max_value ?? undefined}
-          readOnly={readOnly}
-        />
-      )
-
-    case 'yes_no':
-      return (
-        <div className="chk-toggle-group">
-          <button
-            type="button"
-            className={`chk-toggle ${value === 'yes' ? 'chk-toggle--active chk-toggle--yes' : ''}`}
-            onClick={() => !readOnly && onChange(q.id, value === 'yes' ? '' : 'yes')}
-          >
-            نعم ✓
-          </button>
-          <button
-            type="button"
-            className={`chk-toggle ${value === 'no' ? 'chk-toggle--active chk-toggle--no' : ''}`}
-            onClick={() => !readOnly && onChange(q.id, value === 'no' ? '' : 'no')}
-          >
-            لا ✗
-          </button>
-        </div>
-      )
-
-    case 'single_choice': {
-      const options = parseOptions(q.options)
-      return (
-        <div className="chk-choices">
-          {options.map(opt => (
-            <button
-              key={opt}
-              type="button"
-              className={`chk-choice ${value === opt ? 'chk-choice--selected' : ''}`}
-              onClick={() => !readOnly && onChange(q.id, value === opt ? '' : opt)}
-            >
-              {value === opt && '● '}{opt}
-            </button>
-          ))}
-        </div>
-      )
-    }
-
-    case 'multi_choice': {
-      const options = parseOptions(q.options)
-      const selected = Array.isArray(value) ? value : []
-      return (
-        <div className="chk-choices">
-          {options.map(opt => (
-            <button
-              key={opt}
-              type="button"
-              className={`chk-choice ${selected.includes(opt) ? 'chk-choice--selected' : ''}`}
-              onClick={() => {
-                if (readOnly) return
-                const next = selected.includes(opt)
-                  ? selected.filter((s: string) => s !== opt)
-                  : [...selected, opt]
-                onChange(q.id, next)
-              }}
-            >
-              {selected.includes(opt) ? '☑ ' : '☐ '}{opt}
-            </button>
-          ))}
-        </div>
-      )
-    }
-
-    case 'rating': {
-      const rating = parseInt(value) || 0
-      return (
-        <div className="chk-rating">
-          {[1, 2, 3, 4, 5].map(star => (
-            <button
-              key={star}
-              type="button"
-              className={`chk-star ${star <= rating ? 'chk-star--filled' : ''}`}
-              onClick={() => !readOnly && onChange(q.id, star === rating ? '' : String(star))}
-            >
-              <Star size={24} fill={star <= rating ? 'currentColor' : 'none'} />
-            </button>
-          ))}
-          {rating > 0 && <span className="chk-rating-text">{rating}/5</span>}
-        </div>
-      )
-    }
-
-    case 'photo':
-      return (
-        <div className="chk-photo">
-          <button
-            type="button"
-            className="chk-photo-btn"
-            onClick={() => {
-              if (readOnly) return
-              // TODO: implement camera capture
-              const input = document.createElement('input')
-              input.type = 'file'
-              input.accept = 'image/*'
-              input.capture = 'environment'
-              input.onchange = (e: any) => {
-                const file = e.target?.files?.[0]
-                if (file) {
-                  const reader = new FileReader()
-                  reader.onload = () => onChange(q.id, reader.result)
-                  reader.readAsDataURL(file)
-                }
-              }
-              input.click()
-            }}
-          >
-            <Camera size={20} />
-            {value ? 'تغيير الصورة' : 'التقاط صورة'}
-          </button>
-          {value && typeof value === 'string' && value.startsWith('data:') && (
-            <img src={value} alt="صورة ملتقطة" className="chk-photo-preview" />
-          )}
-        </div>
-      )
-
-    default:
-      return null
-  }
-}
-
-function parseOptions(options: any): string[] {
+function parseOptions(options: unknown): string[] {
   if (!options) return []
   if (Array.isArray(options)) {
-    return options.map(o => (typeof o === 'string' ? o : o.label || o.value || ''))
+    return options.map(o => {
+      if (typeof o === 'string') return o
+      if (o && typeof o === 'object') {
+        const record = o as Record<string, unknown>
+        const val = record.label ?? record.value
+        return typeof val === 'string' ? val : ''
+      }
+      return ''
+    })
   }
   return []
 }
@@ -357,7 +514,7 @@ const styles = `
     background: var(--bg-surface, white);
   }
   .chk-q--required {
-    border-right: 3px solid var(--color-warning, #d97706);
+    border-inline-start: 3px solid var(--color-warning, #d97706);
   }
   .chk-q-label {
     display: flex;
@@ -396,10 +553,10 @@ const styles = `
     font-size: var(--text-xs, 12px);
     color: var(--text-muted, #64748b);
     margin: 0;
-    padding-right: 30px;
+    padding-inline-start: 30px;
   }
   .chk-q-input {
-    padding-right: 30px;
+    padding-inline-start: 30px;
   }
   .chk-textarea, .chk-input {
     width: 100%;
@@ -411,6 +568,7 @@ const styles = `
     resize: vertical;
     transition: border-color 0.15s ease;
     background: var(--bg-surface, white);
+    min-height: 44px;
   }
   .chk-textarea:focus, .chk-input:focus {
     outline: none;
@@ -423,7 +581,8 @@ const styles = `
   }
   .chk-toggle {
     flex: 1;
-    padding: var(--space-2, 8px) var(--space-3, 12px);
+    padding: var(--space-3, 12px) var(--space-3, 12px);
+    min-height: 48px;
     border: 2px solid var(--border-light, #e2e8f0);
     border-radius: var(--radius-md, 8px);
     background: var(--bg-surface, white);
@@ -450,7 +609,8 @@ const styles = `
     gap: var(--space-2, 8px);
   }
   .chk-choice {
-    padding: var(--space-2, 8px) var(--space-3, 12px);
+    padding: var(--space-2, 10px) var(--space-3, 14px);
+    min-height: 40px;
     border: 1px solid var(--border-light, #e2e8f0);
     border-radius: var(--radius-md, 8px);
     background: var(--bg-surface, white);
@@ -459,6 +619,8 @@ const styles = `
     font-weight: 500;
     transition: all 0.15s ease;
     font-family: inherit;
+    display: inline-flex;
+    align-items: center;
   }
   .chk-choice:hover { border-color: var(--color-primary, #2563eb); }
   .chk-choice--selected {
@@ -483,7 +645,7 @@ const styles = `
   .chk-star:hover { transform: scale(1.2); }
   .chk-star--filled { color: #f59e0b; }
   .chk-rating-text {
-    margin-right: var(--space-2, 8px);
+    margin-inline-start: var(--space-2, 8px);
     font-size: var(--text-sm, 14px);
     font-weight: 600;
     color: #f59e0b;
@@ -497,7 +659,8 @@ const styles = `
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: var(--space-3, 12px) var(--space-4, 16px);
+    padding: var(--space-4, 16px) var(--space-4, 16px);
+    min-height: 52px;
     border: 2px dashed var(--border-light, #e2e8f0);
     border-radius: var(--radius-lg, 12px);
     background: var(--neutral-50, #f8fafc);
@@ -507,10 +670,18 @@ const styles = `
     font-family: inherit;
     color: var(--text-secondary, #334155);
     transition: all 0.15s ease;
+    width: 100%;
+    justify-content: center;
   }
-  .chk-photo-btn:hover {
+  .chk-photo-btn:hover:not(:disabled) {
     border-color: var(--color-primary, #2563eb);
     color: var(--color-primary, #2563eb);
+  }
+  .chk-photo-btn:disabled {
+    cursor: not-allowed;
+    background: var(--neutral-100, #f1f5f9);
+    color: var(--text-muted, #94a3b8);
+    border-style: solid;
   }
   .chk-photo-preview {
     max-width: 200px;
@@ -518,6 +689,14 @@ const styles = `
     border-radius: var(--radius-md, 8px);
     object-fit: cover;
     border: 1px solid var(--border-light, #e2e8f0);
+  }
+  .chk-photo-loading {
+    font-size: var(--text-xs, 12px);
+    color: var(--text-muted, #64748b);
+  }
+  .chk-photo-error {
+    font-size: var(--text-xs, 12px);
+    color: var(--color-danger, #dc2626);
   }
   .chk-submit {
     padding: var(--space-3, 12px) var(--space-4, 16px);

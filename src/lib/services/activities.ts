@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase/client'
 import { getAuthUserId } from '@/lib/services/_get-user-id'
+import type { PostgrestError } from '@supabase/supabase-js'
 import type {
   Activity, ActivityInput,
   CallDetail, CallDetailInput,
@@ -17,6 +18,41 @@ import type {
   ChecklistResponseInput,
   ChecklistTemplateInput, ChecklistQuestionInput,
   ActivityTypeInput, TargetTypeInput,
+  // RPC Inputs
+  CreateVisitPlanAtomicInput,
+  ConfirmVisitPlanAtomicInput,
+  CancelVisitPlanAtomicInput,
+  ReorderVisitPlanItemsAtomicInput,
+  CloseVisitPlanAdministrativelyAtomicInput,
+  StartVisitItemAtomicInput,
+  CompleteVisitItemAtomicInput,
+  SkipVisitItemAtomicInput,
+  RescheduleVisitItemAtomicInput,
+  RescheduleVisitItemToDateAtomicInput,
+  CloseVisitDayMissedAtomicInput,
+  AddVisitPlanItemAtomicInput,
+  DeleteVisitPlanItemAtomicInput,
+  // RPC Results
+  CreateVisitPlanAtomicResult,
+  ConfirmVisitPlanAtomicResult,
+  CancelVisitPlanAtomicResult,
+  ReorderVisitPlanItemsAtomicResult,
+  CloseVisitPlanAdministrativelyAtomicResult,
+  StartVisitItemAtomicResult,
+  CompleteVisitItemAtomicResult,
+  SkipVisitItemAtomicResult,
+  RescheduleVisitItemAtomicResult,
+  RescheduleVisitItemToDateAtomicResult,
+  CloseVisitDayMissedAtomicResult,
+  AddVisitPlanItemAtomicResult,
+  DeleteVisitPlanItemAtomicResult,
+  // RPC Types & Unions
+  VisitRpcResult,
+  VisitOperationName,
+  VisitStoragePath,
+  VisitOutcomeType,
+  VisitCompletionChecklistPhotoResponseInput,
+  VisitCompletionChecklistResponseInput,
 } from '@/lib/types/activities'
 
 // ============================================================
@@ -42,7 +78,7 @@ export async function getActivityTypes(onlyActive = true): Promise<ActivityType[
     .from('activity_types')
     .select('*')
     .order('sort_order')
-  
+
   if (onlyActive) query = query.eq('is_active', true)
 
   const { data, error } = await query
@@ -230,6 +266,11 @@ export async function createActivity(input: ActivityInput): Promise<Activity> {
   }
 
   const clean = sanitize(input)
+
+  if (clean.visit_plan_item_id) {
+    throw new Error('تسجيل أنشطة الزيارات المخططة محظور عبر هذا النموذج. يجب تنفيذ الزيارة من شاشة التنفيذ الميداني لضمان المزامنة الذرية.')
+  }
+
   // نُزيل employee_id من input (قد يكون '') ونحدده دائماً من hr_employees
   const { employee_id: _ignored, ...rest } = clean as any
 
@@ -309,6 +350,7 @@ export async function getVisitPlans(params?: {
   dateTo?: string
   status?: PlanStatus
   branchId?: string
+  planType?: VisitPlan['plan_type']
   page?: number
   pageSize?: number
 }) {
@@ -330,6 +372,7 @@ export async function getVisitPlans(params?: {
   if (params?.dateFrom)   q = q.gte('plan_date', params.dateFrom)
   if (params?.dateTo)     q = q.lte('plan_date', params.dateTo)
   if (params?.status)     q = q.eq('status', params.status)
+  if (params?.planType)   q = q.eq('plan_type', params.planType)
 
   // branchId: resolve to employee_ids first so the filter hits the main table's
   // employee_id column directly — guarantees accurate pagination counts.
@@ -386,6 +429,10 @@ export async function getVisitPlanItems(planId: string): Promise<VisitPlanItem[]
   return (data ?? []) as VisitPlanItem[]
 }
 
+/**
+ * @deprecated يرجى استخدام createVisitPlanAtomic لضمان الذرية ومنع التكرار.
+ * TODO: استبدالها بـ createVisitPlanAtomic في مرحلة الواجهة (المرتجع ز/ي).
+ */
 export async function createVisitPlan(input: VisitPlanInput): Promise<VisitPlan> {
   const userId = await getAuthUserId()
   const clean  = sanitize(input)
@@ -398,6 +445,10 @@ export async function createVisitPlan(input: VisitPlanInput): Promise<VisitPlan>
   return data as VisitPlan
 }
 
+/**
+ * @deprecated يرجى تحديث الخطة عبر الدوال الذرية المعنية.
+ * TODO: استبدالها بالـ RPCs الذرية في مرحلة الواجهة (المرتجع ز/ي).
+ */
 export async function updateVisitPlan(id: string, input: Partial<VisitPlanInput>): Promise<VisitPlan> {
   const clean = sanitize(input)
   const { data, error } = await supabase
@@ -411,6 +462,10 @@ export async function updateVisitPlan(id: string, input: Partial<VisitPlanInput>
   return data as VisitPlan
 }
 
+/**
+ * @deprecated يرجى استخدام confirmVisitPlanAtomic لضمان الذرية ومنع التكرار.
+ * TODO: استبدالها بـ confirmVisitPlanAtomic في مرحلة الواجهة (المرتجع ز/ي).
+ */
 export async function confirmVisitPlan(id: string): Promise<void> {
   const userId = await getAuthUserId()
   const { error } = await supabase
@@ -421,6 +476,10 @@ export async function confirmVisitPlan(id: string): Promise<void> {
   if (error) throw error
 }
 
+/**
+ * @deprecated يرجى استخدام cancelVisitPlanAtomic لضمان الذرية ومنع التكرار.
+ * TODO: استبدالها بـ cancelVisitPlanAtomic في مرحلة الواجهة (المرتجع ز/ي).
+ */
 export async function cancelVisitPlan(id: string, reason?: string): Promise<void> {
   const { error } = await supabase
     .from('visit_plans')
@@ -430,6 +489,10 @@ export async function cancelVisitPlan(id: string, reason?: string): Promise<void
   if (error) throw error
 }
 
+/**
+ * @deprecated يرجى استخدام createVisitPlanAtomic الذي ينشئ الخطة والبنود معاً ذرياً.
+ * TODO: استبدالها بـ createVisitPlanAtomic في مرحلة الواجهة (المرتجع ز/ي).
+ */
 export async function addVisitPlanItem(
   planId: string,
   item: VisitPlanItemInput
@@ -444,6 +507,10 @@ export async function addVisitPlanItem(
   return data as VisitPlanItem
 }
 
+/**
+ * @deprecated يرجى استخدام startVisitItemAtomic أو completeVisitItemAtomic أو skipVisitItemAtomic أو rescheduleVisitItemAtomic.
+ * TODO: استبدالها بالـ RPCs الذرية المقابلة في مرحلة الواجهة (المرتجع ز/ي).
+ */
 export async function updateVisitPlanItem(
   itemId: string,
   input: Partial<VisitPlanItemInput> & {
@@ -1011,8 +1078,8 @@ export async function deleteCallPlanItem(itemId: string): Promise<void> {
 }
 
 /**
- * إعادة ترتيب بنود خطة الزيارات
- * يقبل مصفوفة معرفات البنود بالترتيب الجديد
+ * @deprecated يرجى استخدام reorderVisitPlanItemsAtomic لضمان الذرية ومنع التعارضات.
+ * TODO: استبدالها بـ reorderVisitPlanItemsAtomic في مرحلة الواجهة (المرتجع ز/ي).
  */
 export async function reorderVisitPlanItems(
   planId: string,
@@ -1233,4 +1300,366 @@ export async function deleteCallPlanTemplate(id: string): Promise<void> {
     .delete()
     .eq('id', id)
   if (error) throw error
+}
+
+// ============================================================
+// Phase F additions: Atomic RPC Services & Helpers
+// ============================================================
+
+export class VisitRpcTransportError extends Error {
+  readonly supabaseError: PostgrestError;
+
+  constructor(message: string, supabaseError: PostgrestError) {
+    super(message);
+    this.name = 'VisitRpcTransportError';
+    this.supabaseError = supabaseError;
+    Object.setPrototypeOf(this, VisitRpcTransportError.prototype);
+  }
+}
+
+export function isRetryableVisitErrorCode(code: string): boolean {
+  return code === 'RETRYABLE_ERROR';
+}
+
+/**
+ * دالة مساعدة للتحقق من أن المدخل هو كائن JSON صالح وليس Array أو null
+ */
+export function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Runtime Validator لمسار الصورة يطابق تماماً قيود قاعدة البيانات
+ */
+export function validateVisitStoragePath(path: string): VisitStoragePath {
+  if (path.length > 2048) {
+    throw new Error('مسار تخزين الصورة طويل جداً');
+  }
+  if (
+    path.includes('\\') ||
+    path.includes('%') ||
+    path.includes('?') ||
+    path.includes('//') ||
+    path.startsWith('/') ||
+    path.startsWith('.')
+  ) {
+    throw new Error('مسار تخزين الصورة غير صالح أو غير آمن');
+  }
+  const segments = path.split('/');
+  if (segments.includes('.') || segments.includes('..')) {
+    throw new Error('مسار تخزين الصورة غير صالح أو غير آمن');
+  }
+  const allowedChars = /^[a-zA-Z0-9_\-\./]+$/;
+  if (!allowedChars.test(path)) {
+    throw new Error('مسار تخزين الصورة غير صالح أو غير آمن');
+  }
+  return path as VisitStoragePath;
+}
+
+/**
+ * Type guard آمن للتحقق من أن الاستجابة هي استجابة صورة
+ */
+export function isPhotoResponse(
+  response: VisitCompletionChecklistResponseInput
+): response is VisitCompletionChecklistPhotoResponseInput {
+  const json = response.answer_json;
+  if (!isRecord(json)) {
+    return false;
+  }
+  if (!Object.prototype.hasOwnProperty.call(json, 'storage_path')) {
+    throw new Error('مسار تخزين الصورة غير صالح أو غير آمن');
+  }
+  if (typeof json.storage_path !== 'string') {
+    throw new Error('مسار تخزين الصورة غير صالح أو غير آمن');
+  }
+  return true;
+}
+
+/**
+ * معالج استدعاء RPC موحد آمن لحماية سلامة البيانات والتعامل مع الأخطاء
+ */
+async function callVisitRpc<T>(
+  operation: VisitOperationName,
+  operationId: string,
+  params: Record<string, unknown>
+): Promise<VisitRpcResult<T>> {
+  const response = await supabase.rpc(operation, params);
+  const rawData: unknown = response.data;
+  const error: PostgrestError | null = response.error;
+
+  if (error) {
+    throw new VisitRpcTransportError(`فشل الاتصال بالخادم أثناء تنفيذ العملية: ${error.message}`, error);
+  }
+
+  // Runtime validation to ensure the response is not malformed
+  if (!isRecord(rawData)) {
+    throw new Error('رد غير صالح أو مشوه من الخادم');
+  }
+
+  const obj = rawData;
+
+  if (
+    typeof obj.ok !== 'boolean' ||
+    obj.operation_id !== operationId ||
+    obj.operation !== operation ||
+    typeof obj.replayed !== 'boolean'
+  ) {
+    throw new Error('رد غير صالح أو مشوه من الخادم');
+  }
+
+  if (obj.ok) {
+    if (!isRecord(obj.data)) {
+      throw new Error('رد غير صالح أو مشوه من الخادم');
+    }
+    return {
+      ok: true,
+      operation_id: operationId,
+      operation: operation,
+      replayed: obj.replayed,
+      data: obj.data as T
+    };
+  } else {
+    if (!isRecord(obj.error)) {
+      throw new Error('رد غير صالح أو مشوه من الخادم');
+    }
+    const errObj = obj.error;
+    if (
+      typeof errObj.code !== 'string' ||
+      !errObj.code ||
+      typeof errObj.message !== 'string' ||
+      !errObj.message
+    ) {
+      throw new Error('رد غير صالح أو مشوه من الخادم');
+    }
+    return {
+      ok: false,
+      operation_id: operationId,
+      operation: operation,
+      replayed: obj.replayed,
+      error: {
+        code: errObj.code,
+        message: errObj.message
+      }
+    };
+  }
+}
+
+/**
+ * إنشاء خطة زيارة متكاملة مع بنودها ذرياً
+ */
+export async function createVisitPlanAtomic(
+  input: CreateVisitPlanAtomicInput
+): Promise<VisitRpcResult<CreateVisitPlanAtomicResult>> {
+  return callVisitRpc<CreateVisitPlanAtomicResult>('create_visit_plan_atomic', input.operationId, {
+    p_operation_id: input.operationId,
+    p_employee_id: input.employeeId,
+    p_plan_date: input.planDate,
+    p_plan_type: input.planType,
+    p_notes: input.notes,
+    p_items: input.items
+  });
+}
+
+/**
+ * تأكيد خطة الزيارة لنقلها لحالة مؤكدة ذرياً
+ */
+export async function confirmVisitPlanAtomic(
+  input: ConfirmVisitPlanAtomicInput
+): Promise<VisitRpcResult<ConfirmVisitPlanAtomicResult>> {
+  return callVisitRpc<ConfirmVisitPlanAtomicResult>('confirm_visit_plan_atomic', input.operationId, {
+    p_operation_id: input.operationId,
+    p_plan_id: input.planId
+  });
+}
+
+/**
+ * إلغاء خطة الزيارة ذرياً
+ */
+export async function cancelVisitPlanAtomic(
+  input: CancelVisitPlanAtomicInput
+): Promise<VisitRpcResult<CancelVisitPlanAtomicResult>> {
+  return callVisitRpc<CancelVisitPlanAtomicResult>('cancel_visit_plan_atomic', input.operationId, {
+    p_operation_id: input.operationId,
+    p_plan_id: input.planId,
+    p_cancellation_reason: input.reason
+  });
+}
+
+/**
+ * إعادة ترتيب بنود خطة الزيارة ذرياً
+ */
+export async function reorderVisitPlanItemsAtomic(
+  input: ReorderVisitPlanItemsAtomicInput
+): Promise<VisitRpcResult<ReorderVisitPlanItemsAtomicResult>> {
+  return callVisitRpc<ReorderVisitPlanItemsAtomicResult>('reorder_visit_plan_items_atomic', input.operationId, {
+    p_operation_id: input.operationId,
+    p_plan_id: input.planId,
+    p_reorder_data: input.items
+  });
+}
+
+/**
+ * الإغلاق الإداري لخطة الزيارة بعد بدء التنفيذ ذرياً
+ */
+export async function closeVisitPlanAdministrativelyAtomic(
+  input: CloseVisitPlanAdministrativelyAtomicInput
+): Promise<VisitRpcResult<CloseVisitPlanAdministrativelyAtomicResult>> {
+  return callVisitRpc<CloseVisitPlanAdministrativelyAtomicResult>('close_visit_plan_administratively_atomic', input.operationId, {
+    p_operation_id: input.operationId,
+    p_plan_id: input.planId,
+    p_close_reason: input.reason
+  });
+}
+
+/**
+ * بدء زيارة بند مع تحديد الوقت وموقع المندوب ذرياً
+ */
+export async function startVisitItemAtomic(
+  input: StartVisitItemAtomicInput
+): Promise<VisitRpcResult<StartVisitItemAtomicResult>> {
+  return callVisitRpc<StartVisitItemAtomicResult>('start_visit_item_atomic', input.operationId, {
+    p_operation_id: input.operationId,
+    p_item_id: input.itemId,
+    p_start_lat: input.startLat,
+    p_start_lng: input.startLng,
+    p_start_accuracy_m: input.startAccuracyM,
+    p_client_started_at: input.clientStartedAt,
+    p_device_timezone: input.deviceTimezone
+  });
+}
+
+/**
+ * إكمال الزيارة ميدانياً وحفظ الأنشطة والاستبيانات ذرياً
+ */
+export async function completeVisitItemAtomic(
+  input: CompleteVisitItemAtomicInput
+): Promise<VisitRpcResult<CompleteVisitItemAtomicResult>> {
+  // Create a new responses array replacing storage_path with validated path
+  const validatedResponses = input.responses.map(resp => {
+    if (isPhotoResponse(resp)) {
+      const validatedPath = validateVisitStoragePath(resp.answer_json.storage_path);
+      return {
+        ...resp,
+        answer_json: {
+          storage_path: validatedPath
+        }
+      };
+    }
+    return resp;
+  });
+
+  return callVisitRpc<CompleteVisitItemAtomicResult>('complete_visit_item_atomic', input.operationId, {
+    p_operation_id: input.operationId,
+    p_item_id: input.itemId,
+    p_end_lat: input.endLat,
+    p_end_lng: input.endLng,
+    p_end_accuracy_m: input.endAccuracyM,
+    p_client_completed_at: input.clientCompletedAt,
+    p_device_timezone: input.deviceTimezone,
+    p_outcome_type: input.outcomeType,
+    p_outcome_notes: input.outcomeNotes,
+    p_responses: validatedResponses,
+    p_order_id: input.orderId,
+    p_collection_id: input.collectionId,
+    p_gps_exception_reason: input.gpsExceptionReason
+  });
+}
+
+/**
+ * تخطي زيارة بند ميدانياً مع توضيح السبب ذرياً
+ */
+export async function skipVisitItemAtomic(
+  input: SkipVisitItemAtomicInput
+): Promise<VisitRpcResult<SkipVisitItemAtomicResult>> {
+  return callVisitRpc<SkipVisitItemAtomicResult>('skip_visit_item_atomic', input.operationId, {
+    p_operation_id: input.operationId,
+    p_item_id: input.itemId,
+    p_skip_reason: input.skipReason,
+    p_client_event_at: input.clientEventAt,
+    p_device_timezone: input.deviceTimezone
+  });
+}
+
+/**
+ * إعادة جدولة بند زيارة لليوم التالي ذرياً
+ */
+export async function rescheduleVisitItemAtomic(
+  input: RescheduleVisitItemAtomicInput
+): Promise<VisitRpcResult<RescheduleVisitItemAtomicResult>> {
+  return callVisitRpc<RescheduleVisitItemAtomicResult>('reschedule_visit_item_atomic', input.operationId, {
+    p_operation_id: input.operationId,
+    p_item_id: input.itemId,
+    p_target_plan_id: input.targetPlanId,
+    p_reschedule_reason: input.rescheduleReason,
+    p_planned_time: input.plannedTime,
+    p_client_event_at: input.clientEventAt,
+    p_device_timezone: input.deviceTimezone
+  });
+}
+
+/**
+ * إعادة جدولة بند زيارة بتاريخ محدد ذرياً (لحل فجوات التنفيذ الميداني)
+ */
+export async function rescheduleVisitItemToDateAtomic(
+  input: RescheduleVisitItemToDateAtomicInput
+): Promise<VisitRpcResult<RescheduleVisitItemToDateAtomicResult>> {
+  return callVisitRpc<RescheduleVisitItemToDateAtomicResult>('reschedule_visit_item_to_date_atomic', input.operationId, {
+    p_operation_id: input.operationId,
+    p_item_id: input.itemId,
+    p_target_date: input.targetDate,
+    p_reschedule_reason: input.rescheduleReason,
+    p_planned_time: input.plannedTime || null,
+    p_client_event_at: input.clientEventAt || null,
+    p_device_timezone: input.deviceTimezone || null
+  });
+}
+
+/**
+ * إنهاء يومية الزيارات وتحويل كافة البنود المعلقة إلى ضائعة ذرياً
+ */
+export async function closeVisitDayMissedAtomic(
+  input: CloseVisitDayMissedAtomicInput
+): Promise<VisitRpcResult<CloseVisitDayMissedAtomicResult>> {
+  return callVisitRpc<CloseVisitDayMissedAtomicResult>('close_visit_day_missed_atomic', input.operationId, {
+    p_operation_id: input.operationId,
+    p_plan_id: input.planId,
+    p_close_reason: input.closeReason,
+    p_client_event_at: input.clientEventAt || null,
+    p_device_timezone: input.deviceTimezone || null
+  });
+}
+
+/**
+ * إضافة بند إلى خطة الزيارة ذرياً
+ */
+export async function addVisitPlanItemAtomic(
+  input: AddVisitPlanItemAtomicInput
+): Promise<VisitRpcResult<AddVisitPlanItemAtomicResult>> {
+  return callVisitRpc<AddVisitPlanItemAtomicResult>('add_visit_plan_item_atomic', input.operationId, {
+    p_operation_id: input.operationId,
+    p_plan_id: input.planId,
+    p_customer_id: input.customerId,
+    p_customer_branch_id: input.customerBranchId || null,
+    p_purpose: input.purpose || null,
+    p_purpose_type: input.purposeType ?? null,
+    p_priority: input.priority || 'normal',
+    p_planned_time: input.plannedTime || null,
+    p_estimated_duration_min: input.estimatedDurationMin || 30,
+    p_client_event_at: input.clientEventAt || null,
+    p_device_timezone: input.deviceTimezone || null
+  });
+}
+
+/**
+ * حذف بند من خطة الزيارة ذرياً
+ */
+export async function deleteVisitPlanItemAtomic(
+  input: DeleteVisitPlanItemAtomicInput
+): Promise<VisitRpcResult<DeleteVisitPlanItemAtomicResult>> {
+  return callVisitRpc<DeleteVisitPlanItemAtomicResult>('delete_visit_plan_item_atomic', input.operationId, {
+    p_operation_id: input.operationId,
+    p_item_id: input.itemId,
+    p_client_event_at: input.clientEventAt || null,
+    p_device_timezone: input.deviceTimezone || null
+  });
 }

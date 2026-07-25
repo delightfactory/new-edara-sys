@@ -21,14 +21,21 @@ const OUTCOME_CONFIG: Record<ActivityOutcome, { label: string; color: string }> 
   callback_scheduled:   { label: 'مكالمة لاحقة',     color: 'var(--color-info)' },
 }
 
-const PLAN_STATUS_CONFIG: Record<PlanStatus, { label: string; color: string }> = {
-  draft:       { label: 'مسودة',   color: 'var(--text-muted)' },
-  confirmed:   { label: 'مؤكدة',  color: 'var(--color-primary)' },
-  in_progress: { label: 'جارية',  color: 'var(--color-warning)' },
-  completed:   { label: 'مكتملة', color: 'var(--color-success)' },
-  partial:     { label: 'جزئية',  color: 'var(--color-warning)' },
-  cancelled:   { label: 'ملغاة',  color: 'var(--color-danger)' },
-  missed:      { label: 'فائتة',  color: 'var(--color-danger)' },
+interface PlanStatusConfigItem {
+  label: string
+  color: string
+  variant: 'primary' | 'warning' | 'success' | 'danger' | 'secondary'
+  description?: string
+}
+
+const PLAN_STATUS_CONFIG: Record<PlanStatus, PlanStatusConfigItem> = {
+  draft:       { label: 'مسودة',   color: 'var(--text-muted)',    variant: 'secondary', description: 'الخطة في مرحلة التحضير كمسودة' },
+  confirmed:   { label: 'مؤكدة',  color: 'var(--color-primary)', variant: 'primary',   description: 'تم اعتماد الخطة وتأكيدها' },
+  in_progress: { label: 'جارية',  color: 'var(--color-warning)', variant: 'warning',   description: 'الخطة قيد التنفيذ الميداني' },
+  completed:   { label: 'مكتملة', color: 'var(--color-success)', variant: 'success',   description: 'تم إنجاز كافة زيارات الخطة بنجاح' },
+  partial:     { label: 'جزئية',  color: 'var(--color-warning)', variant: 'warning',   description: 'تم إنجاز جزء من الزيارات وتخطي/تفويت الباقي' },
+  cancelled:   { label: 'ملغاة',  color: 'var(--color-danger)',  variant: 'danger',    description: 'تم إلغاء الخطة بالكامل' },
+  missed:      { label: 'فائتة',  color: 'var(--color-danger)',  variant: 'danger',    description: 'لم يتم البدء في الخطة وانتهى وقتها' },
 }
 
 const ITEM_STATUS_CONFIG: Record<PlanItemStatus, { label: string; color: string }> = {
@@ -54,24 +61,28 @@ interface BadgeProps {
   label: string
   color: string
   size?: 'sm' | 'md'
+  title?: string
 }
 
-function Badge({ label, color, size = 'md' }: BadgeProps) {
+function Badge({ label, color, size = 'md', title }: BadgeProps) {
   const pad = size === 'sm' ? '2px 7px' : '3px 10px'
   const fs  = size === 'sm' ? '10px'    : '11px'
   return (
-    <span style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      padding: pad,
-      borderRadius: '99px',
-      fontSize: fs,
-      fontWeight: 700,
-      color: '#fff',
-      background: color,
-      whiteSpace: 'nowrap',
-      letterSpacing: '0.2px',
-    }}>
+    <span
+      title={title}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        padding: pad,
+        borderRadius: '99px',
+        fontSize: fs,
+        fontWeight: 700,
+        color: '#fff',
+        background: color,
+        whiteSpace: 'nowrap',
+        letterSpacing: '0.2px',
+      }}
+    >
       {label}
     </span>
   )
@@ -103,7 +114,7 @@ export default function ActivityStatusBadge({
   }
   if (planStatus && PLAN_STATUS_CONFIG[planStatus]) {
     const cfg = PLAN_STATUS_CONFIG[planStatus]
-    return <Badge label={cfg.label} color={cfg.color} size={size} />
+    return <Badge label={cfg.label} color={cfg.color} size={size} title={cfg.description} />
   }
   if (itemStatus && ITEM_STATUS_CONFIG[itemStatus]) {
     const cfg = ITEM_STATUS_CONFIG[itemStatus]

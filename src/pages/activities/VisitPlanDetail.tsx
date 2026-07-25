@@ -1,16 +1,27 @@
-﻿import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import {
   useVisitPlan, useVisitPlanItems,
   useConfirmVisitPlan, useCancelVisitPlan,
+  useConfirmVisitPlanAtomic, useCancelVisitPlanAtomic,
   useAddVisitPlanItem, useUpdateVisitPlanItem,
   useCustomers, useCreateVisitPlan,
   useDeleteVisitPlanItem, useReorderVisitPlanItems,
   useCreateVisitPlanTemplateMutation,
+  useSkipVisitItemAtomic,
+  useRescheduleVisitItemToDateAtomic,
+  useCloseVisitDayMissedAtomic,
+  useCreateVisitPlanAtomic,
+  useReorderVisitPlanItemsAtomic,
+  useAddVisitPlanItemAtomic,
+  useDeleteVisitPlanItemAtomic,
+  useCurrentEmployee,
 } from '@/hooks/useQueryHooks'
+import { useCustomerBranches } from '@/hooks/useCustomerBranches'
 import { useAuthStore } from '@/stores/auth-store'
 import { PERMISSIONS } from '@/lib/permissions/constants'
 import { toast } from 'sonner'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
+import { VISITS_ATOMIC_EXECUTION } from '@/lib/config/features'
 import {
   MapPin, CheckCircle, XCircle, Plus, SkipForward,
   Calendar, Clock, ChevronLeft, Copy, Archive,
@@ -25,6 +36,13 @@ import { CardSkeleton } from '@/components/ui/Skeleton'
 import type {
   VisitPlanItemInput, PlanItemPurposeType, PlanPriority,
   VisitPlanItem,
+  SkipVisitItemAtomicInput,
+  RescheduleVisitItemToDateAtomicInput,
+  CloseVisitDayMissedAtomicInput,
+  ReorderVisitPlanItemsAtomicInput,
+  CreateVisitPlanAtomicInput,
+  AddVisitPlanItemAtomicInput,
+  DeleteVisitPlanItemAtomicInput,
 } from '@/lib/types/activities'
 
 function fmtDate(d: string) {
@@ -59,13 +77,20 @@ export default function VisitPlanDetail() {
   const [processing,   setProcessing]   = useState(false)
 
   // ── Modal: Add item
-  const [addItemOpen,     setAddItemOpen]     = useState(false)
-  const [itemCustomerId,  setItemCustomerId]  = useState('')
-  const [itemPurposeType, setItemPurposeType] = useState<PlanItemPurposeType | ''>('')
-  const [itemPriority,    setItemPriority]    = useState<PlanPriority>('normal')
-  const [itemPlannedTime, setItemPlannedTime] = useState('')
-  const [itemDuration,    setItemDuration]    = useState(30)
-  const [addingItem,      setAddingItem]      = useState(false)
+  const [addItemOpen,          setAddItemOpen]          = useState(false)
+  const [itemCustomerId,       setItemCustomerId]       = useState('')
+  const [itemCustomerBranchId, setItemCustomerBranchId] = useState('')
+  const [itemPurposeType,      setItemPurposeType]      = useState<PlanItemPurposeType | ''>('')
+  const [itemPriority,         setItemPriority]         = useState<PlanPriority>('normal')
+  const [itemPlannedTime,      setItemPlannedTime]      = useState('')
+  const [itemDuration,         setItemDuration]         = useState(30)
+  const [addingItem,           setAddingItem]           = useState(false)
+
+  // ── Customer branches query for selected customer in Add Modal
+  const { branches: customerBranches = [], isLoading: branchesLoading } = useCustomerBranches({
+    customerId: itemCustomerId,
+    enabled: !!itemCustomerId && addItemOpen,
+  })
 
   // ── Modal: Skip item
   const [skipItem,       setSkipItem]       = useState<VisitPlanItem | null>(null)
@@ -74,13 +99,18 @@ export default function VisitPlanDetail() {
   const [skipping,       setSkipping]       = useState(false)
 
   // ── Modal: Reschedule item
-  const [rescheduleItem, setRescheduleItem] = useState<VisitPlanItem | null>(null)
-  const [rescheduleDate, setRescheduleDate] = useState(tomorrow())
-  const [rescheduling,   setRescheduling]   = useState(false)
+  const [rescheduleItem,   setRescheduleItem]   = useState<VisitPlanItem | null>(null)
+  const [rescheduleDate,   setRescheduleDate]   = useState(tomorrow())
+  const [rescheduleReason, setRescheduleReason] = useState('')
+  const [rescheduling,     setRescheduling]     = useState(false)
 
   // ── Modal: Bulk Close
   const [bulkCloseOpen, setBulkCloseOpen] = useState(false)
   const [bulkReason,    setBulkReason]    = useState('انتهاء الدوام الزمني')
+
+  // ── Modal: Delete Item Confirm (بدل confirm() الافتراضي للمتصفح)
+  const [deleteConfirmItem, setDeleteConfirmItem] = useState<VisitPlanItem | null>(null)
+  const [deletingItem,      setDeletingItem]      = useState(false)
 
   // ── Modal: Clone Plan
   const [cloneOpen, setCloneOpen] = useState(false)
@@ -98,12 +128,21 @@ export default function VisitPlanDetail() {
   // ── Mutations
   const confirmPlan   = useConfirmVisitPlan()
   const cancelPlan    = useCancelVisitPlan()
+  const confirmPlanAtomic = useConfirmVisitPlanAtomic()
+  const cancelPlanAtomic = useCancelVisitPlanAtomic()
   const addPlanItem   = useAddVisitPlanItem()
   const updatePlanItem = useUpdateVisitPlanItem()
-  const createPlan    = useCreateVisitPlan()
-  const deleteItemMut = useDeleteVisitPlanItem()
-  const reorderMut    = useReorderVisitPlanItems()
-  const saveAsTmpl    = useCreateVisitPlanTemplateMutation()
+  const createPlan        = useCreateVisitPlan()
+  const deletePlanItem    = useDeleteVisitPlanItem()
+  const reorderMut        = useReorderVisitPlanItems()
+  const saveAsTmpl        = useCreateVisitPlanTemplateMutation()
+  const skipVisitAtomic   = useSkipVisitItemAtomic()
+  const rescheduleAtomic  = useRescheduleVisitItemToDateAtomic()
+  const closeMissedAtomic = useCloseVisitDayMissedAtomic()
+  const createPlanAtomic   = useCreateVisitPlanAtomic()
+  const reorderMutAtomic   = useReorderVisitPlanItemsAtomic()
+  const addPlanItemAtomic  = useAddVisitPlanItemAtomic()
+  const deletePlanItemAtomic = useDeleteVisitPlanItemAtomic()
 
   // ── Save as Template state
   const [saveTmplOpen,  setSaveTmplOpen]  = useState(false)
@@ -113,57 +152,198 @@ export default function VisitPlanDetail() {
   // ── Edit Mode State
   const [editMode, setEditMode] = useState(false)
 
+  // ── Atomic operation and concurrency refs
+  const confirmOperationIdRef = useRef<string | null>(null)
+  const cancelOperationRef    = useRef<{ operationId: string; reason: string } | null>(null)
+  const isMutatingRef         = useRef(false)
+
+  // Wave 1.5 typed refs
+  const skipOperationRef = useRef<SkipVisitItemAtomicInput | null>(null)
+  const rescheduleOperationRef = useRef<RescheduleVisitItemToDateAtomicInput | null>(null)
+  const bulkCloseOperationRef = useRef<CloseVisitDayMissedAtomicInput | null>(null)
+  const reorderOperationRef = useRef<ReorderVisitPlanItemsAtomicInput | null>(null)
+  const cloneOperationRef = useRef<CreateVisitPlanAtomicInput | null>(null)
+  const addItemOperationRef = useRef<AddVisitPlanItemAtomicInput | null>(null)
+  const deleteItemOperationRef = useRef<DeleteVisitPlanItemAtomicInput | null>(null)
+
+  // Wave 1.5 distinct mutex lock refs
+  const isMutatingSkipRef = useRef(false)
+  const isMutatingRescheduleRef = useRef(false)
+  const isMutatingBulkCloseRef = useRef(false)
+  const isMutatingReorderRef = useRef(false)
+  const isMutatingCloneRef = useRef(false)
+  const isMutatingAddItemRef = useRef(false)
+  const isMutatingDeleteItemRef = useRef(false)
+
   // ── Permissions
-  const canConfirm   = can(PERMISSIONS.VISIT_PLANS_CONFIRM) || can(PERMISSIONS.VISIT_PLANS_READ_ALL)
-  const canCreate    = can(PERMISSIONS.ACTIVITIES_CREATE)
+  const { data: currentEmployee } = useCurrentEmployee()
+  const isOwnPlan = !!plan && !!currentEmployee && plan.employee_id === currentEmployee.id
+  const isDraft = plan?.status === 'draft'
+
+  const canConfirm   = can(PERMISSIONS.VISIT_PLANS_CONFIRM)
+  const canCancel    = can(PERMISSIONS.VISIT_PLANS_CANCEL)
+  const canCreate    = can(PERMISSIONS.VISIT_PLANS_CREATE)
+
+  const canReorderItems = isDraft && (
+    can(PERMISSIONS.VISIT_PLANS_UPDATE) ||
+    (isOwnPlan && can(PERMISSIONS.VISIT_PLANS_UPDATE_OWN))
+  )
+
+  const canAddItem   = isDraft && can(PERMISSIONS.VISIT_PLANS_CREATE)
+  const canDeleteItem = isDraft && can(PERMISSIONS.VISIT_PLANS_CREATE)
   const canSaveTmpl  = can(PERMISSIONS.VISIT_PLANS_CREATE)
-  const canAddItem   = can(PERMISSIONS.VISIT_PLANS_CREATE) && plan?.status === 'draft'
   const canSkip      = plan?.status === 'confirmed' || plan?.status === 'in_progress'
 
+  const canManageDraftItems = canReorderItems || canDeleteItem
+
   // مصفوفة التعديل المرن
-  const canEditPlan = (() => {
-    if (!plan) return false
-    const isDraft = plan.status === 'draft'
-    const isActive = plan.status === 'confirmed' || plan.status === 'in_progress'
-    const hasUpdatePerm = can(PERMISSIONS.VISIT_PLANS_UPDATE)
-    const hasUpdateOwn = can(PERMISSIONS.VISIT_PLANS_UPDATE_OWN)
-    // المندوب يعدل المسودة فقط
-    if (isDraft && hasUpdateOwn) return true
-    // المشرف/المدير يعدل المسودة + المؤكدة + الجارية
-    if ((isDraft || isActive) && hasUpdatePerm) return true
-    return false
-  })()
+  const canEditPlan = canManageDraftItems
+
+  // إنهاء اليومية (Bulk Close)
+  const canCloseDayAtomic = can(PERMISSIONS.VISIT_PLANS_CLOSE_ADMINISTRATIVE)
+  const canCloseDayLegacy = canConfirm
+  const canCloseDay = VISITS_ATOMIC_EXECUTION ? canCloseDayAtomic : canCloseDayLegacy
 
   // هل يمكن بدء التنفيذ?
-  const canExecute = canCreate && (plan?.status === 'confirmed' || plan?.status === 'in_progress')
+  const canExecuteAtomic = can(PERMISSIONS.VISIT_PLANS_UPDATE_OWN) && can(PERMISSIONS.ACTIVITIES_CREATE)
+  const canExecuteLegacy = canCreate
+  const canExecute = (VISITS_ATOMIC_EXECUTION ? canExecuteAtomic : canExecuteLegacy) &&
+    (plan?.status === 'confirmed' || plan?.status === 'in_progress')
 
   // ── Handlers: Confirm / Cancel
   const handleConfirm = () => {
-    if (!id) return
+    if (!id || processing || isMutatingRef.current) return
+    isMutatingRef.current = true
     setProcessing(true)
-    confirmPlan.mutate(id, {
-      onSuccess: () => { toast.success('تم تأكيد الخطة'); setConfirmOpen(false) },
-      onError:   () => toast.error('فشل التأكيد'),
-      onSettled: () => setProcessing(false),
-    })
+    if (VISITS_ATOMIC_EXECUTION) {
+      if (!confirmOperationIdRef.current) {
+        confirmOperationIdRef.current = crypto.randomUUID()
+      }
+      const opId = confirmOperationIdRef.current
+      confirmPlanAtomic.mutate({ operationId: opId, planId: id }, {
+        onSuccess: () => {
+          toast.success('تم تأكيد الخطة ذرياً')
+          setConfirmOpen(false)
+          confirmOperationIdRef.current = null
+        },
+        onError:   (err: unknown) => {
+          const errMsg = err instanceof Error ? err.message : 'فشلت العملية الذرية للتأكيد'
+          toast.error(errMsg)
+        },
+        onSettled: () => {
+          isMutatingRef.current = false
+          setProcessing(false)
+        },
+      })
+    } else {
+      confirmPlan.mutate(id, {
+        onSuccess: () => { toast.success('تم تأكيد الخطة'); setConfirmOpen(false) },
+        onError:   () => toast.error('فشل التأكيد'),
+        onSettled: () => {
+          isMutatingRef.current = false
+          setProcessing(false)
+        },
+      })
+    }
   }
 
   const handleCancel = () => {
-    if (!id) return
-    setProcessing(true)
-    cancelPlan.mutate({ id, reason: cancelReason }, {
-      onSuccess: () => { toast.success('تم إلغاء الخطة'); setCancelOpen(false) },
-      onError:   () => toast.error('فشل الإلغاء'),
-      onSettled: () => setProcessing(false),
-    })
+    if (!id || processing || isMutatingRef.current) return
+    if (VISITS_ATOMIC_EXECUTION) {
+      const activeReason = cancelOperationRef.current ? cancelOperationRef.current.reason : cancelReason.trim()
+      if (!activeReason) {
+        toast.error('سبب الإلغاء إلزامي في المسار الذري')
+        return
+      }
+      isMutatingRef.current = true
+      setProcessing(true)
+
+      if (!cancelOperationRef.current) {
+        cancelOperationRef.current = {
+          operationId: crypto.randomUUID(),
+          reason: activeReason
+        }
+      }
+      const { operationId, reason } = cancelOperationRef.current
+
+      cancelPlanAtomic.mutate({ operationId, planId: id, reason }, {
+        onSuccess: () => {
+          toast.success('تم إلغاء الخطة ذرياً')
+          setCancelOpen(false)
+          setCancelReason('')
+          cancelOperationRef.current = null
+        },
+        onError:   (err: unknown) => {
+          const errMsg = err instanceof Error ? err.message : 'فشلت العملية الذرية للإلغاء'
+          toast.error(errMsg)
+        },
+        onSettled: () => {
+          isMutatingRef.current = false
+          setProcessing(false)
+        },
+      })
+    } else {
+      isMutatingRef.current = true
+      setProcessing(true)
+      cancelPlan.mutate({ id, reason: cancelReason || undefined }, {
+        onSuccess: () => { toast.success('تم إلغاء الخطة'); setCancelOpen(false) },
+        onError:   () => toast.error('فشل الإلغاء'),
+        onSettled: () => {
+          isMutatingRef.current = false
+          setProcessing(false)
+        },
+      })
+    }
   }
 
   // ── Handler: Add Item
   const handleAddItem = () => {
-    if (!id || !itemCustomerId) { toast.error('اختر العميل'); return }
+    if (!id || !(addItemOperationRef.current ? addItemOperationRef.current.customerId : itemCustomerId)) { toast.error('اختر العميل'); return }
+
+    if (VISITS_ATOMIC_EXECUTION) {
+      if (isMutatingAddItemRef.current) return
+      isMutatingAddItemRef.current = true
+      setAddingItem(true)
+
+      if (!addItemOperationRef.current) {
+        addItemOperationRef.current = {
+          operationId: crypto.randomUUID(),
+          planId: id,
+          customerId: itemCustomerId,
+          customerBranchId: itemCustomerBranchId || null,
+          purposeType: itemPurposeType || null,
+          priority: itemPriority,
+          plannedTime: itemPlannedTime || null,
+          estimatedDurationMin: itemDuration,
+          clientEventAt: new Date().toISOString(),
+          deviceTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        }
+      }
+
+      addPlanItemAtomic.mutate(addItemOperationRef.current, {
+        onSuccess: () => {
+          toast.success('تمت إضافة البند ذرياً')
+          setAddItemOpen(false)
+          setItemCustomerId(''); setItemCustomerBranchId(''); setItemPurposeType('')
+          setItemPriority('normal'); setItemPlannedTime(''); setItemDuration(30)
+          addItemOperationRef.current = null
+        },
+        onError: (e: unknown) => {
+          toast.error(e instanceof Error ? e.message : 'فشلت إضافة البند ذرياً')
+        },
+        onSettled: () => {
+          isMutatingAddItemRef.current = false
+          setAddingItem(false)
+        },
+      })
+      return
+    }
+
+    // Legacy Fallback
     setAddingItem(true)
     const itemInput: VisitPlanItemInput = {
       customer_id:            itemCustomerId,
+      customer_branch_id:     itemCustomerBranchId || null,
       sequence:               items.length + 1,
       purpose_type:           itemPurposeType || null,
       priority:               itemPriority,
@@ -176,10 +356,10 @@ export default function VisitPlanDetail() {
         onSuccess: () => {
           toast.success('تم إضافة البند')
           setAddItemOpen(false)
-          setItemCustomerId(''); setItemPurposeType('')
+          setItemCustomerId(''); setItemCustomerBranchId(''); setItemPurposeType('')
           setItemPriority('normal'); setItemPlannedTime(''); setItemDuration(30)
         },
-        onError:   (e: any) => toast.error(e?.message || 'فشل إضافة البند'),
+        onError:   (e: unknown) => toast.error(e instanceof Error ? e.message : 'فشل إضافة البند'),
         onSettled: () => setAddingItem(false),
       }
     )
@@ -190,6 +370,46 @@ export default function VisitPlanDetail() {
     if (!skipItem || !id) return
     const reason = skipReason === 'أخرى' ? (skipCustom || 'أخرى') : skipReason
     if (!reason) { toast.error('اختر سبب التخطي'); return }
+
+    if (VISITS_ATOMIC_EXECUTION) {
+      if (isMutatingSkipRef.current) return
+      isMutatingSkipRef.current = true
+      setSkipping(true)
+
+      if (!skipOperationRef.current) {
+        skipOperationRef.current = {
+          operationId: crypto.randomUUID(),
+          itemId: skipItem.id,
+          skipReason: reason,
+          clientEventAt: new Date().toISOString(),
+          deviceTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        }
+      }
+
+      skipVisitAtomic.mutate(
+        {
+          planId: id,
+          input: skipOperationRef.current
+        },
+        {
+          onSuccess: () => {
+            toast.success('تم تخطي البند بنجاح (المسار الذري)')
+            setSkipItem(null); setSkipReason(''); setSkipCustom('')
+            skipOperationRef.current = null
+          },
+          onError: (e: unknown) => {
+            toast.error(e instanceof Error ? e.message : 'فشل تخطي البند')
+          },
+          onSettled: () => {
+            isMutatingSkipRef.current = false
+            setSkipping(false)
+          },
+        }
+      )
+      return
+    }
+
+    // مسار تقليدي (Fallback)
     setSkipping(true)
     updatePlanItem.mutate(
       {
@@ -202,7 +422,7 @@ export default function VisitPlanDetail() {
           toast.success('تم تخطي البند')
           setSkipItem(null); setSkipReason(''); setSkipCustom('')
         },
-        onError:   (e: any) => toast.error(e?.message || 'فشل تخطي البند'),
+        onError:   (e: unknown) => toast.error(e instanceof Error ? e.message : 'فشل تخطي البند'),
         onSettled: () => setSkipping(false),
       }
     )
@@ -211,6 +431,54 @@ export default function VisitPlanDetail() {
   // ── Handler: Reschedule Item
   const handleReschedule = () => {
     if (!rescheduleItem || !id || !rescheduleDate) return
+
+    if (VISITS_ATOMIC_EXECUTION && !rescheduleReason.trim()) {
+      toast.error('يرجى كتابة سبب إعادة الجدولة')
+      return
+    }
+
+    if (VISITS_ATOMIC_EXECUTION) {
+      if (isMutatingRescheduleRef.current) return
+      isMutatingRescheduleRef.current = true
+      setRescheduling(true)
+
+      if (!rescheduleOperationRef.current) {
+        rescheduleOperationRef.current = {
+          operationId: crypto.randomUUID(),
+          itemId: rescheduleItem.id,
+          targetDate: rescheduleDate,
+          rescheduleReason: rescheduleReason.trim(),
+          plannedTime: null,
+          clientEventAt: new Date().toISOString(),
+          deviceTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        }
+      }
+
+      rescheduleAtomic.mutate(
+        {
+          planId: id,
+          input: rescheduleOperationRef.current
+        },
+        {
+          onSuccess: () => {
+            toast.success(`تمت إعادة الجدولة إلى ${new Date(rescheduleDate).toLocaleDateString('ar-EG-u-nu-latn')} (المسار الذري)`)
+            setRescheduleItem(null)
+            setRescheduleReason('')
+            rescheduleOperationRef.current = null
+          },
+          onError: (e: unknown) => {
+            toast.error(e instanceof Error ? e.message : 'فشل إعادة الجدولة')
+          },
+          onSettled: () => {
+            isMutatingRescheduleRef.current = false
+            setRescheduling(false)
+          },
+        }
+      )
+      return
+    }
+
+    // مسار تقليدي (Fallback)
     setRescheduling(true)
     updatePlanItem.mutate(
       {
@@ -222,8 +490,9 @@ export default function VisitPlanDetail() {
         onSuccess: () => {
           toast.success(`تمت إعادة الجدولة إلى ${new Date(rescheduleDate).toLocaleDateString('ar-EG-u-nu-latn')}`)
           setRescheduleItem(null)
+          setRescheduleReason('')
         },
-        onError:   (e: any) => toast.error(e?.message || 'فشل إعادة الجدولة'),
+        onError:   (e: unknown) => toast.error(e instanceof Error ? e.message : 'فشل إعادة الجدولة'),
         onSettled: () => setRescheduling(false),
       }
     )
@@ -233,6 +502,46 @@ export default function VisitPlanDetail() {
   const pendingItems = items.filter(i => i.status === 'pending')
   const handleBulkClose = async () => {
     if (!id || pendingItems.length === 0) return
+
+    if (VISITS_ATOMIC_EXECUTION) {
+      if (isMutatingBulkCloseRef.current) return
+      isMutatingBulkCloseRef.current = true
+      setProcessing(true)
+
+      if (!bulkCloseOperationRef.current) {
+        bulkCloseOperationRef.current = {
+          operationId: crypto.randomUUID(),
+          planId: id,
+          closeReason: bulkReason,
+          clientEventAt: new Date().toISOString(),
+          deviceTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        }
+      }
+
+      closeMissedAtomic.mutate(
+        {
+          planId: id,
+          input: bulkCloseOperationRef.current
+        },
+        {
+          onSuccess: () => {
+            toast.success('تم إنهاء اليومية ذرياً بنجاح')
+            setBulkCloseOpen(false)
+            bulkCloseOperationRef.current = null
+          },
+          onError: (e: unknown) => {
+            toast.error(e instanceof Error ? e.message : 'فشل إنهاء اليومية ذرياً')
+          },
+          onSettled: () => {
+            isMutatingBulkCloseRef.current = false
+            setProcessing(false)
+          }
+        }
+      )
+      return
+    }
+
+    // مسار تقليدي (Fallback)
     setProcessing(true)
     let errs = 0
     for (const item of pendingItems) {
@@ -255,6 +564,63 @@ export default function VisitPlanDetail() {
   // ── Handler: Clone Plan
   const handleClone = async () => {
     if (!plan) return
+    if (items.length === 0) {
+      toast.error('لا يمكن استنساخ خطة فارغة بدون بنود.')
+      return
+    }
+
+    if (VISITS_ATOMIC_EXECUTION) {
+      if (isMutatingCloneRef.current) return
+      isMutatingCloneRef.current = true
+      setProcessing(true)
+
+      if (!cloneOperationRef.current) {
+        const sortedItems = [...items].sort((a, b) => a.sequence - b.sequence)
+        const tmplItems = sortedItems.map((item, index) => ({
+          customer_id:            item.customer_id,
+          customer_branch_id:     item.customer_branch_id ?? null,
+          sequence:               index + 1,
+          planned_time:           item.planned_time || null,
+          estimated_duration_min: item.estimated_duration_min || 30,
+          priority:               item.priority,
+          purpose_type:           item.purpose_type ?? null,
+          purpose:                item.purpose ?? null,
+        }))
+
+        cloneOperationRef.current = {
+          operationId: crypto.randomUUID(),
+          employeeId: plan.employee_id,
+          planDate: cloneDate,
+          planType: plan.plan_type,
+          notes: `نسخة مستنسخة من مسار يوم ${plan.plan_date}`,
+          items: tmplItems
+        }
+      }
+
+      if (!cloneOperationRef.current) return
+
+      createPlanAtomic.mutate(cloneOperationRef.current, {
+        onSuccess: (result) => {
+          toast.success('تم استنساخ الخطة ذرياً بنجاح')
+          setCloneOpen(false)
+          setCloneDate(tomorrow())
+          cloneOperationRef.current = null
+          if (result.ok) {
+            navigate(`/activities/visit-plans/${result.data.plan_id}`)
+          }
+        },
+        onError: (e: unknown) => {
+          toast.error(e instanceof Error ? e.message : 'فشل استنساخ الخطة ذرياً')
+        },
+        onSettled: () => {
+          isMutatingCloneRef.current = false
+          setProcessing(false)
+        }
+      })
+      return
+    }
+
+    // مسار تقليدي (Fallback)
     setProcessing(true)
     try {
       const newPlan = await createPlan.mutateAsync({
@@ -284,11 +650,67 @@ export default function VisitPlanDetail() {
       
       toast.success(`تم إنشاء نسخة بخطة جديدة (تم نسخ ${copied} بند)`)
       setCloneOpen(false)
+      setCloneDate(tomorrow())
       navigate(`/activities/visit-plans/${newPlan.id}`)
     } catch {
       toast.error('فشل استنساخ الخطة')
     }
     setProcessing(false)
+  }
+
+  // ── Handler: Reorder
+  const handleReorder = (orderedItemIds: string[]) => {
+    if (!id) return
+
+    if (VISITS_ATOMIC_EXECUTION) {
+      if (isMutatingReorderRef.current) return
+
+      const isRetry = reorderOperationRef.current &&
+        reorderOperationRef.current.items.length === orderedItemIds.length &&
+        reorderOperationRef.current.items.every((it, idx) => it.item_id === orderedItemIds[idx] && it.sequence === idx + 1)
+
+      if (reorderOperationRef.current && !isRetry) {
+        toast.error('يرجى إعادة محاولة الترتيب السابق أولاً، أو إلغاء نية الترتيب المعلقة.')
+        return
+      }
+
+      isMutatingReorderRef.current = true
+
+      if (!reorderOperationRef.current) {
+        const reorderItems = orderedItemIds.map((itemId, idx) => ({
+          item_id: itemId,
+          sequence: idx + 1
+        }))
+        reorderOperationRef.current = {
+          operationId: crypto.randomUUID(),
+          planId: id,
+          items: reorderItems
+        }
+      }
+
+      reorderMutAtomic.mutate(reorderOperationRef.current, {
+        onSuccess: () => {
+          toast.success('تم إعادة الترتيب ذرياً')
+          reorderOperationRef.current = null
+        },
+        onError: (err: unknown) => {
+          const errMsg = err instanceof Error ? err.message : 'فشلت عملية إعادة الترتيب الذرية'
+          toast.error(errMsg, {
+            action: {
+              label: 'إلغاء الحركة المعلقة',
+              onClick: () => { reorderOperationRef.current = null }
+            }
+          })
+        },
+        onSettled: () => {
+          isMutatingReorderRef.current = false
+        }
+      })
+      return
+    }
+
+    // Legacy Fallback
+    reorderMut.mutate({ planId: id, orderedItemIds })
   }
 
   // ── Save as Template handler ─────────────────────────────────────
@@ -309,7 +731,7 @@ export default function VisitPlanDetail() {
         estimated_duration_min: item.estimated_duration_min || 30,
         priority:               item.priority || 'normal',
         purpose_type:           item.purpose_type || null,
-        purpose:                (item as any).purpose || null,
+        purpose:                item.purpose ?? null,
       }))
       await saveAsTmpl.mutateAsync({
         name:      tmplName.trim(),
@@ -319,8 +741,8 @@ export default function VisitPlanDetail() {
       })
       toast.success(`تم حفظ القالب "${tmplName.trim()}" بـ${items.length} بند`)
       setSaveTmplOpen(false)
-    } catch (e: any) {
-      toast.error(e?.message || 'فشل حفظ القالب')
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'فشل حفظ القالب')
     } finally {
       setSavingTmpl(false)
     }
@@ -387,7 +809,7 @@ export default function VisitPlanDetail() {
               </Button>
             )}
 
-            {(canAddItem || (editMode && canEditPlan)) && (
+            {canAddItem && (
               <Button icon={<Plus size={16} />} variant="secondary" onClick={() => setAddItemOpen(true)}>
                 إضافة بند
               </Button>
@@ -397,13 +819,13 @@ export default function VisitPlanDetail() {
                 تأكيد واعتماد
               </Button>
             )}
-            {canConfirm && plan.status === 'in_progress' && pendingItems.length > 0 && (
-              <Button onClick={() => setBulkCloseOpen(true)} variant="secondary" icon={<Archive size={16} />} className="desktop-only-btn">
+            {canCloseDay && plan.status === 'in_progress' && pendingItems.length > 0 && (
+              <Button onClick={() => { setBulkCloseOpen(true); setBulkReason('انتهاء الدوام الزمني'); bulkCloseOperationRef.current = null }} variant="secondary" icon={<Archive size={16} />} className="desktop-only-btn">
                 إنهاء اليومية المتبقية
               </Button>
             )}
             {canCreate && (
-              <Button onClick={() => setCloneOpen(true)} variant="secondary" icon={<Copy size={16} />} className="desktop-only-btn">
+              <Button onClick={() => { setCloneOpen(true); setCloneDate(tomorrow()); cloneOperationRef.current = null }} variant="secondary" icon={<Copy size={16} />} className="desktop-only-btn">
                 استنساخ المسار
               </Button>
             )}
@@ -419,13 +841,13 @@ export default function VisitPlanDetail() {
               </Button>
             )}
             {/* Mobile overflow menu — exposes desktop-only actions on small screens */}
-            {(canCreate || canSaveTmpl || (canConfirm && plan.status === 'in_progress' && pendingItems.length > 0)) && (
+            {(canCreate || canSaveTmpl || (canCloseDay && plan.status === 'in_progress' && pendingItems.length > 0)) && (
               <div className="mobile-overflow-menu">
                 <button
-                  className="mobile-overflow-menu-btn"
-                  onClick={() => setMoreMenuOpen(prev => !prev)}
-                  aria-label="المزيد من الإجراءات"
-                  aria-expanded={moreMenuOpen}
+                   className="mobile-overflow-menu-btn"
+                   onClick={() => setMoreMenuOpen(prev => !prev)}
+                   aria-label="المزيد من الإجراءات"
+                   aria-expanded={moreMenuOpen}
                 >
                   <MoreVertical size={18} />
                 </button>
@@ -436,13 +858,13 @@ export default function VisitPlanDetail() {
                       onClick={() => setMoreMenuOpen(false)}
                     />
                     <div className="mobile-overflow-dropdown" role="menu">
-                      {canConfirm && plan.status === 'in_progress' && pendingItems.length > 0 && (
-                        <button className="mobile-overflow-item" role="menuitem" onClick={() => { setMoreMenuOpen(false); setBulkCloseOpen(true) }}>
+                      {canCloseDay && plan.status === 'in_progress' && pendingItems.length > 0 && (
+                        <button className="mobile-overflow-item" role="menuitem" onClick={() => { setMoreMenuOpen(false); setBulkCloseOpen(true); setBulkReason('انتهاء الدوام الزمني'); bulkCloseOperationRef.current = null }}>
                           <Archive size={16} /> إنهاء اليومية المتبقية
                         </button>
                       )}
                       {canCreate && (
-                        <button className="mobile-overflow-item" role="menuitem" onClick={() => { setMoreMenuOpen(false); setCloneOpen(true) }}>
+                        <button className="mobile-overflow-item" role="menuitem" onClick={() => { setMoreMenuOpen(false); setCloneOpen(true); setCloneDate(tomorrow()); cloneOperationRef.current = null }}>
                           <Copy size={16} /> استنساخ المسار
                         </button>
                       )}
@@ -456,8 +878,8 @@ export default function VisitPlanDetail() {
                 )}
               </div>
             )}
-            {plan.status !== 'completed' && plan.status !== 'cancelled' && (
-              <Button variant="danger" icon={<XCircle size={16} />} onClick={() => setCancelOpen(true)}>
+            {canCancel && (plan.status === 'draft' || plan.status === 'confirmed') && (
+              <Button variant="danger" icon={<XCircle size={16} />} onClick={() => { setCancelOpen(true); setCancelReason(''); cancelOperationRef.current = null }} aria-label="إلغاء خطة الزيارات">
                 إلغاء
               </Button>
             )}
@@ -531,54 +953,54 @@ export default function VisitPlanDetail() {
           items.map((item, idx) => (
             <div key={item.id} className="vp-item-wrapper">
               {/* Edit mode controls */}
-              {editMode && (
+              {editMode && canManageDraftItems && (
                 <div className="vp-edit-controls">
-                  <button
-                    className="vp-edit-btn"
-                    disabled={idx === 0}
-                    onClick={() => {
-                      const ids = items.map(i => i.id)
-                      ;[ids[idx - 1], ids[idx]] = [ids[idx], ids[idx - 1]]
-                      reorderMut.mutate({ planId: id!, orderedItemIds: ids })
-                    }}
-                    title="تحريك للأعلى"
-                  >
-                    <ArrowUp size={14} />
-                  </button>
-                  <span className="vp-edit-seq">{idx + 1}</span>
-                  <button
-                    className="vp-edit-btn"
-                    disabled={idx === items.length - 1}
-                    onClick={() => {
-                      const ids = items.map(i => i.id)
-                      ;[ids[idx], ids[idx + 1]] = [ids[idx + 1], ids[idx]]
-                      reorderMut.mutate({ planId: id!, orderedItemIds: ids })
-                    }}
-                    title="تحريك للأسفل"
-                  >
-                    <ArrowDown size={14} />
-                  </button>
-                  <button
-                    className="vp-edit-btn vp-edit-btn--delete"
-                    onClick={() => {
-                      if (confirm('هل أنت متأكد من حذف هذا البند؟')) {
-                        deleteItemMut.mutate(item.id, {
-                          onSuccess: () => toast.success('تم حذف البند'),
-                          onError: () => toast.error('فشل حذف البند'),
-                        })
-                      }
-                    }}
-                    title="حذف البند"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  {canReorderItems && (
+                    <>
+                      <button
+                        className="vp-edit-btn"
+                        disabled={idx === 0 || isMutatingReorderRef.current}
+                        onClick={() => {
+                          const ids = items.map(i => i.id)
+                          ;[ids[idx - 1], ids[idx]] = [ids[idx], ids[idx - 1]]
+                          handleReorder(ids)
+                        }}
+                        title="تحريك للأعلى"
+                      >
+                        <ArrowUp size={14} />
+                      </button>
+                      <span className="vp-edit-seq">{idx + 1}</span>
+                      <button
+                        className="vp-edit-btn"
+                        disabled={idx === items.length - 1 || isMutatingReorderRef.current}
+                        onClick={() => {
+                          const ids = items.map(i => i.id)
+                          ;[ids[idx], ids[idx + 1]] = [ids[idx + 1], ids[idx]]
+                          handleReorder(ids)
+                        }}
+                        title="تحريك للأسفل"
+                      >
+                        <ArrowDown size={14} />
+                      </button>
+                    </>
+                  )}
+                  {canDeleteItem && (
+                    <button
+                      className="vp-edit-btn vp-edit-btn--delete"
+                      onClick={() => setDeleteConfirmItem(item)}
+                      title="حذف البند"
+                      disabled={deletingItem}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
                 </div>
               )}
               <PlanItemCard
                 item={item}
                 type="visit"
-                onStart={canCreate && item.status === 'pending' ? () => navigate(
-                  `/activities/new?visitPlanItemId=${item.id}&customerId=${item.customer_id ?? ''}`
+                onStart={canExecute && item.status === 'pending' ? () => navigate(
+                  `/activities/visit-plans/${id}/execute`
                 ) : undefined}
                 onViewActivity={item.activity_id ? () => navigate(`/activities/${item.activity_id}`) : undefined}
               />
@@ -587,14 +1009,14 @@ export default function VisitPlanDetail() {
                 <div className="vp-item-actions">
                   <button
                     className="vp-action-btn vp-action-btn--skip"
-                    onClick={() => { setSkipItem(item); setSkipReason('') }}
+                    onClick={() => { setSkipItem(item); setSkipReason(''); setSkipCustom(''); skipOperationRef.current = null }}
                   >
                     <SkipForward size={13} />
                     تخطي
                   </button>
                   <button
                     className="vp-action-btn vp-action-btn--reschedule"
-                    onClick={() => { setRescheduleItem(item); setRescheduleDate(tomorrow()) }}
+                    onClick={() => { setRescheduleItem(item); setRescheduleDate(tomorrow()); setRescheduleReason(''); rescheduleOperationRef.current = null }}
                   >
                     <Calendar size={13} />
                     إعادة جدولة
@@ -629,12 +1051,19 @@ export default function VisitPlanDetail() {
       {/* ─── Modal: إضافة بند ─── */}
       <ResponsiveModal
         open={addItemOpen}
-        onClose={() => setAddItemOpen(false)}
+        onClose={() => {
+          if (!addingItem) {
+            setAddItemOpen(false)
+            setItemCustomerId('')
+            setItemCustomerBranchId('')
+            addItemOperationRef.current = null
+          }
+        }}
         title="إضافة بند زيارة"
         disableOverlayClose={addingItem}
         footer={<>
-          <Button variant="secondary" onClick={() => setAddItemOpen(false)} disabled={addingItem}>إلغاء</Button>
-          <Button onClick={handleAddItem} disabled={addingItem || !itemCustomerId}>
+          <Button variant="secondary" onClick={() => { setAddItemOpen(false); setItemCustomerId(''); setItemCustomerBranchId(''); addItemOperationRef.current = null }} disabled={addingItem}>إلغاء</Button>
+          <Button onClick={handleAddItem} disabled={addingItem || !(addItemOperationRef.current ? addItemOperationRef.current.customerId : itemCustomerId)}>
             {addingItem ? 'جاري الإضافة...' : 'إضافة'}
           </Button>
         </>}
@@ -642,16 +1071,48 @@ export default function VisitPlanDetail() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
           <div className="form-group">
             <label className="form-label">العميل <span className="form-required">*</span></label>
-            <select className="form-select" value={itemCustomerId} onChange={e => setItemCustomerId(e.target.value)}>
+            <select
+              className="form-select"
+              value={addItemOperationRef.current ? addItemOperationRef.current.customerId : itemCustomerId}
+              onChange={e => { setItemCustomerId(e.target.value); setItemCustomerBranchId('') }}
+              disabled={addingItem || !!addItemOperationRef.current}
+            >
               <option value="">-- اختر العميل --</option>
-              {customers.map((c: any) => (
+              {customers.map(c => (
                 <option key={c.id} value={c.id}>{c.name}{c.code ? ` (${c.code})` : ''}</option>
               ))}
             </select>
           </div>
+
+          {itemCustomerId && (
+            <div className="form-group">
+              <label className="form-label">فرع العميل (موقع الزيارة)</label>
+              {branchesLoading ? (
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>جاري تحميل الفروع...</div>
+              ) : (
+                <select
+                  className="form-select"
+                  value={addItemOperationRef.current ? addItemOperationRef.current.customerBranchId ?? '' : itemCustomerBranchId}
+                  onChange={e => setItemCustomerBranchId(e.target.value)}
+                  disabled={addingItem || !!addItemOperationRef.current}
+                >
+                  <option value="">الموقع الرئيسي للعميل</option>
+                  {customerBranches.map(b => (
+                    <option key={b.id} value={b.id}>{b.name}{b.is_primary ? ' (الرئيسي)' : ''}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+          )}
+
           <div className="form-group">
             <label className="form-label">الغرض</label>
-            <select className="form-select" value={itemPurposeType} onChange={e => setItemPurposeType(e.target.value as PlanItemPurposeType)}>
+            <select
+              className="form-select"
+              value={addItemOperationRef.current ? addItemOperationRef.current.purposeType ?? '' : itemPurposeType}
+              onChange={e => setItemPurposeType(e.target.value as PlanItemPurposeType)}
+              disabled={addingItem || !!addItemOperationRef.current}
+            >
               <option value="">-- غير محدد --</option>
               <option value="sales">مبيعات</option>
               <option value="collection">تحصيل</option>
@@ -664,7 +1125,12 @@ export default function VisitPlanDetail() {
           <div className="grid grid-cols-2 gap-3">
             <div className="form-group">
               <label className="form-label">الأولوية</label>
-              <select className="form-select" value={itemPriority} onChange={e => setItemPriority(e.target.value as PlanPriority)}>
+              <select
+                className="form-select"
+                value={addItemOperationRef.current ? addItemOperationRef.current.priority : itemPriority}
+                onChange={e => setItemPriority(e.target.value as PlanPriority)}
+                disabled={addingItem || !!addItemOperationRef.current}
+              >
                 <option value="high">عالية</option>
                 <option value="normal">عادية</option>
                 <option value="low">منخفضة</option>
@@ -672,13 +1138,26 @@ export default function VisitPlanDetail() {
             </div>
             <div className="form-group">
               <label className="form-label">الوقت المخطط</label>
-              <input type="time" className="form-input" value={itemPlannedTime} onChange={e => setItemPlannedTime(e.target.value)} />
+              <input
+                type="time"
+                className="form-input"
+                value={addItemOperationRef.current ? addItemOperationRef.current.plannedTime ?? '' : itemPlannedTime}
+                onChange={e => setItemPlannedTime(e.target.value)}
+                disabled={addingItem || !!addItemOperationRef.current}
+              />
             </div>
           </div>
           <div className="form-group">
             <label className="form-label">المدة المتوقعة (دقيقة)</label>
-            <input type="number" className="form-input" value={itemDuration} min={5} max={480}
-              onChange={e => setItemDuration(Number(e.target.value))} />
+            <input
+              type="number"
+              className="form-input"
+              value={addItemOperationRef.current ? addItemOperationRef.current.estimatedDurationMin : itemDuration}
+              min={5}
+              max={480}
+              onChange={e => setItemDuration(Number(e.target.value))}
+              disabled={addingItem || !!addItemOperationRef.current}
+            />
           </div>
         </div>
       </ResponsiveModal>
@@ -686,12 +1165,12 @@ export default function VisitPlanDetail() {
       {/* ─── Modal: Skip ─── */}
       <ResponsiveModal
         open={!!skipItem}
-        onClose={() => { setSkipItem(null); setSkipReason(''); setSkipCustom('') }}
+        onClose={() => { if (!skipping) { setSkipItem(null); setSkipReason(''); setSkipCustom(''); skipOperationRef.current = null } }}
         title={`تخطي: ${skipItem?.customer?.name ?? '...'}`}
         disableOverlayClose={skipping}
         footer={<>
-          <Button variant="secondary" onClick={() => setSkipItem(null)} disabled={skipping}>إلغاء</Button>
-          <Button variant="danger" onClick={handleSkip} disabled={skipping || !skipReason}>
+          <Button variant="secondary" onClick={() => { setSkipItem(null); setSkipReason(''); setSkipCustom(''); skipOperationRef.current = null }} disabled={skipping}>إلغاء</Button>
+          <Button variant="danger" onClick={handleSkip} disabled={skipping || !(skipOperationRef.current ? skipOperationRef.current.skipReason : skipReason)}>
             {skipping ? 'جاري التخطي...' : 'تخطي البند'}
           </Button>
         </>}
@@ -701,25 +1180,31 @@ export default function VisitPlanDetail() {
             اختر سبب تخطي هذه الزيارة — سيُسجَّل للمراجعة.
           </p>
           <div className="vp-skip-reasons">
-            {SKIP_REASONS.map(r => (
-              <button
-                key={r}
-                type="button"
-                className={`vp-skip-reason-btn${skipReason === r ? ' vp-skip-reason-btn--active' : ''}`}
-                onClick={() => setSkipReason(r)}
-              >
-                {r}
-              </button>
-            ))}
+            {SKIP_REASONS.map(r => {
+              const activeVal = skipOperationRef.current ? skipOperationRef.current.skipReason : skipReason
+              const isSelected = activeVal === r || (r === 'أخرى' && activeVal && !SKIP_REASONS.includes(activeVal))
+              return (
+                <button
+                  key={r}
+                  type="button"
+                  className={`vp-skip-reason-btn${isSelected ? ' vp-skip-reason-btn--active' : ''}`}
+                  onClick={() => setSkipReason(r)}
+                  disabled={skipping || !!skipOperationRef.current}
+                >
+                  {r}
+                </button>
+              )
+            })}
           </div>
-          {skipReason === 'أخرى' && (
+          {((skipOperationRef.current ? skipOperationRef.current.skipReason : skipReason) === 'أخرى' || (skipOperationRef.current && !SKIP_REASONS.includes(skipOperationRef.current.skipReason))) && (
             <div className="form-group">
               <label className="form-label">اذكر السبب</label>
               <input
                 className="form-input"
-                value={skipCustom}
+                value={skipOperationRef.current ? skipOperationRef.current.skipReason : skipCustom}
                 onChange={e => setSkipCustom(e.target.value)}
                 placeholder="سبب التخطي..."
+                disabled={skipping || !!skipOperationRef.current}
                 autoFocus
               />
             </div>
@@ -730,12 +1215,12 @@ export default function VisitPlanDetail() {
       {/* ─── Modal: Reschedule ─── */}
       <ResponsiveModal
         open={!!rescheduleItem}
-        onClose={() => setRescheduleItem(null)}
+        onClose={() => { if (!rescheduling) { setRescheduleItem(null); setRescheduleReason(''); rescheduleOperationRef.current = null } }}
         title={`إعادة جدولة: ${rescheduleItem?.customer?.name ?? '...'}`}
         disableOverlayClose={rescheduling}
         footer={<>
-          <Button variant="secondary" onClick={() => setRescheduleItem(null)} disabled={rescheduling}>إلغاء</Button>
-          <Button onClick={handleReschedule} disabled={rescheduling || !rescheduleDate}>
+          <Button variant="secondary" onClick={() => { setRescheduleItem(null); setRescheduleReason(''); rescheduleOperationRef.current = null }} disabled={rescheduling}>إلغاء</Button>
+          <Button onClick={handleReschedule} disabled={rescheduling || !(rescheduleOperationRef.current ? rescheduleOperationRef.current.targetDate : rescheduleDate)}>
             {rescheduling ? 'جاري الجدولة...' : 'تأكيد إعادة الجدولة'}
           </Button>
         </>}
@@ -743,41 +1228,60 @@ export default function VisitPlanDetail() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
           <p style={{ margin: 0, fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', lineHeight: 1.7 }}>
             اختر تاريخاً جديداً لزيارة <strong>{rescheduleItem?.customer?.name}</strong>.
-            سيُحوَّل البند تلقائياً إلى الخطة المقابلة لذلك اليوم.
+            سيُحوَّل البند تلقائياً إلى خطة اليوم الجديد لنفس المندوب.
           </p>
+          <div className="vp-modal-hint">
+            💡 إعادة الجدولة تُغيّر حالة هذا البند إلى "معاد جدولته" ولا تحذف البند الأصلي.
+          </div>
           <div className="form-group">
             <label className="form-label">التاريخ الجديد <span className="form-required">*</span></label>
             <input
               type="date"
               className="form-input"
-              value={rescheduleDate}
+              value={rescheduleOperationRef.current ? rescheduleOperationRef.current.targetDate : rescheduleDate}
               min={tomorrow()}
               onChange={e => setRescheduleDate(e.target.value)}
+              disabled={rescheduling || !!rescheduleOperationRef.current}
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">سبب التعديل {VISITS_ATOMIC_EXECUTION && <span className="form-required">*</span>}</label>
+            <textarea
+              className="form-input"
+              rows={3}
+              value={rescheduleOperationRef.current ? rescheduleOperationRef.current.rescheduleReason : rescheduleReason}
+              onChange={e => setRescheduleReason(e.target.value)}
+              placeholder="اكتب سبب إعادة الجدولة..."
+              disabled={rescheduling || !!rescheduleOperationRef.current}
             />
           </div>
         </div>
       </ResponsiveModal>
 
       {/* ─── Modal: تأكيد الخطة ─── */}
-      <ResponsiveModal open={confirmOpen} onClose={() => setConfirmOpen(false)} title="تأكيد خطة الزيارات"
+      <ResponsiveModal open={confirmOpen} onClose={() => { setConfirmOpen(false); confirmOperationIdRef.current = null }} title="تأكيد خطة الزيارات"
         disableOverlayClose={processing}
         footer={<>
-          <Button variant="secondary" onClick={() => setConfirmOpen(false)} disabled={processing}>إلغاء</Button>
+          <Button variant="secondary" onClick={() => { setConfirmOpen(false); confirmOperationIdRef.current = null }} disabled={processing}>إلغاء</Button>
           <Button variant="success" onClick={handleConfirm} disabled={processing}>
             {processing ? 'جاري التأكيد...' : 'تأكيد'}
           </Button>
         </>}>
-        <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', lineHeight: 1.7 }}>
-          تأكيد خطة {fmtDate(plan.plan_date)}؟ سيتلقى المندوب إشعاراً فورياً.
-          لن تتمكن من تعديل البنود بعد التأكيد.
-        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', lineHeight: 1.7 }}>
+            تأكيد خطة <strong>{fmtDate(plan.plan_date)}</strong> بـ <strong>{items.length}</strong> {items.length === 1 ? 'زيارة' : 'زيارات'}؟
+          </p>
+          <div className="vp-modal-hint vp-modal-hint--warning">
+            ⚠ بعد التأكيد لن تتمكن من إضافة أو تعديل البنود. تأكد من مراجعة جميع العملاء.
+          </div>
+        </div>
       </ResponsiveModal>
 
       {/* ─── Modal: إلغاء الخطة ─── */}
-      <ResponsiveModal open={cancelOpen} onClose={() => setCancelOpen(false)} title="إلغاء خطة الزيارات"
+      <ResponsiveModal open={cancelOpen} onClose={() => { setCancelOpen(false); setCancelReason(''); cancelOperationRef.current = null }} title="إلغاء خطة الزيارات"
         disableOverlayClose={processing}
         footer={<>
-          <Button variant="secondary" onClick={() => setCancelOpen(false)} disabled={processing}>تراجع</Button>
+          <Button variant="secondary" onClick={() => { setCancelOpen(false); setCancelReason(''); cancelOperationRef.current = null }} disabled={processing}>تراجع</Button>
           <Button variant="danger" onClick={handleCancel} disabled={processing}>
             {processing ? 'جاري الإلغاء...' : 'إلغاء الخطة'}
           </Button>
@@ -787,9 +1291,15 @@ export default function VisitPlanDetail() {
             إلغاء خطة {fmtDate(plan.plan_date)}؟ الزيارات المنجزة تبقى كما هي.
           </p>
           <div className="form-group">
-            <label className="form-label">سبب الإلغاء (اختياري)</label>
-            <textarea className="form-textarea" rows={2} value={cancelReason}
-              onChange={e => setCancelReason(e.target.value)} placeholder="اذكر سبب الإلغاء..." />
+            <label className="form-label">سبب الإلغاء (مطلوب)</label>
+            <textarea
+              className="form-textarea"
+              rows={2}
+              value={cancelOperationRef.current ? cancelOperationRef.current.reason : cancelReason}
+              onChange={e => setCancelReason(e.target.value)}
+              placeholder="اذكر سبب الإلغاء وجوباً..."
+              disabled={processing || !!cancelOperationRef.current}
+            />
           </div>
         </div>
       </ResponsiveModal>
@@ -797,27 +1307,32 @@ export default function VisitPlanDetail() {
       {/* ─── Modal: Bulk Close ─── */}
       <ResponsiveModal
         open={bulkCloseOpen}
-        onClose={() => setBulkCloseOpen(false)}
+        onClose={() => { if (!processing) { setBulkCloseOpen(false); setBulkReason('انتهاء الدوام الزمني'); bulkCloseOperationRef.current = null } }}
         title="إنهاء يومية الخطة وتحويل المعلقات"
         disableOverlayClose={processing}
         footer={<>
-          <Button variant="secondary" onClick={() => setBulkCloseOpen(false)} disabled={processing}>إلغاء</Button>
-          <Button onClick={handleBulkClose} disabled={processing || !bulkReason.trim()}>
+          <Button variant="secondary" onClick={() => { setBulkCloseOpen(false); setBulkReason('انتهاء الدوام الزمني'); bulkCloseOperationRef.current = null }} disabled={processing}>إلغاء</Button>
+          <Button onClick={handleBulkClose} disabled={processing || !(bulkCloseOperationRef.current ? bulkCloseOperationRef.current.closeReason : bulkReason).trim()}>
             {processing ? 'جاري التنفيذ...' : 'تسجيل كافة المعلقات كزيارات فائتة'}
           </Button>
         </>}
       >
-        <div style={{ padding: 'var(--space-2) 0' }}>
-          <p style={{ margin: '0 0 var(--space-4)', fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>
-            يوجد <strong>{pendingItems.length}</strong> بنود معلقة. سيتم تسجيلها جميعاً كزيارات فائتة (Missed) وإغلاقها.
+        <div style={{ padding: 'var(--space-2) 0', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          <p style={{ margin: 0, fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>
+            يوجد <strong>{pendingItems.length}</strong> {pendingItems.length === 1 ? 'بند معلق' : 'بنود معلقة'}.
+            سيتم تسجيلها جميعاً كـ <strong>زيارات فائتة</strong> وإغلاق الخطة.
           </p>
-          <div className="form-group">
-            <label className="form-label">سبب التخطي الجماعي للبنود المتبقية <span className="form-required">*</span></label>
+          <div className="vp-modal-hint vp-modal-hint--warning">
+            ⚠ هذا الإجراء لا يمكن التراجع عنه. ستظل الزيارات المنجزة سليمة.
+          </div>
+          <div className="form-group" style={{ margin: 0 }}>
+            <label className="form-label">سبب إغلاق البنود المتبقية <span className="form-required">*</span></label>
             <input
               className="form-input"
-              value={bulkReason}
+              value={bulkCloseOperationRef.current ? bulkCloseOperationRef.current.closeReason : bulkReason}
               onChange={e => setBulkReason(e.target.value)}
-              placeholder="مثال: انتهاء دوام، ظروف جوية..."
+              placeholder="مثال: انتهاء الدوام، ظروف جوية، مشكلة طارئة..."
+              disabled={processing || !!bulkCloseOperationRef.current}
             />
           </div>
         </div>
@@ -826,12 +1341,12 @@ export default function VisitPlanDetail() {
       {/* ─── Modal: Clone Plan ─── */}
       <ResponsiveModal
         open={cloneOpen}
-        onClose={() => setCloneOpen(false)}
+        onClose={() => { if (!processing) { setCloneOpen(false); setCloneDate(tomorrow()); cloneOperationRef.current = null } }}
         title="استنساخ مسار خطة الزيارات"
         disableOverlayClose={processing}
         footer={<>
-          <Button variant="secondary" onClick={() => setCloneOpen(false)} disabled={processing}>إلغاء</Button>
-          <Button onClick={handleClone} disabled={processing || !cloneDate}>
+          <Button variant="secondary" onClick={() => { setCloneOpen(false); setCloneDate(tomorrow()); cloneOperationRef.current = null }} disabled={processing}>إلغاء</Button>
+          <Button onClick={handleClone} disabled={processing || !(cloneOperationRef.current ? cloneOperationRef.current.planDate : cloneDate)}>
             {processing ? 'جاري الاستنساخ...' : 'تأكيد العملية'}
           </Button>
         </>}
@@ -845,10 +1360,88 @@ export default function VisitPlanDetail() {
             <input
               type="date"
               className="form-input"
-              value={cloneDate}
+              value={cloneOperationRef.current ? cloneOperationRef.current.planDate : cloneDate}
               onChange={e => setCloneDate(e.target.value)}
+              disabled={processing || !!cloneOperationRef.current}
               required
             />
+          </div>
+        </div>
+      </ResponsiveModal>
+
+      {/* ─── Modal: تأكيد حذف بند (بديل confirm() الافتراضي) ─── */}
+      <ResponsiveModal
+        open={!!deleteConfirmItem}
+        onClose={() => { if (!deletingItem) { setDeleteConfirmItem(null); deleteItemOperationRef.current = null } }}
+        title="تأكيد حذف البند"
+        disableOverlayClose={deletingItem}
+        footer={<>
+          <Button variant="secondary" onClick={() => { setDeleteConfirmItem(null); deleteItemOperationRef.current = null }} disabled={deletingItem}>إلغاء</Button>
+          <Button
+            variant="danger"
+            disabled={deletingItem}
+            onClick={() => {
+              if (!deleteConfirmItem || !id) return
+
+              if (VISITS_ATOMIC_EXECUTION) {
+                if (isMutatingDeleteItemRef.current) return
+                isMutatingDeleteItemRef.current = true
+                setDeletingItem(true)
+
+                if (!deleteItemOperationRef.current) {
+                  deleteItemOperationRef.current = {
+                    operationId: crypto.randomUUID(),
+                    itemId: deleteConfirmItem.id,
+                    clientEventAt: new Date().toISOString(),
+                    deviceTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                  }
+                }
+
+                deletePlanItemAtomic.mutate(
+                  {
+                    input: deleteItemOperationRef.current,
+                    planId: id,
+                  },
+                  {
+                    onSuccess: () => {
+                      toast.success('تم حذف البند ذرياً بنجاح')
+                      setDeleteConfirmItem(null)
+                      deleteItemOperationRef.current = null
+                    },
+                    onError: (e: unknown) => {
+                      toast.error(e instanceof Error ? e.message : 'فشل حذف البند ذرياً')
+                    },
+                    onSettled: () => {
+                      isMutatingDeleteItemRef.current = false
+                      setDeletingItem(false)
+                    },
+                  }
+                )
+                return
+              }
+
+              // Legacy Fallback
+              setDeletingItem(true)
+              deletePlanItem.mutate(deleteConfirmItem.id, {
+                onSuccess: () => {
+                  toast.success('تم حذف البند بنجاح')
+                  setDeleteConfirmItem(null)
+                },
+                onError: () => toast.error('فشل حذف البند'),
+                onSettled: () => setDeletingItem(false),
+              })
+            }}
+          >
+            {deletingItem ? 'جاري الحذف...' : 'حذف البند'}
+          </Button>
+        </>}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', lineHeight: 1.7 }}>
+            هل تريد حذف زيارة <strong>{deleteConfirmItem?.customer?.name}</strong> من الخطة؟
+          </p>
+          <div className="vp-modal-hint vp-modal-hint--danger">
+            ⚠ سيتم حذف هذا البند نهائياً ولا يمكن استرداده.
           </div>
         </div>
       </ResponsiveModal>
@@ -875,6 +1468,26 @@ export default function VisitPlanDetail() {
           font-size: var(--text-sm);
           font-weight: 600;
           color: var(--color-warning);
+        }
+        /* ── Modal hints (Quick Wins UX) ── */
+        .vp-modal-hint {
+          font-size: var(--text-xs);
+          padding: var(--space-2) var(--space-3);
+          border-radius: var(--radius-md);
+          line-height: 1.6;
+          background: var(--color-primary-light);
+          color: var(--color-primary);
+          border: 1px solid rgba(37,99,235,0.2);
+        }
+        .vp-modal-hint--warning {
+          background: var(--color-warning-light);
+          color: var(--color-warning);
+          border-color: rgba(217,119,6,0.25);
+        }
+        .vp-modal-hint--danger {
+          background: var(--color-danger-light);
+          color: var(--color-danger);
+          border-color: rgba(220,38,38,0.2);
         }
         .vp-items {
           display: flex;
