@@ -4,7 +4,7 @@ import {
   useConfirmVisitPlan, useCancelVisitPlan,
   useConfirmVisitPlanAtomic, useCancelVisitPlanAtomic,
   useAddVisitPlanItem, useUpdateVisitPlanItem,
-  useCustomers, useCreateVisitPlan,
+  useCreateVisitPlan,
   useDeleteVisitPlanItem, useReorderVisitPlanItems,
   useCreateVisitPlanTemplateMutation,
   useSkipVisitItemAtomic,
@@ -17,6 +17,7 @@ import {
   useCurrentEmployee,
 } from '@/hooks/useQueryHooks'
 import { useCustomerBranches } from '@/hooks/useCustomerBranches'
+import { useCustomerSearch } from '@/hooks/useCustomerSearch'
 import { useAuthStore } from '@/stores/auth-store'
 import { PERMISSIONS } from '@/lib/permissions/constants'
 import { toast } from 'sonner'
@@ -25,7 +26,7 @@ import { VISITS_ATOMIC_EXECUTION } from '@/lib/config/features'
 import {
   MapPin, CheckCircle, XCircle, Plus, SkipForward,
   Calendar, Clock, ChevronLeft, Copy, Archive,
-  Edit3, Trash2, ArrowUp, ArrowDown, Play, Save, X, MoreVertical,
+  Edit3, Trash2, ArrowUp, ArrowDown, Play, Save, X, MoreVertical, Search,
 } from 'lucide-react'
 import PageHeader from '@/components/shared/PageHeader'
 import Button from '@/components/ui/Button'
@@ -33,6 +34,7 @@ import PlanItemCard from '@/components/shared/PlanItemCard'
 import ActivityStatusBadge from '@/components/shared/ActivityStatusBadge'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
 import { CardSkeleton } from '@/components/ui/Skeleton'
+import CustomerSearchCard from '@/components/shared/CustomerSearchCard'
 import type {
   VisitPlanItemInput, PlanItemPurposeType, PlanPriority,
   VisitPlanItem,
@@ -79,12 +81,16 @@ export default function VisitPlanDetail() {
   // ── Modal: Add item
   const [addItemOpen,          setAddItemOpen]          = useState(false)
   const [itemCustomerId,       setItemCustomerId]       = useState('')
+  const [itemCustomerName,     setItemCustomerName]     = useState('')
   const [itemCustomerBranchId, setItemCustomerBranchId] = useState('')
   const [itemPurposeType,      setItemPurposeType]      = useState<PlanItemPurposeType | ''>('')
   const [itemPriority,         setItemPriority]         = useState<PlanPriority>('normal')
   const [itemPlannedTime,      setItemPlannedTime]      = useState('')
   const [itemDuration,         setItemDuration]         = useState(30)
   const [addingItem,           setAddingItem]           = useState(false)
+
+  // ── Smart customer search for Add Item Modal
+  const customerSearch = useCustomerSearch({ pageSize: 30 })
 
   // ── Customer branches query for selected customer in Add Modal
   const { branches: customerBranches = [], isLoading: branchesLoading } = useCustomerBranches({
@@ -122,8 +128,6 @@ export default function VisitPlanDetail() {
   // ── Data
   const { data: plan,  isLoading: planLoading  } = useVisitPlan(id)
   const { data: items = [], isLoading: itemsLoading } = useVisitPlanItems(id)
-  const { data: customersRes } = useCustomers({ pageSize: 200 })
-  const customers = customersRes?.data ?? []
 
   // ── Mutations
   const confirmPlan   = useConfirmVisitPlan()
@@ -324,7 +328,8 @@ export default function VisitPlanDetail() {
         onSuccess: () => {
           toast.success('تمت إضافة البند ذرياً')
           setAddItemOpen(false)
-          setItemCustomerId(''); setItemCustomerBranchId(''); setItemPurposeType('')
+          setItemCustomerId(''); setItemCustomerName(''); setItemCustomerBranchId(''); setItemPurposeType('')
+          customerSearch.setSearch('')
           setItemPriority('normal'); setItemPlannedTime(''); setItemDuration(30)
           addItemOperationRef.current = null
         },
@@ -356,8 +361,9 @@ export default function VisitPlanDetail() {
         onSuccess: () => {
           toast.success('تم إضافة البند')
           setAddItemOpen(false)
-          setItemCustomerId(''); setItemCustomerBranchId(''); setItemPurposeType('')
+          setItemCustomerId(''); setItemCustomerName(''); setItemCustomerBranchId(''); setItemPurposeType('')
           setItemPriority('normal'); setItemPlannedTime(''); setItemDuration(30)
+          customerSearch.setSearch('')
         },
         onError:   (e: unknown) => toast.error(e instanceof Error ? e.message : 'فشل إضافة البند'),
         onSettled: () => setAddingItem(false),
@@ -810,7 +816,12 @@ export default function VisitPlanDetail() {
             )}
 
             {canAddItem && (
-              <Button icon={<Plus size={16} />} variant="secondary" onClick={() => setAddItemOpen(true)}>
+              <Button icon={<Plus size={16} />} variant="secondary" onClick={() => {
+                setItemCustomerId(''); setItemCustomerName(''); setItemCustomerBranchId('')
+                customerSearch.setSearch('')
+                addItemOperationRef.current = null
+                setAddItemOpen(true)
+              }}>
                 إضافة بند
               </Button>
             )}
@@ -1055,14 +1066,16 @@ export default function VisitPlanDetail() {
           if (!addingItem) {
             setAddItemOpen(false)
             setItemCustomerId('')
+            setItemCustomerName('')
             setItemCustomerBranchId('')
+            customerSearch.setSearch('')
             addItemOperationRef.current = null
           }
         }}
         title="إضافة بند زيارة"
         disableOverlayClose={addingItem}
         footer={<>
-          <Button variant="secondary" onClick={() => { setAddItemOpen(false); setItemCustomerId(''); setItemCustomerBranchId(''); addItemOperationRef.current = null }} disabled={addingItem}>إلغاء</Button>
+          <Button variant="secondary" onClick={() => { setAddItemOpen(false); setItemCustomerId(''); setItemCustomerName(''); setItemCustomerBranchId(''); customerSearch.setSearch(''); addItemOperationRef.current = null }} disabled={addingItem}>إلغاء</Button>
           <Button onClick={handleAddItem} disabled={addingItem || !(addItemOperationRef.current ? addItemOperationRef.current.customerId : itemCustomerId)}>
             {addingItem ? 'جاري الإضافة...' : 'إضافة'}
           </Button>
@@ -1071,20 +1084,145 @@ export default function VisitPlanDetail() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
           <div className="form-group">
             <label className="form-label">العميل <span className="form-required">*</span></label>
-            <select
-              className="form-select"
-              value={addItemOperationRef.current ? addItemOperationRef.current.customerId : itemCustomerId}
-              onChange={e => { setItemCustomerId(e.target.value); setItemCustomerBranchId('') }}
-              disabled={addingItem || !!addItemOperationRef.current}
-            >
-              <option value="">-- اختر العميل --</option>
-              {customers.map(c => (
-                <option key={c.id} value={c.id}>{c.name}{c.code ? ` (${c.code})` : ''}</option>
-              ))}
-            </select>
+
+            {/* إذا تم اختيار العميل بالفعل، اعرض بطاقته مع زر التغيير */}
+            {itemCustomerId && !addItemOperationRef.current ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                <div style={{
+                  padding: 'var(--space-3) var(--space-4)',
+                  background: 'var(--color-primary-light, rgba(37,99,235,0.06))',
+                  border: '1.5px solid var(--color-primary)',
+                  borderRadius: 'var(--radius-lg)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 'var(--space-3)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                    <MapPin size={16} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
+                    <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--text-primary)' }}>
+                      {itemCustomerName}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={addingItem}
+                    onClick={() => { setItemCustomerId(''); setItemCustomerName(''); setItemCustomerBranchId(''); customerSearch.setSearch('') }}
+                    style={{
+                      background: 'none',
+                      border: '1px solid var(--border-light)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: '2px 10px',
+                      fontSize: 'var(--text-xs)',
+                      cursor: 'pointer',
+                      color: 'var(--text-secondary)',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    تغيير
+                  </button>
+                </div>
+              </div>
+            ) : addItemOperationRef.current ? (
+              // عملية مجمدة — العميل محدد ولا يمكن تغييره
+              <div style={{
+                padding: 'var(--space-3) var(--space-4)',
+                background: 'var(--neutral-100)',
+                border: '1px solid var(--border-light)',
+                borderRadius: 'var(--radius-lg)',
+                fontSize: 'var(--text-sm)',
+                color: 'var(--text-secondary)',
+              }}>
+                {itemCustomerName || addItemOperationRef.current.customerId}
+              </div>
+            ) : (
+              // حقل البحث الذكي
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                <div style={{ position: 'relative' }}>
+                  <Search size={16} style={{
+                    position: 'absolute',
+                    right: 'var(--space-3)',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: 'var(--text-muted)',
+                    pointerEvents: 'none',
+                  }} />
+                  <input
+                    className="form-input"
+                    style={{ paddingRight: 'calc(var(--space-3) + 24px)' }}
+                    placeholder="ابحث بالاسم أو الكود أو الهاتف..."
+                    value={customerSearch.search}
+                    onChange={e => customerSearch.setSearch(e.target.value)}
+                    disabled={addingItem}
+                    autoFocus
+                  />
+                </div>
+
+                {/* نتائج البحث */}
+                <div style={{
+                  maxHeight: '280px',
+                  overflowY: 'auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 'var(--space-2)',
+                  border: customerSearch.results.length > 0 || customerSearch.isLoading ? '1px solid var(--border-light)' : 'none',
+                  borderRadius: 'var(--radius-lg)',
+                  padding: customerSearch.results.length > 0 || customerSearch.isLoading ? 'var(--space-2)' : '0',
+                }}>
+                  {customerSearch.isLoading && customerSearch.results.length === 0 ? (
+                    <div style={{ padding: 'var(--space-3)', color: 'var(--text-muted)', fontSize: 'var(--text-sm)', textAlign: 'center' }}>
+                      جاري البحث...
+                    </div>
+                  ) : customerSearch.results.length === 0 && customerSearch.search ? (
+                    <div style={{ padding: 'var(--space-3)', color: 'var(--text-muted)', fontSize: 'var(--text-sm)', textAlign: 'center' }}>
+                      لا توجد نتائج لـ &quot;{customerSearch.search}&quot;
+                    </div>
+                  ) : customerSearch.results.length === 0 ? (
+                    <div style={{ padding: 'var(--space-2)', color: 'var(--text-muted)', fontSize: 'var(--text-xs)', textAlign: 'center' }}>
+                      ابحث عن عميل بالاسم أو الكود أو الهاتف
+                    </div>
+                  ) : (
+                    <>
+                      {customerSearch.results.map(cust => (
+                        <CustomerSearchCard
+                          key={cust.id}
+                          customer={cust}
+                          isSelected={itemCustomerId === cust.id}
+                          onAdd={() => {
+                            setItemCustomerId(cust.id)
+                            setItemCustomerName(cust.name)
+                            setItemCustomerBranchId('')
+                          }}
+                          compact
+                        />
+                      ))}
+                      {customerSearch.hasMore && (
+                        <button
+                          type="button"
+                          onClick={customerSearch.loadMore}
+                          disabled={customerSearch.isLoading || addingItem}
+                          style={{
+                            background: 'none',
+                            border: '1px dashed var(--border-light)',
+                            borderRadius: 'var(--radius-md)',
+                            padding: 'var(--space-2)',
+                            color: 'var(--color-primary)',
+                            fontSize: 'var(--text-xs)',
+                            cursor: 'pointer',
+                            width: '100%',
+                          }}
+                        >
+                          {customerSearch.isLoading ? 'جاري التحميل...' : 'تحميل المزيد'}
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
-          {itemCustomerId && (
+          {itemCustomerId && !customerSearch.search && (
             <div className="form-group">
               <label className="form-label">فرع العميل (موقع الزيارة)</label>
               {branchesLoading ? (
