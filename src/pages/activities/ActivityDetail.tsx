@@ -34,6 +34,7 @@ const QUESTION_TYPE_AR: Record<string, string> = {
   multi_choice:  'اختيار متعدد',
   rating:        'تقييم',
   photo:         'صورة',
+  date:          'تاريخ',
 }
 
 function fmtDate(d: string) {
@@ -55,6 +56,10 @@ function renderAnswerValue(r: ChecklistResponse): string {
     return String(r.answer_json)
   }
   if (r.answer_value !== null && r.answer_value !== undefined) {
+    const questionType = r.question_type_snapshot ?? r.question?.question_type
+    if (questionType === 'date') return fmtDate(r.answer_value)
+    if (r.answer_value === 'yes') return 'نعم ✓'
+    if (r.answer_value === 'no') return 'لا ✗'
     if (r.answer_value === 'true' || r.answer_value === '1') return 'نعم ✓'
     if (r.answer_value === 'false' || r.answer_value === '0') return 'لا ✗'
     return r.answer_value
@@ -308,13 +313,17 @@ export default function ActivityDetail() {
             <div className="act-detail-checklist-groups">
               {templateGroups.map(([templateId, responses]) => (
                 <div key={templateId} className="act-detail-checklist-group">
+                  <div className="act-detail-checklist-template-name">
+                    {responses[0]?.template_name_snapshot ?? 'استبيان الزيارة'}
+                  </div>
                   {responses.map(r => (
                     <div key={r.id} className="act-detail-checklist-row">
                       <span className="act-detail-checklist-q">
-                        {r.question?.question_text ?? 'سؤال'}
-                        {r.question?.question_type && (
+                        {r.question_text_snapshot ?? r.question?.question_text ?? 'سؤال'}
+                        {(r.question_type_snapshot ?? r.question?.question_type) && (
                           <span className="act-detail-checklist-type">
-                            ({QUESTION_TYPE_AR[r.question.question_type] ?? r.question.question_type})
+                            ({QUESTION_TYPE_AR[r.question_type_snapshot ?? r.question!.question_type]
+                              ?? (r.question_type_snapshot ?? r.question!.question_type)})
                           </span>
                         )}
                       </span>

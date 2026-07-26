@@ -930,9 +930,12 @@ export type ChecklistQuestionType =
   | 'multi_choice'   // اختيار متعدد من قائمة
   | 'rating'         // تقييم (1-5 نجوم)
   | 'photo'          // التقاط صورة
+  | 'date'           // تاريخ فعلي بصيغة YYYY-MM-DD
 
 export interface ChecklistTemplate {
   id: string
+  template_code: string
+  version: number
   name: string
   description: string | null
   category: ActivityCategory            // 'visit' | 'call' | 'task'
@@ -940,6 +943,7 @@ export interface ChecklistTemplate {
   is_mandatory: boolean
   is_active: boolean
   sort_order: number
+  estimated_minutes: number
   created_by: string
   created_at: string
   updated_at: string
@@ -950,6 +954,7 @@ export interface ChecklistTemplate {
 export interface ChecklistQuestion {
   id: string
   template_id: string
+  question_code: string
   question_text: string
   question_type: ChecklistQuestionType
   options: string[] | { label: string; value: string }[]
@@ -969,6 +974,13 @@ export interface ChecklistResponse {
   question_id: string
   answer_value: string | null
   answer_json: any | null
+  template_code_snapshot: string | null
+  template_name_snapshot: string | null
+  template_version_snapshot: number | null
+  question_code_snapshot: string | null
+  question_text_snapshot: string | null
+  question_type_snapshot: ChecklistQuestionType | null
+  options_snapshot: unknown[] | null
   created_at: string
   // joined
   question?: Pick<ChecklistQuestion, 'id' | 'question_text' | 'question_type'>
@@ -982,6 +994,7 @@ export interface ChecklistTemplateInput {
   is_mandatory?: boolean
   is_active?: boolean
   sort_order?: number
+  estimated_minutes?: number
 }
 
 export interface ChecklistQuestionInput {

@@ -112,6 +112,27 @@ vi.mock('@/hooks/useCustomerBranches', () => ({
   })
 }))
 
+vi.mock('@/hooks/useCustomerSearch', () => ({
+  useCustomerSearch: () => ({
+    results: [],
+    isLoading: false,
+    hasMore: false,
+    search: '',
+    setSearch: vi.fn(),
+    loadMore: vi.fn(),
+    refresh: vi.fn(),
+  }),
+  default: () => ({
+    results: [],
+    isLoading: false,
+    hasMore: false,
+    search: '',
+    setSearch: vi.fn(),
+    loadMore: vi.fn(),
+    refresh: vi.fn(),
+  }),
+}))
+
 vi.mock('@/hooks/useQueryHooks', () => ({
   useCurrentEmployee: () => ({
     data: mockCurrentEmployee,

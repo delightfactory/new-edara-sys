@@ -42,15 +42,18 @@ const CATEGORY_OPTIONS: { value: ActivityCategory; label: string }[] = [
  * - number: supports min/max ✓
  * - rating: supports min/max ✓
  * - single_choice, multi_choice: support options list ✓
- * - photo: not authorable here (needs server config) — excluded
+ * - date: browser-native ISO date input ✓
+ * - photo: uses the existing local proof upload pipeline ✓
  */
 const QUESTION_TYPE_OPTIONS: { value: ChecklistQuestionType; label: string; needsOptions?: boolean; needsRange?: boolean }[] = [
   { value: 'text',          label: 'نص حر' },
   { value: 'yes_no',        label: 'نعم / لا' },
   { value: 'number',        label: 'رقم',                 needsRange: true },
+  { value: 'date',          label: 'تاريخ' },
   { value: 'rating',        label: 'تقييم (نطاق رقمي)',   needsRange: true },
   { value: 'single_choice', label: 'اختيار واحد',         needsOptions: true },
   { value: 'multi_choice',  label: 'اختيار متعدد',        needsOptions: true },
+  { value: 'photo',         label: 'صورة' },
 ]
 
 const PURPOSE_OPTIONS: { value: PlanItemPurposeType; label: string }[] = [
@@ -70,7 +73,7 @@ const CATEGORY_COLOR: Record<string, string> = {
 
 const EMPTY_TEMPLATE: ChecklistTemplateInput = {
   name: '', description: null, category: 'visit',
-  purpose_type: null, is_mandatory: false, is_active: true,
+  purpose_type: null, is_mandatory: false, is_active: true, estimated_minutes: 3,
 }
 
 interface QFormState extends ChecklistQuestionInput {
@@ -133,6 +136,7 @@ export default function ChecklistTemplatesPage() {
     setForm({
       name: t.name, description: t.description, category: t.category,
       purpose_type: t.purpose_type, is_mandatory: t.is_mandatory, is_active: t.is_active,
+      estimated_minutes: t.estimated_minutes ?? 3,
     })
     setShowModal(true)
   }
@@ -308,6 +312,8 @@ export default function ChecklistTemplatesPage() {
                     </div>
                     <div className="chk-card-meta">
                       <span className="chk-meta-chip">{questions.length} سؤال</span>
+                      <span className="chk-meta-chip">الإصدار {t.version ?? 1}</span>
+                      <span className="chk-meta-chip">≈ {t.estimated_minutes ?? 3} د</span>
                       {t.is_mandatory && <span className="chk-meta-chip chk-meta-chip--warn">إلزامي</span>}
                       {!t.is_active && (
                         <span className="chk-meta-chip chk-meta-chip--muted" title="معطّل — لن يظهر للمندوبين">
@@ -428,6 +434,20 @@ export default function ChecklistTemplatesPage() {
               <option value="">— كل الأغراض —</option>
               {PURPOSE_OPTIONS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
             </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label">الوقت المتوقع للإجابة (دقائق)</label>
+            <input
+              className="form-input"
+              type="number"
+              min={1}
+              max={30}
+              value={form.estimated_minutes ?? 3}
+              onChange={e => setForm(f => ({
+                ...f,
+                estimated_minutes: Math.min(30, Math.max(1, Number(e.target.value) || 3)),
+              }))}
+            />
           </div>
           <div className="flex gap-4 items-center">
             <label className="flex items-center gap-2 cursor-pointer">

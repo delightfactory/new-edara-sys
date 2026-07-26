@@ -144,7 +144,8 @@ export default function ChecklistForm({
   }, [questions, answers])
 
   // التحقق من صحة إعداد الـ photoMode والـ handler لمرة واحدة في وضع التحرير فقط
-  const isPhotoSetupInvalid = !readOnly && photoMode === 'local-blob' && !onPhotoCapture
+  const hasPhotoQuestion = questions.some(q => q.question_type === 'photo')
+  const isPhotoSetupInvalid = hasPhotoQuestion && !readOnly && photoMode === 'local-blob' && !onPhotoCapture
   const loggedRef = useRef(false)
 
   useEffect(() => {
@@ -273,6 +274,17 @@ export default function ChecklistForm({
             placeholder={q.hint_text || 'أدخل رقماً'}
             min={q.min_value ?? undefined}
             max={q.max_value ?? undefined}
+            readOnly={readOnly}
+          />
+        )
+
+      case 'date':
+        return (
+          <input
+            className="chk-input"
+            type="date"
+            value={(value as string) ?? ''}
+            onChange={e => handleChange(q.id, e.target.value)}
             readOnly={readOnly}
           />
         )

@@ -240,4 +240,46 @@ describe('ChecklistForm Component', () => {
     unmount()
     expect(revokeObjectURLMock).toHaveBeenCalledTimes(2)
   })
+
+  it('uses a native date input and emits an ISO date as answer_value', async () => {
+    const onChangeMock = vi.fn()
+    const dateQuestion = {
+      id: 'q-date',
+      template_id: 't-1',
+      question_code: 'followup.next_date',
+      question_text: 'تاريخ المتابعة التالي',
+      question_type: 'date',
+      is_required: true,
+      options: [],
+      default_value: null,
+      hint_text: null,
+      min_value: null,
+      max_value: null,
+      sort_order: 1,
+      created_at: '2026-07-26T00:00:00Z',
+    } satisfies ChecklistQuestion
+
+    const { container } = render(
+      <ChecklistForm
+        questions={[dateQuestion]}
+        activityId="act-1"
+        templateId="t-1"
+        onChange={onChangeMock}
+      />
+    )
+
+    const input = container.querySelector<HTMLInputElement>('input[type="date"]')
+    expect(input).not.toBeNull()
+    fireEvent.change(input!, { target: { value: '2026-08-02' } })
+
+    await waitFor(() => {
+      expect(onChangeMock).toHaveBeenCalledWith([
+        expect.objectContaining({
+          question_id: 'q-date',
+          answer_value: '2026-08-02',
+          answer_json: null,
+        }),
+      ], true)
+    })
+  })
 })
