@@ -1326,6 +1326,9 @@ export interface RescheduleVisitItemAtomicResult {
 export interface RescheduleVisitItemToDateAtomicResult {
   target_plan_id: string
   new_item_id: string
+  target_plan_status: Extract<PlanStatus, 'draft' | 'confirmed'>
+  target_plan_created: boolean
+  planned_time: string | null
 }
 
 export interface CloseVisitDayMissedAtomicResult {

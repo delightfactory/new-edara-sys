@@ -1389,9 +1389,14 @@ export function useRescheduleVisitItemToDateAtomic() {
       if (!result.ok) throw new Error(result.error?.message || 'Failed to reschedule visit item atomically')
       return result
     },
-    onSuccess: (_data, vars) => {
+    onSuccess: (data, vars) => {
       qc.invalidateQueries({ queryKey: ['visit-plan', vars.planId] })
       qc.invalidateQueries({ queryKey: ['visit-plan-items', vars.planId] })
+      qc.invalidateQueries({ queryKey: ['visit-plans'] })
+      if (data.data?.target_plan_id) {
+        qc.invalidateQueries({ queryKey: ['visit-plan', data.data.target_plan_id] })
+        qc.invalidateQueries({ queryKey: ['visit-plan-items', data.data.target_plan_id] })
+      }
     },
   })
 }
@@ -1931,4 +1936,3 @@ export function useTrialBalanceDetail(asOfDate: string, showParents: boolean, en
     enabled,
   })
 }
-

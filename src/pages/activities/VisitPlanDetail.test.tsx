@@ -163,6 +163,7 @@ vi.mock('@/hooks/useQueryHooks', () => ({
         customer: { id: 'cust-1', name: 'عميل 1', code: 'C1' },
         sequence: 1,
         priority: 'normal',
+        planned_time: '10:30:00',
         expected_lat: 30.123,
         expected_lng: 31.456,
       } as unknown as VisitPlanItem,
@@ -284,7 +285,7 @@ describe('VisitPlanDetail - Execution Actions', () => {
     const confirmBtn = screen.getByRole('button', { name: 'تأكيد إعادة الجدولة' })
     
     const dateInputs = container.querySelectorAll('input[type="date"]')
-    if(dateInputs.length > 0) fireEvent.change(dateInputs[0], { target: { value: '2026-07-10' } })
+    if(dateInputs.length > 0) fireEvent.change(dateInputs[0], { target: { value: tomorrow() } })
     
     fireEvent.click(confirmBtn)
     
@@ -299,7 +300,7 @@ describe('VisitPlanDetail - Execution Actions', () => {
     const confirmBtn = screen.getByRole('button', { name: 'تأكيد إعادة الجدولة' })
     
     const dateInputs = container.querySelectorAll('input[type="date"]')
-    if(dateInputs.length > 0) fireEvent.change(dateInputs[0], { target: { value: '2026-07-10' } })
+    if(dateInputs.length > 0) fireEvent.change(dateInputs[0], { target: { value: tomorrow() } })
     
     const textareas = container.querySelectorAll('textarea')
     if(textareas.length > 0) fireEvent.change(textareas[0], { target: { value: 'العميل مسافر' } })
@@ -307,9 +308,47 @@ describe('VisitPlanDetail - Execution Actions', () => {
     fireEvent.click(confirmBtn)
     
     expect(mockRescheduleAtomicMutate).toHaveBeenCalled()
-    expect(mockRescheduleAtomicMutate.mock.calls[0][0].input.targetDate).toBe('2026-07-10')
+    expect(mockRescheduleAtomicMutate.mock.calls[0][0].input.targetDate).toBe(tomorrow())
     expect(mockRescheduleAtomicMutate.mock.calls[0][0].input.rescheduleReason).toBe('العميل مسافر')
+    expect(mockRescheduleAtomicMutate.mock.calls[0][0].input.plannedTime).toBe('10:30')
     expect(mockUpdatePlanItemMutate).not.toHaveBeenCalled()
+  })
+
+  it('blocks rescheduling to today even if the date input is manipulated', () => {
+    const { container } = render(<VisitPlanDetail />)
+    fireEvent.click(screen.getAllByRole('button', { name: 'إعادة جدولة' })[0])
+
+    const today = new Date().toISOString().split('T')[0]
+    const dateInput = container.querySelector('input[type="date"]') as HTMLInputElement
+    fireEvent.change(dateInput, { target: { value: today } })
+    fireEvent.change(screen.getByPlaceholderText('اكتب سبب إعادة الجدولة...'), { target: { value: 'طلب العميل' } })
+    fireEvent.click(screen.getByRole('button', { name: 'تأكيد إعادة الجدولة' }))
+
+    expect(toast.error).toHaveBeenCalledWith('يجب أن يكون تاريخ إعادة الجدولة بعد تاريخ اليوم')
+    expect(mockRescheduleAtomicMutate).not.toHaveBeenCalled()
+  })
+
+  it('explains that a newly-created target plan is a draft requiring confirmation', () => {
+    mockRescheduleAtomicMutate.mockImplementationOnce((_args: unknown, options: { onSuccess: (result: unknown) => void; onSettled: () => void }) => {
+      options.onSuccess({
+        ok: true,
+        data: {
+          target_plan_id: 'target-plan-1',
+          new_item_id: 'new-item-1',
+          target_plan_status: 'draft',
+          target_plan_created: true,
+          planned_time: '10:30:00',
+        },
+      })
+      options.onSettled()
+    })
+
+    render(<VisitPlanDetail />)
+    fireEvent.click(screen.getAllByRole('button', { name: 'إعادة جدولة' })[0])
+    fireEvent.change(screen.getByPlaceholderText('اكتب سبب إعادة الجدولة...'), { target: { value: 'طلب العميل' } })
+    fireEvent.click(screen.getByRole('button', { name: 'تأكيد إعادة الجدولة' }))
+
+    expect(toast.success).toHaveBeenCalledWith(expect.stringContaining('خطة مسودة تحتاج الاعتماد'))
   })
 
   it('uses atomic close missed RPC when VISITS_ATOMIC_EXECUTION=true', async () => {
@@ -516,7 +555,11 @@ describe('VisitPlanDetail - Execution Actions', () => {
       fireEvent.click(screen.getAllByRole('button', { name: 'إعادة جدولة' })[0])
 
       const dateInput = container.querySelector('input[type="date"]') as HTMLInputElement
-      fireEvent.change(dateInput, { target: { value: '2026-07-10' } })
+      fireEvent.change(dateInput, { target: { value: tomorrow() } })
+
+      const timeInput = container.querySelector('input[type="time"]') as HTMLInputElement
+      expect(timeInput.value).toBe('10:30')
+      fireEvent.change(timeInput, { target: { value: '11:15' } })
 
       const reasonTextarea = container.querySelector('textarea') as HTMLTextAreaElement
       fireEvent.change(reasonTextarea, { target: { value: 'طلب العميل تأجيل' } })
@@ -528,10 +571,12 @@ describe('VisitPlanDetail - Execution Actions', () => {
 
       expect(mockRescheduleAtomicMutate).toHaveBeenCalledTimes(1)
       expect(dateInput.hasAttribute('disabled')).toBe(true)
+      expect(timeInput.hasAttribute('disabled')).toBe(true)
       expect(reasonTextarea.hasAttribute('disabled')).toBe(true)
 
       const firstArgs = mockRescheduleAtomicMutate.mock.calls[0][0].input
-      expect(firstArgs.targetDate).toBe('2026-07-10')
+      expect(firstArgs.targetDate).toBe(tomorrow())
+      expect(firstArgs.plannedTime).toBe('11:15')
       expect(firstArgs.rescheduleReason).toBe('طلب العميل تأجيل')
 
       await new Promise(r => setTimeout(r, 0))

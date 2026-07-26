@@ -107,6 +107,7 @@ export default function VisitPlanDetail() {
   // ── Modal: Reschedule item
   const [rescheduleItem,   setRescheduleItem]   = useState<VisitPlanItem | null>(null)
   const [rescheduleDate,   setRescheduleDate]   = useState(tomorrow())
+  const [rescheduleTime,   setRescheduleTime]   = useState('')
   const [rescheduleReason, setRescheduleReason] = useState('')
   const [rescheduling,     setRescheduling]     = useState(false)
 
@@ -438,8 +439,18 @@ export default function VisitPlanDetail() {
   const handleReschedule = () => {
     if (!rescheduleItem || !id || !rescheduleDate) return
 
+    if (rescheduleDate < tomorrow()) {
+      toast.error('يجب أن يكون تاريخ إعادة الجدولة بعد تاريخ اليوم')
+      return
+    }
+
     if (VISITS_ATOMIC_EXECUTION && !rescheduleReason.trim()) {
       toast.error('يرجى كتابة سبب إعادة الجدولة')
+      return
+    }
+
+    if (rescheduleReason.trim().length > 500) {
+      toast.error('سبب إعادة الجدولة يجب ألا يتجاوز 500 حرف')
       return
     }
 
@@ -454,7 +465,7 @@ export default function VisitPlanDetail() {
           itemId: rescheduleItem.id,
           targetDate: rescheduleDate,
           rescheduleReason: rescheduleReason.trim(),
-          plannedTime: null,
+          plannedTime: rescheduleTime || null,
           clientEventAt: new Date().toISOString(),
           deviceTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         }
@@ -466,9 +477,18 @@ export default function VisitPlanDetail() {
           input: rescheduleOperationRef.current
         },
         {
-          onSuccess: () => {
-            toast.success(`تمت إعادة الجدولة إلى ${new Date(rescheduleDate).toLocaleDateString('ar-EG-u-nu-latn')} (المسار الذري)`)
+          onSuccess: (result) => {
+            const dateLabel = new Date(`${rescheduleDate}T12:00:00`).toLocaleDateString('ar-EG-u-nu-latn')
+            // Older server versions do not return target_plan_status. Treat that
+            // response conservatively as a draft until the completion migration lands.
+            const needsConfirmation = result.data?.target_plan_status !== 'confirmed'
+            toast.success(
+              needsConfirmation
+                ? `تمت إعادة الجدولة إلى ${dateLabel} داخل خطة مسودة تحتاج الاعتماد`
+                : `تمت إعادة الجدولة إلى ${dateLabel} داخل الخطة المعتمدة`
+            )
             setRescheduleItem(null)
+            setRescheduleTime('')
             setRescheduleReason('')
             rescheduleOperationRef.current = null
           },
@@ -1027,7 +1047,13 @@ export default function VisitPlanDetail() {
                   </button>
                   <button
                     className="vp-action-btn vp-action-btn--reschedule"
-                    onClick={() => { setRescheduleItem(item); setRescheduleDate(tomorrow()); setRescheduleReason(''); rescheduleOperationRef.current = null }}
+                    onClick={() => {
+                      setRescheduleItem(item)
+                      setRescheduleDate(tomorrow())
+                      setRescheduleTime(item.planned_time?.slice(0, 5) ?? '')
+                      setRescheduleReason('')
+                      rescheduleOperationRef.current = null
+                    }}
                   >
                     <Calendar size={13} />
                     إعادة جدولة
@@ -1353,11 +1379,11 @@ export default function VisitPlanDetail() {
       {/* ─── Modal: Reschedule ─── */}
       <ResponsiveModal
         open={!!rescheduleItem}
-        onClose={() => { if (!rescheduling) { setRescheduleItem(null); setRescheduleReason(''); rescheduleOperationRef.current = null } }}
+        onClose={() => { if (!rescheduling) { setRescheduleItem(null); setRescheduleTime(''); setRescheduleReason(''); rescheduleOperationRef.current = null } }}
         title={`إعادة جدولة: ${rescheduleItem?.customer?.name ?? '...'}`}
         disableOverlayClose={rescheduling}
         footer={<>
-          <Button variant="secondary" onClick={() => { setRescheduleItem(null); setRescheduleReason(''); rescheduleOperationRef.current = null }} disabled={rescheduling}>إلغاء</Button>
+          <Button variant="secondary" onClick={() => { setRescheduleItem(null); setRescheduleTime(''); setRescheduleReason(''); rescheduleOperationRef.current = null }} disabled={rescheduling}>إلغاء</Button>
           <Button onClick={handleReschedule} disabled={rescheduling || !(rescheduleOperationRef.current ? rescheduleOperationRef.current.targetDate : rescheduleDate)}>
             {rescheduling ? 'جاري الجدولة...' : 'تأكيد إعادة الجدولة'}
           </Button>
@@ -1383,6 +1409,17 @@ export default function VisitPlanDetail() {
             />
           </div>
           <div className="form-group">
+            <label className="form-label">وقت الزيارة الجديد</label>
+            <input
+              type="time"
+              className="form-input"
+              value={rescheduleOperationRef.current?.plannedTime ?? rescheduleTime}
+              onChange={e => setRescheduleTime(e.target.value)}
+              disabled={rescheduling || !!rescheduleOperationRef.current}
+            />
+            <span className="form-hint">يُحتفظ بوقت الزيارة السابق تلقائيًا، ويمكنك تغييره أو تركه بدون وقت.</span>
+          </div>
+          <div className="form-group">
             <label className="form-label">سبب التعديل {VISITS_ATOMIC_EXECUTION && <span className="form-required">*</span>}</label>
             <textarea
               className="form-input"
@@ -1390,6 +1427,7 @@ export default function VisitPlanDetail() {
               value={rescheduleOperationRef.current ? rescheduleOperationRef.current.rescheduleReason : rescheduleReason}
               onChange={e => setRescheduleReason(e.target.value)}
               placeholder="اكتب سبب إعادة الجدولة..."
+              maxLength={500}
               disabled={rescheduling || !!rescheduleOperationRef.current}
             />
           </div>
