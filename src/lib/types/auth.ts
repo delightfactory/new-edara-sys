@@ -50,6 +50,20 @@ export interface UserPermissionOverride {
   created_at: string
 }
 
+export interface UserPermissionOverrideInput {
+  permission: string
+  granted: boolean
+  reason: string | null
+  expires_at: string | null
+}
+
+export interface UserPermissionContext {
+  inherited_permissions: string[]
+  has_wildcard: boolean
+  role_permissions_by_role: Record<string, string[]>
+  overrides: UserPermissionOverride[]
+}
+
 export interface MyProfile extends Profile {
   roles: Pick<Role, 'id' | 'name' | 'name_ar' | 'color'>[]
   permissions: string[]

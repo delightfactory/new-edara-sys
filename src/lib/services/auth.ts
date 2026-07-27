@@ -127,12 +127,26 @@ export async function loadSession() {
       return
     }
 
+    // Keep get_my_profile/get_user_permissions backwards compatible. Explicit
+    // deny markers come from a separate optional RPC; RLS remains authoritative
+    // even if this UX synchronization request fails temporarily.
+    const { data: denialRows, error: denialError } = await supabase
+      .rpc('get_my_permission_denials')
+    if (denialError) {
+      captureError(denialError, { stage: 'load_session_permission_denials' })
+    }
+    const permissions = [
+      ...(data.permissions ?? []),
+      ...((denialRows ?? []) as { permission: string }[]).map(row => row.permission),
+    ]
+    const profile = { ...data, permissions: [...new Set(permissions)] }
+
     store.setHasSession(true)
-    store.setProfile(data)
-    store.setPermissions(data.permissions ?? [])
+    store.setProfile(profile)
+    store.setPermissions(profile.permissions)
     store.setProfileLoadError(null)
     setUserContext(data.id)
-    saveAuthCache(data, data.permissions ?? [])
+    saveAuthCache(profile, profile.permissions)
 
     // تحديث last_login_at بدون انتظار — fire and forget مع قليل من التأخير
     // لتجنب تنافس الطلبات عند تسجيل الدخول

@@ -84,6 +84,8 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
   can: (permission) => {
     const { permissions } = get()
+    // Explicit per-user denies have priority over both exact role grants and '*'.
+    if (permissions.includes(`!${permission}`)) return false
     if (permissions.includes('*')) return true
     return permissions.includes(permission)
   },

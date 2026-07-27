@@ -14,6 +14,10 @@ import { useAuthStore } from '@/stores/auth-store'
 const mockSignOut    = vi.fn().mockResolvedValue({})
 const mockGetSession = vi.fn()
 const mockRpcSingle  = vi.fn()
+const mockDenialsRpc = vi.fn()
+const mockRpc = vi.fn((functionName: string) => functionName === 'get_my_profile'
+  ? { single: mockRpcSingle }
+  : mockDenialsRpc())
 
 vi.mock('@/lib/supabase/client', () => ({
   supabase: {
@@ -26,7 +30,7 @@ vi.mock('@/lib/supabase/client', () => ({
         eq: vi.fn().mockReturnValue({ then: vi.fn() }),
       }),
     }),
-    rpc: vi.fn().mockReturnValue({ single: mockRpcSingle }),
+    rpc: mockRpc,
   },
 }))
 
@@ -41,6 +45,7 @@ beforeEach(() => {
   useAuthStore.getState().reset()
   // محاكاة افتراضية: لا session في getSession (اختبارات ستعيد تعريفها إذا لزم)
   mockGetSession.mockResolvedValue({ data: { session: null } })
+  mockDenialsRpc.mockResolvedValue({ data: [], error: null })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -176,6 +181,42 @@ describe('loadSession() — account status checks', () => {
     expect(useAuthStore.getState().profileLoadError).toBeNull()
     expect(useAuthStore.getState().isInitialized).toBe(true)
   })
+
+  it('merges explicit deny markers without changing the established profile RPC', async () => {
+    mockRpcSingle.mockResolvedValue({
+      data: { id: 'u1', status: 'active', permissions: ['*'] },
+      error: null,
+    })
+    mockDenialsRpc.mockResolvedValue({
+      data: [{ permission: '!finance.view_costs' }],
+      error: null,
+    })
+
+    await loadSession()
+
+    expect(mockRpc).toHaveBeenCalledWith('get_my_profile')
+    expect(mockRpc).toHaveBeenCalledWith('get_my_permission_denials')
+    expect(useAuthStore.getState().can('finance.view_costs')).toBe(false)
+    expect(useAuthStore.getState().can('sales.orders.read')).toBe(true)
+  })
+
+  it('keeps a valid session usable if the optional deny-marker RPC fails', async () => {
+    mockRpcSingle.mockResolvedValue({
+      data: { id: 'u1', status: 'active', permissions: ['sales.orders.read'] },
+      error: null,
+    })
+    mockDenialsRpc.mockResolvedValue({
+      data: null,
+      error: { message: 'temporary permission sync failure', code: '503' },
+    })
+
+    await loadSession()
+
+    expect(useAuthStore.getState().profile?.id).toBe('u1')
+    expect(useAuthStore.getState().can('sales.orders.read')).toBe(true)
+    expect(useAuthStore.getState().profileLoadError).toBeNull()
+    expect(mockSignOut).not.toHaveBeenCalled()
+  })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -228,4 +269,3 @@ describe('loadSession() — profile_missing (data=null, error=null)', () => {
     expect(useAuthStore.getState().hasSession).toBe(true)
   })
 })
-

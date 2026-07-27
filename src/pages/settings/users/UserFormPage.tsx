@@ -1,19 +1,41 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Save, ArrowRight, Loader2 } from 'lucide-react'
+import { Save, ArrowRight, Loader2, ShieldAlert } from 'lucide-react'
 import { createUser } from '@/lib/services/auth'
-import { getUser, getRoles, setUserRoles, updateProfile } from '@/lib/services/users'
-import type { Role } from '@/lib/types/auth'
+import {
+  getUser,
+  getRoles,
+  getUserPermissionContext,
+  updateUserWithAccessAtomic,
+  updateProfile,
+} from '@/lib/services/users'
+import { PERMISSIONS } from '@/lib/permissions/constants'
+import { useAuthStore } from '@/stores/auth-store'
+import { UserPermissionOverridesCard } from './UserPermissionOverridesCard'
+import type {
+  Role,
+  UserPermissionContext,
+  UserPermissionOverrideInput,
+} from '@/lib/types/auth'
 
 export default function UserFormPage() {
   const navigate = useNavigate()
   const { id } = useParams()
   const isEdit = Boolean(id)
+  const currentUserId = useAuthStore(state => state.profile?.id)
+  const canManageIndividualPermissions = useAuthStore(state =>
+    state.can(PERMISSIONS.AUTH_USER_PERMISSIONS_MANAGE),
+  )
+  const canEditTargetPermissions = Boolean(
+    isEdit && id && canManageIndividualPermissions && currentUserId !== id,
+  )
 
-  const [loading, setLoading] = useState(isEdit)
+  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [roles, setRoles] = useState<Role[]>([])
+  const [permissionContext, setPermissionContext] = useState<UserPermissionContext | null>(null)
+  const [permissionOverrides, setPermissionOverrides] = useState<UserPermissionOverrideInput[]>([])
 
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
@@ -22,32 +44,104 @@ export default function UserFormPage() {
   const [selectedRoles, setSelectedRoles] = useState<string[]>([])
 
   useEffect(() => {
-    getRoles().then(setRoles).catch(() => toast.error('فشل تحميل الأدوار'))
-    if (isEdit && id) {
-      getUser(id).then(user => {
-        setFullName(user.full_name)
-        setEmail(user.email || '')
-        setPhone(user.phone || '')
-        setSelectedRoles(user.user_roles?.map(ur => ur.role_id) || [])
-        setLoading(false)
-      }).catch(() => {
-        toast.error('فشل تحميل المستخدم')
-        navigate('/settings/users')
-      })
+    let cancelled = false
+
+    const loadForm = async () => {
+      setLoading(true)
+      try {
+        if (isEdit && id) {
+          const [loadedRoles, user] = await Promise.all([
+            getRoles(),
+            getUser(id),
+          ])
+          if (cancelled) return
+
+          setRoles(loadedRoles)
+          setFullName(user.full_name)
+          setEmail(user.email || '')
+          setPhone(user.phone || '')
+          setSelectedRoles(user.user_roles?.map(ur => ur.role_id) || [])
+          // The established profile/role form must not wait for the optional
+          // individual-permission context to finish loading.
+          setLoading(false)
+        } else {
+          const loadedRoles = await getRoles()
+          if (!cancelled) setRoles(loadedRoles)
+        }
+      } catch {
+        if (cancelled) return
+        toast.error(isEdit ? 'فشل تحميل بيانات المستخدم وصلاحياته' : 'فشل تحميل الأدوار')
+        if (isEdit) navigate('/settings/users')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
     }
-  }, [id])
+
+    void loadForm()
+    return () => { cancelled = true }
+  }, [id, isEdit, navigate])
+
+  useEffect(() => {
+    let cancelled = false
+
+    // Permission state belongs to one target and must never survive a route or
+    // authorization change. Keep this independent from the established form
+    // load so a background session refresh cannot discard unsaved profile data.
+    setPermissionContext(null)
+    setPermissionOverrides([])
+
+    if (!canEditTargetPermissions || !isEdit || !id) {
+      return () => { cancelled = true }
+    }
+
+    const loadPermissionContext = async () => {
+      try {
+        const accessContext = await getUserPermissionContext(id)
+        if (cancelled) return
+        setPermissionContext(accessContext)
+        setPermissionOverrides(accessContext.overrides.map(override => ({
+          permission: override.permission,
+          granted: override.granted,
+          reason: override.reason,
+          expires_at: override.expires_at,
+        })))
+      } catch {
+        if (cancelled) return
+        setPermissionContext(null)
+        setPermissionOverrides([])
+        toast.warning('تعذر تحميل الصلاحيات الفردية؛ يمكنك تعديل البيانات دون تغييرها')
+      }
+    }
+
+    void loadPermissionContext()
+    return () => { cancelled = true }
+  }, [canEditTargetPermissions, id, isEdit])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!fullName.trim()) { toast.error('الاسم مطلوب'); return }
     if (!isEdit && !email.trim()) { toast.error('البريد الإلكتروني مطلوب'); return }
     if (!isEdit && password.length < 8) { toast.error('كلمة المرور: 8 أحرف على الأقل'); return }
+    if (permissionOverrides.some(override =>
+      override.expires_at && new Date(override.expires_at).getTime() <= Date.now()
+    )) {
+      toast.error('تاريخ انتهاء استثناء الصلاحية يجب أن يكون في المستقبل')
+      return
+    }
 
     setSaving(true)
     try {
       if (isEdit && id) {
-        await updateProfile(id, { full_name: fullName, phone: phone || null })
-        await setUserRoles(id, selectedRoles)
+        if (currentUserId === id) {
+          await updateProfile(id, { full_name: fullName, phone: phone || null })
+        } else {
+          await updateUserWithAccessAtomic(
+            id,
+            { full_name: fullName, phone: phone || null },
+            selectedRoles,
+            canEditTargetPermissions && permissionContext ? permissionOverrides : null,
+          )
+        }
         toast.success('تم تحديث المستخدم')
       } else {
         await createUser({
@@ -85,7 +179,7 @@ export default function UserFormPage() {
           <p className="page-subtitle">{isEdit ? `تعديل بيانات ${fullName}` : 'إنشاء حساب مستخدم جديد في النظام'}</p>
         </div>
         <button className="btn btn-secondary" onClick={() => navigate('/settings/users')}>
-          <ArrowRight size={16} /> رجوع
+          <ArrowRight size={16} style={{ transform: 'scaleX(-1)' }} /> رجوع
         </button>
       </div>
 
@@ -108,7 +202,8 @@ export default function UserFormPage() {
             </div>
             <div className="form-group">
               <label className="form-label">رقم الهاتف</label>
-              <input className="form-input" dir="ltr" value={phone} onChange={e => setPhone(e.target.value)}
+              <input className="form-input" dir="ltr" type="tel" inputMode="numeric"
+                value={phone} onChange={e => setPhone(e.target.value)}
                 placeholder="01xxxxxxxxx" />
             </div>
             {!isEdit && (
@@ -135,17 +230,47 @@ export default function UserFormPage() {
                 background: selectedRoles.includes(role.id) ? `${role.color}08` : undefined,
               }}>
                 <input type="checkbox" checked={selectedRoles.includes(role.id)}
+                  disabled={isEdit && currentUserId === id}
                   onChange={() => toggleRole(role.id)} />
                 <div>
                   <span className="badge" style={{ background: `${role.color}18`, color: role.color }}>
                     {role.name_ar}
                   </span>
-                  {role.is_system && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginRight: 'var(--space-2)' }}>نظامي</span>}
+                  {role.is_system && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginInlineStart: 'var(--space-2)' }}>نظامي</span>}
                 </div>
               </label>
             ))}
           </div>
         </div>
+
+        {isEdit && canEditTargetPermissions && permissionContext && (
+          <UserPermissionOverridesCard
+            context={permissionContext}
+            selectedRoleIds={selectedRoles}
+            value={permissionOverrides}
+            onChange={setPermissionOverrides}
+            disabled={saving}
+          />
+        )}
+
+        {isEdit && canManageIndividualPermissions && currentUserId === id && (
+          <div className="edara-card" style={{
+            padding: 'var(--space-4)',
+            marginBottom: 'var(--space-4)',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 'var(--space-3)',
+            color: 'var(--text-secondary)',
+          }}>
+            <ShieldAlert size={20} style={{ color: 'var(--color-warning)', flexShrink: 0 }} />
+            <div>
+              <strong style={{ color: 'var(--text-primary)', fontWeight: 700 }}>حماية الحساب الحالي</strong>
+              <p style={{ fontSize: 'var(--text-sm)', lineHeight: 1.7, marginTop: 2 }}>
+                لا يمكن تعديل أدوار أو استثناءات حسابك أثناء استخدامه، لمنع التصعيد الذاتي أو فقدان صلاحية الإدارة.
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="flex gap-3" style={{ justifyContent: 'flex-end' }}>
           <button type="button" className="btn btn-secondary" onClick={() => navigate('/settings/users')}>إلغاء</button>

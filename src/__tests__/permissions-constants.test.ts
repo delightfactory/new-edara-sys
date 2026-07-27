@@ -8,6 +8,8 @@
  *   so the role editor UI can assign it.
  */
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { PERMISSIONS, PERMISSION_GROUPS } from '@/lib/permissions/constants'
 
 describe('PERMISSIONS constants', () => {
@@ -26,6 +28,13 @@ describe('PERMISSIONS constants', () => {
   it('defines NOTIFICATIONS_DISPATCH', () => {
     expect(PERMISSIONS.NOTIFICATIONS_DISPATCH).toBeDefined()
     expect(PERMISSIONS.NOTIFICATIONS_DISPATCH).toBe('notifications.dispatch')
+  })
+
+  it('defines the dedicated individual-permission management gate', () => {
+    expect(PERMISSIONS.AUTH_USER_PERMISSIONS_MANAGE).toBe('auth.user_permissions.manage')
+    const authGroup = PERMISSION_GROUPS.find(g => g.id === 'auth')
+    expect(authGroup?.permissions.map(permission => permission.key))
+      .toContain(PERMISSIONS.AUTH_USER_PERMISSIONS_MANAGE)
   })
 
   it('NOTIFICATIONS_DISPATCH appears in PERMISSION_GROUPS under "notifications"', () => {
@@ -50,5 +59,31 @@ describe('PERMISSIONS constants', () => {
         expect(allValues.has(perm.key), `${perm.key} not in PERMISSIONS`).toBe(true)
       }
     }
+  })
+
+  it('exposes every assignable permission in PERMISSION_GROUPS', () => {
+    const groupedPermissions = new Set(
+      PERMISSION_GROUPS.flatMap(group => group.permissions.map(permission => permission.key)),
+    )
+
+    for (const permission of new Set(Object.values(PERMISSIONS))) {
+      if (permission === '*') continue
+      expect(
+        groupedPermissions.has(permission),
+        `${permission} is not assignable from the permission UI`,
+      ).toBe(true)
+    }
+  })
+})
+
+describe('payroll permission guard compatibility', () => {
+  it('keeps every payroll calculation action aligned with the backend any-of guard', () => {
+    const source = readFileSync(
+      resolve(process.cwd(), 'src/pages/hr/payroll/PayrollRunDetail.tsx'),
+      'utf8',
+    )
+
+    expect(source).not.toContain('permission="hr.payroll.calculate"')
+    expect(source.match(/permission=\{PAYROLL_CALCULATION_PERMISSIONS\}/g)).toHaveLength(4)
   })
 })

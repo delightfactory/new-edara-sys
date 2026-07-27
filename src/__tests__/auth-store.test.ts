@@ -30,6 +30,17 @@ describe('useAuthStore.can()', () => {
     expect(useAuthStore.getState().can('auth.users.delete')).toBe(true)
   })
 
+  it('an explicit user deny takes precedence over wildcard', () => {
+    useAuthStore.getState().setPermissions(['*', '!finance.view_costs'])
+    expect(useAuthStore.getState().can('finance.view_costs')).toBe(false)
+    expect(useAuthStore.getState().can('sales.orders.read')).toBe(true)
+  })
+
+  it('an explicit user deny takes precedence over an exact role grant', () => {
+    useAuthStore.getState().setPermissions(['sales.orders.read', '!sales.orders.read'])
+    expect(useAuthStore.getState().can('sales.orders.read')).toBe(false)
+  })
+
   it('canAny returns true when at least one permission matches', () => {
     useAuthStore.getState().setPermissions(['sales.orders.read'])
     expect(useAuthStore.getState().canAny(['sales.orders.create', 'sales.orders.read'])).toBe(true)

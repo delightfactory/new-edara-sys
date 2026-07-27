@@ -1,6 +1,12 @@
 import { supabase } from '@/lib/supabase/client'
 import { getAuthUserId } from '@/lib/services/_get-user-id'
-import type { Profile, UserWithRoles, Role, UserRole, UserPermissionOverride } from '@/lib/types/auth'
+import type {
+  Profile,
+  UserWithRoles,
+  Role,
+  UserPermissionContext,
+  UserPermissionOverrideInput,
+} from '@/lib/types/auth'
 
 // ── Roles cache ───────────────────────────────────────────────
 // `roles` is reference data that changes rarely; fetching it on every
@@ -164,7 +170,7 @@ export async function toggleUserStatus(userId: string, newStatus: 'active' | 'in
 }
 
 /**
- * تعيين أدوار للمستخدم (يحذف القديمة ويضيف الجديدة)
+ * مزامنة أدوار المستخدم ذريًا مع الحفاظ على بيانات الإسنادات غير المتغيرة.
  */
 export async function setUserRoles(userId: string, roleIds: string[]) {
   const currentUserId = await getAuthUserId()
@@ -174,6 +180,76 @@ export async function setUserRoles(userId: string, roleIds: string[]) {
     p_user_id: currentUserId,
   })
   if (error) throw error
+}
+
+/**
+ * جلب الصلاحيات الموروثة والاستثناءات الفردية الفعالة لمستخدم.
+ * تتطلب auth.user_permissions.manage داخل دالة قاعدة البيانات.
+ */
+export async function getUserPermissionContext(userId: string): Promise<UserPermissionContext> {
+  const { data, error } = await supabase.rpc('get_user_permission_context', {
+    p_target_user_id: userId,
+  })
+  if (error) throw error
+
+  const context = data as UserPermissionContext | null
+  return {
+    inherited_permissions: context?.inherited_permissions ?? [],
+    has_wildcard: context?.has_wildcard ?? false,
+    role_permissions_by_role: context?.role_permissions_by_role ?? {},
+    overrides: context?.overrides ?? [],
+  }
+}
+
+/**
+ * استبدال كل استثناءات المستخدم في معاملة واحدة مع التسجيل في audit_logs.
+ */
+export async function setUserPermissionOverrides(
+  userId: string,
+  overrides: UserPermissionOverrideInput[],
+) {
+  const { data, error } = await supabase.rpc('set_user_permission_overrides', {
+    p_target_user_id: userId,
+    p_overrides: overrides,
+  })
+  if (error) throw error
+  return data as { saved_count: number; changed: boolean }
+}
+
+/** حفظ الأدوار والاستثناءات معًا؛ أي فشل يعيد العمليتين بالكامل. */
+export async function setUserAccessAtomic(
+  userId: string,
+  roleIds: string[],
+  overrides: UserPermissionOverrideInput[],
+) {
+  const { data, error } = await supabase.rpc('set_user_access_atomic', {
+    p_target_user_id: userId,
+    p_role_ids: roleIds,
+    p_overrides: overrides,
+  })
+  if (error) throw error
+  return data as { saved_count: number; changed: boolean }
+}
+
+/**
+ * تحديث ملف المستخدم وأدواره واستثناءاته داخل معاملة قاعدة بيانات واحدة.
+ * تمرير null للاستثناءات يحافظ على الاستثناءات الحالية ولا يتطلب صلاحية إدارتها.
+ */
+export async function updateUserWithAccessAtomic(
+  userId: string,
+  profile: { full_name: string; phone: string | null },
+  roleIds: string[],
+  overrides: UserPermissionOverrideInput[] | null,
+) {
+  const { data, error } = await supabase.rpc('update_user_with_access_atomic', {
+    p_target_user_id: userId,
+    p_full_name: profile.full_name,
+    p_phone: profile.phone,
+    p_role_ids: roleIds,
+    p_overrides: overrides,
+  })
+  if (error) throw error
+  return data as { saved_count: number; changed: boolean }
 }
 
 /**
