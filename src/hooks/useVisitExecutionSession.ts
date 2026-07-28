@@ -250,6 +250,39 @@ function sortOperations(ops: PendingVisitOperation[]) {
   })
 }
 
+export function isVisitOperationSatisfiedByServer(
+  operation: PendingVisitOperation,
+  item: VisitPlanItem | undefined
+): boolean {
+  if (!item) return false
+
+  if (operation.kind === 'start') {
+    return item.status !== 'pending'
+  }
+  if (operation.kind === 'complete') {
+    return item.status === 'completed'
+  }
+  return item.status === 'skipped'
+}
+
+async function reconcileOperationsWithServer(
+  operations: PendingVisitOperation[],
+  items: VisitPlanItem[]
+): Promise<PendingVisitOperation[]> {
+  const satisfiedIds = operations
+    .filter(operation => isVisitOperationSatisfiedByServer(
+      operation,
+      items.find(item => item.id === operation.itemId)
+    ))
+    .map(operation => operation.operationId)
+
+  if (satisfiedIds.length === 0) return operations
+
+  await visitsDb.pendingVisitOperations.bulkDelete(satisfiedIds)
+  const satisfiedIdSet = new Set(satisfiedIds)
+  return operations.filter(operation => !satisfiedIdSet.has(operation.operationId))
+}
+
 export function useVisitExecutionSession(
   planId: string | undefined,
   serverItems: VisitPlanItem[],
@@ -285,7 +318,7 @@ export function useVisitExecutionSession(
     try {
       await cleanUpDatabase(userId)
       const localSession = await visitsDb.visitSessions.get([userId, planId])
-      const ops = await visitsDb.pendingVisitOperations
+      let ops = await visitsDb.pendingVisitOperations
         .where('userId')
         .equals(userId)
         .and(op => op.planId === planId)
@@ -302,8 +335,10 @@ export function useVisitExecutionSession(
         }
       }
 
+      const itemsToUse = freshItems || serverItemsRef.current
+      ops = await reconcileOperationsWithServer(ops, itemsToUse)
+
       if (isMountedRef.current) {
-        const itemsToUse = freshItems || serverItemsRef.current
         let sessionToSet: LocalVisitSession | null = null
 
         if (localSession) {
@@ -364,7 +399,7 @@ export function useVisitExecutionSession(
           .modify({ state: 'retryable', updatedAt: Date.now(), expiresAt: Date.now() + 48 * 3600 * 1000 })
 
         const localSession = await visitsDb.visitSessions.get([userId, planId])
-        const ops = await visitsDb.pendingVisitOperations
+        let ops = await visitsDb.pendingVisitOperations
           .where('userId')
           .equals(userId)
           .and(op => op.planId === planId)
@@ -382,6 +417,7 @@ export function useVisitExecutionSession(
         }
 
         const currentServerItems = serverItemsRef.current
+        ops = await reconcileOperationsWithServer(ops, currentServerItems)
 
         if (localSession) {
           const matchedItem = currentServerItems.find(i => i.id === localSession.itemId)
@@ -389,6 +425,10 @@ export function useVisitExecutionSession(
             // Delete local session if item status is final on server
             if (['completed', 'skipped', 'rescheduled', 'missed'].includes(matchedItem.status)) {
               await visitsDb.visitSessions.delete([userId, planId])
+              await visitsDb.localBlobs
+                .where('[userId+planId+itemId]')
+                .equals([userId, planId, matchedItem.id])
+                .delete()
               if (isMountedRef.current) setSession(null)
             } else {
               const startOp = ops.find(o => o.itemId === localSession.itemId && o.kind === 'start')

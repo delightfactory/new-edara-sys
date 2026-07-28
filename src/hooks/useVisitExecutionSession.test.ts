@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { useVisitExecutionSession, mapChecklistResponses } from './useVisitExecutionSession'
+import { useVisitExecutionSession, mapChecklistResponses, isVisitOperationSatisfiedByServer } from './useVisitExecutionSession'
 import { visitsDb, cleanUpDatabase, type PendingVisitOperation, validatePendingOperation, getOrCreatePendingOperation, InvalidOperationDependencyError, CorruptedPayloadError, replaceLocalBlobTransaction } from '@/lib/db/visitsDb'
 import {
   startVisitItemAtomic,
@@ -100,6 +100,58 @@ describe('useVisitExecutionSession Hook Core Logic', () => {
     { id: 'q-scalar', template_id: 't-1', question_text: 'نص', question_type: 'text' } as unknown as ChecklistQuestion
   ]
 
+  it('reconciles a stale local start conflict when the server already started the visit', async () => {
+    const operationId = '78fd0ac5-35f8-4815-aa81-bf4ec4b042b4'
+    const now = Date.now()
+    const operation: PendingVisitOperation = {
+      operationId,
+      userId: 'test-user-123',
+      planId: 'plan-123',
+      itemId: 'item-1',
+      kind: 'start',
+      state: 'conflict',
+      attemptCount: 1,
+      lastErrorCode: 'SYNC_CONFLICT',
+      createdAt: now,
+      updatedAt: now,
+      expiresAt: now + 10_000,
+      payload: {
+        operationId,
+        itemId: 'item-1',
+        startLat: null,
+        startLng: null,
+        startAccuracyM: null,
+        clientStartedAt: new Date().toISOString(),
+        deviceTimezone: 'Africa/Cairo'
+      }
+    }
+    const serverItems = [{
+      id: 'item-1', plan_id: 'plan-123', customer_id: 'customer-1', sequence: 1,
+      status: 'in_progress', server_started_at: new Date().toISOString(),
+      client_started_at: new Date().toISOString(), start_lat: null, start_lng: null,
+      start_accuracy_m: null, gps_validation_status: 'no_coordinates',
+      updated_at: new Date().toISOString()
+    }] as unknown as VisitPlanItem[]
+
+    await visitsDb.pendingVisitOperations.put(operation)
+    await visitsDb.visitSessions.put({
+      userId: 'test-user-123', planId: 'plan-123', itemId: 'item-1',
+      serverStartedAt: serverItems[0].server_started_at,
+      clientStartedAt: serverItems[0].client_started_at || new Date().toISOString(),
+      startGPS: null, startGPSAccuracy: null, gpsValidationStatus: 'no_coordinates',
+      checklistDrafts: {}, gpsExceptionReason: null, updatedAt: now, expiresAt: now + 10_000
+    })
+
+    expect(isVisitOperationSatisfiedByServer(operation, serverItems[0])).toBe(true)
+    const { result } = renderHook(() => useVisitExecutionSession('plan-123', serverItems, true))
+
+    await waitFor(async () => {
+      expect(await visitsDb.pendingVisitOperations.get(operationId)).toBeUndefined()
+      expect(result.current.pendingOps).toHaveLength(0)
+      expect(result.current.session?.itemId).toBe('item-1')
+    })
+  })
+
   it('mapChecklistResponses validates types, templateIds, extra properties, and blocks Base64', () => {
     const validPhoto: ChecklistResponseInput = {
       template_id: 't-1',
@@ -193,7 +245,7 @@ describe('useVisitExecutionSession Hook Core Logic', () => {
     errorSpy.mockRestore()
   })
 
-  it('checks server status before discarding failed operations to avoid Diverged State', async () => {
+  it('checks server status before discarding failed operations and accepts an already-satisfied start', async () => {
     const now = Date.now()
     await visitsDb.pendingVisitOperations.put({
       operationId: 'op-failed-start',
@@ -270,11 +322,8 @@ describe('useVisitExecutionSession Hook Core Logic', () => {
       await result.current.discardFailedOperation('op-failed-start-2')
     })
 
-    const storedConflict = await visitsDb.pendingVisitOperations.get('op-failed-start-2')
-    expect(storedConflict).toBeDefined()
-    expect(storedConflict?.state).toBe('conflict')
-    expect(storedConflict?.lastErrorCode).toBe('SYNC_CONFLICT')
-    expect(storedConflict?.expiresAt).toBeGreaterThanOrEqual(now + 6 * 24 * 3600 * 1000)
+    const reconciled = await visitsDb.pendingVisitOperations.get('op-failed-start-2')
+    expect(reconciled).toBeUndefined()
   })
 
   it('restores interrupted pending/sending operations to retryable on initialization', async () => {
