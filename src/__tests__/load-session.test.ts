@@ -53,6 +53,29 @@ beforeEach(() => {
 // ─────────────────────────────────────────────────────────────────────────────
 describe('loadSession() — transient network errors do NOT trigger logout', () => {
 
+  it('retries a failed profile fetch once before exposing an error', async () => {
+    mockRpcSingle
+      .mockResolvedValueOnce({
+        data: null,
+        error: {
+          message: 'TypeError: Failed to fetch',
+          details: 'net::ERR_CONNECTION_CLOSED',
+          code: '',
+        },
+      })
+      .mockResolvedValueOnce({
+        data: { id: 'u1', status: 'active', permissions: ['reports.activities'] },
+        error: null,
+      })
+
+    await loadSession()
+
+    expect(mockRpcSingle).toHaveBeenCalledTimes(2)
+    expect(useAuthStore.getState().profile?.id).toBe('u1')
+    expect(useAuthStore.getState().profileLoadError).toBeNull()
+    expect(mockSignOut).not.toHaveBeenCalled()
+  })
+
   it('Promise.reject(TypeError: Failed to fetch) → no reset, no signOut, profileLoadError=network_error', async () => {
     // get_my_profile RPC يُرمي TypeError (network)
     mockRpcSingle.mockRejectedValue(new TypeError('Failed to fetch'))

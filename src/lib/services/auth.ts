@@ -41,6 +41,45 @@ function isNetworkError(err: unknown): boolean {
   )
 }
 
+const PROFILE_RETRY_DELAY_MS = 400
+
+function isRetryableProfileError(err: { code?: string; message?: string; details?: string; hint?: string } | null): boolean {
+  if (!err) return false
+
+  const code = err.code ?? ''
+  if (['408', '409', '503', '504', '520'].includes(code)) return true
+
+  const text = [err.message, err.details, err.hint].filter(Boolean).join(' ').toLowerCase()
+  return (
+    text.includes('failed to fetch') ||
+    text.includes('network request failed') ||
+    text.includes('load failed') ||
+    text.includes('networkerror') ||
+    text.includes('connection closed') ||
+    text.includes('timeout')
+  )
+}
+
+function waitForProfileRetry() {
+  return new Promise(resolve => setTimeout(resolve, PROFILE_RETRY_DELAY_MS))
+}
+
+async function requestMyProfile() {
+  return supabase.rpc('get_my_profile').single<MyProfile>()
+}
+
+async function requestMyProfileWithRetry() {
+  try {
+    const firstAttempt = await requestMyProfile()
+    if (!isRetryableProfileError(firstAttempt.error)) return firstAttempt
+  } catch (error) {
+    if (!isNetworkError(error)) throw error
+  }
+
+  await waitForProfileRetry()
+  return requestMyProfile()
+}
+
 /**
  * تسجيل الدخول
  */
@@ -83,9 +122,7 @@ export async function loadSession() {
   try {
     // طلب واحد مباشر بدلاً من طلبين متسلسلين
     // get_my_profile() ستفشل بـ PGRST error إذا لم يكن هناك session
-    const { data, error } = await supabase
-      .rpc('get_my_profile')
-      .single<MyProfile>()
+    const { data, error } = await requestMyProfileWithRetry()
 
     if (error) {
       // حالات auth الحقيقية: لا جلسة أو JWT منتهٍ أو ممنوع
