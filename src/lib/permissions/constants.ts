@@ -446,6 +446,8 @@ export const PERMISSION_GROUPS = [
       { key: PERMISSIONS.REPORTS_SALES,     label: 'تقارير المبيعات' },
       { key: PERMISSIONS.REPORTS_FINANCIAL, label: 'تقارير المالية' },
       { key: PERMISSIONS.REPORTS_VIEW_ALL,  label: 'كل التقارير' },
+      { key: PERMISSIONS.REPORTS_ACTIVITIES,label: 'تقارير الزيارات والأنشطة' },
+      { key: PERMISSIONS.REPORTS_EXPORT,    label: 'تصدير التقارير' },
     ]
   },
   {

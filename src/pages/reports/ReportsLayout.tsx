@@ -1,32 +1,35 @@
 import { NavLink, Outlet, useMatch } from 'react-router-dom'
 import { usePageTitle } from '@/components/layout/PageTitleContext'
 import { useEffect } from 'react'
-import { BarChart3, TrendingUp, Wallet, Users2, LayoutDashboard, Package, AlertTriangle, MapPin, Target, UserCheck, LineChart, ShieldCheck, RefreshCcw } from 'lucide-react'
+import { BarChart3, TrendingUp, Wallet, Users2, LayoutDashboard, Package, AlertTriangle, MapPin, Target, UserCheck, LineChart, ShieldCheck, RefreshCcw, Route } from 'lucide-react'
 import AnalyticsGate from '@/components/reports/AnalyticsGate'
+import { useAuthStore } from '@/stores/auth-store'
 
 const TABS = [
-  { to: '/reports/overview', label: 'نظرة عامة', icon: LayoutDashboard },
-  { to: '/reports/sales', label: 'المبيعات', icon: TrendingUp },
-  { to: '/reports/receivables', label: 'المستحقات', icon: BarChart3 },
-  { to: '/reports/treasury', label: 'الخزينة', icon: Wallet },
-  { to: '/reports/customers',         label: 'العملاء',        icon: Users2        },
-  { to: '/reports/reps',              label: 'أداء المندوبين', icon: UserCheck     },
-  { to: '/reports/products',          label: 'أداء المنتجات',  icon: Package       },
-  { to: '/reports/churn-risk',        label: 'خطر الخمود',      icon: AlertTriangle },
-  { to: '/reports/geography',         label: 'جغرافى',          icon: MapPin        },
-  { to: '/reports/target-attainment', label: 'إنجاز الأهداف',   icon: Target        },
-  { to: '/reports/credit-commitment', label: 'التزام المندوبين', icon: ShieldCheck    },
-  { to: '/reports/reengagement',      label: 'إعادة الاستهداف', icon: RefreshCcw    },
-  { to: '/reports/profitability',     label: 'الربحية',         icon: LineChart     },
+  { to: '/reports/overview', label: 'نظرة عامة', icon: LayoutDashboard, permissions: ['reports.sales', 'reports.view_all'] },
+  { to: '/reports/sales', label: 'المبيعات', icon: TrendingUp, permissions: ['reports.sales', 'reports.view_all'] },
+  { to: '/reports/receivables', label: 'المستحقات', icon: BarChart3, permissions: ['reports.sales', 'reports.targets', 'reports.view_all'] },
+  { to: '/reports/treasury', label: 'الخزينة', icon: Wallet, permissions: ['reports.sales', 'reports.financial', 'reports.view_all'] },
+  { to: '/reports/customers',         label: 'العملاء',        icon: Users2,        permissions: ['reports.sales', 'reports.view_all'] },
+  { to: '/reports/reps',              label: 'أداء المندوبين', icon: UserCheck,     permissions: ['reports.sales', 'reports.view_all'] },
+  { to: '/reports/visits',            label: 'الزيارات',       icon: Route,         permissions: ['reports.activities', 'reports.view_all'] },
+  { to: '/reports/products',          label: 'أداء المنتجات',  icon: Package,       permissions: ['reports.sales', 'reports.view_all'] },
+  { to: '/reports/churn-risk',        label: 'خطر الخمود',      icon: AlertTriangle, permissions: ['reports.sales', 'reports.view_all'] },
+  { to: '/reports/geography',         label: 'جغرافى',          icon: MapPin,        permissions: ['reports.sales', 'reports.view_all'] },
+  { to: '/reports/target-attainment', label: 'إنجاز الأهداف',   icon: Target,        permissions: ['reports.targets', 'reports.view_all'] },
+  { to: '/reports/credit-commitment', label: 'التزام المندوبين', icon: ShieldCheck,  permissions: ['reports.sales', 'reports.view_all'] },
+  { to: '/reports/reengagement',      label: 'إعادة الاستهداف', icon: RefreshCcw,    permissions: ['reports.sales', 'reports.view_all'] },
+  { to: '/reports/profitability',     label: 'الربحية',         icon: LineChart,     permissions: ['reports.financial', 'reports.view_all'] },
 ]
 
 export default function ReportsLayout() {
   const { setTitle } = usePageTitle()
+  const can = useAuthStore(state => state.can)
   useEffect(() => setTitle('التقارير'), [])
 
   // الصفحات التشغيلية المستقلة عن analytics engine
   // تعمل دائماً بغض النظر عن حالة analytics — لا تمر بـ AnalyticsGate
-  const isOperationalPage = !!useMatch('/reports/reengagement')
+  const isOperationalPage = !!useMatch('/reports/reengagement') || !!useMatch('/reports/visits')
 
   return (
     <div className="reports-shell" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', gap: 0 }}>
@@ -44,7 +47,7 @@ export default function ReportsLayout() {
         top: 0,
         zIndex: 'var(--z-sticky)',
       }}>
-        {TABS.map(t => {
+        {TABS.filter(tab => tab.permissions.some(permission => can(permission))).map(t => {
           const Icon = t.icon
           return (
             <NavLink

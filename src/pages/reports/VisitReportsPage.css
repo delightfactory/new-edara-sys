@@ -1,0 +1,303 @@
+.visit-report-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  color: var(--text-primary);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.visit-report-header,
+.visit-report-section-head,
+.visit-report-table-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.visit-report-header h1 {
+  margin: 0;
+  font-size: var(--text-2xl);
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+.visit-report-header p,
+.visit-report-section-head p {
+  margin: 4px 0 0;
+  color: var(--text-secondary);
+}
+
+.visit-report-tabs {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding-block-end: 2px;
+}
+
+.visit-report-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 42px;
+  padding: 8px 14px;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.visit-report-tab[aria-selected="true"] {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.visit-report-filters {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.visit-report-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: var(--space-3);
+}
+
+.visit-report-filter-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.visit-report-filter-grid select {
+  min-height: 42px;
+}
+
+.visit-report-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.visit-report-metric {
+  position: relative;
+  min-height: 128px;
+  padding: var(--space-4);
+  overflow: hidden;
+}
+
+.visit-report-metric-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.visit-report-metric-label {
+  margin-block-start: 10px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.visit-report-metric-value {
+  margin-block-start: 2px;
+  font-size: 28px;
+  line-height: 1.3;
+  font-weight: 700;
+  direction: ltr;
+  text-align: end;
+}
+
+.visit-report-metric-note {
+  color: var(--text-muted);
+}
+
+.visit-report-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.visit-report-panel {
+  padding: var(--space-4);
+  min-width: 0;
+}
+
+.visit-report-panel h2,
+.visit-report-section-head h2 {
+  margin: 0;
+  font-size: var(--text-lg);
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+.visit-report-bars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-block-start: var(--space-4);
+}
+
+.visit-report-bar-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.visit-report-bar-track {
+  height: 9px;
+  margin-block-start: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--bg-surface-2);
+}
+
+.visit-report-bar-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-primary);
+}
+
+.visit-report-table-card {
+  overflow: hidden;
+}
+
+.visit-report-table-head {
+  padding: var(--space-4);
+  border-block-end: 1px solid var(--border-primary);
+}
+
+.visit-report-table-wrap {
+  overflow-x: auto;
+}
+
+.visit-report-table {
+  width: 100%;
+  min-width: 1050px;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.visit-report-table th,
+.visit-report-table td {
+  padding: 11px 13px;
+  border-block-end: 1px solid var(--border-primary);
+  text-align: start;
+  vertical-align: top;
+}
+
+.visit-report-table th {
+  background: var(--bg-surface-2);
+  color: var(--text-secondary);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.visit-report-table tbody tr:hover {
+  background: var(--bg-hover);
+}
+
+.visit-report-link {
+  color: var(--color-primary);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.visit-report-link:hover {
+  text-decoration: underline;
+}
+
+.visit-report-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.visit-report-badge--success { background: rgba(22, 163, 74, 0.12); color: var(--color-success); }
+.visit-report-badge--warning { background: rgba(217, 119, 6, 0.12); color: var(--color-warning); }
+.visit-report-badge--danger { background: rgba(220, 38, 38, 0.12); color: var(--color-danger); }
+.visit-report-badge--info { background: rgba(2, 132, 199, 0.12); color: var(--color-info); }
+.visit-report-badge--muted { background: var(--bg-surface-2); color: var(--text-secondary); }
+
+.visit-report-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.visit-report-empty,
+.visit-report-error,
+.visit-report-loading {
+  padding: var(--space-8);
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.visit-report-error {
+  color: var(--color-danger);
+}
+
+.visit-report-survey-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(200px, 1fr));
+  gap: var(--space-3);
+  margin-block-start: var(--space-4);
+}
+
+.visit-report-answer {
+  max-width: 360px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.visit-report-quality-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+@media (max-width: 1100px) {
+  .visit-report-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .visit-report-filter-grid { grid-template-columns: repeat(2, minmax(150px, 1fr)); }
+}
+
+@media (max-width: 760px) {
+  .visit-report-page { gap: var(--space-4); }
+  .visit-report-header { align-items: stretch; }
+  .visit-report-header h1 { font-size: var(--text-xl); }
+  .visit-report-overview-grid,
+  .visit-report-quality-summary,
+  .visit-report-survey-controls { grid-template-columns: 1fr; }
+  .visit-report-metric { min-height: 112px; }
+}
+
+@media (max-width: 520px) {
+  .visit-report-filter-grid,
+  .visit-report-metrics { grid-template-columns: 1fr; }
+  .visit-report-filters { padding: var(--space-3); }
+  .visit-report-tab { padding-inline: 11px; }
+}

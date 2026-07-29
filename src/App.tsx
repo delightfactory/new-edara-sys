@@ -135,6 +135,7 @@ const GeographyPage               = lazy(() => import('@/pages/reports/Geography
 const TargetAttainmentPage        = lazy(() => import('@/pages/reports/TargetAttainmentPage'))
 const RepCreditCommitmentPage     = lazy(() => import('@/pages/reports/RepCreditCommitmentPage'))
 const CustomerReengagementPage    = lazy(() => import('@/pages/reports/CustomerReengagementPage'))
+const VisitReportsPage            = lazy(() => import('@/pages/reports/VisitReportsPage'))
 
 // Reports — Profitability (Phases 1-3)
 const ProfitabilityLayout = lazy(() => import('@/pages/reports/profitability/ProfitabilityLayout'))
@@ -427,7 +428,7 @@ export default function App() {
                   customers:    reports.sales OR reports.view_all
               */}
               <Route path="reports" element={
-                <ProtectedRoute permission={['reports.sales', 'reports.financial', 'reports.targets', 'reports.view_all']}>
+                <ProtectedRoute permission={['reports.sales', 'reports.financial', 'reports.targets', 'reports.activities', 'reports.view_all']}>
                   <Suspense fallback={<LazyFallback />}><ReportsLayout /></Suspense>
                 </ProtectedRoute>
               }>
@@ -490,6 +491,11 @@ export default function App() {
                 <Route path="reengagement" element={
                   <ProtectedRoute permission={['reports.sales', 'reports.view_all']}>
                     <Suspense fallback={<LazyFallback />}><CustomerReengagementPage /></Suspense>
+                  </ProtectedRoute>
+                } />
+                <Route path="visits" element={
+                  <ProtectedRoute permission={['reports.activities', 'reports.view_all']}>
+                    <Suspense fallback={<LazyFallback />}><VisitReportsPage /></Suspense>
                   </ProtectedRoute>
                 } />
                 <Route path="profitability" element={

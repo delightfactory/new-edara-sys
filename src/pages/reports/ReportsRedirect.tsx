@@ -19,12 +19,11 @@ import { useAuthStore } from '@/stores/auth-store'
 
 export default function ReportsRedirect() {
   const can    = useAuthStore(s => s.can)
-  const canAny = useAuthStore(s => s.canAny)
-
   const hasViewAll   = can('reports.view_all')
   const hasSales     = can('reports.sales')
   const hasFinancial = can('reports.financial')
   const hasTargets   = can('reports.targets')
+  const hasActivities = can('reports.activities')
 
   // Finance-only user: skip overview (requires reports.sales), go directly to treasury
   if (hasFinancial && !hasSales && !hasViewAll) {
@@ -39,6 +38,10 @@ export default function ReportsRedirect() {
   // targets-only: land on receivables
   if (hasTargets) {
     return <Navigate to="/reports/receivables" replace />
+  }
+
+  if (hasActivities) {
+    return <Navigate to="/reports/visits" replace />
   }
 
   // Fallback — shouldn't be reached if ProtectedRoute is correctly configured
