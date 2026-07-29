@@ -5,12 +5,16 @@ import { toast } from 'sonner'
 import {
   AlertTriangle,
   BarChart3,
+  CalendarClock,
   CheckCircle2,
+  CircleDollarSign,
   ClipboardCheck,
   Download,
   FileWarning,
   MapPinCheck,
   Route,
+  ShieldCheck,
+  TrendingUp,
   Users,
 } from 'lucide-react'
 import ReportFilterBar, { type DateRange } from '@/components/reports/ReportFilterBar'
@@ -120,6 +124,57 @@ function Metric({
       <div className="visit-report-metric-value">{value}</div>
       <div className="visit-report-metric-note">{note}</div>
     </article>
+  )
+}
+
+function DecisionCard({
+  label,
+  value,
+  note,
+  tone,
+  icon,
+}: {
+  label: string
+  value: string
+  note: string
+  tone: 'success' | 'warning' | 'danger' | 'info'
+  icon: React.ReactNode
+}) {
+  return (
+    <article className={`visit-decision-card visit-decision-card--${tone}`}>
+      <span className="visit-decision-card-icon">{icon}</span>
+      <div>
+        <p>{label}</p>
+        <strong dir="ltr">{value}</strong>
+        <span>{note}</span>
+      </div>
+    </article>
+  )
+}
+
+function VisitFunnel({ metrics }: { metrics: VisitReportMetrics }) {
+  const stages = [
+    { label: 'مخططة', value: metrics.planned },
+    { label: 'مكتملة', value: metrics.completed },
+    { label: 'مسجلة ميدانيًا', value: metrics.field_recorded },
+    { label: 'تواصل فعلي', value: metrics.effective_contacts },
+  ]
+  const base = Math.max(metrics.planned, 1)
+  return (
+    <div className="visit-decision-funnel">
+      {stages.map((stage, index) => (
+        <div className="visit-decision-funnel-stage" key={stage.label}>
+          <div className="visit-decision-funnel-copy">
+            <span>{stage.label}</span>
+            <strong dir="ltr">{formatNumber(stage.value)}</strong>
+          </div>
+          <div className="visit-decision-funnel-track">
+            <span style={{ inlineSize: `${Math.max((stage.value / base) * 100, stage.value ? 8 : 0)}%` }} />
+          </div>
+          {index > 0 ? <small>{percentage(stage.value, stages[index - 1].value)} من المرحلة السابقة</small> : null}
+        </div>
+      ))}
+    </div>
   )
 }
 
@@ -342,6 +397,14 @@ export default function VisitReportsPage() {
     open_visits: 0,
     average_duration_minutes: null,
     opportunity_value: 0,
+    sales_created: 0,
+    sales_expected: 0,
+    sales_lost: 0,
+    activation_followup: 0,
+    at_risk_visits: 0,
+    very_short_visits: 0,
+    unlinked_order_claims: 0,
+    actionable_visits: 0,
   }
 
   const surveyModel = useMemo(() => {
@@ -502,6 +565,65 @@ export default function VisitReportsPage() {
 
       {tab === 'overview' ? (
         <>
+          <section className="visit-decision-hero" aria-labelledby="visit-decision-title">
+            <div className="visit-decision-hero-copy">
+              <span className="visit-decision-eyebrow">لوحة القرار</span>
+              <h2 id="visit-decision-title">ماذا تحقق، وما الذي يحتاج تدخلًا؟</h2>
+              <p>النتائج التالية تجمع التنفيذ والفرص والمخاطر، دون اعتبار الحقول الاختيارية نقصًا يعطل المندوب.</p>
+            </div>
+            <div className="visit-decision-cards">
+              <DecisionCard
+                label="فرص طلب تحتاج متابعة"
+                value={formatNumber(metrics.sales_expected)}
+                note={`قيمة مقدرة ${formatNumber(metrics.opportunity_value)} ج.م`}
+                tone="info"
+                icon={<TrendingUp size={20} />}
+              />
+              <DecisionCard
+                label="عملاء في دائرة الخطر"
+                value={formatNumber(metrics.at_risk_visits)}
+                note="تراجع أو معرض للفقد أو متوقف"
+                tone="danger"
+                icon={<AlertTriangle size={20} />}
+              />
+              <DecisionCard
+                label="إجراءات تحتاج انتباهًا"
+                value={formatNumber(metrics.actionable_visits)}
+                note="فرص ومخاطر واستثناءات قابلة للمراجعة"
+                tone="warning"
+                icon={<CalendarClock size={20} />}
+              />
+              <DecisionCard
+                label="طلبات تم الإبلاغ عنها"
+                value={formatNumber(metrics.sales_created)}
+                note={`${formatNumber(metrics.unlinked_order_claims)} غير مرتبطة بطلب فعلي`}
+                tone="success"
+                icon={<CircleDollarSign size={20} />}
+              />
+            </div>
+          </section>
+
+          <section className="visit-decision-grid">
+            <article className="edara-card visit-report-panel visit-decision-panel">
+              <div className="visit-report-section-head">
+                <div><h2>مسار تنفيذ الزيارات</h2><p>يوضح أين يتوقف التحول من الخطة إلى التواصل الفعلي.</p></div>
+              </div>
+              <VisitFunnel metrics={metrics} />
+            </article>
+            <article className="edara-card visit-report-panel visit-attention-panel">
+              <div className="visit-report-section-head">
+                <div><h2>ثقة البيانات</h2><p>تنبيهات للمراجعة وليست أسبابًا لمنع المندوب من الإغلاق.</p></div>
+                <ShieldCheck size={22} />
+              </div>
+              <div className="visit-attention-list">
+                <div><span>زيارات قصيرة جدًا</span><strong dir="ltr">{formatNumber(metrics.very_short_visits)}</strong></div>
+                <div><span>طلبات مذكورة بلا ربط</span><strong dir="ltr">{formatNumber(metrics.unlinked_order_claims)}</strong></div>
+                <div><span>استثناءات تسجيل أو GPS</span><strong dir="ltr">{formatNumber(metrics.quality_exceptions)}</strong></div>
+                <div><span>زيارات مفتوحة</span><strong dir="ltr">{formatNumber(metrics.open_visits)}</strong></div>
+              </div>
+            </article>
+          </section>
+
           <section className="visit-report-metrics" aria-label="المؤشرات الرئيسية">
             <Metric label="الزيارات المخططة" value={formatNumber(metrics.planned)} note="إجمالي بنود الخطط" icon={<Route size={18} />} />
             <Metric label="المكتملة تشغيليًا" value={formatNumber(metrics.completed)} note={percentage(metrics.completed, metrics.planned)} icon={<CheckCircle2 size={18} />} />
@@ -521,6 +643,17 @@ export default function VisitReportsPage() {
             <article className="edara-card visit-report-panel">
               <h2>حالة العملاء</h2>
               <DistributionBars rows={summary?.customer_states ?? []} emptyText="لا توجد تقييمات عملاء في الفترة." />
+            </article>
+          </section>
+
+          <section className="visit-report-overview-grid">
+            <article className="edara-card visit-report-panel">
+              <h2>نتائج فرص المبيعات</h2>
+              <DistributionBars rows={summary?.sales_outcomes ?? []} emptyText="لا توجد زيارات مبيعات في الفترة." />
+            </article>
+            <article className="edara-card visit-report-panel">
+              <h2>استجابة العملاء للتنشيط</h2>
+              <DistributionBars rows={summary?.activation_outcomes ?? []} emptyText="لا توجد زيارات تنشيط في الفترة." />
             </article>
           </section>
 

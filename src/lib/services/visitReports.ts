@@ -24,6 +24,14 @@ export interface VisitReportMetrics {
   open_visits: number
   average_duration_minutes: number | null
   opportunity_value: number
+  sales_created?: number
+  sales_expected?: number
+  sales_lost?: number
+  activation_followup?: number
+  at_risk_visits?: number
+  very_short_visits?: number
+  unlinked_order_claims?: number
+  actionable_visits?: number
 }
 
 export interface VisitReportBreakdown {
@@ -48,10 +56,20 @@ export interface VisitEmployeeResult {
   quality_exceptions: number
 }
 
+export interface VisitDailyResult {
+  date: string
+  planned: number
+  completed: number
+  effective_contacts: number
+}
+
 export interface VisitReportSummary {
   metrics: VisitReportMetrics
   contact_results: VisitReportBreakdown[]
   customer_states: VisitReportBreakdown[]
+  sales_outcomes?: VisitReportBreakdown[]
+  activation_outcomes?: VisitReportBreakdown[]
+  daily_results?: VisitDailyResult[]
   purpose_results: VisitPurposeResult[]
   employee_results: VisitEmployeeResult[]
 }

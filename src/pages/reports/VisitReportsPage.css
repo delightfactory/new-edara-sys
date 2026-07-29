@@ -90,6 +90,146 @@
   gap: var(--space-3);
 }
 
+.visit-decision-hero {
+  padding: clamp(18px, 3vw, 30px);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 24%, var(--border-primary));
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 12% 20%, color-mix(in srgb, var(--color-primary) 13%, transparent), transparent 34%),
+    var(--bg-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.visit-decision-hero-copy {
+  max-width: 760px;
+}
+
+.visit-decision-eyebrow {
+  display: inline-flex;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.visit-decision-hero h2 {
+  margin: 8px 0 2px;
+  font-size: clamp(21px, 3vw, 30px);
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+.visit-decision-hero p,
+.visit-decision-card p,
+.visit-decision-card span {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.visit-decision-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-block-start: var(--space-5);
+}
+
+.visit-decision-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--border-primary);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bg-surface) 92%, var(--bg-surface-2));
+}
+
+.visit-decision-card-icon {
+  display: inline-flex;
+  padding: 8px;
+  border-radius: 10px;
+  background: var(--bg-surface-2);
+}
+
+.visit-decision-card strong {
+  display: block;
+  font-size: 25px;
+  line-height: 1.3;
+  text-align: start;
+}
+
+.visit-decision-card span:last-child {
+  display: block;
+  font-size: 12px;
+}
+
+.visit-decision-card--success .visit-decision-card-icon { color: var(--color-success); }
+.visit-decision-card--warning .visit-decision-card-icon { color: var(--color-warning); }
+.visit-decision-card--danger .visit-decision-card-icon { color: var(--color-danger); }
+.visit-decision-card--info .visit-decision-card-icon { color: var(--color-info); }
+
+.visit-decision-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.8fr);
+  gap: var(--space-4);
+}
+
+.visit-decision-funnel {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-block-start: var(--space-5);
+}
+
+.visit-decision-funnel-stage {
+  min-width: 0;
+}
+
+.visit-decision-funnel-copy,
+.visit-attention-list > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.visit-decision-funnel-track {
+  block-size: 10px;
+  margin-block: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--bg-surface-2);
+}
+
+.visit-decision-funnel-track span {
+  display: block;
+  block-size: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-info));
+}
+
+.visit-decision-funnel small {
+  color: var(--text-muted);
+}
+
+.visit-attention-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-block-start: var(--space-3);
+}
+
+.visit-attention-list > div {
+  padding-block: 10px;
+  border-block-end: 1px solid var(--border-primary);
+}
+
+.visit-attention-list > div:last-child {
+  border-block-end: 0;
+}
+
 .visit-report-metric {
   position: relative;
   min-height: 128px;
@@ -283,6 +423,8 @@
 @media (max-width: 1100px) {
   .visit-report-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .visit-report-filter-grid { grid-template-columns: repeat(2, minmax(150px, 1fr)); }
+  .visit-decision-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .visit-decision-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 760px) {
@@ -290,6 +432,7 @@
   .visit-report-header { align-items: stretch; }
   .visit-report-header h1 { font-size: var(--text-xl); }
   .visit-report-overview-grid,
+  .visit-decision-funnel,
   .visit-report-quality-summary,
   .visit-report-survey-controls { grid-template-columns: 1fr; }
   .visit-report-metric { min-height: 112px; }
@@ -300,4 +443,5 @@
   .visit-report-metrics { grid-template-columns: 1fr; }
   .visit-report-filters { padding: var(--space-3); }
   .visit-report-tab { padding-inline: 11px; }
+  .visit-decision-cards { grid-template-columns: 1fr; }
 }

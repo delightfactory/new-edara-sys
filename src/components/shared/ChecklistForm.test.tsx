@@ -113,6 +113,37 @@ describe('ChecklistForm Component', () => {
     consoleErrorSpy.mockRestore()
   })
 
+  it('only requires a conditional question after its controller makes it relevant', async () => {
+    const onChange = vi.fn()
+    const questions = [
+      {
+        id: 'contact', template_id: 't-conditional', question_code: 'contact.result',
+        question_text: 'نتيجة التواصل', question_type: 'single_choice',
+        options: ['تمت مقابلة المسؤول', 'المكان مغلق'], is_required: true,
+        visibility_rule: null,
+      },
+      {
+        id: 'state', template_id: 't-conditional', question_code: 'customer.current_state',
+        question_text: 'حالة العميل', question_type: 'single_choice',
+        options: ['مستقر', 'نمو'], is_required: true,
+        visibility_rule: {
+          question_code: 'contact.result', operator: 'equals', value: 'تمت مقابلة المسؤول',
+        },
+      },
+    ] as unknown as ChecklistQuestion[]
+
+    render(<ChecklistForm questions={questions} activityId="a-1" templateId="t-conditional" onChange={onChange} />)
+    expect(screen.queryByText('حالة العميل')).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'المكان مغلق' }))
+    await waitFor(() => expect(onChange).toHaveBeenLastCalledWith(expect.any(Array), true))
+    expect(screen.queryByText('حالة العميل')).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'تمت مقابلة المسؤول' }))
+    expect(await screen.findByText('حالة العميل')).not.toBeNull()
+    await waitFor(() => expect(onChange).toHaveBeenLastCalledWith(expect.any(Array), false))
+  })
+
   it('supports photo capture and saves local_blob_id without Base64', async () => {
     const onPhotoCaptureMock = vi.fn().mockResolvedValue({ local_blob_id: 'new-local-blob-id' })
     const onChangeMock = vi.fn()

@@ -40,9 +40,20 @@ const summary = {
     open_visits: 0,
     average_duration_minutes: 5.4,
     opportunity_value: 479,
+    sales_created: 2,
+    sales_expected: 9,
+    sales_lost: 4,
+    activation_followup: 10,
+    at_risk_visits: 16,
+    very_short_visits: 29,
+    unlinked_order_claims: 2,
+    actionable_visits: 31,
   },
   contact_results: [{ label: 'تمت مقابلة المسؤول', count: 23 }],
   customer_states: [{ label: 'مستقر', count: 13 }],
+  sales_outcomes: [{ label: 'طلب متوقع لاحقاً', count: 9 }],
+  activation_outcomes: [{ label: 'مهتم ويحتاج متابعة', count: 10 }],
+  daily_results: [],
   purpose_results: [],
   employee_results: [{
     employee_id: 'employee-1',
@@ -143,6 +154,9 @@ describe('VisitReportsPage', () => {
     renderPage()
 
     expect(await screen.findByText('الزيارات المخططة')).toBeTruthy()
+    expect(screen.getByText('لوحة القرار')).toBeTruthy()
+    expect(screen.getByText('فرص طلب تحتاج متابعة')).toBeTruthy()
+    expect(screen.getByText('ثقة البيانات')).toBeTruthy()
     expect(screen.getByText('المسجلة ميدانيًا')).toBeTruthy()
     expect(screen.getByText('التواصل الفعلي')).toBeTruthy()
     expect(await screen.findByText('تمت مقابلة المسؤول')).toBeTruthy()

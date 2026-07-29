@@ -174,6 +174,17 @@ export default function VisitExecutionMode() {
     return Object.values(atomic.session.checklistDrafts).flatMap(d => d.responses)
   }, [atomic.session?.checklistDrafts])
 
+  const checklistContextValues = useMemo(() => {
+    const questionCodes = new Map(
+      templates.flatMap(template => (template.questions ?? []).map(question => [question.id, question.question_code] as const))
+    )
+    return atomicChecklistResponses.reduce<Record<string, unknown>>((values, response) => {
+      const code = questionCodes.get(response.question_id)
+      if (code) values[code] = response.answer_value ?? response.answer_json
+      return values
+    }, {})
+  }, [templates, atomicChecklistResponses])
+
   const atomicChecklistReady = useMemo(() => {
     return templates.every(tpl => {
       if (!tpl.is_mandatory) return true
@@ -707,7 +718,7 @@ export default function VisitExecutionMode() {
                        {templates.map(tpl => {
                          const draft = atomic.session?.checklistDrafts[tpl.id]
                          const initialValues = draft ? draft.responses.reduce((acc, curr) => {
-                           acc[curr.question_id] = curr.answer_value || curr.answer_json
+                           acc[curr.question_id] = curr.answer_value ?? curr.answer_json
                            return acc
                          }, {} as Record<string, unknown>) : undefined
 
@@ -731,6 +742,7 @@ export default function VisitExecutionMode() {
                                activityId={currentItem.id}
                                templateId={tpl.id}
                                initialValues={initialValues}
+                               contextValues={checklistContextValues}
                                onChange={(responses, complete) => {
                                  atomic.saveChecklistDraft(tpl.id, responses, tpl.questions ?? [], complete)
                                }}

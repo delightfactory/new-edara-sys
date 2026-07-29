@@ -3,6 +3,7 @@ import type { ChecklistQuestion, ChecklistResponseInput } from '@/lib/types/acti
 import { Star, Camera, HelpCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { compressImage } from '@/lib/utils/imageCompressor'
+import { buildChecklistAnswersByCode, evaluateChecklistVisibility } from '@/lib/utils/checklistVisibility'
 
 interface ChecklistFormProps {
   /** أسئلة الاستبيان */
@@ -17,6 +18,8 @@ interface ChecklistFormProps {
   onChange?: (responses: ChecklistResponseInput[], isComplete: boolean) => void
   /** إجابات سابقة (للتعديل) */
   initialValues?: Record<string, unknown>
+  /** Answers from the other templates, keyed by question_code, for cross-template conditions. */
+  contextValues?: Record<string, unknown>
   /** وضع القراءة فقط */
   readOnly?: boolean
   /** وضع الصور */
@@ -35,6 +38,8 @@ interface LocalImagePreviewProps {
   localBlobId: string
   loadLocalPhoto?: (localBlobId: string) => Promise<Blob | null>
 }
+
+const EMPTY_CONTEXT_VALUES: Record<string, unknown> = {}
 
 export function LocalImagePreview({ localBlobId, loadLocalPhoto }: LocalImagePreviewProps) {
   const [objectUrl, setObjectUrl] = useState<string | null>(null)
@@ -90,6 +95,7 @@ export default function ChecklistForm({
   onComplete,
   onChange,
   initialValues = {},
+  contextValues = EMPTY_CONTEXT_VALUES,
   readOnly = false,
   photoMode = 'local-blob',
   onPhotoCapture,
@@ -121,10 +127,20 @@ export default function ChecklistForm({
 
   const [processingQuestions, setProcessingQuestions] = useState<Record<string, boolean>>({})
 
-  // حساب الاكتمال
+  const answersByCode = useMemo(
+    () => buildChecklistAnswersByCode(questions, answers, contextValues),
+    [questions, answers, contextValues]
+  )
+
+  const visibleQuestions = useMemo(
+    () => questions.filter(q => evaluateChecklistVisibility(q.visibility_rule, answersByCode)),
+    [questions, answersByCode]
+  )
+
+  // حساب الاكتمال — only questions that are both visible and required can block completion.
   const requiredQuestions = useMemo(
-    () => questions.filter(q => q.is_required),
-    [questions]
+    () => visibleQuestions.filter(q => q.is_required),
+    [visibleQuestions]
   )
 
   const isComplete = useMemo(() => {
@@ -137,11 +153,16 @@ export default function ChecklistForm({
   }, [requiredQuestions, answers])
 
   const answeredCount = useMemo(() => {
-    return questions.filter(q => {
+    return visibleQuestions.filter(q => {
       const val = answers[q.id]
       return val !== undefined && val !== null && val !== '' && !(Array.isArray(val) && val.length === 0)
     }).length
-  }, [questions, answers])
+  }, [visibleQuestions, answers])
+
+  const requiredAnsweredCount = useMemo(() => requiredQuestions.filter(q => {
+    const val = answers[q.id]
+    return val !== undefined && val !== null && val !== '' && !(Array.isArray(val) && val.length === 0)
+  }).length, [requiredQuestions, answers])
 
   // التحقق من صحة إعداد الـ photoMode والـ handler لمرة واحدة في وضع التحرير فقط
   const hasPhotoQuestion = questions.some(q => q.question_type === 'photo')
@@ -158,7 +179,7 @@ export default function ChecklistForm({
   // بناء الردود
   const getTypedResponses = useCallback((): ChecklistResponseInput[] => {
     const list: ChecklistResponseInput[] = []
-    for (const q of questions) {
+    for (const q of visibleQuestions) {
       const val = answers[q.id]
       if (val !== undefined && val !== null && val !== '') {
         if (typeof val === 'string') {
@@ -181,7 +202,7 @@ export default function ChecklistForm({
       }
     }
     return list
-  }, [questions, activityId, templateId, answers])
+  }, [visibleQuestions, activityId, templateId, answers])
 
   const buildResponses = useCallback((): ChecklistResponseInput[] => {
     return getTypedResponses()
@@ -424,21 +445,23 @@ export default function ChecklistForm({
         <div className="chk-progress-bar">
           <div
             className="chk-progress-fill"
-            style={{ width: `${questions.length > 0 ? (answeredCount / questions.length) * 100 : 0}%` }}
+            style={{ width: `${visibleQuestions.length > 0 ? (answeredCount / visibleQuestions.length) * 100 : 100}%` }}
           />
         </div>
         <span className="chk-progress-text">
-          {answeredCount}/{questions.length} سؤال
+          {answeredCount}/{visibleQuestions.length} سؤال ظاهر
         </span>
       </div>
 
       {/* الأسئلة */}
-      {questions.map((q, idx) => (
+      {visibleQuestions.map((q, idx) => (
         <div key={q.id} className={`chk-q ${q.is_required ? 'chk-q--required' : ''}`}>
           <label className="chk-q-label">
             <span className="chk-q-num">{idx + 1}</span>
             <span className="chk-q-text">{q.question_text}</span>
-            {q.is_required && <span className="chk-q-required">*</span>}
+            {q.is_required
+              ? <span className="chk-q-required">* مطلوب الآن</span>
+              : <span className="chk-q-optional">اختياري</span>}
           </label>
 
           {q.hint_text && (
@@ -461,7 +484,7 @@ export default function ChecklistForm({
           disabled={!isComplete}
           type="button"
         >
-          {isComplete ? '✓ الاستبيان مكتمل — جاهز للإنهاء' : `${requiredQuestions.length - answeredCount} سؤال إجباري متبقٍ`}
+          {isComplete ? '✓ مكتمل — يمكنك إنهاء الزيارة' : `${requiredQuestions.length - requiredAnsweredCount} سؤال ظاهر مطلوب`}
         </button>
       )}
 
@@ -557,6 +580,12 @@ const styles = `
     color: var(--color-danger, #dc2626);
     font-size: 16px;
     flex-shrink: 0;
+  }
+  .chk-q-optional {
+    color: var(--text-muted, #64748b);
+    font-size: var(--text-xs, 12px);
+    font-weight: 500;
+    margin-inline-start: auto;
   }
   .chk-q-hint {
     display: flex;

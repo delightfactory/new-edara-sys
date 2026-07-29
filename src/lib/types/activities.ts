@@ -932,6 +932,26 @@ export type ChecklistQuestionType =
   | 'photo'          // التقاط صورة
   | 'date'           // تاريخ فعلي بصيغة YYYY-MM-DD
 
+export type ChecklistConditionOperator =
+  | 'equals'
+  | 'not_equals'
+  | 'in'
+  | 'not_in'
+  | 'contains'
+  | 'not_contains'
+  | 'answered'
+
+export interface ChecklistCondition {
+  question_code: string
+  operator: ChecklistConditionOperator
+  value?: string | string[] | boolean | null
+}
+
+export type ChecklistVisibilityRule =
+  | ChecklistCondition
+  | { all: ChecklistVisibilityRule[] }
+  | { any: ChecklistVisibilityRule[] }
+
 export interface ChecklistTemplate {
   id: string
   template_code: string
@@ -963,6 +983,8 @@ export interface ChecklistQuestion {
   min_value: number | null
   max_value: number | null
   is_required: boolean
+  /** Optional progressive-disclosure rule. Missing rules preserve legacy behaviour. */
+  visibility_rule?: ChecklistVisibilityRule | null
   sort_order: number
   created_at: string
 }
@@ -1007,6 +1029,7 @@ export interface ChecklistQuestionInput {
   min_value?: number | null
   max_value?: number | null
   is_required?: boolean
+  visibility_rule?: ChecklistVisibilityRule | null
   sort_order?: number
 }
 
