@@ -338,6 +338,35 @@ describe('VisitExecutionMode UI Integration Tests (Atomic Mode)', () => {
     expect(screen.queryByText('بدء الزيارة')).toBeNull()
   })
 
+  it('refreshes checklist templates when the active customer item changes', async () => {
+    mockAtomicExecution = true
+    const refetch = vi.fn().mockResolvedValue({ data: [] })
+    mockChecklistQuery.refetch = refetch
+
+    vi.mocked(useVisitExecutionSession).mockReturnValue({
+      session: null,
+      pendingOps: [],
+      loading: false,
+      error: null,
+      startVisit: vi.fn(),
+      completeVisit: vi.fn(),
+      skipVisit: vi.fn(),
+      retryOperation: vi.fn(),
+      discardFailedOperation: vi.fn(),
+      saveChecklistDraft: vi.fn(),
+      saveGpsExceptionReason: vi.fn(),
+      reloadFromDb: vi.fn()
+    } as unknown as ReturnType<typeof useVisitExecutionSession>)
+
+    const { rerender } = render(<VisitExecutionMode />)
+    await waitFor(() => expect(refetch).toHaveBeenCalledTimes(1))
+
+    mockItemsData = [{ ...mockItemsData[0], id: 'item-2', sequence: 2 }]
+    rerender(<VisitExecutionMode />)
+
+    await waitFor(() => expect(refetch).toHaveBeenCalledTimes(2))
+  })
+
   it('keeps skip modal open on RPC failures and closes it only when operation returns ok = true', async () => {
     mockAtomicExecution = true
     let mockResult: { ok: boolean; state: string; errorCode: string | null } = { ok: false, state: 'failed', errorCode: 'SERVER_ERROR' }

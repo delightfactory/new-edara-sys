@@ -134,6 +134,14 @@ export default function VisitExecutionMode() {
     currentItem ? { category: 'visit', purposeType } : undefined
   )
 
+  // A route can stay mounted while the rep advances through many customers.
+  // Refresh on every item transition so a long-lived PWA never completes a
+  // visit against checklist rules cached for an earlier template version.
+  useEffect(() => {
+    if (!currentItem?.id) return
+    void refetchTemplates()
+  }, [currentItem?.id, refetchTemplates])
+
   const mandatoryTemplates = templates.filter(t => t.is_mandatory)
 
   const isSyncActive = useMemo(() => {
