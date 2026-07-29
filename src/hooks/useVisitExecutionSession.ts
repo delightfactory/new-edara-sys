@@ -287,7 +287,8 @@ async function reconcileOperationsWithServer(
 export function useVisitExecutionSession(
   planId: string | undefined,
   serverItems: VisitPlanItem[],
-  enabled: boolean
+  enabled: boolean,
+  externalActionInProgressRef?: { readonly current: boolean }
 ) {
   const queryClient = useQueryClient()
   const profile = useAuthStore(s => s.profile)
@@ -866,6 +867,10 @@ export function useVisitExecutionSession(
   const resumePromiseRef = useRef<Promise<void> | null>(null)
   const resumeVisitFlow = useCallback((): Promise<void> => {
     if (!enabled || !userId || !planId || !navigator.onLine) return Promise.resolve()
+    // Android may fire focus/visibilitychange while the GPS permission sheet is
+    // closing. Reloading the visit session during that user action can race the
+    // completion flow and make the execution screen visibly jump.
+    if (isExecutingRef.current || externalActionInProgressRef?.current) return Promise.resolve()
     if (resumePromiseRef.current) return resumePromiseRef.current
 
     const promise = (async () => {
@@ -886,7 +891,7 @@ export function useVisitExecutionSession(
     })
     resumePromiseRef.current = finalPromise
     return finalPromise
-  }, [enabled, userId, planId, queryClient, reloadFromDb, syncPendingOperations])
+  }, [enabled, userId, planId, queryClient, reloadFromDb, syncPendingOperations, externalActionInProgressRef])
 
   useEffect(() => {
     if (!enabled || !userId || !planId) return

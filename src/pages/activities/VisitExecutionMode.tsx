@@ -58,9 +58,10 @@ export default function VisitExecutionMode() {
   const { data: plan, isLoading: planLoading } = useVisitPlan(id)
   const { data: items = [], isLoading: itemsLoading } = useVisitPlanItems(id)
   const geo = useGeoPermission()
+  const isActionExecutingRef = useRef(false)
 
   // ── Session & Operation hook (IndexedDB)
-  const atomic = useVisitExecutionSession(id, items, VISITS_ATOMIC_EXECUTION)
+  const atomic = useVisitExecutionSession(id, items, VISITS_ATOMIC_EXECUTION, isActionExecutingRef)
 
   const canExecuteAtomic = can(PERMISSIONS.VISIT_PLANS_UPDATE_OWN) && can(PERMISSIONS.ACTIVITIES_CREATE)
   const canExecuteLegacy = can(PERMISSIONS.VISIT_PLANS_CREATE)
@@ -229,7 +230,6 @@ export default function VisitExecutionMode() {
   // ── Start Visit
   const [isStarting, setIsStarting] = useState(false)
   const [retryingOpId, setRetryingOpId] = useState<string | null>(null)
-  const isActionExecutingRef = useRef(false)
 
   const ERROR_TRANSLATIONS: Record<string, string> = {
     CORRUPTED_PAYLOAD: 'تم الكشف عن تلف في بيانات العملية المحلية المحفوظة في المتصفح. يرجى بدء محاولة جديدة.',

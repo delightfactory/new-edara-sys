@@ -660,6 +660,34 @@ describe('useVisitExecutionSession Hook Core Logic', () => {
     expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ['visit-plan-items', 'plan-123'] })
   })
 
+  it('does not reload the visit while a GPS-backed field action is running', async () => {
+    const serverItems: VisitPlanItem[] = [
+      { id: 'item-1', plan_id: 'plan-123', status: 'in_progress', customer_id: 'c-1', sequence: 1 } as unknown as VisitPlanItem
+    ]
+    const actionInProgressRef = { current: true }
+    mockFetchQuery.mockResolvedValue(serverItems)
+
+    renderHook(() => useVisitExecutionSession('plan-123', serverItems, true, actionInProgressRef))
+
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'))
+      document.dispatchEvent(new Event('visibilitychange'))
+      await Promise.resolve()
+    })
+
+    expect(mockInvalidateQueries).not.toHaveBeenCalled()
+    expect(mockFetchQuery).not.toHaveBeenCalled()
+
+    actionInProgressRef.current = false
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'))
+    })
+
+    await waitFor(() => {
+      expect(mockFetchQuery).toHaveBeenCalledWith({ queryKey: ['visit-plan-items', 'plan-123'] })
+    })
+  })
+
    describe('Phase \u0635\u0641\u0631-\u0623 Specific Tests', () => {
     let consoleErrorSpy: any
     beforeEach(() => {
