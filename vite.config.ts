@@ -4,6 +4,11 @@ import path from 'path'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  // Each git worktree must own its dependency cache. Some local worktrees
+  // share node_modules through a junction, so Vite's default node_modules/.vite
+  // cache can otherwise mix module graphs from different branches.
+  cacheDir: path.resolve(__dirname, '.vite'),
+
   plugins: [
     react(),
     VitePWA({
@@ -117,5 +122,18 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
+    // Keep React hooks bound to the same runtime when Vite pre-bundles
+    // charting dependencies such as Recharts during development.
+    dedupe: ['react', 'react-dom'],
+  },
+
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react/jsx-runtime',
+      'react/jsx-dev-runtime',
+      'recharts',
+    ],
   },
 })
