@@ -124,7 +124,13 @@ export default function VisitExecutionMode() {
 
   // ── Checklist templates for current visit purpose
   const purposeType = currentItem?.purpose_type || undefined
-  const { data: templates = [] } = useChecklistTemplates(
+  const {
+    data: templates = [],
+    isLoading: templatesLoading,
+    isError: templatesError,
+    isSuccess: templatesLoaded,
+    refetch: refetchTemplates,
+  } = useChecklistTemplates(
     currentItem ? { category: 'visit', purposeType } : undefined
   )
 
@@ -236,11 +242,12 @@ export default function VisitExecutionMode() {
 
   const isCompleteDisabled = useMemo(() => {
     if (completing || isPendingActive || isStarting || skipping || retryingOpId !== null) return true
+    if (!currentItem || templatesLoading || templatesError || !templatesLoaded) return true
     if (mandatoryTemplates.length > 0 && !atomicChecklistReady) return true
     if (isGpsInvalid && !atomic.session?.gpsExceptionReason?.trim()) return true
     if (hasLocalPhotoReferences) return true
     return false
-  }, [completing, isPendingActive, isStarting, skipping, retryingOpId, mandatoryTemplates.length, atomicChecklistReady, isGpsInvalid, atomic.session?.gpsExceptionReason, hasLocalPhotoReferences])
+  }, [completing, isPendingActive, isStarting, skipping, retryingOpId, currentItem, templatesLoading, templatesError, templatesLoaded, mandatoryTemplates.length, atomicChecklistReady, isGpsInvalid, atomic.session?.gpsExceptionReason, hasLocalPhotoReferences])
 
   const handleRetryOperation = useCallback(async (opId: string) => {
     if (isActionExecutingRef.current || isStarting || completing || skipping || retryingOpId !== null) return
@@ -340,6 +347,24 @@ export default function VisitExecutionMode() {
     if (isActionExecutingRef.current || isPendingActive || isStarting || skipping) return
     if (!currentItem || !id || !plan) return
 
+    if (templatesError) {
+      toast.error('تعذر تحميل استبيانات الزيارة. أعد المحاولة قبل الإنهاء')
+      return
+    }
+
+    if (templatesLoading || !templatesLoaded) {
+      toast.error('انتظر حتى يكتمل تحميل استبيانات الزيارة قبل الإنهاء')
+      return
+    }
+
+    if (!atomicChecklistReady) {
+      const incompleteNames = mandatoryTemplates
+        .filter(tpl => !(atomic.session?.checklistDrafts[tpl.id]?.isComplete ?? false))
+        .map(tpl => tpl.name)
+      toast.error(`أكمل الاستبيانات الإلزامية أولاً: ${incompleteNames.join('، ')}`)
+      return
+    }
+
     if (isGpsInvalid && !atomic.session?.gpsExceptionReason?.trim()) {
       toast.error('يلزم إدخال مبرر لتجاوز النطاق الجغرافي للعميل قبل إنهاء الزيارة')
       return
@@ -389,7 +414,7 @@ export default function VisitExecutionMode() {
       setCompleting(false)
       isActionExecutingRef.current = false
     }
-  }, [currentItem, id, plan, geo, atomic, atomicChecklistResponses, templates, isPendingActive, isStarting, skipping, isGpsInvalid])
+  }, [currentItem, id, plan, geo, atomic, atomicChecklistResponses, templates, isPendingActive, isStarting, skipping, isGpsInvalid, templatesLoading, templatesLoaded, templatesError, atomicChecklistReady, mandatoryTemplates])
 
   // ── Skip
   const handleSkip = useCallback(async () => {
@@ -663,6 +688,19 @@ export default function VisitExecutionMode() {
               {isActive && (
                 <div className="vem-active-actions">
                   {/* Checklist (Multiple forms rendered independently in Atomic Mode) */}
+                  {templatesLoading && (
+                    <div className="vem-checklist-load-state" role="status">
+                      <Loader2 size={16} className="vpw-spin" /> جاري تحميل استبيانات الزيارة...
+                    </div>
+                  )}
+                  {templatesError && (
+                    <div className="vem-checklist-load-state vem-checklist-load-state--error" role="alert">
+                      <span>تعذر تحميل استبيانات الزيارة، ولا يمكن إنهاؤها قبل إعادة التحميل.</span>
+                      <button type="button" onClick={() => void refetchTemplates()}>
+                        <RefreshCw size={14} /> إعادة التحميل
+                      </button>
+                    </div>
+                  )}
                   {templates.length > 0 && (
                      <div className="vem-checklist-section">
                        <h4 className="vem-checklist-title">📋 استبيانات الزيارة الجارية</h4>
@@ -1015,6 +1053,24 @@ export default function VisitExecutionMode() {
           margin-top: var(--space-4);
           border-top: 1px solid var(--border-light);
           padding-top: var(--space-4);
+        }
+        .vem-checklist-load-state {
+          display: flex; align-items: center; gap: var(--space-2);
+          padding: var(--space-3); border: 1px solid var(--border-light);
+          border-radius: var(--radius-md); background: var(--neutral-50);
+          color: var(--text-secondary); font-size: var(--text-sm); line-height: 1.7;
+        }
+        .vem-checklist-load-state--error {
+          justify-content: space-between; flex-wrap: wrap;
+          border-color: color-mix(in srgb, var(--color-danger) 35%, var(--border-light));
+          background: color-mix(in srgb, var(--color-danger) 8%, var(--bg-surface));
+          color: var(--color-danger);
+        }
+        .vem-checklist-load-state button {
+          display: inline-flex; align-items: center; gap: var(--space-1);
+          padding: var(--space-2) var(--space-3); border: 1px solid currentColor;
+          border-radius: var(--radius-sm); background: transparent; color: inherit;
+          font: inherit; font-weight: 600; cursor: pointer;
         }
         .vem-checklist-section {
           display: flex; flex-direction: column; gap: var(--space-4);

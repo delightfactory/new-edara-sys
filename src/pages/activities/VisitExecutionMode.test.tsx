@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import VisitExecutionMode from './VisitExecutionMode'
 import { useVisitExecutionSession } from '@/hooks/useVisitExecutionSession'
 import type { PendingVisitOperation } from '@/lib/db/visitsDb'
-import type { VisitPlanItem, VisitPlan } from '@/lib/types/activities'
+import type { ChecklistTemplate, VisitPlanItem, VisitPlan } from '@/lib/types/activities'
 
 import { PERMISSIONS } from '@/lib/permissions/constants'
 
@@ -108,12 +108,19 @@ let mockItemsData: VisitPlanItem[] = [
 ] as unknown as VisitPlanItem[]
 
 let mockAtomicExecution = true
+let mockChecklistQuery = {
+  data: [] as ChecklistTemplate[],
+  isLoading: false,
+  isError: false,
+  isSuccess: true,
+  refetch: vi.fn()
+}
 
 vi.mock('@/hooks/useQueryHooks', () => ({
   useVisitPlan: () => ({ data: mockPlanData, isLoading: false }),
   useVisitPlanItems: () => ({ data: mockItemsData, isLoading: false }),
   useUpdateVisitPlanItem: () => ({ mutateAsync: vi.fn() }),
-  useChecklistTemplates: () => ({ data: [], isLoading: false }),
+  useChecklistTemplates: () => mockChecklistQuery,
   useCreateActivity: () => ({ mutateAsync: vi.fn() }),
   useActivityTypes: () => ({ data: [{ id: 'type-123', code: 'visit_planned' }], isLoading: false }),
   useSaveChecklistResponses: () => ({ mutateAsync: vi.fn() })
@@ -290,6 +297,13 @@ describe('VisitExecutionMode UI Integration Tests (Atomic Mode)', () => {
       }
     ] as unknown as VisitPlanItem[]
     mockAtomicExecution = true
+    mockChecklistQuery = {
+      data: [],
+      isLoading: false,
+      isError: false,
+      isSuccess: true,
+      refetch: vi.fn()
+    }
     activeExecutionPermissions = [
       PERMISSIONS.VISIT_PLANS_UPDATE_OWN,
       PERMISSIONS.ACTIVITIES_CREATE,
@@ -585,6 +599,83 @@ describe('VisitExecutionMode UI Integration Tests (Atomic Mode)', () => {
     expect(screen.queryByText(/أنت خارج النطاق الجغرافي المسموح به للعميل/)).toBeNull()
     const completeBtn = screen.getByText('إنهاء الزيارة')
     expect(completeBtn.closest('button')?.disabled).toBe(false)
+  })
+
+  it('keeps completion disabled until checklist definitions finish loading', () => {
+    mockChecklistQuery = {
+      data: [],
+      isLoading: true,
+      isError: false,
+      isSuccess: false,
+      refetch: vi.fn()
+    }
+
+    vi.mocked(useVisitExecutionSession).mockReturnValue({
+      session: {
+        userId: 'test-user-123',
+        planId: 'plan-123',
+        itemId: 'item-1',
+        serverStartedAt: '2026-07-06T19:00:00Z',
+        clientStartedAt: '2026-07-06T19:00:00Z',
+        startGPS: { lat: 30, lng: 31 },
+        startGPSAccuracy: 10,
+        gpsValidationStatus: 'passed',
+        checklistDrafts: {},
+        gpsExceptionReason: null,
+        updatedAt: Date.now(),
+        expiresAt: Date.now() + 1000
+      },
+      pendingOps: [], loading: false, error: null,
+      startVisit: vi.fn(), completeVisit: vi.fn(), skipVisit: vi.fn(),
+      retryOperation: vi.fn(), discardFailedOperation: vi.fn(),
+      saveChecklistDraft: vi.fn(), saveGpsExceptionReason: vi.fn(), reloadFromDb: vi.fn()
+    } as unknown as ReturnType<typeof useVisitExecutionSession>)
+
+    render(<VisitExecutionMode />)
+
+    expect(screen.getByText('جاري تحميل استبيانات الزيارة...')).toBeDefined()
+    expect(screen.getByText('إنهاء الزيارة').closest('button')?.disabled).toBe(true)
+  })
+
+  it('keeps completion disabled when a purpose-specific mandatory checklist is incomplete', () => {
+    mockChecklistQuery = {
+      data: [
+        { id: 'core-template', name: 'نتيجة الزيارة الأساسية', is_mandatory: true, questions: [] },
+        { id: 'activation-template', name: 'تنشيط العميل أو المنتج', is_mandatory: true, questions: [] }
+      ] as unknown as ChecklistTemplate[],
+      isLoading: false,
+      isError: false,
+      isSuccess: true,
+      refetch: vi.fn()
+    }
+
+    vi.mocked(useVisitExecutionSession).mockReturnValue({
+      session: {
+        userId: 'test-user-123',
+        planId: 'plan-123',
+        itemId: 'item-1',
+        serverStartedAt: '2026-07-06T19:00:00Z',
+        clientStartedAt: '2026-07-06T19:00:00Z',
+        startGPS: { lat: 30, lng: 31 },
+        startGPSAccuracy: 10,
+        gpsValidationStatus: 'passed',
+        checklistDrafts: {
+          'core-template': { responses: [], isComplete: true }
+        },
+        gpsExceptionReason: null,
+        updatedAt: Date.now(),
+        expiresAt: Date.now() + 1000
+      },
+      pendingOps: [], loading: false, error: null,
+      startVisit: vi.fn(), completeVisit: vi.fn(), skipVisit: vi.fn(),
+      retryOperation: vi.fn(), discardFailedOperation: vi.fn(),
+      saveChecklistDraft: vi.fn(), saveGpsExceptionReason: vi.fn(), reloadFromDb: vi.fn()
+    } as unknown as ReturnType<typeof useVisitExecutionSession>)
+
+    render(<VisitExecutionMode />)
+
+    expect(screen.getByText(/تنشيط العميل أو المنتج/)).toBeDefined()
+    expect(screen.getByText('إنهاء الزيارة').closest('button')?.disabled).toBe(true)
   })
 
   it('renders blocker screen when VISITS_ATOMIC_EXECUTION is false', () => {
