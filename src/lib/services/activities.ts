@@ -985,8 +985,10 @@ export async function getChecklistTemplates(params?: {
 
   if (!params?.includeInactive) q = q.eq('is_active', true)
   if (params?.category) q = q.eq('category', params.category)
-  if (params?.purposeType) {
-    q = q.or(`purpose_type.is.null,purpose_type.eq.${params.purposeType}`)
+  if (params && Object.prototype.hasOwnProperty.call(params, 'purposeType')) {
+    q = params.purposeType
+      ? q.or(`purpose_type.is.null,purpose_type.eq.${params.purposeType}`)
+      : q.is('purpose_type', null)
   }
 
   const { data, error } = await q

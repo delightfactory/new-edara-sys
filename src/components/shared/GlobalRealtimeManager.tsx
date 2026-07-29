@@ -55,6 +55,11 @@ const TABLE_QUERY_MAP: Record<string, string[]> = {
 
   // ─── الحضور (يتغير بشكل مستمر أثناء الدوام) ───
   hr_attendance:       ['hr-attendance-days', 'hr-attendance-summary'],
+
+  // ─── التنفيذ الميداني للزيارات ───
+  visit_plans:      ['visit-plans', 'visit-plan', 'visit-report'],
+  visit_plan_items: ['visit-plan-items', 'visit-plans', 'visit-plan', 'visit-report'],
+  activities:       ['activities', 'visit-report'],
 }
 
 const DEBOUNCE_MS = 1500 // 1.5 ثانية — يمنع cascade refetch في bulk operations

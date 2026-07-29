@@ -641,6 +641,25 @@ describe('useVisitExecutionSession Hook Core Logic', () => {
     expect(result.current.session?.startGPS).toEqual({ lat: 30, lng: 31 })
   })
 
+  it('refreshes server truth and resumes queued operations when connectivity returns', async () => {
+    const serverItems: VisitPlanItem[] = [
+      { id: 'item-1', plan_id: 'plan-123', status: 'pending', customer_id: 'c-1', sequence: 1 } as unknown as VisitPlanItem
+    ]
+    mockFetchQuery.mockResolvedValue(serverItems)
+
+    renderHook(() => useVisitExecutionSession('plan-123', serverItems, true))
+
+    await act(async () => {
+      window.dispatchEvent(new Event('online'))
+    })
+
+    await waitFor(() => {
+      expect(mockFetchQuery).toHaveBeenCalledWith({ queryKey: ['visit-plan-items', 'plan-123'] })
+    })
+    expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ['visit-plan', 'plan-123'] })
+    expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ['visit-plan-items', 'plan-123'] })
+  })
+
    describe('Phase \u0635\u0641\u0631-\u0623 Specific Tests', () => {
     let consoleErrorSpy: any
     beforeEach(() => {

@@ -42,6 +42,7 @@ export interface BasePendingOperation {
   state: 'pending' | 'sending' | 'retryable' | 'failed' | 'conflict'
   attemptCount: number
   lastErrorCode: string | null
+  lastErrorMessage?: string | null
   createdAt: number
   updatedAt: number
   expiresAt: number
@@ -124,6 +125,7 @@ export function validatePendingOperation(op: unknown): op is PendingVisitOperati
   if (typeof o.updatedAt !== 'number') return false
   if (typeof o.expiresAt !== 'number') return false
   if (typeof o.attemptCount !== 'number') return false
+  if ('lastErrorMessage' in o && o.lastErrorMessage !== undefined && o.lastErrorMessage !== null && typeof o.lastErrorMessage !== 'string') return false
 
   if ('dependsOnOperationId' in o && o.dependsOnOperationId !== undefined && o.dependsOnOperationId !== null && o.dependsOnOperationId !== '') {
     if (typeof o.dependsOnOperationId !== 'string') return false
@@ -281,6 +283,7 @@ export async function getOrCreatePendingOperation<K extends keyof OperationPaylo
     state: 'pending',
     attemptCount: 0,
     lastErrorCode: null,
+    lastErrorMessage: null,
     createdAt: now,
     updatedAt: now,
     expiresAt: now + 48 * 3600 * 1000 // 48 hours TTL

@@ -441,7 +441,7 @@ describe('VisitExecutionMode UI Integration Tests (Atomic Mode)', () => {
 
     render(<VisitExecutionMode />)
 
-    const discardBtn = screen.getByText('بدء محاولة جديدة')
+    const discardBtn = screen.getByText('تصحيح البيانات وإعادة المحاولة')
     fireEvent.click(discardBtn)
 
     await waitFor(() => {
@@ -475,7 +475,7 @@ describe('VisitExecutionMode UI Integration Tests (Atomic Mode)', () => {
 
     expect(screen.getByText(/فشل الاتصال بالشبكة: تم حفظ العملية محلياً/)).toBeDefined()
     const retryBtn = screen.getByText('إعادة المحاولة')
-    expect(screen.queryByText('بدء محاولة جديدة')).toBeNull()
+    expect(screen.queryByText('تصحيح البيانات وإعادة المحاولة')).toBeNull()
 
     // Fast double click
     fireEvent.click(retryBtn)
@@ -488,7 +488,12 @@ describe('VisitExecutionMode UI Integration Tests (Atomic Mode)', () => {
     mockAtomicExecution = true
     const mockDiscard = vi.fn()
     const ops = [
-      makeMockStartOperation({ operationId: 'op-failed', state: 'failed', lastErrorCode: 'CLIENT_ERROR' })
+      makeMockStartOperation({
+        operationId: 'op-failed',
+        state: 'failed',
+        lastErrorCode: 'SURVEY_VALIDATION_FAILED',
+        lastErrorMessage: 'السؤال المطلوب يحتاج إلى مراجعة'
+      })
     ]
 
     vi.mocked(useVisitExecutionSession).mockReturnValue({
@@ -508,8 +513,8 @@ describe('VisitExecutionMode UI Integration Tests (Atomic Mode)', () => {
 
     render(<VisitExecutionMode />)
 
-    expect(screen.getByText(/حدث خطأ غير متوقع في المتصفح أثناء المعالجة/)).toBeDefined()
-    const discardBtn = screen.getByText('بدء محاولة جديدة')
+    expect(screen.getByText(/السؤال المطلوب يحتاج إلى مراجعة/)).toBeDefined()
+    const discardBtn = screen.getByText('تصحيح البيانات وإعادة المحاولة')
     expect(screen.queryByText('إعادة المحاولة')).toBeNull()
 
     fireEvent.click(discardBtn)
@@ -541,14 +546,14 @@ describe('VisitExecutionMode UI Integration Tests (Atomic Mode)', () => {
 
     expect(screen.getByText(/تعارض في التزامن: تم تحديث حالة هذه الزيارة بالفعل/)).toBeDefined()
     expect(screen.queryByText('إعادة المحاولة')).toBeNull()
-    expect(screen.queryByText('بدء محاولة جديدة')).toBeNull()
+    expect(screen.queryByText('تصحيح البيانات وإعادة المحاولة')).toBeNull()
   })
 
   it.each([
     ['failed_distance'],
     ['failed_accuracy'],
     ['no_coordinates']
-  ])('enforces GPS exception justification when validation status is %s', (gpsStatus) => {
+  ])('keeps GPS exception visible but non-blocking when validation status is %s', (gpsStatus) => {
     mockAtomicExecution = true
     const mockSaveReason = vi.fn()
     const mockCompleteVisit = vi.fn()
@@ -586,9 +591,10 @@ describe('VisitExecutionMode UI Integration Tests (Atomic Mode)', () => {
 
     expect(screen.getByText(/أنت خارج النطاق الجغرافي المسموح به للعميل/)).toBeDefined()
     expect(screen.getByText(/مبرر تجاوز موقع العميل الجغرافي/)).toBeDefined()
+    expect(screen.getByText('(اختياري)')).toBeDefined()
 
     const completeBtn = screen.getByText('إنهاء الزيارة')
-    expect(completeBtn.closest('button')?.disabled).toBe(true)
+    expect(completeBtn.closest('button')?.disabled).toBe(false)
   })
 
   it('does not enforce GPS exception or disable complete button when validation status is passed', () => {

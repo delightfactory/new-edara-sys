@@ -44,6 +44,7 @@ export interface ExecutionOutcome {
   ok: boolean
   state: ExecutionOutcomeState
   errorCode: string | null
+  errorMessage?: string | null
 }
 
 export interface ChecklistResponseValidationInput {
@@ -631,9 +632,11 @@ export function useVisitExecutionSession(
   // Result failure helper defined inside Hook with strict dependencies
   const handleResultFailure = useCallback(async (
     operation: PendingVisitOperation,
-    code: string
+    code: string,
+    message: string | null = null
   ): Promise<ExecutionOutcome> => {
     operation.lastErrorCode = code
+    operation.lastErrorMessage = message
     operation.attemptCount += 1
     operation.updatedAt = Date.now()
 
@@ -654,7 +657,7 @@ export function useVisitExecutionSession(
     if (code === 'SYNC_CONFLICT' || code === 'IDEMPOTENCY_KEY_CONFLICT') {
       await queryClient.invalidateQueries({ queryKey: ['visit-plan-items', planId] })
     }
-    return { ok: false, state: operation.state, errorCode: code }
+    return { ok: false, state: operation.state, errorCode: code, errorMessage: message }
   }, [planId, queryClient, reloadFromDb])
 
   // Helper to execute an operation and apply the Result Policy
@@ -687,7 +690,7 @@ export function useVisitExecutionSession(
           }
           return await handleResultSuccess()
         } else {
-          return await handleResultFailure(operation, result.error?.code || 'UNKNOWN_ERROR')
+          return await handleResultFailure(operation, result.error?.code || 'UNKNOWN_ERROR', result.error?.message || null)
         }
       } else if (operation.kind === 'complete') {
         const result = await completeVisitItemAtomic(operation.payload)
@@ -702,7 +705,7 @@ export function useVisitExecutionSession(
           if (isMountedRef.current) setSession(null)
           return await handleResultSuccess()
         } else {
-          return await handleResultFailure(operation, result.error?.code || 'UNKNOWN_ERROR')
+          return await handleResultFailure(operation, result.error?.code || 'UNKNOWN_ERROR', result.error?.message || null)
         }
       } else {
         const result = await skipVisitItemAtomic(operation.payload)
@@ -716,7 +719,7 @@ export function useVisitExecutionSession(
           if (isMountedRef.current) setSession(null)
           return await handleResultSuccess()
         } else {
-          return await handleResultFailure(operation, result.error?.code || 'UNKNOWN_ERROR')
+          return await handleResultFailure(operation, result.error?.code || 'UNKNOWN_ERROR', result.error?.message || null)
         }
       }
     } catch (err: unknown) {
@@ -727,16 +730,23 @@ export function useVisitExecutionSession(
       if (err instanceof VisitRpcTransportError || (err && typeof err === 'object' && 'name' in err && err.name === 'VisitRpcTransportError')) {
         operation.state = 'retryable'
         operation.lastErrorCode = 'CONNECTION_ERROR'
+        operation.lastErrorMessage = 'تعذر الاتصال بالخادم. تم حفظ العملية وستتم إعادة المحاولة عند عودة الإنترنت.'
         operation.expiresAt = Date.now() + 48 * 3600 * 1000
       } else {
         operation.state = 'failed'
         operation.lastErrorCode = 'CLIENT_ERROR'
+        operation.lastErrorMessage = 'حدث خطأ غير متوقع في الجهاز أثناء تجهيز العملية.'
         operation.expiresAt = Date.now() + 7 * 24 * 3600 * 1000
       }
 
       await visitsDb.pendingVisitOperations.put(operation)
       await reloadFromDb()
-      return { ok: false, state: operation.state, errorCode: operation.lastErrorCode }
+      return {
+        ok: false,
+        state: operation.state,
+        errorCode: operation.lastErrorCode,
+        errorMessage: operation.lastErrorMessage
+      }
     }
   }, [userId, planId, handleResultSuccess, handleResultFailure, reloadFromDb])
 
@@ -853,6 +863,50 @@ export function useVisitExecutionSession(
     return finalPromise
   }, [userId, planId, executeOperation])
 
+  const resumePromiseRef = useRef<Promise<void> | null>(null)
+  const resumeVisitFlow = useCallback((): Promise<void> => {
+    if (!enabled || !userId || !planId || !navigator.onLine) return Promise.resolve()
+    if (resumePromiseRef.current) return resumePromiseRef.current
+
+    const promise = (async () => {
+      await queryClient.invalidateQueries({ queryKey: ['visit-plan', planId] })
+      await queryClient.invalidateQueries({ queryKey: ['visit-plan-items', planId] })
+      const freshItems = await queryClient.fetchQuery<VisitPlanItem[]>({
+        queryKey: ['visit-plan-items', planId]
+      }) || []
+      serverItemsRef.current = freshItems
+      await reloadFromDb(freshItems)
+      await syncPendingOperations()
+    })().catch(err => {
+      console.warn('[Visits] تعذر استئناف مزامنة الزيارة بعد العودة للتطبيق', err)
+    })
+
+    const finalPromise = promise.finally(() => {
+      resumePromiseRef.current = null
+    })
+    resumePromiseRef.current = finalPromise
+    return finalPromise
+  }, [enabled, userId, planId, queryClient, reloadFromDb, syncPendingOperations])
+
+  useEffect(() => {
+    if (!enabled || !userId || !planId) return
+
+    const handleOnline = () => { void resumeVisitFlow() }
+    const handleFocus = () => { void resumeVisitFlow() }
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') void resumeVisitFlow()
+    }
+
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('focus', handleFocus)
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('focus', handleFocus)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  }, [enabled, userId, planId, resumeVisitFlow])
+
   // Trigger start visit operation
   const startVisit = useCallback(async (
     itemId: string,
@@ -901,7 +955,7 @@ export function useVisitExecutionSession(
       }
 
       if (!isNew && (operation.state === 'conflict' || operation.state === 'failed')) {
-        return { ok: false, state: operation.state, errorCode: operation.lastErrorCode }
+        return { ok: false, state: operation.state, errorCode: operation.lastErrorCode, errorMessage: operation.lastErrorMessage }
       }
 
       await syncPendingOperations()
@@ -909,7 +963,7 @@ export function useVisitExecutionSession(
       if (!updatedOp) {
         return { ok: true, state: 'succeeded', errorCode: null }
       } else {
-        return { ok: false, state: updatedOp.state, errorCode: updatedOp.lastErrorCode }
+        return { ok: false, state: updatedOp.state, errorCode: updatedOp.lastErrorCode, errorMessage: updatedOp.lastErrorMessage }
       }
     } catch (err) {
       if (err instanceof CorruptedPayloadError) {
@@ -932,7 +986,8 @@ export function useVisitExecutionSession(
     responses: VisitCompletionChecklistResponseInput[],
     orderId: string | null,
     collectionId: string | null,
-    gpsExceptionReason: string | null
+    gpsExceptionReason: string | null,
+    ignoreUnuploadedOptionalPhotos = false
   ): Promise<ExecutionOutcome> => {
     if (!planId || !userId) {
       return { ok: false, state: 'failed', errorCode: 'MISSING_PARAMS' }
@@ -944,46 +999,50 @@ export function useVisitExecutionSession(
         return { ok: false, state: 'failed', errorCode: 'MISSING_SESSION' }
       }
 
-      // Collect all local_blob_ids referenced in draft responses
-      const referencedBlobIdsSet = new Set<string>()
-      if (session.checklistDrafts) {
-        for (const draft of Object.values(session.checklistDrafts)) {
-          if (draft.responses) {
-            for (const r of draft.responses) {
-              if (r.answer_json && typeof r.answer_json === 'object') {
-                const json = r.answer_json as Record<string, unknown>
-                if (typeof json.local_blob_id === 'string' && json.local_blob_id) {
-                  referencedBlobIdsSet.add(json.local_blob_id)
+      // Optional proof must not stop the rep. The caller only enables this
+      // when every unuploaded local photo belongs to an optional question.
+      if (!ignoreUnuploadedOptionalPhotos) {
+        // Collect all local_blob_ids referenced in draft responses.
+        const referencedBlobIdsSet = new Set<string>()
+        if (session.checklistDrafts) {
+          for (const draft of Object.values(session.checklistDrafts)) {
+            if (draft.responses) {
+              for (const r of draft.responses) {
+                if (r.answer_json && typeof r.answer_json === 'object') {
+                  const json = r.answer_json as Record<string, unknown>
+                  if (typeof json.local_blob_id === 'string' && json.local_blob_id) {
+                    referencedBlobIdsSet.add(json.local_blob_id)
+                  }
                 }
               }
             }
           }
         }
-      }
-      if (responses) {
-        for (const r of responses) {
-          if (r.answer_json && typeof r.answer_json === 'object') {
-            const json = r.answer_json as unknown as Record<string, unknown>
-            if (typeof json.local_blob_id === 'string' && json.local_blob_id) {
-              referencedBlobIdsSet.add(json.local_blob_id)
+        if (responses) {
+          for (const r of responses) {
+            if (r.answer_json && typeof r.answer_json === 'object') {
+              const json = r.answer_json as unknown as Record<string, unknown>
+              if (typeof json.local_blob_id === 'string' && json.local_blob_id) {
+                referencedBlobIdsSet.add(json.local_blob_id)
+              }
             }
           }
         }
-      }
 
-      const referencedBlobIds = Array.from(referencedBlobIdsSet)
+        const referencedBlobIds = Array.from(referencedBlobIdsSet)
 
-      // Verify each referenced blob is present in IndexedDB
-      for (const blobId of referencedBlobIds) {
-        const record = await visitsDb.localBlobs.get(blobId)
-        if (!record) {
-          return { ok: false, state: 'failed', errorCode: 'LOCAL_PHOTO_MISSING' }
+        // Verify each referenced blob is present in IndexedDB.
+        for (const blobId of referencedBlobIds) {
+          const record = await visitsDb.localBlobs.get(blobId)
+          if (!record) {
+            return { ok: false, state: 'failed', errorCode: 'LOCAL_PHOTO_MISSING' }
+          }
         }
-      }
 
-      // If all exist and the list is not empty, block completion
-      if (referencedBlobIds.length > 0) {
-        return { ok: false, state: 'failed', errorCode: 'LOCAL_PHOTOS_PENDING_UPLOAD' }
+        // Required photo responses must reach storage before the server can validate them.
+        if (referencedBlobIds.length > 0) {
+          return { ok: false, state: 'failed', errorCode: 'LOCAL_PHOTOS_PENDING_UPLOAD' }
+        }
       }
     } catch (dbErr) {
       console.error('Failed to verify local photos in completeVisit', dbErr)
@@ -1028,7 +1087,7 @@ export function useVisitExecutionSession(
       }, dependsOnOperationId)
 
       if (!isNew && (operation.state === 'conflict' || operation.state === 'failed')) {
-        return { ok: false, state: operation.state, errorCode: operation.lastErrorCode }
+        return { ok: false, state: operation.state, errorCode: operation.lastErrorCode, errorMessage: operation.lastErrorMessage }
       }
 
       await syncPendingOperations()
@@ -1036,7 +1095,7 @@ export function useVisitExecutionSession(
       if (!updatedOp) {
         return { ok: true, state: 'succeeded', errorCode: null }
       } else {
-        return { ok: false, state: updatedOp.state, errorCode: updatedOp.lastErrorCode }
+        return { ok: false, state: updatedOp.state, errorCode: updatedOp.lastErrorCode, errorMessage: updatedOp.lastErrorMessage }
       }
     } catch (err) {
       if (err instanceof CorruptedPayloadError) {
@@ -1075,7 +1134,7 @@ export function useVisitExecutionSession(
       })
 
       if (!isNew && (operation.state === 'conflict' || operation.state === 'failed')) {
-        return { ok: false, state: operation.state, errorCode: operation.lastErrorCode }
+        return { ok: false, state: operation.state, errorCode: operation.lastErrorCode, errorMessage: operation.lastErrorMessage }
       }
 
       await syncPendingOperations()
@@ -1083,7 +1142,7 @@ export function useVisitExecutionSession(
       if (!updatedOp) {
         return { ok: true, state: 'succeeded', errorCode: null }
       } else {
-        return { ok: false, state: updatedOp.state, errorCode: updatedOp.lastErrorCode }
+        return { ok: false, state: updatedOp.state, errorCode: updatedOp.lastErrorCode, errorMessage: updatedOp.lastErrorMessage }
       }
     } catch (err) {
       if (err instanceof CorruptedPayloadError) {

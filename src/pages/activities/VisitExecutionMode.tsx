@@ -27,7 +27,7 @@ import ResponsiveModal from '@/components/ui/ResponsiveModal'
 import {
   Play, CheckCircle, SkipForward, Phone, MapPin,
   Navigation, Target, ArrowLeft, Loader2, PartyPopper,
-  RefreshCw, Trash2
+  RefreshCw
 } from 'lucide-react'
 
 // Atomic feature flag & hook
@@ -240,19 +240,38 @@ export default function VisitExecutionMode() {
     LOCKED: 'العملية قيد الإرسال والمعالجة حالياً. يرجى الانتظار.',
     MISSING_PARAMS: 'بيانات غير مكتملة للعملية الجارية.',
     CLIENT_ERROR: 'حدث خطأ غير متوقع في المتصفح أثناء المعالجة.',
+    SURVEY_VALIDATION_FAILED: 'توجد إجابة في الاستبيان تحتاج إلى مراجعة.',
+    GPS_VALIDATION_FAILED: 'تعذر اعتماد بيانات الموقع، وستظهر الزيارة للمراجعة الجغرافية.',
+    LINKED_DOCUMENT_VALIDATION_FAILED: 'طلب المبيعات أو سند التحصيل المرتبط لا يطابق الزيارة.',
+    VISIT_STATE_INVALID: 'حالة الزيارة تغيرت على الخادم. سيتم تحديث الخطة قبل المحاولة التالية.',
+    INTERNAL_ERROR: 'حدث خطأ داخلي أثناء الإنهاء. بيانات الزيارة محفوظة ولم تُفقد.',
+    MISSING_SESSION: 'تعذر العثور على جلسة الزيارة المحلية. تم تحديث الخطة ويمكن استعادة الزيارة الجارية.',
+    DB_ERROR: 'تعذر قراءة البيانات المحلية المحفوظة على الجهاز.',
     LOCAL_PHOTO_MISSING: 'عذراً، بعض الصور المطلوبة لهذا الاستبيان مفقودة من التخزين المحلي. يرجى التقاط الصورة من جديد.',
     LOCAL_PHOTOS_PENDING_UPLOAD: 'تم حفظ الصور محليًا، ولا يمكن إنهاء الزيارة قبل مزامنتها مع الخادم.',
   }
 
-  const hasLocalPhotoReferences = useMemo(() => {
-    return atomicChecklistResponses.some(r => {
+  const localPhotoQuestionIds = useMemo(() => {
+    return new Set(atomicChecklistResponses.flatMap(r => {
       if (r.answer_json && typeof r.answer_json === 'object') {
         const json = r.answer_json as Record<string, unknown>
-        return typeof json.local_blob_id === 'string' && json.local_blob_id
+        if (typeof json.local_blob_id === 'string' && json.local_blob_id) return [r.question_id]
       }
-      return false
-    })
+      return []
+    }))
   }, [atomicChecklistResponses])
+
+  const requiredPhotoQuestionIds = useMemo(() => new Set(
+    templates.flatMap(t => (t.questions ?? [])
+      .filter(q => q.question_type === 'photo' && q.is_required)
+      .map(q => q.id))
+  ), [templates])
+
+  const hasRequiredLocalPhotoReferences = useMemo(
+    () => [...localPhotoQuestionIds].some(id => requiredPhotoQuestionIds.has(id)),
+    [localPhotoQuestionIds, requiredPhotoQuestionIds]
+  )
+  const hasOptionalLocalPhotoReferences = localPhotoQuestionIds.size > 0 && !hasRequiredLocalPhotoReferences
 
   const isGpsInvalid = useMemo(() => {
     const status = atomic.session?.gpsValidationStatus
@@ -263,10 +282,9 @@ export default function VisitExecutionMode() {
     if (completing || isPendingActive || isStarting || skipping || retryingOpId !== null) return true
     if (!currentItem || templatesLoading || templatesError || !templatesLoaded) return true
     if (mandatoryTemplates.length > 0 && !atomicChecklistReady) return true
-    if (isGpsInvalid && !atomic.session?.gpsExceptionReason?.trim()) return true
-    if (hasLocalPhotoReferences) return true
+    if (hasRequiredLocalPhotoReferences) return true
     return false
-  }, [completing, isPendingActive, isStarting, skipping, retryingOpId, currentItem, templatesLoading, templatesError, templatesLoaded, mandatoryTemplates.length, atomicChecklistReady, isGpsInvalid, atomic.session?.gpsExceptionReason, hasLocalPhotoReferences])
+  }, [completing, isPendingActive, isStarting, skipping, retryingOpId, currentItem, templatesLoading, templatesError, templatesLoaded, mandatoryTemplates.length, atomicChecklistReady, hasRequiredLocalPhotoReferences])
 
   const handleRetryOperation = useCallback(async (opId: string) => {
     if (isActionExecutingRef.current || isStarting || completing || skipping || retryingOpId !== null) return
@@ -384,11 +402,6 @@ export default function VisitExecutionMode() {
       return
     }
 
-    if (isGpsInvalid && !atomic.session?.gpsExceptionReason?.trim()) {
-      toast.error('يلزم إدخال مبرر لتجاوز النطاق الجغرافي للعميل قبل إنهاء الزيارة')
-      return
-    }
-
     isActionExecutingRef.current = true
     setCompleting(true)
 
@@ -398,15 +411,20 @@ export default function VisitExecutionMode() {
       const endCoords = geoResultEnd.ok ? geoResultEnd.coords : null
       const accuracy = geoResultEnd.ok && geoResultEnd.coords ? geoResultEnd.coords.accuracy : null
 
-      // Check if any response contains a local photo reference
-      const hasLocalPhotos = atomicChecklistResponses.some(
-        r => r.answer_json && typeof r.answer_json === 'object' && 'local_blob_id' in r.answer_json
+      // Optional photos are evidence, not a blocker. Omit only local references
+      // that have not reached storage yet; keep every other survey response.
+      const responsesForCompletion = atomicChecklistResponses.filter(response => {
+        if (!response.answer_json || typeof response.answer_json !== 'object') return true
+        return !('local_blob_id' in response.answer_json)
+      })
+      const allLoadedQuestions = templates.flatMap(t => t.questions ?? [])
+      const validatedResponses: VisitCompletionChecklistResponseInput[] = mapChecklistResponses(
+        responsesForCompletion,
+        allLoadedQuestions
       )
 
-      let validatedResponses: VisitCompletionChecklistResponseInput[] = []
-      if (!hasLocalPhotos) {
-        const allLoadedQuestions = templates.flatMap(t => t.questions ?? [])
-        validatedResponses = mapChecklistResponses(atomicChecklistResponses, allLoadedQuestions)
+      if (hasOptionalLocalPhotoReferences) {
+        toast.info('سيتم إنهاء الزيارة دون الصورة الاختيارية التي لم تكتمل مزامنتها.')
       }
 
       const res = await atomic.completeVisit(
@@ -418,12 +436,13 @@ export default function VisitExecutionMode() {
         validatedResponses,
         null,
         null,
-        atomic.session?.gpsExceptionReason || null
+        atomic.session?.gpsExceptionReason || null,
+        hasOptionalLocalPhotoReferences
       )
       if (res.ok) {
         toast.success('✓ تم إنهاء الزيارة بنجاح')
       } else {
-        const msg = res.errorCode ? (ERROR_TRANSLATIONS[res.errorCode] || res.errorCode) : 'فشل إنهاء الزيارة'
+        const msg = res.errorMessage || (res.errorCode ? (ERROR_TRANSLATIONS[res.errorCode] || res.errorCode) : 'فشل إنهاء الزيارة')
         toast.error(msg)
       }
     } catch (err: unknown) {
@@ -433,7 +452,7 @@ export default function VisitExecutionMode() {
       setCompleting(false)
       isActionExecutingRef.current = false
     }
-  }, [currentItem, id, plan, geo, atomic, atomicChecklistResponses, templates, isPendingActive, isStarting, skipping, isGpsInvalid, templatesLoading, templatesLoaded, templatesError, atomicChecklistReady, mandatoryTemplates])
+  }, [currentItem, id, plan, geo, atomic, atomicChecklistResponses, templates, isPendingActive, isStarting, skipping, templatesLoading, templatesLoaded, templatesError, atomicChecklistReady, mandatoryTemplates, hasOptionalLocalPhotoReferences])
 
   // ── Skip
   const handleSkip = useCallback(async () => {
@@ -584,18 +603,18 @@ export default function VisitExecutionMode() {
             {currentOp.state === 'pending' && '⏳ العملية قيد الانتظار...'}
             {currentOp.state === 'retryable' && (
               <span>
-                ⚠️ {ERROR_TRANSLATIONS[currentOp.lastErrorCode || ''] || 'فشل الاتصال بالشبكة. العملية معلقة ومحفوظة لإعادة المحاولة.'}
+                ⚠️ {currentOp.lastErrorMessage || ERROR_TRANSLATIONS[currentOp.lastErrorCode || ''] || 'فشل الاتصال بالشبكة. العملية معلقة ومحفوظة لإعادة المحاولة.'}
                 {currentOp.attemptCount > 0 && ` (محاولة رقم ${currentOp.attemptCount})`}
               </span>
             )}
             {currentOp.state === 'conflict' && (
               <span>
-                ❌ {ERROR_TRANSLATIONS[currentOp.lastErrorCode || ''] || 'تعارض في البيانات! يرجى مراجعة الخطة والبيانات الحالية.'}
+                ❌ {currentOp.lastErrorMessage || ERROR_TRANSLATIONS[currentOp.lastErrorCode || ''] || 'تعارض في البيانات! يرجى مراجعة الخطة والبيانات الحالية.'}
               </span>
             )}
             {currentOp.state === 'failed' && (
               <span>
-                ❌ {ERROR_TRANSLATIONS[currentOp.lastErrorCode || ''] || 'فشلت العملية. يرجى مراجعة تفاصيل الخطأ وبدء محاولة جديدة.'}
+                ❌ {currentOp.lastErrorMessage || ERROR_TRANSLATIONS[currentOp.lastErrorCode || ''] || 'تعذر إنهاء الزيارة. إجاباتك محفوظة ويمكنك تصحيحها والمحاولة مرة أخرى.'}
               </span>
             )}
           </span>
@@ -606,8 +625,8 @@ export default function VisitExecutionMode() {
               </button>
             )}
             {currentOp.state === 'failed' && (
-              <button className="vem-op-action-btn vem-op-action-btn--danger" onClick={() => atomic.discardFailedOperation(currentOp.operationId)}>
-                <Trash2 size={14} /> بدء محاولة جديدة
+              <button className="vem-op-action-btn" onClick={() => atomic.discardFailedOperation(currentOp.operationId)}>
+                <RefreshCw size={14} /> تصحيح البيانات وإعادة المحاولة
               </button>
             )}
           </div>
@@ -830,7 +849,7 @@ export default function VisitExecutionMode() {
                     {isGpsInvalid ? (
                       <div className="vem-gps-warning animate-enter vem-gps-quiet-pulse">
                         <p className="text-sm font-bold text-red-600">⚠️ أنت خارج النطاق الجغرافي المسموح به للعميل.</p>
-                        <p className="text-xs text-red-500">يلزم كتابة مبرر منطقي للاستثناء الجغرافي أدناه لتتمكن من إنهاء الزيارة.</p>
+                        <p className="text-xs text-red-500">يمكنك كتابة مبرر، أو إنهاء الزيارة وسيتم تحويل الموقع للمراجعة دون تعطيلك.</p>
                       </div>
                     ) : (
                       atomic.session?.startGPSAccuracy !== null && atomic.session?.startGPSAccuracy !== undefined && (
@@ -843,11 +862,11 @@ export default function VisitExecutionMode() {
                     {isGpsInvalid && (
                       <>
                         <label className="vem-gps-exception-label">
-                          مبرر تجاوز موقع العميل الجغرافي <span className="vem-mandatory-star">* (مطلوب)</span>
+                          مبرر تجاوز موقع العميل الجغرافي <span className="vem-draft-status">(اختياري)</span>
                         </label>
                         <textarea
                           className="form-input vem-gps-exception-textarea"
-                          placeholder="اكتب التبرير هنا لإنهاء الزيارة..."
+                          placeholder="اكتب التبرير إن كان متاحًا..."
                           value={atomic.session?.gpsExceptionReason || ''}
                           onChange={e => atomic.saveGpsExceptionReason(e.target.value)}
                           disabled={isPendingActive}
