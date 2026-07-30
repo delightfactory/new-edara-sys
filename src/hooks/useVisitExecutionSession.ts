@@ -532,49 +532,55 @@ export function useVisitExecutionSession(
     }
   }, [enabled, userId, reloadFromDb])
 
-  // Save checklist draft updates (Validates before saving to IndexedDB)
+  const checklistDraftWriteRef = useRef<Promise<void>>(Promise.resolve())
+
+  // Update React immediately and serialize IndexedDB writes. On slower phones,
+  // overlapping writes used to let an older answer overwrite a newer answer,
+  // which then flowed back into ChecklistForm and looked like screen shaking.
   const saveChecklistDraft = useCallback(async (
     templateId: string,
     responses: ChecklistResponseValidationInput[],
     templateQuestions: ChecklistQuestion[],
     isComplete: boolean
   ) => {
-    if (!enabled) return
-    const localSession = await visitsDb.visitSessions.get([userId, planId || ''])
-    if (!localSession || !userId || !planId) return
+    if (!enabled || !userId || !planId) return
+
     try {
       const validated = mapLocalChecklistResponses(responses, templateQuestions, templateId)
+      const draft = { responses: validated, isComplete }
 
-      const updatedDrafts = {
-        ...localSession.checklistDrafts,
-        [templateId]: { responses: validated, isComplete }
-      }
-      const updatedSession = {
-        ...localSession,
-        checklistDrafts: updatedDrafts,
-        updatedAt: Date.now()
-      }
-      await visitsDb.visitSessions.put(updatedSession)
-
-      const ops = await visitsDb.pendingVisitOperations
-        .where('userId')
-        .equals(userId)
-        .and(op => op.planId === planId)
-        .toArray()
-      const startOp = ops.find(o => o.itemId === localSession.itemId && o.kind === 'start')
-      const hasPendingStart = startOp && (startOp.state === 'pending' || startOp.state === 'retryable' || startOp.state === 'sending')
-      const hasTerminalStartFailure = startOp && (startOp.state === 'failed' || startOp.state === 'conflict')
-      const serverConfirmsInProgress = (serverItemsRef.current.find(i => i.id === localSession.itemId))?.status === 'in_progress'
-
-      if (isMountedRef.current) {
-        if (hasPendingStart) {
-          setSession(updatedSession)
-        } else if (hasTerminalStartFailure) {
-          setSession(null)
-        } else {
-          setSession(serverConfirmsInProgress ? updatedSession : null)
+      setSession(current => {
+        if (!current || current.userId !== userId || current.planId !== planId) return current
+        return {
+          ...current,
+          checklistDrafts: {
+            ...current.checklistDrafts,
+            [templateId]: draft
+          },
+          updatedAt: Date.now()
         }
+      })
+
+      const persistDraft = async () => {
+        await visitsDb.transaction('rw', visitsDb.visitSessions, async () => {
+          const localSession = await visitsDb.visitSessions.get([userId, planId])
+          if (!localSession) return
+
+          await visitsDb.visitSessions.update([userId, planId], {
+            checklistDrafts: {
+              ...localSession.checklistDrafts,
+              [templateId]: draft
+            },
+            updatedAt: Date.now()
+          })
+        })
       }
+
+      const write = checklistDraftWriteRef.current
+        .catch(() => undefined)
+        .then(persistDraft)
+      checklistDraftWriteRef.current = write
+      await write
     } catch (err) {
       if (err instanceof Error) {
         toast.error(err.message || 'فشل حفظ المسودة')

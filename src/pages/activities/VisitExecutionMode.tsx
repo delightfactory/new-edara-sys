@@ -779,16 +779,14 @@ export default function VisitExecutionMode() {
                          }, {} as Record<string, unknown>) : undefined
 
                          return (
-                           <div key={tpl.id} className="vem-checklist-template-group animate-enter">
+                           <div key={tpl.id} className="vem-checklist-template-group">
                              <h5 className="vem-checklist-template-name flex items-center justify-between">
                                <span>
                                  {tpl.name} {tpl.is_mandatory && <span className="vem-mandatory-star">* (إلزامي)</span>}
                                </span>
-                               {draft && (
-                                 <span className="vem-draft-status">
-                                   {draft.isComplete ? '✓ مكتمل ومحفوظ' : '📝 مسودة محفوظة'}
-                                 </span>
-                               )}
+                               <span className="vem-draft-status">
+                                 {draft?.isComplete ? '✓ مكتمل' : 'حفظ تلقائي'}
+                               </span>
                              </h5>
                               <ChecklistForm
                                 photoMode="local-blob"
@@ -876,7 +874,7 @@ export default function VisitExecutionMode() {
                   {/* GPS Exception Input & Warning — يظهر فقط عند وجود مشكلة في النطاق الجغرافي — */}
                   <div className="vem-gps-exception-container">
                     {isGpsInvalid ? (
-                      <div className="vem-gps-warning animate-enter">
+                      <div className="vem-gps-warning">
                         <p className="text-sm font-bold text-red-600">⚠️ أنت خارج النطاق الجغرافي المسموح به للعميل.</p>
                         <p className="text-xs text-red-500">يمكنك كتابة مبرر، أو إنهاء الزيارة وسيتم تحويل الموقع للمراجعة دون تعطيلك.</p>
                       </div>
@@ -1280,9 +1278,7 @@ export default function VisitExecutionMode() {
         }
 
         .vem-sticky-action-bar {
-          position: sticky;
-          bottom: calc(var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px));
-          z-index: 10;
+          position: relative;
           margin-block-start: var(--space-4);
           background: var(--bg-surface);
           padding: var(--space-3);
@@ -1321,6 +1317,7 @@ export default function VisitExecutionMode() {
         .vem-draft-status {
           font-size: 10px; color: var(--color-success, green); font-weight: normal;
           background: rgba(16, 185, 129, 0.1); padding: 2px 6px; border-radius: 4px;
+          min-inline-size: 72px; text-align: center; white-space: nowrap; flex-shrink: 0;
         }
       `}</style>
     </div>

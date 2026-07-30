@@ -716,6 +716,44 @@ describe('useVisitExecutionSession Hook Core Logic', () => {
     expect(persisted?.gpsExceptionReason).toBe('خارج موقع العميل')
   })
 
+  it('updates checklist answers immediately and persists rapid writes in the correct order', async () => {
+    const session: LocalVisitSession = {
+      userId: 'test-user-123', planId: 'plan-123', itemId: 'item-1',
+      serverStartedAt: '2026-07-30T12:22:50.000Z', clientStartedAt: '2026-07-30T12:22:50.000Z',
+      startGPS: null, startGPSAccuracy: null, gpsValidationStatus: 'passed',
+      checklistDrafts: {}, gpsExceptionReason: null,
+      updatedAt: Date.now(), expiresAt: Date.now() + 48 * 3600 * 1000
+    }
+    await visitsDb.visitSessions.put(session)
+    const serverItems = [
+      { id: 'item-1', plan_id: 'plan-123', status: 'in_progress', customer_id: 'c-1', sequence: 1 } as unknown as VisitPlanItem
+    ]
+    const { result } = renderHook(() => useVisitExecutionSession('plan-123', serverItems, true))
+    await waitFor(() => expect(result.current.session?.itemId).toBe('item-1'))
+
+    const firstResponses = [
+      { template_id: 't-1', question_id: 'q-scalar', answer_value: 'الإجابة الأولى', answer_json: null }
+    ]
+    const latestResponses = [
+      { template_id: 't-1', question_id: 'q-scalar', answer_value: 'الإجابة النهائية', answer_json: null }
+    ]
+
+    let firstWrite: Promise<void>
+    let latestWrite: Promise<void>
+    act(() => {
+      firstWrite = result.current.saveChecklistDraft('t-1', firstResponses, mockQuestions, false)
+      latestWrite = result.current.saveChecklistDraft('t-1', latestResponses, mockQuestions, true)
+    })
+
+    expect(result.current.session?.checklistDrafts['t-1']?.responses[0].answer_value).toBe('الإجابة النهائية')
+    expect(result.current.session?.checklistDrafts['t-1']?.isComplete).toBe(true)
+
+    await act(async () => { await Promise.all([firstWrite!, latestWrite!]) })
+    const persisted = await visitsDb.visitSessions.get(['test-user-123', 'plan-123'])
+    expect(persisted?.checklistDrafts['t-1']?.responses[0].answer_value).toBe('الإجابة النهائية')
+    expect(persisted?.checklistDrafts['t-1']?.isComplete).toBe(true)
+  })
+
   it('drains an operation enqueued while a single-flight sync is already running', async () => {
     const serverItems = [
       { id: 'item-1', plan_id: 'plan-123', status: 'pending', customer_id: 'c-1', sequence: 1 } as unknown as VisitPlanItem

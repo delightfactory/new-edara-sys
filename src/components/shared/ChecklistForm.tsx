@@ -41,6 +41,18 @@ interface LocalImagePreviewProps {
 
 const EMPTY_CONTEXT_VALUES: Record<string, unknown> = {}
 
+function areAnswerValuesEqual(left: unknown, right: unknown): boolean {
+  if (Object.is(left, right)) return true
+  if (left === null || right === null || left === undefined || right === undefined) return false
+  if (typeof left !== 'object' || typeof right !== 'object') return false
+
+  try {
+    return JSON.stringify(left) === JSON.stringify(right)
+  } catch {
+    return false
+  }
+}
+
 export function LocalImagePreview({ localBlobId, loadLocalPhoto }: LocalImagePreviewProps) {
   const [objectUrl, setObjectUrl] = useState<string | null>(null)
   const [error, setError] = useState<boolean>(false)
@@ -116,7 +128,7 @@ export default function ChecklistForm({
       let changed = false
       const updated = { ...prev }
       for (const q of questions) {
-        if (vals[q.id] !== undefined && prev[q.id] !== vals[q.id]) {
+        if (vals[q.id] !== undefined && !areAnswerValuesEqual(prev[q.id], vals[q.id])) {
           updated[q.id] = vals[q.id]
           changed = true
         }
@@ -514,6 +526,7 @@ const styles = `
     display: flex;
     flex-direction: column;
     gap: var(--space-4, 16px);
+    overflow-anchor: none;
   }
   .chk-progress {
     display: flex;
@@ -531,7 +544,6 @@ const styles = `
     height: 100%;
     background: var(--color-primary, #2563eb);
     border-radius: 99px;
-    transition: width 0.3s ease;
   }
   .chk-progress-text {
     font-size: var(--text-xs, 12px);
