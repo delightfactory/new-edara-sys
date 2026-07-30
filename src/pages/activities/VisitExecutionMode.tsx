@@ -254,6 +254,7 @@ export default function VisitExecutionMode() {
     NOT_PLAN_OWNER: 'هذه الخطة مسندة لمندوب آخر ولا يمكن تنفيذها من هذا الحساب.',
     EMPLOYEE_NOT_FOUND: 'لا يوجد سجل موظف نشط مرتبط بهذا الحساب.',
     ACTIVE_ACTIVITY_EXISTS: 'بدأت الزيارة بالفعل، أنهِ الزيارة الجارية بدلاً من تخطيها.',
+    ACTIVE_VISIT_EXISTS: 'توجد زيارة أخرى جارية على هذا الجهاز. أنهِها أو حدّث الخطة قبل بدء زيارة جديدة.',
     PLAN_NOT_EXECUTABLE: 'الخطة ليست في حالة تسمح بالتخطي. حدّث الصفحة وراجع حالتها.',
   }
 
@@ -334,7 +335,9 @@ export default function VisitExecutionMode() {
 
       const res = await atomic.startVisit(currentItem.id, coords, accuracy)
       if (res.ok) {
-        toast.success('✓ تم بدء الزيارة بنجاح')
+        toast.success(res.errorCode === 'SESSION_RESTORED' ? 'تمت استعادة الزيارة الجارية' : '✓ تم بدء الزيارة بنجاح')
+      } else if (res.errorCode !== 'LOCKED') {
+        toast.error(res.errorMessage || (res.errorCode ? (ERROR_TRANSLATIONS[res.errorCode] || res.errorCode) : 'فشل بدء الزيارة'))
       }
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : 'حدث خطأ ما أثناء بدء الزيارة'
@@ -366,7 +369,9 @@ export default function VisitExecutionMode() {
 
       const res = await atomic.startVisit(currentItem.id, coords, accuracy)
       if (res.ok) {
-        toast.success('✓ تم بدء الزيارة بنجاح')
+        toast.success(res.errorCode === 'SESSION_RESTORED' ? 'تمت استعادة الزيارة الجارية' : '✓ تم بدء الزيارة بنجاح')
+      } else if (res.errorCode !== 'LOCKED') {
+        toast.error(res.errorMessage || (res.errorCode ? (ERROR_TRANSLATIONS[res.errorCode] || res.errorCode) : 'فشل بدء الزيارة'))
       }
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : 'حدث خطأ ما أثناء بدء الزيارة'
@@ -871,13 +876,13 @@ export default function VisitExecutionMode() {
                   {/* GPS Exception Input & Warning — يظهر فقط عند وجود مشكلة في النطاق الجغرافي — */}
                   <div className="vem-gps-exception-container">
                     {isGpsInvalid ? (
-                      <div className="vem-gps-warning animate-enter vem-gps-quiet-pulse">
+                      <div className="vem-gps-warning animate-enter">
                         <p className="text-sm font-bold text-red-600">⚠️ أنت خارج النطاق الجغرافي المسموح به للعميل.</p>
                         <p className="text-xs text-red-500">يمكنك كتابة مبرر، أو إنهاء الزيارة وسيتم تحويل الموقع للمراجعة دون تعطيلك.</p>
                       </div>
                     ) : (
                       atomic.session?.startGPSAccuracy !== null && atomic.session?.startGPSAccuracy !== undefined && (
-                        <div className={`vem-gps-accuracy-badge vem-gps-quiet-pulse ${atomic.session.startGPSAccuracy > 50 ? 'vem-gps-accuracy-badge--low' : 'vem-gps-accuracy-badge--good'}`}>
+                        <div className={`vem-gps-accuracy-badge ${atomic.session.startGPSAccuracy > 50 ? 'vem-gps-accuracy-badge--low' : 'vem-gps-accuracy-badge--good'}`}>
                           {atomic.session.startGPSAccuracy > 50 ? `⚠️ دقة موقع منخفضة: ${Math.round(atomic.session.startGPSAccuracy)} متر` : `✓ دقة موقع جيدة: ${Math.round(atomic.session.startGPSAccuracy)} متر`}
                         </div>
                       )
@@ -1284,19 +1289,6 @@ export default function VisitExecutionMode() {
           border-radius: var(--radius-lg);
           border: 1px solid var(--border-primary);
           box-shadow: var(--shadow-sm);
-        }
-
-        .vem-gps-quiet-pulse {
-          animation: vem-quiet-pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-        @keyframes vem-quiet-pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.85; transform: scale(1.015); }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .vem-gps-quiet-pulse {
-            animation: none !important;
-          }
         }
 
         .vp-skip-reasons {

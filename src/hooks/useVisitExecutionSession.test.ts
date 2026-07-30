@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { useVisitExecutionSession, mapChecklistResponses, isVisitOperationSatisfiedByServer } from './useVisitExecutionSession'
-import { visitsDb, cleanUpDatabase, type PendingVisitOperation, validatePendingOperation, getOrCreatePendingOperation, InvalidOperationDependencyError, CorruptedPayloadError, replaceLocalBlobTransaction } from '@/lib/db/visitsDb'
+import { visitsDb, cleanUpDatabase, type LocalVisitSession, type PendingVisitOperation, validatePendingOperation, getOrCreatePendingOperation, InvalidOperationDependencyError, CorruptedPayloadError, replaceLocalBlobTransaction } from '@/lib/db/visitsDb'
 import {
   startVisitItemAtomic,
   completeVisitItemAtomic,
@@ -89,6 +89,9 @@ describe('useVisitExecutionSession Hook Core Logic', () => {
     await visitsDb.pendingVisitOperations.clear()
     await visitsDb.localBlobs.clear()
     vi.clearAllMocks()
+    mockFetchQuery.mockReset()
+    mockFetchQuery.mockResolvedValue([])
+    mockInvalidateQueries.mockReset()
     vi.mocked(startVisitItemAtomic).mockReset()
     vi.mocked(completeVisitItemAtomic).mockReset()
     vi.mocked(skipVisitItemAtomic).mockReset()
@@ -639,6 +642,150 @@ describe('useVisitExecutionSession Hook Core Logic', () => {
 
     expect(result.current.session?.serverStartedAt).toBe('2026-07-06T20:30:00Z')
     expect(result.current.session?.startGPS).toEqual({ lat: 30, lng: 31 })
+  })
+
+  it('preserves an existing visit session and checklist drafts when Start is pressed again after refresh', async () => {
+    const originalStartedAt = '2026-07-30T12:22:50.000Z'
+    const existingSession: LocalVisitSession = {
+      userId: 'test-user-123',
+      planId: 'plan-123',
+      itemId: 'item-1',
+      serverStartedAt: originalStartedAt,
+      clientStartedAt: originalStartedAt,
+      startGPS: { lat: 30, lng: 31 },
+      startGPSAccuracy: 12,
+      gpsValidationStatus: 'failed_distance',
+      checklistDrafts: {
+        't-1': {
+          isComplete: true,
+          responses: [{ template_id: 't-1', question_id: 'q-scalar', answer_value: 'إجابة محفوظة', answer_json: null }]
+        }
+      },
+      gpsExceptionReason: 'بعيد عن الموقع',
+      updatedAt: Date.now(),
+      expiresAt: Date.now() + 48 * 3600 * 1000
+    }
+    await visitsDb.visitSessions.put(existingSession)
+
+    // Simulates the stale pending snapshot that exposed Start after refresh.
+    const staleItems = [
+      { id: 'item-1', plan_id: 'plan-123', status: 'pending', customer_id: 'c-1', sequence: 1 } as unknown as VisitPlanItem
+    ]
+    const { result } = renderHook(() => useVisitExecutionSession('plan-123', staleItems, true))
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 50)) })
+
+    let outcome: Awaited<ReturnType<typeof result.current.startVisit>> | undefined
+    await act(async () => {
+      outcome = await result.current.startVisit('item-1', null, null)
+    })
+
+    expect(outcome?.ok).toBe(true)
+    expect(outcome?.errorCode).toBe('SESSION_RESTORED')
+    expect(startVisitItemAtomic).not.toHaveBeenCalled()
+    const preserved = await visitsDb.visitSessions.get(['test-user-123', 'plan-123'])
+    expect(preserved?.clientStartedAt).toBe(originalStartedAt)
+    expect(preserved?.checklistDrafts['t-1']?.responses[0].answer_value).toBe('إجابة محفوظة')
+    expect(preserved?.gpsExceptionReason).toBe('بعيد عن الموقع')
+  })
+
+  it('updates the GPS exception reason immediately and persists rapid writes in the correct order', async () => {
+    const session: LocalVisitSession = {
+      userId: 'test-user-123', planId: 'plan-123', itemId: 'item-1',
+      serverStartedAt: '2026-07-30T12:22:50.000Z', clientStartedAt: '2026-07-30T12:22:50.000Z',
+      startGPS: null, startGPSAccuracy: null, gpsValidationStatus: 'failed_distance',
+      checklistDrafts: {}, gpsExceptionReason: null,
+      updatedAt: Date.now(), expiresAt: Date.now() + 48 * 3600 * 1000
+    }
+    await visitsDb.visitSessions.put(session)
+    const serverItems = [
+      { id: 'item-1', plan_id: 'plan-123', status: 'in_progress', customer_id: 'c-1', sequence: 1 } as unknown as VisitPlanItem
+    ]
+    const { result } = renderHook(() => useVisitExecutionSession('plan-123', serverItems, true))
+    await waitFor(() => expect(result.current.session?.itemId).toBe('item-1'))
+
+    let firstWrite: Promise<void>
+    let secondWrite: Promise<void>
+    act(() => {
+      firstWrite = result.current.saveGpsExceptionReason('خارج')
+      secondWrite = result.current.saveGpsExceptionReason('خارج موقع العميل')
+    })
+    expect(result.current.session?.gpsExceptionReason).toBe('خارج موقع العميل')
+
+    await act(async () => { await Promise.all([firstWrite!, secondWrite!]) })
+    const persisted = await visitsDb.visitSessions.get(['test-user-123', 'plan-123'])
+    expect(persisted?.gpsExceptionReason).toBe('خارج موقع العميل')
+  })
+
+  it('drains an operation enqueued while a single-flight sync is already running', async () => {
+    const serverItems = [
+      { id: 'item-1', plan_id: 'plan-123', status: 'pending', customer_id: 'c-1', sequence: 1 } as unknown as VisitPlanItem
+    ]
+    mockFetchQuery.mockResolvedValue([
+      { ...serverItems[0], status: 'in_progress', server_started_at: '2026-07-30T12:22:50.000Z' } as unknown as VisitPlanItem
+    ])
+    await visitsDb.visitSessions.put({
+      userId: 'test-user-123', planId: 'plan-123', itemId: 'item-1',
+      serverStartedAt: null, clientStartedAt: '2026-07-30T12:22:50.000Z',
+      startGPS: null, startGPSAccuracy: null, gpsValidationStatus: 'not_checked',
+      checklistDrafts: {}, gpsExceptionReason: null,
+      updatedAt: Date.now(), expiresAt: Date.now() + 48 * 3600 * 1000
+    })
+
+    const startOperationId = '11111111-1111-4111-8111-111111111111'
+    await visitsDb.pendingVisitOperations.put({
+      operationId: startOperationId, userId: 'test-user-123', planId: 'plan-123', itemId: 'item-1',
+      kind: 'start', state: 'pending', attemptCount: 0, lastErrorCode: null,
+      createdAt: Date.now(), updatedAt: Date.now(), expiresAt: Date.now() + 48 * 3600 * 1000,
+      payload: {
+        operationId: startOperationId, itemId: 'item-1', startLat: null, startLng: null,
+        startAccuracyM: null, clientStartedAt: '2026-07-30T12:22:50.000Z', deviceTimezone: 'Africa/Cairo'
+      }
+    })
+
+    let releaseStart: ((value: VisitRpcResult<StartVisitItemAtomicResult>) => void) | undefined
+    vi.mocked(startVisitItemAtomic).mockImplementationOnce(() => new Promise(resolve => { releaseStart = resolve }))
+    vi.mocked(completeVisitItemAtomic).mockResolvedValueOnce({
+      ok: true, operation_id: '22222222-2222-4222-8222-222222222222',
+      operation: 'complete_visit_item_atomic', replayed: false,
+      data: {
+        item_id: 'item-1', status: 'completed', activity_id: 'activity-1',
+        gps_validation_status: 'passed', gps_review_status: 'not_required',
+        plan_id: 'plan-123', plan_status: 'completed'
+      }
+    })
+
+    const { result } = renderHook(() => useVisitExecutionSession('plan-123', serverItems, true))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    const firstSync = result.current.syncPendingOperations()
+    await waitFor(() => expect(startVisitItemAtomic).toHaveBeenCalledTimes(1))
+
+    const completeOperationId = '22222222-2222-4222-8222-222222222222'
+    await visitsDb.pendingVisitOperations.put({
+      operationId: completeOperationId, userId: 'test-user-123', planId: 'plan-123', itemId: 'item-1',
+      kind: 'complete', state: 'pending', attemptCount: 0, lastErrorCode: null,
+      createdAt: Date.now() + 1, updatedAt: Date.now() + 1, expiresAt: Date.now() + 48 * 3600 * 1000,
+      payload: {
+        operationId: completeOperationId, itemId: 'item-1', endLat: null, endLng: null,
+        endAccuracyM: null, clientCompletedAt: '2026-07-30T12:25:00.000Z', deviceTimezone: 'Africa/Cairo',
+        outcomeType: 'visited', outcomeNotes: null, responses: [], orderId: null,
+        collectionId: null, gpsExceptionReason: null
+      }
+    })
+    const secondSync = result.current.syncPendingOperations()
+    expect(secondSync).toBe(firstSync)
+
+    releaseStart?.({
+      ok: true, operation_id: startOperationId, operation: 'start_visit_item_atomic', replayed: false,
+      data: {
+        item_id: 'item-1', status: 'in_progress', server_started_at: '2026-07-30T12:22:50.000Z',
+        start_distance_m: null, gps_validation_status: 'not_checked', plan_id: 'plan-123', plan_status: 'in_progress'
+      }
+    })
+    await act(async () => { await firstSync })
+
+    expect(completeVisitItemAtomic).toHaveBeenCalledTimes(1)
+    expect(await visitsDb.pendingVisitOperations.get(completeOperationId)).toBeUndefined()
   })
 
   it('refreshes server truth and resumes queued operations when connectivity returns', async () => {
@@ -1891,6 +2038,17 @@ describe('useVisitExecutionSession Hook Core Logic', () => {
       const dbSession = await visitsDb.visitSessions.get(['test-user-123', 'plan-123'])
       expect(dbSession).toBeDefined()
       expect(dbSession?.itemId).toBe('item-1')
+
+      // A second tap must not turn the preserved forensic session into a
+      // running visit when the server still says pending.
+      let secondStart: Awaited<ReturnType<typeof result.current.startVisit>> | undefined
+      await act(async () => {
+        secondStart = await result.current.startVisit('item-1', null, null)
+      })
+      expect(secondStart?.ok).toBe(false)
+      expect(secondStart?.state).toBe('conflict')
+      expect(result.current.session).toBeNull()
+      expect(startVisitItemAtomic).toHaveBeenCalledTimes(1)
 
       // 4. Updating operation state back to retryable (admin intervention) and reloading restores the session
       if (startOp) {

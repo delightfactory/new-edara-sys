@@ -225,6 +225,21 @@ export function useGeoPermission(): UseGeoPermissionReturn {
     setError(null)
 
     return new Promise<GeoRequestResult>((resolve) => {
+      let settled = false
+      const finish = (result: GeoRequestResult) => {
+        if (settled) return
+        settled = true
+        window.clearTimeout(safetyTimeout)
+        setIsLoading(false)
+        resolve(result)
+      }
+      // Some Android WebViews have been observed to skip both geolocation
+      // callbacks. This outer watchdog guarantees the visit flow can recover.
+      const safetyTimeout = window.setTimeout(() => {
+        const msg = 'انتهت مهلة تحديد الموقع — يمكنك المتابعة وسيظهر الموقع للمراجعة'
+        setError(msg)
+        finish({ ok: false, reason: 'timeout', message: msg })
+      }, 28_000)
 
       // Strategy: نحاول أولاً بدقة عالية، ثم بدقة عادية عند الفشل
       const tryGetPosition = (highAccuracy: boolean) => {
@@ -238,8 +253,7 @@ export function useGeoPermission(): UseGeoPermissionReturn {
             setCoords(result)
             setStatus('granted')
             setError(null)
-            setIsLoading(false)
-            resolve({ ok: true, coords: result })
+            finish({ ok: true, coords: result })
           },
           (err) => {
             if (err.code === err.PERMISSION_DENIED) {
@@ -247,8 +261,7 @@ export function useGeoPermission(): UseGeoPermissionReturn {
               // رُفضت الصلاحية — لا نعيد المحاولة
               setStatus('denied')
               setError(msg)
-              setIsLoading(false)
-              resolve({ ok: false, reason: 'denied', message: msg })
+              finish({ ok: false, reason: 'denied', message: msg })
 
             } else if (err.code === err.TIMEOUT && highAccuracy) {
               // انتهت المهلة بدقة عالية → نحاول بدقة عادية (أسرع داخل المباني)
@@ -257,16 +270,14 @@ export function useGeoPermission(): UseGeoPermissionReturn {
             } else if (err.code === err.POSITION_UNAVAILABLE) {
               const msg = 'تعذّر تحديد الموقع — تأكد من تفعيل GPS في الجهاز ووجودك في مكان مفتوح'
               setError(msg)
-              setIsLoading(false)
-              resolve({ ok: false, reason: 'unavailable', message: msg })
+              finish({ ok: false, reason: 'unavailable', message: msg })
 
             } else {
               const msg = err.code === err.TIMEOUT
                 ? 'انتهت مهلة تحديد الموقع — تأكد من تفعيل GPS وحاول مرة أخرى'
                 : 'حدث خطأ أثناء تحديد الموقع — حاول مرة أخرى'
               setError(msg)
-              setIsLoading(false)
-              resolve({ ok: false, reason: 'timeout', message: msg })
+              finish({ ok: false, reason: 'timeout', message: msg })
             }
           },
           {

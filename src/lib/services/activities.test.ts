@@ -561,6 +561,26 @@ describe('Visits Atomic RPC Services', () => {
       })
     })
 
+    it('turns a hanging visit RPC into a retryable transport error after the safety timeout', async () => {
+      vi.useFakeTimers()
+      try {
+        vi.mocked(supabase.rpc).mockImplementationOnce(() => new Promise(() => {}) as never)
+        const request = startVisitItemAtomic({
+          operationId: 'op-timeout', itemId: 'item-1',
+          startLat: null, startLng: null, startAccuracyM: null,
+          clientStartedAt: '2026-07-30T12:22:50.000Z', deviceTimezone: 'Africa/Cairo'
+        })
+        const assertion = expect(request).rejects.toMatchObject({
+          name: 'VisitRpcTransportError',
+          supabaseError: null
+        })
+        await vi.advanceTimersByTimeAsync(30_000)
+        await assertion
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
     it('completes visit item with safe photo path validation and exact parameters', async () => {
       const mockResult = {
         item_id: 'item-1',

@@ -438,14 +438,17 @@ export function useVisitExecutionSession(
               const hasTerminalStartFailure = startOp && (startOp.state === 'failed' || startOp.state === 'conflict')
               const serverConfirmsInProgress = matchedItem.status === 'in_progress'
 
-              if (hasPendingStart) {
+              // Server truth wins over a stale local terminal start operation.
+              // This is the normal recovery path when the start RPC succeeded
+              // but the phone refreshed before its local operation was cleaned.
+              if (serverConfirmsInProgress) {
+                if (isMountedRef.current) setSession(localSession)
+              } else if (hasPendingStart) {
                 if (isMountedRef.current) setSession(localSession)
               } else if (hasTerminalStartFailure) {
                 if (isMountedRef.current) setSession(null)
               } else {
-                if (isMountedRef.current) {
-                  setSession(serverConfirmsInProgress ? localSession : null)
-                }
+                if (isMountedRef.current) setSession(null)
               }
             }
           } else {
@@ -579,38 +582,34 @@ export function useVisitExecutionSession(
     }
   }, [userId, planId, enabled])
 
-  // Save gps exception reason
+  const gpsReasonWriteRef = useRef<Promise<void>>(Promise.resolve())
+
+  // Keep typing synchronous in React and serialize IndexedDB writes so an
+  // older keystroke can never overwrite a newer one on slower Android phones.
   const saveGpsExceptionReason = useCallback(async (reason: string | null) => {
-    if (!enabled) return
-    const localSession = await visitsDb.visitSessions.get([userId, planId || ''])
-    if (!localSession || !userId || !planId) return
-    try {
-      const updatedSession = {
-        ...localSession,
+    if (!enabled || !userId || !planId) return
+
+    setSession(current => current
+      ? { ...current, gpsExceptionReason: reason, updatedAt: Date.now() }
+      : current
+    )
+
+    const persistReason = async () => {
+      // Patch only the two changed fields so this write cannot overwrite a
+      // checklist draft saved at the same time.
+      await visitsDb.visitSessions.update([userId, planId], {
         gpsExceptionReason: reason,
         updatedAt: Date.now()
-      }
-      await visitsDb.visitSessions.put(updatedSession)
+      })
+    }
 
-      const ops = await visitsDb.pendingVisitOperations
-        .where('userId')
-        .equals(userId)
-        .and(op => op.planId === planId)
-        .toArray()
-      const startOp = ops.find(o => o.itemId === localSession.itemId && o.kind === 'start')
-      const hasPendingStart = startOp && (startOp.state === 'pending' || startOp.state === 'retryable' || startOp.state === 'sending')
-      const hasTerminalStartFailure = startOp && (startOp.state === 'failed' || startOp.state === 'conflict')
-      const serverConfirmsInProgress = (serverItemsRef.current.find(i => i.id === localSession.itemId))?.status === 'in_progress'
+    const write = gpsReasonWriteRef.current
+      .catch(() => undefined)
+      .then(persistReason)
+    gpsReasonWriteRef.current = write
 
-      if (isMountedRef.current) {
-        if (hasPendingStart) {
-          setSession(updatedSession)
-        } else if (hasTerminalStartFailure) {
-          setSession(null)
-        } else {
-          setSession(serverConfirmsInProgress ? updatedSession : null)
-        }
-      }
+    try {
+      await write
     } catch (err) {
       console.error('Failed to save gps exception reason', err)
     }
@@ -652,12 +651,17 @@ export function useVisitExecutionSession(
       operation.expiresAt = Date.now() + 7 * 24 * 3600 * 1000
     }
 
-    await visitsDb.pendingVisitOperations.put(operation)
-    await reloadFromDb()
-
     if (code === 'SYNC_CONFLICT' || code === 'IDEMPOTENCY_KEY_CONFLICT') {
       await queryClient.invalidateQueries({ queryKey: ['visit-plan-items', planId] })
+      const freshItems = await queryClient.fetchQuery<VisitPlanItem[]>({
+        queryKey: ['visit-plan-items', planId]
+      }).catch(() => serverItemsRef.current)
+      serverItemsRef.current = freshItems || serverItemsRef.current
     }
+
+    await visitsDb.pendingVisitOperations.put(operation)
+    await reloadFromDb(serverItemsRef.current)
+
     return { ok: false, state: operation.state, errorCode: code, errorMessage: message }
   }, [planId, queryClient, reloadFromDb])
 
@@ -752,13 +756,21 @@ export function useVisitExecutionSession(
   }, [userId, planId, handleResultSuccess, handleResultFailure, reloadFromDb])
 
   const syncPromiseRef = useRef<Promise<void> | null>(null)
+  const syncRequestGenerationRef = useRef(0)
 
   const syncPendingOperations = useCallback((): Promise<void> => {
+    syncRequestGenerationRef.current += 1
     if (syncPromiseRef.current) {
       return syncPromiseRef.current
     }
 
     const promise = (async () => {
+      let handledGeneration = 0
+      // Never retry the same operation twice in one user-triggered sync. The
+      // generation loop is only for operations added after the first snapshot.
+      const attemptedIds = new Set<string>()
+      do {
+        handledGeneration = syncRequestGenerationRef.current
       // 1. Stale Recovery
       try {
         await visitsDb.pendingVisitOperations
@@ -770,7 +782,6 @@ export function useVisitExecutionSession(
         console.error('فشل معالجة العمليات المعلقة العالقة', err)
       }
 
-      const attemptedIds = new Set<string>()
       let passes = 0
       const maxPasses = 5
       let hasUpdates = true
@@ -855,6 +866,9 @@ export function useVisitExecutionSession(
           }
         }
       }
+      // If another action enqueued work while this single-flight sync was
+      // running, drain the queue again before releasing the shared promise.
+      } while (handledGeneration !== syncRequestGenerationRef.current)
     })()
 
     const finalPromise = promise.finally(() => {
@@ -927,6 +941,59 @@ export function useVisitExecutionSession(
     isExecutingRef.current = true
 
     try {
+      const existingSession = await visitsDb.visitSessions.get([userId, planId])
+      if (existingSession) {
+        if (existingSession.itemId !== itemId) {
+          return {
+            ok: false,
+            state: 'conflict',
+            errorCode: 'ACTIVE_VISIT_EXISTS',
+            errorMessage: 'توجد زيارة أخرى جارية على هذا الجهاز. تمت حماية بياناتها من الاستبدال.'
+          }
+        }
+
+        const existingStartOp = await visitsDb.pendingVisitOperations
+          .where('[userId+planId+itemId+kind]')
+          .equals([userId, planId, itemId, 'start'])
+          .first()
+
+        const serverItem = serverItemsRef.current.find(item => item.id === itemId)
+        const hasTerminalStartFailure = existingStartOp &&
+          (existingStartOp.state === 'conflict' || existingStartOp.state === 'failed')
+
+        // A genuine failed Start must stay failed. Only server-confirmed
+        // in_progress state may override and reconcile a stale local failure.
+        if (hasTerminalStartFailure && serverItem?.status !== 'in_progress') {
+          return {
+            ok: false,
+            state: existingStartOp.state,
+            errorCode: existingStartOp.lastErrorCode,
+            errorMessage: existingStartOp.lastErrorMessage
+          }
+        }
+
+        if (hasTerminalStartFailure && serverItem?.status === 'in_progress') {
+          await visitsDb.pendingVisitOperations.delete(existingStartOp.operationId)
+        }
+
+        // Never overwrite an existing session or its checklist drafts. A
+        // second Start after refresh is treated as session recovery.
+        if (isMountedRef.current) setSession(existingSession)
+        if (existingStartOp && (existingStartOp.state === 'pending' || existingStartOp.state === 'retryable' || existingStartOp.state === 'sending')) {
+          await syncPendingOperations()
+          const updatedStartOp = await visitsDb.pendingVisitOperations.get(existingStartOp.operationId)
+          if (updatedStartOp) {
+            return {
+              ok: false,
+              state: updatedStartOp.state,
+              errorCode: updatedStartOp.lastErrorCode,
+              errorMessage: updatedStartOp.lastErrorMessage
+            }
+          }
+        }
+        return { ok: true, state: 'succeeded', errorCode: 'SESSION_RESTORED' }
+      }
+
       const clientStartedAt = new Date().toISOString()
       const { operation, isNew } = await getOrCreatePendingOperation(userId, planId, itemId, 'start', (opId) => {
         return {

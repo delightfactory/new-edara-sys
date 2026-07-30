@@ -1309,9 +1309,9 @@ export async function deleteCallPlanTemplate(id: string): Promise<void> {
 // ============================================================
 
 export class VisitRpcTransportError extends Error {
-  readonly supabaseError: PostgrestError;
+  readonly supabaseError: PostgrestError | null;
 
-  constructor(message: string, supabaseError: PostgrestError) {
+  constructor(message: string, supabaseError: PostgrestError | null) {
     super(message);
     this.name = 'VisitRpcTransportError';
     this.supabaseError = supabaseError;
@@ -1385,7 +1385,16 @@ async function callVisitRpc<T>(
   operationId: string,
   params: Record<string, unknown>
 ): Promise<VisitRpcResult<T>> {
-  const response = await supabase.rpc(operation, params);
+  const rpcRequest = Promise.resolve(supabase.rpc(operation, params));
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new VisitRpcTransportError('انتهت مهلة الاتصال بالخادم. تم حفظ العملية لإعادة المحاولة بأمان.', null));
+    }, 30_000);
+  });
+  const response = await Promise.race([rpcRequest, timeout]).finally(() => {
+    if (timeoutId) clearTimeout(timeoutId);
+  });
   const rawData: unknown = response.data;
   const error: PostgrestError | null = response.error;
 
