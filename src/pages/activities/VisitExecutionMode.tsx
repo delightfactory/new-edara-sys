@@ -15,7 +15,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   useVisitPlan, useVisitPlanItems,
-  useChecklistTemplates,
+  useChecklistTemplates, useCurrentEmployee,
 } from '@/hooks/useQueryHooks'
 import useGeoPermission from '@/hooks/useGeoPermission'
 import type { VisitPlanItem, VisitCompletionChecklistResponseInput } from '@/lib/types/activities'
@@ -57,6 +57,7 @@ export default function VisitExecutionMode() {
   // ── Data (react-query)
   const { data: plan, isLoading: planLoading } = useVisitPlan(id)
   const { data: items = [], isLoading: itemsLoading } = useVisitPlanItems(id)
+  const { data: currentEmployee, isLoading: currentEmployeeLoading } = useCurrentEmployee()
   const geo = useGeoPermission()
   const isActionExecutingRef = useRef(false)
 
@@ -249,6 +250,11 @@ export default function VisitExecutionMode() {
     DB_ERROR: 'تعذر قراءة البيانات المحلية المحفوظة على الجهاز.',
     LOCAL_PHOTO_MISSING: 'عذراً، بعض الصور المطلوبة لهذا الاستبيان مفقودة من التخزين المحلي. يرجى التقاط الصورة من جديد.',
     LOCAL_PHOTOS_PENDING_UPLOAD: 'تم حفظ الصور محليًا، ولا يمكن إنهاء الزيارة قبل مزامنتها مع الخادم.',
+    INVALID_SKIP_REASON: 'سبب التخطي مطلوب ويجب ألا يتجاوز 500 حرف.',
+    NOT_PLAN_OWNER: 'هذه الخطة مسندة لمندوب آخر ولا يمكن تنفيذها من هذا الحساب.',
+    EMPLOYEE_NOT_FOUND: 'لا يوجد سجل موظف نشط مرتبط بهذا الحساب.',
+    ACTIVE_ACTIVITY_EXISTS: 'بدأت الزيارة بالفعل، أنهِ الزيارة الجارية بدلاً من تخطيها.',
+    PLAN_NOT_EXECUTABLE: 'الخطة ليست في حالة تسمح بالتخطي. حدّث الصفحة وراجع حالتها.',
   }
 
   const localPhotoQuestionIds = useMemo(() => {
@@ -320,10 +326,8 @@ export default function VisitExecutionMode() {
     setIsStarting(true)
     try {
       const geoResult = await geo.requestLocation()
-      if (!geoResult.ok && geoResult.reason === 'denied') {
-        setIsStarting(false)
-        isActionExecutingRef.current = false
-        return
+      if (!geoResult.ok) {
+        toast.warning('تعذر الحصول على الموقع الآن. ستبدأ الزيارة بدون إحداثيات وتظهر للمراجعة الجغرافية.')
       }
       const coords = geoResult.ok ? geoResult.coords : null
       const accuracy = geoResult.ok && geoResult.coords ? geoResult.coords.accuracy : null
@@ -354,10 +358,8 @@ export default function VisitExecutionMode() {
     setIsStarting(true)
     try {
       const geoResult = await geo.requestLocation()
-      if (!geoResult.ok && geoResult.reason === 'denied') {
-        setIsStarting(false)
-        isActionExecutingRef.current = false
-        return
+      if (!geoResult.ok) {
+        toast.warning('تعذر الحصول على الموقع الآن. ستبدأ الزيارة بدون إحداثيات وتظهر للمراجعة الجغرافية.')
       }
       const coords = geoResult.ok ? geoResult.coords : null
       const accuracy = geoResult.ok && geoResult.coords ? geoResult.coords.accuracy : null
@@ -462,8 +464,9 @@ export default function VisitExecutionMode() {
     }
     if (isActionExecutingRef.current || isPendingActive || isStarting || completing) return
     if (!skipModal || !id) return
-    const reason = skipReason === 'أخرى' ? (skipCustom || 'أخرى') : skipReason
+    const reason = (skipReason === 'أخرى' ? skipCustom : skipReason).trim()
     if (!reason) { toast.error('اختر سبب التخطي'); return }
+    if (reason.length > 500) { toast.error('سبب التخطي يجب ألا يتجاوز 500 حرف'); return }
     isActionExecutingRef.current = true
     setSkipping(true)
 
@@ -474,6 +477,9 @@ export default function VisitExecutionMode() {
         setSkipModal(null)
         setSkipReason('')
         setSkipCustom('')
+      } else {
+        const msg = res.errorMessage || (res.errorCode ? (ERROR_TRANSLATIONS[res.errorCode] || res.errorCode) : 'فشل تخطي الزيارة')
+        toast.error(msg)
       }
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : 'حدث خطأ ما أثناء تخطي الزيارة'
@@ -531,7 +537,7 @@ export default function VisitExecutionMode() {
   }
 
   // ── Loading
-  if (planLoading || itemsLoading || atomic.loading) {
+  if (planLoading || itemsLoading || currentEmployeeLoading || atomic.loading) {
     return (
       <div className="page-container animate-enter">
         <div className="edara-card p-6 text-center">
@@ -543,23 +549,41 @@ export default function VisitExecutionMode() {
     )
   }
 
-  if (atomic.error) {
-    return (
-      <div className="page-container animate-enter">
-        <div className="edara-card p-6 text-center text-red-500">
-          <p>{atomic.error}</p>
-          <Button variant="secondary" onClick={() => atomic.reloadFromDb()} className="mt-3">أعد المحاولة</Button>
-        </div>
-      </div>
-    )
-  }
-
   if (!plan || sortedItems.length === 0) {
     return (
       <div className="page-container animate-enter flex-1 flex flex-col items-center justify-center min-h-[50vh]">
         <div className="empty-state p-8">
           <p className="empty-state-title">الزيارة غير موجودة المرجو الرجوع للجدول</p>
           <Button variant="secondary" onClick={() => navigate(-1)}>العودة</Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!currentEmployee || currentEmployee.id !== plan.employee_id) {
+    return (
+      <div className="page-container animate-enter flex-1 flex flex-col items-center justify-center min-h-[50vh]">
+        <div className="edara-card p-8 text-center border-amber-200 bg-amber-50 max-w-md mx-auto">
+          <div style={{ fontSize: 32, marginBottom: 'var(--space-3)' }}>⚠️</div>
+          <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--color-warning)' }}>الخطة مسندة لمندوب آخر</h2>
+          <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)', lineHeight: 1.7 }}>
+            التنفيذ والتخطي الميداني متاحان فقط للمندوب المسندة إليه الخطة، لحماية تسلسل الزيارات وسجل التنفيذ.
+          </p>
+          <p className="text-xs mb-6" style={{ color: 'var(--text-muted)' }}>
+            لإغلاق الخطة أو تعديلها استخدم الإجراء الإداري من شاشة الخطة.
+          </p>
+          <Button variant="secondary" onClick={() => navigate(-1)}>العودة للخطة</Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (atomic.error) {
+    return (
+      <div className="page-container animate-enter">
+        <div className="edara-card p-6 text-center text-red-500">
+          <p>{atomic.error}</p>
+          <Button variant="secondary" onClick={() => atomic.reloadFromDb()} className="mt-3">أعد المحاولة</Button>
         </div>
       </div>
     )
@@ -978,6 +1002,7 @@ export default function VisitExecutionMode() {
               placeholder="اكتب السبب..."
               value={skipCustom}
               onChange={e => setSkipCustom(e.target.value)}
+              maxLength={500}
             />
           )}
 
@@ -986,7 +1011,7 @@ export default function VisitExecutionMode() {
             <Button
               variant="secondary"
               onClick={handleSkip}
-              disabled={skipping || !skipReason || isPendingActive}
+              disabled={skipping || !skipReason || (skipReason === 'أخرى' && !skipCustom.trim()) || isPendingActive}
             >
               {skipping || (currentOp?.kind === 'skip' && (currentOp.state === 'sending' || currentOp.state === 'pending')) ? (
                 <span className="flex items-center gap-2">

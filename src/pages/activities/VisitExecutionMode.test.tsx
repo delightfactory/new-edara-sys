@@ -8,6 +8,10 @@ import type { ChecklistTemplate, VisitPlanItem, VisitPlan } from '@/lib/types/ac
 import { PERMISSIONS } from '@/lib/permissions/constants'
 
 let activeExecutionPermissions: string[] = []
+const mockGeo = vi.hoisted(() => ({
+  status: 'granted',
+  requestLocation: vi.fn()
+}))
 
 // Simple mock for auth store
 vi.mock('@/stores/auth-store', () => {
@@ -115,25 +119,21 @@ let mockChecklistQuery = {
   isSuccess: true,
   refetch: vi.fn()
 }
+let mockCurrentEmployee = { id: 'emp-123' }
 
 vi.mock('@/hooks/useQueryHooks', () => ({
   useVisitPlan: () => ({ data: mockPlanData, isLoading: false }),
   useVisitPlanItems: () => ({ data: mockItemsData, isLoading: false }),
   useUpdateVisitPlanItem: () => ({ mutateAsync: vi.fn() }),
   useChecklistTemplates: () => mockChecklistQuery,
+  useCurrentEmployee: () => ({ data: mockCurrentEmployee, isLoading: false }),
   useCreateActivity: () => ({ mutateAsync: vi.fn() }),
   useActivityTypes: () => ({ data: [{ id: 'type-123', code: 'visit_planned' }], isLoading: false }),
   useSaveChecklistResponses: () => ({ mutateAsync: vi.fn() })
 }))
 
 vi.mock('@/hooks/useGeoPermission', () => ({
-  default: () => ({
-    status: 'granted',
-    requestLocation: vi.fn().mockResolvedValue({
-      ok: true,
-      coords: { lat: 30, lng: 31, accuracy: 10 }
-    })
-  })
+  default: () => mockGeo
 }))
 
 // Mock session hook
@@ -304,6 +304,12 @@ describe('VisitExecutionMode UI Integration Tests (Atomic Mode)', () => {
       isSuccess: true,
       refetch: vi.fn()
     }
+    mockCurrentEmployee = { id: 'emp-123' }
+    mockGeo.status = 'granted'
+    mockGeo.requestLocation.mockResolvedValue({
+      ok: true,
+      coords: { lat: 30, lng: 31, accuracy: 10 }
+    })
     activeExecutionPermissions = [
       PERMISSIONS.VISIT_PLANS_UPDATE_OWN,
       PERMISSIONS.ACTIVITIES_CREATE,
@@ -634,6 +640,54 @@ describe('VisitExecutionMode UI Integration Tests (Atomic Mode)', () => {
     expect(screen.queryByText(/أنت خارج النطاق الجغرافي المسموح به للعميل/)).toBeNull()
     const completeBtn = screen.getByText('إنهاء الزيارة')
     expect(completeBtn.closest('button')?.disabled).toBe(false)
+  })
+
+  it('starts without coordinates when location permission is denied instead of blocking the rep', async () => {
+    const startVisit = vi.fn().mockResolvedValue({ ok: true, state: 'succeeded', errorCode: null })
+    mockGeo.requestLocation.mockResolvedValue({ ok: false, reason: 'denied' })
+
+    vi.mocked(useVisitExecutionSession).mockReturnValue({
+      session: null,
+      pendingOps: [],
+      loading: false,
+      error: null,
+      startVisit,
+      completeVisit: vi.fn(),
+      skipVisit: vi.fn(),
+      retryOperation: vi.fn(),
+      discardFailedOperation: vi.fn(),
+      saveChecklistDraft: vi.fn(),
+      saveGpsExceptionReason: vi.fn(),
+      reloadFromDb: vi.fn()
+    } as unknown as ReturnType<typeof useVisitExecutionSession>)
+
+    render(<VisitExecutionMode />)
+    fireEvent.click(screen.getByText('بدء الزيارة'))
+
+    await waitFor(() => expect(startVisit).toHaveBeenCalledWith('item-1', null, null))
+  })
+
+  it('blocks field execution when the plan belongs to another employee', () => {
+    mockCurrentEmployee = { id: 'emp-other' }
+    vi.mocked(useVisitExecutionSession).mockReturnValue({
+      session: null,
+      pendingOps: [],
+      loading: false,
+      error: null,
+      startVisit: vi.fn(),
+      completeVisit: vi.fn(),
+      skipVisit: vi.fn(),
+      retryOperation: vi.fn(),
+      discardFailedOperation: vi.fn(),
+      saveChecklistDraft: vi.fn(),
+      saveGpsExceptionReason: vi.fn(),
+      reloadFromDb: vi.fn()
+    } as unknown as ReturnType<typeof useVisitExecutionSession>)
+
+    render(<VisitExecutionMode />)
+
+    expect(screen.getByText('الخطة مسندة لمندوب آخر')).toBeDefined()
+    expect(screen.queryByText('بدء الزيارة')).toBeNull()
   })
 
   it('keeps completion disabled until checklist definitions finish loading', () => {
