@@ -80,3 +80,15 @@ WHERE NOT EXISTS (
     AND tg.tgenabled = 'O'
     AND NOT tg.tgisinternal
 );
+
+-- 5) A native date input emits YYYY-MM-DD. The trigger regex must accept
+-- ASCII digits without relying on a double-escaped \d sequence.
+SELECT 'DATE_VALIDATION_REGEX_REGRESSION' AS audit_rule
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM pg_catalog.pg_proc p
+  JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public'
+    AND p.proname = 'snapshot_and_validate_visit_checklist_response'
+    AND p.prosrc LIKE '%^[0-9]{4}-[0-9]{2}-[0-9]{2}$%'
+);

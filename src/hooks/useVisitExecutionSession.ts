@@ -54,6 +54,13 @@ export interface ChecklistResponseValidationInput {
   answer_json?: unknown
 }
 
+export function isValidChecklistIsoDate(value: unknown): value is string {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  if (value.startsWith('0000-')) return false
+  const parsed = new Date(`${value}T00:00:00.000Z`)
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value
+}
+
 export function mapLocalChecklistResponses(
   responses: ChecklistResponseValidationInput[],
   questions: ChecklistQuestion[],
@@ -110,6 +117,17 @@ export function mapLocalChecklistResponses(
           ...base,
           answer_value: null,
           answer_json: r.answer_json as string[]
+        } as LocalChecklistDraftResponse
+      }
+
+      case 'date': {
+        if (!isValidChecklistIsoDate(r.answer_value)) {
+          throw new Error(`إجابة التاريخ للسؤال "${q.question_text}" يجب أن تكون بصيغة YYYY-MM-DD وتاريخاً صالحاً`)
+        }
+        return {
+          ...base,
+          answer_value: r.answer_value,
+          answer_json: null
         } as LocalChecklistDraftResponse
       }
 
@@ -218,6 +236,17 @@ export function mapChecklistResponses(
         } as VisitCompletionChecklistMultiChoiceResponseInput
       }
 
+      case 'date': {
+        if (!isValidChecklistIsoDate(r.answer_value)) {
+          throw new Error(`إجابة التاريخ للسؤال "${q.question_text}" يجب أن تكون بصيغة YYYY-MM-DD وتاريخاً صالحاً`)
+        }
+        return {
+          ...base,
+          answer_value: r.answer_value,
+          answer_json: null
+        } as VisitCompletionChecklistScalarResponseInput
+      }
+
       default: {
         if (r.answer_value === null || r.answer_value === undefined) {
           throw new Error(`إجابة السؤال "${q.question_text}" مطلوبة ويجب أن تكون نصية`)
@@ -301,7 +330,6 @@ export function useVisitExecutionSession(
 
   const isExecutingRef = useRef(false)
   const isMountedRef = useRef(true)
-
   // Update ref directly in render body to guarantee it's always up to date
   const serverItemsRef = useRef(serverItems)
   serverItemsRef.current = serverItems

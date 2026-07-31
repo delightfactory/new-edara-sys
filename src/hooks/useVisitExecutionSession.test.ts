@@ -1,7 +1,13 @@
 import 'fake-indexeddb/auto'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { useVisitExecutionSession, mapChecklistResponses, isVisitOperationSatisfiedByServer } from './useVisitExecutionSession'
+import {
+  useVisitExecutionSession,
+  mapChecklistResponses,
+  mapLocalChecklistResponses,
+  isValidChecklistIsoDate,
+  isVisitOperationSatisfiedByServer
+} from './useVisitExecutionSession'
 import { visitsDb, cleanUpDatabase, type LocalVisitSession, type PendingVisitOperation, validatePendingOperation, getOrCreatePendingOperation, InvalidOperationDependencyError, CorruptedPayloadError, replaceLocalBlobTransaction } from '@/lib/db/visitsDb'
 import {
   startVisitItemAtomic,
@@ -194,6 +200,30 @@ describe('useVisitExecutionSession Hook Core Logic', () => {
     expect(() => {
       mapChecklistResponses([dataUrlPhoto], mockQuestions, 't-1')
     }).toThrow('لا يمكن حفظ أو إرسال صور ترميز Base64/Data URL مباشرة')
+  })
+
+  it('accepts real ISO checklist dates and rejects malformed or impossible dates before RPC execution', () => {
+    const dateQuestion = {
+      id: 'q-date',
+      template_id: 't-1',
+      question_text: 'موعد المتابعة',
+      question_type: 'date'
+    } as unknown as ChecklistQuestion
+    const validDate = {
+      template_id: 't-1', question_id: 'q-date',
+      answer_value: '2026-08-02', answer_json: null
+    }
+
+    expect(isValidChecklistIsoDate('2026-08-02')).toBe(true)
+    expect(isValidChecklistIsoDate('02/08/2026')).toBe(false)
+    expect(isValidChecklistIsoDate('2026-02-30')).toBe(false)
+    expect(isValidChecklistIsoDate('0000-01-01')).toBe(false)
+    expect(mapLocalChecklistResponses([validDate], [dateQuestion], 't-1')[0]).toMatchObject(validDate)
+    expect(mapChecklistResponses([validDate], [dateQuestion], 't-1')[0]).toMatchObject(validDate)
+
+    expect(() => mapChecklistResponses([
+      { ...validDate, answer_value: '2026-02-30' }
+    ], [dateQuestion], 't-1')).toThrow('يجب أن تكون بصيغة YYYY-MM-DD وتاريخاً صالحاً')
   })
 
   it('proves IndexedDB is not touched if enabled is false', async () => {
