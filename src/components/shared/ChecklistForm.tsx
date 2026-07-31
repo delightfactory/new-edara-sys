@@ -104,19 +104,41 @@ export default function ChecklistForm({
     return init
   })
 
+  const lastInitialValuesRef = useRef<Record<string, unknown>>(initialValues || {})
+
   useEffect(() => {
     const vals = initialValues || {}
+    const previousVals = lastInitialValuesRef.current
+
     setAnswers(prev => {
       let changed = false
       const updated = { ...prev }
+
       for (const q of questions) {
-        if (vals[q.id] !== undefined && prev[q.id] !== vals[q.id]) {
-          updated[q.id] = vals[q.id]
+        const fallback = q.default_value ?? ''
+        const previousExternal = Object.prototype.hasOwnProperty.call(previousVals, q.id)
+          ? previousVals[q.id]
+          : fallback
+        const nextExternal = Object.prototype.hasOwnProperty.call(vals, q.id)
+          ? vals[q.id]
+          : fallback
+
+        // External updates (for example, replacing a local photo id with its
+        // uploaded storage path) are safe only while the user has not changed
+        // the same answer locally. This prevents a delayed draft echo from
+        // overwriting an in-progress keystroke or a newer choice.
+        if (
+          !areAnswerValuesEqual(previousExternal, nextExternal) &&
+          areAnswerValuesEqual(prev[q.id], previousExternal)
+        ) {
+          updated[q.id] = nextExternal
           changed = true
         }
       }
       return changed ? updated : prev
     })
+
+    lastInitialValuesRef.current = vals
   }, [initialValues, questions])
 
   const [processingQuestions, setProcessingQuestions] = useState<Record<string, boolean>>({})
@@ -195,12 +217,19 @@ export default function ChecklistForm({
   }, [])
 
   const onChangeRef = useRef(onChange)
+  const hasMountedRef = useRef(false)
   useEffect(() => {
     onChangeRef.current = onChange
   }, [onChange])
 
   // إبلاغ الـ parent بالتغيير
   useEffect(() => {
+    // Initial values have already been persisted by the parent. Avoid creating
+    // an empty draft and a layout-changing "saved" badge on first mount.
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true
+      return
+    }
     if (!onChangeRef.current) return
     const responses = getTypedResponses()
 
@@ -320,7 +349,10 @@ export default function ChecklistForm({
                 className={`chk-choice ${value === opt ? 'chk-choice--selected' : ''}`}
                 onClick={() => !readOnly && handleChange(q.id, value === opt ? '' : opt)}
               >
-                {value === opt && '● '}{opt}
+                <span className="chk-choice-mark" aria-hidden="true">
+                  {value === opt ? '●' : ''}
+                </span>
+                <span>{opt}</span>
               </button>
             ))}
           </div>
@@ -345,7 +377,10 @@ export default function ChecklistForm({
                   handleChange(q.id, next)
                 }}
               >
-                {selected.includes(opt) ? '☑ ' : '☐ '}{opt}
+                <span className="chk-choice-mark" aria-hidden="true">
+                  {selected.includes(opt) ? '☑' : '☐'}
+                </span>
+                <span>{opt}</span>
               </button>
             ))}
           </div>
@@ -484,6 +519,32 @@ function parseOptions(options: unknown): string[] {
     })
   }
   return []
+}
+
+function areAnswerValuesEqual(left: unknown, right: unknown): boolean {
+  if (Object.is(left, right)) return true
+
+  if (Array.isArray(left) || Array.isArray(right)) {
+    if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) return false
+    return left.every((value, index) => areAnswerValuesEqual(value, right[index]))
+  }
+
+  if (
+    left && right &&
+    typeof left === 'object' && typeof right === 'object'
+  ) {
+    const leftRecord = left as Record<string, unknown>
+    const rightRecord = right as Record<string, unknown>
+    const leftKeys = Object.keys(leftRecord)
+    const rightKeys = Object.keys(rightRecord)
+    if (leftKeys.length !== rightKeys.length) return false
+    return leftKeys.every(key => (
+      Object.prototype.hasOwnProperty.call(rightRecord, key) &&
+      areAnswerValuesEqual(leftRecord[key], rightRecord[key])
+    ))
+  }
+
+  return false
 }
 
 const styles = `
@@ -627,19 +688,29 @@ const styles = `
     border-radius: var(--radius-md, 8px);
     background: var(--bg-surface, white);
     cursor: pointer;
-    font-size: var(--text-xs, 12px);
-    font-weight: 500;
-    transition: all 0.15s ease;
+    font-size: var(--text-sm, 14px);
+    font-weight: 600;
+    transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
     font-family: inherit;
     display: inline-flex;
     align-items: center;
+    gap: 6px;
+    touch-action: manipulation;
   }
   .chk-choice:hover { border-color: var(--color-primary, #2563eb); }
   .chk-choice--selected {
     border-color: var(--color-primary, #2563eb);
     background: var(--color-primary-light, rgba(37,99,235,0.1));
     color: var(--color-primary, #2563eb);
-    font-weight: 600;
+  }
+  .chk-choice-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 16px;
+    min-inline-size: 16px;
+    block-size: 18px;
+    line-height: 1;
   }
   .chk-rating {
     display: flex;
@@ -731,6 +802,11 @@ const styles = `
     background: var(--neutral-200, #e2e8f0);
     color: var(--text-muted, #64748b);
     cursor: not-allowed;
+  }
+  @media (max-width: 768px) {
+    .chk-textarea, .chk-input {
+      font-size: 16px;
+    }
   }
 `
 

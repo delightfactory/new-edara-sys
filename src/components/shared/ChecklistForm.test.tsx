@@ -282,4 +282,67 @@ describe('ChecklistForm Component', () => {
       ], true)
     })
   })
+
+  it('does not emit or create an empty draft on initial mount', async () => {
+    const onChangeMock = vi.fn()
+
+    render(
+      <ChecklistForm
+        questions={[mockQuestions[0]]}
+        activityId="act-1"
+        templateId="t-1"
+        onChange={onChangeMock}
+        onPhotoCapture={vi.fn()}
+      />
+    )
+
+    await Promise.resolve()
+    expect(onChangeMock).not.toHaveBeenCalled()
+  })
+
+  it('keeps newer typing and multi-choice input when an older persisted draft arrives', async () => {
+    const onChangeMock = vi.fn()
+    const questions = [
+      {
+        id: 'q-text', template_id: 't-1', question_text: 'ملاحظات',
+        question_type: 'text', is_required: false, default_value: null
+      },
+      {
+        id: 'q-multi', template_id: 't-1', question_text: 'اختيارات',
+        question_type: 'multi_choice', is_required: false, default_value: null,
+        options: ['الأول', 'الثاني']
+      }
+    ] as unknown as ChecklistQuestion[]
+
+    const { rerender } = render(
+      <ChecklistForm
+        questions={questions}
+        activityId="act-1"
+        templateId="t-1"
+        initialValues={{}}
+        onChange={onChangeMock}
+      />
+    )
+
+    const textarea = screen.getByPlaceholderText('اكتب إجابتك...') as HTMLTextAreaElement
+    fireEvent.change(textarea, { target: { value: 'إجابة حديثة' } })
+    fireEvent.click(screen.getByRole('button', { name: 'الأول' }))
+    fireEvent.click(screen.getByRole('button', { name: 'الثاني' }))
+
+    // Simulate a slower, older IndexedDB echo reaching the parent after both
+    // newer interactions have already happened locally.
+    rerender(
+      <ChecklistForm
+        questions={questions}
+        activityId="act-1"
+        templateId="t-1"
+        initialValues={{ 'q-text': 'إجابة', 'q-multi': ['الأول'] }}
+        onChange={onChangeMock}
+      />
+    )
+
+    expect(textarea.value).toBe('إجابة حديثة')
+    expect(screen.getByRole('button', { name: 'الأول' }).className).toContain('chk-choice--selected')
+    expect(screen.getByRole('button', { name: 'الثاني' }).className).toContain('chk-choice--selected')
+  })
 })

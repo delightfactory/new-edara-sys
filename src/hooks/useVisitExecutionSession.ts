@@ -53,6 +53,13 @@ export interface ChecklistResponseValidationInput {
   answer_json?: unknown
 }
 
+export function isValidChecklistIsoDate(value: unknown): value is string {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  if (value.startsWith('0000-')) return false
+  const parsed = new Date(`${value}T00:00:00.000Z`)
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value
+}
+
 export function mapLocalChecklistResponses(
   responses: ChecklistResponseValidationInput[],
   questions: ChecklistQuestion[],
@@ -109,6 +116,17 @@ export function mapLocalChecklistResponses(
           ...base,
           answer_value: null,
           answer_json: r.answer_json as string[]
+        } as LocalChecklistDraftResponse
+      }
+
+      case 'date': {
+        if (!isValidChecklistIsoDate(r.answer_value)) {
+          throw new Error(`إجابة التاريخ للسؤال "${q.question_text}" يجب أن تكون بصيغة YYYY-MM-DD وتاريخاً صالحاً`)
+        }
+        return {
+          ...base,
+          answer_value: r.answer_value,
+          answer_json: null
         } as LocalChecklistDraftResponse
       }
 
@@ -217,6 +235,17 @@ export function mapChecklistResponses(
         } as VisitCompletionChecklistMultiChoiceResponseInput
       }
 
+      case 'date': {
+        if (!isValidChecklistIsoDate(r.answer_value)) {
+          throw new Error(`إجابة التاريخ للسؤال "${q.question_text}" يجب أن تكون بصيغة YYYY-MM-DD وتاريخاً صالحاً`)
+        }
+        return {
+          ...base,
+          answer_value: r.answer_value,
+          answer_json: null
+        } as VisitCompletionChecklistScalarResponseInput
+      }
+
       default: {
         if (r.answer_value === null || r.answer_value === undefined) {
           throw new Error(`إجابة السؤال "${q.question_text}" مطلوبة ويجب أن تكون نصية`)
@@ -250,6 +279,39 @@ function sortOperations(ops: PendingVisitOperation[]) {
   })
 }
 
+export function isVisitOperationSatisfiedByServer(
+  operation: PendingVisitOperation,
+  item: VisitPlanItem | undefined
+): boolean {
+  if (!item) return false
+
+  if (operation.kind === 'start') {
+    return item.status !== 'pending'
+  }
+  if (operation.kind === 'complete') {
+    return item.status === 'completed'
+  }
+  return item.status === 'skipped'
+}
+
+async function reconcileOperationsWithServer(
+  operations: PendingVisitOperation[],
+  items: VisitPlanItem[]
+): Promise<PendingVisitOperation[]> {
+  const satisfiedIds = operations
+    .filter(operation => isVisitOperationSatisfiedByServer(
+      operation,
+      items.find(item => item.id === operation.itemId)
+    ))
+    .map(operation => operation.operationId)
+
+  if (satisfiedIds.length === 0) return operations
+
+  await visitsDb.pendingVisitOperations.bulkDelete(satisfiedIds)
+  const satisfiedIdSet = new Set(satisfiedIds)
+  return operations.filter(operation => !satisfiedIdSet.has(operation.operationId))
+}
+
 export function useVisitExecutionSession(
   planId: string | undefined,
   serverItems: VisitPlanItem[],
@@ -266,6 +328,9 @@ export function useVisitExecutionSession(
 
   const isExecutingRef = useRef(false)
   const isMountedRef = useRef(true)
+  const checklistDraftSaveChainRef = useRef<Promise<void>>(Promise.resolve())
+  const checklistDraftSaveContextRef = useRef('')
+  checklistDraftSaveContextRef.current = `${userId}:${planId || ''}`
 
   // Update ref directly in render body to guarantee it's always up to date
   const serverItemsRef = useRef(serverItems)
@@ -285,7 +350,7 @@ export function useVisitExecutionSession(
     try {
       await cleanUpDatabase(userId)
       const localSession = await visitsDb.visitSessions.get([userId, planId])
-      const ops = await visitsDb.pendingVisitOperations
+      let ops = await visitsDb.pendingVisitOperations
         .where('userId')
         .equals(userId)
         .and(op => op.planId === planId)
@@ -302,8 +367,10 @@ export function useVisitExecutionSession(
         }
       }
 
+      const itemsToUse = freshItems || serverItemsRef.current
+      ops = await reconcileOperationsWithServer(ops, itemsToUse)
+
       if (isMountedRef.current) {
-        const itemsToUse = freshItems || serverItemsRef.current
         let sessionToSet: LocalVisitSession | null = null
 
         if (localSession) {
@@ -364,7 +431,7 @@ export function useVisitExecutionSession(
           .modify({ state: 'retryable', updatedAt: Date.now(), expiresAt: Date.now() + 48 * 3600 * 1000 })
 
         const localSession = await visitsDb.visitSessions.get([userId, planId])
-        const ops = await visitsDb.pendingVisitOperations
+        let ops = await visitsDb.pendingVisitOperations
           .where('userId')
           .equals(userId)
           .and(op => op.planId === planId)
@@ -382,6 +449,7 @@ export function useVisitExecutionSession(
         }
 
         const currentServerItems = serverItemsRef.current
+        ops = await reconcileOperationsWithServer(ops, currentServerItems)
 
         if (localSession) {
           const matchedItem = currentServerItems.find(i => i.id === localSession.itemId)
@@ -389,6 +457,10 @@ export function useVisitExecutionSession(
             // Delete local session if item status is final on server
             if (['completed', 'skipped', 'rescheduled', 'missed'].includes(matchedItem.status)) {
               await visitsDb.visitSessions.delete([userId, planId])
+              await visitsDb.localBlobs
+                .where('[userId+planId+itemId]')
+                .equals([userId, planId, matchedItem.id])
+                .delete()
               if (isMountedRef.current) setSession(null)
             } else {
               const startOp = ops.find(o => o.itemId === localSession.itemId && o.kind === 'start')
@@ -488,53 +560,65 @@ export function useVisitExecutionSession(
   }, [enabled, userId, reloadFromDb])
 
   // Save checklist draft updates (Validates before saving to IndexedDB)
-  const saveChecklistDraft = useCallback(async (
+  const saveChecklistDraft = useCallback((
     templateId: string,
     responses: ChecklistResponseValidationInput[],
     templateQuestions: ChecklistQuestion[],
     isComplete: boolean
-  ) => {
-    if (!enabled) return
-    const localSession = await visitsDb.visitSessions.get([userId, planId || ''])
-    if (!localSession || !userId || !planId) return
-    try {
-      const validated = mapLocalChecklistResponses(responses, templateQuestions, templateId)
+  ): Promise<void> => {
+    if (!enabled || !userId || !planId) return Promise.resolve()
+    const saveContextKey = `${userId}:${planId}`
 
-      const updatedDrafts = {
-        ...localSession.checklistDrafts,
-        [templateId]: { responses: validated, isComplete }
-      }
-      const updatedSession = {
-        ...localSession,
-        checklistDrafts: updatedDrafts,
-        updatedAt: Date.now()
-      }
-      await visitsDb.visitSessions.put(updatedSession)
+    // Every keystroke/choice can request a durable draft save. Keep those
+    // writes in invocation order so a slower, older write can never replace a
+    // newer answer in IndexedDB or React state.
+    const queuedSave = checklistDraftSaveChainRef.current
+      .catch(() => undefined)
+      .then(async () => {
+        try {
+          const localSession = await visitsDb.visitSessions.get([userId, planId])
+          if (!localSession) return
 
-      const ops = await visitsDb.pendingVisitOperations
-        .where('userId')
-        .equals(userId)
-        .and(op => op.planId === planId)
-        .toArray()
-      const startOp = ops.find(o => o.itemId === localSession.itemId && o.kind === 'start')
-      const hasPendingStart = startOp && (startOp.state === 'pending' || startOp.state === 'retryable' || startOp.state === 'sending')
-      const hasTerminalStartFailure = startOp && (startOp.state === 'failed' || startOp.state === 'conflict')
-      const serverConfirmsInProgress = (serverItemsRef.current.find(i => i.id === localSession.itemId))?.status === 'in_progress'
+          const validated = mapLocalChecklistResponses(responses, templateQuestions, templateId)
+          const updatedDrafts = {
+            ...localSession.checklistDrafts,
+            [templateId]: { responses: validated, isComplete }
+          }
+          const updatedSession = {
+            ...localSession,
+            checklistDrafts: updatedDrafts,
+            updatedAt: Date.now()
+          }
+          await visitsDb.visitSessions.put(updatedSession)
 
-      if (isMountedRef.current) {
-        if (hasPendingStart) {
-          setSession(updatedSession)
-        } else if (hasTerminalStartFailure) {
-          setSession(null)
-        } else {
-          setSession(serverConfirmsInProgress ? updatedSession : null)
+          const ops = await visitsDb.pendingVisitOperations
+            .where('userId')
+            .equals(userId)
+            .and(op => op.planId === planId)
+            .toArray()
+          const startOp = ops.find(o => o.itemId === localSession.itemId && o.kind === 'start')
+          const hasPendingStart = startOp && (startOp.state === 'pending' || startOp.state === 'retryable' || startOp.state === 'sending')
+          const hasTerminalStartFailure = startOp && (startOp.state === 'failed' || startOp.state === 'conflict')
+          const serverConfirmsInProgress = (serverItemsRef.current.find(i => i.id === localSession.itemId))?.status === 'in_progress'
+
+          if (isMountedRef.current && checklistDraftSaveContextRef.current === saveContextKey) {
+            if (hasPendingStart) {
+              setSession(updatedSession)
+            } else if (hasTerminalStartFailure) {
+              setSession(null)
+            } else {
+              setSession(serverConfirmsInProgress ? updatedSession : null)
+            }
+          }
+        } catch (err) {
+          if (err instanceof Error) {
+            toast.error(err.message || 'فشل حفظ المسودة')
+          }
         }
-      }
-    } catch (err) {
-      if (err instanceof Error) {
-        toast.error(err.message || 'فشل حفظ المسودة')
-      }
-    }
+      })
+
+    checklistDraftSaveChainRef.current = queuedSave
+    return queuedSave
   }, [userId, planId, enabled])
 
   // Save gps exception reason

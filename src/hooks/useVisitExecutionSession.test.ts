@@ -1,8 +1,14 @@
 import 'fake-indexeddb/auto'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { useVisitExecutionSession, mapChecklistResponses } from './useVisitExecutionSession'
-import { visitsDb, cleanUpDatabase, type PendingVisitOperation, validatePendingOperation, getOrCreatePendingOperation, InvalidOperationDependencyError, CorruptedPayloadError, replaceLocalBlobTransaction } from '@/lib/db/visitsDb'
+import {
+  useVisitExecutionSession,
+  mapChecklistResponses,
+  mapLocalChecklistResponses,
+  isValidChecklistIsoDate,
+  isVisitOperationSatisfiedByServer
+} from './useVisitExecutionSession'
+import { visitsDb, cleanUpDatabase, type PendingVisitOperation, type LocalVisitSession, validatePendingOperation, getOrCreatePendingOperation, InvalidOperationDependencyError, CorruptedPayloadError, replaceLocalBlobTransaction } from '@/lib/db/visitsDb'
 import {
   startVisitItemAtomic,
   completeVisitItemAtomic,
@@ -100,6 +106,73 @@ describe('useVisitExecutionSession Hook Core Logic', () => {
     { id: 'q-scalar', template_id: 't-1', question_text: 'نص', question_type: 'text' } as unknown as ChecklistQuestion
   ]
 
+  it('reconciles a stale local start conflict when the server already started the visit', async () => {
+    const operationId = '78fd0ac5-35f8-4815-aa81-bf4ec4b042b4'
+    const now = Date.now()
+    const operation: PendingVisitOperation = {
+      operationId,
+      userId: 'test-user-123',
+      planId: 'plan-123',
+      itemId: 'item-1',
+      kind: 'start',
+      state: 'conflict',
+      attemptCount: 1,
+      lastErrorCode: 'SYNC_CONFLICT',
+      createdAt: now,
+      updatedAt: now,
+      expiresAt: now + 10_000,
+      payload: {
+        operationId,
+        itemId: 'item-1',
+        startLat: null,
+        startLng: null,
+        startAccuracyM: null,
+        clientStartedAt: new Date().toISOString(),
+        deviceTimezone: 'Africa/Cairo'
+      }
+    }
+    const serverItems = [{
+      id: 'item-1',
+      plan_id: 'plan-123',
+      customer_id: 'customer-1',
+      sequence: 1,
+      status: 'in_progress',
+      server_started_at: new Date().toISOString(),
+      client_started_at: new Date().toISOString(),
+      start_lat: null,
+      start_lng: null,
+      start_accuracy_m: null,
+      gps_validation_status: 'no_coordinates',
+      updated_at: new Date().toISOString()
+    }] as unknown as VisitPlanItem[]
+
+    await visitsDb.pendingVisitOperations.put(operation)
+    await visitsDb.visitSessions.put({
+      userId: 'test-user-123',
+      planId: 'plan-123',
+      itemId: 'item-1',
+      serverStartedAt: serverItems[0].server_started_at,
+      clientStartedAt: serverItems[0].client_started_at || new Date().toISOString(),
+      startGPS: null,
+      startGPSAccuracy: null,
+      gpsValidationStatus: 'no_coordinates',
+      checklistDrafts: {},
+      gpsExceptionReason: null,
+      updatedAt: now,
+      expiresAt: now + 10_000
+    })
+
+    expect(isVisitOperationSatisfiedByServer(operation, serverItems[0])).toBe(true)
+
+    const { result } = renderHook(() => useVisitExecutionSession('plan-123', serverItems, true))
+
+    await waitFor(async () => {
+      expect(await visitsDb.pendingVisitOperations.get(operationId)).toBeUndefined()
+      expect(result.current.pendingOps).toHaveLength(0)
+      expect(result.current.session?.itemId).toBe('item-1')
+    })
+  })
+
   it('mapChecklistResponses validates types, templateIds, extra properties, and blocks Base64', () => {
     const validPhoto: ChecklistResponseInput = {
       template_id: 't-1',
@@ -139,6 +212,77 @@ describe('useVisitExecutionSession Hook Core Logic', () => {
     expect(() => {
       mapChecklistResponses([dataUrlPhoto], mockQuestions, 't-1')
     }).toThrow('لا يمكن حفظ أو إرسال صور ترميز Base64/Data URL مباشرة')
+  })
+
+  it('accepts real ISO checklist dates and rejects malformed or impossible dates before RPC execution', () => {
+    const dateQuestion = {
+      id: 'q-date',
+      template_id: 't-1',
+      question_text: 'موعد المتابعة',
+      question_type: 'date'
+    } as unknown as ChecklistQuestion
+    const validDate = {
+      template_id: 't-1', question_id: 'q-date',
+      answer_value: '2026-08-02', answer_json: null
+    }
+
+    expect(isValidChecklistIsoDate('2026-08-02')).toBe(true)
+    expect(isValidChecklistIsoDate('02/08/2026')).toBe(false)
+    expect(isValidChecklistIsoDate('2026-02-30')).toBe(false)
+    expect(isValidChecklistIsoDate('0000-01-01')).toBe(false)
+    expect(mapLocalChecklistResponses([validDate], [dateQuestion], 't-1')[0]).toMatchObject(validDate)
+    expect(mapChecklistResponses([validDate], [dateQuestion], 't-1')[0]).toMatchObject(validDate)
+
+    expect(() => mapChecklistResponses([
+      { ...validDate, answer_value: '2026-02-30' }
+    ], [dateQuestion], 't-1')).toThrow('يجب أن تكون بصيغة YYYY-MM-DD وتاريخاً صالحاً')
+  })
+
+  it('serializes rapid draft saves so a delayed older write cannot replace the newest answer', async () => {
+    const now = Date.now()
+    const serverItems = [{
+      id: 'item-1', plan_id: 'plan-123', customer_id: 'customer-1',
+      sequence: 1, status: 'in_progress'
+    }] as unknown as VisitPlanItem[]
+
+    await visitsDb.visitSessions.put({
+      userId: 'test-user-123', planId: 'plan-123', itemId: 'item-1',
+      serverStartedAt: new Date().toISOString(), clientStartedAt: new Date().toISOString(),
+      startGPS: null, startGPSAccuracy: null, gpsValidationStatus: 'passed',
+      checklistDrafts: {}, gpsExceptionReason: null,
+      updatedAt: now, expiresAt: now + 60_000
+    })
+
+    const { result } = renderHook(() => useVisitExecutionSession('plan-123', serverItems, true))
+    await waitFor(() => expect(result.current.session?.itemId).toBe('item-1'))
+
+    const originalPut = visitsDb.visitSessions.put.bind(visitsDb.visitSessions)
+    const putSpy = vi.spyOn(visitsDb.visitSessions, 'put')
+    putSpy.mockImplementation((async (value: LocalVisitSession, key?: [string, string]) => {
+      const answer = value.checklistDrafts['t-1']?.responses[0]?.answer_value
+      if (answer === 'الإجابة الأقدم') {
+        await new Promise(resolve => setTimeout(resolve, 40))
+      }
+      return key === undefined ? originalPut(value) : originalPut(value, key)
+    }) as typeof visitsDb.visitSessions.put)
+
+    try {
+      await act(async () => {
+        const olderSave = result.current.saveChecklistDraft('t-1', [{
+          template_id: 't-1', question_id: 'q-scalar', answer_value: 'الإجابة الأقدم'
+        }], mockQuestions, false)
+        const newestSave = result.current.saveChecklistDraft('t-1', [{
+          template_id: 't-1', question_id: 'q-scalar', answer_value: 'الإجابة الأحدث'
+        }], mockQuestions, false)
+        await Promise.all([olderSave, newestSave])
+      })
+
+      const stored = await visitsDb.visitSessions.get(['test-user-123', 'plan-123'])
+      expect(stored?.checklistDrafts['t-1']?.responses[0]?.answer_value).toBe('الإجابة الأحدث')
+      expect(result.current.session?.checklistDrafts['t-1']?.responses[0]?.answer_value).toBe('الإجابة الأحدث')
+    } finally {
+      putSpy.mockRestore()
+    }
   })
 
   it('proves IndexedDB is not touched if enabled is false', async () => {
@@ -193,7 +337,7 @@ describe('useVisitExecutionSession Hook Core Logic', () => {
     errorSpy.mockRestore()
   })
 
-  it('checks server status before discarding failed operations to avoid Diverged State', async () => {
+  it('checks server status before discarding failed operations and accepts an already-satisfied start', async () => {
     const now = Date.now()
     await visitsDb.pendingVisitOperations.put({
       operationId: 'op-failed-start',
@@ -270,11 +414,8 @@ describe('useVisitExecutionSession Hook Core Logic', () => {
       await result.current.discardFailedOperation('op-failed-start-2')
     })
 
-    const storedConflict = await visitsDb.pendingVisitOperations.get('op-failed-start-2')
-    expect(storedConflict).toBeDefined()
-    expect(storedConflict?.state).toBe('conflict')
-    expect(storedConflict?.lastErrorCode).toBe('SYNC_CONFLICT')
-    expect(storedConflict?.expiresAt).toBeGreaterThanOrEqual(now + 6 * 24 * 3600 * 1000)
+    const reconciled = await visitsDb.pendingVisitOperations.get('op-failed-start-2')
+    expect(reconciled).toBeUndefined()
   })
 
   it('restores interrupted pending/sending operations to retryable on initialization', async () => {
@@ -2159,4 +2300,3 @@ describe('useVisitExecutionSession Hook Core Logic', () => {
     })
   })
 })
-
