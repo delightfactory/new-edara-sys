@@ -18,7 +18,7 @@ import {
   useChecklistTemplates, useCurrentEmployee,
 } from '@/hooks/useQueryHooks'
 import useGeoPermission from '@/hooks/useGeoPermission'
-import type { VisitPlanItem, VisitCompletionChecklistResponseInput } from '@/lib/types/activities'
+import type { ChecklistTemplate, VisitPlanItem, VisitCompletionChecklistResponseInput } from '@/lib/types/activities'
 import GeoPermissionBanner from '@/components/shared/GeoPermissionBanner'
 import VisitTimer from '@/components/shared/VisitTimer'
 import ChecklistForm from '@/components/shared/ChecklistForm'
@@ -33,7 +33,7 @@ import {
 // Atomic feature flag & hook
 import { VISITS_ATOMIC_EXECUTION } from '@/lib/config/features'
 import { useVisitExecutionSession, mapChecklistResponses } from '@/hooks/useVisitExecutionSession'
-import { visitsDb, type PendingVisitOperation, type LocalBlobRecord } from '@/lib/db/visitsDb'
+import { visitsDb, type PendingVisitOperation, type LocalBlobRecord, type LocalVisitSession } from '@/lib/db/visitsDb'
 import { useAuthStore } from '@/stores/auth-store'
 import { PERMISSIONS } from '@/lib/permissions/constants'
 import { subscribeToSyncChanges, resumeUploads, retrySingleUpload } from '@/lib/services/photoSyncService'
@@ -47,6 +47,24 @@ const SKIP_REASONS = [
 const PURPOSE_LABELS: Record<string, string> = {
   sales: 'مبيعات', collection: 'تحصيل', activation: 'تنشيط',
   promotion: 'ترويج', followup: 'متابعة', service: 'خدمة',
+}
+
+export function collectCurrentChecklistResponses(
+  drafts: LocalVisitSession['checklistDrafts'] | undefined,
+  templates: ChecklistTemplate[]
+) {
+  if (!drafts) return []
+
+  return templates.flatMap(template => {
+    const draft = drafts[template.id]
+    if (!draft) return []
+
+    const currentQuestionIds = new Set((template.questions ?? []).map(question => question.id))
+    return draft.responses.filter(response => (
+      response.template_id === template.id &&
+      currentQuestionIds.has(response.question_id)
+    ))
+  })
 }
 
 export default function VisitExecutionMode() {
@@ -181,8 +199,8 @@ export default function VisitExecutionMode() {
   // Derived Checklist Responses & Complete Status (Atomic Mode)
   const atomicChecklistResponses = useMemo(() => {
     if (!atomic.session) return []
-    return Object.values(atomic.session.checklistDrafts).flatMap(d => d.responses)
-  }, [atomic.session?.checklistDrafts])
+    return collectCurrentChecklistResponses(atomic.session.checklistDrafts, templates)
+  }, [templates, atomic.session?.checklistDrafts])
 
   const checklistContextValues = useMemo(() => {
     const questionCodes = new Map(

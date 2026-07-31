@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import VisitExecutionMode from './VisitExecutionMode'
+import VisitExecutionMode, { collectCurrentChecklistResponses } from './VisitExecutionMode'
 import { useVisitExecutionSession } from '@/hooks/useVisitExecutionSession'
 import type { PendingVisitOperation } from '@/lib/db/visitsDb'
 import type { ChecklistTemplate, VisitPlanItem, VisitPlan } from '@/lib/types/activities'
@@ -218,6 +218,50 @@ function makeMockCompleteOperation(overrides?: Partial<PendingVisitOperation>): 
     ...overrides
   } as PendingVisitOperation
 }
+
+describe('collectCurrentChecklistResponses', () => {
+  it('keeps current answers and excludes stale templates or removed question ids', () => {
+    const templates = [{
+      id: 'activation-template',
+      questions: [{ id: 'activation-current-question' }]
+    }] as unknown as ChecklistTemplate[]
+    const drafts = {
+      'activation-template': {
+        isComplete: true,
+        responses: [
+          {
+            template_id: 'activation-template',
+            question_id: 'activation-current-question',
+            answer_value: 'تم التنفيذ',
+            answer_json: null
+          },
+          {
+            template_id: 'activation-template',
+            question_id: 'removed-question',
+            answer_value: 'إجابة قديمة',
+            answer_json: null
+          }
+        ]
+      },
+      'previous-purpose-template': {
+        isComplete: true,
+        responses: [{
+          template_id: 'previous-purpose-template',
+          question_id: 'previous-purpose-question',
+          answer_value: 'إجابة من غرض سابق',
+          answer_json: null
+        }]
+      }
+    } as Parameters<typeof collectCurrentChecklistResponses>[0]
+
+    expect(collectCurrentChecklistResponses(drafts, templates)).toEqual([{
+      template_id: 'activation-template',
+      question_id: 'activation-current-question',
+      answer_value: 'تم التنفيذ',
+      answer_json: null
+    }])
+  })
+})
 
 describe('VisitExecutionMode UI Integration Tests (Atomic Mode)', () => {
   beforeEach(() => {
