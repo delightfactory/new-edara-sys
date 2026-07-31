@@ -92,3 +92,15 @@ WHERE NOT EXISTS (
     AND p.proname = 'snapshot_and_validate_visit_checklist_response'
     AND p.prosrc LIKE '%^[0-9]{4}-[0-9]{2}-[0-9]{2}$%'
 );
+
+-- 6) Atomic completion passes JSON literal null for scalar answer_json fields.
+-- The trigger must normalize it to SQL NULL before validating or persisting.
+SELECT 'SCALAR_JSON_NULL_NORMALIZATION_REGRESSION' AS audit_rule
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM pg_catalog.pg_proc p
+  JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public'
+    AND p.proname = 'snapshot_and_validate_visit_checklist_response'
+    AND p.prosrc LIKE '%NEW.answer_json := NULLIF(NEW.answer_json, ''null''::JSONB)%'
+);
