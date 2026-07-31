@@ -797,7 +797,7 @@ export default function VisitExecutionMode() {
                          }, {} as Record<string, unknown>) : undefined
 
                          return (
-                           <div key={tpl.id} className="vem-checklist-template-group">
+                           <div key={`${currentItem.id}:${tpl.id}`} className="vem-checklist-template-group">
                              <h5 className="vem-checklist-template-name flex items-center justify-between">
                                <span>
                                  {tpl.name} {tpl.is_mandatory && <span className="vem-mandatory-star">* (إلزامي)</span>}
