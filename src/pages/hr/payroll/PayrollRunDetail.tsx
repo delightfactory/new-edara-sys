@@ -50,6 +50,8 @@ const STATUS_VARIANT: Record<HRPayrollRunStatus, 'neutral' | 'warning' | 'info' 
 const fmt = (n: number) =>
   n.toLocaleString('ar-EG-u-nu-latn', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ج.م'
 
+const PAYROLL_CALCULATION_PERMISSIONS = ['hr.payroll.calculate', 'hr.payroll.approve']
+
 // ─── StatCard ─────────────────────────────────────────
 function StatCard({ label, value, icon, color }: {
   label: string; value: string; icon: React.ReactNode; color: string
@@ -423,7 +425,7 @@ export default function PayrollRunDetail() {
               </Badge>
             )}
             {run && ['draft', 'review'].includes(run.status) && (
-              <PermissionGuard permission="hr.payroll.calculate">
+              <PermissionGuard permission={PAYROLL_CALCULATION_PERMISSIONS}>
                 <Button
                   size="sm"
                   icon={<Calculator size={14} />}
@@ -523,7 +525,7 @@ export default function PayrollRunDetail() {
               اضغط "إعادة الحساب" لتضمينها في الراتب
             </div>
           </div>
-          <PermissionGuard permission="hr.payroll.calculate">
+          <PermissionGuard permission={PAYROLL_CALCULATION_PERMISSIONS}>
             <Button
               size="sm"
               icon={<Calculator size={14} />}
@@ -551,7 +553,7 @@ export default function PayrollRunDetail() {
           <Edit3 size={13} style={{ color: 'var(--color-info)', flexShrink: 0 }} />
           <span>وضع المراجعة — يمكنك تعديل المكافآت والخصومات الإضافية لكل موظف قبل الاعتماد</span>
           {!hasPendingAdjustments && (
-            <PermissionGuard permission="hr.payroll.calculate">
+            <PermissionGuard permission={PAYROLL_CALCULATION_PERMISSIONS}>
               <Button
                 size="sm"
                 variant="ghost"
@@ -771,7 +773,7 @@ export default function PayrollRunDetail() {
           emptyText={run?.status === 'draft' ? 'اضغط حساب المسير لتجميع بيانات الحضور والجزاءات والسلف والعمولات.' : 'لم يتم حساب الرواتب بعد — أو لا يوجد موظفون نشطون'}
           emptyAction={
             run?.status === 'draft' ? (
-              <PermissionGuard permission="hr.payroll.calculate">
+              <PermissionGuard permission={PAYROLL_CALCULATION_PERMISSIONS}>
                 <Button
                   size="sm"
                   icon={<Calculator size={14} />}

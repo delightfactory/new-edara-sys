@@ -4,7 +4,7 @@ import Button from '@/components/ui/Button'
 import { useAdjustTargetBatch } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
 import { toast } from 'sonner'
-import type { TargetRewardSummary } from '@/lib/types/activities'
+import type { TargetRewardSummary, TargetScope } from '@/lib/types/activities'
 import { AlertCircle, Lock } from 'lucide-react'
 import {
   allowsPercentageReward,
@@ -22,10 +22,12 @@ interface TargetRewardEditModalProps {
   typeCode:     string
   /** تصنيف الهدف — إلزامي لقواعد percentage */
   typeCategory: string
+  /** الصرف التلقائي مرتبط بمسير موظف واحد فقط */
+  targetScope: TargetScope
 }
 
 export default function TargetRewardEditModal({
-  targetId, summary, open, onClose, typeCode, typeCategory,
+  targetId, summary, open, onClose, typeCode, typeCategory, targetScope,
 }: TargetRewardEditModalProps) {
   const [rewardType,       setRewardType]       = useState<RewardType>(summary?.reward_type as RewardType || '')
   const [rewardBaseValue,  setRewardBaseValue]  = useState(summary?.reward_base_value?.toString() || '')
@@ -40,6 +42,7 @@ export default function TargetRewardEditModal({
 
   // ── القواعد المستنتجة من helper ────────────────────────────
   const canPercentage  = allowsPercentageReward(typeCategory, typeCode)
+  const canAutoPayout  = targetScope === 'individual' && typeCode !== 'reactivation'
   // pool_basis مثبَّت حسب النوع: collection → collection_value، كل الباقي → sales_value
   const lockedBasis: PoolBasis = typeCode === 'collection' ? 'collection_value' : 'sales_value'
 
@@ -58,7 +61,11 @@ export default function TargetRewardEditModal({
   // عند تغيير rewardType، نُزامن pool_basis تلقائياً
   const handleRewardTypeChange = (rt: RewardType) => {
     setRewardType(rt)
-    if (!rt || rt === 'fixed') {
+    if (!rt) {
+      setRewardBaseValue('')
+      setRewardPoolBasis('')
+      setAutoPayout(false)
+    } else if (rt === 'fixed') {
       setRewardPoolBasis('')
     } else if (rt === 'percentage') {
       setRewardPoolBasis(lockedBasis)
@@ -66,11 +73,13 @@ export default function TargetRewardEditModal({
   }
 
   // تحقق صلاحية التركيبة الحالية
-  const configError = validateRewardConfig(
+  const rewardConfigError = validateRewardConfig(
     typeCategory, typeCode,
     rewardType || null,
     rewardPoolBasis || null
   )
+  const configError = rewardConfigError
+    || (autoPayout && !canAutoPayout ? 'الصرف التلقائي متاح للأهداف الفردية فقط، وغير متاح لإعادة التنشيط' : null)
 
   const handleSave = async () => {
     if (!reason.trim()) {
@@ -166,7 +175,7 @@ export default function TargetRewardEditModal({
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '16px' }}>
           <div className="form-group">
             <label className="form-label">نوع المكافأة</label>
             <select
@@ -233,18 +242,23 @@ export default function TargetRewardEditModal({
 
         <div style={{ borderTop: '1px solid var(--border-color)', margin: '8px 0' }} />
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '16px' }}>
           <div className="form-group" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
               <input
                 type="checkbox"
                 checked={autoPayout}
                 onChange={e => setAutoPayout(e.target.checked)}
-                disabled={processing}
+                disabled={processing || (!canAutoPayout && !autoPayout)}
                 style={{ width: '18px', height: '18px' }}
               />
               تفعيل الصرف التلقائي بمسير الرواتب
             </label>
+            {!canAutoPayout && !autoPayout && (
+              <small style={{ color: 'var(--text-muted)', fontSize: '11px' }}>
+                متاح للأهداف الفردية فقط، وغير متاح لإعادة التنشيط.
+              </small>
+            )}
           </div>
 
           <div className="form-group">

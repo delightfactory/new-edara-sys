@@ -11,6 +11,7 @@ import {
   useTargetChildren, useAdjustTarget,
   useTargetStatus, useBranches, useHREmployees, useHRDepartments,
   useActivities, useUpdateTarget,
+  useTargetCustomerProgress,
 } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
 import { PERMISSIONS } from '@/lib/permissions/constants'
@@ -89,6 +90,12 @@ export default function TargetDetail() {
   const computed       = detailData?.computed
   const rewardTiers    = detailData?.reward_tiers ?? []
   const targetCustomers = detailData?.target_customers ?? []
+  const isCustomerAxis = ['upgrade_value', 'reactivation', 'category_spread'].includes(target?.type_code ?? '')
+  const {
+    data: customerProgress = [],
+    isLoading: customerProgressLoading,
+    isError: customerProgressError,
+  } = useTargetCustomerProgress(id, isCustomerAxis)
 
   // Derived metrics
   const daysRemaining  = computed?.days_remaining ?? 0
@@ -145,7 +152,20 @@ export default function TargetDetail() {
     }
   }
 
-  const handleAdjust     = () => doAdjust(adjustField, adjustValue, adjustReason)
+  const handleAdjust = () => {
+    if (isCustomerAxis && adjustField === 'period_end') {
+      toast.error('محاور العملاء تعمل على شهر تقويمي كامل ولا تسمح بتغيير نهاية الفترة')
+      return
+    }
+    if (isCustomerAxis && adjustField === 'target_value') {
+      const value = Number(adjustValue)
+      if (!Number.isInteger(value) || value <= 0 || value > targetCustomers.length) {
+        toast.error(`القيمة المستهدفة يجب أن تكون عدداً صحيحاً من 1 إلى ${targetCustomers.length}`)
+        return
+      }
+    }
+    doAdjust(adjustField, adjustValue, adjustReason)
+  }
   const handlePause      = () => doAdjust('is_paused', 'true', pauseReason || 'إيقاف مؤقت')
   const handleResume     = () => doAdjust('is_paused', 'false', 'استئناف الهدف')
   const handleDeactivate = () => {
@@ -217,7 +237,7 @@ export default function TargetDetail() {
           { label: target.name },
         ]}
         actions={canAssign ? (
-          <div className="flex gap-2">
+          <div className="td-header-actions">
             <Button icon={<Settings size={16} />} variant="secondary" onClick={openMetaEdit}>
               تعديل البيانات
             </Button>
@@ -305,13 +325,13 @@ export default function TargetDetail() {
       {/* ── Reward Config Section ────────────────────────────── */}
       {target.reward_type && (
         <div className="edara-card td-card" style={{ padding: 'var(--space-6)', marginTop: 'var(--space-6)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-primary)', paddingBottom: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
+          <div className="td-section-header">
             <h3 className="td-section-title" style={{ margin: 0, padding: 0, border: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Gift size={20} className="text-primary" /> مسار المكافأة
             </h3>
             {canAssign && (
               <Button variant="secondary" onClick={() => setRewardEditOpen(true)} size="sm">
-                <Edit2 size={14} style={{ marginRight: '6px' }} />
+                <Edit2 size={14} style={{ marginInlineStart: '6px' }} />
                 إعدادات المكافأة
               </Button>
             )}
@@ -334,7 +354,13 @@ export default function TargetDetail() {
       {targetCustomers.length > 0 && (
         <div className="edara-card td-card">
           <h3 className="td-section-title">👥 العملاء المستهدفون ({targetCustomers.length})</h3>
-          <TargetCustomersSection customers={targetCustomers} />
+          <TargetCustomersSection
+            customers={targetCustomers}
+            progress={customerProgress}
+            typeCode={target.type_code}
+            loading={customerProgressLoading}
+            error={customerProgressError}
+          />
         </div>
       )}
 
@@ -366,11 +392,12 @@ export default function TargetDetail() {
               <p className="empty-state-text">سيتم إدراج الاستحقاقات هنا تلقائياً عند طلب دورة التقييم.</p>
             </div>
           ) : (
-            <div style={{ overflowX: 'auto' }}>
+            <>
+            <div className="td-payout-table-wrap">
               <table className="edara-table" style={{ width: '100%', fontSize: '13px' }}>
                 <thead>
                   <tr>
-                    <th style={{ padding: '12px', textAlign: 'right', color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)' }}>التاريخ والفترة</th>
+                    <th style={{ padding: '12px', textAlign: 'start', color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)' }}>التاريخ والفترة</th>
                     <th style={{ padding: '12px', textAlign: 'center', color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)' }}>الإنجاز</th>
                     <th style={{ padding: '12px', textAlign: 'center', color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)' }}>الشريحة المحققة</th>
                     <th style={{ padding: '12px', textAlign: 'center', color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)' }}>المبلغ المستحق</th>
@@ -424,6 +451,25 @@ export default function TargetDetail() {
                 </tbody>
               </table>
             </div>
+            <div className="td-payout-mobile-list">
+              {payouts.map(p => (
+                <article key={p.id} className="td-payout-mobile-card">
+                  <div className="td-payout-mobile-head">
+                    <div>
+                      <strong>{p.period?.name || 'بدون فترة مسير'}</strong>
+                      <span>{new Date(p.computed_at).toLocaleDateString('ar-EG-u-nu-latn', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                    </div>
+                    <strong className="td-payout-amount">{fmtUnit(p.payout_amount, 'currency')}</strong>
+                  </div>
+                  <div className="td-payout-mobile-metrics">
+                    <span>الإنجاز <strong dir="ltr">{p.achievement_pct.toFixed(1)}%</strong></span>
+                    <span>{p.tier_reached ? `شريحة ${p.tier_reached}` : 'بدون شريحة'}</span>
+                    {canReadPayroll && <span>{p.status === 'pending' ? 'قيد الصرف' : p.status === 'committed' ? 'مصروفة ✓' : 'ملغية ✗'}</span>}
+                  </div>
+                </article>
+              ))}
+            </div>
+            </>
           )}
         </div>
       )}
@@ -629,6 +675,7 @@ export default function TargetDetail() {
         summary={summaryData ?? null}
         typeCode={target.type_code ?? ''}
         typeCategory={target.target_type?.category ?? ''}
+        targetScope={target.scope}
       />
 
       {/* ── Edit Metadata Modal ────────────────────────────────────────── */}
@@ -703,7 +750,7 @@ export default function TargetDetail() {
               <option value="target_value">القيمة المستهدفة</option>
               <option value="min_value">الحد الأدنى</option>
               <option value="stretch_value">هدف التمدد</option>
-              <option value="period_end">نهاية الفترة</option>
+              {!isCustomerAxis && <option value="period_end">نهاية الفترة</option>}
             </select>
           </div>
           <div className="form-group">
@@ -717,6 +764,9 @@ export default function TargetDetail() {
               value={adjustValue}
               onChange={e => setAdjustValue(e.target.value)}
               placeholder={adjustField === 'period_end' ? '' : 'أدخل القيمة...'}
+              step={isCustomerAxis && adjustField === 'target_value' ? 1 : undefined}
+              min={isCustomerAxis && adjustField === 'target_value' ? 1 : undefined}
+              max={isCustomerAxis && adjustField === 'target_value' ? targetCustomers.length : undefined}
             />
           </div>
           <div className="form-group">
@@ -759,20 +809,21 @@ export default function TargetDetail() {
         .td-alert { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); border: 1px solid; font-size: var(--text-sm); font-weight: 600; margin-bottom: var(--space-3); }
         .td-alert--warning { background: var(--color-warning-light); border-color: var(--color-warning); color: var(--color-warning); }
         .td-alert--danger  { background: var(--color-danger-light); border-color: var(--color-danger); color: var(--color-danger); }
+        .td-header-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+        .td-section-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); border-bottom: 1px solid var(--border-primary); padding-bottom: var(--space-4); margin-bottom: var(--space-4); }
         .td-kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-3); margin: var(--space-4) 0; }
         .td-kpi { background: var(--bg-surface); border: 1px solid var(--border-primary); border-radius: var(--radius-lg); padding: var(--space-4); text-align: center; }
         .td-kpi-icon { width: 36px; height: 36px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-2); }
-        .td-kpi-value { font-size: var(--text-lg); font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+        .td-kpi-value { font-size: var(--text-lg); font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
         .td-kpi-label { font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px; }
-        @media (max-width: 600px) { .td-kpi-grid { grid-template-columns: 1fr 1fr; } }
         .td-daily-needed { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); background: var(--color-primary-light); border: 1px solid var(--color-primary); border-radius: var(--radius-md); font-size: var(--text-sm); color: var(--color-primary); margin-bottom: var(--space-4); }
         .td-card { padding: var(--space-5); margin-top: var(--space-4); }
         .td-section-title { font-size: var(--text-base); font-weight: 700; color: var(--text-primary); margin: 0 0 var(--space-4); padding-bottom: var(--space-3); border-bottom: 1px solid var(--border-primary); }
         .td-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: var(--space-4); }
-        .td-label { font-size: var(--text-xs); color: var(--text-muted); margin-bottom: var(--space-1); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+        .td-label { font-size: var(--text-xs); color: var(--text-muted); margin-bottom: var(--space-1); font-weight: 600; }
         .td-value { font-size: var(--text-sm); color: var(--text-primary); font-weight: 500; }
         .td-value--primary { font-size: var(--text-lg); font-weight: 700; color: var(--color-primary); font-variant-numeric: tabular-nums; }
-        .td-filter-tag { font-size: 11px; padding: 2px 8px; border-radius: 99px; background: var(--bg-surface-2); color: var(--text-secondary); border: 1px solid var(--border-primary); }
+        .td-filter-tag { font-size: 12px; padding: 3px 8px; border-radius: 99px; background: var(--bg-surface-2); color: var(--text-secondary); border: 1px solid var(--border-primary); }
         .td-parent-link { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); margin-top: var(--space-3); cursor: pointer; font-size: var(--text-sm); color: var(--color-primary); font-weight: 600; transition: background var(--transition-fast); }
         .td-parent-link:hover { background: var(--color-primary-light); }
         .td-children { display: flex; flex-direction: column; gap: var(--space-2); }
@@ -783,27 +834,54 @@ export default function TargetDetail() {
         .td-child-scope { font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px; }
         .td-child-progress { display: flex; align-items: center; gap: var(--space-2); }
         .td-child-pct { font-size: var(--text-sm); font-weight: 700; color: var(--text-primary); }
-        .td-child-arrow { position: absolute; left: var(--space-3); top: 50%; transform: translateY(-50%); color: var(--text-muted); opacity: 0.5; }
+        .td-child-arrow { position: absolute; inset-inline-end: var(--space-3); top: 50%; transform: translateY(-50%); color: var(--text-muted); opacity: 0.5; }
         .td-progress-timeline { display: flex; flex-direction: column; gap: var(--space-2); }
         .td-progress-bar-item { display: grid; grid-template-columns: 60px 1fr 40px; align-items: center; gap: var(--space-2); }
-        .td-progress-bar-date { font-size: 11px; color: var(--text-muted); text-align: right; }
+        .td-progress-bar-date { font-size: 12px; color: var(--text-muted); text-align: start; }
         .td-progress-bar-track { height: 8px; background: var(--bg-surface-2); border-radius: 99px; overflow: hidden; }
         .td-progress-bar-fill { height: 100%; border-radius: 99px; transition: width 0.4s ease; }
-        .td-progress-bar-pct { font-size: 11px; font-weight: 700; color: var(--text-secondary); text-align: right; }
+        .td-progress-bar-pct { font-size: 12px; font-weight: 700; color: var(--text-secondary); text-align: end; }
         .td-adj-list { display: flex; flex-direction: column; gap: 0; position: relative; }
-        .td-adj-list::before { content: ''; position: absolute; right: 7px; top: 8px; bottom: 8px; width: 2px; background: var(--border-primary); }
+        .td-adj-list::before { content: ''; position: absolute; inset-inline-start: 7px; top: 8px; bottom: 8px; width: 2px; background: var(--border-primary); }
         .td-adj-item { display: flex; gap: var(--space-3); padding: var(--space-3) 0; position: relative; }
         .td-adj-dot { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; background: var(--color-primary); border: 3px solid var(--bg-surface); position: relative; z-index: 1; }
         .td-adj-body { flex: 1; }
         .td-adj-header { display: flex; justify-content: space-between; align-items: center; }
         .td-adj-field { font-weight: 700; font-size: var(--text-sm); color: var(--text-primary); }
-        .td-adj-date { font-size: 11px; color: var(--text-muted); }
+        .td-adj-date { font-size: 12px; color: var(--text-muted); }
         .td-adj-change { display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-1); font-size: var(--text-sm); }
         .td-adj-old { color: var(--color-danger); text-decoration: line-through; }
         .td-adj-arrow { color: var(--text-muted); }
         .td-adj-new { color: var(--color-success); font-weight: 600; }
-        .td-adj-reason { font-size: var(--text-xs); color: var(--text-muted); margin-top: var(--space-1); font-style: italic; }
-        .td-adj-by { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        .td-adj-reason { font-size: var(--text-xs); color: var(--text-muted); margin-top: var(--space-1); }
+        .td-adj-by { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+        .td-payout-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .td-payout-mobile-list { display: none; }
+        @media (max-width: 600px) {
+          .td-header-actions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+          .td-header-actions .btn { min-height: 44px; justify-content: center; }
+          .td-kpi-grid { grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+          .td-kpi { padding: var(--space-3); }
+          .td-kpi-value { font-size: var(--text-base); }
+          .td-card { padding: var(--space-3); }
+          .td-section-header { align-items: stretch; flex-direction: column; }
+          .td-section-header .btn { width: 100%; justify-content: center; min-height: 44px; }
+          .td-payout-table-wrap { display: none; }
+          .td-payout-mobile-list { display: flex; flex-direction: column; gap: var(--space-3); }
+          .td-payout-mobile-card { padding: var(--space-3); border: 1px solid var(--border-primary); border-radius: var(--radius-md); background: var(--bg-surface-2); }
+          .td-payout-mobile-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-2); }
+          .td-payout-mobile-head > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+          .td-payout-mobile-head strong { font-size: 14px; color: var(--text-primary); }
+          .td-payout-mobile-head span { font-size: 12px; color: var(--text-muted); }
+          .td-payout-amount { color: var(--color-success) !important; white-space: nowrap; }
+          .td-payout-mobile-metrics { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
+          .td-payout-mobile-metrics > span { padding: 4px 8px; border-radius: 999px; background: var(--bg-surface); color: var(--text-secondary); font-size: 12px; }
+          .td-adj-header { align-items: flex-start; flex-direction: column; gap: 3px; }
+        }
+        @media (max-width: 380px) {
+          .td-header-actions, .td-kpi-grid { grid-template-columns: 1fr; }
+          .td-progress-bar-item { grid-template-columns: 50px 1fr 36px; gap: var(--space-1); }
+        }
       `}</style>
     </div>
   )
