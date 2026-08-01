@@ -37,9 +37,10 @@ export default function TargetProgressWidget({
   compact = false,
 }: TargetProgressWidgetProps) {
   const unit      = target.target_type?.unit ?? 'count'
+  const hasProgress = progress != null
   const achieved  = progress?.achieved_value ?? 0
   const pct       = Math.min(progress?.achievement_pct ?? 0, 120)
-  const trend     = progress?.trend ?? 'behind'
+  const trend     = progress?.trend ?? 'on_track'
   const remaining = Math.max(target.target_value - achieved, 0)
   const barColor  = TREND_BAR_COLOR[trend]
 
@@ -59,8 +60,14 @@ export default function TargetProgressWidget({
           )}
         </div>
         <div className="tpw-badges">
-          <ActivityStatusBadge trend={trend} size="sm" />
-          <span className="tpw-trend-icon">{TREND_ICON[trend]}</span>
+          {hasProgress ? (
+            <>
+              <ActivityStatusBadge trend={trend} size="sm" />
+              <span className="tpw-trend-icon">{TREND_ICON[trend]}</span>
+            </>
+          ) : (
+            <span className="tpw-pending">لم يبدأ الحساب</span>
+          )}
         </div>
       </div>
 
@@ -83,6 +90,9 @@ export default function TargetProgressWidget({
       {!compact && (
         <div className="tpw-footer">
           <span>المتبقي: {fmtNumber(remaining, unit)}</span>
+          {progress?.last_calc_at && (
+            <span>آخر تحديث: {new Date(progress.last_calc_at).toLocaleString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}</span>
+          )}
         </div>
       )}
 
@@ -102,6 +112,7 @@ export default function TargetProgressWidget({
           box-shadow: var(--shadow-md);
           transform: translateY(-1px);
         }
+        .tpw--clickable:focus-visible { outline: 3px solid var(--color-primary-light); outline-offset: 2px; }
         .tpw--compact { padding: var(--space-3); }
         .tpw-header {
           display: flex;
@@ -126,6 +137,7 @@ export default function TargetProgressWidget({
           flex-shrink: 0;
         }
         .tpw-trend-icon { font-size: 14px; font-weight: 700; }
+        .tpw-pending { border-radius: 999px; padding: 3px 8px; background: var(--bg-surface-2); color: var(--text-muted); font-size: 12px; font-weight: 600; }
         .tpw-bar-wrap {
           height: 8px;
           background: var(--bg-surface-2);
@@ -140,7 +152,7 @@ export default function TargetProgressWidget({
         }
         .tpw-bar-overflow {
           position: absolute;
-          top: 0; right: 0;
+          top: 0; inset-inline-start: 0;
           width: 4%;
           height: 100%;
           border-radius: 0 99px 99px 0;
@@ -166,10 +178,16 @@ export default function TargetProgressWidget({
         .tpw-footer {
           display: flex;
           justify-content: space-between;
+          flex-wrap: wrap;
+          gap: var(--space-1) var(--space-2);
           font-size: var(--text-xs);
           color: var(--text-muted);
           padding-top: var(--space-1);
           border-top: 1px dashed var(--border-primary);
+        }
+        @media (max-width: 380px) {
+          .tpw-header, .tpw-numbers { align-items: flex-start; flex-direction: column; }
+          .tpw-badges { align-self: flex-start; }
         }
       `}</style>
     </div>

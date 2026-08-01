@@ -168,7 +168,7 @@ export default function TargetsPage() {
         <style>{`
           .tg-emp-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
             gap: var(--space-4);
           }
           @media (max-width: 480px) {
@@ -318,7 +318,7 @@ export default function TargetsPage() {
               render: t => (
                 <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
                   {fmtNumber(t.target_value)}
-                  <span style={{ fontSize: 11, color: 'var(--text-muted)', marginRight: 2 }}>
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)', marginInlineStart: 2 }}>
                     {t.target_type?.unit === 'currency' ? ' ج' : ''}
                   </span>
                 </span>
@@ -348,12 +348,12 @@ export default function TargetsPage() {
                 if (!t.reward_type) return <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>—</span>
                 return (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <Gift size={11} />
                       {t.reward_type === 'fixed' ? 'مقطوعة' : 'نسبية'}
                     </span>
                     {t.auto_payout && (
-                      <span style={{ fontSize: '10px', color: 'var(--color-success)' }}>⚡ صرف تلقائي</span>
+                      <span style={{ fontSize: '12px', color: 'var(--color-success)' }}>⚡ صرف تلقائي</span>
                     )}
                   </div>
                 )
@@ -445,16 +445,20 @@ export default function TargetsPage() {
           display: flex; align-items: center; gap: 4px;
           background: none; border: none; color: var(--color-danger);
           font-size: var(--text-xs); font-weight: 600; cursor: pointer;
-          font-family: inherit; padding: 0;
+          font-family: inherit; padding: var(--space-2) 0; min-height: 40px;
         }
         .tg-clear-btn:hover { text-decoration: underline; }
         .tg-table-view { display: block; }
         .fab-button { display: none; }
         @media (max-width: 768px) {
+          .tg-filters--open { max-height: 1100px; }
+          .tg-filters-row { flex-direction: column; gap: var(--space-2); }
+          .tg-filter-select { width: 100%; min-width: 0; min-height: 44px; }
+          .tg-filter-toggle { min-height: 44px; }
           .desktop-only-btn { display: none; }
           .fab-button {
             display: flex; align-items: center; justify-content: center;
-            position: fixed; bottom: calc(var(--bottom-nav-height, 64px) + var(--space-4)); inset-inline-end: var(--space-4);
+            position: fixed; bottom: calc(var(--bottom-nav-height, 64px) + var(--space-4) + env(safe-area-inset-bottom, 0px)); inset-inline-end: var(--space-4);
             width: 56px; height: 56px; border-radius: 28px;
             background: var(--color-primary); color: white;
             box-shadow: var(--shadow-lg); z-index: 160; border: none;

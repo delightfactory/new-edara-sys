@@ -21,6 +21,7 @@ import type {
   TargetRewardType, TargetRewardPoolBasis, TargetPayoutStatus,
   TargetListItem, TargetDetailView, TargetRewardSummary,
   TargetComputedMetrics, TargetFilters, PayoutFilters,
+  ReactivationTargetCandidate, TargetCustomerProgressRow,
 } from '@/lib/types/activities'
 
 // ============================================================
@@ -101,6 +102,55 @@ export function validateCreateTargetInput(
   typeCategory: string
 ): RewardValidationError[] {
   const errors: RewardValidationError[] = []
+  const customerAxes = ['upgrade_value', 'reactivation', 'category_spread']
+
+  const targetValue = Number(input.target_value ?? 0)
+  if (!Number.isFinite(targetValue) || targetValue <= 0) {
+    errors.push({ field: 'target_value', message: 'القيمة المستهدفة يجب أن تكون أكبر من صفر' })
+  }
+  if (input.period_start && input.period_end && input.period_start > input.period_end) {
+    errors.push({ field: 'period_end', message: 'تاريخ نهاية الهدف يجب ألا يسبق تاريخ البداية' })
+  }
+  if (input.min_value != null && (input.min_value <= 0 || input.min_value > targetValue)) {
+    errors.push({ field: 'min_value', message: 'الحد الأدنى يجب أن يكون موجباً وألا يتجاوز الهدف' })
+  }
+  if (input.stretch_value != null && input.stretch_value < targetValue) {
+    errors.push({ field: 'stretch_value', message: 'هدف التمدد يجب ألا يقل عن القيمة المستهدفة' })
+  }
+
+  const supportsProductFilter = typeCode === 'sales_value' || typeCode === 'product_qty'
+  if (!supportsProductFilter && (input.product_id || input.category_id)) {
+    errors.push({ field: 'product_id', message: 'فلتر المنتج أو التصنيف غير مدعوم لهذا النوع من الأهداف' })
+  }
+  if (input.product_id && input.category_id) {
+    errors.push({ field: 'category_id', message: 'اختر منتجاً أو تصنيفاً، وليس الاثنين معاً' })
+  }
+  if (typeCode === 'product_qty' && !input.product_id && !input.category_id) {
+    errors.push({ field: 'product_id', message: 'هدف كمية المنتج يتطلب منتجاً محدداً أو تصنيفاً' })
+  }
+
+  const hasGeography = !!(input.governorate_id || input.city_id || input.area_id)
+  if (typeCode !== 'sales_value' && hasGeography) {
+    errors.push({ field: 'governorate_id', message: 'الفلتر الجغرافي مدعوم حسابياً لهدف المبيعات فقط' })
+  }
+  if (input.city_id && !input.governorate_id) {
+    errors.push({ field: 'city_id', message: 'اختيار المدينة يتطلب اختيار المحافظة أولاً' })
+  }
+  if (input.area_id && !input.city_id) {
+    errors.push({ field: 'area_id', message: 'اختيار المنطقة يتطلب اختيار المدينة أولاً' })
+  }
+
+  if (customerAxes.includes(typeCode) && (input.period ?? 'monthly') !== 'monthly') {
+    errors.push({ field: 'period', message: 'محاور العملاء متاحة بفترة شهرية فقط حالياً' })
+  }
+  if (customerAxes.includes(typeCode) && input.period_start && input.period_end) {
+    const [year, month] = input.period_start.split('-').map(Number)
+    const expectedStart = `${year}-${String(month).padStart(2, '0')}-01`
+    const expectedEnd = `${year}-${String(month).padStart(2, '0')}-${String(new Date(year, month, 0).getDate()).padStart(2, '0')}`
+    if (input.period_start !== expectedStart || input.period_end !== expectedEnd) {
+      errors.push({ field: 'period_start', message: 'محاور العملاء تتطلب شهراً تقويمياً كاملاً' })
+    }
+  }
 
   // 1. upgrade_value يتطلب growth_pct
   if (typeCode === 'upgrade_value') {
@@ -110,6 +160,26 @@ export function validateCreateTargetInput(
         field: 'filter_criteria.growth_pct',
         message: 'نسبة النمو المطلوبة (growth_pct) إلزامية ويجب أن تكون أكبر من صفر',
       })
+    }
+  }
+
+  if (typeCode === 'reactivation') {
+    if (!input.dormancy_days || input.dormancy_days <= 0) {
+      errors.push({ field: 'dormancy_days', message: 'أيام الخمول إلزامية ويجب أن تكون أكبر من صفر' })
+    }
+    const minValue = Number(input.filter_criteria?.min_reactivation_value)
+    if (!minValue || minValue <= 0) {
+      errors.push({ field: 'filter_criteria.min_reactivation_value', message: 'حد قيمة إعادة التنشيط إلزامي ويجب أن يكون أكبر من صفر' })
+    }
+    if (input.auto_payout) {
+      errors.push({ field: 'auto_payout', message: 'الصرف التلقائي غير متاح حالياً لإعادة التنشيط بسبب المرتجعات المتأخرة' })
+    }
+  }
+
+  if (typeCode === 'category_spread') {
+    const required = Number(input.filter_criteria?.required_category_count)
+    if (!required || required <= 0 || !Number.isInteger(required)) {
+      errors.push({ field: 'filter_criteria.required_category_count', message: 'عدد التصنيفات المطلوب يجب أن يكون عدداً صحيحاً أكبر من صفر' })
     }
   }
 
@@ -132,8 +202,26 @@ export function validateCreateTargetInput(
     })
   }
 
+  if (!input.reward_type && (
+    input.reward_base_value != null
+    || !!input.reward_pool_basis
+    || !!input.auto_payout
+    || (input.tiers?.length ?? 0) > 0
+  )) {
+    errors.push({
+      field: 'reward_type',
+      message: 'لا يمكن إرسال قيمة أو شرائح أو صرف تلقائي بدون نوع مكافأة',
+    })
+  }
+  if ((input.payout_month_offset ?? 0) < 0) {
+    errors.push({ field: 'payout_month_offset', message: 'تأخير الصرف غير صالح' })
+  }
+
   // 4. auto_payout يتطلب شرائح + reward_type
   if (input.auto_payout) {
+    if (input.scope !== 'individual') {
+      errors.push({ field: 'auto_payout', message: 'الصرف التلقائي متاح للأهداف الفردية فقط' })
+    }
     if (!input.reward_type) {
       errors.push({ field: 'reward_type', message: 'الصرف التلقائي يتطلب تحديد نوع المكافأة' })
     }
@@ -144,6 +232,14 @@ export function validateCreateTargetInput(
 
   // 5. ترتيب الشرائح: كل شريحة يجب أن تكون أعلى من السابقة
   if (input.tiers && input.tiers.length > 0) {
+    input.tiers.forEach((tier, index) => {
+      if (tier.threshold_pct <= 0 || tier.threshold_pct > 200) {
+        errors.push({ field: `tiers[${index}].threshold_pct`, message: 'نسبة الإنجاز يجب أن تكون بين 1 و200' })
+      }
+      if (tier.reward_pct <= 0 || tier.reward_pct > 200) {
+        errors.push({ field: `tiers[${index}].reward_pct`, message: 'نسبة المكافأة يجب أن تكون بين 1 و200' })
+      }
+    })
     const sorted = [...input.tiers].sort((a, b) => a.threshold_pct - b.threshold_pct)
     for (let i = 1; i < sorted.length; i++) {
       if (sorted[i].threshold_pct === sorted[i - 1].threshold_pct) {
@@ -156,23 +252,22 @@ export function validateCreateTargetInput(
     }
   }
 
-  // 6. target_customers مطلوب لـ upgrade_value و category_spread
-  if (['upgrade_value', 'category_spread'].includes(typeCode) && (!input.customers || input.customers.length === 0)) {
+  // 6. قائمة ثابتة مطلوبة لكل محاور العملاء
+  if (customerAxes.includes(typeCode) && (!input.customers || input.customers.length === 0)) {
     errors.push({
       field: 'customers',
-      message: `هدف ${typeCode} يتطلب تحديد العملاء المستهدفين مع بيانات الفترة المرجعية`,
+      message: `هدف ${typeCode} يتطلب تحديد العملاء المستهدفين`,
     })
   }
 
 
-  // 9. baseline_value إلزامي لـ upgrade_value
-  if (typeCode === 'upgrade_value' && input.customers) {
-    const missingBaseline = input.customers.some(c => !c.baseline_value || c.baseline_value <= 0)
-    if (missingBaseline) {
-      errors.push({
-        field: 'customers[].baseline_value',
-        message: 'هدف رفع القيمة يتطلب قيمة مرجعية موجبة لكل عميل مستهدف',
-      })
+  if (customerAxes.includes(typeCode) && input.customers?.length) {
+    const uniqueCustomers = new Set(input.customers.map(c => c.customer_id))
+    if (uniqueCustomers.size !== input.customers.length) {
+      errors.push({ field: 'customers', message: 'قائمة العملاء تحتوي على تكرار' })
+    }
+    if (!Number.isInteger(targetValue) || targetValue <= 0 || targetValue > uniqueCustomers.size) {
+      errors.push({ field: 'target_value', message: 'القيمة المستهدفة يجب أن تكون عدد عملاء صحيحاً لا يتجاوز القائمة' })
     }
   }
 
@@ -259,7 +354,7 @@ function buildTargetsQuery(filters?: TargetFilters) {
 
   let q = supabase
     .from('targets')
-    .select(selectCols)
+    .select(selectCols, { count: 'exact' })
 
   if (filters?.scope)       q = q.eq('scope', filters.scope)
   if (filters?.scope_id)    q = q.eq('scope_id', filters.scope_id)
@@ -313,6 +408,7 @@ export async function getTargets(
 
   let q = buildTargetsQuery(filters)
     .order('created_at', { ascending: false })
+    .order('snapshot_date', { ascending: false, referencedTable: 'target_progress' })
     .range(from, from + pageSize - 1)
     .limit(1, { referencedTable: 'target_progress' })
 
@@ -444,6 +540,36 @@ export async function getTargetCustomers(targetId: string): Promise<TargetCustom
   return (data ?? []) as unknown as TargetCustomer[]
 }
 
+/** تفاصيل تقدم كل عميل. RPC للقراءة فقط ولا يغيّر بيانات العمليات أو الأهداف. */
+export async function getTargetCustomerProgress(targetId: string): Promise<TargetCustomerProgressRow[]> {
+  const { data, error } = await supabase.rpc('get_target_customer_progress', {
+    p_target_id: targetId,
+  })
+  if (error) throw error
+  return (data ?? []) as TargetCustomerProgressRow[]
+}
+
+/** العملاء الذين يحققون شرط الخمول تاريخياً داخل نطاق الهدف — قراءة فقط. */
+export async function getReactivationTargetCandidates(params: {
+  scope: string
+  scopeId?: string | null
+  periodStart: string
+  dormancyDays: number
+  search?: string
+  limit?: number
+}): Promise<ReactivationTargetCandidate[]> {
+  const { data, error } = await supabase.rpc('get_reactivation_target_candidates', {
+    p_scope: params.scope,
+    p_scope_id: params.scopeId ?? null,
+    p_period_start: params.periodStart,
+    p_dormancy_days: params.dormancyDays,
+    p_search: params.search?.trim() || null,
+    p_limit: params.limit ?? 50,
+  })
+  if (error) throw error
+  return (data ?? []) as ReactivationTargetCandidate[]
+}
+
 // ============================================================
 // ★ SECTION 6: قراءة استحقاقات الصرف — target_reward_payouts
 // ============================================================
@@ -474,7 +600,7 @@ export async function getTargetPayouts(filters?: PayoutFilters): Promise<TargetR
  */
 export async function getTargetRewardSummary(targetId: string): Promise<TargetRewardSummary> {
   const [targetRes, tiersRes, payoutsRes, progressRes] = await Promise.all([
-    supabase.from('targets').select('reward_type, reward_base_value, reward_pool_basis, auto_payout, payout_month_offset').eq('id', targetId).single(),
+    supabase.from('targets').select('type_code, reward_type, reward_base_value, reward_pool_basis, auto_payout, payout_month_offset').eq('id', targetId).single(),
     supabase.from('target_reward_tiers').select(TIERS_SELECT).eq('target_id', targetId).order('sequence'),
     supabase.from('target_reward_payouts').select(PAYOUT_SELECT).eq('target_id', targetId).order('computed_at', { ascending: false }),
     // [P1 FIX] جلب achieved_value أيضاً لتمريره كـ poolValue للمكافآت النسبية
@@ -483,17 +609,19 @@ export async function getTargetRewardSummary(targetId: string): Promise<TargetRe
 
   if (targetRes.error) throw targetRes.error
 
-  const t = targetRes.data as Pick<Target, 'reward_type' | 'reward_base_value' | 'reward_pool_basis' | 'auto_payout' | 'payout_month_offset'>
+  const t = targetRes.data as Pick<Target, 'type_code' | 'reward_type' | 'reward_base_value' | 'reward_pool_basis' | 'auto_payout' | 'payout_month_offset'>
   const tiers   = (tiersRes.data ?? []) as TargetRewardTier[]
   const payouts = (payoutsRes.data ?? []) as unknown as TargetRewardPayout[]
   const latestPayout = payouts[0] ?? null
   const isLocked = payouts.some(p => p.status === 'committed')
 
-  // [P1 FIX] تقدير المكافأة بناءً على الإنجاز الحالي
-  // achieved_value = pool للنسبية (sales_value أو collection_value حسب reward_pool_basis)
+  // upgrade_value يقيس عدد العملاء، وليس وعاء المبيعات المالي.
+  // لذلك يُترك تقديره النسبي للخادم عند التثبيت بدلاً من عرض مبلغ مضلل.
   const currentPct    = progressRes.error ? 0 : (progressRes.data?.achievement_pct ?? 0)
   const achievedValue = progressRes.error ? 0 : (progressRes.data?.achieved_value ?? 0)
-  const estimated = estimateReward(t, tiers, currentPct, achievedValue)
+  const estimated = t.reward_type === 'percentage' && t.type_code === 'upgrade_value'
+    ? null
+    : estimateReward(t, tiers, currentPct, achievedValue)
 
   return {
     target_id:          targetId,
@@ -531,8 +659,8 @@ export async function adjustTarget(input: AdjustTargetInput): Promise<void> {
 }
 
 /**
- * تعديل دُفعة من حقول الهدف (طبقة أ فقط — حقول آمنة)
- * كل تعديل يُنفَّذ منفصلاً عبر adjust_target() للحفاظ على سجل التدقيق
+ * تعديل إعدادات الهدف في معاملة واحدة مع الحفاظ على سجل التدقيق.
+ * لا تُجزَّأ العملية حتى لا يبقى الهدف في حالة وسيطة غير صالحة.
  */
 export async function adjustTargetBatch(
   targetId: string,
@@ -540,16 +668,18 @@ export async function adjustTargetBatch(
   reason: string,
   userId: string
 ): Promise<void> {
-  const entries = Object.entries(fields).filter(([, v]) => v !== undefined)
-  for (const [field, value] of entries) {
-    await adjustTarget({
-      p_target_id: targetId,
-      p_field:     field as any,
-      p_new_value: String(value),
-      p_reason:    reason,
-      p_user_id:   userId,
-    })
-  }
+  const changes = Object.fromEntries(
+    Object.entries(fields).filter(([, value]) => value !== undefined)
+  )
+  if (Object.keys(changes).length === 0) return
+
+  const { error } = await supabase.rpc('adjust_target_fields', {
+    p_target_id: targetId,
+    p_changes:   changes,
+    p_reason:    reason,
+    p_user_id:   userId,
+  })
+  if (error) throw error
 }
 
 // ============================================================
@@ -695,8 +825,10 @@ function buildCurrentTierInfo(
     : 0
   const nextTier = sortedTiers[nextTierIndex] ?? null
 
-  // [P1 FIX] تقدير قيمة المكافأة مع تمرير achievedValue كـ pool للنسبية
-  const estimated = reached ? estimateReward(target, tiers, currentPct, achievedValue) : null
+  // achieved_value في upgrade_value هو عدد العملاء لا قيمة المبيعات.
+  const estimated = reached && !(target.reward_type === 'percentage' && target.type_code === 'upgrade_value')
+    ? estimateReward(target, tiers, currentPct, achievedValue)
+    : null
 
   return {
     reached_tier:        reached?.sequence ?? null,
@@ -752,10 +884,10 @@ export async function getTargetProgressHistory(
     .from('target_progress')
     .select('*')
     .eq('target_id', targetId)
-    .order('snapshot_date', { ascending: true })
+    .order('snapshot_date', { ascending: false })
     .limit(limit)
   if (error) throw error
-  return (data ?? []) as TargetProgress[]
+  return ((data ?? []) as TargetProgress[]).reverse()
 }
 
 // ============================================================

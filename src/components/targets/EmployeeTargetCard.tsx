@@ -1,5 +1,5 @@
 ﻿import React from 'react'
-import { Target, TrendingUp, TrendingDown, Minus, Gift, ChevronRight } from 'lucide-react'
+import { Target, TrendingUp, TrendingDown, Minus, Gift, ChevronLeft } from 'lucide-react'
 import type { TargetListItem } from '@/lib/types/activities'
 import RewardEstimateChip from './RewardEstimateChip'
 
@@ -12,10 +12,21 @@ function fmtN(n: number) {
   return n.toLocaleString('en-US', { maximumFractionDigits: 1 })
 }
 
+function unitLabel(unit: string) {
+  const labels: Record<string, string> = {
+    currency: 'ج.م',
+    count: 'وحدة',
+    percentage: '%',
+    points: 'نقطة',
+  }
+  return labels[unit] ?? unit
+}
+
 export default function EmployeeTargetCard({ target, onClick }: EmployeeTargetCardProps) {
   const isPaused = target.is_paused
   const isActive = target.is_active
   const pct      = target.achievement_pct || 0
+  const displayUnit = unitLabel(target.unit)
 
   // ── Tier info — حقل رسمي في TargetListItem (مُحسَّب عند include_tiers)
   const tierInfo = target.current_tier_info
@@ -38,6 +49,15 @@ export default function EmployeeTargetCard({ target, onClick }: EmployeeTargetCa
   return (
     <div
       onClick={() => onClick?.(target.id)}
+      onKeyDown={e => {
+        if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault()
+          onClick(target.id)
+        }
+      }}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      aria-label={onClick ? `عرض تفاصيل الهدف ${target.name}` : undefined}
       style={{
         background: 'var(--bg-surface)',
         border: `1px solid ${isPaused || !isActive ? 'var(--border-color)' : 'var(--border-primary)'}`,
@@ -76,12 +96,12 @@ export default function EmployeeTargetCard({ target, onClick }: EmployeeTargetCa
               {target.name}
             </h3>
             {isPaused && (
-              <span style={{ fontSize: '10px', background: 'var(--color-warning-light)', color: 'var(--color-warning)', padding: '2px 7px', borderRadius: '4px', fontWeight: 600 }}>
+              <span style={{ fontSize: '12px', background: 'var(--color-warning-light)', color: 'var(--color-warning)', padding: '2px 7px', borderRadius: '4px', fontWeight: 600 }}>
                 موقوف
               </span>
             )}
             {!isActive && (
-              <span style={{ fontSize: '10px', background: 'var(--bg-body)', color: 'var(--text-muted)', padding: '2px 7px', borderRadius: '4px' }}>
+              <span style={{ fontSize: '12px', background: 'var(--bg-body)', color: 'var(--text-muted)', padding: '2px 7px', borderRadius: '4px' }}>
                 منتهٍ
               </span>
             )}
@@ -114,17 +134,17 @@ export default function EmployeeTargetCard({ target, onClick }: EmployeeTargetCa
             <strong style={{ color: 'var(--text-primary)', fontSize: '16px' }}>
               {fmtN(target.achieved_value ?? 0)}
             </strong>{' '}
-            <span style={{ fontSize: '11px' }}>{target.unit}</span>
+            <span style={{ fontSize: '12px' }}>{displayUnit}</span>
           </span>
           <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-            من {fmtN(target.target_value ?? 0)} {target.unit}
+            من {fmtN(target.target_value ?? 0)} {displayUnit}
           </span>
         </div>
 
         {/* progress bar */}
         <div style={{ position: 'relative', height: '8px', background: 'var(--bg-body)', borderRadius: '99px', overflow: 'hidden' }}>
           <div style={{
-            position: 'absolute', top: 0, right: 0, bottom: 0,
+            position: 'absolute', top: 0, insetInlineStart: 0, bottom: 0,
             background: barColor,
             width: `${Math.min(100, pct)}%`,
             borderRadius: '99px',
@@ -186,7 +206,7 @@ export default function EmployeeTargetCard({ target, onClick }: EmployeeTargetCa
 
           {nextTier != null && gapToNext != null && gapToNext > 0 ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <ChevronRight size={13} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
+              <ChevronLeft size={13} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
               <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
                 تبقى{' '}
                 <strong style={{ color: 'var(--color-primary)' }}>{fmtN(gapToNext)}%</strong>

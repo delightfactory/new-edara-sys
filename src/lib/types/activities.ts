@@ -644,10 +644,35 @@ export interface TargetCustomer {
 /** مدخلات عميل مستهدف عند الإنشاء */
 export interface TargetCustomerInput {
   customer_id: string
-  baseline_value?: number                  // للـ upgrade_value
-  baseline_category_count?: number         // للـ category_spread
+  baseline_value?: number                  // legacy only; advanced axes calculate it server-side
+  baseline_category_count?: number         // legacy only; advanced axes calculate it server-side
   baseline_period_start?: string           // DATE
   baseline_period_end?: string             // DATE
+}
+
+export interface ReactivationTargetCandidate {
+  customer_id: string
+  customer_name: string
+  customer_code: string
+  last_purchase_date: string
+  dormant_days: number
+}
+
+export interface TargetCustomerProgressRow {
+  target_id: string
+  customer_id: string
+  customer_name: string
+  customer_code: string
+  baseline_value: number | null
+  baseline_category_count: number | null
+  required_value: number
+  achieved_value: number
+  achieved_category_count: number | null
+  last_purchase_date: string | null
+  is_achieved: boolean
+  status_reason: 'achieved' | 'baseline_missing' | 'no_sales_yet' | 'in_progress'
+    | 'dormancy_not_verified' | 'not_reactivated_yet' | 'below_minimum_value'
+    | 'required_count_missing' | 'no_categories_yet'
 }
 
 // ─── Phase 22: استحقاق صرف مكافأة — target_reward_payouts ────
@@ -698,7 +723,7 @@ export interface CreateTargetWithRewardsInput {
   city_id?: string | null
   area_id?: string | null
   dormancy_days?: number | null
-  /** JSONB — يشمل growth_pct (إلزامي لـ upgrade_value) */
+  /** JSONB — growth_pct / min_reactivation_value / required_category_count */
   filter_criteria?: Record<string, any>
   notes?: string | null
   // ★ حقول المكافأة (Phase 22)
@@ -709,7 +734,7 @@ export interface CreateTargetWithRewardsInput {
   payout_month_offset?: number
   /** شرائح المكافأة — إلزامية عند auto_payout=true */
   tiers?: TierInput[]
-  /** العملاء المستهدفون — للأهداف upgrade_value/category_spread */
+  /** العملاء المستهدفون — للأهداف upgrade_value/reactivation/category_spread */
   customers?: TargetCustomerInput[]
   /** تفعيل الصرف الآلي — يتطلب شرائح وreward_type */
   auto_payout?: boolean

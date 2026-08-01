@@ -20,7 +20,7 @@ import { supabase } from '@/lib/supabase/client'
 // ─── Services ───
 import { getCustomers, getCustomer } from '@/lib/services/customers'
 import { getProducts, getCategories, getBrands } from '@/lib/services/products'
-import { getGovernorates, getCities, getBranches } from '@/lib/services/geography'
+import { getGovernorates, getCities, getAreas, getBranches } from '@/lib/services/geography'
 import {
   getWarehouses, getMyWarehouses, getStock, getStockMovements,
   getTransfers, getAdjustments
@@ -82,6 +82,7 @@ import type { PlanTemplateInput } from '@/lib/services/activities'
 import {
   getTargets, getTargetDetail, getTargetRewardSummary, getTargetPayouts, prepareTargetRewardPayouts,
   adjustTargetBatch, getTargetProgressHistory, createTargetWithRewards,
+  getTargetCustomerProgress, getReactivationTargetCandidates,
 } from '@/lib/services/targets'
 
 // ════════════════════════════════════════════
@@ -105,6 +106,15 @@ export function useCities(governorateId?: string) {
     queryFn: () => getCities(governorateId),
     staleTime: REF_STALE,
     enabled: !!governorateId,
+  })
+}
+
+export function useAreas(cityId?: string) {
+  return useQuery({
+    queryKey: ['areas', cityId],
+    queryFn: () => getAreas(cityId!),
+    staleTime: REF_STALE,
+    enabled: !!cityId,
   })
 }
 
@@ -272,11 +282,12 @@ export function useInventoryABCAnalysis(opts?: { enabled?: boolean }) {
 // 3. CUSTOMERS — العملاء
 // ════════════════════════════════════════════
 
-export function useCustomers(params?: Parameters<typeof getCustomers>[0]) {
+export function useCustomers(params?: Parameters<typeof getCustomers>[0], enabled = true) {
   return useQuery({
     queryKey: ['customers', params],
     queryFn: () => getCustomers(params),
     staleTime: 30_000,
+    enabled,
   })
 }
 
@@ -1207,6 +1218,24 @@ export function useTargetProgressHistory(id: string | null | undefined, limit: n
     queryKey: ['target-progress-history', id, limit],
     queryFn: () => getTargetProgressHistory(id!, limit),
     enabled: !!id,
+  })
+}
+export function useTargetCustomerProgress(id: string | null | undefined, enabled = true) {
+  return useQuery({
+    queryKey: ['target-customer-progress', id],
+    queryFn: () => getTargetCustomerProgress(id!),
+    enabled: !!id && enabled,
+    staleTime: 60 * 1000,
+  })
+}
+
+export function useReactivationTargetCandidates(params: Parameters<typeof getReactivationTargetCandidates>[0] | null) {
+  return useQuery({
+    queryKey: ['reactivation-target-candidates', params],
+    queryFn: () => getReactivationTargetCandidates(params!),
+    enabled: !!params?.periodStart && !!params?.dormancyDays
+      && (params.scope === 'company' || !!params.scopeId),
+    staleTime: 60 * 1000,
   })
 }
 export function useTargetPayouts(filters?: PayoutFilters) {
