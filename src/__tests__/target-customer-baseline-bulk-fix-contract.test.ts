@@ -73,6 +73,7 @@ describe('customer target baseline and bulk candidate correction', () => {
     expect(form).toContain('اختيار النتائج المعروضة')
     expect(form).toContain('tf-candidate-filters')
     expect(form).toContain("@media (max-width: 600px)")
-    expect(form).toContain(".tf-candidate-row { grid-template-columns: auto minmax(0, 1fr);")
+    expect(form).toContain(".tf-form--wide { max-width: 1120px; }")
+    expect(form).toContain(".tf-candidate-row { grid-template-columns: 34px minmax(0, 1fr);")
   })
 })

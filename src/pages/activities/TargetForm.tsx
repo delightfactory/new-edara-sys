@@ -27,7 +27,10 @@ import Button from '@/components/ui/Button'
 import AsyncCombobox from '@/components/ui/AsyncCombobox'
 import type { ComboboxOption } from '@/components/ui/AsyncCombobox'
 import TierLadderDisplay from '@/components/targets/TierLadderDisplay'
-import { ChevronRight, ChevronLeft, Check, Gift, Plus, Trash2, Info, Users, AlertCircle } from 'lucide-react'
+import {
+  ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Check, Gift, Plus, Trash2,
+  Info, Users, AlertCircle, Search, SlidersHorizontal, UserPlus, X, MapPin, Loader2,
+} from 'lucide-react'
 import { allowsPercentageReward } from '@/lib/utils/rewardRules'
 import { useDebounce } from '@/hooks/useDebounce'
 import { getProducts } from '@/lib/services/products'
@@ -239,7 +242,7 @@ export default function TargetForm() {
   ])
 
   // ── Step 6: قائمة العملاء الثابتة لمحاور العملاء الثلاثة
-  const [customers, setCustomers] = useState<(TargetCustomerInput & { _key: number; _name?: string })[]>([])
+  const [customers, setCustomers] = useState<(TargetCustomerInput & { _key: string; _name?: string })[]>([])
   const [customerSearch, setCustomerSearch] = useState('')
   const [candidateCustomerType, setCandidateCustomerType] = useState('')
   const [candidateGovernorateId, setCandidateGovernorateId] = useState('')
@@ -251,6 +254,7 @@ export default function TargetForm() {
   const [candidateLastPurchaseFrom, setCandidateLastPurchaseFrom] = useState('')
   const [candidateLastPurchaseTo, setCandidateLastPurchaseTo] = useState('')
   const [candidatePage, setCandidatePage] = useState(1)
+  const [candidateFiltersOpen, setCandidateFiltersOpen] = useState(false)
   const debouncedCustomerSearch = useDebounce(customerSearch.trim(), 250)
   const { data: candidateCities = [] } = useCities(candidateGovernorateId || undefined)
   const { data: candidateAreas = [] } = useAreas(candidateCityId || undefined)
@@ -436,8 +440,8 @@ export default function TargetForm() {
       const existing = new Set(prev.map(customer => customer.customer_id))
       const additions = rows
         .filter(row => !existing.has(row.customer_id))
-        .map((row, index) => ({
-          _key: Date.now() + index,
+        .map(row => ({
+          _key: row.customer_id,
           _name: row.customer_name,
           customer_id: row.customer_id,
         }))
@@ -449,7 +453,7 @@ export default function TargetForm() {
     if (selected) removeCustomer(selected._key)
     else addCandidateCustomers([row])
   }
-  const removeCustomer = (key: number) => setCustomers(prev => prev.filter(c => c._key !== key))
+  const removeCustomer = (key: string) => setCustomers(prev => prev.filter(c => c._key !== key))
   const clearCustomerSelection = () => {
     setCustomers([])
     setCustomerSearch('')
@@ -1040,9 +1044,21 @@ export default function TargetForm() {
     const selectedIds = new Set(customers.map(customer => customer.customer_id))
     const allPageSelected = customerResults.length > 0
       && customerResults.every(customer => selectedIds.has(customer.customer_id))
+    const selectedOnPageCount = customerResults.filter(customer => selectedIds.has(customer.customer_id)).length
     const baselineFilterLabel = typeCode === 'category_spread'
       ? 'عدد تصنيفات خط الأساس'
       : 'متوسط المبيعات الشهري'
+    const activeCandidateFilterCount = [
+      candidateCustomerType,
+      scope !== 'individual' ? candidateEmployeeId : '',
+      candidateGovernorateId,
+      candidateCityId,
+      candidateAreaId,
+      candidateBaselineMin,
+      candidateBaselineMax,
+      candidateLastPurchaseFrom,
+      candidateLastPurchaseTo,
+    ].filter(Boolean).length
     const typeLabels: Record<string, string> = {
       retail: 'تجزئة',
       wholesale: 'جملة',
@@ -1050,214 +1066,281 @@ export default function TargetForm() {
     }
 
     return (
-      <div className="tf-section">
-        <div className="tf-section-title"><Users size={16} className="inline align-middle ml-1" /> العملاء المستهدفون</div>
-        <p className="tf-field-help">
-          {typeCode === 'upgrade_value'
-            ? 'خط الأساس هو متوسط صافي مشتريات العميل من الشركة خلال آخر 3 أشهر كاملة، بينما يُنسب الإنجاز لنطاق الهدف.'
-            : typeCode === 'reactivation'
-              ? 'الخمول يُقاس من آخر شراء للعميل مع الشركة قبل بداية الهدف، ثم يُنسب شراء العودة لنطاق الهدف.'
-              : 'النجاح يُقاس بعدد التصنيفات الجديدة التي لم تكن ضمن مشتريات العميل في الشهر السابق.'}
-        </p>
+      <div className="tf-section tf-customer-picker">
+        <div className="tf-customer-picker-head">
+          <div className="tf-customer-picker-heading">
+            <span className="tf-customer-picker-icon"><Users size={20} /></span>
+            <div>
+              <h3>اختيار العملاء المستهدفين</h3>
+              <p>
+                {typeCode === 'upgrade_value'
+                  ? 'خط الأساس هو متوسط صافي مشتريات العميل من الشركة خلال آخر 3 أشهر كاملة، بينما يُنسب الإنجاز لنطاق الهدف.'
+                  : typeCode === 'reactivation'
+                    ? 'الخمول يُقاس من آخر شراء للعميل مع الشركة قبل بداية الهدف، ثم يُنسب شراء العودة لنطاق الهدف.'
+                    : 'النجاح يُقاس بعدد التصنيفات الجديدة التي لم تكن ضمن مشتريات العميل في الشهر السابق.'}
+              </p>
+            </div>
+          </div>
+          <div className="tf-customer-picker-stats" aria-live="polite">
+            <span><strong>{fmtN(candidateTotalCount)}</strong><small>عميل مطابق</small></span>
+            <span className="tf-customer-picker-stat--selected"><strong>{fmtN(customers.length)}</strong><small>تم اختيارهم</small></span>
+          </div>
+        </div>
 
-        <div className="tf-candidate-filters">
-          <div className="form-group tf-candidate-search">
-            <label className="form-label">بحث ذكي</label>
+        <div className="tf-candidate-discovery">
+          <div className="tf-candidate-searchbar">
+            <Search size={19} aria-hidden="true" />
             <input
-              className="form-input"
               value={customerSearch}
               onChange={event => setCustomerSearch(event.target.value)}
-              placeholder="الاسم أو الكود أو الهاتف — يمكن كتابة أكثر من كلمة"
+              placeholder="ابحث بالاسم أو الكود أو الهاتف — يمكنك كتابة أكثر من كلمة"
+              aria-label="بحث ذكي عن العملاء"
               autoComplete="off"
             />
+            {customerSearch && (
+              <button type="button" onClick={() => setCustomerSearch('')} aria-label="مسح البحث">
+                <X size={17} />
+              </button>
+            )}
           </div>
+          <button
+            type="button"
+            className={'tf-filter-toggle' + (candidateFiltersOpen ? ' tf-filter-toggle--open' : '')}
+            onClick={() => setCandidateFiltersOpen(open => !open)}
+            aria-expanded={candidateFiltersOpen}
+            aria-controls="target-customer-advanced-filters"
+          >
+            <SlidersHorizontal size={17} />
+            <span>فلاتر متقدمة</span>
+            {activeCandidateFilterCount > 0 && <b>{fmtN(activeCandidateFilterCount)}</b>}
+            {candidateFiltersOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+        </div>
 
-          <div className="form-group">
-            <label className="form-label">نوع العميل</label>
-            <select className="form-select" value={candidateCustomerType} onChange={event => setCandidateCustomerType(event.target.value)}>
-              <option value="">كل الأنواع</option>
-              <option value="retail">تجزئة</option>
-              <option value="wholesale">جملة</option>
-              <option value="distributor">موزع</option>
-            </select>
-          </div>
+        {candidateFiltersOpen && (
+          <div id="target-customer-advanced-filters" className="tf-candidate-filters">
+            <div className="tf-candidate-filters-head">
+              <div>
+                <strong>تضييق النتائج</strong>
+                <small>استخدم فقط الفلاتر التي تحتاجها</small>
+              </div>
+              {activeCandidateFilterCount > 0 && (
+                <button type="button" onClick={clearCandidateFilters}>مسح الكل</button>
+              )}
+            </div>
 
-          {scope !== 'individual' && (
             <div className="form-group">
-              <label className="form-label">المندوب المسؤول</label>
-              <select className="form-select" value={candidateEmployeeId} onChange={event => setCandidateEmployeeId(event.target.value)}>
-                <option value="">كل مندوبي النطاق</option>
-                {visibleEmployees.map(employee => (
-                  <option key={employee.id} value={employee.id}>{employee.full_name}</option>
+              <label className="form-label">نوع العميل</label>
+              <select className="form-select" value={candidateCustomerType} onChange={event => setCandidateCustomerType(event.target.value)}>
+                <option value="">كل الأنواع</option>
+                <option value="retail">تجزئة</option>
+                <option value="wholesale">جملة</option>
+                <option value="distributor">موزع</option>
+              </select>
+            </div>
+
+            {scope !== 'individual' && (
+              <div className="form-group">
+                <label className="form-label">المندوب المسؤول</label>
+                <select className="form-select" value={candidateEmployeeId} onChange={event => setCandidateEmployeeId(event.target.value)}>
+                  <option value="">كل مندوبي النطاق</option>
+                  {visibleEmployees.map(employee => (
+                    <option key={employee.id} value={employee.id}>{employee.full_name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="form-group">
+              <label className="form-label">المحافظة</label>
+              <select className="form-select" value={candidateGovernorateId} onChange={event => {
+                setCandidateGovernorateId(event.target.value)
+                setCandidateCityId('')
+                setCandidateAreaId('')
+              }}>
+                <option value="">كل المحافظات</option>
+                {(governorates as any[]).map(governorate => (
+                  <option key={governorate.id} value={governorate.id}>{governorate.name}</option>
                 ))}
               </select>
             </div>
-          )}
 
-          <div className="form-group">
-            <label className="form-label">المحافظة</label>
-            <select className="form-select" value={candidateGovernorateId} onChange={event => {
-              setCandidateGovernorateId(event.target.value)
-              setCandidateCityId('')
-              setCandidateAreaId('')
-            }}>
-              <option value="">كل المحافظات</option>
-              {(governorates as any[]).map(governorate => (
-                <option key={governorate.id} value={governorate.id}>{governorate.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">المدينة</label>
-            <select className="form-select" value={candidateCityId} disabled={!candidateGovernorateId} onChange={event => {
-              setCandidateCityId(event.target.value)
-              setCandidateAreaId('')
-            }}>
-              <option value="">كل المدن</option>
-              {(candidateCities as any[]).map(city => <option key={city.id} value={city.id}>{city.name}</option>)}
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">المنطقة</label>
-            <select className="form-select" value={candidateAreaId} disabled={!candidateCityId} onChange={event => setCandidateAreaId(event.target.value)}>
-              <option value="">كل المناطق</option>
-              {(candidateAreas as any[]).map(area => <option key={area.id} value={area.id}>{area.name}</option>)}
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">{baselineFilterLabel} — من</label>
-            <input type="number" dir="ltr" className="form-input tf-number-input" min="0"
-              value={candidateBaselineMin} onChange={event => setCandidateBaselineMin(event.target.value)} />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">{baselineFilterLabel} — إلى</label>
-            <input type="number" dir="ltr" className="form-input tf-number-input" min="0"
-              value={candidateBaselineMax} onChange={event => setCandidateBaselineMax(event.target.value)} />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">آخر شراء — من</label>
-            <input type="date" dir="ltr" className="form-input"
-              value={candidateLastPurchaseFrom} onChange={event => setCandidateLastPurchaseFrom(event.target.value)} />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">آخر شراء — إلى</label>
-            <input type="date" dir="ltr" className="form-input"
-              value={candidateLastPurchaseTo} onChange={event => setCandidateLastPurchaseTo(event.target.value)} />
-          </div>
-
-          <div className="tf-candidate-filter-actions">
-            <Button type="button" variant="ghost" onClick={clearCandidateFilters}>مسح الفلاتر</Button>
-          </div>
-        </div>
-
-        <div className="tf-candidate-toolbar">
-          <div>
-            <strong>{fmtN(candidateTotalCount)}</strong> عميل مطابق
-            <span className="tf-candidate-selected-count">تم اختيار {fmtN(customers.length)}</span>
-          </div>
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={customerResults.length === 0}
-            onClick={() => {
-              if (allPageSelected) {
-                const pageIds = new Set(customerResults.map(customer => customer.customer_id))
-                setCustomers(previous => previous.filter(customer => !pageIds.has(customer.customer_id)))
-              } else {
-                addCandidateCustomers(customerResults)
-              }
-            }}
-          >
-            {allPageSelected
-              ? 'إلغاء اختيار النتائج المعروضة'
-              : 'اختيار النتائج المعروضة (' + customerResults.length + ')'}
-          </Button>
-        </div>
-
-        {candidatesFetching ? (
-          <div className="tf-candidate-message" role="status">جاري حساب المرشحين وخطوط الأساس...</div>
-        ) : candidatesError ? (
-          <div className="tf-candidate-message tf-candidate-message--error" role="alert">
-            تعذر جلب العملاء المؤهلين. راجع نطاق الهدف والفلاتر ثم أعد المحاولة.
-          </div>
-        ) : customerResults.length === 0 ? (
-          <div className="tf-candidate-message">لا يوجد عملاء مؤهلون يطابقون الفلاتر الحالية.</div>
-        ) : (
-          <div className="tf-candidate-list" role="list">
-            {customerResults.map(customer => {
-              const selected = selectedIds.has(customer.customer_id)
-              return (
-                <label key={customer.customer_id} className={'tf-candidate-row' + (selected ? ' tf-candidate-row--selected' : '')}>
-                  <input
-                    type="checkbox"
-                    checked={selected}
-                    onChange={() => toggleCandidateCustomer(customer)}
-                    aria-label={'اختيار ' + customer.customer_name}
-                  />
-                  <span className="tf-candidate-main">
-                    <span className="tf-candidate-name">{customer.customer_name}</span>
-                    <span className="tf-candidate-code" dir="ltr">{customer.customer_code}</span>
-                    <span className="tf-candidate-meta">
-                      {typeLabels[customer.customer_type] ?? customer.customer_type}
-                      {customer.assigned_rep_name ? ' • ' + customer.assigned_rep_name : ''}
-                      {customer.city_name ? ' • ' + customer.city_name : ''}
-                    </span>
-                  </span>
-                  <span className="tf-candidate-metric">
-                    {typeCode === 'upgrade_value' && <>متوسط الأساس <strong>{fmtN(customer.baseline_value)} ج.م</strong></>}
-                    {typeCode === 'reactivation' && <>
-                      آخر شراء <strong>{customer.last_purchase_date ?? '—'}</strong>
-                      <small>{fmtN(customer.dormant_days ?? 0)} يوم خمول</small>
-                    </>}
-                    {typeCode === 'category_spread' && <>خط الأساس <strong>{fmtN(customer.baseline_category_count)} تصنيف</strong></>}
-                  </span>
-                </label>
-              )
-            })}
-          </div>
-        )}
-
-        {candidateTotalPages > 1 && (
-          <div className="tf-candidate-pagination">
-            <Button type="button" variant="ghost" disabled={candidatePage <= 1} onClick={() => setCandidatePage(page => page - 1)}>
-              السابق
-            </Button>
-            <span>صفحة {fmtN(candidatePage)} من {fmtN(candidateTotalPages)}</span>
-            <Button type="button" variant="ghost" disabled={candidatePage >= candidateTotalPages} onClick={() => setCandidatePage(page => page + 1)}>
-              التالي
-            </Button>
-          </div>
-        )}
-
-        <div className="tf-selected-customers">
-          <div className="tf-selected-header">
-            <strong>العملاء المختارون ({fmtN(customers.length)})</strong>
-            {customers.length > 0 && (
-              <Button type="button" variant="ghost" onClick={() => setCustomers([])}>إلغاء اختيار الكل</Button>
-            )}
-          </div>
-          {customers.length === 0 ? (
-            <div className="tf-candidate-message">اختر عميلاً واحدًا على الأقل للمتابعة.</div>
-          ) : (
-            <div className="tf-selected-list">
-              {customers.map((customer, index) => (
-                <div key={customer._key} className="tf-selected-row">
-                  <span className="tf-selected-index">{index + 1}</span>
-                  <span>{customer._name ?? customer.customer_id}</span>
-                  <button type="button" onClick={() => removeCustomer(customer._key)}
-                    aria-label={'إزالة ' + (customer._name ?? 'العميل')}>
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              ))}
+            <div className="form-group">
+              <label className="form-label">المدينة</label>
+              <select className="form-select" value={candidateCityId} disabled={!candidateGovernorateId} onChange={event => {
+                setCandidateCityId(event.target.value)
+                setCandidateAreaId('')
+              }}>
+                <option value="">كل المدن</option>
+                {(candidateCities as any[]).map(city => <option key={city.id} value={city.id}>{city.name}</option>)}
+              </select>
             </div>
-          )}
+
+            <div className="form-group">
+              <label className="form-label">المنطقة</label>
+              <select className="form-select" value={candidateAreaId} disabled={!candidateCityId} onChange={event => setCandidateAreaId(event.target.value)}>
+                <option value="">كل المناطق</option>
+                {(candidateAreas as any[]).map(area => <option key={area.id} value={area.id}>{area.name}</option>)}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">{baselineFilterLabel} — من</label>
+              <input type="number" dir="ltr" className="form-input tf-number-input" min="0"
+                value={candidateBaselineMin} onChange={event => setCandidateBaselineMin(event.target.value)} />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">{baselineFilterLabel} — إلى</label>
+              <input type="number" dir="ltr" className="form-input tf-number-input" min="0"
+                value={candidateBaselineMax} onChange={event => setCandidateBaselineMax(event.target.value)} />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">آخر شراء — من</label>
+              <input type="date" dir="ltr" className="form-input"
+                value={candidateLastPurchaseFrom} onChange={event => setCandidateLastPurchaseFrom(event.target.value)} />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">آخر شراء — إلى</label>
+              <input type="date" dir="ltr" className="form-input"
+                value={candidateLastPurchaseTo} onChange={event => setCandidateLastPurchaseTo(event.target.value)} />
+            </div>
+          </div>
+        )}
+
+        <div className="tf-customer-picker-body">
+          <section className="tf-candidate-results" aria-label="العملاء المطابقون">
+            <div className="tf-candidate-toolbar">
+              <div>
+                <strong>العملاء المطابقون</strong>
+                <span>{fmtN(candidateTotalCount)} نتيجة</span>
+                {selectedOnPageCount > 0 && <span className="tf-candidate-page-selected">{fmtN(selectedOnPageCount)} محدد في الصفحة</span>}
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={customerResults.length === 0}
+                onClick={() => {
+                  if (allPageSelected) {
+                    const pageIds = new Set(customerResults.map(customer => customer.customer_id))
+                    setCustomers(previous => previous.filter(customer => !pageIds.has(customer.customer_id)))
+                  } else {
+                    addCandidateCustomers(customerResults)
+                  }
+                }}
+              >
+                {allPageSelected
+                  ? 'إلغاء اختيار النتائج المعروضة'
+                  : 'اختيار النتائج المعروضة (' + customerResults.length + ')'}
+              </Button>
+            </div>
+
+            {candidatesFetching ? (
+              <div className="tf-candidate-message" role="status">
+                <Loader2 size={22} className="tf-spin" />
+                <strong>جاري تجهيز العملاء المؤهلين</strong>
+                <span>نحسب خطوط الأساس ونطبّق الفلاتر الآن...</span>
+              </div>
+            ) : candidatesError ? (
+              <div className="tf-candidate-message tf-candidate-message--error" role="alert">
+                <AlertCircle size={24} />
+                <strong>تعذر جلب العملاء المؤهلين</strong>
+                <span>راجع نطاق الهدف والفلاتر ثم حاول مرة أخرى.</span>
+              </div>
+            ) : customerResults.length === 0 ? (
+              <div className="tf-candidate-message">
+                <Search size={25} />
+                <strong>لا توجد نتائج مطابقة</strong>
+                <span>جرّب تبسيط البحث أو مسح بعض الفلاتر.</span>
+              </div>
+            ) : (
+              <div className="tf-candidate-list" role="list">
+                {customerResults.map(customer => {
+                  const selected = selectedIds.has(customer.customer_id)
+                  return (
+                    <label key={customer.customer_id} className={'tf-candidate-row' + (selected ? ' tf-candidate-row--selected' : '')}>
+                      <input
+                        type="checkbox"
+                        checked={selected}
+                        onChange={() => toggleCandidateCustomer(customer)}
+                        aria-label={'اختيار ' + customer.customer_name}
+                      />
+                      <span className="tf-candidate-check" aria-hidden="true"><Check size={14} /></span>
+                      <span className="tf-candidate-avatar" aria-hidden="true">{customer.customer_name.trim().charAt(0) || 'ع'}</span>
+                      <span className="tf-candidate-main">
+                        <span className="tf-candidate-name">{customer.customer_name}</span>
+                        <span className="tf-candidate-identity">
+                          <span dir="ltr">{customer.customer_code}</span>
+                          <span>{typeLabels[customer.customer_type] ?? customer.customer_type}</span>
+                        </span>
+                        <span className="tf-candidate-meta">
+                          {customer.assigned_rep_name && <span><Users size={12} />{customer.assigned_rep_name}</span>}
+                          {customer.city_name && <span><MapPin size={12} />{customer.city_name}</span>}
+                        </span>
+                      </span>
+                      <span className="tf-candidate-metric">
+                        {typeCode === 'upgrade_value' && <><small>متوسط خط الأساس</small><strong>{fmtN(customer.baseline_value)} <em>ج.م</em></strong></>}
+                        {typeCode === 'reactivation' && <>
+                          <small>آخر شراء</small><strong dir="ltr">{customer.last_purchase_date ?? '—'}</strong>
+                          <em>{fmtN(customer.dormant_days ?? 0)} يوم خمول</em>
+                        </>}
+                        {typeCode === 'category_spread' && <><small>تصنيفات خط الأساس</small><strong>{fmtN(customer.baseline_category_count)} <em>تصنيف</em></strong></>}
+                      </span>
+                    </label>
+                  )
+                })}
+              </div>
+            )}
+
+            {candidateTotalPages > 1 && (
+              <div className="tf-candidate-pagination" aria-label="صفحات العملاء">
+                <Button type="button" variant="ghost" disabled={candidatePage <= 1} onClick={() => setCandidatePage(page => page - 1)} icon={<ChevronRight size={16} />}>
+                  السابق
+                </Button>
+                <span><b>{fmtN(candidatePage)}</b><small>من {fmtN(candidateTotalPages)}</small></span>
+                <Button type="button" variant="ghost" disabled={candidatePage >= candidateTotalPages} onClick={() => setCandidatePage(page => page + 1)} icon={<ChevronLeft size={16} />}>
+                  التالي
+                </Button>
+              </div>
+            )}
+          </section>
+
+          <aside className="tf-selected-customers" aria-label="العملاء المختارون">
+            <div className="tf-selected-header">
+              <div>
+                <span className="tf-selected-header-icon"><UserPlus size={18} /></span>
+                <span><strong>العملاء المختارون</strong><small>{fmtN(customers.length)} عميل</small></span>
+              </div>
+              {customers.length > 0 && (
+                <button type="button" onClick={() => setCustomers([])}>إلغاء الكل</button>
+              )}
+            </div>
+            {customers.length === 0 ? (
+              <div className="tf-selected-empty">
+                <UserPlus size={28} />
+                <strong>قائمة الاختيار فارغة</strong>
+                <span>حدد العملاء من النتائج وسيظهرون هنا فورًا.</span>
+              </div>
+            ) : (
+              <div className="tf-selected-list">
+                {customers.map((customer, index) => (
+                  <div key={customer._key} className="tf-selected-row">
+                    <span className="tf-selected-index">{fmtN(index + 1)}</span>
+                    <span title={customer._name ?? customer.customer_id}>{customer._name ?? customer.customer_id}</span>
+                    <button type="button" onClick={() => removeCustomer(customer._key)}
+                      aria-label={'إزالة ' + (customer._name ?? 'العميل')}>
+                      <X size={15} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {customers.length > 0 && (
+              <div className="tf-selected-foot"><Check size={14} />سيتم تثبيت خطوط الأساس تلقائيًا عند اعتماد الهدف</div>
+            )}
+          </aside>
         </div>
       </div>
     )
@@ -1430,7 +1513,7 @@ export default function TargetForm() {
         })}
       </div>
 
-      <form className="edara-card tf-form" onSubmit={e => e.preventDefault()}>
+      <form className={'edara-card tf-form' + (step === 6 ? ' tf-form--wide' : '')} onSubmit={e => e.preventDefault()}>
         {step === 1 && renderStep1()}
         {step === 2 && renderStep2()}
         {step === 3 && renderStep3()}
@@ -1439,6 +1522,7 @@ export default function TargetForm() {
         {step === 6 && renderStep6()}
         {step === 7 && renderStep7()}
 
+        <div className="tf-action-clearance" aria-hidden="true" />
         <div className="tf-actions">
           {!isFirstStep && (
             <Button type="button" variant="secondary" icon={<ChevronRight size={14} />} onClick={goPrev}>
@@ -1461,6 +1545,7 @@ export default function TargetForm() {
 
       <style>{`
         .tf-form { max-width: 720px; margin: 0 auto; padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
+        .tf-form--wide { max-width: 1120px; }
         .tf-steps { display: flex; justify-content: center; gap: 0; max-width: 720px; margin: 0 auto var(--space-4); padding: 0 var(--space-4); }
         .tf-step { display: flex; align-items: center; gap: var(--space-1); flex: 1; padding: var(--space-2) 0; font-size: var(--text-xs); color: var(--text-muted); position: relative; }
         .tf-step + .tf-step::before { content: ''; position: absolute; inset-inline-end: 100%; top: 12px; width: 8px; height: 2px; background: var(--border-primary); }
@@ -1509,37 +1594,123 @@ export default function TargetForm() {
         .tf-reward-settings { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
         .tf-tier-row { display: grid; grid-template-columns: 36px 1fr 1fr 1fr auto; gap: var(--space-2); align-items: center; }
         .tf-customer-dropdown--message { position: absolute; top: 100%; inset-inline: 0; z-index: 51; background: var(--bg-surface); border: 1px solid var(--border-primary); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: var(--text-muted); margin-top: 2px; }
-        .tf-candidate-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); padding: var(--space-3); background: var(--bg-surface-2); border: 1px solid var(--border-primary); border-radius: var(--radius-md); }
-        .tf-candidate-search { grid-column: span 2; }
-        .tf-candidate-filter-actions { display: flex; align-items: flex-end; justify-content: flex-end; }
-        .tf-candidate-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding-block: var(--space-2); font-size: 14px; color: var(--text-secondary); }
-        .tf-candidate-selected-count { display: inline-block; margin-inline-start: var(--space-2); padding: 3px 8px; border-radius: 999px; background: var(--color-primary-light); color: var(--color-primary); font-weight: 600; }
-        .tf-candidate-list { display: flex; flex-direction: column; gap: 6px; max-height: 440px; overflow-y: auto; padding-inline-end: 2px; }
-        .tf-candidate-row { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(130px, auto); align-items: center; gap: var(--space-3); min-height: 72px; padding: 10px 12px; border: 1px solid var(--border-primary); border-radius: var(--radius-md); background: var(--bg-surface); cursor: pointer; transition: border-color var(--transition-fast), background var(--transition-fast); }
-        .tf-candidate-row:hover { border-color: var(--color-primary); background: var(--bg-hover); }
-        .tf-candidate-row--selected { border-color: var(--color-primary); background: var(--color-primary-light); }
-        .tf-candidate-row input[type='checkbox'] { width: 18px; height: 18px; accent-color: var(--color-primary); }
+        .tf-customer-picker { gap: var(--space-4); overflow: visible; }
+        .tf-customer-picker-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); padding-bottom: var(--space-3); border-bottom: 1px solid var(--border-primary); }
+        .tf-customer-picker-heading { display: flex; align-items: flex-start; gap: var(--space-3); min-width: 0; }
+        .tf-customer-picker-icon { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 42px; width: 42px; height: 42px; border-radius: 12px; background: var(--color-primary-light); color: var(--color-primary); }
+        .tf-customer-picker-heading h3 { margin: 0; color: var(--text-primary); font-size: 17px; line-height: 1.4; font-weight: 700; }
+        .tf-customer-picker-heading p { max-width: 720px; margin: 3px 0 0; color: var(--text-secondary); font-size: 13px; line-height: 1.8; }
+        .tf-customer-picker-stats { display: flex; flex: 0 0 auto; overflow: hidden; border: 1px solid var(--border-primary); border-radius: 12px; background: var(--bg-surface-2); }
+        .tf-customer-picker-stats > span { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 92px; min-height: 58px; padding: 7px 14px; }
+        .tf-customer-picker-stats > span + span { border-inline-start: 1px solid var(--border-primary); }
+        .tf-customer-picker-stats strong { color: var(--text-primary); font-size: 18px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+        .tf-customer-picker-stats small { margin-top: 3px; color: var(--text-muted); font-size: 11px; font-weight: 600; }
+        .tf-customer-picker-stats .tf-customer-picker-stat--selected { background: var(--color-primary-light); }
+        .tf-customer-picker-stat--selected strong, .tf-customer-picker-stat--selected small { color: var(--color-primary); }
+        .tf-candidate-discovery { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2); align-items: stretch; }
+        .tf-candidate-searchbar { display: flex; align-items: center; min-width: 0; min-height: 48px; padding-inline: 14px 8px; border: 1px solid var(--border-primary); border-radius: 12px; background: var(--bg-surface); color: var(--text-muted); transition: border-color var(--transition-fast), box-shadow var(--transition-fast); }
+        .tf-candidate-searchbar:focus-within { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-light); color: var(--color-primary); }
+        .tf-candidate-searchbar input { flex: 1; min-width: 0; height: 46px; padding-inline: 10px; border: 0; outline: 0; background: transparent; color: var(--text-primary); font: inherit; font-size: 14px; }
+        .tf-candidate-searchbar input::placeholder { color: var(--text-muted); }
+        .tf-candidate-searchbar button { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: 0; border-radius: 8px; background: transparent; color: var(--text-muted); cursor: pointer; }
+        .tf-candidate-searchbar button:hover { background: var(--bg-hover); color: var(--text-primary); }
+        .tf-filter-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding-inline: 15px; border: 1px solid var(--border-primary); border-radius: 12px; background: var(--bg-surface); color: var(--text-secondary); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; transition: border-color var(--transition-fast), background var(--transition-fast), color var(--transition-fast); }
+        .tf-filter-toggle:hover, .tf-filter-toggle--open { border-color: var(--color-primary); background: var(--color-primary-light); color: var(--color-primary); }
+        .tf-filter-toggle b { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding-inline: 5px; border-radius: 999px; background: var(--color-primary); color: var(--text-inverse); font-size: 11px; }
+        .tf-candidate-filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); padding: var(--space-3); border: 1px solid var(--border-primary); border-radius: 12px; background: var(--bg-surface-2); animation: tf-filter-reveal 160ms ease-out; }
+        .tf-candidate-filters-head { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding-bottom: var(--space-2); border-bottom: 1px solid var(--border-primary); }
+        .tf-candidate-filters-head > div { display: flex; flex-direction: column; }
+        .tf-candidate-filters-head strong { color: var(--text-primary); font-size: 13px; }
+        .tf-candidate-filters-head small { color: var(--text-muted); font-size: 11px; }
+        .tf-candidate-filters-head button { border: 0; background: transparent; color: var(--color-danger); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+        .tf-candidate-filters .form-group { margin: 0; }
+        .tf-customer-picker-body { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(260px, 0.75fr); gap: var(--space-3); align-items: start; min-width: 0; }
+        .tf-candidate-results, .tf-selected-customers { min-width: 0; border: 1px solid var(--border-primary); border-radius: 12px; background: var(--bg-surface); }
+        .tf-candidate-results { overflow: hidden; }
+        .tf-candidate-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: 60px; padding: 10px 12px; border-bottom: 1px solid var(--border-primary); background: var(--bg-surface-2); }
+        .tf-candidate-toolbar > div { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; min-width: 0; }
+        .tf-candidate-toolbar strong { color: var(--text-primary); font-size: 14px; }
+        .tf-candidate-toolbar span { color: var(--text-muted); font-size: 12px; }
+        .tf-candidate-toolbar .tf-candidate-page-selected { padding: 2px 7px; border-radius: 999px; background: var(--color-primary-light); color: var(--color-primary); font-weight: 700; }
+        .tf-candidate-toolbar .btn { min-height: 38px; white-space: nowrap; }
+        .tf-candidate-list { display: flex; flex-direction: column; max-height: 520px; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+        .tf-candidate-row { position: relative; display: grid; grid-template-columns: 38px minmax(0, 1fr) minmax(130px, auto); align-items: center; gap: var(--space-3); min-height: 86px; padding: 11px 14px; border-bottom: 1px solid var(--border-primary); background: var(--bg-surface); cursor: pointer; transition: background var(--transition-fast), box-shadow var(--transition-fast); }
+        .tf-candidate-row:last-child { border-bottom: 0; }
+        .tf-candidate-row:hover { z-index: 1; background: var(--bg-hover); box-shadow: inset -3px 0 0 var(--color-primary); }
+        .tf-candidate-row--selected { background: var(--color-primary-light); box-shadow: inset -3px 0 0 var(--color-primary); }
+        .tf-candidate-row input[type='checkbox'] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+        .tf-candidate-check { position: absolute; inset-block-start: 9px; inset-inline-end: 9px; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border: 2px solid var(--border-primary); border-radius: 7px; background: var(--bg-surface); color: transparent; transition: all var(--transition-fast); }
+        .tf-candidate-row--selected .tf-candidate-check { border-color: var(--color-primary); background: var(--color-primary); color: var(--text-inverse); }
+        .tf-candidate-row:focus-within { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+        .tf-candidate-avatar { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 11px; background: var(--bg-surface-2); color: var(--color-primary); font-size: 15px; font-weight: 700; }
+        .tf-candidate-row--selected .tf-candidate-avatar { background: var(--bg-surface); }
         .tf-candidate-main, .tf-candidate-metric { display: flex; flex-direction: column; min-width: 0; }
-        .tf-candidate-name { color: var(--text-primary); font-size: 15px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .tf-candidate-code { color: var(--text-muted); font-size: 12px; text-align: start; }
-        .tf-candidate-meta { color: var(--text-secondary); font-size: 12px; line-height: 1.7; }
-        .tf-candidate-metric { color: var(--text-secondary); font-size: 12px; text-align: end; }
-        .tf-candidate-metric strong { color: var(--text-primary); font-size: 14px; }
-        .tf-candidate-metric small { color: var(--text-muted); font-size: 11px; }
-        .tf-candidate-message { padding: var(--space-4); border: 1px dashed var(--border-primary); border-radius: var(--radius-md); background: var(--bg-surface-2); color: var(--text-muted); font-size: 14px; line-height: 1.7; text-align: center; }
-        .tf-candidate-message--error { border-color: var(--color-danger); color: var(--color-danger); background: rgba(220, 38, 38, 0.07); }
-        .tf-candidate-pagination { display: flex; align-items: center; justify-content: center; gap: var(--space-3); color: var(--text-secondary); font-size: 13px; }
-        .tf-selected-customers { border-top: 1px solid var(--border-primary); padding-top: var(--space-3); }
-        .tf-selected-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-2); color: var(--text-primary); font-size: 14px; }
-        .tf-selected-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; max-height: 260px; overflow-y: auto; }
-        .tf-selected-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--space-2); padding: 8px 10px; border-radius: var(--radius-sm); background: var(--bg-surface-2); color: var(--text-primary); font-size: 13px; }
+        .tf-candidate-name { padding-inline-end: 28px; overflow: hidden; color: var(--text-primary); font-size: 15px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+        .tf-candidate-identity { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; margin-top: 2px; }
+        .tf-candidate-identity span { padding: 1px 6px; border-radius: 5px; background: var(--bg-surface-2); color: var(--text-muted); font-size: 10px; font-weight: 600; }
+        .tf-candidate-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; margin-top: 5px; color: var(--text-secondary); font-size: 11px; }
+        .tf-candidate-meta span { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
+        .tf-candidate-metric { align-items: flex-end; justify-content: center; min-height: 52px; padding-inline-start: var(--space-3); border-inline-start: 1px solid var(--border-primary); text-align: end; }
+        .tf-candidate-metric small { color: var(--text-muted); font-size: 10px; font-weight: 600; }
+        .tf-candidate-metric strong { color: var(--text-primary); font-size: 14px; font-style: normal; font-variant-numeric: tabular-nums; }
+        .tf-candidate-metric em { color: var(--text-muted); font-size: 10px; font-style: normal; font-weight: 600; }
+        .tf-candidate-message { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 230px; padding: var(--space-5); background: var(--bg-surface); color: var(--text-muted); line-height: 1.7; text-align: center; }
+        .tf-candidate-message svg { margin-bottom: 5px; color: var(--text-muted); }
+        .tf-candidate-message strong { color: var(--text-primary); font-size: 14px; }
+        .tf-candidate-message span { max-width: 340px; font-size: 12px; }
+        .tf-candidate-message--error { background: rgba(220, 38, 38, 0.04); color: var(--color-danger); }
+        .tf-candidate-message--error svg, .tf-candidate-message--error strong { color: var(--color-danger); }
+        .tf-spin { animation: tf-spin 800ms linear infinite; }
+        .tf-candidate-pagination { display: flex; align-items: center; justify-content: center; gap: var(--space-3); min-height: 52px; padding: 7px 10px; border-top: 1px solid var(--border-primary); background: var(--bg-surface-2); }
+        .tf-candidate-pagination > span { display: flex; align-items: baseline; gap: 5px; min-width: 58px; color: var(--text-muted); font-size: 11px; }
+        .tf-candidate-pagination b { color: var(--text-primary); font-size: 14px; font-variant-numeric: tabular-nums; }
+        .tf-candidate-pagination small { font-size: 11px; }
+        .tf-selected-customers { position: sticky; top: var(--space-3); overflow: hidden; }
+        .tf-selected-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); min-height: 60px; padding: 10px 12px; border-bottom: 1px solid var(--border-primary); background: var(--bg-surface-2); }
+        .tf-selected-header > div { display: flex; align-items: center; gap: 9px; min-width: 0; }
+        .tf-selected-header-icon { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; flex: 0 0 34px; border-radius: 10px; background: var(--color-primary-light); color: var(--color-primary); }
+        .tf-selected-header > div > span:last-child { display: flex; flex-direction: column; min-width: 0; }
+        .tf-selected-header strong { color: var(--text-primary); font-size: 13px; }
+        .tf-selected-header small { color: var(--text-muted); font-size: 10px; }
+        .tf-selected-header > button { border: 0; background: transparent; color: var(--color-danger); font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
+        .tf-selected-list { display: flex; flex-direction: column; max-height: 466px; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+        .tf-selected-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; min-height: 43px; padding: 6px 10px; border-bottom: 1px solid var(--border-primary); color: var(--text-primary); font-size: 12px; }
+        .tf-selected-row:last-child { border-bottom: 0; }
+        .tf-selected-row:hover { background: var(--bg-hover); }
         .tf-selected-row > span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .tf-selected-index { color: var(--color-primary); font-weight: 700; font-variant-numeric: tabular-nums; }
-        .tf-selected-row button { display: inline-flex; padding: 5px; border: 0; border-radius: 6px; background: transparent; color: var(--color-danger); cursor: pointer; }
-        .tf-selected-row button:hover { background: rgba(220, 38, 38, 0.1); }
+        .tf-selected-index { display: inline-flex; align-items: center; justify-content: center; width: 25px; height: 25px; border-radius: 7px; background: var(--color-primary-light); color: var(--color-primary); font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .tf-selected-row button { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--text-muted); cursor: pointer; }
+        .tf-selected-row button:hover { background: rgba(220, 38, 38, 0.1); color: var(--color-danger); }
+        .tf-selected-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 230px; padding: var(--space-4); color: var(--text-muted); text-align: center; }
+        .tf-selected-empty svg { margin-bottom: 8px; color: var(--border-focus); opacity: .65; }
+        .tf-selected-empty strong { color: var(--text-secondary); font-size: 13px; }
+        .tf-selected-empty span { max-width: 220px; margin-top: 3px; font-size: 11px; line-height: 1.7; }
+        .tf-selected-foot { display: flex; align-items: flex-start; gap: 6px; padding: 9px 11px; border-top: 1px solid var(--border-primary); background: rgba(22, 163, 74, .07); color: var(--color-success); font-size: 10px; line-height: 1.6; }
+        .tf-selected-foot svg { flex: 0 0 auto; margin-top: 1px; }
+        @keyframes tf-filter-reveal { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes tf-spin { to { transform: rotate(360deg); } }
         .tf-geo-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
         .tf-geo-help { grid-column: 1 / -1; }
+        .tf-action-clearance { display: none; }
         .tf-actions { display: flex; gap: var(--space-3); align-items: center; padding-top: var(--space-3); border-top: 1px solid var(--border-primary); }
+        @media (max-width: 1100px) {
+          .tf-candidate-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+          .tf-customer-picker-body { grid-template-columns: minmax(0, 1.45fr) minmax(240px, .75fr); }
+        }
+        @media (max-width: 820px) {
+          .tf-customer-picker-head { align-items: stretch; flex-direction: column; }
+          .tf-customer-picker-stats { align-self: flex-start; }
+          .tf-customer-picker-body { grid-template-columns: 1fr; }
+          .tf-selected-customers { position: static; }
+          .tf-selected-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 250px; }
+          .tf-selected-row:nth-child(odd) { border-inline-end: 1px solid var(--border-primary); }
+          .tf-candidate-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 768px) {
+          .tf-action-clearance { display: block; flex: 0 0 56px; height: 56px; }
+          .tf-actions { position: sticky; bottom: calc(var(--bottom-nav-height, 64px) - 1px); z-index: 20; margin: 0 calc(var(--space-3) * -1) calc(var(--space-3) * -1); padding: var(--space-3); border-radius: var(--radius-lg) var(--radius-lg) 0 0; background: var(--bg-surface); box-shadow: 0 -8px 20px rgba(0,0,0,0.08); }
+          .tf-actions .btn { min-height: 44px; }
+        }
         @media (max-width: 600px) {
           .tf-form { padding: var(--space-3); border-radius: var(--radius-lg); }
           .tf-section { padding: var(--space-3); }
@@ -1551,20 +1722,30 @@ export default function TargetForm() {
           .tf-step { justify-content: center; }
           .tf-reward-options, .tf-reward-settings { grid-template-columns: 1fr; }
           .tf-geo-grid { grid-template-columns: 1fr; }
-          .tf-candidate-filters { grid-template-columns: 1fr; }
-          .tf-candidate-search { grid-column: auto; }
-          .tf-candidate-filter-actions { justify-content: stretch; }
-          .tf-candidate-filter-actions .btn { width: 100%; }
-          .tf-candidate-toolbar { align-items: stretch; flex-direction: column; }
+          .tf-customer-picker { gap: var(--space-3); }
+          .tf-customer-picker-heading { gap: 10px; }
+          .tf-customer-picker-icon { width: 38px; height: 38px; flex-basis: 38px; }
+          .tf-customer-picker-heading h3 { font-size: 15px; }
+          .tf-customer-picker-heading p { font-size: 12px; }
+          .tf-customer-picker-stats { width: 100%; }
+          .tf-customer-picker-stats > span { flex: 1; min-width: 0; }
+          .tf-candidate-discovery { grid-template-columns: 1fr; }
+          .tf-filter-toggle { width: 100%; }
+          .tf-candidate-filters { grid-template-columns: 1fr; padding: 10px; }
+          .tf-candidate-toolbar { align-items: stretch; flex-direction: column; padding: 10px; }
           .tf-candidate-toolbar .btn { width: 100%; min-height: 44px; }
-          .tf-candidate-row { grid-template-columns: auto minmax(0, 1fr); min-height: 88px; }
-          .tf-candidate-metric { grid-column: 2; text-align: start; }
-          .tf-selected-list { grid-template-columns: 1fr; }
+          .tf-candidate-row { grid-template-columns: 34px minmax(0, 1fr); gap: 9px; min-height: 112px; padding: 10px; }
+          .tf-candidate-avatar { width: 34px; height: 34px; }
+          .tf-candidate-name { font-size: 14px; }
+          .tf-candidate-metric { grid-column: 2; align-items: flex-start; min-height: 0; margin-top: 4px; padding: 7px 0 0; border-inline-start: 0; border-top: 1px dashed var(--border-primary); text-align: start; }
+          .tf-candidate-metric strong { font-size: 13px; }
+          .tf-candidate-check { inset-block-start: 8px; inset-inline-end: 8px; }
+          .tf-candidate-list { max-height: 480px; }
+          .tf-selected-list { display: flex; grid-template-columns: none; max-height: 260px; }
+          .tf-selected-row:nth-child(odd) { border-inline-end: 0; }
           .tf-tier-row { grid-template-columns: 28px 1fr 1fr; }
           .tf-tier-row .tf-tier-label { grid-column: 2 / -1; }
           .tf-review-item { align-items: flex-start; flex-direction: column; gap: 4px; }
-          .tf-actions { position: sticky; bottom: calc(var(--bottom-nav-height, 64px) - 1px); z-index: 20; margin: 0 calc(var(--space-3) * -1) calc(var(--space-3) * -1); padding: var(--space-3); background: var(--bg-surface); box-shadow: 0 -8px 20px rgba(0,0,0,0.06); }
-          .tf-actions .btn { min-height: 44px; }
         }
       `}</style>
     </div>
