@@ -21,7 +21,7 @@ import type {
   TargetRewardType, TargetRewardPoolBasis, TargetPayoutStatus,
   TargetListItem, TargetDetailView, TargetRewardSummary,
   TargetComputedMetrics, TargetFilters, PayoutFilters,
-  ReactivationTargetCandidate, TargetCustomerProgressRow,
+  ReactivationTargetCandidate, TargetCustomerCandidate, TargetCustomerProgressRow,
 } from '@/lib/types/activities'
 
 // ============================================================
@@ -66,7 +66,7 @@ const TIERS_SELECT = `id, target_id, sequence, threshold_pct, reward_pct, label,
 
 /** حقول العملاء المستهدفين مع بيانات العميل */
 const CUSTOMERS_SELECT = `
-  id, target_id, customer_id, baseline_value, baseline_category_count,
+  id, target_id, customer_id, baseline_value, baseline_category_count, baseline_category_ids,
   baseline_period_start, baseline_period_end, created_at,
   customer:customers(id, name, code, phone)
 `
@@ -568,6 +568,59 @@ export async function getReactivationTargetCandidates(params: {
   })
   if (error) throw error
   return (data ?? []) as ReactivationTargetCandidate[]
+}
+
+export interface TargetCustomerCandidateParams {
+  typeCode: 'upgrade_value' | 'reactivation' | 'category_spread'
+  scope: string
+  scopeId?: string | null
+  periodStart: string
+  dormancyDays?: number | null
+  search?: string
+  customerType?: string | null
+  governorateId?: string | null
+  cityId?: string | null
+  areaId?: string | null
+  employeeId?: string | null
+  baselineMin?: number | null
+  baselineMax?: number | null
+  lastPurchaseFrom?: string | null
+  lastPurchaseTo?: string | null
+  page?: number
+  pageSize?: number
+}
+
+/** مرشحو محاور العملاء مع خطوط أساس محسوبة خادمياً — قراءة فقط. */
+export async function getTargetCustomerCandidates(params: TargetCustomerCandidateParams): Promise<{
+  data: TargetCustomerCandidate[]
+  totalCount: number
+  page: number
+  pageSize: number
+}> {
+  const page = Math.max(params.page ?? 1, 1)
+  const pageSize = Math.min(Math.max(params.pageSize ?? 50, 1), 100)
+  const { data, error } = await supabase.rpc('get_target_customer_candidates', {
+    p_type_code: params.typeCode,
+    p_scope: params.scope,
+    p_scope_id: params.scopeId ?? null,
+    p_period_start: params.periodStart,
+    p_dormancy_days: params.dormancyDays ?? null,
+    p_search: params.search?.trim() || null,
+    p_customer_type: params.customerType || null,
+    p_governorate_id: params.governorateId || null,
+    p_city_id: params.cityId || null,
+    p_area_id: params.areaId || null,
+    p_employee_id: params.employeeId || null,
+    p_baseline_min: params.baselineMin ?? null,
+    p_baseline_max: params.baselineMax ?? null,
+    p_last_purchase_from: params.lastPurchaseFrom || null,
+    p_last_purchase_to: params.lastPurchaseTo || null,
+    p_page: page,
+    p_page_size: pageSize,
+  })
+  if (error) throw error
+  const rows = (data ?? []) as TargetCustomerCandidate[]
+  return { data: rows, totalCount: Number(rows[0]?.total_count ?? 0), page, pageSize }
 }
 
 // ============================================================

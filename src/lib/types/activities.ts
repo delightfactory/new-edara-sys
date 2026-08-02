@@ -629,6 +629,7 @@ export interface TargetCustomer {
   customer_id: string                      // → customers(id)
   baseline_value: number | null            // للـ upgrade_value: متوسط مشتريات المرجع
   baseline_category_count: number | null   // للـ category_spread: عدد التصنيفات المرجعي
+  baseline_category_ids: string[] | null   // لقطة التصنيفات المرجعية المستخدمة لقياس التصنيفات الجديدة
   baseline_period_start: string | null     // DATE — بداية الفترة المرجعية
   baseline_period_end: string | null       // DATE — نهاية الفترة المرجعية
   created_at: string
@@ -656,6 +657,25 @@ export interface ReactivationTargetCandidate {
   customer_code: string
   last_purchase_date: string
   dormant_days: number
+}
+
+export interface TargetCustomerCandidate {
+  customer_id: string
+  customer_name: string
+  customer_code: string
+  customer_type: string
+  assigned_rep_id: string | null
+  assigned_rep_name: string | null
+  governorate_name: string | null
+  city_name: string | null
+  area_name: string | null
+  last_purchase_date: string | null
+  dormant_days: number | null
+  baseline_value: number
+  baseline_category_count: number
+  eligible: boolean
+  eligibility_reason: 'eligible'
+  total_count: number
 }
 
 export interface TargetCustomerProgressRow {

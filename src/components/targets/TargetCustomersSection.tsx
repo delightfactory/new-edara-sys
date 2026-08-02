@@ -18,7 +18,7 @@ const STATUS_AR: Record<string, string> = {
   achieved: 'متحقق', baseline_missing: 'خط الأساس غير متاح', no_sales_yet: 'لا مبيعات بعد',
   in_progress: 'جارٍ التقدم', dormancy_not_verified: 'الخمول غير متحقق',
   not_reactivated_yet: 'لم يعد للشراء', below_minimum_value: 'أقل من حد العودة',
-  required_count_missing: 'العدد المطلوب غير محدد', no_categories_yet: 'لا تصنيفات بعد',
+  required_count_missing: 'العدد المطلوب غير محدد', no_categories_yet: 'لا تصنيفات جديدة بعد',
 }
 
 export default function TargetCustomersSection({ customers, progress = [], typeCode, loading = false, error = false }: TargetCustomersSectionProps) {
@@ -81,10 +81,10 @@ export default function TargetCustomersSection({ customers, progress = [], typeC
             <tr style={{ background: 'var(--bg-body)', borderBottom: '1px solid var(--border-color)' }}>
               <th style={{ padding: '12px 20px', fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>العميل</th>
               <th style={{ padding: '12px 20px', fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                {typeCode === 'category_spread' ? 'التصنيفات الحالية / المطلوبة' : typeCode === 'reactivation' ? 'صافي العودة / الحد' : 'الصافي الحالي / المطلوب'}
+                {typeCode === 'category_spread' ? 'التصنيفات الجديدة / المطلوبة' : typeCode === 'reactivation' ? 'صافي العودة / الحد' : 'الصافي الحالي / المطلوب'}
               </th>
               <th style={{ padding: '12px 20px', fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                {typeCode === 'reactivation' ? 'آخر شراء قبل الهدف' : 'خط الأساس'}
+                {typeCode === 'reactivation' ? 'آخر شراء قبل الهدف' : typeCode === 'category_spread' ? 'تصنيفات الشهر السابق' : 'خط الأساس'}
               </th>
               <th style={{ padding: '12px 20px', fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>الحالة</th>
             </tr>

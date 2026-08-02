@@ -82,7 +82,7 @@ import type { PlanTemplateInput } from '@/lib/services/activities'
 import {
   getTargets, getTargetDetail, getTargetRewardSummary, getTargetPayouts, prepareTargetRewardPayouts,
   adjustTargetBatch, getTargetProgressHistory, createTargetWithRewards,
-  getTargetCustomerProgress, getReactivationTargetCandidates,
+  getTargetCustomerProgress, getReactivationTargetCandidates, getTargetCustomerCandidates,
 } from '@/lib/services/targets'
 
 // ════════════════════════════════════════════
@@ -1235,6 +1235,17 @@ export function useReactivationTargetCandidates(params: Parameters<typeof getRea
     queryFn: () => getReactivationTargetCandidates(params!),
     enabled: !!params?.periodStart && !!params?.dormancyDays
       && (params.scope === 'company' || !!params.scopeId),
+    staleTime: 60 * 1000,
+  })
+}
+
+export function useTargetCustomerCandidates(params: Parameters<typeof getTargetCustomerCandidates>[0] | null) {
+  return useQuery({
+    queryKey: ['target-customer-candidates', params],
+    queryFn: () => getTargetCustomerCandidates(params!),
+    enabled: !!params?.periodStart
+      && (params.scope === 'company' || !!params.scopeId)
+      && (params.typeCode !== 'reactivation' || Number(params.dormancyDays) > 0),
     staleTime: 60 * 1000,
   })
 }

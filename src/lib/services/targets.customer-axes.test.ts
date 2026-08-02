@@ -1,6 +1,12 @@
-import { describe, expect, it } from 'vitest'
-import { buildComputedMetrics, validateCreateTargetInput } from './targets'
+import { describe, expect, it, vi } from 'vitest'
+import { buildComputedMetrics, getTargetCustomerCandidates, validateCreateTargetInput } from './targets'
 import type { CreateTargetWithRewardsInput, Target, TargetProgress, TargetRewardTier } from '@/lib/types/activities'
+
+const { rpcMock } = vi.hoisted(() => ({ rpcMock: vi.fn() }))
+
+vi.mock('@/lib/supabase/client', () => ({
+  supabase: { rpc: rpcMock },
+}))
 
 const base: CreateTargetWithRewardsInput = {
   type_id: '00000000-0000-0000-0000-000000000001',
@@ -54,6 +60,38 @@ describe('customer target axes service validation', () => {
       filter_criteria: { growth_pct: 20 },
     }, 'upgrade_value', 'sales')
     expect(errors.some(e => e.field === 'period_start')).toBe(true)
+  })
+})
+
+describe('bulk customer candidate service', () => {
+  it('passes every filter to the read-only RPC and normalizes paging totals', async () => {
+    rpcMock.mockResolvedValueOnce({
+      data: [{
+        customer_id: 'customer-1', customer_name: 'spot8', customer_code: 'CUS-00321',
+        customer_type: 'retail', assigned_rep_id: 'profile-1', assigned_rep_name: 'أحمد',
+        governorate_name: 'القاهرة', city_name: 'القاهرة', area_name: null,
+        last_purchase_date: '2026-07-25', dormant_days: 7,
+        baseline_value: 1670, baseline_category_count: 2,
+        eligible: true, eligibility_reason: 'eligible', total_count: 135,
+      }],
+      error: null,
+    })
+
+    const result = await getTargetCustomerCandidates({
+      typeCode: 'reactivation', scope: 'branch', scopeId: 'branch-1',
+      periodStart: '2026-08-01', dormancyDays: 90, search: 'spot 8',
+      customerType: 'retail', governorateId: 'gov-1', cityId: 'city-1',
+      areaId: 'area-1', employeeId: 'employee-1', baselineMin: 100,
+      baselineMax: 5000, lastPurchaseFrom: '2026-01-01',
+      lastPurchaseTo: '2026-07-31', page: 2, pageSize: 100,
+    })
+
+    expect(rpcMock).toHaveBeenCalledWith('get_target_customer_candidates', expect.objectContaining({
+      p_type_code: 'reactivation', p_scope: 'branch', p_scope_id: 'branch-1',
+      p_search: 'spot 8', p_employee_id: 'employee-1', p_page: 2, p_page_size: 100,
+    }))
+    expect(result.totalCount).toBe(135)
+    expect(result.data[0].last_purchase_date).toBe('2026-07-25')
   })
 })
 
