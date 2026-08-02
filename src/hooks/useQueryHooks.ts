@@ -83,6 +83,7 @@ import {
   getTargets, getTargetDetail, getTargetRewardSummary, getTargetPayouts, prepareTargetRewardPayouts,
   adjustTargetBatch, getTargetProgressHistory, createTargetWithRewards,
   getTargetCustomerProgress, getReactivationTargetCandidates, getTargetCustomerCandidates,
+  getTargetEmployeeContributions,
 } from '@/lib/services/targets'
 
 // ════════════════════════════════════════════
@@ -1218,6 +1219,18 @@ export function useTargetProgressHistory(id: string | null | undefined, limit: n
     queryKey: ['target-progress-history', id, limit],
     queryFn: () => getTargetProgressHistory(id!, limit),
     enabled: !!id,
+  })
+}
+export function useTargetEmployeeContributions(
+  id: string | null | undefined,
+  enabled = true,
+  snapshotDate?: string
+) {
+  return useQuery({
+    queryKey: ['target-employee-contributions', id, snapshotDate],
+    queryFn: () => getTargetEmployeeContributions(id!, snapshotDate),
+    enabled: !!id && enabled,
+    staleTime: 60 * 1000,
   })
 }
 export function useTargetCustomerProgress(id: string | null | undefined, enabled = true) {

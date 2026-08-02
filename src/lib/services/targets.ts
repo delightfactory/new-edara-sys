@@ -11,6 +11,7 @@
 
 import { supabase } from '@/lib/supabase/client'
 import { getAuthUserId } from '@/lib/services/_get-user-id'
+import { toLocalISODate } from '@/lib/utils/date'
 import type {
   // Phase 21 (موجودة)
   Target, TargetInput, TargetProgress, TargetAdjustment,
@@ -22,6 +23,7 @@ import type {
   TargetListItem, TargetDetailView, TargetRewardSummary,
   TargetComputedMetrics, TargetFilters, PayoutFilters,
   ReactivationTargetCandidate, TargetCustomerCandidate, TargetCustomerProgressRow,
+  TargetEmployeeContribution,
 } from '@/lib/types/activities'
 
 // ============================================================
@@ -371,6 +373,9 @@ function buildTargetsQuery(filters?: TargetFilters) {
   if (filters?.branch_id)   q = q.eq('scope_id', filters.branch_id).eq('scope', 'branch')
   if (filters?.date_from)   q = q.gte('period_start', filters.date_from)
   if (filters?.date_to)     q = q.lte('period_end', filters.date_to)
+  if (filters?.active_on) {
+    q = q.lte('period_start', filters.active_on).gte('period_end', filters.active_on)
+  }
 
   return q
 }
@@ -758,9 +763,33 @@ export async function prepareTargetRewardPayouts(periodId: string): Promise<void
 export async function recalculateTargetProgress(targetId: string, snapshotDate?: string): Promise<void> {
   const { error } = await supabase.rpc('recalculate_target_progress', {
     p_target_id:    targetId,
-    p_snapshot_date: snapshotDate ?? new Date().toISOString().split('T')[0],
+    p_snapshot_date: snapshotDate ?? toLocalISODate(new Date()),
   })
   if (error) throw error
+}
+
+/**
+ * تفصيل مساهمات أعضاء نطاق الهدف كما يحسبها محرك الأهداف الرسمي.
+ * المحاور التي لا يمكن إسنادها لموظف دون تخمين تُرجع مصفوفة فارغة من الـ RPC.
+ */
+export async function getTargetEmployeeContributions(
+  targetId: string,
+  snapshotDate?: string
+): Promise<TargetEmployeeContribution[]> {
+  const { data, error } = await supabase.rpc('get_target_employee_contributions', {
+    p_target_id: targetId,
+    p_snapshot_date: snapshotDate ?? toLocalISODate(new Date()),
+  })
+
+  if (error) throw error
+
+  return ((data ?? []) as TargetEmployeeContribution[]).map(row => ({
+    ...row,
+    achieved_value: Number(row.achieved_value ?? 0),
+    contribution_share_pct: Number(row.contribution_share_pct ?? 0),
+    target_share_pct: Number(row.target_share_pct ?? 0),
+    contribution_rank: Number(row.contribution_rank ?? 0),
+  }))
 }
 
 // ============================================================

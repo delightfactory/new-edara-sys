@@ -1,0 +1,190 @@
+.gcc-shell {
+  margin-block-end: var(--space-4);
+  padding: clamp(14px, 3vw, 22px);
+  overflow: hidden;
+}
+
+.gcc-head,
+.gcc-heading-copy,
+.gcc-badges,
+.gcc-view-all,
+.gcc-scope-badge,
+.gcc-team-head h3 {
+  display: flex;
+  align-items: center;
+}
+
+.gcc-head { justify-content: space-between; gap: 12px; margin-block-end: 14px; }
+.gcc-heading-copy { gap: 10px; min-inline-size: 0; }
+.gcc-heading-copy h2,
+.gcc-empty h2 { margin: 0; color: var(--text-primary); font-size: 17px; font-weight: 700; }
+.gcc-heading-copy p,
+.gcc-empty p { margin: 2px 0 0; color: var(--text-muted); font-size: 14px; }
+.gcc-heading-icon,
+.gcc-empty-icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  inline-size: 38px;
+  block-size: 38px;
+  border-radius: 12px;
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 11%, transparent);
+}
+.gcc-view-all,
+.gcc-text-button,
+.gcc-retry-button {
+  border: 0;
+  color: var(--color-primary);
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.gcc-view-all { gap: 5px; padding: 8px; border-radius: 10px; }
+.gcc-view-all:hover { background: var(--bg-surface-2); }
+
+.gcc-hero {
+  position: relative;
+  display: block;
+  inline-size: 100%;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 24%, transparent);
+  border-radius: 20px;
+  padding: 16px;
+  color: var(--text-primary);
+  background:
+    radial-gradient(circle at 0 0, color-mix(in srgb, var(--color-primary) 18%, transparent), transparent 42%),
+    linear-gradient(145deg, color-mix(in srgb, var(--color-primary) 7%, var(--bg-surface)), var(--bg-surface));
+  text-align: start;
+  font: inherit;
+  box-shadow: 0 12px 30px color-mix(in srgb, var(--color-primary) 9%, transparent);
+}
+.gcc-hero-action {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+.gcc-hero-action:focus-visible,
+.gcc-mini-goal:focus-visible,
+.gcc-view-all:focus-visible,
+.gcc-text-button:focus-visible { outline: 3px solid color-mix(in srgb, var(--color-primary) 35%, transparent); outline-offset: 2px; }
+.gcc-team-error button:focus-visible,
+.gcc-retry-button:focus-visible { outline: 3px solid color-mix(in srgb, var(--color-primary) 35%, transparent); outline-offset: 2px; }
+.gcc-hero-top { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.gcc-goal-copy { min-inline-size: 0; }
+.gcc-badges { flex-wrap: wrap; gap: 6px; margin-block-end: 10px; }
+.gcc-scope-badge,
+.gcc-status { border-radius: 999px; padding: 5px 9px; font-size: 12px; font-weight: 700; }
+.gcc-scope-badge { gap: 5px; color: var(--color-primary); background: color-mix(in srgb, var(--color-primary) 11%, transparent); }
+.gcc-status--success { color: var(--color-success); background: color-mix(in srgb, var(--color-success) 12%, transparent); }
+.gcc-status--warning { color: var(--color-warning); background: color-mix(in srgb, var(--color-warning) 13%, transparent); }
+.gcc-status--danger { color: var(--color-danger); background: color-mix(in srgb, var(--color-danger) 11%, transparent); }
+.gcc-goal-copy h3 { margin: 0; max-inline-size: 38ch; font-size: clamp(17px, 4vw, 22px); font-weight: 700; line-height: 1.45; }
+.gcc-goal-copy p { margin: 5px 0 0; color: var(--text-muted); font-size: 13px; }
+.gcc-ring {
+  position: relative;
+  display: grid;
+  flex: 0 0 auto;
+  place-content: center;
+  inline-size: 88px;
+  block-size: 88px;
+  border-radius: 50%;
+  background: conic-gradient(var(--color-primary) var(--gcc-progress), color-mix(in srgb, var(--color-primary) 12%, transparent) 0);
+  text-align: center;
+}
+.gcc-ring::before { content: ''; position: absolute; inset: 8px; border-radius: inherit; background: var(--bg-surface); }
+.gcc-ring span,
+.gcc-ring small { position: relative; z-index: 1; }
+.gcc-ring span { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.gcc-ring small { color: var(--text-muted); font-size: 12px; }
+
+.gcc-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-block: 16px; }
+.gcc-metrics > div { min-inline-size: 0; border-radius: 12px; padding: 10px; background: color-mix(in srgb, var(--bg-surface-2) 82%, transparent); }
+.gcc-metrics span,
+.gcc-metrics strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gcc-metrics span { margin-block-end: 3px; color: var(--text-muted); font-size: 13px; }
+.gcc-metrics strong { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.gcc-pace-labels { display: flex; justify-content: space-between; gap: 10px; margin-block-end: 7px; color: var(--text-secondary); font-size: 13px; }
+.gcc-track { position: relative; overflow: visible; block-size: 7px; border-radius: 999px; background: color-mix(in srgb, var(--color-primary) 12%, transparent); }
+.gcc-track-fill { display: block; block-size: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--color-primary), var(--color-info)); }
+.gcc-track i { position: absolute; inset-block: -4px; inline-size: 2px; border-radius: 2px; background: var(--text-primary); opacity: .45; transform: translateX(50%); }
+
+.gcc-goal-strip { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(235px, 82%); gap: 10px; margin-block-start: 12px; overflow-x: auto; overscroll-behavior-inline: contain; scroll-snap-type: inline mandatory; scrollbar-width: none; }
+.gcc-goal-strip::-webkit-scrollbar { display: none; }
+.gcc-mini-goal { display: flex; align-items: center; gap: 9px; min-inline-size: 0; border: 1px solid var(--border-primary); border-radius: 14px; padding: 12px; color: var(--text-primary); background: var(--bg-surface); text-align: start; font: inherit; cursor: pointer; scroll-snap-align: start; }
+.gcc-mini-copy { flex: 1; min-inline-size: 0; }
+.gcc-mini-copy strong,
+.gcc-mini-copy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gcc-mini-copy strong { font-size: 14px; font-weight: 700; }
+.gcc-mini-copy small { margin-block-start: 2px; color: var(--text-muted); font-size: 12px; }
+.gcc-mini-goal b { font-size: 14px; font-weight: 700; }
+.gcc-mini-dot { inline-size: 8px; block-size: 8px; flex: 0 0 auto; border-radius: 50%; }
+.gcc-mini-dot--success { background: var(--color-success); }
+.gcc-mini-dot--warning { background: var(--color-warning); }
+.gcc-mini-dot--danger { background: var(--color-danger); }
+
+.gcc-team { margin-block-start: 16px; border-block-start: 1px solid var(--border-primary); padding-block-start: 15px; }
+.gcc-team-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--color-primary); margin-block-end: 11px; }
+.gcc-team-head h3 { gap: 7px; margin: 0; color: var(--text-primary); font-size: 15px; font-weight: 700; }
+.gcc-team-head p { margin: 3px 0 0; color: var(--text-muted); font-size: 13px; }
+.gcc-contributors { display: grid; gap: 7px; }
+.gcc-contributor { display: flex; align-items: center; gap: 9px; min-inline-size: 0; padding: 8px; border-radius: 12px; background: var(--bg-surface-2); }
+.gcc-rank { display: grid; place-items: center; inline-size: 24px; block-size: 24px; flex: 0 0 auto; border-radius: 7px; color: var(--text-muted); background: var(--bg-surface); font-size: 12px; font-weight: 700; }
+.gcc-avatar { display: grid; place-items: center; inline-size: 34px; block-size: 34px; flex: 0 0 auto; border-radius: 10px; color: var(--color-primary); background: color-mix(in srgb, var(--color-primary) 12%, transparent); font-size: 14px; font-weight: 700; }
+.gcc-person { flex: 1; min-inline-size: 0; }
+.gcc-person > div:first-child { display: flex; justify-content: space-between; gap: 8px; margin-block-end: 5px; }
+.gcc-person strong,
+.gcc-person span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.gcc-person strong { font-weight: 700; }
+.gcc-person > div:first-child span { color: var(--text-muted); }
+.gcc-person-track { overflow: hidden; block-size: 4px; border-radius: 999px; background: color-mix(in srgb, var(--color-primary) 10%, transparent); }
+.gcc-person-track span { display: block; block-size: 100%; border-radius: inherit; background: var(--color-primary); }
+.gcc-contributor > b { inline-size: 48px; color: var(--text-secondary); font-size: 12px; font-weight: 700; text-align: end; }
+.gcc-team-empty { margin: 0; padding: 12px; border-radius: 12px; color: var(--text-muted); background: var(--bg-surface-2); font-size: 14px; text-align: center; }
+.gcc-notice { margin-block-end: 10px; border-radius: 10px; padding: 9px 11px; color: var(--color-warning); background: color-mix(in srgb, var(--color-warning) 10%, transparent); font-size: 13px; }
+.gcc-team-error { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-radius: 12px; padding: 11px 12px; color: var(--color-warning); background: color-mix(in srgb, var(--color-warning) 9%, transparent); font-size: 13px; }
+.gcc-team-error button { display: inline-flex; align-items: center; gap: 5px; flex: 0 0 auto; border: 0; border-radius: 9px; padding: 7px 9px; color: var(--color-warning); background: var(--bg-surface); font: inherit; font-weight: 700; cursor: pointer; }
+.gcc-empty { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 12px; }
+.gcc-empty .gcc-text-button { grid-column: 1 / -1; display: inline-flex; align-items: center; justify-self: start; gap: 4px; }
+.gcc-error { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 12px; }
+.gcc-error h2 { margin: 0; color: var(--text-primary); font-size: 17px; font-weight: 700; }
+.gcc-error p { margin: 3px 0 0; color: var(--text-muted); font-size: 14px; }
+.gcc-error-icon { display: grid; place-items: center; inline-size: 40px; block-size: 40px; border-radius: 12px; color: var(--color-warning); background: color-mix(in srgb, var(--color-warning) 12%, transparent); }
+.gcc-retry-button { grid-column: 1 / -1; display: inline-flex; align-items: center; justify-self: start; gap: 6px; padding: 8px 10px; border-radius: 10px; }
+.gcc-skeleton-line { inline-size: 210px; block-size: 26px; border-radius: 8px; }
+.gcc-skeleton-line--short { inline-size: 45%; block-size: 16px; margin-block-start: 12px; }
+.gcc-skeleton-hero { block-size: 210px; margin-block-start: 14px; border-radius: 20px; }
+.gcc-contribution-skeleton { block-size: 52px; border-radius: 12px; }
+
+@media (min-width: 720px) {
+  .gcc-hero { padding: 20px; }
+  .gcc-ring { inline-size: 104px; block-size: 104px; }
+  .gcc-metrics { max-inline-size: 720px; gap: 12px; }
+  .gcc-metrics strong { font-size: 15px; }
+  .gcc-goal-strip { grid-auto-flow: initial; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; }
+  .gcc-contributors { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 390px) {
+  .gcc-shell { padding: 12px; }
+  .gcc-view-all { font-size: 0; }
+  .gcc-view-all svg { inline-size: 19px; block-size: 19px; }
+  .gcc-hero-top { align-items: flex-start; }
+  .gcc-ring { inline-size: 76px; block-size: 76px; }
+  .gcc-ring::before { inset: 7px; }
+  .gcc-ring span { font-size: 15px; }
+  .gcc-metrics { gap: 5px; }
+  .gcc-metrics > div { padding: 8px 6px; }
+  .gcc-metrics strong { font-size: 13px; }
+  .gcc-team-error { align-items: flex-start; flex-direction: column; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gcc-shell *, .gcc-shell *::before, .gcc-shell *::after { scroll-behavior: auto !important; transition: none !important; }
+}
