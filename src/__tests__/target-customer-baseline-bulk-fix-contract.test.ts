@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 const migration = readFileSync(
-  'supabase/migrations/20260802100600_fix_target_customer_baselines_and_bulk_candidates.sql',
+  'supabase/migrations/20260802105812_fix_target_customer_baselines_and_bulk_candidates.sql',
   'utf8',
 )
 const service = readFileSync('src/lib/services/targets.ts', 'utf8')
