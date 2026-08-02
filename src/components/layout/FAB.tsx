@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import {
   ShoppingCart, UserPlus, Package,
   Receipt, RotateCcw, Activity, MapPin, Phone,
-  Users,
+  Users, Target,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import { useIsAnyModalOpen } from '@/hooks/useModalStack'
@@ -29,6 +29,7 @@ const FAB_MAP: FabConfig[] = [
   { path: '/activities/list',           label: '+ نشاط',        icon: Activity,       navigateTo: '/activities/new',               permission: 'activities.create'              },
   { path: '/activities/visit-plans',    label: '+ خطة زيارة',   icon: MapPin,         navigateTo: '/activities/visit-plans/new',   permission: 'visit_plans.create'             },
   { path: '/activities/call-plans',     label: '+ خطة مكالمات', icon: Phone,          navigateTo: '/activities/call-plans/new',    permission: 'call_plans.create'              },
+  { path: '/activities/targets',        label: '+ هدف',         icon: Target,         navigateTo: '/activities/targets/new',       permission: 'targets.assign'                 },
   // Pages below use inline-modal creation (no /new route exists) — they manage their own FAB locally:
   // /inventory/transfers → TransfersPage modal   (tr-fab)
   // /inventory/adjustments → AdjustmentsPage modal

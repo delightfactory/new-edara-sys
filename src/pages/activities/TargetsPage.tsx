@@ -414,13 +414,6 @@ export default function TargetsPage() {
         />
       </div>
 
-      {/* ── Mobile FAB ── */}
-      <PermissionGuard permission={PERMISSIONS.TARGETS_ASSIGN}>
-        <button className="fab-button" onClick={() => navigate('/activities/targets/new')} aria-label="هدف جديد">
-          <Plus size={24} />
-        </button>
-      </PermissionGuard>
-
       <style>{`
         .tg-filter-toggle { position: relative; }
         .tg-filter-badge {
@@ -449,22 +442,12 @@ export default function TargetsPage() {
         }
         .tg-clear-btn:hover { text-decoration: underline; }
         .tg-table-view { display: block; }
-        .fab-button { display: none; }
         @media (max-width: 768px) {
           .tg-filters--open { max-height: 1100px; }
           .tg-filters-row { flex-direction: column; gap: var(--space-2); }
           .tg-filter-select { width: 100%; min-width: 0; min-height: 44px; }
           .tg-filter-toggle { min-height: 44px; }
           .desktop-only-btn { display: none; }
-          .fab-button {
-            display: flex; align-items: center; justify-content: center;
-            position: fixed; bottom: calc(var(--bottom-nav-height, 64px) + var(--space-4) + env(safe-area-inset-bottom, 0px)); inset-inline-end: var(--space-4);
-            width: 56px; height: 56px; border-radius: 28px;
-            background: var(--color-primary); color: white;
-            box-shadow: var(--shadow-lg); z-index: 160; border: none;
-            transition: transform 0.2s;
-          }
-          .fab-button:active { transform: scale(0.95); }
         }
       `}</style>
     </div>
