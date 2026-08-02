@@ -29,11 +29,18 @@ vi.mock('@/hooks/useQueryHooks', () => ({
   useGovernorates: () => ({ data: [] }),
   useCities: () => ({ data: [] }),
   useAreas: () => ({ data: [] }),
-  useCustomers: () => ({
-    data: { data: [{ id: 'customer-1', name: 'عميل اختبار', code: 'C-1' }] },
+  useTargetCustomerCandidates: () => ({
+    data: { data: [{
+      customer_id: 'customer-1', customer_name: 'عميل اختبار', customer_code: 'C-1',
+      customer_type: 'retail', assigned_rep_id: null, assigned_rep_name: null,
+      governorate_name: null, city_name: null, area_name: null,
+      last_purchase_date: '2026-07-20', dormant_days: 12,
+      baseline_value: 1000, baseline_category_count: 2,
+      eligible: true, eligibility_reason: 'eligible', total_count: 1,
+    }], totalCount: 1, page: 1, pageSize: 100 },
     isFetching: false,
+    error: null,
   }),
-  useReactivationTargetCandidates: () => ({ data: [], isFetching: false, error: null }),
 }))
 
 function clickNext() {
@@ -63,9 +70,7 @@ describe('TargetForm review flow', () => {
 
     // بدون مكافأة: ينتقل مباشرة إلى اختيار العملاء.
     clickNext()
-    fireEvent.change(screen.getByPlaceholderText('اكتب اسم العميل أو الكود...'), { target: { value: 'عم' } })
-    fireEvent.click(screen.getByRole('option', { name: /عميل اختبار/ }))
-    fireEvent.click(screen.getByRole('button', { name: 'إضافة' }))
+    fireEvent.click(screen.getByRole('button', { name: 'اختيار النتائج المعروضة (1)' }))
 
     clickNext()
     expect(screen.getByText('✅ مراجعة شاملة قبل الإنشاء')).not.toBeNull()

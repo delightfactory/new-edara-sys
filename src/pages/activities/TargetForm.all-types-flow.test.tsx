@@ -45,8 +45,11 @@ vi.mock('@/hooks/useQueryHooks', () => ({
   useGovernorates: () => ({ data: [{ id: 'gov-1', name: 'القاهرة' }] }),
   useCities: () => ({ data: [] }),
   useAreas: () => ({ data: [] }),
-  useCustomers: () => ({ data: { data: [] }, isFetching: false }),
-  useReactivationTargetCandidates: () => ({ data: [], isFetching: false, error: null }),
+  useTargetCustomerCandidates: () => ({
+    data: { data: [], totalCount: 0, page: 1, pageSize: 100 },
+    isFetching: false,
+    error: null,
+  }),
 }))
 
 function selectType(name: string) {

@@ -17,12 +17,11 @@ import {
   useGovernorates,
   useCities,
   useAreas,
-  useCustomers,
-  useReactivationTargetCandidates,
+  useTargetCustomerCandidates,
 } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
 import type { TargetScope, TargetPeriod, TargetType } from '@/lib/types/activities'
-import type { TierInput, TargetCustomerInput } from '@/lib/types/activities'
+import type { TierInput, TargetCustomerInput, TargetCustomerCandidate } from '@/lib/types/activities'
 import PageHeader from '@/components/shared/PageHeader'
 import Button from '@/components/ui/Button'
 import AsyncCombobox from '@/components/ui/AsyncCombobox'
@@ -241,44 +240,60 @@ export default function TargetForm() {
 
   // ── Step 6: قائمة العملاء الثابتة لمحاور العملاء الثلاثة
   const [customers, setCustomers] = useState<(TargetCustomerInput & { _key: number; _name?: string })[]>([])
-  const [customerSearch, setCustomerSearch]       = useState('')
-  const [customerPickId,   setCustomerPickId]     = useState('')  // selected customer id from search
-  const [customerActiveIdx, setCustomerActiveIdx] = useState(-1)  // keyboard navigation index
+  const [customerSearch, setCustomerSearch] = useState('')
+  const [candidateCustomerType, setCandidateCustomerType] = useState('')
+  const [candidateGovernorateId, setCandidateGovernorateId] = useState('')
+  const [candidateCityId, setCandidateCityId] = useState('')
+  const [candidateAreaId, setCandidateAreaId] = useState('')
+  const [candidateEmployeeId, setCandidateEmployeeId] = useState('')
+  const [candidateBaselineMin, setCandidateBaselineMin] = useState('')
+  const [candidateBaselineMax, setCandidateBaselineMax] = useState('')
+  const [candidateLastPurchaseFrom, setCandidateLastPurchaseFrom] = useState('')
+  const [candidateLastPurchaseTo, setCandidateLastPurchaseTo] = useState('')
+  const [candidatePage, setCandidatePage] = useState(1)
   const debouncedCustomerSearch = useDebounce(customerSearch.trim(), 250)
+  const { data: candidateCities = [] } = useCities(candidateGovernorateId || undefined)
+  const { data: candidateAreas = [] } = useAreas(candidateCityId || undefined)
 
-  // ── S6: Customer search query (lazy — يبدأ عند كتابة 2 أحرف+)
+  // ── S6: مرشح موحد — يعرض المؤهلين ويحسب خطوط الأساس في قاعدة البيانات
   const selectedTypeCode = targetTypes.find(t => t.id === typeId)?.code ?? ''
-  const { data: customersRes, isFetching: customersFetching } = useCustomers(
-    selectedTypeCode !== 'reactivation' && debouncedCustomerSearch.length >= 2
-      ? { search: debouncedCustomerSearch, pageSize: 20, isActive: true }
-      : undefined,
-    selectedTypeCode !== 'reactivation' && debouncedCustomerSearch.length >= 2
-  )
   const {
-    data: reactivationCandidates = [],
+    data: candidateResult,
     isFetching: candidatesFetching,
     error: candidatesError,
-  } = useReactivationTargetCandidates(
-    selectedTypeCode === 'reactivation' && periodStart && Number(dormancyDays) > 0
-      && (scope === 'company' || !!scopeId) && debouncedCustomerSearch.length >= 2
+  } = useTargetCustomerCandidates(
+    step === 6 && ['upgrade_value', 'reactivation', 'category_spread'].includes(selectedTypeCode)
+      && periodStart && (scope === 'company' || !!scopeId)
       ? {
+          typeCode: selectedTypeCode as 'upgrade_value' | 'reactivation' | 'category_spread',
           scope,
           scopeId: scopeId || null,
           periodStart,
-          dormancyDays: Number(dormancyDays),
+          dormancyDays: Number(dormancyDays) || null,
           search: debouncedCustomerSearch,
-          limit: 50,
+          customerType: candidateCustomerType || null,
+          governorateId: candidateGovernorateId || null,
+          cityId: candidateCityId || null,
+          areaId: candidateAreaId || null,
+          employeeId: candidateEmployeeId || null,
+          baselineMin: candidateBaselineMin ? Number(candidateBaselineMin) : null,
+          baselineMax: candidateBaselineMax ? Number(candidateBaselineMax) : null,
+          lastPurchaseFrom: candidateLastPurchaseFrom || null,
+          lastPurchaseTo: candidateLastPurchaseTo || null,
+          page: candidatePage,
+          pageSize: 100,
         }
       : null
   )
-  const customerResults = useMemo(() => selectedTypeCode === 'reactivation'
-    ? reactivationCandidates.map(c => ({
-        id: c.customer_id, name: c.customer_name, code: c.customer_code,
-        last_purchase_date: c.last_purchase_date, dormant_days: c.dormant_days,
-      }))
-    : customersRes?.data ?? [], [selectedTypeCode, reactivationCandidates, customersRes])
-  const showDropdown = customerSearch.trim().length >= 2 && customerResults.length > 0 && !customerPickId
-  const customersLoading = selectedTypeCode === 'reactivation' ? candidatesFetching : customersFetching
+  const customerResults = candidateResult?.data ?? []
+  const candidateTotalCount = candidateResult?.totalCount ?? 0
+  const candidateTotalPages = Math.max(1, Math.ceil(candidateTotalCount / 100))
+
+  useEffect(() => {
+    setCandidatePage(1)
+  }, [debouncedCustomerSearch, candidateCustomerType, candidateGovernorateId, candidateCityId,
+    candidateAreaId, candidateEmployeeId, candidateBaselineMin, candidateBaselineMax,
+    candidateLastPurchaseFrom, candidateLastPurchaseTo, selectedTypeCode, scope, scopeId, periodStart, dormancyDays])
 
   // نفس حدود النطاق التي تفرضها دالة الإنشاء: صاحب read_all يرى الكل،
   // وغيره يرى نطاق فرعه فقط حتى لا يصل لنهاية المعالج ثم يفشل برسالة مبهمة.
@@ -416,27 +431,42 @@ export default function TargetForm() {
   const updateTier = (i: number, field: keyof TierInput, val: any) => setTiers(prev => prev.map((t, idx) => idx === i ? { ...t, [field]: val } : t))
 
   // ── Customer helpers
-  const addCustomer = () => {
-    if (!customerPickId) return
-    // منع التكرار
-    if (customers.some(c => c.customer_id === customerPickId)) {
-      toast.warning('هذا العميل موجود بالفعل في القائمة')
-      return
-    }
-    const picked = customerResults.find(c => c.id === customerPickId)
-    setCustomers(prev => [...prev, {
-      _key: Date.now(),
-      _name: picked?.name ?? customerPickId,
-      customer_id: customerPickId,
-    }])
-    setCustomerSearch(''); setCustomerPickId('')
+  const addCandidateCustomers = (rows: TargetCustomerCandidate[]) => {
+    setCustomers(prev => {
+      const existing = new Set(prev.map(customer => customer.customer_id))
+      const additions = rows
+        .filter(row => !existing.has(row.customer_id))
+        .map((row, index) => ({
+          _key: Date.now() + index,
+          _name: row.customer_name,
+          customer_id: row.customer_id,
+        }))
+      return [...prev, ...additions]
+    })
+  }
+  const toggleCandidateCustomer = (row: TargetCustomerCandidate) => {
+    const selected = customers.find(customer => customer.customer_id === row.customer_id)
+    if (selected) removeCustomer(selected._key)
+    else addCandidateCustomers([row])
   }
   const removeCustomer = (key: number) => setCustomers(prev => prev.filter(c => c._key !== key))
   const clearCustomerSelection = () => {
     setCustomers([])
     setCustomerSearch('')
-    setCustomerPickId('')
-    setCustomerActiveIdx(-1)
+    setCandidatePage(1)
+  }
+  const clearCandidateFilters = () => {
+    setCustomerSearch('')
+    setCandidateCustomerType('')
+    setCandidateGovernorateId('')
+    setCandidateCityId('')
+    setCandidateAreaId('')
+    setCandidateEmployeeId('')
+    setCandidateBaselineMin('')
+    setCandidateBaselineMax('')
+    setCandidateLastPurchaseFrom('')
+    setCandidateLastPurchaseTo('')
+    setCandidatePage(1)
   }
   const clearTypeSpecificFilters = () => {
     setProductId('')
@@ -557,6 +587,7 @@ export default function TargetForm() {
               onClick={() => {
                 if (t.id === typeId) return
                 clearCustomerSelection()
+                clearCandidateFilters()
                 clearTypeSpecificFilters()
                 if (rewardType === 'percentage' && !allowsPercentageReward(t.category, t.code)) {
                   setRewardType('')
@@ -608,10 +639,10 @@ export default function TargetForm() {
         <div className="tf-section">
           <div className="tf-section-title">🧺 اتساع التصنيفات المطلوب</div>
           <div className="form-group">
-            <label className="form-label">عدد التصنيفات لكل عميل <span className="form-required">*</span></label>
+            <label className="form-label">عدد التصنيفات الجديدة لكل عميل <span className="form-required">*</span></label>
             <input type="number" dir="ltr" className="form-input tf-number-input" value={requiredCategoryCount}
               onChange={e => setRequiredCategoryCount(e.target.value)} placeholder="مثال: 4" min="1" step="1" />
-            <small style={{ color: 'var(--text-muted)', fontSize: 11 }}>ينجح العميل عند شراء هذا العدد من التصنيفات بصافي كمية موجبة خلال الشهر.</small>
+            <small style={{ color: 'var(--text-muted)', fontSize: 11 }}>ينجح العميل عند شراء هذا العدد من تصنيفات لم تكن ضمن خط الشهر السابق.</small>
           </div>
         </div>
       )}
@@ -689,7 +720,7 @@ export default function TargetForm() {
                 <label className="form-label">أيام الخمول <span className="form-required">*</span></label>
                 <input type="number" dir="ltr" className="form-input tf-number-input" value={dormancyDays}
                   onChange={e => { setDormancyDays(e.target.value); clearCustomerSelection() }} placeholder="مثال: 90" min="1" step="1" />
-                <small style={{ color: 'var(--text-muted)', fontSize: 11 }}>تُقاس عند بداية الهدف من آخر شراء موجب ومسلّم داخل نطاق المندوب.</small>
+                <small style={{ color: 'var(--text-muted)', fontSize: 11 }}>تُقاس عند بداية الهدف من آخر شراء موجب ومسلّم للعميل على مستوى الشركة.</small>
               </div>
               <div className="form-group">
                 <label className="form-label">أقل صافي شراء لإعادة التنشيط (ج.م) <span className="form-required">*</span></label>
@@ -1005,143 +1036,232 @@ export default function TargetForm() {
     </div>
   ) } // end renderStep5
 
-  function renderStep6() { return (
-    <div className="tf-section">
-      <div className="tf-section-title"><Users size={16} className="inline align-middle ml-1" /> العملاء المستهدفون</div>
-      <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-        {typeCode === 'upgrade_value'
-          ? 'اختر العملاء؛ سيحسب النظام تلقائياً متوسط صافي مشتريات آخر 3 أشهر كاملة.'
-          : typeCode === 'reactivation'
-            ? 'القائمة تعرض فقط العملاء الذين يحققون مدة الخمول المحددة داخل نطاق الهدف.'
-            : 'اختر العملاء الذين تريد قياس اتساع التصنيفات لديهم؛ خط الشهر السابق يُحفظ تلقائياً للعرض.'}
-      </p>
+  function renderStep6() {
+    const selectedIds = new Set(customers.map(customer => customer.customer_id))
+    const allPageSelected = customerResults.length > 0
+      && customerResults.every(customer => selectedIds.has(customer.customer_id))
+    const baselineFilterLabel = typeCode === 'category_spread'
+      ? 'عدد تصنيفات خط الأساس'
+      : 'متوسط المبيعات الشهري'
+    const typeLabels: Record<string, string> = {
+      retail: 'تجزئة',
+      wholesale: 'جملة',
+      distributor: 'موزع',
+    }
 
-      {/* ── اختيار بالبحث ── */}
-      <div style={{ padding: '14px', background: 'var(--bg-surface-2)', border: '1px solid var(--border-primary)', borderRadius: '10px', marginBottom: '10px' }}>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          {/* searchable input with keyboard navigation */}
-          <div className="form-group" style={{ margin: 0, flex: '2 1 220px', position: 'relative' }}>
-            <label className="form-label">بحث عن عميل <span className="form-required">*</span></label>
+    return (
+      <div className="tf-section">
+        <div className="tf-section-title"><Users size={16} className="inline align-middle ml-1" /> العملاء المستهدفون</div>
+        <p className="tf-field-help">
+          {typeCode === 'upgrade_value'
+            ? 'خط الأساس هو متوسط صافي مشتريات العميل من الشركة خلال آخر 3 أشهر كاملة، بينما يُنسب الإنجاز لنطاق الهدف.'
+            : typeCode === 'reactivation'
+              ? 'الخمول يُقاس من آخر شراء للعميل مع الشركة قبل بداية الهدف، ثم يُنسب شراء العودة لنطاق الهدف.'
+              : 'النجاح يُقاس بعدد التصنيفات الجديدة التي لم تكن ضمن مشتريات العميل في الشهر السابق.'}
+        </p>
+
+        <div className="tf-candidate-filters">
+          <div className="form-group tf-candidate-search">
+            <label className="form-label">بحث ذكي</label>
             <input
               className="form-input"
               value={customerSearch}
+              onChange={event => setCustomerSearch(event.target.value)}
+              placeholder="الاسم أو الكود أو الهاتف — يمكن كتابة أكثر من كلمة"
               autoComplete="off"
-              aria-autocomplete="list"
-              aria-expanded={showDropdown}
-              aria-busy={customersLoading}
-              onChange={e => {
-                setCustomerSearch(e.target.value)
-                setCustomerPickId('')
-                setCustomerActiveIdx(-1)
-              }}
-              onKeyDown={e => {
-                if (!showDropdown) return
-                if (e.key === 'ArrowDown') {
-                  e.preventDefault()
-                  setCustomerActiveIdx(i => Math.min(i + 1, customerResults.length - 1))
-                } else if (e.key === 'ArrowUp') {
-                  e.preventDefault()
-                  setCustomerActiveIdx(i => Math.max(i - 1, 0))
-                } else if (e.key === 'Enter') {
-                  e.preventDefault()
-                  const c = customerActiveIdx >= 0 ? customerResults[customerActiveIdx] : null
-                  if (c) { setCustomerPickId((c as any).id); setCustomerSearch((c as any).name); setCustomerActiveIdx(-1) }
-                } else if (e.key === 'Escape') {
-                  setCustomerActiveIdx(-1)
-                  setCustomerPickId('')
-                  setCustomerSearch('')
-                }
-              }}
-              onBlur={() =>
-                // تأخير بسيط للسماح للنقر على عنصر القائمة قبل الإغلاق
-                setTimeout(() => { if (!customerPickId) setCustomerActiveIdx(-1) }, 200)
-              }
-              placeholder="اكتب اسم العميل أو الكود..."
             />
-            {showDropdown && (
-              <div role="listbox" style={{
-                position: 'absolute', top: '100%', insetInline: 0, zIndex: 50,
-                background: 'var(--bg-surface)', border: '1px solid var(--border-primary)',
-                borderRadius: '8px', boxShadow: 'var(--shadow-lg)', maxHeight: 220, overflowY: 'auto',
-                marginTop: '2px',
-              }}>
-                {(customerResults as any[]).map((c: any, idx: number) => (
-                  <button
-                    key={c.id} type="button" role="option"
-                    aria-selected={customerActiveIdx === idx}
-                    style={{
-                      display: 'block', width: '100%', textAlign: 'start', padding: '9px 14px',
-                      background: customerActiveIdx === idx ? 'var(--color-primary-light)' : 'none',
-                      border: 'none', borderBottom: '1px solid var(--border-secondary)',
-                      cursor: 'pointer', fontSize: '13px', color: 'var(--text-primary)',
-                    }}
-                    onMouseEnter={() => setCustomerActiveIdx(idx)}
-                    onMouseLeave={() => setCustomerActiveIdx(-1)}
-                    onClick={() => { setCustomerPickId(c.id); setCustomerSearch(c.name); setCustomerActiveIdx(-1) }}
-                  >
-                    <span style={{ fontWeight: 600 }}>{c.name}</span>
-                    <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginInlineStart: '6px' }}>{c.code}</span>
-                    {typeCode === 'reactivation' && c.last_purchase_date && (
-                      <span style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginTop: 2 }}>
-                        آخر شراء: {c.last_purchase_date} — خامل {c.dormant_days} يوم
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-            {customerSearch.trim().length >= 2 && customersLoading && (
-              <div className="tf-customer-dropdown tf-customer-dropdown--message" role="status">
-                جاري البحث...
-              </div>
-            )}
-            {customerSearch.trim().length >= 2 && !customersLoading && typeCode === 'reactivation' && candidatesError && (
-              <div className="tf-customer-dropdown tf-customer-dropdown--message" role="alert">
-                تعذر التحقق من العملاء الخاملين. راجع نطاق الهدف ثم أعد المحاولة.
-              </div>
-            )}
-            {customerSearch.trim().length >= 2 && !customersLoading && !candidatesError && customerResults.length === 0 && (
-              <div style={{ position: 'absolute', top: '100%', insetInline: 0, zIndex: 50, background: 'var(--bg-surface)', border: '1px solid var(--border-primary)', borderRadius: '8px', padding: '10px 14px', fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                {typeCode === 'reactivation' ? 'لا يوجد عميل خامل مطابق داخل هذا النطاق' : 'لا يوجد عميل بهذا الاسم'}
-              </div>
-            )}
           </div>
 
-          <Button type="button" variant="secondary" icon={<Plus size={14} />}
-            onClick={addCustomer} disabled={!customerPickId}
-            style={{ alignSelf: 'flex-end' }}
+          <div className="form-group">
+            <label className="form-label">نوع العميل</label>
+            <select className="form-select" value={candidateCustomerType} onChange={event => setCandidateCustomerType(event.target.value)}>
+              <option value="">كل الأنواع</option>
+              <option value="retail">تجزئة</option>
+              <option value="wholesale">جملة</option>
+              <option value="distributor">موزع</option>
+            </select>
+          </div>
+
+          {scope !== 'individual' && (
+            <div className="form-group">
+              <label className="form-label">المندوب المسؤول</label>
+              <select className="form-select" value={candidateEmployeeId} onChange={event => setCandidateEmployeeId(event.target.value)}>
+                <option value="">كل مندوبي النطاق</option>
+                {visibleEmployees.map(employee => (
+                  <option key={employee.id} value={employee.id}>{employee.full_name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div className="form-group">
+            <label className="form-label">المحافظة</label>
+            <select className="form-select" value={candidateGovernorateId} onChange={event => {
+              setCandidateGovernorateId(event.target.value)
+              setCandidateCityId('')
+              setCandidateAreaId('')
+            }}>
+              <option value="">كل المحافظات</option>
+              {(governorates as any[]).map(governorate => (
+                <option key={governorate.id} value={governorate.id}>{governorate.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">المدينة</label>
+            <select className="form-select" value={candidateCityId} disabled={!candidateGovernorateId} onChange={event => {
+              setCandidateCityId(event.target.value)
+              setCandidateAreaId('')
+            }}>
+              <option value="">كل المدن</option>
+              {(candidateCities as any[]).map(city => <option key={city.id} value={city.id}>{city.name}</option>)}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">المنطقة</label>
+            <select className="form-select" value={candidateAreaId} disabled={!candidateCityId} onChange={event => setCandidateAreaId(event.target.value)}>
+              <option value="">كل المناطق</option>
+              {(candidateAreas as any[]).map(area => <option key={area.id} value={area.id}>{area.name}</option>)}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">{baselineFilterLabel} — من</label>
+            <input type="number" dir="ltr" className="form-input tf-number-input" min="0"
+              value={candidateBaselineMin} onChange={event => setCandidateBaselineMin(event.target.value)} />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">{baselineFilterLabel} — إلى</label>
+            <input type="number" dir="ltr" className="form-input tf-number-input" min="0"
+              value={candidateBaselineMax} onChange={event => setCandidateBaselineMax(event.target.value)} />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">آخر شراء — من</label>
+            <input type="date" dir="ltr" className="form-input"
+              value={candidateLastPurchaseFrom} onChange={event => setCandidateLastPurchaseFrom(event.target.value)} />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">آخر شراء — إلى</label>
+            <input type="date" dir="ltr" className="form-input"
+              value={candidateLastPurchaseTo} onChange={event => setCandidateLastPurchaseTo(event.target.value)} />
+          </div>
+
+          <div className="tf-candidate-filter-actions">
+            <Button type="button" variant="ghost" onClick={clearCandidateFilters}>مسح الفلاتر</Button>
+          </div>
+        </div>
+
+        <div className="tf-candidate-toolbar">
+          <div>
+            <strong>{fmtN(candidateTotalCount)}</strong> عميل مطابق
+            <span className="tf-candidate-selected-count">تم اختيار {fmtN(customers.length)}</span>
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={customerResults.length === 0}
+            onClick={() => {
+              if (allPageSelected) {
+                const pageIds = new Set(customerResults.map(customer => customer.customer_id))
+                setCustomers(previous => previous.filter(customer => !pageIds.has(customer.customer_id)))
+              } else {
+                addCandidateCustomers(customerResults)
+              }
+            }}
           >
-            إضافة
+            {allPageSelected
+              ? 'إلغاء اختيار النتائج المعروضة'
+              : 'اختيار النتائج المعروضة (' + customerResults.length + ')'}
           </Button>
         </div>
-      </div>
 
-      {/* ── قائمة المختارين ── */}
-      {customers.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '16px', color: 'var(--text-muted)', fontSize: '13px', background: 'var(--bg-surface-2)', borderRadius: '8px' }}>
-          ابحث عن عميل وأضفه للقائمة
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          {customers.map((c, i) => (
-            <div key={c._key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px',
-              background: 'var(--bg-surface-2)', border: '1px solid var(--border-primary)', borderRadius: '8px' }}>
-              <span style={{ fontWeight: 700, color: 'var(--color-primary)', minWidth: 24, fontSize: '13px' }}>{i + 1}</span>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>{c._name ?? c.customer_id}</div>
-                {c._name && <div style={{ fontSize: '10px', fontFamily: 'monospace', color: 'var(--text-muted)' }}>{c.customer_id}</div>}
-              </div>
-              <span className="tf-unit-badge">خط الأساس يُحسب تلقائياً</span>
-              <button type="button" onClick={() => removeCustomer(c._key)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-danger)', padding: '4px' }}>
-                <Trash2 size={14} />
-              </button>
+        {candidatesFetching ? (
+          <div className="tf-candidate-message" role="status">جاري حساب المرشحين وخطوط الأساس...</div>
+        ) : candidatesError ? (
+          <div className="tf-candidate-message tf-candidate-message--error" role="alert">
+            تعذر جلب العملاء المؤهلين. راجع نطاق الهدف والفلاتر ثم أعد المحاولة.
+          </div>
+        ) : customerResults.length === 0 ? (
+          <div className="tf-candidate-message">لا يوجد عملاء مؤهلون يطابقون الفلاتر الحالية.</div>
+        ) : (
+          <div className="tf-candidate-list" role="list">
+            {customerResults.map(customer => {
+              const selected = selectedIds.has(customer.customer_id)
+              return (
+                <label key={customer.customer_id} className={'tf-candidate-row' + (selected ? ' tf-candidate-row--selected' : '')}>
+                  <input
+                    type="checkbox"
+                    checked={selected}
+                    onChange={() => toggleCandidateCustomer(customer)}
+                    aria-label={'اختيار ' + customer.customer_name}
+                  />
+                  <span className="tf-candidate-main">
+                    <span className="tf-candidate-name">{customer.customer_name}</span>
+                    <span className="tf-candidate-code" dir="ltr">{customer.customer_code}</span>
+                    <span className="tf-candidate-meta">
+                      {typeLabels[customer.customer_type] ?? customer.customer_type}
+                      {customer.assigned_rep_name ? ' • ' + customer.assigned_rep_name : ''}
+                      {customer.city_name ? ' • ' + customer.city_name : ''}
+                    </span>
+                  </span>
+                  <span className="tf-candidate-metric">
+                    {typeCode === 'upgrade_value' && <>متوسط الأساس <strong>{fmtN(customer.baseline_value)} ج.م</strong></>}
+                    {typeCode === 'reactivation' && <>
+                      آخر شراء <strong>{customer.last_purchase_date ?? '—'}</strong>
+                      <small>{fmtN(customer.dormant_days ?? 0)} يوم خمول</small>
+                    </>}
+                    {typeCode === 'category_spread' && <>خط الأساس <strong>{fmtN(customer.baseline_category_count)} تصنيف</strong></>}
+                  </span>
+                </label>
+              )
+            })}
+          </div>
+        )}
+
+        {candidateTotalPages > 1 && (
+          <div className="tf-candidate-pagination">
+            <Button type="button" variant="ghost" disabled={candidatePage <= 1} onClick={() => setCandidatePage(page => page - 1)}>
+              السابق
+            </Button>
+            <span>صفحة {fmtN(candidatePage)} من {fmtN(candidateTotalPages)}</span>
+            <Button type="button" variant="ghost" disabled={candidatePage >= candidateTotalPages} onClick={() => setCandidatePage(page => page + 1)}>
+              التالي
+            </Button>
+          </div>
+        )}
+
+        <div className="tf-selected-customers">
+          <div className="tf-selected-header">
+            <strong>العملاء المختارون ({fmtN(customers.length)})</strong>
+            {customers.length > 0 && (
+              <Button type="button" variant="ghost" onClick={() => setCustomers([])}>إلغاء اختيار الكل</Button>
+            )}
+          </div>
+          {customers.length === 0 ? (
+            <div className="tf-candidate-message">اختر عميلاً واحدًا على الأقل للمتابعة.</div>
+          ) : (
+            <div className="tf-selected-list">
+              {customers.map((customer, index) => (
+                <div key={customer._key} className="tf-selected-row">
+                  <span className="tf-selected-index">{index + 1}</span>
+                  <span>{customer._name ?? customer.customer_id}</span>
+                  <button type="button" onClick={() => removeCustomer(customer._key)}
+                    aria-label={'إزالة ' + (customer._name ?? 'العميل')}>
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
-      )}
-    </div>
-  ) } // end renderStep6
+      </div>
+    )
+  } // end renderStep6
 
   function renderStep7() {
     const scopeLabel = SCOPE_OPTIONS.find(o => o.value === scope)?.label
@@ -1261,7 +1381,7 @@ export default function TargetForm() {
                 {dormancyDays && <span className="tf-tag">خمول {dormancyDays} يوم</span>}
                 {minReactivationValue && <span className="tf-tag">حد العودة {fmtN(Number(minReactivationValue))} ج.م</span>}
                 {growthPct && <span className="tf-tag">نمو {growthPct}%</span>}
-                {requiredCategoryCount && <span className="tf-tag">{requiredCategoryCount} تصنيفات لكل عميل</span>}
+                {requiredCategoryCount && <span className="tf-tag">{requiredCategoryCount} تصنيفات جديدة لكل عميل</span>}
               </span>
             </div>
           )}
@@ -1389,6 +1509,34 @@ export default function TargetForm() {
         .tf-reward-settings { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
         .tf-tier-row { display: grid; grid-template-columns: 36px 1fr 1fr 1fr auto; gap: var(--space-2); align-items: center; }
         .tf-customer-dropdown--message { position: absolute; top: 100%; inset-inline: 0; z-index: 51; background: var(--bg-surface); border: 1px solid var(--border-primary); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+        .tf-candidate-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); padding: var(--space-3); background: var(--bg-surface-2); border: 1px solid var(--border-primary); border-radius: var(--radius-md); }
+        .tf-candidate-search { grid-column: span 2; }
+        .tf-candidate-filter-actions { display: flex; align-items: flex-end; justify-content: flex-end; }
+        .tf-candidate-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding-block: var(--space-2); font-size: 14px; color: var(--text-secondary); }
+        .tf-candidate-selected-count { display: inline-block; margin-inline-start: var(--space-2); padding: 3px 8px; border-radius: 999px; background: var(--color-primary-light); color: var(--color-primary); font-weight: 600; }
+        .tf-candidate-list { display: flex; flex-direction: column; gap: 6px; max-height: 440px; overflow-y: auto; padding-inline-end: 2px; }
+        .tf-candidate-row { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(130px, auto); align-items: center; gap: var(--space-3); min-height: 72px; padding: 10px 12px; border: 1px solid var(--border-primary); border-radius: var(--radius-md); background: var(--bg-surface); cursor: pointer; transition: border-color var(--transition-fast), background var(--transition-fast); }
+        .tf-candidate-row:hover { border-color: var(--color-primary); background: var(--bg-hover); }
+        .tf-candidate-row--selected { border-color: var(--color-primary); background: var(--color-primary-light); }
+        .tf-candidate-row input[type='checkbox'] { width: 18px; height: 18px; accent-color: var(--color-primary); }
+        .tf-candidate-main, .tf-candidate-metric { display: flex; flex-direction: column; min-width: 0; }
+        .tf-candidate-name { color: var(--text-primary); font-size: 15px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .tf-candidate-code { color: var(--text-muted); font-size: 12px; text-align: start; }
+        .tf-candidate-meta { color: var(--text-secondary); font-size: 12px; line-height: 1.7; }
+        .tf-candidate-metric { color: var(--text-secondary); font-size: 12px; text-align: end; }
+        .tf-candidate-metric strong { color: var(--text-primary); font-size: 14px; }
+        .tf-candidate-metric small { color: var(--text-muted); font-size: 11px; }
+        .tf-candidate-message { padding: var(--space-4); border: 1px dashed var(--border-primary); border-radius: var(--radius-md); background: var(--bg-surface-2); color: var(--text-muted); font-size: 14px; line-height: 1.7; text-align: center; }
+        .tf-candidate-message--error { border-color: var(--color-danger); color: var(--color-danger); background: rgba(220, 38, 38, 0.07); }
+        .tf-candidate-pagination { display: flex; align-items: center; justify-content: center; gap: var(--space-3); color: var(--text-secondary); font-size: 13px; }
+        .tf-selected-customers { border-top: 1px solid var(--border-primary); padding-top: var(--space-3); }
+        .tf-selected-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-2); color: var(--text-primary); font-size: 14px; }
+        .tf-selected-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; max-height: 260px; overflow-y: auto; }
+        .tf-selected-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--space-2); padding: 8px 10px; border-radius: var(--radius-sm); background: var(--bg-surface-2); color: var(--text-primary); font-size: 13px; }
+        .tf-selected-row > span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .tf-selected-index { color: var(--color-primary); font-weight: 700; font-variant-numeric: tabular-nums; }
+        .tf-selected-row button { display: inline-flex; padding: 5px; border: 0; border-radius: 6px; background: transparent; color: var(--color-danger); cursor: pointer; }
+        .tf-selected-row button:hover { background: rgba(220, 38, 38, 0.1); }
         .tf-geo-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
         .tf-geo-help { grid-column: 1 / -1; }
         .tf-actions { display: flex; gap: var(--space-3); align-items: center; padding-top: var(--space-3); border-top: 1px solid var(--border-primary); }
@@ -1403,6 +1551,15 @@ export default function TargetForm() {
           .tf-step { justify-content: center; }
           .tf-reward-options, .tf-reward-settings { grid-template-columns: 1fr; }
           .tf-geo-grid { grid-template-columns: 1fr; }
+          .tf-candidate-filters { grid-template-columns: 1fr; }
+          .tf-candidate-search { grid-column: auto; }
+          .tf-candidate-filter-actions { justify-content: stretch; }
+          .tf-candidate-filter-actions .btn { width: 100%; }
+          .tf-candidate-toolbar { align-items: stretch; flex-direction: column; }
+          .tf-candidate-toolbar .btn { width: 100%; min-height: 44px; }
+          .tf-candidate-row { grid-template-columns: auto minmax(0, 1fr); min-height: 88px; }
+          .tf-candidate-metric { grid-column: 2; text-align: start; }
+          .tf-selected-list { grid-template-columns: 1fr; }
           .tf-tier-row { grid-template-columns: 28px 1fr 1fr; }
           .tf-tier-row .tf-tier-label { grid-column: 2 / -1; }
           .tf-review-item { align-items: flex-start; flex-direction: column; gap: 4px; }
