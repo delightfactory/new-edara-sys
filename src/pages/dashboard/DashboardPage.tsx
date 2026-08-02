@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { formatNumber, formatCurrency } from '@/lib/utils/format'
 import Badge from '@/components/ui/Badge'
+import GoalCommandCenter from '@/components/dashboard/GoalCommandCenter'
 
 // ── Data types ───────────────────────────────────────────────
 interface OverviewStats {
@@ -160,6 +161,8 @@ export default function DashboardPage() {
           <p className="page-subtitle">لوحة القيادة — نظرة عامة على النظام</p>
         </div>
       </div>
+
+      <GoalCommandCenter />
 
       {/* ── KPI Grid (2-col on mobile, auto on desktop) ── */}
       <div className="db-kpi-grid" style={{ marginBottom: 'var(--space-4)' }}>

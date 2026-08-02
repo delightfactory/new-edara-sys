@@ -880,7 +880,18 @@ export interface TargetFilters {
   branch_id?: string
   date_from?: string
   date_to?: string
+  active_on?: string                       // الهدف جارٍ فعلياً في هذا التاريخ
   include_tiers?: boolean                  // ★ Phase 22: لجلب الشرائح وحساب المكافأة المتوقعة
+}
+
+/** تفصيل قراءة فقط لمساهمة كل موظف في هدف جماعي قابل للنسب الدقيق. */
+export interface TargetEmployeeContribution {
+  employee_id: string
+  employee_name: string
+  achieved_value: number
+  contribution_share_pct: number
+  target_share_pct: number
+  contribution_rank: number
 }
 
 export interface PayoutFilters {
