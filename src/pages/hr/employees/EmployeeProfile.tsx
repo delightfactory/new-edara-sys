@@ -39,18 +39,20 @@ export default function EmployeeProfile() {
   if (!showWorkSchedule || !canReadSchedules) {
     return (
       <div className="employee-profile-shell">
-        <EmployeeProfileLegacy />
         {canReadSchedules && (
-          <button
-            type="button"
-            className="employee-profile-schedule-entry"
-            onClick={openWorkSchedule}
-            aria-label="فتح جدول عمل الموظف"
-          >
-            <CalendarClock size={18} />
-            جدول العمل
-          </button>
+          <div className="employee-profile-schedule-toolbar">
+            <button
+              type="button"
+              className="employee-profile-schedule-entry"
+              onClick={openWorkSchedule}
+              aria-label="فتح جدول عمل الموظف"
+            >
+              <CalendarClock size={18} />
+              جدول العمل
+            </button>
+          </div>
         )}
+        <EmployeeProfileLegacy />
       </div>
     )
   }
