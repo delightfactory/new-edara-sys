@@ -30,6 +30,7 @@ import {
   normalizeScheduleTime,
   validateEmployeeWorkSchedule,
 } from '@/lib/validations/hrWorkSchedules'
+import './EmployeeWorkScheduleTab.css'
 
 interface EmployeeWorkScheduleTabProps {
   employee: Pick<
@@ -57,7 +58,7 @@ function toDayInput(
 
 function buildCompanyDays(
   defaults: HRCompanyWorkScheduleDefaults,
-  employeeOffDay: HRDayOfWeek | null
+  employeeOffDay: HRDayOfWeek | null | undefined
 ): HREmployeeWorkScheduleDayInput[] {
   const weeklyOff = employeeOffDay ?? defaults.weekly_off_day
 
@@ -88,8 +89,7 @@ function formatHours(minutes: number): string {
 
 function scheduleLabel(schedule: HREmployeeWorkSchedule, cairoToday: string): string {
   if (schedule.status === 'retired') return 'سابق'
-  if (schedule.effective_from > cairoToday) return 'مخطط'
-  return 'ساري'
+  return schedule.effective_from > cairoToday ? 'مخطط' : 'ساري'
 }
 
 function scheduleVariant(
@@ -97,8 +97,7 @@ function scheduleVariant(
   cairoToday: string
 ): 'success' | 'warning' | 'info' {
   if (schedule.status === 'retired') return 'info'
-  if (schedule.effective_from > cairoToday) return 'warning'
-  return 'success'
+  return schedule.effective_from > cairoToday ? 'warning' : 'success'
 }
 
 export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkScheduleTabProps) {
@@ -122,6 +121,7 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
   })
 
   const installed = featureQuery.data?.installed === true
+  const featureEnabled = featureQuery.data?.enabled === true
 
   const defaultsQuery = useQuery({
     queryKey: queryKeys.defaults,
@@ -149,7 +149,9 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
 
   const minimumNewDate = useMemo(() => {
     if (!activeSchedule) return tomorrow
-    return [tomorrow, addDaysToISODate(activeSchedule.effective_from, 1)].sort().at(-1) ?? tomorrow
+
+    const candidates = [tomorrow, addDaysToISODate(activeSchedule.effective_from, 1)].sort()
+    return candidates[candidates.length - 1] ?? tomorrow
   }, [activeSchedule, tomorrow])
 
   const resetEditor = () => {
@@ -162,14 +164,15 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
   }
 
   const startNewSchedule = () => {
-    if (!defaultsQuery.data) {
+    const defaults = defaultsQuery.data
+    if (!defaults) {
       toast.error('تعذر تحميل مواعيد الشركة الافتراضية')
       return
     }
 
     const template = activeSchedule?.days.length === 7
       ? activeSchedule.days.map(toDayInput)
-      : buildCompanyDays(defaultsQuery.data, employee.weekly_off_day)
+      : buildCompanyDays(defaults, employee.weekly_off_day)
 
     setEditingScheduleId(null)
     setEffectiveFrom(minimumNewDate)
@@ -203,11 +206,9 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
         throw new Error('راجع بيانات جدول العمل قبل الحفظ')
       }
 
-      if (editingScheduleId) {
-        return updateFutureEmployeeWorkSchedule(editingScheduleId, days, notes)
-      }
-
-      return saveEmployeeWorkSchedule(input)
+      return editingScheduleId
+        ? updateFutureEmployeeWorkSchedule(editingScheduleId, days, notes)
+        : saveEmployeeWorkSchedule(input)
     },
     onSuccess: async result => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.employee(employee.id) })
@@ -229,10 +230,10 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
     dayName: HRDayOfWeek,
     patch: Partial<HREmployeeWorkScheduleDayInput>
   ) => {
-    setDays(current => current.map(day => {
-      if (day.day_of_week !== dayName) return day
-      return { ...day, ...patch }
-    }))
+    setDays(current => current.map(day =>
+      day.day_of_week === dayName ? { ...day, ...patch } : day
+    ))
+
     setErrors(current => {
       const next = { ...current }
       delete next[`days.${dayName}`]
@@ -251,14 +252,12 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
   }
 
   if (featureQuery.isLoading) {
-    return (
-      <div className="ews-loading"><Spinner /></div>
-    )
+    return <div className="employee-work-schedule-loading"><Spinner /></div>
   }
 
   if (featureQuery.error) {
     return (
-      <div className="ews-state ews-state--danger">
+      <div className="employee-work-schedule-state employee-work-schedule-state--danger">
         <AlertCircle size={20} />
         <div>
           <strong>تعذر التحقق من إعدادات جداول العمل</strong>
@@ -270,23 +269,23 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
 
   if (!installed) {
     return (
-      <div className="ews-state">
+      <div className="employee-work-schedule-state">
         <ShieldCheck size={22} />
         <div>
           <strong>ميزة جداول العمل الفردية غير مركبة على قاعدة البيانات</strong>
-          <p>لا توجد أي محاولة كتابة أو افتراض بديل. ستظل مواعيد الشركة الحالية هي المرجع.</p>
+          <p>ستظل مواعيد الشركة الحالية هي المرجع، ولن تتم أي محاولة كتابة.</p>
         </div>
       </div>
     )
   }
 
   if (defaultsQuery.isLoading || schedulesQuery.isLoading) {
-    return <div className="ews-loading"><Spinner /></div>
+    return <div className="employee-work-schedule-loading"><Spinner /></div>
   }
 
   if (defaultsQuery.error || schedulesQuery.error) {
     return (
-      <div className="ews-state ews-state--danger">
+      <div className="employee-work-schedule-state employee-work-schedule-state--danger">
         <AlertCircle size={20} />
         <div>
           <strong>تعذر تحميل جدول العمل</strong>
@@ -297,27 +296,27 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
   }
 
   return (
-    <section className="ews-root">
-      <div className={`ews-state ${featureQuery.data.enabled ? 'ews-state--success' : 'ews-state--warning'}`}>
+    <section className="employee-work-schedule-tab">
+      <div className={`employee-work-schedule-state ${featureEnabled ? 'employee-work-schedule-state--success' : 'employee-work-schedule-state--warning'}`}>
         <ShieldCheck size={22} />
         <div>
           <strong>
-            {featureQuery.data.enabled
+            {featureEnabled
               ? 'جداول الموظفين مفعلة في الحضور والرواتب'
               : 'مرحلة إعداد ومراجعة فقط — التأثير التشغيلي معطل'}
           </strong>
           <p>
-            {featureQuery.data.enabled
-              ? 'سيتم الحساب وفق مواعيد كل موظف المثبتة لكل يوم.'
+            {featureEnabled
+              ? 'سيتم الحساب وفق الموعد المثبت لكل موظف ولكل يوم.'
               : 'يمكن تجهيز جدول مستقبلي، لكنه لن يغيّر الحضور أو الجزاءات أو الرواتب قبل قرار التفعيل النهائي.'}
           </p>
         </div>
       </div>
 
-      <div className="ews-header edara-card">
+      <div className="employee-work-schedule-header employee-work-schedule-card edara-card">
         <div>
           <h3>مواعيد العمل الأسبوعية</h3>
-          <p>موعد مستقل لكل يوم، دون تتبع للراحة أو تصنيف منفصل للدوام الجزئي.</p>
+          <p>موعد مستقل لكل يوم، دون تتبع للراحة أو محرك منفصل للدوام الجزئي.</p>
         </div>
         {canEdit && (
           <Button
@@ -333,25 +332,25 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
 
       {editorOpen && (
         <form
-          className="ews-editor edara-card"
+          className="employee-work-schedule-editor employee-work-schedule-card edara-card"
           onSubmit={event => {
             event.preventDefault()
             mutation.mutate()
           }}
         >
-          <div className="ews-editor-head">
+          <div className="employee-work-schedule-editor-header">
             <div>
               <h3>{editingScheduleId ? 'تصحيح الجدول المستقبلي' : 'إضافة جدول مستقبلي'}</h3>
               <p>
                 {editingScheduleId
                   ? 'يمكن تعديل الأيام والساعات فقط لأن الجدول لم يبدأ ولم يرتبط بحضور.'
-                  : 'يبدأ التطبيق في تاريخ مستقبلي، ولا يعاد حساب أي يوم سابق.'}
+                  : 'يبدأ التطبيق في تاريخ مستقبلي ولا يعاد حساب أي يوم سابق.'}
               </p>
             </div>
             <Badge variant="warning">غير مطبق بأثر رجعي</Badge>
           </div>
 
-          <div className="ews-form-grid">
+          <div className="employee-work-schedule-form-grid">
             <Input
               type="date"
               label="تاريخ بدء التطبيق"
@@ -369,11 +368,14 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
                 })
               }}
             />
+
             <div className="form-group">
-              <label className="form-label" htmlFor="employee-work-schedule-notes">ملاحظات</label>
+              <label className="form-label" htmlFor="employee-work-schedule-notes">
+                ملاحظات
+              </label>
               <textarea
                 id="employee-work-schedule-notes"
-                className={`form-input ews-notes ${errors.notes ? 'error' : ''}`}
+                className={`form-input employee-work-schedule-notes ${errors.notes ? 'error' : ''}`}
                 value={notes}
                 maxLength={500}
                 rows={2}
@@ -384,8 +386,8 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
             </div>
           </div>
 
-          <div className="ews-table-wrap">
-            <table className="ews-table">
+          <div className="employee-work-schedule-table-wrap">
+            <table className="employee-work-schedule-table">
               <thead>
                 <tr>
                   <th>اليوم</th>
@@ -399,11 +401,17 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
                 {days.map(day => {
                   const rowError = errors[`days.${day.day_of_week}`]
                   const duration = calculateScheduledMinutes(day)
+
                   return (
-                    <tr key={day.day_of_week} className={rowError ? 'ews-row--error' : ''}>
-                      <td data-label="اليوم"><strong>{HR_WORK_WEEK_DAY_LABELS[day.day_of_week]}</strong></td>
+                    <tr
+                      key={day.day_of_week}
+                      className={rowError ? 'employee-work-schedule-row--error' : ''}
+                    >
+                      <td data-label="اليوم">
+                        <strong>{HR_WORK_WEEK_DAY_LABELS[day.day_of_week]}</strong>
+                      </td>
                       <td data-label="يوم عمل">
-                        <label className="ews-check">
+                        <label className="employee-work-schedule-check">
                           <input
                             type="checkbox"
                             checked={day.is_working_day}
@@ -414,7 +422,7 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
                       </td>
                       <td data-label="من">
                         <input
-                          className="form-input ews-time"
+                          className="form-input employee-work-schedule-time"
                           type="time"
                           step={60}
                           value={day.start_time ?? ''}
@@ -424,7 +432,7 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
                       </td>
                       <td data-label="إلى">
                         <input
-                          className="form-input ews-time"
+                          className="form-input employee-work-schedule-time"
                           type="time"
                           step={60}
                           value={day.end_time ?? ''}
@@ -434,7 +442,9 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
                       </td>
                       <td data-label="المدة">
                         {day.is_working_day && duration > 0 ? formatHours(duration) : '—'}
-                        {rowError && <span className="ews-row-error">{rowError}</span>}
+                        {rowError && (
+                          <span className="employee-work-schedule-row-error">{rowError}</span>
+                        )}
                       </td>
                     </tr>
                   )
@@ -443,25 +453,36 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
             </table>
           </div>
 
-          {errors.days && <div className="ews-form-error">{errors.days}</div>}
+          {errors.days && (
+            <div className="employee-work-schedule-form-error">{errors.days}</div>
+          )}
 
-          <div className="ews-summary">
-            <span><Clock3 size={15} /> إجمالي الأسبوع: <strong>{formatHours(weeklyMinutes)}</strong></span>
-            <span>أيام العمل: <strong>{days.filter(day => day.is_working_day).length}</strong></span>
+          <div className="employee-work-schedule-summary">
+            <span>
+              <Clock3 size={15} /> إجمالي الأسبوع: <strong>{formatHours(weeklyMinutes)}</strong>
+            </span>
+            <span>
+              أيام العمل: <strong>{days.filter(day => day.is_working_day).length}</strong>
+            </span>
           </div>
 
-          <div className="ews-actions">
+          <div className="employee-work-schedule-actions">
             <Button type="submit" loading={mutation.isPending}>حفظ الجدول</Button>
-            <Button type="button" variant="secondary" onClick={resetEditor} disabled={mutation.isPending}>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={resetEditor}
+              disabled={mutation.isPending}
+            >
               إلغاء
             </Button>
           </div>
         </form>
       )}
 
-      <div className="ews-list">
+      <div className="employee-work-schedule-history">
         {schedules.length === 0 ? (
-          <div className="ews-empty edara-card">
+          <div className="employee-work-schedule-empty edara-card">
             <CalendarClock size={32} />
             <h3>لا يوجد جدول فردي محفوظ</h3>
             <p>يستمر الموظف حاليًا على مواعيد الشركة ويوم الإجازة المحدد في ملفه.</p>
@@ -476,18 +497,22 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
             && schedule.effective_from > cairoToday
 
           return (
-            <article key={schedule.id} className="ews-card edara-card">
-              <div className="ews-card-head">
+            <article
+              key={schedule.id}
+              className="employee-work-schedule-history-card employee-work-schedule-card edara-card"
+            >
+              <div className="employee-work-schedule-history-header">
                 <div>
-                  <div className="ews-card-title">
+                  <div className="employee-work-schedule-history-title">
                     <CalendarClock size={17} />
                     من {formatDate(schedule.effective_from)} إلى {formatDate(schedule.effective_to)}
                   </div>
-                  <div className="ews-card-meta">
+                  <div className="employee-work-schedule-history-meta">
                     {schedule.days.filter(day => day.is_working_day).length} أيام عمل · {formatHours(totalMinutes)} أسبوعيًا
                   </div>
                 </div>
-                <div className="ews-card-actions">
+
+                <div className="employee-work-schedule-history-actions">
                   <Badge variant={scheduleVariant(schedule, cairoToday)}>
                     {scheduleLabel(schedule, cairoToday)}
                   </Badge>
@@ -504,9 +529,12 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
                 </div>
               </div>
 
-              <div className="ews-days-preview">
+              <div className="employee-work-schedule-days">
                 {schedule.days.map(day => (
-                  <div key={day.day_of_week} className={`ews-day ${day.is_working_day ? '' : 'ews-day--off'}`}>
+                  <div
+                    key={day.day_of_week}
+                    className={`employee-work-schedule-day ${day.is_working_day ? '' : 'employee-work-schedule-day--off'}`}
+                  >
                     <span>{HR_WORK_WEEK_DAY_LABELS[day.day_of_week]}</span>
                     <strong>
                       {day.is_working_day
@@ -517,91 +545,23 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
                 ))}
               </div>
 
-              {schedule.notes && <p className="ews-card-notes">{schedule.notes}</p>}
+              {schedule.notes && (
+                <p className="employee-work-schedule-history-notes">{schedule.notes}</p>
+              )}
             </article>
           )
         })}
       </div>
 
-      {futureSchedule && !featureQuery.data.enabled && (
-        <div className="ews-state ews-state--warning">
+      {futureSchedule && !featureEnabled && (
+        <div className="employee-work-schedule-state employee-work-schedule-state--warning">
           <AlertCircle size={20} />
           <div>
             <strong>يوجد جدول مستقبلي محفوظ لكنه غير فعال تشغيليًا</strong>
-            <p>لن يبدأ تأثيره قبل تطبيق جميع الميجريشنات واجتياز المحاكاة وفتح قفل التفعيل بقرار مستقل.</p>
+            <p>لن يبدأ تأثيره قبل اجتياز المحاكاة وفتح قفل التفعيل بقرار مستقل.</p>
           </div>
         </div>
       )}
-
-      <style>{`
-        .ews-root { display: flex; flex-direction: column; gap: var(--space-4); }
-        .ews-loading { display: flex; justify-content: center; padding: var(--space-10); }
-        .ews-state {
-          display: flex; gap: var(--space-3); align-items: flex-start;
-          padding: var(--space-4); border: 1px solid var(--border-primary);
-          border-radius: var(--radius-lg); background: var(--bg-surface);
-        }
-        .ews-state svg { flex-shrink: 0; color: var(--color-primary); margin-top: 2px; }
-        .ews-state strong { display: block; color: var(--text-primary); margin-bottom: 4px; }
-        .ews-state p { margin: 0; color: var(--text-secondary); font-size: var(--text-sm); }
-        .ews-state--warning { border-color: color-mix(in srgb, var(--color-warning) 45%, var(--border-primary)); background: color-mix(in srgb, var(--color-warning) 7%, var(--bg-surface)); }
-        .ews-state--warning svg { color: var(--color-warning); }
-        .ews-state--success { border-color: color-mix(in srgb, var(--color-success) 45%, var(--border-primary)); background: color-mix(in srgb, var(--color-success) 7%, var(--bg-surface)); }
-        .ews-state--success svg { color: var(--color-success); }
-        .ews-state--danger { border-color: color-mix(in srgb, var(--color-danger) 45%, var(--border-primary)); }
-        .ews-state--danger svg { color: var(--color-danger); }
-        .ews-header, .ews-editor, .ews-card, .ews-empty { padding: var(--space-5); }
-        .ews-header { display: flex; justify-content: space-between; gap: var(--space-3); align-items: center; }
-        .ews-header h3, .ews-editor h3, .ews-empty h3 { margin: 0 0 4px; color: var(--text-primary); }
-        .ews-header p, .ews-editor p, .ews-empty p { margin: 0; color: var(--text-secondary); font-size: var(--text-sm); }
-        .ews-editor { display: flex; flex-direction: column; gap: var(--space-4); }
-        .ews-editor-head { display: flex; justify-content: space-between; gap: var(--space-3); align-items: flex-start; }
-        .ews-form-grid { display: grid; grid-template-columns: minmax(220px, 320px) minmax(280px, 1fr); gap: var(--space-4); }
-        .ews-notes { min-height: 74px; resize: vertical; font-family: var(--font-sans); }
-        .ews-table-wrap { overflow-x: auto; border: 1px solid var(--border-primary); border-radius: var(--radius-lg); }
-        .ews-table { width: 100%; border-collapse: collapse; min-width: 680px; }
-        .ews-table th, .ews-table td { padding: var(--space-3); text-align: start; border-bottom: 1px solid var(--border-primary); }
-        .ews-table th { background: var(--bg-surface-2); font-size: var(--text-xs); color: var(--text-muted); }
-        .ews-table tr:last-child td { border-bottom: 0; }
-        .ews-row--error { background: color-mix(in srgb, var(--color-danger) 5%, transparent); }
-        .ews-time { min-width: 120px; direction: ltr; }
-        .ews-check { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; white-space: nowrap; }
-        .ews-check input { width: 18px; height: 18px; accent-color: var(--color-primary); }
-        .ews-row-error { display: block; margin-top: 4px; color: var(--color-danger); font-size: var(--text-xs); max-width: 240px; }
-        .ews-form-error { color: var(--color-danger); font-size: var(--text-sm); }
-        .ews-summary { display: flex; flex-wrap: wrap; gap: var(--space-4); color: var(--text-secondary); font-size: var(--text-sm); }
-        .ews-summary span { display: inline-flex; gap: 6px; align-items: center; }
-        .ews-actions { display: flex; gap: var(--space-2); justify-content: flex-end; }
-        .ews-list { display: flex; flex-direction: column; gap: var(--space-3); }
-        .ews-card { display: flex; flex-direction: column; gap: var(--space-4); }
-        .ews-card-head { display: flex; justify-content: space-between; gap: var(--space-3); align-items: flex-start; }
-        .ews-card-title { display: flex; align-items: center; gap: 7px; font-weight: 700; color: var(--text-primary); }
-        .ews-card-meta { margin-top: 5px; color: var(--text-muted); font-size: var(--text-xs); }
-        .ews-card-actions { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
-        .ews-days-preview { display: grid; grid-template-columns: repeat(7, minmax(105px, 1fr)); gap: var(--space-2); overflow-x: auto; }
-        .ews-day { min-width: 105px; padding: var(--space-3); border-radius: var(--radius-md); background: var(--bg-surface-2); border: 1px solid var(--border-primary); }
-        .ews-day span { display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 5px; }
-        .ews-day strong { direction: ltr; display: block; font-size: var(--text-xs); color: var(--text-primary); white-space: nowrap; }
-        .ews-day--off { opacity: 0.65; }
-        .ews-card-notes { margin: 0; padding-top: var(--space-3); border-top: 1px solid var(--border-primary); color: var(--text-secondary); font-size: var(--text-sm); }
-        .ews-empty { text-align: center; color: var(--text-muted); }
-        .ews-empty svg { margin-bottom: var(--space-2); }
-        @media (max-width: 700px) {
-          .ews-header, .ews-editor-head, .ews-card-head { flex-direction: column; align-items: stretch; }
-          .ews-form-grid { grid-template-columns: 1fr; }
-          .ews-actions { justify-content: stretch; }
-          .ews-actions button { flex: 1; }
-          .ews-table-wrap { overflow: visible; border: 0; }
-          .ews-table { min-width: 0; }
-          .ews-table thead { display: none; }
-          .ews-table, .ews-table tbody, .ews-table tr, .ews-table td { display: block; width: 100%; }
-          .ews-table tr { border: 1px solid var(--border-primary); border-radius: var(--radius-lg); margin-bottom: var(--space-3); padding: var(--space-2); }
-          .ews-table td { display: grid; grid-template-columns: 92px 1fr; gap: var(--space-2); align-items: center; border: 0; padding: var(--space-2); }
-          .ews-table td::before { content: attr(data-label); color: var(--text-muted); font-size: var(--text-xs); font-weight: 600; }
-          .ews-time { min-width: 0; width: 100%; }
-          .ews-days-preview { grid-template-columns: repeat(7, 110px); }
-        }
-      `}</style>
     </section>
   )
 }
