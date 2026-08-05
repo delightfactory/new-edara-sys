@@ -28,7 +28,8 @@ Proposed columns:
 | `employee_id` | `uuid` | required FK to `hr_employees(id)` |
 | `effective_from` | `date` | required |
 | `effective_to` | `date` | nullable; inclusive end date |
-| `status` | `text` | `draft`, `active`, `retired`; checked text rather than a new enum for safer additive rollout |
+| `effective_range` | `daterange` | generated from the inclusive dates for overlap protection |
+| `status` | `text` | `draft`, `active`, `retired`; checked text rather than a new enum for additive rollout |
 | `notes` | `text` | nullable |
 | `created_by` | `uuid` | nullable FK to `profiles(id)` following current HR audit convention |
 | `created_at` | `timestamptz` | required, default `now()` |
@@ -38,7 +39,7 @@ Proposed columns:
 Required constraints:
 
 - `effective_to IS NULL OR effective_to >= effective_from`;
-- no overlapping `active` date ranges for the same employee;
+- no overlapping `active` date ranges for the same employee, including concurrent writes;
 - an active schedule must have exactly seven valid day rows;
 - an active schedule cannot be changed in place after attendance exists within its effective range; a new version must be created instead.
 
@@ -51,20 +52,20 @@ Proposed columns:
 | Column | Type | Rules |
 |---|---|---|
 | `id` | `uuid` | primary key, generated |
-| `schedule_id` | `uuid` | required FK; cascade delete is acceptable only while the header is `draft` |
+| `schedule_id` | `uuid` | required FK; draft-only deletion may cascade, historical header deletion remains restricted by attendance references |
 | `day_of_week` | existing `hr_day_of_week` | required |
 | `is_working_day` | `boolean` | required |
 | `start_time` | `time` | required only for working days |
 | `end_time` | `time` | required only for working days |
-| `scheduled_minutes` | `integer` | generated or validated from start/end; positive for working days, zero for non-working days |
+| `scheduled_minutes` | `integer` | generated from start/end; positive for working days and zero for non-working days |
 
 Required constraints:
 
 - unique `(schedule_id, day_of_week)`;
 - working day: `start_time IS NOT NULL`, `end_time IS NOT NULL`, `end_time > start_time`;
 - non-working day: start/end are null and minutes are zero;
-- v1 maximum scheduled duration is less than or equal to 24 hours, with same-day end only;
-- no manual minutes that disagree with the time window.
+- v1 supports same-day windows only;
+- no manual minutes that can disagree with the time window.
 
 ### Why header + seven days?
 
@@ -76,33 +77,41 @@ Add nullable columns to `hr_attendance_days`:
 
 | Column | Type | Meaning |
 |---|---|---|
-| `scheduled_start_at` | `timestamptz` | expected start for that specific attendance date |
-| `scheduled_end_at` | `timestamptz` | expected end for that specific attendance date |
-| `scheduled_minutes` | `integer` | expected duration for that date |
-| `schedule_source` | `text` | `employee` or `company` |
-| `work_schedule_id` | `uuid` | nullable FK to the employee schedule header |
-| `schedule_snapshot_at` | `timestamptz` | when the expected schedule was fixed on the attendance row |
+| `schedule_day_kind` | `text` | `work_day`, `weekly_off`, or `public_holiday` at the time the day was resolved |
+| `scheduled_start_at` | `timestamptz` | expected start for that specific attendance date; null for non-working days |
+| `scheduled_end_at` | `timestamptz` | expected end for that specific attendance date; null for non-working days |
+| `scheduled_minutes` | `integer` | expected duration; positive for work days and zero for non-working days |
+| `schedule_source` | `text` | `employee`, `company`, or `public_holiday` |
+| `work_schedule_id` | `uuid` | nullable FK to the employee schedule header when source is `employee` |
+| `schedule_snapshot_at` | `timestamptz` | when the expected schedule state was fixed on the attendance row |
+
+The day kind is required because an employee can create an attendance record on a weekly off or public holiday. Without it, a historical non-working day could later be misread as an incomplete work-day snapshot.
 
 Snapshot check rules:
 
-- `schedule_source IN ('employee','company')` when present;
+- a legacy row may have all snapshot columns null;
+- a complete snapshot requires `schedule_day_kind`, `schedule_source`, `scheduled_minutes`, and `schedule_snapshot_at`;
+- `schedule_day_kind IN ('work_day','weekly_off','public_holiday')`;
+- `schedule_source IN ('employee','company','public_holiday')`;
 - employee source requires `work_schedule_id`;
-- company source requires `work_schedule_id IS NULL`;
-- work-day snapshots require start/end/minutes together;
-- scheduled end must be after scheduled start in v1;
-- no default values are applied to historical rows.
+- company and public-holiday sources require `work_schedule_id IS NULL`;
+- public-holiday kind and source must appear together;
+- work-day snapshot requires start/end, positive minutes, and end after start;
+- weekly-off/public-holiday snapshot requires null start/end and zero minutes;
+- no defaults or automatic backfill are applied to historical attendance rows.
 
 ### Snapshot authority
 
 For an existing attendance row:
 
 1. If a complete snapshot exists, it is authoritative.
-2. If no snapshot exists and the row is being read only, preserve legacy semantics.
+2. If no snapshot exists and the row is read only, no database mutation occurs.
 3. If no snapshot exists and the row is about to be changed:
    - approved/paid payroll dates: reject;
-   - open period: resolve a schedule under an explicit reprocess rule and persist the snapshot in the same transaction.
+   - open period: persist one legacy-safe snapshot in the same transaction;
+   - a later custom schedule is never used retroactively.
 
-The system must not silently refresh a complete snapshot because a schedule was edited later.
+The system must not silently refresh a complete snapshot because a schedule was edited later. V1 exposes no snapshot-refresh action.
 
 ## 4. Central resolver
 
@@ -125,37 +134,38 @@ Proposed return columns:
 ### Resolution rules
 
 1. Reject unknown or ineligible employee IDs.
-2. Public holiday returns `public_holiday`, no working window.
-3. Find one active custom schedule covering the target date.
+2. Public holiday returns `public_holiday`, source `public_holiday`, no window, zero minutes.
+3. When the feature switch is enabled, find one active custom schedule covering the target date.
 4. Resolve the weekday row from the existing `hr_day_of_week` enum.
-5. If custom day is non-working, return `weekly_off`, no window.
-6. If custom day is working, construct Cairo timestamps and return the employee window.
-7. If no custom schedule exists, reproduce the current legacy rules:
+5. Custom non-working day returns `weekly_off`, source `employee`, schedule ID, no window, zero minutes.
+6. Custom working day returns `work_day`, source `employee`, schedule ID, Cairo timestamps, and positive minutes.
+7. If the feature is disabled or no custom schedule exists, reproduce the current legacy rules:
    - employee `weekly_off_day`, if present;
    - otherwise company `hr.weekly_off_day`;
-   - company start and end settings;
-   - current timezone semantics.
+   - company start/end settings;
+   - current Cairo timezone semantics;
+   - source `company`.
 
 ### Fail-safe rule
 
-If an overlapping schedule, missing weekday row, invalid time, or malformed company setting is detected, the resolver raises a clear exception. It must not return an invented default and must not create an absence.
+If an overlapping schedule, missing weekday row, invalid time, malformed company setting, or inconsistent company hours is detected, the resolver raises a clear exception. It must not return an invented default and must not create an absence.
 
 ## 5. Snapshot helper
 
 Proposed helper:
 
-`ensure_attendance_schedule_snapshot(p_attendance_day_id uuid, p_allow_refresh boolean default false)`
+`ensure_attendance_schedule_snapshot(p_attendance_day_id uuid)`
 
 Responsibilities:
 
 - lock the attendance row;
-- return the existing complete snapshot unchanged;
-- reject refresh for approved/paid payroll periods;
-- resolve and save a missing snapshot atomically;
-- allow refresh only through an explicitly authorized manual reprocess path;
+- return an existing complete snapshot unchanged;
+- reject mutation for approved/paid payroll periods;
+- save a missing legacy-safe snapshot atomically for an open period;
+- never refresh a complete snapshot in v1;
 - never create or modify punch times.
 
-Live attendance, manual attendance, auto-checkout, penalties, and leave settlement should not each implement separate snapshot rules.
+Live attendance, manual attendance, auto-checkout, penalties, leave settlement, and open-day review should not implement separate snapshot rules.
 
 ## 6. Workday compatibility function
 
@@ -163,45 +173,47 @@ Keep the existing signature:
 
 `is_employee_work_day(uuid,date) returns text`
 
-Its implementation may delegate to the central resolver and map the result to the current values:
+Its implementation delegates to the central resolver and returns the existing values:
 
 - `work_day`
 - `weekly_off`
 - `public_holiday`
 
-Keeping the signature avoids unnecessary caller breakage.
+Keeping the signature avoids caller breakage.
 
 ## 7. Schedule mutation API
 
-Direct client writes to both tables should be avoided. A transaction-safe RPC is preferred.
+Direct client writes to both tables are blocked. A transaction-safe RPC is used.
 
 Proposed RPC:
 
 `save_employee_work_schedule(p_employee_id, p_effective_from, p_days_json, p_notes)`
 
-It should:
+It must:
 
-1. verify the caller’s explicit schedule-management permission;
-2. validate all seven days;
-3. verify no overlapping active range;
-4. verify the activation date does not rewrite protected history;
-5. retire/close the previous future schedule only when safe;
-6. create the header and seven day rows in one transaction;
-7. write an audit log;
-8. return the saved schedule and validation summary.
+1. require `check_permission(auth.uid(), 'hr.employees.edit')`;
+2. require `p_effective_from` to be later than the current Cairo date;
+3. validate exactly seven distinct weekdays;
+4. validate every working/non-working window;
+5. take an employee-scoped lock;
+6. verify no overlapping active range;
+7. create the header and seven day rows atomically;
+8. preserve prior versions rather than rewriting history;
+9. write an audit log;
+10. return the saved schedule and validation summary.
 
-A separate RPC should disable future custom scheduling without deleting history.
+A separate RPC may retire a future schedule without deleting history.
 
 ## 8. Activation-date safety
 
-V1 default policy:
+V1 policy is fixed:
 
-- the UI proposes a future effective date;
-- same-day activation is allowed only when no attendance record exists for that employee/date and no automated absence/checkout mutation has run;
-- backdated activation is rejected by the normal save RPC;
-- historical correction remains a separate privileged workflow and is not part of this feature.
+- normal activation is strictly future-dated;
+- same-day activation is rejected;
+- backdated activation is rejected;
+- historical correction is a separate controlled workflow and not part of this feature.
 
-This policy prevents a schedule save from changing already-observed attendance facts.
+This avoids races with attendance, absence, auto-checkout, and the operational cron.
 
 ## 9. Payroll schedule inputs
 
@@ -209,12 +221,12 @@ Proposed helper:
 
 `get_employee_scheduled_period(p_employee_id uuid, p_start_date date, p_end_date date)`
 
-Return one row per date or an aggregate containing:
+It returns or aggregates:
 
 - scheduled workday count;
 - scheduled minutes total;
-- holiday count already excluded;
-- source mix for diagnostic purposes.
+- holidays already excluded;
+- source mix for diagnostics.
 
 Payroll uses this helper only for schedule-dependent inputs.
 
@@ -223,104 +235,110 @@ Payroll uses this helper only for schedule-dependent inputs.
 For employees without custom schedules:
 
 - working-day count must match the current single-off-day loop;
-- scheduled minutes must equal `working_days × current company hours/day` under the existing default contract;
-- daily salary rate, absence deduction, and overtime amount must remain equal within established database rounding.
+- scheduled minutes must equal `working_days × current company hours/day` under the current configuration;
+- daily salary rate, absence deduction, and overtime amount must remain exactly equal under current numeric rounding.
 
-If the current start/end window and `hr.work_hours_per_day` disagree, migration must not silently select one as authoritative. The discrepancy must be surfaced before activation.
+A read-only production sample on 2026-08-05 confirmed that the 11:00–19:00 window equals the configured eight hours and that sampled old/new hourly bases differed by zero at eight decimal places.
+
+If the company window and `hr.work_hours_per_day` diverge later, preflight must block feature activation rather than silently choosing one value.
+
+For custom schedules, overtime hourly base uses:
+
+`base_salary / (scheduled_minutes_in_entitlement_period / 60)`
 
 ## 10. RLS and permissions
 
 ### Read
 
-Proposed access follows the existing HR pattern:
-
-- employee may read their own effective schedule;
-- users with HR employee or attendance read permission may read schedules needed for administration.
+- employee may read their own schedule where self-service is allowed;
+- users with `hr.employees.read` or `hr.attendance.read` may read schedules needed for administration.
 
 ### Write
 
-Schedule mutation requires a dedicated management permission or a verified existing HR management permission. It must not use broad client-side table access.
+- direct client insert/update/delete is not granted;
+- mutation goes through the atomic security-definer RPC;
+- mutation permission is the existing `hr.employees.edit`.
 
-### Service-role functions
+### Security-definer functions
 
-Security-definer functions must:
+They must:
 
-- set a safe `search_path`;
-- perform explicit permission checks for client-invoked mutations;
-- expose only the minimum execution grants;
-- never trust employee IDs supplied by a normal employee for another user.
-
-Permission names remain unresolved until the role catalog is inspected and documented.
+- set `search_path = public` or another explicitly reviewed safe path;
+- perform explicit permission checks;
+- expose only minimum execution grants;
+- never trust a supplied employee ID without permission and scope validation.
 
 ## 11. Feature switch
 
-A non-public company setting is proposed:
+A non-public setting is introduced:
 
 `hr.employee_work_schedules_enabled = false`
 
 Behavior while false:
 
-- resolver returns legacy company/employee-off-day results;
-- schedule UI may be hidden or display draft-only state;
-- no attendance path consumes custom schedules;
-- schema and draft schedules may exist safely.
+- resolver returns legacy behavior;
+- custom schedules cannot affect attendance or payroll;
+- schedule data may exist for review;
+- operational UI activation remains unavailable.
 
-The switch is a rollout control, not a substitute for rollback. Production activation requires a separate reviewed change.
+The switch is a rollout control, not a substitute for rollback.
 
 ## 12. Migration split
 
-Draft migrations should be separated to make review and rollback clearer:
-
 1. **Schema only**
+   - `btree_gist` extension if required for the overlap constraint;
    - schedule tables;
    - attendance snapshot columns;
    - indexes, constraints, RLS;
-   - feature switch default false.
+   - feature switch false.
 2. **Resolver and snapshot helpers**
    - no caller rewrites yet.
 3. **Attendance callers**
-   - GPS variants;
+   - both GPS variants;
    - manual upsert;
    - work-day compatibility.
-4. **Automations and penalties**
+4. **Automations, notifications, penalties, and leave settlement**
    - absence marking;
+   - absence notifications;
    - auto-checkout;
+   - daily open-day review;
    - penalty processing;
-   - operational scans/notifications.
+   - leave settlement.
 5. **Payroll integration**
-   - scheduled period helper;
+   - scheduled-period helper;
    - minimal `calculate_employee_payroll` changes.
-6. **Verification functions**
+6. **Verification functions/scripts**
    - parity diagnostics and preflight checks.
 
 No migration is applied merely because its file exists on the branch.
 
 ## 13. Index plan
 
-Minimum proposed indexes:
+Minimum indexes:
 
-- schedule header: `(employee_id, effective_from DESC)`;
-- active schedule lookup: partial index on employee/date-relevant columns where status is active;
-- schedule days: unique `(schedule_id, day_of_week)`;
-- attendance snapshot FK index on `work_schedule_id` only if query plans justify it.
+- schedule header `(employee_id, effective_from DESC)`;
+- exclusion constraint for active date-range overlap;
+- unique schedule day `(schedule_id, day_of_week)`;
+- attendance `work_schedule_id` index only because the FK/history lookup requires it.
 
-No redundant index should be added without an `EXPLAIN`-based reason.
+No redundant index is added without a query-plan reason.
 
 ## 14. Deletion and retention
 
-- active or historically referenced schedules are never deleted;
-- draft schedules with no references may be deleted by an authorized user;
-- retiring a schedule closes its range; it does not remove day rows;
-- attendance FK should use `ON DELETE RESTRICT` or equivalent historical protection.
+- active, retired, or attendance-referenced schedules are never deleted;
+- an unreferenced draft may be deleted only through an authorized future RPC;
+- retiring a schedule closes its lifecycle; it does not remove day rows;
+- attendance FK uses `ON DELETE RESTRICT`.
 
-## 15. Acceptance checks for this contract
+## 15. Acceptance checks
 
-The data contract is accepted only when:
+The contract is accepted only when:
 
-- seven-day validation is unambiguous;
-- no overlap is possible under concurrent saves;
-- default fallback exactly matches production behavior;
-- snapshot refresh rules are explicit;
-- RLS and grants are reviewed;
-- payroll default parity is proven;
+- seven-day validation is atomic;
+- overlap is impossible under concurrent saves;
+- fallback matches production behavior;
+- non-working-day snapshots are unambiguous;
+- snapshots cannot silently refresh;
+- RLS and grants are verified;
+- payroll parity is proven;
 - feature-disabled mode is operationally identical to the current system.
