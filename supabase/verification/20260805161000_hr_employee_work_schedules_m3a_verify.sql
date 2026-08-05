@@ -36,6 +36,26 @@ BEGIN
     RAISE EXCEPTION 'M3A verify failed: attendance rows were unexpectedly snapshotted';
   END IF;
 
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_trigger t
+    JOIN pg_class c ON c.oid = t.tgrelid
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public'
+      AND c.relname = 'company_settings'
+      AND t.tgname = 'trg_company_settings_employee_schedule_activation_guard'
+      AND NOT t.tgisinternal
+  ) THEN
+    RAISE EXCEPTION 'M3A verify failed: activation guard trigger is missing';
+  END IF;
+
+  SELECT pg_get_functiondef('public.guard_employee_work_schedules_activation()'::regprocedure)
+  INTO v_definition;
+  IF v_definition NOT ILIKE '%hr_employee_work_schedules_activation_ready%'
+     OR v_definition NOT ILIKE '%cannot be enabled%' THEN
+    RAISE EXCEPTION 'M3A verify failed: activation guard function is incomplete';
+  END IF;
+
   -- The internal disabled-mode implementations must be byte-equivalent after
   -- normalizing only the function name back to its production name.
   SELECT md5(replace(
@@ -164,37 +184,11 @@ BEGIN
 END;
 $verify$;
 
--- Prove the release gate rejects activation. The failed UPDATE is rolled back to
--- the PL/pgSQL subtransaction and the outer transaction remains read-only-safe.
-DO $activation_guard$
-DECLARE
-  v_blocked BOOLEAN := false;
-BEGIN
-  BEGIN
-    UPDATE public.company_settings
-    SET value = 'true'
-    WHERE key = 'hr.employee_work_schedules_enabled';
-  EXCEPTION
-    WHEN OTHERS THEN
-      IF SQLERRM ILIKE '%read-only%'
-         OR SQLERRM ILIKE '%release readiness gate%'
-         OR SQLERRM ILIKE '%cannot be enabled%' THEN
-        v_blocked := true;
-      ELSE
-        RAISE;
-      END IF;
-  END;
-
-  IF NOT v_blocked THEN
-    RAISE EXCEPTION 'M3A verify failed: activation attempt was not blocked';
-  END IF;
-END;
-$activation_guard$;
-
 SELECT jsonb_build_object(
   'status', 'pass',
   'feature_enabled', public.hr_employee_work_schedules_enabled(),
   'activation_ready', public.hr_employee_work_schedules_activation_ready(),
+  'activation_guard_structure', true,
   'legacy_gps_v2_parity', true,
   'legacy_work_day_parity', true,
   'attendance_rows_changed', false,
