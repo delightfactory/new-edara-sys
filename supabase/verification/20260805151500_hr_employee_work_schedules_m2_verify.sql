@@ -61,17 +61,34 @@ BEGIN
     RAISE EXCEPTION 'M2 verify failed: an internal resolver/helper is exposed to authenticated';
   END IF;
 
-  -- One active lifecycle head per employee.
+  -- One active lifecycle head per employee. Inspect PostgreSQL catalogs rather
+  -- than depending on the formatted text produced by pg_indexes.indexdef.
   IF NOT EXISTS (
     SELECT 1
-    FROM pg_indexes
-    WHERE schemaname = 'public'
-      AND tablename = 'hr_employee_work_schedules'
-      AND indexname = 'hr_employee_work_schedules_one_active_idx'
-      AND indexdef ILIKE '%UNIQUE INDEX%'
-      AND indexdef ILIKE '%WHERE (status = ''active''::text)%'
+    FROM pg_class idx
+    JOIN pg_namespace idx_ns ON idx_ns.oid = idx.relnamespace
+    JOIN pg_index ix ON ix.indexrelid = idx.oid
+    JOIN pg_class tbl ON tbl.oid = ix.indrelid
+    JOIN pg_namespace tbl_ns ON tbl_ns.oid = tbl.relnamespace
+    WHERE idx_ns.nspname = 'public'
+      AND tbl_ns.nspname = 'public'
+      AND tbl.relname = 'hr_employee_work_schedules'
+      AND idx.relname = 'hr_employee_work_schedules_one_active_idx'
+      AND ix.indisunique
+      AND ix.indnkeyatts = 1
+      AND EXISTS (
+        SELECT 1
+        FROM unnest(ix.indkey) WITH ORDINALITY AS key_col(attnum, ord)
+        JOIN pg_attribute a
+          ON a.attrelid = tbl.oid
+         AND a.attnum = key_col.attnum
+        WHERE key_col.ord = 1
+          AND a.attname = 'employee_id'
+      )
+      AND ix.indpred IS NOT NULL
+      AND pg_get_expr(ix.indpred, ix.indrelid) ~* 'status\s*=\s*''active'''
   ) THEN
-    RAISE EXCEPTION 'M2 verify failed: unique active schedule index is missing';
+    RAISE EXCEPTION 'M2 verify failed: unique active schedule index is missing or malformed';
   END IF;
 
   -- Minute precision constraint.
