@@ -80,6 +80,7 @@ SET SESSION edara.allow_schedule_simulation = 'disposable-only';
 3. `20260805201000_hr_employee_work_schedules_runtime_payroll_simulation.sql`
 4. `20260805214500_hr_employee_work_schedules_offday_payroll_simulation.sql`
 5. `20260805215200_hr_employee_work_schedules_permission_snapshot_simulation.sql`
+6. `20260805215300_hr_employee_work_schedules_zero_day_partial_payroll_simulation.sql`
 
 ## الفحص النهائي الوحيد
 
