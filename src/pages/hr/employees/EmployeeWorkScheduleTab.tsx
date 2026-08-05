@@ -24,9 +24,12 @@ import {
 } from '@/lib/services/hrWorkSchedules'
 import {
   addDaysToISODate,
+  addMinutesToTime,
   calculateScheduledMinutes,
   getCairoDateISO,
   getNextCairoDateISO,
+  getUniformWorkingDayMinutes,
+  isFirstDayOfMonthISO,
   normalizeScheduleTime,
   validateEmployeeWorkSchedule,
 } from '@/lib/validations/hrWorkSchedules'
@@ -73,6 +76,11 @@ function buildCompanyDays(
   })
 }
 
+function scheduleDuration(schedule: HREmployeeWorkSchedule | undefined): number | null {
+  if (!schedule) return null
+  return schedule.days.find(day => day.is_working_day)?.scheduled_minutes ?? null
+}
+
 function formatDate(value: string | null): string {
   if (!value) return 'مستمر'
   return new Date(`${value}T12:00:00Z`).toLocaleDateString('ar-EG-u-nu-latn', {
@@ -88,16 +96,19 @@ function formatHours(minutes: number): string {
 }
 
 function scheduleLabel(schedule: HREmployeeWorkSchedule, cairoToday: string): string {
-  if (schedule.status === 'retired') return 'سابق'
-  return schedule.effective_from > cairoToday ? 'مخطط' : 'ساري'
+  if (schedule.effective_from > cairoToday) return 'مخطط'
+  if (!schedule.effective_to || schedule.effective_to >= cairoToday) return 'ساري'
+  return 'سابق'
 }
 
 function scheduleVariant(
   schedule: HREmployeeWorkSchedule,
   cairoToday: string
 ): 'success' | 'warning' | 'info' {
-  if (schedule.status === 'retired') return 'info'
-  return schedule.effective_from > cairoToday ? 'warning' : 'success'
+  const label = scheduleLabel(schedule, cairoToday)
+  if (label === 'مخطط') return 'warning'
+  if (label === 'ساري') return 'success'
+  return 'info'
 }
 
 export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkScheduleTabProps) {
@@ -154,6 +165,15 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
     return candidates[candidates.length - 1] ?? tomorrow
   }, [activeSchedule, tomorrow])
 
+  const getBaselineMinutes = (dateISO: string, excludedScheduleId?: string | null): number => {
+    const predecessor = schedules
+      .filter(schedule => schedule.id !== excludedScheduleId && schedule.effective_from < dateISO)
+      .sort((a, b) => b.effective_from.localeCompare(a.effective_from))[0]
+
+    return scheduleDuration(predecessor)
+      ?? Math.round((defaultsQuery.data?.work_hours_per_day ?? 0) * 60)
+  }
+
   const resetEditor = () => {
     setEditorOpen(false)
     setEditingScheduleId(null)
@@ -201,8 +221,21 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
       }
 
       const validation = validateEmployeeWorkSchedule(input, cairoToday)
-      if (!validation.valid) {
-        setErrors(validation.errors)
+      const nextErrors = { ...validation.errors }
+      const proposedMinutes = getUniformWorkingDayMinutes(days)
+      const baselineMinutes = getBaselineMinutes(effectiveFrom, editingScheduleId)
+
+      if (
+        proposedMinutes !== null
+        && baselineMinutes > 0
+        && proposedMinutes !== baselineMinutes
+        && !isFirstDayOfMonthISO(effectiveFrom)
+      ) {
+        nextErrors.effective_from = 'تغيير عدد ساعات يوم العمل يجب أن يبدأ من أول يوم في الشهر'
+      }
+
+      if (Object.keys(nextErrors).length > 0) {
+        setErrors(nextErrors)
         throw new Error('راجع بيانات جدول العمل قبل الحفظ')
       }
 
@@ -244,10 +277,17 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
 
   const toggleDay = (dayName: HRDayOfWeek, checked: boolean) => {
     const defaults = defaultsQuery.data
+    const referenceMinutes = getUniformWorkingDayMinutes(days)
+      ?? getBaselineMinutes(effectiveFrom, editingScheduleId)
+    const startTime = defaults?.start_time ?? null
+    const endTime = startTime && referenceMinutes > 0
+      ? addMinutesToTime(startTime, referenceMinutes)
+      : null
+
     updateDay(dayName, {
       is_working_day: checked,
-      start_time: checked ? defaults?.start_time ?? null : null,
-      end_time: checked ? defaults?.end_time ?? null : null,
+      start_time: checked ? startTime : null,
+      end_time: checked ? endTime ?? defaults?.end_time ?? null : null,
     })
   }
 
