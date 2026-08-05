@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import type { HREmployeeWorkScheduleDayInput } from '@/lib/types/hrWorkSchedules'
 import {
+  addMinutesToTime,
   calculateScheduledMinutes,
+  getUniformWorkingDayMinutes,
+  isFirstDayOfMonthISO,
   normalizeScheduleTime,
   validateEmployeeWorkSchedule,
   validateWorkScheduleDays,
@@ -38,6 +41,7 @@ describe('employee work schedule validation', () => {
     expect(days.filter(day => day.is_working_day).map(calculateScheduledMinutes)).toEqual([
       360, 360, 360, 360, 360, 360,
     ])
+    expect(getUniformWorkingDayMinutes(days)).toBe(360)
   })
 
   it('accepts nine official working hours for sales', () => {
@@ -47,6 +51,17 @@ describe('employee work schedule validation', () => {
 
     expect(validateWorkScheduleDays(days).valid).toBe(true)
     expect(calculateScheduledMinutes(days[0])).toBe(540)
+    expect(getUniformWorkingDayMinutes(days)).toBe(540)
+  })
+
+  it('rejects mixed daily durations inside one schedule version', () => {
+    const days = standardDays()
+    days[0] = { ...days[0], start_time: '10:00', end_time: '16:00' }
+
+    const result = validateWorkScheduleDays(days)
+    expect(result.valid).toBe(false)
+    expect(result.errors.days).toContain('مدة يوم العمل ثابتة')
+    expect(getUniformWorkingDayMinutes(days)).toBeNull()
   })
 
   it('rejects a schedule where every day is off', () => {
@@ -91,6 +106,14 @@ describe('employee work schedule validation', () => {
 
     expect(validateEmployeeWorkSchedule({ ...base, effective_from: today }, today).valid).toBe(false)
     expect(validateEmployeeWorkSchedule({ ...base, effective_from: '2026-08-06' }, today).valid).toBe(true)
+  })
+
+  it('recognizes month boundaries and preserves a requested daily duration', () => {
+    expect(isFirstDayOfMonthISO('2026-09-01')).toBe(true)
+    expect(isFirstDayOfMonthISO('2026-09-02')).toBe(false)
+    expect(addMinutesToTime('10:00', 360)).toBe('16:00')
+    expect(addMinutesToTime('15:00', 360)).toBe('21:00')
+    expect(addMinutesToTime('20:00', 540)).toBeNull()
   })
 
   it('normalizes database time values without seconds for the editor', () => {
