@@ -12,20 +12,37 @@ import {
 } from '@/lib/types/hrWorkSchedules'
 import {
   normalizeScheduleTime,
-  timeToMinutes,
   validateEmployeeWorkSchedule,
   validateWorkScheduleDays,
 } from '@/lib/validations/hrWorkSchedules'
 
-const FEATURE_SETTING_KEY = 'hr.employee_work_schedules_enabled'
-const COMPANY_SETTING_KEYS = [
-  'hr.work_start_time',
-  'hr.work_end_time',
-  'hr.work_hours_per_day',
-  'hr.weekly_off_day',
-] as const
+interface WorkScheduleAdminContextResponse {
+  installed: boolean
+  enabled: boolean
+  company_defaults: {
+    start_time: string
+    end_time: string
+    work_hours_per_day: number
+    weekly_off_day: HRDayOfWeek
+  }
+}
 
-const truthyValues = new Set(['true', '1', 'on', 'yes'])
+function isMissingContextRpc(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false
+  return error.code === 'PGRST202'
+    || error.message?.includes('get_employee_work_schedule_admin_context') === true
+}
+
+async function getWorkScheduleAdminContext(): Promise<WorkScheduleAdminContextResponse | null> {
+  const { data, error } = await supabase.rpc('get_employee_work_schedule_admin_context')
+
+  if (error) {
+    if (isMissingContextRpc(error)) return null
+    throw error
+  }
+
+  return data as unknown as WorkScheduleAdminContextResponse
+}
 
 function sortDays(days: HREmployeeWorkScheduleDay[]): HREmployeeWorkScheduleDay[] {
   return [...days].sort(
@@ -70,37 +87,26 @@ function mapSchedule(row: Record<string, unknown>): HREmployeeWorkSchedule {
 }
 
 export async function getWorkScheduleFeatureState(): Promise<HRWorkScheduleFeatureState> {
-  const { data, error } = await supabase
-    .from('company_settings')
-    .select('key, value')
-    .eq('key', FEATURE_SETTING_KEY)
-    .maybeSingle()
-
-  if (error) throw error
-
-  if (!data) {
-    return { installed: false, enabled: false }
-  }
+  const context = await getWorkScheduleAdminContext()
+  if (!context) return { installed: false, enabled: false }
 
   return {
-    installed: true,
-    enabled: truthyValues.has(String(data.value).trim().toLowerCase()),
+    installed: context.installed === true,
+    enabled: context.enabled === true,
   }
 }
 
 export async function getCompanyWorkScheduleDefaults(): Promise<HRCompanyWorkScheduleDefaults> {
-  const { data, error } = await supabase
-    .from('company_settings')
-    .select('key, value')
-    .in('key', [...COMPANY_SETTING_KEYS])
+  const context = await getWorkScheduleAdminContext()
+  if (!context) {
+    throw new Error('ميزة جداول العمل الفردية غير مركبة على قاعدة البيانات')
+  }
 
-  if (error) throw error
-
-  const settings = new Map((data ?? []).map(item => [item.key, String(item.value)]))
-  const startTime = normalizeScheduleTime(settings.get('hr.work_start_time'))
-  const endTime = normalizeScheduleTime(settings.get('hr.work_end_time'))
-  const workHours = Number(settings.get('hr.work_hours_per_day'))
-  const weeklyOff = settings.get('hr.weekly_off_day')?.trim().toLowerCase() as HRDayOfWeek | undefined
+  const defaults = context.company_defaults
+  const startTime = normalizeScheduleTime(defaults.start_time)
+  const endTime = normalizeScheduleTime(defaults.end_time)
+  const workHours = Number(defaults.work_hours_per_day)
+  const weeklyOff = defaults.weekly_off_day
 
   if (!startTime || !endTime || !Number.isFinite(workHours) || workHours <= 0) {
     throw new Error('إعدادات مواعيد الشركة غير مكتملة أو غير صالحة')
@@ -108,11 +114,6 @@ export async function getCompanyWorkScheduleDefaults(): Promise<HRCompanyWorkSch
 
   if (!weeklyOff || !HR_WORK_WEEK_DAYS.includes(weeklyOff)) {
     throw new Error('إعداد يوم الإجازة الأسبوعية للشركة غير صالح')
-  }
-
-  const windowMinutes = timeToMinutes(endTime) - timeToMinutes(startTime)
-  if (windowMinutes <= 0 || windowMinutes !== workHours * 60) {
-    throw new Error('عدد ساعات العمل في إعدادات الشركة لا يطابق وقت البداية والنهاية')
   }
 
   return {
