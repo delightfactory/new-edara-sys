@@ -1,20 +1,19 @@
 # Employee Work Schedules — Current Migration Manifest
 
-> **Single source of truth for the current branch review.**
+> **المرجع الوحيد لترتيب التطبيق والمراجعة على الفرع الحالي.**
 >
-> This manifest supersedes migration/simulation lists in earlier planning documents. Only files listed here participate in the final disposable rehearsal.
+> لا يجيز هذا الملف تطبيق أي شيء على الإنتاج أو تفعيل الخاصية.
 
-## Production prohibition
+## ضوابط ثابتة
 
-- Do not apply any listed migration to production.
-- Do not enable `hr.employee_work_schedules_enabled`.
-- Do not create real employee schedules.
-- Do not run any simulation outside a disposable database.
-- Do not create a Vercel Build or Deployment from this branch automatically.
+- قاعدة الإنتاج قراءة فقط.
+- لا يتم تشغيل `hr.employee_work_schedules_enabled`.
+- لا يتم إنشاء جداول لموظفين حقيقيين.
+- لا يتم عمل Backfill للحضور القديم.
+- لا يتم إنشاء Vercel Build أو Deployment تلقائي من الفرع.
+- كل المحاكاة على قاعدة Disposable محلية وتنتهي بـ`ROLLBACK`.
 
-## Migration order
-
-Apply to a disposable database in this exact order:
+## ترتيب الميجريشنات المعتمد
 
 1. `20260805143000_hr_employee_work_schedules_m1_schema.sql`
 2. `20260805150000_hr_employee_work_schedules_m2_resolver.sql`
@@ -34,10 +33,18 @@ Apply to a disposable database in this exact order:
 16. `20260805193700_hr_employee_work_schedules_duration_change_month_boundary.sql`
 17. `20260805193800_hr_employee_work_schedules_company_duration_boundary.sql`
 18. `20260805194000_hr_employee_work_schedules_admin_context.sql`
+19. `20260805210000_hr_employee_work_schedules_critical_review_fixes.sql`
+20. `20260805210500_hr_employee_work_schedules_service_role_actor_guard.sql`
+21. `20260805212000_hr_employee_work_schedules_attendance_metric_normalization.sql`
+22. `20260805212100_hr_employee_work_schedules_permission_minute_alias_fix.sql`
+23. `20260805213000_hr_employee_work_schedules_absence_notification_delivery_guard.sql`
+24. `20260805215000_hr_employee_work_schedules_release_safety_fixes.sql`
 
-## Stage verification order
+يجب إيقاف التطبيق فور فشل أي ملف، ولا يتم دمج الملفات في Migration واحدة كبيرة أثناء البروفة.
 
-Run the matching verification immediately after each stage and before moving forward:
+## اختبارات المراحل
+
+تشغل اختبارات كل مرحلة فور اكتمالها:
 
 - `20260805143000_hr_employee_work_schedules_m1_verify.sql`
 - `20260805151500_hr_employee_work_schedules_m2_verify.sql`
@@ -54,70 +61,66 @@ Run the matching verification immediately after each stage and before moving for
 - `20260805193500_hr_employee_work_schedules_consistent_duration_verify.sql`
 - `20260805193800_hr_employee_work_schedules_company_duration_verify.sql`
 - `20260805194000_hr_employee_work_schedules_admin_context_verify.sql`
+- `20260805211000_hr_employee_work_schedules_critical_review_fixes.sql`
+- `20260805214000_hr_employee_work_schedules_attendance_normalization.sql`
+- `20260805215100_hr_employee_work_schedules_release_safety_verify.sql`
 
-`20260805161100_hr_employee_work_schedules_activation_guard_simulation.sql` is rollback-only and does not require the general simulation session flag unless the file itself states otherwise.
+## المحاكاة السلوكية المعتمدة
 
-## Authoritative behavioral simulations
-
-Open one disposable-database session and set:
+في جلسة Disposable فقط:
 
 ```sql
 SET SESSION edara.allow_schedule_simulation = 'disposable-only';
 ```
 
-Run only:
+ثم تشغل الملفات التالية، وكل ملف ينتهي بـ`ROLLBACK`:
 
 1. `20260805200700_hr_employee_work_schedules_final_lifecycle_simulation.sql`
 2. `20260805200600_hr_employee_work_schedules_company_and_transition_duration_simulation.sql`
 3. `20260805201000_hr_employee_work_schedules_runtime_payroll_simulation.sql`
+4. `20260805214500_hr_employee_work_schedules_offday_payroll_simulation.sql`
+5. `20260805215200_hr_employee_work_schedules_permission_snapshot_simulation.sql`
 
-Each file starts a transaction and ends with `ROLLBACK`.
+## الفحص النهائي الوحيد
 
-## Final preflights
+بعد رجوع كل المحاكاة وتشابه عدادات البيانات مع الـBaseline، يشغل فقط:
 
-After all simulations roll back, run:
+- `20260805222000_hr_employee_work_schedules_final_release_preflight.sql`
 
-1. `20260805200000_hr_employee_work_schedules_final_disabled_preflight.sql`
-2. `20260805200100_hr_employee_work_schedules_final_duration_preflight.sql`
-3. `20260805200200_hr_employee_work_schedules_final_company_duration_preflight.sql`
+الملفات القديمة التالية ليست دليل إصدار نهائي ولا تُشغل ضمن المسار المعتمد:
 
-Then compare all business-data row counts and protected function hashes with the pre-rehearsal baseline.
-
-## Explicitly excluded files
-
-The following were design-stage simulations and are excluded from final evidence:
-
+- `20260805200000_hr_employee_work_schedules_final_disabled_preflight.sql`
+- `20260805200100_hr_employee_work_schedules_final_duration_preflight.sql`
+- `20260805200200_hr_employee_work_schedules_final_company_duration_preflight.sql`
 - `20260805151500_hr_employee_work_schedules_m2_simulation.sql`
 - `20260805193700_hr_employee_work_schedules_duration_boundary_simulation.sql`
 - `20260805200500_hr_employee_work_schedules_lifecycle_simulation.sql`
 
-Do not run, cite, rename, or merge them into the authoritative sequence.
+## قواعد V1 المجمدة
 
-## Frozen V1 schedule rules
+- سبعة أيام فريدة، ويوم عمل واحد على الأقل.
+- لا ورديات ليلية أو فترتين في اليوم أو تتبع راحة.
+- مواعيد الأيام قد تختلف، لكن مدة يوم العمل ثابتة داخل نسخة الجدول.
+- تغيير مدة اليوم يبدأ من أول الشهر.
+- الموظف بلا جدول خاص يستخدم إعداد الشركة.
+- العطلة الرسمية يوم غير مقرر ولا ينتج أثرًا ماليًا تلقائيًا.
+- الحضور في يوم غير مقرر لا يعوض غياب يوم عمل.
+- Auto Checkout لا يمنح إضافيًا ماليًا تلقائيًا.
+- التصاريح المتداخلة تُحسب كاتحاد زمني واحد.
+- Snapshot يوم الحضور غير قابلة للتغيير بعد تثبيتها.
+- فترة لا تحتوي يوم عمل مقرر لا تُمنح يوم استحقاق وهميًا.
+- التشغيل يظل مطابقًا للنظام القديم والمفتاح مغلق.
 
-- Seven unique weekdays.
-- At least one working day.
-- Same-day windows only; no overnight schedule.
-- No split shifts or break tracking.
-- Every working day inside one schedule version has the same duration.
-- Start/end times may differ while duration remains equal.
-- First custom duration is compared with the company baseline.
-- Any change in daily duration starts on day one of a month.
-- Attendance/penalty/payroll runtime remains exact legacy behavior while the flag is false.
-- Absence notification waits for the employee start plus the existing late-grace setting.
-- Late-shift notifications reuse the existing 15-minute operational scan.
-- One atomic alert-state key prevents duplicate absence notifications per employee/date.
+## فحوص التطبيق بعد قاعدة البيانات
 
-## Application checks after database rehearsal
+دون Deploy:
 
-No deployment is required for these checks:
+1. TypeScript type-check.
+2. اختبارات `hrWorkSchedules.test.ts`.
+3. الاختبارات الكاملة.
+4. lint.
+5. مراجعة فرق الفرع كاملًا.
+6. التأكد أن `EmployeeProfileLegacy.tsx` مطابق لـ`main`.
+7. التأكد من عدم إنشاء Vercel Deployment.
 
-1. Confirm `EmployeeProfileLegacy.tsx` is byte-identical to the original `main` profile.
-2. Run TypeScript type-check locally.
-3. Run focused schedule validation tests.
-4. Run the full test suite.
-5. Run lint.
-6. Review the complete branch diff.
-7. Confirm no Vercel Deployment was created.
-
-A Vercel Preview and any production action require separate explicit decisions.
+أي Preview أو تطبيق إنتاجي يحتاج قرارًا مستقلًا بعد نجاح جميع البنود السابقة.
