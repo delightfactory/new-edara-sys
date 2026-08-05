@@ -46,9 +46,38 @@ export function timeToMinutes(value: string): number {
   return hours * 60 + minutes
 }
 
+export function minutesToTime(value: number): string | null {
+  if (!Number.isInteger(value) || value < 0 || value >= 24 * 60) return null
+  const hours = Math.floor(value / 60).toString().padStart(2, '0')
+  const minutes = (value % 60).toString().padStart(2, '0')
+  return `${hours}:${minutes}`
+}
+
+export function addMinutesToTime(value: string, minutes: number): string | null {
+  if (!TIME_PATTERN.test(value) || !Number.isInteger(minutes) || minutes <= 0) return null
+  return minutesToTime(timeToMinutes(value) + minutes)
+}
+
 export function calculateScheduledMinutes(day: HREmployeeWorkScheduleDayInput): number {
   if (!day.is_working_day || !day.start_time || !day.end_time) return 0
   return timeToMinutes(day.end_time) - timeToMinutes(day.start_time)
+}
+
+export function getUniformWorkingDayMinutes(
+  days: HREmployeeWorkScheduleDayInput[]
+): number | null {
+  const durations = days
+    .filter(day => day.is_working_day)
+    .map(calculateScheduledMinutes)
+    .filter(minutes => minutes > 0)
+
+  if (durations.length === 0) return null
+  const first = durations[0]
+  return durations.every(minutes => minutes === first) ? first : null
+}
+
+export function isFirstDayOfMonthISO(value: string): boolean {
+  return /^\d{4}-\d{2}-01$/.test(value)
 }
 
 export function validateWorkScheduleDays(
@@ -101,6 +130,16 @@ export function validateWorkScheduleDays(
       errors[key] = 'وقت الانصراف يجب أن يكون بعد وقت الحضور في اليوم نفسه'
     }
   })
+
+  if (!Object.keys(errors).some(key => key.startsWith('days.'))) {
+    const workingDurations = days
+      .filter(day => day.is_working_day)
+      .map(calculateScheduledMinutes)
+
+    if (new Set(workingDurations).size > 1) {
+      errors.days = 'يجب أن تكون مدة يوم العمل ثابتة داخل نفس نسخة الجدول'
+    }
+  }
 
   return { valid: Object.keys(errors).length === 0, errors }
 }
