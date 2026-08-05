@@ -45,6 +45,7 @@ SET SESSION edara.allow_schedule_simulation = 'disposable-only';
 3. `20260805201000_hr_employee_work_schedules_runtime_payroll_simulation.sql`
 4. `20260805214500_hr_employee_work_schedules_offday_payroll_simulation.sql`
 5. `20260805215200_hr_employee_work_schedules_permission_snapshot_simulation.sql`
+6. `20260805215300_hr_employee_work_schedules_zero_day_partial_payroll_simulation.sql`
 
 كل ملف يجب أن يعلن النجاح قبل `ROLLBACK`، وبعده يجب ألا تبقى أي بيانات محاكاة.
 
@@ -60,9 +61,9 @@ SET SESSION edara.allow_schedule_simulation = 'disposable-only';
 - التأخير بعد فترة السماح نفسها في GPS والتعديل الإداري.
 - الإضافي يبدأ بعد نهاية الموظف، ولا ينتج من Auto Checkout.
 - الانصراف المبكر يستخدم دقائق التصريح المغطاة فعلًا.
-- التصاريح المتداخلة لا تُحسب مرتين.
+- التصاريح المتداخلة لا تُحسب مرتين في الجزاء المالي.
 - حضور يوم الإجازة لا ينتج جزاء أو إضافيًا ولا يعوض غياب يوم عمل.
-- فترة استحقاق بلا يوم عمل مقرر تعطي صفر يوم، لا يومًا وهميًا.
+- فترة استحقاق بلا يوم عمل مقرر تعطي صفر يوم وصفر راتب، لا يومًا وهميًا.
 - Snapshot المثبتة لا يمكن تغييرها.
 - أي سجل غير مقرر مفتوح يظل مانع مراجعة واضحًا قبل الراتب.
 - السلف والعمولات والتعديلات والتأمينات والضرائب والترحيلات لم تتغير.
