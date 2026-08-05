@@ -20,6 +20,9 @@ DECLARE
   v_suffix TEXT := substr(replace(extensions.gen_random_uuid()::TEXT, '-', ''), 1, 10);
   v_test_date DATE := DATE '2026-09-15';
   v_uncovered INTEGER;
+  v_penalty_minutes INTEGER;
+  v_penalty_days NUMERIC;
+  v_penalty_count INTEGER;
   v_guard_blocked BOOLEAN := false;
 BEGIN
   IF current_setting('edara.allow_schedule_simulation', true) IS DISTINCT FROM 'disposable-only' THEN
@@ -122,6 +125,12 @@ BEGIN
     work_date,
     status,
     day_value,
+    punch_in_time,
+    punch_out_time,
+    effective_hours,
+    checkout_status,
+    early_leave_minutes,
+    overtime_minutes,
     review_status,
     is_manually_locked,
     schedule_day_kind,
@@ -138,6 +147,12 @@ BEGIN
     v_test_date,
     'present',
     1.00,
+    (v_test_date + TIME '12:00') AT TIME ZONE 'Africa/Cairo',
+    (v_test_date + TIME '15:00') AT TIME ZONE 'Africa/Cairo',
+    3.00,
+    'early_unauthorized',
+    180,
+    0,
     'reviewed',
     true,
     'work_day',
@@ -148,6 +163,26 @@ BEGIN
     NULL,
     now()
   );
+
+  v_penalty_count := public.process_attendance_penalties_scheduled(v_attendance_id);
+
+  SELECT deduction_minutes, deduction_days
+  INTO v_penalty_minutes, v_penalty_days
+  FROM public.hr_penalty_instances
+  WHERE attendance_day_id = v_attendance_id
+    AND penalty_type = 'early_leave_unauthorized'
+  ORDER BY created_at DESC
+  LIMIT 1;
+
+  IF v_penalty_count <> 1
+     OR v_penalty_minutes <> 60
+     OR abs(v_penalty_days - (60 / 360.0)) > 0.0001 THEN
+    RAISE EXCEPTION
+      'Simulation failed: penalty did not use one permission union; count=% minutes=% days=%',
+      v_penalty_count,
+      v_penalty_minutes,
+      v_penalty_days;
+  END IF;
 
   BEGIN
     UPDATE public.hr_attendance_days
@@ -172,7 +207,7 @@ $simulation$;
 SELECT jsonb_build_object(
   'simulation_status', 'pass_before_rollback',
   'overlapping_permission_union_minutes', 120,
-  'uncovered_minutes', 60,
+  'uncovered_and_penalized_minutes', 60,
   'snapshot_update_blocked', true,
   'next_action', 'ROLLBACK'
 ) AS result;
