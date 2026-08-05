@@ -16,9 +16,7 @@ export default function EmployeeProfile() {
   const [searchParams, setSearchParams] = useSearchParams()
   const can = useAuthStore(state => state.can)
   const showWorkSchedule = searchParams.get('section') === WORK_SCHEDULE_SECTION
-  const canReadSchedules = can('hr.employees.read')
-    || can('hr.attendance.read')
-    || can('hr.employees.edit')
+  const canReadSchedules = can('hr.employees.read') || can('hr.employees.edit')
 
   const employeeQuery = useQuery({
     queryKey: ['hr-employee-work-schedule-shell', id],
