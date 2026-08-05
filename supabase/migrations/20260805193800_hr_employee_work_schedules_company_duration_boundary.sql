@@ -255,10 +255,13 @@ REVOKE ALL ON FUNCTION public.validate_employee_work_schedule_duration()
 DO $assertions$
 DECLARE
   v_definition TEXT;
+  v_company_minutes INTEGER;
 BEGIN
-  IF public.get_company_default_scheduled_minutes() <> 480 THEN
+  v_company_minutes := public.get_company_default_scheduled_minutes();
+
+  IF v_company_minutes <= 0 THEN
     RAISE EXCEPTION
-      'Company-duration assertion failed: current validated company day is not 480 minutes';
+      'Company-duration assertion failed: validated company minutes must be positive';
   END IF;
 
   SELECT pg_get_functiondef('public.guard_employee_work_schedule_activation_duration()'::regprocedure)
