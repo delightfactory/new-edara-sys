@@ -9,11 +9,25 @@
 - قاعدة الإنتاج قراءة فقط.
 - لا يتم تشغيل `hr.employee_work_schedules_enabled`.
 - لا يتم إنشاء جداول لموظفين حقيقيين.
-- لا يتم عمل Backfill للحضور القديم.
+- لا يتم عمل Backfill للحضور أو الإجازات القديمة.
+- لا يتم إعادة حساب أي مسير راتب قائم.
 - لا يتم إنشاء Vercel Build أو Deployment تلقائي من الفرع.
 - كل المحاكاة على قاعدة Disposable محلية وتنتهي بـ`ROLLBACK`.
+- كل دفعة إصلاح مستقلة، ولا تبدأ الدفعة التالية قبل مراجعة ملفات الدفعة الحالية.
 
-## ترتيب الميجريشنات المعتمد
+## حالة الدفعات
+
+| الدفعة | النطاق | الحالة النظرية | التطبيق/التشغيل |
+|---|---|---|---|
+| الأساس | الجداول والحضور والجزاءات والراتب | موجود على الفرع | غير مطبق |
+| 1 | تكامل الإجازات | منفذ على الفرع للمراجعة | غير مطبق وغير مشغّل على PostgreSQL |
+| 2 | إعدادات الشركة المؤرخة والذرية | لم تبدأ | — |
+| 3 | التقارير وكشوف الحضور | لم تبدأ | — |
+| 4 | دورة حياة الموظف والجداول المستقبلية | لم تبدأ | — |
+| 5 | تنبيهات الغياب والتصاريح | لم تبدأ | — |
+| 6 | بوابة التفعيل النهائية | لم تبدأ | — |
+
+## ترتيب الميجريشنات المعتمد حاليًا
 
 1. `20260805143000_hr_employee_work_schedules_m1_schema.sql`
 2. `20260805150000_hr_employee_work_schedules_m2_resolver.sql`
@@ -39,8 +53,11 @@
 22. `20260805212100_hr_employee_work_schedules_permission_minute_alias_fix.sql`
 23. `20260805213000_hr_employee_work_schedules_absence_notification_delivery_guard.sql`
 24. `20260805215000_hr_employee_work_schedules_release_safety_fixes.sql`
+25. `20260806180000_hr_employee_work_schedules_leave_integration.sql`
+26. `20260806181000_hr_employee_work_schedules_leave_balance_settlement.sql`
+27. `20260806181500_hr_employee_work_schedules_leave_cross_year_compatibility.sql`
 
-يجب إيقاف التطبيق فور فشل أي ملف، ولا يتم دمج الملفات في Migration واحدة كبيرة أثناء البروفة.
+يجب إيقاف التطبيق فور فشل أي ملف. لا يتم دمج الملفات في Migration واحدة كبيرة أثناء البروفة، ولا يتم تخطي Migration فاشلة بتعديل يدوي على قاعدة الاختبار.
 
 ## اختبارات المراحل
 
@@ -64,8 +81,9 @@
 - `20260805211000_hr_employee_work_schedules_critical_review_fixes.sql`
 - `20260805214000_hr_employee_work_schedules_attendance_normalization.sql`
 - `20260805215100_hr_employee_work_schedules_release_safety_verify.sql`
+- `20260806182000_hr_employee_work_schedules_leave_integration_verify.sql`
 
-## المحاكاة السلوكية المعتمدة
+## المحاكاة السلوكية المعتمدة حاليًا
 
 في جلسة Disposable فقط:
 
@@ -81,18 +99,27 @@ SET SESSION edara.allow_schedule_simulation = 'disposable-only';
 4. `20260805214500_hr_employee_work_schedules_offday_payroll_simulation.sql`
 5. `20260805215200_hr_employee_work_schedules_permission_snapshot_simulation.sql`
 6. `20260805215300_hr_employee_work_schedules_zero_day_partial_payroll_simulation.sql`
+7. `20260806183000_hr_employee_work_schedules_leave_lifecycle_simulation.sql`
+8. `20260806184000_hr_employee_work_schedules_unpaid_leave_payroll_simulation.sql`
 
-## الفحص النهائي الوحيد
+## وضع الفحص النهائي
 
-بعد رجوع كل المحاكاة وتشابه عدادات البيانات مع الـBaseline، يشغل فقط:
+`20260805222000_hr_employee_work_schedules_final_release_preflight.sql` لم يعد فحص الإصدار النهائي المعتمد؛ لأنه أُنشئ قبل دفعة تكامل الإجازات والدفعات اللاحقة المخططة.
 
-- `20260805222000_hr_employee_work_schedules_final_release_preflight.sql`
+لا يوجد حاليًا Final Release Preflight صالح للتفعيل. يتم إنشاء فحص نهائي جديد فقط في الدفعة السادسة، بعد إغلاق:
 
-الملفات القديمة التالية ليست دليل إصدار نهائي ولا تُشغل ضمن المسار المعتمد:
+- إعدادات الشركة المؤرخة والذرية.
+- التقارير وكشوف الحضور.
+- دورة حياة الموظف.
+- التنبيهات والتصاريح.
+- نتائج جولة المراجعة المستقلة التالية.
+
+الملفات القديمة التالية ليست دليل إصدار نهائي ولا تُشغل ضمن مسار الإثبات النهائي:
 
 - `20260805200000_hr_employee_work_schedules_final_disabled_preflight.sql`
 - `20260805200100_hr_employee_work_schedules_final_duration_preflight.sql`
 - `20260805200200_hr_employee_work_schedules_final_company_duration_preflight.sql`
+- `20260805222000_hr_employee_work_schedules_final_release_preflight.sql`
 - `20260805151500_hr_employee_work_schedules_m2_simulation.sql`
 - `20260805193700_hr_employee_work_schedules_duration_boundary_simulation.sql`
 - `20260805200500_hr_employee_work_schedules_lifecycle_simulation.sql`
@@ -110,6 +137,10 @@ SET SESSION edara.allow_schedule_simulation = 'disposable-only';
 - التصاريح المتداخلة تُحسب كاتحاد زمني واحد.
 - Snapshot يوم الحضور غير قابلة للتغيير بعد تثبيتها.
 - فترة لا تحتوي يوم عمل مقرر لا تُمنح يوم استحقاق وهميًا.
+- أيام الإجازة تُحتسب خادميًا من أيام العمل المقررة فقط عند التفعيل.
+- اعتماد الإجازة النهائي يزامن الحضور بعد حفظ الحالة، وبـSnapshot كاملة.
+- الإجازة المدفوعة تدخل كاستحقاق مدفوع؛ الإجازة بدون أجر لا تدخل كحضور مدفوع ولا تنشئ جزاءً تلقائيًا.
+- طلب الإجازة العابر لنهاية السنة يظل متوافقًا مع سياسة النظام الحالية ويُحاسب على رصيد سنة البداية.
 - التشغيل يظل مطابقًا للنظام القديم والمفتاح مغلق.
 
 ## فحوص التطبيق بعد قاعدة البيانات
@@ -118,10 +149,11 @@ SET SESSION edara.allow_schedule_simulation = 'disposable-only';
 
 1. TypeScript type-check.
 2. اختبارات `hrWorkSchedules.test.ts`.
-3. الاختبارات الكاملة.
-4. lint.
-5. مراجعة فرق الفرع كاملًا.
-6. التأكد أن `EmployeeProfileLegacy.tsx` مطابق لـ`main`.
-7. التأكد من عدم إنشاء Vercel Deployment.
+3. اختبارات شاشة الإجازات والـRPC preview.
+4. الاختبارات الكاملة.
+5. lint.
+6. مراجعة فرق الفرع كاملًا.
+7. التأكد أن `EmployeeProfileLegacy.tsx` مطابق لـ`main`.
+8. التأكد من عدم إنشاء Vercel Deployment.
 
-أي Preview أو تطبيق إنتاجي يحتاج قرارًا مستقلًا بعد نجاح جميع البنود السابقة.
+أي Preview أو تطبيق إنتاجي أو فتح Feature Flag يحتاج قرارًا مستقلًا بعد نجاح جميع الدفعات والفحوص.
