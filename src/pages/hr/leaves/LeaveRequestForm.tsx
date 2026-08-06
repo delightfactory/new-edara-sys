@@ -38,6 +38,15 @@ function fmtDays(n: number): string {
   return `${n} يوماً`
 }
 
+function isMissingLeavePreviewRpc(error: { code?: string; message?: string }): boolean {
+  const message = (error.message ?? '').toLowerCase()
+  return error.code === 'PGRST202'
+    || (
+      message.includes('preview_employee_leave_workday_count')
+      && (message.includes('not found') || message.includes('schema cache'))
+    )
+}
+
 // ── مؤشر الرصيد ────────────────────────────────────────────
 function BalanceBar({ employeeId, leaveTypeId, daysRequested }: {
   employeeId: string; leaveTypeId: string; daysRequested: number
@@ -100,30 +109,85 @@ export default function LeaveRequestForm({ open, onClose, employeeId: externalEm
   const [reason,      setReason]      = useState('')
   const [docFile,     setDocFile]     = useState<File | null>(null)
   const [uploading,   setUploading]   = useState(false)
+  const [previewDaysCount, setPreviewDaysCount] = useState<number | null>(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
+  const [previewError, setPreviewError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const daysCount = calcDays(startDate, endDate)
+  const calendarDaysCount = calcDays(startDate, endDate)
+  const daysCount = previewDaysCount ?? calendarDaysCount
 
   useEffect(() => {
     if (endDate && startDate && endDate < startDate) setEndDate(startDate)
   }, [startDate, endDate])
 
   useEffect(() => {
+    let cancelled = false
+
+    if (!open || !resolvedEmpId || calendarDaysCount <= 0) {
+      setPreviewDaysCount(null)
+      setPreviewLoading(false)
+      setPreviewError(null)
+      return () => { cancelled = true }
+    }
+
+    setPreviewLoading(true)
+    setPreviewError(null)
+
+    void supabase
+      .rpc('preview_employee_leave_workday_count', {
+        p_employee_id: resolvedEmpId,
+        p_start_date: startDate,
+        p_end_date: endDate,
+      })
+      .then(({ data, error }) => {
+        if (cancelled) return
+
+        if (error) {
+          if (isMissingLeavePreviewRpc(error)) {
+            // The side-branch UI remains compatible with the current production
+            // database before the reviewed migration chain is ever applied.
+            setPreviewDaysCount(calendarDaysCount)
+            setPreviewError(null)
+          } else {
+            setPreviewDaysCount(null)
+            setPreviewError(error.message || 'تعذر احتساب أيام الإجازة')
+          }
+        } else {
+          const parsed = Number(data ?? 0)
+          setPreviewDaysCount(Number.isFinite(parsed) ? parsed : 0)
+          setPreviewError(null)
+        }
+
+        setPreviewLoading(false)
+      })
+
+    return () => { cancelled = true }
+  }, [open, resolvedEmpId, startDate, endDate, calendarDaysCount])
+
+  useEffect(() => {
     if (!open) {
-      setLeaveTypeId(''); setStartDate(''); setEndDate(''); setReason(''); setDocFile(null)
+      setLeaveTypeId('')
+      setStartDate('')
+      setEndDate('')
+      setReason('')
+      setDocFile(null)
+      setPreviewDaysCount(null)
+      setPreviewLoading(false)
+      setPreviewError(null)
     }
   }, [open])
 
   const { data: leaveTypes = [], isLoading: typesLoading } = useHRLeaveTypes()
-  
+
   // X2: Context-Aware Filtering Model
   const applicableLeaveTypes = leaveTypes.filter(t => {
     // 1- Always allow universal rules
     if (!t.eligible_gender || t.eligible_gender === 'all') return true
-    
+
     // 2- If context is missing, be graceful and do NOT show targeted types
     if (!employeeGender) return false
-    
+
     // 3- Matching rules
     return t.eligible_gender === employeeGender
   })
@@ -137,7 +201,9 @@ export default function LeaveRequestForm({ open, onClose, employeeId: externalEm
     if (!resolvedEmpId) { toast.error('تعذر تحديد الموظف — تأكد من ربط حسابك بسجل موظف'); return }
     if (!leaveTypeId)   { toast.error('يرجى اختيار نوع الإجازة'); return }
     if (!startDate || !endDate) { toast.error('يرجى تحديد تاريخ البداية والنهاية'); return }
-    if (daysCount <= 0) { toast.error('تاريخ النهاية يجب أن يكون بعد تاريخ البداية'); return }
+    if (previewLoading) { toast.error('انتظر اكتمال احتساب أيام الإجازة'); return }
+    if (previewError) { toast.error(`تعذر احتساب أيام الإجازة: ${previewError}`); return }
+    if (daysCount <= 0) { toast.error('الفترة المحددة لا تحتوي على يوم إجازة محتسب'); return }
     if (!reason.trim()) { toast.error('يرجى كتابة سبب الإجازة'); return }
     if (requiresDoc && !docFile) { toast.error('هذا النوع من الإجازة يتطلب رفع وثيقة داعمة'); return }
 
@@ -151,9 +217,11 @@ export default function LeaveRequestForm({ open, onClose, employeeId: externalEm
         if (upErr) throw upErr
         const { data: urlData } = supabase.storage.from('hr-documents').getPublicUrl(path)
         document_url = urlData.publicUrl
-      } catch (e: any) {
-        toast.error('فشل رفع الوثيقة: ' + (e.message ?? ''))
-        setUploading(false); return
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error)
+        toast.error(`فشل رفع الوثيقة: ${message}`)
+        setUploading(false)
+        return
       }
       setUploading(false)
     }
@@ -163,6 +231,7 @@ export default function LeaveRequestForm({ open, onClose, employeeId: externalEm
       leave_type_id: leaveTypeId,
       start_date:    startDate,
       end_date:      endDate,
+      // The database trigger remains authoritative and recalculates this value.
       days_count:    daysCount,
       reason:        reason.trim(),
       ...(document_url ? { document_url } : {}),
@@ -183,7 +252,7 @@ export default function LeaveRequestForm({ open, onClose, employeeId: externalEm
 
   const isSubmitting = createMutation.isPending || uploading
   const isDisabled   = !leaveTypeId || !startDate || !endDate || daysCount <= 0 || !reason.trim()
-                     || (requiresDoc && !docFile)
+                     || previewLoading || Boolean(previewError) || (requiresDoc && !docFile)
 
   return (
     <ResponsiveModal
@@ -263,7 +332,7 @@ export default function LeaveRequestForm({ open, onClose, employeeId: externalEm
           )}
 
           {/* مؤشر الرصيد */}
-          {leaveTypeId && resolvedEmpId && (
+          {leaveTypeId && resolvedEmpId && !previewLoading && !previewError && (
             <BalanceBar
               employeeId={resolvedEmpId}
               leaveTypeId={leaveTypeId}
@@ -307,11 +376,33 @@ export default function LeaveRequestForm({ open, onClose, employeeId: externalEm
           </div>
 
           {/* مؤشر عدد الأيام */}
-          {daysCount > 0 && (
+          {calendarDaysCount > 0 && (
             <div className="lf-days-badge">
               <Clock size={13} />
-              <span>مدة الإجازة:</span>
-              <strong>{fmtDays(daysCount)}</strong>
+              {previewLoading ? (
+                <strong>جارٍ احتساب أيام الإجازة...</strong>
+              ) : previewError ? (
+                <strong>تعذر احتساب الأيام</strong>
+              ) : (
+                <>
+                  <span>أيام الإجازة المحتسبة:</span>
+                  <strong>{fmtDays(daysCount)}</strong>
+                </>
+              )}
+            </div>
+          )}
+
+          {calendarDaysCount > 0 && !previewLoading && !previewError && (
+            <div className="lf-notice">
+              <Info size={13} style={{ flexShrink: 0, marginTop: 1 }} />
+              <span>يُثبت النظام العدد النهائي عند الحفظ وفق أيام العمل الفعلية وإعداد التشغيل الساري.</span>
+            </div>
+          )}
+
+          {previewError && (
+            <div className="lf-notice lf-notice--danger">
+              <AlertCircle size={13} style={{ flexShrink: 0, marginTop: 1 }} />
+              <span>{previewError}</span>
             </div>
           )}
         </div>
@@ -515,6 +606,11 @@ export default function LeaveRequestForm({ open, onClose, employeeId: externalEm
           padding: var(--space-3); border-radius: var(--radius-md);
           background: var(--bg-surface-2); border: 1px solid var(--border-primary);
           font-size: var(--text-xs); color: var(--text-muted); line-height: 1.6;
+        }
+        .lf-notice--danger {
+          color: var(--color-danger);
+          border-color: color-mix(in srgb, var(--color-danger) 30%, transparent);
+          background: color-mix(in srgb, var(--color-danger) 6%, transparent);
         }
 
         @media (max-width: 480px) {
