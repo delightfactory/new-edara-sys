@@ -37,8 +37,12 @@ export function getNextCairoDateISO(date = new Date()): string {
 export function normalizeScheduleTime(value: string | null | undefined): string | null {
   if (!value) return null
   const trimmed = value.trim()
-  const match = trimmed.match(/^(\d{2}):(\d{2})/)
-  return match ? `${match[1]}:${match[2]}` : trimmed
+
+  const compact = trimmed.match(/^([01]\d|2[0-3])([0-5]\d)$/)
+  if (compact) return `${compact[1]}:${compact[2]}`
+
+  const colon = trimmed.match(/^([01]\d|2[0-3]):([0-5]\d)(?::\d{2}(?:\.\d+)?)?$/)
+  return colon ? `${colon[1]}:${colon[2]}` : trimmed
 }
 
 export function timeToMinutes(value: string): number {
