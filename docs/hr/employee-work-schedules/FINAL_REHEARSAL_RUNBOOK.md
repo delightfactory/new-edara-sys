@@ -30,7 +30,7 @@
 
 ## 3. تطبيق الميجريشنات
 
-طبّق الملفات الـ27 بالترتيب الحرفي الموجود في `CURRENT_MIGRATION_MANIFEST.md`.
+طبّق الملفات الـ28 بالترتيب الحرفي الموجود في `CURRENT_MIGRATION_MANIFEST.md`.
 
 بعد كل مرحلة شغّل Verification المقابل قبل الانتقال للمرحلة التالية. الفشل يوقف السلسلة، ولا يتم تخطي الملف أو تعديل قاعدة الاختبار يدويًا لإجباره على النجاح.
 
@@ -41,7 +41,8 @@
 1. `20260806180000_hr_employee_work_schedules_leave_integration.sql`
 2. `20260806181000_hr_employee_work_schedules_leave_balance_settlement.sql`
 3. `20260806181500_hr_employee_work_schedules_leave_cross_year_compatibility.sql`
-4. ثم شغّل `20260806182000_hr_employee_work_schedules_leave_integration_verify.sql`
+4. `20260806181700_hr_employee_work_schedules_partial_unpaid_leave.sql`
+5. ثم شغّل `20260806182000_hr_employee_work_schedules_leave_integration_verify.sql`
 
 لا تبدأ دفعة إعدادات الشركة إذا فشل أي بند من هذه الدفعة.
 
@@ -63,6 +64,7 @@ SET SESSION edara.allow_schedule_simulation = 'disposable-only';
 6. `20260805215300_hr_employee_work_schedules_zero_day_partial_payroll_simulation.sql`
 7. `20260806183000_hr_employee_work_schedules_leave_lifecycle_simulation.sql`
 8. `20260806184000_hr_employee_work_schedules_unpaid_leave_payroll_simulation.sql`
+9. `20260806185000_hr_employee_work_schedules_partial_unpaid_leave_simulation.sql`
 
 كل ملف يجب أن يعلن النجاح قبل `ROLLBACK`، وبعده يجب ألا تبقى أي بيانات محاكاة أو تغيير في تعريف Feature Helper.
 
@@ -96,7 +98,9 @@ SET SESSION edara.allow_schedule_simulation = 'disposable-only';
 - إلغاء إجازة غير مرتبطة بمسير معتمد يحذف الأيام الآلية ويعيد الرصيد كاملًا.
 - الإلغاء يُرفض عند وجود مسير معتمد/مدفوع أو حضور فعلي تمت تسويته.
 - الحضور الكامل في يوم إجازة معتمد يعيد `used_days` ويحدث `remaining_days` مرة واحدة.
-- الإجازة بدون أجر لا تنشئ جزاءً تلقائيًا، لكنها لا تدخل كحضور مدفوع في الراتب.
+- الإجازة بدون أجر لا تنشئ جزاءً تلقائيًا، ولا تدخل كحضور مدفوع في الراتب.
+- العمل لنصف يوم أثناء إجازة بدون أجر ينتج `day_value = 0.50` وخصم نصف يوم وصفر جزاءات.
+- العمل الجزئي أثناء إجازة مدفوعة يظل يومًا مدفوعًا كاملًا وفق سياسة V1.
 - طلب الإجازة العابر لنهاية السنة يظل مقبولًا وفق سياسة النظام الحالية ويستخدم رصيد سنة البداية.
 - فشل إنشاء أي Snapshot أو تعارض يوم حضور يجعل معاملة الاعتماد كلها تتراجع، بما فيها الرصيد والحالة.
 
