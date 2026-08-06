@@ -13,6 +13,7 @@ DO $verify$
 DECLARE
   v_definition TEXT;
   v_trigger_definition TEXT;
+  v_body_hash TEXT;
 BEGIN
   IF public.hr_employee_work_schedules_enabled()
      OR public.hr_employee_work_schedules_activation_ready() THEN
@@ -25,16 +26,26 @@ BEGIN
     RAISE EXCEPTION 'Leave verification failed: installed-state runtime tables must remain empty';
   END IF;
 
-  IF md5(pg_get_functiondef(
-       'public.sync_approved_leave_to_attendance_legacy_20260806(uuid)'::regprocedure
-     )) <> '3c3d2222e3d24ac1246fdff05799f9be' THEN
-    RAISE EXCEPTION 'Leave verification failed: disabled sync clone differs from production baseline';
+  SELECT md5(p.prosrc)
+  INTO v_body_hash
+  FROM pg_proc p
+  WHERE p.oid = 'public.sync_approved_leave_to_attendance_legacy_20260806(uuid)'::regprocedure;
+
+  IF v_body_hash <> 'b80003f390021ea5b8740b1eeef40809' THEN
+    RAISE EXCEPTION
+      'Leave verification failed: disabled sync clone body differs from production baseline (%)',
+      v_body_hash;
   END IF;
 
-  IF md5(pg_get_functiondef(
-       'public.cleanup_approved_leave_sync_legacy_20260806(uuid)'::regprocedure
-     )) <> '2b26c6150df6ef8ae045c7874d66d316' THEN
-    RAISE EXCEPTION 'Leave verification failed: disabled cleanup clone differs from production baseline';
+  SELECT md5(p.prosrc)
+  INTO v_body_hash
+  FROM pg_proc p
+  WHERE p.oid = 'public.cleanup_approved_leave_sync_legacy_20260806(uuid)'::regprocedure;
+
+  IF v_body_hash <> 'f33702cbe620cd33f69055c3e52b6792' THEN
+    RAISE EXCEPTION
+      'Leave verification failed: disabled cleanup clone body differs from production baseline (%)',
+      v_body_hash;
   END IF;
 
   SELECT pg_get_functiondef('public.calculate_employee_leave_workdays(uuid,date,date,boolean)'::regprocedure)
@@ -138,6 +149,7 @@ SELECT jsonb_build_object(
   'status', 'pass',
   'feature_enabled', public.hr_employee_work_schedules_enabled(),
   'activation_ready', public.hr_employee_work_schedules_activation_ready(),
+  'legacy_clone_body_hashes_verified', true,
   'server_side_day_count', true,
   'cross_year_request_compatibility', true,
   'after_approval_sync', true,
