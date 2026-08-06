@@ -181,10 +181,12 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
     return candidates[candidates.length - 1] ?? tomorrow
   }, [activeSchedule, tomorrow])
 
+  const getPredecessor = (dateISO: string, excludedScheduleId?: string | null) => schedules
+    .filter(schedule => schedule.id !== excludedScheduleId && schedule.effective_from < dateISO)
+    .sort((a, b) => b.effective_from.localeCompare(a.effective_from))[0]
+
   const getBaselineMinutes = (dateISO: string, excludedScheduleId?: string | null): number => {
-    const predecessor = schedules
-      .filter(schedule => schedule.id !== excludedScheduleId && schedule.effective_from < dateISO)
-      .sort((a, b) => b.effective_from.localeCompare(a.effective_from))[0]
+    const predecessor = getPredecessor(dateISO, excludedScheduleId)
 
     if (predecessor) return scheduleDuration(predecessor) ?? 0
 
@@ -195,7 +197,10 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
     return Math.round((defaultsQuery.data?.work_hours_per_day ?? 0) * 60)
   }
 
-  const loadCompanyTemplateForDate = async (dateISO: string) => {
+  const loadCompanyReferenceForDate = async (
+    dateISO: string,
+    applyTemplate: boolean
+  ) => {
     const requestId = ++companyRequestRef.current
     setCompanyDateLoading(true)
 
@@ -204,12 +209,14 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
       if (requestId !== companyRequestRef.current) return
 
       setCompanyDateDefaults(version)
-      setDays(buildCompanyDays(version, employee.weekly_off_day))
+      if (applyTemplate) {
+        setDays(buildCompanyDays(version, employee.weekly_off_day))
+      }
     } catch (error) {
       if (requestId !== companyRequestRef.current) return
 
       setCompanyDateDefaults(null)
-      setDays([])
+      if (applyTemplate) setDays([])
       setErrors(current => ({
         ...current,
         effective_from: error instanceof Error
@@ -255,7 +262,7 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
       setDays(activeSchedule.days.map(toDayInput))
     } else {
       setDays([])
-      void loadCompanyTemplateForDate(minimumNewDate)
+      void loadCompanyReferenceForDate(minimumNewDate, true)
     }
   }
 
@@ -269,6 +276,10 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
     setCompanyDateDefaults(null)
     setCompanyDateLoading(false)
     setEditorOpen(true)
+
+    if (!getPredecessor(schedule.effective_from, schedule.id)) {
+      void loadCompanyReferenceForDate(schedule.effective_from, false)
+    }
   }
 
   const handleEffectiveFromChange = (dateISO: string) => {
@@ -282,7 +293,7 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
     if (!editingScheduleId && !activeSchedule && dateISO > cairoToday) {
       setDays([])
       setCompanyDateDefaults(null)
-      void loadCompanyTemplateForDate(dateISO)
+      void loadCompanyReferenceForDate(dateISO, true)
     }
   }
 
@@ -298,13 +309,11 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
       const validation = validateEmployeeWorkSchedule(input, cairoToday)
       const nextErrors = { ...validation.errors }
       const proposedMinutes = getUniformWorkingDayMinutes(days)
-      const predecessor = schedules
-        .filter(schedule => schedule.id !== editingScheduleId && schedule.effective_from < effectiveFrom)
-        .sort((a, b) => b.effective_from.localeCompare(a.effective_from))[0]
+      const predecessor = getPredecessor(effectiveFrom, editingScheduleId)
 
       if (companyDateLoading) {
         nextErrors.effective_from = 'انتظر تحميل نسخة جدول الشركة الخاصة بتاريخ البدء'
-      } else if (!editingScheduleId && !predecessor && !companyVersionCoversDate(companyDateDefaults, effectiveFrom)) {
+      } else if (!predecessor && !companyVersionCoversDate(companyDateDefaults, effectiveFrom)) {
         nextErrors.effective_from = 'تعذر تثبيت مرجع جدول الشركة الخاص بتاريخ البدء'
       }
 
