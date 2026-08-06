@@ -44,15 +44,12 @@ export async function getSettings(category?: string) {
   let query = supabase
     .from('company_settings')
     .select('*')
+    .neq('key', 'hr.employee_work_schedules_enabled')
     .order('category')
     .order('key')
 
   if (category) {
     query = query.eq('category', category)
-  }
-
-  if (category === 'hr') {
-    query = query.neq('key', 'hr.employee_work_schedules_enabled')
   }
 
   const { data, error } = await query
