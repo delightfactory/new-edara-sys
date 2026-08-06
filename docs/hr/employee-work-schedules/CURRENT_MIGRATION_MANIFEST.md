@@ -67,6 +67,8 @@
 33. `20260806191000_hr_settings_atomic_update.sql`
 34. `20260806191200_hr_settings_company_baseline_sync.sql`
 35. `20260806191300_hr_settings_company_consistency_constraint.sql`
+36. `20260806191400_hr_company_work_schedule_read_policy.sql`
+37. `20260806191500_hr_settings_current_company_version_alignment.sql`
 
 يجب إيقاف التطبيق فور فشل أي ملف. لا يتم دمج الملفات في Migration واحدة كبيرة أثناء البروفة، ولا يتم تخطي Migration فاشلة بتعديل يدوي على قاعدة الاختبار.
 
@@ -94,6 +96,7 @@
 - `20260805215100_hr_employee_work_schedules_release_safety_verify.sql`
 - `20260806182000_hr_employee_work_schedules_leave_integration_verify.sql`
 - `20260806192000_hr_employee_work_schedules_company_history_verify.sql`
+- `20260806192100_hr_settings_current_company_version_alignment_verify.sql`
 
 ## المحاكاة السلوكية المعتمدة حاليًا
 
@@ -116,6 +119,7 @@ SET SESSION edara.allow_schedule_simulation = 'disposable-only';
 9. `20260806185000_hr_employee_work_schedules_partial_unpaid_leave_simulation.sql`
 10. `20260806193000_hr_employee_work_schedules_company_history_simulation.sql`
 11. `20260806193100_hr_settings_company_baseline_sync_simulation.sql`
+12. `20260806193200_hr_settings_current_company_version_alignment_simulation.sql`
 
 ## قواعد دفعة إعدادات الشركة
 
@@ -130,9 +134,12 @@ SET SESSION edara.allow_schedule_simulation = 'disposable-only';
 - سجل الشركة لا يقبل حذفًا، والنسخ المنتهية غير قابلة للتعديل.
 - قبل بدء أي تجهيز مؤرخ، تغيير فوري صحيح في الإعدادات القديمة يزامن الـBaseline في نفس المعاملة.
 - بعد وجود نسخة شركة مستقبلية أو جدول موظف أو Snapshot، لا تُعدل حقول الوقت القديمة دلاليًا؛ يستخدم مسار النسخة المستقبلية.
-- تحديث إعدادات HR يتم ذريًا عبر `update_hr_settings_atomic`; العميل القديم يرجع مؤقتًا للمسار السابق فقط إذا كانت الـRPC غير مركبة.
+- تحديث إعدادات HR يتم ذريًا عبر `update_hr_settings_atomic`.
+- العميل القديم يرجع للمسار السابق فقط إذا كان مفتاح تركيب M1 غير موجود أصلًا؛ لا رجوع غير ذري بعد تركيب البنية.
 - Constraint Trigger مؤجل يمنع أي تحديث مباشر يترك `company_settings` والـBaseline غير متطابقين.
+- إذا أصبح تاريخ نسخة مستقبلية نافذًا قبل فتح الميزة، تُستخدم `align_legacy_company_settings_to_current_version()` لمصالحة الإعدادات القديمة مع نسخة يوم التنفيذ دون تعديل التاريخ.
 - `hr_company_work_schedule_activation_consistent()` تشخيص فقط؛ لا يفتح بوابة التفعيل ولا يغير readiness.
+- سياسة القراءة تمنح صاحب `settings.update` رؤية النسخ التي يستطيع إدارتها.
 
 ## وضع الفحص النهائي
 
