@@ -3,15 +3,21 @@ import type { HRDayOfWeek } from '@/lib/types/hr'
 import {
   HR_WORK_WEEK_DAYS,
   type HRCompanyWorkScheduleDefaults,
+  type HRCompanyWorkScheduleVersion,
+  type HRCompanyWorkScheduleVersionInput,
   type HREmployeeWorkSchedule,
   type HREmployeeWorkScheduleDay,
   type HREmployeeWorkScheduleInput,
+  type HRSaveCompanyWorkScheduleResult,
   type HRSaveWorkScheduleResult,
+  type HRUpdateFutureCompanyWorkScheduleResult,
   type HRUpdateFutureWorkScheduleResult,
   type HRWorkScheduleFeatureState,
 } from '@/lib/types/hrWorkSchedules'
 import {
+  getCairoDateISO,
   normalizeScheduleTime,
+  timeToMinutes,
   validateEmployeeWorkSchedule,
   validateWorkScheduleDays,
 } from '@/lib/validations/hrWorkSchedules'
@@ -26,6 +32,8 @@ interface WorkScheduleAdminContextResponse {
     weekly_off_day: HRDayOfWeek
   }
 }
+
+const TIME_PATTERN = /^(?:[01]\d|2[0-3]):[0-5]\d$/
 
 function isMissingContextRpc(error: { code?: string; message?: string } | null): boolean {
   if (!error) return false
@@ -86,6 +94,61 @@ function mapSchedule(row: Record<string, unknown>): HREmployeeWorkSchedule {
   }
 }
 
+function mapCompanySchedule(row: Record<string, unknown>): HRCompanyWorkScheduleVersion {
+  const startTime = normalizeScheduleTime(row.start_time as string | null | undefined)
+  const endTime = normalizeScheduleTime(row.end_time as string | null | undefined)
+
+  if (!startTime || !endTime) {
+    throw new Error('نسخة جدول الشركة لا تحتوي على وقت بداية ونهاية صالحين')
+  }
+
+  const scheduledMinutes = Number(row.scheduled_minutes ?? 0)
+  const workHours = Number(row.work_hours_per_day ?? scheduledMinutes / 60)
+
+  if (!Number.isFinite(scheduledMinutes) || scheduledMinutes <= 0 || !Number.isFinite(workHours)) {
+    throw new Error('مدة نسخة جدول الشركة غير صالحة')
+  }
+
+  return {
+    id: row.id as string,
+    effective_from: row.effective_from as string,
+    effective_to: (row.effective_to as string | null) ?? null,
+    status: row.status as HRCompanyWorkScheduleVersion['status'],
+    start_time: startTime,
+    end_time: endTime,
+    work_hours_per_day: workHours,
+    scheduled_minutes: scheduledMinutes,
+    weekly_off_day: row.weekly_off_day as HRDayOfWeek,
+    notes: (row.notes as string | null) ?? null,
+    is_system_baseline: Boolean(row.is_system_baseline),
+  }
+}
+
+function validateCompanyScheduleInput(input: HRCompanyWorkScheduleVersionInput): void {
+  const startTime = normalizeScheduleTime(input.start_time)
+  const endTime = normalizeScheduleTime(input.end_time)
+
+  if (!input.effective_from || input.effective_from <= getCairoDateISO()) {
+    throw new Error('تاريخ بدء جدول الشركة يجب أن يكون بعد اليوم بتوقيت القاهرة')
+  }
+
+  if (!startTime || !endTime || !TIME_PATTERN.test(startTime) || !TIME_PATTERN.test(endTime)) {
+    throw new Error('مواعيد الشركة يجب أن تكون بصيغة HH:MM')
+  }
+
+  if (timeToMinutes(endTime) <= timeToMinutes(startTime)) {
+    throw new Error('وقت نهاية دوام الشركة يجب أن يكون بعد وقت البداية')
+  }
+
+  if (!HR_WORK_WEEK_DAYS.includes(input.weekly_off_day)) {
+    throw new Error('يوم الإجازة الأسبوعية للشركة غير صالح')
+  }
+
+  if ((input.notes?.trim().length ?? 0) > 500) {
+    throw new Error('ملاحظات جدول الشركة لا يمكن أن تتجاوز 500 حرف')
+  }
+}
+
 export async function getWorkScheduleFeatureState(): Promise<HRWorkScheduleFeatureState> {
   const context = await getWorkScheduleAdminContext()
   if (!context) return { installed: false, enabled: false }
@@ -121,6 +184,62 @@ export async function getCompanyWorkScheduleDefaults(): Promise<HRCompanyWorkSch
     end_time: endTime,
     work_hours_per_day: workHours,
     weekly_off_day: weeklyOff,
+  }
+}
+
+export async function getCompanyWorkScheduleForDate(
+  targetDate: string
+): Promise<HRCompanyWorkScheduleVersion> {
+  const { data, error } = await supabase.rpc('get_company_work_schedule_for_date', {
+    p_target_date: targetDate,
+  })
+
+  if (error) throw error
+  return mapCompanySchedule(data as unknown as Record<string, unknown>)
+}
+
+export async function saveCompanyWorkScheduleVersion(
+  input: HRCompanyWorkScheduleVersionInput
+): Promise<HRSaveCompanyWorkScheduleResult> {
+  validateCompanyScheduleInput(input)
+
+  const { data, error } = await supabase.rpc('save_company_work_schedule_version', {
+    p_effective_from: input.effective_from,
+    p_start_time: normalizeScheduleTime(input.start_time),
+    p_end_time: normalizeScheduleTime(input.end_time),
+    p_weekly_off_day: input.weekly_off_day,
+    p_notes: input.notes?.trim() || null,
+  })
+
+  if (error) throw error
+
+  const result = data as unknown as HRSaveCompanyWorkScheduleResult
+  return {
+    ...result,
+    schedule: mapCompanySchedule(result.schedule as unknown as Record<string, unknown>),
+  }
+}
+
+export async function updateFutureCompanyWorkScheduleVersion(
+  scheduleId: string,
+  input: Omit<HRCompanyWorkScheduleVersionInput, 'effective_from'> & { effective_from: string }
+): Promise<HRUpdateFutureCompanyWorkScheduleResult> {
+  validateCompanyScheduleInput(input)
+
+  const { data, error } = await supabase.rpc('update_future_company_work_schedule_version', {
+    p_schedule_id: scheduleId,
+    p_start_time: normalizeScheduleTime(input.start_time),
+    p_end_time: normalizeScheduleTime(input.end_time),
+    p_weekly_off_day: input.weekly_off_day,
+    p_notes: input.notes?.trim() || null,
+  })
+
+  if (error) throw error
+
+  const result = data as unknown as HRUpdateFutureCompanyWorkScheduleResult
+  return {
+    ...result,
+    schedule: mapCompanySchedule(result.schedule as unknown as Record<string, unknown>),
   }
 }
 
