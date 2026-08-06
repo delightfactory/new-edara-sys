@@ -116,9 +116,11 @@ describe('employee work schedule validation', () => {
     expect(addMinutesToTime('20:00', 540)).toBeNull()
   })
 
-  it('normalizes database time values without seconds for the editor', () => {
+  it('normalizes database and compact time values for the editor', () => {
     expect(normalizeScheduleTime('15:00:00')).toBe('15:00')
     expect(normalizeScheduleTime('09:30')).toBe('09:30')
+    expect(normalizeScheduleTime('1100')).toBe('11:00')
+    expect(normalizeScheduleTime('1930')).toBe('19:30')
     expect(normalizeScheduleTime(null)).toBeNull()
   })
 })
