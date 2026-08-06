@@ -111,7 +111,7 @@ BEGIN
   SET value = CASE s.key
         WHEN 'hr.work_start_time' THEN to_char(v_current.start_time, 'HH24:MI')
         WHEN 'hr.work_end_time' THEN to_char(v_current.end_time, 'HH24:MI')
-        WHEN 'hr.work_hours_per_day' THEN (v_current.scheduled_minutes / 60.0)::TEXT
+        WHEN 'hr.work_hours_per_day' THEN trim_scale(v_current.scheduled_minutes::NUMERIC / 60)::TEXT
         WHEN 'hr.weekly_off_day' THEN v_current.weekly_off_day::TEXT
       END,
       updated_by = v_actor,
@@ -182,6 +182,7 @@ BEGIN
   IF v_definition NOT ILIKE '%settings.update%'
      OR v_definition NOT ILIKE '%effective_range @> v_today%'
      OR v_definition NOT ILIKE '%FOR UPDATE%'
+     OR v_definition NOT ILIKE '%trim_scale%'
      OR v_definition NOT ILIKE '%legacy_company_settings_aligned_to_version%'
      OR v_definition NOT ILIKE '%hr_company_work_schedule_activation_consistent%' THEN
     RAISE EXCEPTION 'Current-version alignment assertion failed: RPC contract is incomplete';
