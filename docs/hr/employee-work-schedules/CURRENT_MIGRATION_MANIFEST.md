@@ -56,6 +56,7 @@
 25. `20260806180000_hr_employee_work_schedules_leave_integration.sql`
 26. `20260806181000_hr_employee_work_schedules_leave_balance_settlement.sql`
 27. `20260806181500_hr_employee_work_schedules_leave_cross_year_compatibility.sql`
+28. `20260806181700_hr_employee_work_schedules_partial_unpaid_leave.sql`
 
 يجب إيقاف التطبيق فور فشل أي ملف. لا يتم دمج الملفات في Migration واحدة كبيرة أثناء البروفة، ولا يتم تخطي Migration فاشلة بتعديل يدوي على قاعدة الاختبار.
 
@@ -101,6 +102,7 @@ SET SESSION edara.allow_schedule_simulation = 'disposable-only';
 6. `20260805215300_hr_employee_work_schedules_zero_day_partial_payroll_simulation.sql`
 7. `20260806183000_hr_employee_work_schedules_leave_lifecycle_simulation.sql`
 8. `20260806184000_hr_employee_work_schedules_unpaid_leave_payroll_simulation.sql`
+9. `20260806185000_hr_employee_work_schedules_partial_unpaid_leave_simulation.sql`
 
 ## وضع الفحص النهائي
 
@@ -139,7 +141,10 @@ SET SESSION edara.allow_schedule_simulation = 'disposable-only';
 - فترة لا تحتوي يوم عمل مقرر لا تُمنح يوم استحقاق وهميًا.
 - أيام الإجازة تُحتسب خادميًا من أيام العمل المقررة فقط عند التفعيل.
 - اعتماد الإجازة النهائي يزامن الحضور بعد حفظ الحالة، وبـSnapshot كاملة.
-- الإجازة المدفوعة تدخل كاستحقاق مدفوع؛ الإجازة بدون أجر لا تدخل كحضور مدفوع ولا تنشئ جزاءً تلقائيًا.
+- الإجازة المدفوعة تدخل كاستحقاق مدفوع.
+- الإجازة بدون أجر لا تدخل كحضور مدفوع ولا تنشئ جزاءً تلقائيًا.
+- العمل الجزئي أثناء إجازة بدون أجر يُدفع بنسبة العمل الفعلية، والباقي إجازة معتمدة بلا جزاء.
+- العمل الجزئي أثناء إجازة مدفوعة يظل يوم إجازة مدفوعًا وفق سياسة V1.
 - طلب الإجازة العابر لنهاية السنة يظل متوافقًا مع سياسة النظام الحالية ويُحاسب على رصيد سنة البداية.
 - التشغيل يظل مطابقًا للنظام القديم والمفتاح مغلق.
 
