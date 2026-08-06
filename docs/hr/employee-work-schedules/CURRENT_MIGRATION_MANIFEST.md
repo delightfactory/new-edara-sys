@@ -69,6 +69,9 @@
 35. `20260806191300_hr_settings_company_consistency_constraint.sql`
 36. `20260806191400_hr_company_work_schedule_read_policy.sql`
 37. `20260806191500_hr_settings_current_company_version_alignment.sql`
+38. `20260806191600_hr_settings_atomic_concurrency_guard.sql`
+39. `20260806191700_hr_settings_alignment_lock_order.sql`
+40. `20260806191800_hr_settings_internal_key_guard.sql`
 
 يجب إيقاف التطبيق فور فشل أي ملف. لا يتم دمج الملفات في Migration واحدة كبيرة أثناء البروفة، ولا يتم تخطي Migration فاشلة بتعديل يدوي على قاعدة الاختبار.
 
@@ -97,6 +100,9 @@
 - `20260806182000_hr_employee_work_schedules_leave_integration_verify.sql`
 - `20260806192000_hr_employee_work_schedules_company_history_verify.sql`
 - `20260806192100_hr_settings_current_company_version_alignment_verify.sql`
+- `20260806192200_hr_settings_atomic_concurrency_verify.sql`
+- `20260806192300_hr_settings_alignment_lock_order_verify.sql`
+- `20260806192400_hr_settings_internal_key_guard_verify.sql`
 
 ## المحاكاة السلوكية المعتمدة حاليًا
 
@@ -137,7 +143,10 @@ SET SESSION edara.allow_schedule_simulation = 'disposable-only';
 - تحديث إعدادات HR يتم ذريًا عبر `update_hr_settings_atomic`.
 - العميل القديم يرجع للمسار السابق فقط إذا كان مفتاح تركيب M1 غير موجود أصلًا؛ لا رجوع غير ذري بعد تركيب البنية.
 - Constraint Trigger مؤجل يمنع أي تحديث مباشر يترك `company_settings` والـBaseline غير متطابقين.
+- كتابة إعدادات HR تتسلسل بقفل معاملة مشترك قبل قراءة الحالة، وأي تحديث مباشر يستخدم القفل نفسه.
+- المسارات التي تجمع إعدادات HR وسجل الشركة تستخدم ترتيب قفل ثابت: HR أولًا ثم سجل الشركة.
 - إذا أصبح تاريخ نسخة مستقبلية نافذًا قبل فتح الميزة، تُستخدم `align_legacy_company_settings_to_current_version()` لمصالحة الإعدادات القديمة مع نسخة يوم التنفيذ دون تعديل التاريخ.
+- مفتاح `hr.employee_work_schedules_enabled` داخلي، ولا يظهر أو يُحفظ من شاشة إعدادات HR العامة.
 - `hr_company_work_schedule_activation_consistent()` تشخيص فقط؛ لا يفتح بوابة التفعيل ولا يغير readiness.
 - سياسة القراءة تمنح صاحب `settings.update` رؤية النسخ التي يستطيع إدارتها.
 
@@ -192,11 +201,13 @@ SET SESSION edara.allow_schedule_simulation = 'disposable-only';
 2. اختبارات `hrWorkSchedules.test.ts`، بما فيها تطبيع `1100`.
 3. اختبارات شاشة الإجازات والـRPC preview.
 4. اختبارات خدمات ومكوّن سجل جدول الشركة.
-5. الاختبارات الكاملة.
-6. lint.
-7. مراجعة فرق الفرع كاملًا.
-8. التأكد أن `EmployeeProfileLegacy.tsx` مطابق لـ`main`.
-9. التأكد من عدم إنشاء Vercel Deployment.
-10. بعد نجاح كل ما سبق فقط، يُراجع قرار تركيب مكوّن سجل الشركة في صفحة الإعدادات.
+5. اختبار مسار إخفاء مفتاح التفعيل من إعدادات HR العامة.
+6. اختبار تزامن الحفظ من جلستين PostgreSQL مستقلتين.
+7. الاختبارات الكاملة.
+8. lint.
+9. مراجعة فرق الفرع كاملًا.
+10. التأكد أن `EmployeeProfileLegacy.tsx` مطابق لـ`main`.
+11. التأكد من عدم إنشاء Vercel Deployment.
+12. بعد نجاح كل ما سبق فقط، يُراجع قرار تركيب مكوّن سجل الشركة في صفحة الإعدادات.
 
 أي Preview أو تطبيق إنتاجي أو فتح Feature Flag يحتاج قرارًا مستقلًا بعد نجاح جميع الدفعات والفحوص.
