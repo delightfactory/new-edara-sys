@@ -2,8 +2,8 @@
 -- Employee Work Schedules — schedule-aware leave integration verification
 --
 -- Read-only structural verification. Run after migrations 20260806180000,
--- 20260806181000, and 20260806181500. It does not enable the feature or modify
--- business data.
+-- 20260806181000, 20260806181500, and 20260806181700. It does not enable the
+-- feature or modify business data.
 -- =============================================================================
 
 BEGIN TRANSACTION READ ONLY;
@@ -104,6 +104,16 @@ BEGIN
     RAISE EXCEPTION 'Leave verification failed: full-day settlement does not align used/remaining balances';
   END IF;
 
+  SELECT pg_get_functiondef('public.normalize_attendance_day_schedule_metrics(uuid)'::regprocedure)
+  INTO v_definition;
+  IF v_definition NOT ILIKE '%COALESCE(lt.is_paid, true) = false%'
+     OR v_definition NOT ILIKE '%COALESCE(lt.affects_salary, false) = true%'
+     OR v_definition NOT ILIKE '%COALESCE(effective_hours, 0) / (scheduled_minutes / 60.0)%'
+     OR v_definition NOT ILIKE '%status = ''on_leave''%'
+     OR v_definition NOT ILIKE '%status = ''present''%' THEN
+    RAISE EXCEPTION 'Leave verification failed: partial paid/unpaid attendance policy is incomplete';
+  END IF;
+
   SELECT pg_get_functiondef('public.calculate_employee_payroll_scheduled(uuid,uuid)'::regprocedure)
   INTO v_definition;
   IF v_definition NOT ILIKE '%LEFT JOIN hr_leave_types%'
@@ -116,7 +126,8 @@ BEGIN
   IF has_function_privilege('anon', 'public.preview_employee_leave_workday_count(uuid,date,date)', 'EXECUTE')
      OR has_function_privilege('authenticated', 'public.calculate_employee_leave_workdays(uuid,date,date,boolean)', 'EXECUTE')
      OR has_function_privilege('service_role', 'public.sync_approved_leave_to_attendance_scheduled(uuid)', 'EXECUTE')
-     OR has_function_privilege('authenticated', 'public.cleanup_approved_leave_sync_scheduled(uuid)', 'EXECUTE') THEN
+     OR has_function_privilege('authenticated', 'public.cleanup_approved_leave_sync_scheduled(uuid)', 'EXECUTE')
+     OR has_function_privilege('authenticated', 'public.normalize_attendance_day_schedule_metrics(uuid)', 'EXECUTE') THEN
     RAISE EXCEPTION 'Leave verification failed: internal helpers are externally exposed';
   END IF;
 END;
@@ -132,7 +143,8 @@ SELECT jsonb_build_object(
   'after_approval_sync', true,
   'complete_schedule_snapshot', true,
   'balance_consistency', true,
-  'unpaid_leave_payroll_separation', true
+  'unpaid_leave_payroll_separation', true,
+  'partial_unpaid_work_proration', true
 ) AS result;
 
 ROLLBACK;
