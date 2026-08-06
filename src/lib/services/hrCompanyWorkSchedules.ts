@@ -3,6 +3,15 @@ import type { HRDayOfWeek } from '@/lib/types/hr'
 import type { HRCompanyWorkScheduleVersion } from '@/lib/types/hrWorkSchedules'
 import { normalizeScheduleTime } from '@/lib/validations/hrWorkSchedules'
 
+export interface HRCompanySettingsAlignmentResult {
+  success: boolean
+  company_schedule_id: string
+  effective_from: string
+  settings: Record<string, string>
+  company_history_consistent: boolean
+  feature_enabled: boolean
+}
+
 function mapCompanySchedule(row: Record<string, unknown>): HRCompanyWorkScheduleVersion {
   const startTime = normalizeScheduleTime(row.start_time as string | null | undefined)
   const endTime = normalizeScheduleTime(row.end_time as string | null | undefined)
@@ -46,4 +55,10 @@ export async function getCompanyWorkScheduleVersions(): Promise<HRCompanyWorkSch
 
   if (error) throw error
   return (data ?? []).map(row => mapCompanySchedule(row as unknown as Record<string, unknown>))
+}
+
+export async function alignLegacyCompanySettingsToCurrentVersion(): Promise<HRCompanySettingsAlignmentResult> {
+  const { data, error } = await supabase.rpc('align_legacy_company_settings_to_current_version')
+  if (error) throw error
+  return data as unknown as HRCompanySettingsAlignmentResult
 }
