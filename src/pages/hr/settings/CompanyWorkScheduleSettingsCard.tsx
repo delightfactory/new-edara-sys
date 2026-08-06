@@ -9,11 +9,13 @@ import Select from '@/components/ui/Select'
 import Spinner from '@/components/ui/Spinner'
 import { useAuthStore } from '@/stores/auth-store'
 import {
-  getWorkScheduleFeatureState,
   saveCompanyWorkScheduleVersion,
   updateFutureCompanyWorkScheduleVersion,
 } from '@/lib/services/hrWorkSchedules'
-import { getCompanyWorkScheduleVersions } from '@/lib/services/hrCompanyWorkSchedules'
+import {
+  getCompanyWorkScheduleFeatureState,
+  getCompanyWorkScheduleVersions,
+} from '@/lib/services/hrCompanyWorkSchedules'
 import {
   HR_WORK_WEEK_DAY_LABELS,
   type HRCompanyWorkScheduleVersion,
@@ -105,7 +107,7 @@ export default function CompanyWorkScheduleSettingsCard() {
 
   const featureQuery = useQuery({
     queryKey: queryKeys.feature,
-    queryFn: getWorkScheduleFeatureState,
+    queryFn: getCompanyWorkScheduleFeatureState,
     staleTime: 60_000,
   })
 
