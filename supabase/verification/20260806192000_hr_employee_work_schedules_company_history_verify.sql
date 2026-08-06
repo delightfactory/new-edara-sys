@@ -1,7 +1,7 @@
 -- =============================================================================
 -- Employee Work Schedules — company history and atomic settings verification
 --
--- Read-only. Run after migrations 20260806190000 through 20260806191000.
+-- Read-only. Run after migrations 20260806190000 through 20260806191300.
 -- =============================================================================
 
 BEGIN TRANSACTION READ ONLY;
@@ -10,6 +10,7 @@ SET LOCAL statement_timeout = '120s';
 DO $verify$
 DECLARE
   v_definition TEXT;
+  v_trigger_definition TEXT;
   v_baseline public.hr_company_work_schedules%ROWTYPE;
   v_valid JSONB;
   v_start_text TEXT;
@@ -156,14 +157,37 @@ BEGIN
     RAISE EXCEPTION 'Company-history verify failed: prepared-fact safety guard is incomplete';
   END IF;
 
+  SELECT pg_get_functiondef('public.guard_hr_company_work_schedule_mutation()'::regprocedure)
+  INTO v_definition;
+  IF v_definition NOT ILIKE '%v_safe_baseline_correction%'
+     OR v_definition NOT ILIKE '%NEW.retired_by IS NULL%'
+     OR v_definition NOT ILIKE '%count(*) FROM public.hr_company_work_schedules%'
+     OR v_definition NOT ILIKE '%NOT EXISTS (SELECT 1 FROM public.hr_employee_work_schedules)%' THEN
+    RAISE EXCEPTION 'Company-history verify failed: lifecycle/baseline mutation guard is incomplete';
+  END IF;
+
   SELECT pg_get_functiondef('public.update_hr_settings_atomic(jsonb)'::regprocedure)
   INTO v_definition;
   IF v_definition NOT ILIKE '%settings.update%'
      OR v_definition NOT ILIKE '%FOR UPDATE%'
      OR v_definition NOT ILIKE '%validate_hr_company_work_schedule_values%'
      OR v_definition NOT ILIKE '%hr_settings_updated_atomic%'
-     OR v_definition NOT ILIKE '%company_history_consistent%' THEN
-    RAISE EXCEPTION 'Company-history verify failed: atomic HR settings RPC is incomplete';
+     OR v_definition NOT ILIKE '%company_baseline_synchronized%'
+     OR v_definition NOT ILIKE '%UPDATE public.hr_company_work_schedules%' THEN
+    RAISE EXCEPTION 'Company-history verify failed: atomic HR settings/baseline sync is incomplete';
+  END IF;
+
+  SELECT pg_get_triggerdef(t.oid, true)
+  INTO v_trigger_definition
+  FROM pg_trigger t
+  WHERE t.tgrelid = 'public.company_settings'::regclass
+    AND t.tgname = 'trg_company_settings_schedule_consistency_deferred'
+    AND NOT t.tgisinternal;
+
+  IF v_trigger_definition IS NULL
+     OR v_trigger_definition NOT ILIKE '%DEFERRABLE INITIALLY DEFERRED%'
+     OR v_trigger_definition NOT ILIKE '%enforce_company_schedule_settings_consistency%' THEN
+    RAISE EXCEPTION 'Company-history verify failed: deferred direct-write protection is incomplete';
   END IF;
 
   IF NOT EXISTS (
@@ -214,6 +238,11 @@ BEGIN
        'authenticated',
        'public.assert_company_work_schedule_change_safe(date,date,integer,uuid)',
        'EXECUTE'
+     )
+     OR has_function_privilege(
+       'authenticated',
+       'public.enforce_company_schedule_settings_consistency()',
+       'EXECUTE'
      ) THEN
     RAISE EXCEPTION 'Company-history verify failed: function grants are incorrect';
   END IF;
@@ -231,6 +260,8 @@ SELECT jsonb_build_object(
   'compact_time_normalized', true,
   'hardcoded_480_removed', true,
   'atomic_hr_settings', true,
+  'baseline_sync_guarded', true,
+  'direct_write_constraint_deferred', true,
   'runtime_employee_data_changed', false
 ) AS result;
 
