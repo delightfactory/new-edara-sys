@@ -31,7 +31,7 @@
 
 ## 3. تطبيق الميجريشنات
 
-طبّق الملفات الـ37 بالترتيب الحرفي الموجود في `CURRENT_MIGRATION_MANIFEST.md`.
+طبّق الملفات الـ40 بالترتيب الحرفي الموجود في `CURRENT_MIGRATION_MANIFEST.md`.
 
 بعد كل مرحلة شغّل Verification المقابل قبل الانتقال للمرحلة التالية. الفشل يوقف السلسلة، ولا يتم تخطي الملف أو تعديل قاعدة الاختبار يدويًا لإجباره على النجاح.
 
@@ -58,8 +58,14 @@
 7. `20260806191300_hr_settings_company_consistency_constraint.sql`
 8. `20260806191400_hr_company_work_schedule_read_policy.sql`
 9. `20260806191500_hr_settings_current_company_version_alignment.sql`
-10. شغّل `20260806192000_hr_employee_work_schedules_company_history_verify.sql`
-11. شغّل `20260806192100_hr_settings_current_company_version_alignment_verify.sql`
+10. `20260806191600_hr_settings_atomic_concurrency_guard.sql`
+11. `20260806191700_hr_settings_alignment_lock_order.sql`
+12. `20260806191800_hr_settings_internal_key_guard.sql`
+13. شغّل `20260806192000_hr_employee_work_schedules_company_history_verify.sql`
+14. شغّل `20260806192100_hr_settings_current_company_version_alignment_verify.sql`
+15. شغّل `20260806192200_hr_settings_atomic_concurrency_verify.sql`
+16. شغّل `20260806192300_hr_settings_alignment_lock_order_verify.sql`
+17. شغّل `20260806192400_hr_settings_internal_key_guard_verify.sql`
 
 لا تُركب واجهة سجل الشركة في صفحة الإعدادات أثناء هذه الخطوة. المكوّن موجود للمراجعة الساكنة فقط حتى تنجح البروفات وفحوص TypeScript.
 
@@ -87,6 +93,16 @@ SET SESSION edara.allow_schedule_simulation = 'disposable-only';
 12. `20260806193200_hr_settings_current_company_version_alignment_simulation.sql`
 
 كل ملف يجب أن يعلن النجاح قبل `ROLLBACK`، وبعده يجب ألا تبقى أي بيانات محاكاة أو تغيير في تعريف Feature Helper.
+
+### اختبار التزامن متعدد الجلسات
+
+بعد نجاح الملفات السابقة، افتح جلستين مستقلتين على قاعدة Disposable:
+
+1. الجلسة الأولى تبدأ معاملة وتستدعي `update_hr_settings_atomic` ثم تحتفظ بالمعاملة مفتوحة مؤقتًا.
+2. الجلسة الثانية تستدعي RPC نفسها بقيم مختلفة وتجب أن تنتظر قفل `hr_settings_atomic`.
+3. بعد إنهاء الأولى، يجب أن تعيد الثانية قراءة الحالة بعد القفل، لا أن تطبق Bundle مشتقة من قيم قديمة.
+4. كرر السيناريو بين `update_hr_settings_atomic` و`align_legacy_company_settings_to_current_version` لإثبات عدم وجود Deadlock وترتيب القفل HR ثم سجل الشركة.
+5. تُلغى المعاملات ويُثبت تطابق العدادات مع Baseline.
 
 ## 5. سيناريوهات الجداول والحضور الملزمة
 
@@ -140,6 +156,9 @@ SET SESSION edara.allow_schedule_simulation = 'disposable-only';
 - بعد بدء التجهيز المؤرخ، يُرفض التغيير الدلالي في الحقول القديمة ويستخدم مسار النسخة المستقبلية.
 - تحديث مباشر لجدول `company_settings` يفشل عند `SET CONSTRAINTS ... IMMEDIATE` إذا ترك الـBaseline غير متطابق.
 - إذا أصبحت نسخة مستقبلية نافذة قبل فتح الميزة، تُصالح الإعدادات القديمة مع نسخة يوم التنفيذ بواسطة RPC مخصصة، ويُسجل Audit.
+- عمليتا الحفظ المتزامنتان تتسلسلان قبل قراءة الحالة؛ لا يُبنى Update على Bundle قديمة.
+- المصالحة والتحديث الذري يستخدمان ترتيب قفل واحدًا ولا يدخلان Deadlock.
+- مفتاح التفعيل لا يظهر في شاشة HR العامة، وترفضه الـRPC العامة حتى لو أرسله عميل مباشر.
 - كل نسخة منتهية غير قابلة للتعديل، والحذف ممنوع.
 - `hr_company_work_schedule_activation_consistent()` يظل تشخيصًا فقط؛ readiness تبقى `false`.
 - صاحب `settings.update` يستطيع قراءة النسخ التي يسمح له النظام بإدارتها.
@@ -179,12 +198,13 @@ SET SESSION edara.allow_schedule_simulation = 'disposable-only';
 2. اختبارات جداول العمل وتطبيع الوقت المضغوط.
 3. اختبار شاشة طلب الإجازة ومعاينة `preview_employee_leave_workday_count`.
 4. اختبارات خدمات جدول الشركة والمكوّن المستقل.
-5. الاختبارات الكاملة.
-6. lint.
-7. مراجعة فرق الفرع كاملًا.
-8. تأكيد تطابق `EmployeeProfileLegacy.tsx` مع `main`.
-9. تأكيد عدم إنشاء Vercel Deployment.
-10. مراجعة مستقلة لقرار تركيب `CompanyWorkScheduleSettingsCard` داخل صفحة الإعدادات.
+5. اختبار إخفاء مفتاح التفعيل ورفض إرساله من خدمة الإعدادات العامة.
+6. الاختبارات الكاملة.
+7. lint.
+8. مراجعة فرق الفرع كاملًا.
+9. تأكيد تطابق `EmployeeProfileLegacy.tsx` مع `main`.
+10. تأكيد عدم إنشاء Vercel Deployment.
+11. مراجعة مستقلة لقرار تركيب `CompanyWorkScheduleSettingsCard` داخل صفحة الإعدادات.
 
 لا يتم تشغيل Vercel Build أو Preview ضمن هذه المرحلة.
 
