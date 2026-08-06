@@ -20,14 +20,17 @@ function isMissingRpc(
 }
 
 async function isWorkScheduleSchemaInstalled(): Promise<boolean> {
-  const { data, error } = await supabase.rpc('get_employee_work_schedule_admin_context')
+  // company_settings is part of the legacy schema and is not affected by a
+  // PostgREST cache delay for newly created RPCs. M1 creates this private key;
+  // its presence is therefore a stable installation marker for settings users.
+  const { data, error } = await supabase
+    .from('company_settings')
+    .select('key')
+    .eq('key', 'hr.employee_work_schedules_enabled')
+    .maybeSingle()
 
-  if (error) {
-    if (isMissingRpc(error, 'get_employee_work_schedule_admin_context')) return false
-    throw error
-  }
-
-  return Boolean((data as { installed?: boolean } | null)?.installed)
+  if (error) throw error
+  return data?.key === 'hr.employee_work_schedules_enabled'
 }
 
 /**
@@ -69,9 +72,8 @@ export async function updateSettings(updates: { key: string; value: string }[]) 
     if (!error) return
     if (!isMissingRpc(error, 'update_hr_settings_atomic')) throw error
 
-    // A missing RPC is a legitimate compatibility case only before the schedule
-    // schema exists. After installation it normally means PostgREST cache lag or
-    // an incomplete migration, so falling back would destroy atomicity.
+    // A missing RPC is a legitimate compatibility case only before M1 exists.
+    // Once the persistent feature key exists, fallback would destroy atomicity.
     if (await isWorkScheduleSchemaInstalled()) {
       throw new Error('الحفظ الذري لإعدادات HR غير متاح رغم تركيب جداول العمل؛ أعد تحميل مخطط API ولا تستخدم الحفظ القديم')
     }
