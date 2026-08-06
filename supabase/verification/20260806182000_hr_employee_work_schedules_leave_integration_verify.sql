@@ -1,8 +1,9 @@
 -- =============================================================================
 -- Employee Work Schedules — schedule-aware leave integration verification
 --
--- Read-only structural verification. Run after migrations 20260806180000 and
--- 20260806181000. It does not enable the feature or modify business data.
+-- Read-only structural verification. Run after migrations 20260806180000,
+-- 20260806181000, and 20260806181500. It does not enable the feature or modify
+-- business data.
 -- =============================================================================
 
 BEGIN TRANSACTION READ ONLY;
@@ -40,9 +41,10 @@ BEGIN
   INTO v_definition;
   IF v_definition NOT ILIKE '%resolve_employee_work_schedule_core%'
      OR v_definition NOT ILIKE '%day_kind = ''work_day''%'
-     OR v_definition NOT ILIKE '%cannot cross calendar years%'
+     OR v_definition ILIKE '%cannot cross calendar years%'
+     OR v_definition NOT ILIKE '%hire date%'
      OR v_definition NOT ILIKE '%termination date%' THEN
-    RAISE EXCEPTION 'Leave verification failed: server-side workday calculator is incomplete';
+    RAISE EXCEPTION 'Leave verification failed: compatible server-side workday calculator is incomplete';
   END IF;
 
   SELECT pg_get_functiondef('public.handle_leave_submission()'::regprocedure)
@@ -126,6 +128,7 @@ SELECT jsonb_build_object(
   'feature_enabled', public.hr_employee_work_schedules_enabled(),
   'activation_ready', public.hr_employee_work_schedules_activation_ready(),
   'server_side_day_count', true,
+  'cross_year_request_compatibility', true,
   'after_approval_sync', true,
   'complete_schedule_snapshot', true,
   'balance_consistency', true,
