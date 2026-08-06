@@ -1,6 +1,7 @@
 import type { HRDayOfWeek } from '@/lib/types/hr'
 
 export type HRWorkScheduleStatus = 'draft' | 'active' | 'retired'
+export type HRCompanyWorkScheduleStatus = 'active' | 'retired'
 export type HRWorkScheduleSource = 'employee' | 'company' | 'public_holiday'
 export type HRWorkScheduleDayKind = 'work_day' | 'weekly_off' | 'public_holiday'
 
@@ -80,6 +81,24 @@ export interface HRCompanyWorkScheduleDefaults {
   weekly_off_day: HRDayOfWeek
 }
 
+export interface HRCompanyWorkScheduleVersion extends HRCompanyWorkScheduleDefaults {
+  id: string
+  effective_from: string
+  effective_to: string | null
+  status: HRCompanyWorkScheduleStatus
+  scheduled_minutes: number
+  notes: string | null
+  is_system_baseline: boolean
+}
+
+export interface HRCompanyWorkScheduleVersionInput {
+  effective_from: string
+  start_time: string
+  end_time: string
+  weekly_off_day: HRDayOfWeek
+  notes?: string | null
+}
+
 export interface HRSaveWorkScheduleResult {
   success: boolean
   schedule: HREmployeeWorkSchedule
@@ -90,5 +109,18 @@ export interface HRSaveWorkScheduleResult {
 export interface HRUpdateFutureWorkScheduleResult {
   success: boolean
   schedule: HREmployeeWorkSchedule
+  feature_enabled: boolean
+}
+
+export interface HRSaveCompanyWorkScheduleResult {
+  success: boolean
+  schedule: HRCompanyWorkScheduleVersion
+  previous_schedule_id?: string | null
+  feature_enabled: boolean
+}
+
+export interface HRUpdateFutureCompanyWorkScheduleResult {
+  success: boolean
+  schedule: HRCompanyWorkScheduleVersion
   feature_enabled: boolean
 }
