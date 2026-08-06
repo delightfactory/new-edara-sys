@@ -6,14 +6,28 @@ interface SupabaseRpcError {
   message?: string
 }
 
-function isMissingAtomicHRSettingsRpc(error: SupabaseRpcError | null): boolean {
+function isMissingRpc(
+  error: SupabaseRpcError | null,
+  functionName: string
+): boolean {
   if (!error) return false
   const message = (error.message ?? '').toLowerCase()
   return error.code === 'PGRST202'
     || (
-      message.includes('update_hr_settings_atomic')
+      message.includes(functionName.toLowerCase())
       && (message.includes('not found') || message.includes('schema cache'))
     )
+}
+
+async function isWorkScheduleSchemaInstalled(): Promise<boolean> {
+  const { data, error } = await supabase.rpc('get_employee_work_schedule_admin_context')
+
+  if (error) {
+    if (isMissingRpc(error, 'get_employee_work_schedule_admin_context')) return false
+    throw error
+  }
+
+  return Boolean((data as { installed?: boolean } | null)?.installed)
 }
 
 /**
@@ -53,11 +67,18 @@ export async function updateSettings(updates: { key: string; value: string }[]) 
     })
 
     if (!error) return
-    if (!isMissingAtomicHRSettingsRpc(error)) throw error
+    if (!isMissingRpc(error, 'update_hr_settings_atomic')) throw error
+
+    // A missing RPC is a legitimate compatibility case only before the schedule
+    // schema exists. After installation it normally means PostgREST cache lag or
+    // an incomplete migration, so falling back would destroy atomicity.
+    if (await isWorkScheduleSchemaInstalled()) {
+      throw new Error('الحفظ الذري لإعدادات HR غير متاح رغم تركيب جداول العمل؛ أعد تحميل مخطط API ولا تستخدم الحفظ القديم')
+    }
   }
 
-  // Compatibility path for databases where the atomic RPC is not installed,
-  // and for non-HR settings that are outside this feature's scope.
+  // Compatibility path for databases where the schedule schema itself is not
+  // installed, and for non-HR settings outside this feature's scope.
   const errors: string[] = []
 
   for (const { key, value } of updates) {
