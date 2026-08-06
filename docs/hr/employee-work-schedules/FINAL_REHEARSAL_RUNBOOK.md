@@ -31,7 +31,7 @@
 
 ## 3. تطبيق الميجريشنات
 
-طبّق الملفات الـ35 بالترتيب الحرفي الموجود في `CURRENT_MIGRATION_MANIFEST.md`.
+طبّق الملفات الـ37 بالترتيب الحرفي الموجود في `CURRENT_MIGRATION_MANIFEST.md`.
 
 بعد كل مرحلة شغّل Verification المقابل قبل الانتقال للمرحلة التالية. الفشل يوقف السلسلة، ولا يتم تخطي الملف أو تعديل قاعدة الاختبار يدويًا لإجباره على النجاح.
 
@@ -56,7 +56,10 @@
 5. `20260806191000_hr_settings_atomic_update.sql`
 6. `20260806191200_hr_settings_company_baseline_sync.sql`
 7. `20260806191300_hr_settings_company_consistency_constraint.sql`
-8. شغّل `20260806192000_hr_employee_work_schedules_company_history_verify.sql`
+8. `20260806191400_hr_company_work_schedule_read_policy.sql`
+9. `20260806191500_hr_settings_current_company_version_alignment.sql`
+10. شغّل `20260806192000_hr_employee_work_schedules_company_history_verify.sql`
+11. شغّل `20260806192100_hr_settings_current_company_version_alignment_verify.sql`
 
 لا تُركب واجهة سجل الشركة في صفحة الإعدادات أثناء هذه الخطوة. المكوّن موجود للمراجعة الساكنة فقط حتى تنجح البروفات وفحوص TypeScript.
 
@@ -81,6 +84,7 @@ SET SESSION edara.allow_schedule_simulation = 'disposable-only';
 9. `20260806185000_hr_employee_work_schedules_partial_unpaid_leave_simulation.sql`
 10. `20260806193000_hr_employee_work_schedules_company_history_simulation.sql`
 11. `20260806193100_hr_settings_company_baseline_sync_simulation.sql`
+12. `20260806193200_hr_settings_current_company_version_alignment_simulation.sql`
 
 كل ملف يجب أن يعلن النجاح قبل `ROLLBACK`، وبعده يجب ألا تبقى أي بيانات محاكاة أو تغيير في تعريف Feature Helper.
 
@@ -135,8 +139,11 @@ SET SESSION edara.allow_schedule_simulation = 'disposable-only';
 - التحديث الفوري قبل وجود أي تجهيز يغير الإعدادات والـBaseline معًا.
 - بعد بدء التجهيز المؤرخ، يُرفض التغيير الدلالي في الحقول القديمة ويستخدم مسار النسخة المستقبلية.
 - تحديث مباشر لجدول `company_settings` يفشل عند `SET CONSTRAINTS ... IMMEDIATE` إذا ترك الـBaseline غير متطابق.
+- إذا أصبحت نسخة مستقبلية نافذة قبل فتح الميزة، تُصالح الإعدادات القديمة مع نسخة يوم التنفيذ بواسطة RPC مخصصة، ويُسجل Audit.
 - كل نسخة منتهية غير قابلة للتعديل، والحذف ممنوع.
 - `hr_company_work_schedule_activation_consistent()` يظل تشخيصًا فقط؛ readiness تبقى `false`.
+- صاحب `settings.update` يستطيع قراءة النسخ التي يسمح له النظام بإدارتها.
+- لا يستخدم التطبيق المسار القديم بعد ظهور مفتاح تركيب M1، حتى عند تأخر PostgREST في رؤية الـRPC الجديدة.
 
 ## 8. مقارنة ما بعد كل محاكاة
 
