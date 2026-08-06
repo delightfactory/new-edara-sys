@@ -1,6 +1,21 @@
 import { supabase } from '@/lib/supabase/client'
 import type { CompanySetting } from '@/lib/types/auth'
 
+interface SupabaseRpcError {
+  code?: string
+  message?: string
+}
+
+function isMissingAtomicHRSettingsRpc(error: SupabaseRpcError | null): boolean {
+  if (!error) return false
+  const message = (error.message ?? '').toLowerCase()
+  return error.code === 'PGRST202'
+    || (
+      message.includes('update_hr_settings_atomic')
+      && (message.includes('not found') || message.includes('schema cache'))
+    )
+}
+
 /**
  * جلب كل الإعدادات (أو فئة محددة)
  */
@@ -21,10 +36,28 @@ export async function getSettings(category?: string) {
 }
 
 /**
- * تحديث مجموعة إعدادات دفعة واحدة
+ * تحديث مجموعة إعدادات دفعة واحدة.
+ *
+ * بعد تركيب مسار جداول العمل، إعدادات HR تمر عبر RPC ذرية مع تحقق خادمي.
+ * قبل تركيبها — كما هو الوضع في قاعدة الإنتاج الحالية — يستمر السلوك القديم
+ * تلقائياً حتى لا يرتبط نشر الواجهة بتطبيق الميجريشنات.
  */
 export async function updateSettings(updates: { key: string; value: string }[]) {
-  // Supabase doesn't support batch upsert easily, so we do individual updates
+  if (updates.length === 0) return
+
+  const isHRBatch = updates.every(({ key }) => key.startsWith('hr.'))
+
+  if (isHRBatch) {
+    const { error } = await supabase.rpc('update_hr_settings_atomic', {
+      p_updates: updates,
+    })
+
+    if (!error) return
+    if (!isMissingAtomicHRSettingsRpc(error)) throw error
+  }
+
+  // Compatibility path for databases where the atomic RPC is not installed,
+  // and for non-HR settings that are outside this feature's scope.
   const errors: string[] = []
 
   for (const { key, value } of updates) {
@@ -91,7 +124,7 @@ export async function getAuditLogs(params?: {
 
   // جلب بيانات المنفذين
   const userIds = [...new Set((logs || []).map(l => l.user_id).filter(Boolean))]
-  let profilesMap = new Map<string, { full_name: string; avatar_url: string | null }>()
+  const profilesMap = new Map<string, { full_name: string; avatar_url: string | null }>()
 
   if (userIds.length > 0) {
     const { data: profiles } = await supabase
@@ -116,4 +149,3 @@ export async function getAuditLogs(params?: {
     totalPages: Math.ceil((count || 0) / pageSize),
   }
 }
-
