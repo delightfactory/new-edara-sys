@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AlertCircle, CalendarClock, Clock3, Pencil, Plus, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
@@ -12,11 +12,13 @@ import {
   HR_WORK_WEEK_DAYS,
   HR_WORK_WEEK_DAY_LABELS,
   type HRCompanyWorkScheduleDefaults,
+  type HRCompanyWorkScheduleVersion,
   type HREmployeeWorkSchedule,
   type HREmployeeWorkScheduleDayInput,
 } from '@/lib/types/hrWorkSchedules'
 import {
   getCompanyWorkScheduleDefaults,
+  getCompanyWorkScheduleForDate,
   getEmployeeWorkSchedules,
   getWorkScheduleFeatureState,
   saveEmployeeWorkSchedule,
@@ -81,6 +83,17 @@ function scheduleDuration(schedule: HREmployeeWorkSchedule | undefined): number 
   return schedule.days.find(day => day.is_working_day)?.scheduled_minutes ?? null
 }
 
+function companyVersionCoversDate(
+  version: HRCompanyWorkScheduleVersion | null,
+  dateISO: string
+): boolean {
+  return Boolean(
+    version
+    && version.effective_from <= dateISO
+    && (!version.effective_to || version.effective_to >= dateISO)
+  )
+}
+
 function formatDate(value: string | null): string {
   if (!value) return 'مستمر'
   return new Date(`${value}T12:00:00Z`).toLocaleDateString('ar-EG-u-nu-latn', {
@@ -117,6 +130,7 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
   const cairoToday = getCairoDateISO()
   const tomorrow = getNextCairoDateISO()
   const canEdit = can('hr.employees.edit') && employee.status !== 'terminated'
+  const companyRequestRef = useRef(0)
 
   const [editorOpen, setEditorOpen] = useState(false)
   const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null)
@@ -124,6 +138,8 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
   const [days, setDays] = useState<HREmployeeWorkScheduleDayInput[]>([])
   const [notes, setNotes] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [companyDateDefaults, setCompanyDateDefaults] = useState<HRCompanyWorkScheduleVersion | null>(null)
+  const [companyDateLoading, setCompanyDateLoading] = useState(false)
 
   const featureQuery = useQuery({
     queryKey: queryKeys.feature,
@@ -170,17 +186,53 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
       .filter(schedule => schedule.id !== excludedScheduleId && schedule.effective_from < dateISO)
       .sort((a, b) => b.effective_from.localeCompare(a.effective_from))[0]
 
-    return scheduleDuration(predecessor)
-      ?? Math.round((defaultsQuery.data?.work_hours_per_day ?? 0) * 60)
+    if (predecessor) return scheduleDuration(predecessor) ?? 0
+
+    if (companyVersionCoversDate(companyDateDefaults, dateISO)) {
+      return companyDateDefaults?.scheduled_minutes ?? 0
+    }
+
+    return Math.round((defaultsQuery.data?.work_hours_per_day ?? 0) * 60)
+  }
+
+  const loadCompanyTemplateForDate = async (dateISO: string) => {
+    const requestId = ++companyRequestRef.current
+    setCompanyDateLoading(true)
+
+    try {
+      const version = await getCompanyWorkScheduleForDate(dateISO)
+      if (requestId !== companyRequestRef.current) return
+
+      setCompanyDateDefaults(version)
+      setDays(buildCompanyDays(version, employee.weekly_off_day))
+    } catch (error) {
+      if (requestId !== companyRequestRef.current) return
+
+      setCompanyDateDefaults(null)
+      setDays([])
+      setErrors(current => ({
+        ...current,
+        effective_from: error instanceof Error
+          ? error.message
+          : 'تعذر تحميل نسخة جدول الشركة التي تغطي التاريخ المحدد',
+      }))
+    } finally {
+      if (requestId === companyRequestRef.current) {
+        setCompanyDateLoading(false)
+      }
+    }
   }
 
   const resetEditor = () => {
+    companyRequestRef.current += 1
     setEditorOpen(false)
     setEditingScheduleId(null)
     setEffectiveFrom(tomorrow)
     setDays([])
     setNotes('')
     setErrors({})
+    setCompanyDateDefaults(null)
+    setCompanyDateLoading(false)
   }
 
   const startNewSchedule = () => {
@@ -190,25 +242,48 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
       return
     }
 
-    const template = activeSchedule?.days.length === 7
-      ? activeSchedule.days.map(toDayInput)
-      : buildCompanyDays(defaults, employee.weekly_off_day)
-
     setEditingScheduleId(null)
     setEffectiveFrom(minimumNewDate)
-    setDays(template)
     setNotes('')
     setErrors({})
+    setCompanyDateDefaults(null)
     setEditorOpen(true)
+
+    if (activeSchedule?.days.length === 7) {
+      companyRequestRef.current += 1
+      setCompanyDateLoading(false)
+      setDays(activeSchedule.days.map(toDayInput))
+    } else {
+      setDays([])
+      void loadCompanyTemplateForDate(minimumNewDate)
+    }
   }
 
   const startFutureEdit = (schedule: HREmployeeWorkSchedule) => {
+    companyRequestRef.current += 1
     setEditingScheduleId(schedule.id)
     setEffectiveFrom(schedule.effective_from)
     setDays(schedule.days.map(toDayInput))
     setNotes(schedule.notes ?? '')
     setErrors({})
+    setCompanyDateDefaults(null)
+    setCompanyDateLoading(false)
     setEditorOpen(true)
+  }
+
+  const handleEffectiveFromChange = (dateISO: string) => {
+    setEffectiveFrom(dateISO)
+    setErrors(current => {
+      const next = { ...current }
+      delete next.effective_from
+      return next
+    })
+
+    if (!editingScheduleId && !activeSchedule && dateISO > cairoToday) {
+      setDays([])
+      setCompanyDateDefaults(null)
+      void loadCompanyTemplateForDate(dateISO)
+    }
   }
 
   const mutation = useMutation({
@@ -223,6 +298,16 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
       const validation = validateEmployeeWorkSchedule(input, cairoToday)
       const nextErrors = { ...validation.errors }
       const proposedMinutes = getUniformWorkingDayMinutes(days)
+      const predecessor = schedules
+        .filter(schedule => schedule.id !== editingScheduleId && schedule.effective_from < effectiveFrom)
+        .sort((a, b) => b.effective_from.localeCompare(a.effective_from))[0]
+
+      if (companyDateLoading) {
+        nextErrors.effective_from = 'انتظر تحميل نسخة جدول الشركة الخاصة بتاريخ البدء'
+      } else if (!editingScheduleId && !predecessor && !companyVersionCoversDate(companyDateDefaults, effectiveFrom)) {
+        nextErrors.effective_from = 'تعذر تثبيت مرجع جدول الشركة الخاص بتاريخ البدء'
+      }
+
       const baselineMinutes = getBaselineMinutes(effectiveFrom, editingScheduleId)
 
       if (
@@ -276,10 +361,17 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
   }
 
   const toggleDay = (dayName: HRDayOfWeek, checked: boolean) => {
-    const defaults = defaultsQuery.data
     const referenceMinutes = getUniformWorkingDayMinutes(days)
       ?? getBaselineMinutes(effectiveFrom, editingScheduleId)
-    const startTime = defaults?.start_time ?? null
+    const scheduleStart = days.find(day => day.is_working_day && day.start_time)?.start_time
+    const startTime = scheduleStart
+      ?? (companyVersionCoversDate(companyDateDefaults, effectiveFrom)
+        ? companyDateDefaults?.start_time
+        : defaultsQuery.data?.start_time)
+      ?? null
+    const fallbackEnd = companyVersionCoversDate(companyDateDefaults, effectiveFrom)
+      ? companyDateDefaults?.end_time
+      : defaultsQuery.data?.end_time
     const endTime = startTime && referenceMinutes > 0
       ? addMinutesToTime(startTime, referenceMinutes)
       : null
@@ -287,7 +379,7 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
     updateDay(dayName, {
       is_working_day: checked,
       start_time: checked ? startTime : null,
-      end_time: checked ? endTime ?? defaults?.end_time ?? null : null,
+      end_time: checked ? endTime ?? fallbackEnd ?? null : null,
     })
   }
 
@@ -363,7 +455,7 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
             size="sm"
             icon={<Plus size={15} />}
             onClick={startNewSchedule}
-            disabled={!defaultsQuery.data || mutation.isPending}
+            disabled={!defaultsQuery.data || mutation.isPending || companyDateLoading}
           >
             جدول مستقبلي جديد
           </Button>
@@ -399,14 +491,7 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
               disabled={Boolean(editingScheduleId)}
               error={errors.effective_from}
               required
-              onChange={event => {
-                setEffectiveFrom(event.target.value)
-                setErrors(current => {
-                  const next = { ...current }
-                  delete next.effective_from
-                  return next
-                })
-              }}
+              onChange={event => handleEffectiveFromChange(event.target.value)}
             />
 
             <div className="form-group">
@@ -425,6 +510,16 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
               {errors.notes && <span className="form-error">{errors.notes}</span>}
             </div>
           </div>
+
+          {companyDateLoading && (
+            <div className="employee-work-schedule-state">
+              <Spinner size="sm" />
+              <div>
+                <strong>جاري تحميل نسخة جدول الشركة لتاريخ البدء</strong>
+                <p>لن يُقترح أو يُحفظ جدول قبل تثبيت المرجع الزمني الصحيح.</p>
+              </div>
+            </div>
+          )}
 
           <div className="employee-work-schedule-table-wrap">
             <table className="employee-work-schedule-table">
@@ -507,7 +602,13 @@ export default function EmployeeWorkScheduleTab({ employee }: EmployeeWorkSchedu
           </div>
 
           <div className="employee-work-schedule-actions">
-            <Button type="submit" loading={mutation.isPending}>حفظ الجدول</Button>
+            <Button
+              type="submit"
+              loading={mutation.isPending}
+              disabled={companyDateLoading || days.length !== 7}
+            >
+              حفظ الجدول
+            </Button>
             <Button
               type="button"
               variant="secondary"
