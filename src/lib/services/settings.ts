@@ -1,6 +1,10 @@
 import { supabase } from '@/lib/supabase/client'
 import type { CompanySetting } from '@/lib/types/auth'
 
+const INTERNAL_HR_SETTING_KEYS = new Set([
+  'hr.employee_work_schedules_enabled',
+])
+
 interface SupabaseRpcError {
   code?: string
   message?: string
@@ -47,6 +51,10 @@ export async function getSettings(category?: string) {
     query = query.eq('category', category)
   }
 
+  if (category === 'hr') {
+    query = query.neq('key', 'hr.employee_work_schedules_enabled')
+  }
+
   const { data, error } = await query
   if (error) throw error
   return data as CompanySetting[]
@@ -61,6 +69,10 @@ export async function getSettings(category?: string) {
  */
 export async function updateSettings(updates: { key: string; value: string }[]) {
   if (updates.length === 0) return
+
+  if (updates.some(({ key }) => INTERNAL_HR_SETTING_KEYS.has(key))) {
+    throw new Error('مفتاح تفعيل جداول الموظفين داخلي ولا يُحفظ من شاشة إعدادات HR العامة')
+  }
 
   const isHRBatch = updates.every(({ key }) => key.startsWith('hr.'))
 
