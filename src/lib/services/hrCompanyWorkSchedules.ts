@@ -1,6 +1,9 @@
 import { supabase } from '@/lib/supabase/client'
 import type { HRDayOfWeek } from '@/lib/types/hr'
-import type { HRCompanyWorkScheduleVersion } from '@/lib/types/hrWorkSchedules'
+import type {
+  HRCompanyWorkScheduleVersion,
+  HRWorkScheduleFeatureState,
+} from '@/lib/types/hrWorkSchedules'
 import { normalizeScheduleTime } from '@/lib/validations/hrWorkSchedules'
 
 export interface HRCompanySettingsAlignmentResult {
@@ -33,6 +36,22 @@ function mapCompanySchedule(row: Record<string, unknown>): HRCompanyWorkSchedule
     weekly_off_day: row.weekly_off_day as HRDayOfWeek,
     notes: (row.notes as string | null) ?? null,
     is_system_baseline: Boolean(row.is_system_baseline),
+  }
+}
+
+export async function getCompanyWorkScheduleFeatureState(): Promise<HRWorkScheduleFeatureState> {
+  const { data, error } = await supabase
+    .from('company_settings')
+    .select('value')
+    .eq('key', 'hr.employee_work_schedules_enabled')
+    .maybeSingle()
+
+  if (error) throw error
+  if (!data) return { installed: false, enabled: false }
+
+  return {
+    installed: true,
+    enabled: ['true', '1', 'on', 'yes'].includes(String(data.value).trim().toLowerCase()),
   }
 }
 
