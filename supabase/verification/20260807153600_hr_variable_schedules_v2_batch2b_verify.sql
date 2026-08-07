@@ -6,7 +6,6 @@ DECLARE
   v_body_hash text;
   v_wrapper_body text;
   v_custom_body text;
-  v_acl text;
 BEGIN
   IF public.hr_variable_schedules_v2_runtime_enabled() IS DISTINCT FROM false THEN
     RAISE EXCEPTION 'Batch 2B verification failed: V2 runtime gate must remain false';
@@ -25,8 +24,8 @@ BEGIN
     RAISE EXCEPTION 'Batch 2B verification failed: Legacy admin-attendance body drifted';
   END IF;
 
-  SELECT p.prosrc, p.proacl::text
-  INTO v_wrapper_body, v_acl
+  SELECT p.prosrc
+  INTO v_wrapper_body
   FROM pg_proc p
   JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public'
@@ -79,8 +78,8 @@ BEGIN
   IF v_custom_body IS NULL
      OR position('custom_schedule_id' in v_custom_body) = 0
      OR position('custom_scheduled_minutes' in v_custom_body) = 0
-     OR position("interval '30 minutes'" in v_custom_body) = 0
-     OR position("interval '5 minutes'" in v_custom_body) = 0
+     OR position('interval ''30 minutes''' in v_custom_body) = 0
+     OR position('interval ''5 minutes''' in v_custom_body) = 0
      OR position('settle_attendance_day_against_leave' in v_custom_body) = 0
      OR position('reprocess_attendance_day_penalties' in v_custom_body) = 0 THEN
     RAISE EXCEPTION 'Batch 2B verification failed: custom admin timing/legacy-downstream contract incomplete';
