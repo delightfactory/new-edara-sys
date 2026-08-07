@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   rehearsal:
-    name: Snapshot production schema and verify V2
+    name: Restore production-derived HR snapshot and verify V2
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -38,18 +38,6 @@ jobs:
           fi
           psql --version
 
-      - name: Capture current production application schema (read only)
-        shell: bash
-        env:
-          SUPABASE_TELEMETRY_DISABLED: '1'
-          SUPABASE_PROJECT_REF: ozthzccqudrudicnneuu
-          PRODUCTION_SNAPSHOT_FILE: ${{ runner.temp }}/hr-v2-production-schema.sql
-          PRODUCTION_READONLY_DB_URL: ${{ secrets.HR_V2_PROD_READONLY_DB_URL }}
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-        run: |
-          bash supabase/rehearsal/capture_production_schema.sh "$PRODUCTION_SNAPSHOT_FILE"
-
       - name: Initialize isolated local Supabase project
         shell: bash
         env:
@@ -67,12 +55,11 @@ jobs:
           cd .hr-v2-local
           npx --yes supabase@2.110.0 db start
 
-      - name: Restore production schema and run V2 rehearsal
+      - name: Restore committed HR snapshot and run V2 rehearsal
         shell: bash
         env:
           DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
           ROOT_DIR: ${{ github.workspace }}
-          PRODUCTION_SNAPSHOT_FILE: ${{ runner.temp }}/hr-v2-production-schema.sql
         run: |
           set +e
           output="$(bash supabase/rehearsal/hr_v2_rehearsal.sh 2>&1)"
@@ -91,7 +78,6 @@ jobs:
         env:
           SUPABASE_TELEMETRY_DISABLED: '1'
         run: |
-          rm -f "${{ runner.temp }}/hr-v2-production-schema.sql" || true
           if [ -d .hr-v2-local/supabase ]; then
             cd .hr-v2-local
             npx --yes supabase@2.110.0 stop --no-backup || true
