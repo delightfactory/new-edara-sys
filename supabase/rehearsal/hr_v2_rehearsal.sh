@@ -234,4 +234,6 @@ run_sql_file "$VERIFY_DIR/20260807170600_hr_variable_schedules_v2_batch3b2_verif
 run_sql_file "$MIGRATIONS_DIR/20260807172500_hr_variable_schedules_v2_batch3b3_leave_settlement.sql"
 run_sql_file "$VERIFY_DIR/20260807172600_hr_variable_schedules_v2_batch3b3_verify.sql"
 
+run_sql_file "$VERIFY_DIR/20260807174000_hr_variable_schedules_v2_batch3_integration_simulation.sql"
+
 echo "HR V2 isolated database rehearsal: PASS"
