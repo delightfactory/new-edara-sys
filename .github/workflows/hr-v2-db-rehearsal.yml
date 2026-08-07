@@ -31,7 +31,17 @@ jobs:
 
       - name: Validate committed production snapshot payloads
         shell: bash
-        run: python3 supabase/rehearsal/validate_production_snapshot_payload.py
+        run: |
+          set +e
+          output="$(python3 supabase/rehearsal/validate_production_snapshot_payload.py 2>&1)"
+          status=$?
+          set -e
+          printf '%s\n' "$output"
+          if [ "$status" -ne 0 ]; then
+            error_message="$(printf '%s\n' "$output" | tr '\n' ' ' | sed -e 's/%/%25/g' -e 's/\r/%0D/g')"
+            echo "::error title=HR V2 snapshot payload validation failed::$error_message"
+            exit "$status"
+          fi
 
       - name: Ensure PostgreSQL client exists
         shell: bash
