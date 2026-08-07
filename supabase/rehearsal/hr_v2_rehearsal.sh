@@ -206,28 +206,23 @@ $raw_gate$;
 SQL
 echo "::endgroup::"
 
-V2_MIGRATIONS=(
-  "20260807114500_hr_variable_schedules_v2_batch1_schema.sql"
-  "20260807122000_hr_variable_schedules_v2_batch2a_gps_adapter.sql"
-  "20260807153500_hr_variable_schedules_v2_batch2b_admin_attendance_adapter.sql"
-  "20260807155500_hr_variable_schedules_v2_batch3a1_workday_classifier.sql"
-  "20260807161000_hr_variable_schedules_v2_batch3a2_same_day_absence.sql"
-)
+# Each batch is verified immediately after its migration and before the next batch
+# is allowed to mutate any contract that the previous batch intentionally froze.
+# This preserves the meaning of batch-local assertions (for example Batch 3A1
+# proves mark_daily_absences is untouched before Batch 3A2 deliberately wraps it).
+run_sql_file "$MIGRATIONS_DIR/20260807114500_hr_variable_schedules_v2_batch1_schema.sql"
+run_sql_file "$VERIFY_DIR/20260807114600_hr_variable_schedules_v2_batch1_verify.sql"
 
-for name in "${V2_MIGRATIONS[@]}"; do
-  run_sql_file "$MIGRATIONS_DIR/$name"
-done
+run_sql_file "$MIGRATIONS_DIR/20260807122000_hr_variable_schedules_v2_batch2a_gps_adapter.sql"
+run_sql_file "$VERIFY_DIR/20260807122100_hr_variable_schedules_v2_batch2a_verify.sql"
 
-VERIFY_FILES=(
-  "20260807114600_hr_variable_schedules_v2_batch1_verify.sql"
-  "20260807122100_hr_variable_schedules_v2_batch2a_verify.sql"
-  "20260807153600_hr_variable_schedules_v2_batch2b_verify.sql"
-  "20260807155600_hr_variable_schedules_v2_batch3a1_verify.sql"
-  "20260807161100_hr_variable_schedules_v2_batch3a2_verify.sql"
-)
+run_sql_file "$MIGRATIONS_DIR/20260807153500_hr_variable_schedules_v2_batch2b_admin_attendance_adapter.sql"
+run_sql_file "$VERIFY_DIR/20260807153600_hr_variable_schedules_v2_batch2b_verify.sql"
 
-for name in "${VERIFY_FILES[@]}"; do
-  run_sql_file "$VERIFY_DIR/$name"
-done
+run_sql_file "$MIGRATIONS_DIR/20260807155500_hr_variable_schedules_v2_batch3a1_workday_classifier.sql"
+run_sql_file "$VERIFY_DIR/20260807155600_hr_variable_schedules_v2_batch3a1_verify.sql"
+
+run_sql_file "$MIGRATIONS_DIR/20260807161000_hr_variable_schedules_v2_batch3a2_same_day_absence.sql"
+run_sql_file "$VERIFY_DIR/20260807161100_hr_variable_schedules_v2_batch3a2_verify.sql"
 
 echo "HR V2 isolated database rehearsal: PASS"
