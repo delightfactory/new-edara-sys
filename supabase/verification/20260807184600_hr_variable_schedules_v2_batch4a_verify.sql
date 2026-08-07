@@ -71,7 +71,7 @@ BEGIN
   INTO v_metrics_body
   FROM pg_proc p
   JOIN pg_namespace n ON n.oid = p.pronamespace
-  WHERE n.nname = 'public'
+  WHERE n.nspname = 'public'
     AND p.proname = 'hr_v2_get_payroll_schedule_metrics'
     AND pg_get_function_identity_arguments(p.oid) = 'p_employee_id uuid, p_date_from date, p_date_to date';
 
