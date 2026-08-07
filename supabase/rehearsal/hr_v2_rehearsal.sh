@@ -13,10 +13,12 @@ run_sql_file() {
   echo "::endgroup::"
 }
 
-# Curated baseline only. This intentionally excludes production data seeds and
-# unrelated sales/analytics/inventory history. The baseline hash gate below is
-# authoritative: if these files do not reproduce the captured production HR
-# contracts, the rehearsal stops before applying any V2 migration.
+# Curated HR baseline only. This intentionally excludes production data seeds and
+# unrelated sales/analytics/inventory history. In particular, sales-only audit
+# migrations are not part of the HR reconstruction.
+#
+# The baseline hash gate below is authoritative: if these files do not reproduce
+# the captured production HR contracts, the rehearsal stops before applying V2.
 BASELINE_FILES=(
   "01_foundation.sql"
   "02_master_data.sql"
@@ -25,7 +27,6 @@ BASELINE_FILES=(
   "03b_approval_fixes.sql"
   "03e_rls_hardening.sql"
   "03j_auth_guard.sql"
-  "10_audit_fixes.sql"
   "17_hr_core.sql"
   "18_hr_attendance_leaves.sql"
   "19_hr_payroll_loans.sql"
