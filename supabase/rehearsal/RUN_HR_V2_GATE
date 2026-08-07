@@ -1,5 +1,5 @@
 HR V2 isolated database rehearsal gate
 Triggered: 2026-08-07
-Attempt: line-ending-safe production-parity rehearsal
+Attempt: ordered per-batch verification rehearsal
 Scope: Batch 1, 2A, 2B, 3A1, 3A2 only
 Production connections: forbidden
