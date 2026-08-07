@@ -1,4 +1,4 @@
 HR V2 isolated database rehearsal gate
 Triggered: 2026-08-07
-Attempt: snapshot payload validation diagnostics
-Scope: HR V2 isolated rehearsal only
+Attempt: validated catalog snapshot -> isolated local restore -> Batch 1 through 4A
+Scope: HR V2 isolated rehearsal only; zero production credentials or connections in GitHub Actions
