@@ -17,8 +17,11 @@ run_sql_file() {
 # unrelated sales/analytics/inventory history. In particular, sales-only audit
 # migrations are not part of the HR reconstruction.
 #
-# The baseline hash gate below is authoritative: if these files do not reproduce
-# the captured production HR contracts, the rehearsal stops before applying V2.
+# The baseline gate is fail-closed. It first compares normalized PL/pgSQL bodies
+# so Windows CRLF vs Linux LF cannot create a false mismatch. Only after semantic
+# parity is proven do we re-serialize the four functions guarded by V2 using the
+# CRLF representation captured in production. This lets the original V2 migration
+# guards and verification files run UNCHANGED.
 BASELINE_FILES=(
   "01_foundation.sql"
   "02_master_data.sql"
@@ -63,12 +66,105 @@ for name in "${BASELINE_FILES[@]}"; do
   run_sql_file "$file"
 done
 
-# Fail closed unless the curated local reconstruction matches the exact
-# production contracts captured read-only in Batch 0. A mismatch means the
-# baseline replay list must be corrected; V2 is NOT applied in that run.
-echo "::group::verify captured production HR baseline"
+echo "::group::verify normalized production HR baseline"
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 <<'SQL'
 DO $baseline$
+DECLARE
+  v_hash text;
+BEGIN
+  SELECT md5(replace(p.prosrc, E'\r\n', E'\n')) INTO v_hash
+  FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+  WHERE n.nspname='public' AND p.proname='record_attendance_gps_v2'
+    AND pg_get_function_identity_arguments(p.oid)=
+      'p_latitude numeric, p_longitude numeric, p_gps_accuracy numeric, p_log_type text, p_event_time timestamp with time zone';
+  IF v_hash IS DISTINCT FROM '12e9b106ce2992fd3268cadfde21558b' THEN
+    RAISE EXCEPTION 'Normalized baseline mismatch: record_attendance_gps_v2 = %', v_hash;
+  END IF;
+
+  SELECT md5(replace(p.prosrc, E'\r\n', E'\n')) INTO v_hash
+  FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+  WHERE n.nspname='public' AND p.proname='upsert_attendance_and_reprocess'
+    AND pg_get_function_identity_arguments(p.oid)=
+      'p_employee_id uuid, p_shift_date date, p_punch_in_time timestamp with time zone, p_punch_out_time timestamp with time zone, p_status hr_attendance_status, p_notes text, p_user_id uuid';
+  IF v_hash IS DISTINCT FROM 'e00a7617452d6b2796366b9e9be12e90' THEN
+    RAISE EXCEPTION 'Normalized baseline mismatch: upsert_attendance_and_reprocess = %', v_hash;
+  END IF;
+
+  SELECT md5(replace(p.prosrc, E'\r\n', E'\n')) INTO v_hash
+  FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+  WHERE n.nspname='public' AND p.proname='is_employee_work_day'
+    AND pg_get_function_identity_arguments(p.oid)='p_employee_id uuid, p_date date';
+  IF v_hash IS DISTINCT FROM '561f564a44537961e799f5826cbf865b' THEN
+    RAISE EXCEPTION 'Normalized baseline mismatch: is_employee_work_day = %', v_hash;
+  END IF;
+
+  SELECT md5(replace(p.prosrc, E'\r\n', E'\n')) INTO v_hash
+  FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+  WHERE n.nspname='public' AND p.proname='mark_daily_absences'
+    AND pg_get_function_identity_arguments(p.oid)='p_target_date date';
+  IF v_hash IS DISTINCT FROM '45983089033bddad79c682d5b58f122e' THEN
+    RAISE EXCEPTION 'Normalized baseline mismatch: mark_daily_absences = %', v_hash;
+  END IF;
+
+  SELECT md5(replace(p.prosrc, E'\r\n', E'\n')) INTO v_hash
+  FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+  WHERE n.nspname='public' AND p.proname='run_auto_checkout'
+    AND pg_get_function_identity_arguments(p.oid)='p_target_date date';
+  IF v_hash IS DISTINCT FROM 'd13869f50592c2dc31c63e9212183c81' THEN
+    RAISE EXCEPTION 'Normalized baseline mismatch: run_auto_checkout = %', v_hash;
+  END IF;
+
+  SELECT md5(replace(p.prosrc, E'\r\n', E'\n')) INTO v_hash
+  FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+  WHERE n.nspname='public' AND p.proname='process_attendance_penalties'
+    AND pg_get_function_identity_arguments(p.oid)='p_attendance_day_id uuid';
+  IF v_hash IS DISTINCT FROM 'c05f834d11387ab8312965c16a065a0a' THEN
+    RAISE EXCEPTION 'Normalized baseline mismatch: process_attendance_penalties = %', v_hash;
+  END IF;
+
+  SELECT md5(replace(p.prosrc, E'\r\n', E'\n')) INTO v_hash
+  FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+  WHERE n.nspname='public' AND p.proname='settle_attendance_day_against_leave'
+    AND pg_get_function_identity_arguments(p.oid)='p_attendance_day_id uuid, p_force boolean';
+  IF v_hash IS DISTINCT FROM 'f0cd9bc5b6787e76aa970de6a9ce9370' THEN
+    RAISE EXCEPTION 'Normalized baseline mismatch: settle_attendance_day_against_leave = %', v_hash;
+  END IF;
+END;
+$baseline$;
+SQL
+echo "::endgroup::"
+
+# Production currently stores the captured legacy PL/pgSQL bodies with CRLF line
+# endings. Git checkout on the Linux runner materializes the same SQL as LF. The
+# V2 migration guards intentionally use the raw production definition hashes, so
+# normalize ONLY this disposable database representation back to CRLF after the
+# semantic normalized-body gate above has already proven parity.
+echo "::group::materialize captured production function representation"
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 <<'SQL'
+DO $representation$
+DECLARE
+  v_oid oid;
+  v_definition text;
+BEGIN
+  FOR v_oid IN
+    SELECT p.oid
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public'
+      AND p.proname IN (
+        'record_attendance_gps_v2',
+        'upsert_attendance_and_reprocess',
+        'is_employee_work_day',
+        'mark_daily_absences'
+      )
+  LOOP
+    v_definition := pg_get_functiondef(v_oid);
+    EXECUTE replace(v_definition, E'\n', E'\r\n');
+  END LOOP;
+END;
+$representation$;
+
+DO $raw_gate$
 DECLARE
   v_hash text;
 BEGIN
@@ -78,7 +174,7 @@ BEGIN
     AND pg_get_function_identity_arguments(p.oid)=
       'p_latitude numeric, p_longitude numeric, p_gps_accuracy numeric, p_log_type text, p_event_time timestamp with time zone';
   IF v_hash IS DISTINCT FROM 'bd70c45984e188a38cceb45eea00fa00' THEN
-    RAISE EXCEPTION 'Baseline mismatch: record_attendance_gps_v2 = %', v_hash;
+    RAISE EXCEPTION 'Raw production representation mismatch: record_attendance_gps_v2 = %', v_hash;
   END IF;
 
   SELECT md5(pg_get_functiondef(p.oid)) INTO v_hash
@@ -87,7 +183,7 @@ BEGIN
     AND pg_get_function_identity_arguments(p.oid)=
       'p_employee_id uuid, p_shift_date date, p_punch_in_time timestamp with time zone, p_punch_out_time timestamp with time zone, p_status hr_attendance_status, p_notes text, p_user_id uuid';
   IF v_hash IS DISTINCT FROM 'a0123e9ec343603dee9adf4ec73739b4' THEN
-    RAISE EXCEPTION 'Baseline mismatch: upsert_attendance_and_reprocess = %', v_hash;
+    RAISE EXCEPTION 'Raw production representation mismatch: upsert_attendance_and_reprocess = %', v_hash;
   END IF;
 
   SELECT md5(pg_get_functiondef(p.oid)) INTO v_hash
@@ -95,7 +191,7 @@ BEGIN
   WHERE n.nspname='public' AND p.proname='is_employee_work_day'
     AND pg_get_function_identity_arguments(p.oid)='p_employee_id uuid, p_date date';
   IF v_hash IS DISTINCT FROM '3e047334df57ad284bea8e9504724dd0' THEN
-    RAISE EXCEPTION 'Baseline mismatch: is_employee_work_day = %', v_hash;
+    RAISE EXCEPTION 'Raw production representation mismatch: is_employee_work_day = %', v_hash;
   END IF;
 
   SELECT md5(pg_get_functiondef(p.oid)) INTO v_hash
@@ -103,34 +199,10 @@ BEGIN
   WHERE n.nspname='public' AND p.proname='mark_daily_absences'
     AND pg_get_function_identity_arguments(p.oid)='p_target_date date';
   IF v_hash IS DISTINCT FROM '21e4cb27c5d1008da928cbf14ad56f1b' THEN
-    RAISE EXCEPTION 'Baseline mismatch: mark_daily_absences = %', v_hash;
-  END IF;
-
-  SELECT md5(pg_get_functiondef(p.oid)) INTO v_hash
-  FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
-  WHERE n.nspname='public' AND p.proname='run_auto_checkout'
-    AND pg_get_function_identity_arguments(p.oid)='p_target_date date';
-  IF v_hash IS DISTINCT FROM '7687df6dc398cd73ed53408c2c53d1a8' THEN
-    RAISE EXCEPTION 'Baseline mismatch: run_auto_checkout = %', v_hash;
-  END IF;
-
-  SELECT md5(pg_get_functiondef(p.oid)) INTO v_hash
-  FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
-  WHERE n.nspname='public' AND p.proname='process_attendance_penalties'
-    AND pg_get_function_identity_arguments(p.oid)='p_attendance_day_id uuid';
-  IF v_hash IS DISTINCT FROM '7ea1046753bbcfbbb47bcb35c27f986e' THEN
-    RAISE EXCEPTION 'Baseline mismatch: process_attendance_penalties = %', v_hash;
-  END IF;
-
-  SELECT md5(pg_get_functiondef(p.oid)) INTO v_hash
-  FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
-  WHERE n.nspname='public' AND p.proname='settle_attendance_day_against_leave'
-    AND pg_get_function_identity_arguments(p.oid)='p_attendance_day_id uuid, p_force boolean';
-  IF v_hash IS DISTINCT FROM 'c5724ab559a12ca470bcd0bae8ad8206' THEN
-    RAISE EXCEPTION 'Baseline mismatch: settle_attendance_day_against_leave = %', v_hash;
+    RAISE EXCEPTION 'Raw production representation mismatch: mark_daily_absences = %', v_hash;
   END IF;
 END;
-$baseline$;
+$raw_gate$;
 SQL
 echo "::endgroup::"
 
