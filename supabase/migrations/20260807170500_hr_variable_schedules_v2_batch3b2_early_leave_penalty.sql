@@ -233,6 +233,7 @@ AS $function$
 DECLARE
   v_day public.hr_attendance_days%ROWTYPE;
   v_schedule record;
+  v_has_custom_schedule boolean := false;
   v_is_custom_working_day boolean := false;
 BEGIN
   IF NOT public.hr_variable_schedules_v2_runtime_enabled() THEN
@@ -256,6 +257,7 @@ BEGIN
   END IF;
 
   IF v_day.custom_schedule_id IS NOT NULL THEN
+    v_has_custom_schedule := true;
     v_is_custom_working_day :=
       COALESCE(v_day.custom_scheduled_minutes, 0) > 0
       AND v_day.custom_scheduled_end IS NOT NULL;
@@ -265,6 +267,7 @@ BEGIN
     FROM public.resolve_employee_custom_schedule(v_day.employee_id, v_day.shift_date);
 
     IF FOUND THEN
+      v_has_custom_schedule := true;
       v_is_custom_working_day :=
         v_schedule.is_working_day
         AND COALESCE(v_schedule.scheduled_minutes, 0) > 0
@@ -272,8 +275,12 @@ BEGIN
     END IF;
   END IF;
 
-  IF NOT v_is_custom_working_day THEN
+  IF NOT v_has_custom_schedule THEN
     RETURN public.process_attendance_penalties_legacy(p_attendance_day_id);
+  END IF;
+
+  IF NOT v_is_custom_working_day THEN
+    RAISE EXCEPTION 'Batch 3B2 refuses unauthorized early-leave penalty processing on a custom non-working day';
   END IF;
 
   RETURN public.process_attendance_penalties_custom_early_leave(p_attendance_day_id);
@@ -281,7 +288,7 @@ END;
 $function$;
 
 COMMENT ON FUNCTION public.process_attendance_penalties(uuid) IS
-  'V2 compatibility wrapper: exact Legacy penalties except custom-schedule unauthorized early leave uses custom end/minutes.';
+  'V2 compatibility wrapper: exact Legacy penalties except custom-schedule unauthorized early leave uses custom end/minutes; custom off-days fail closed.';
 
 REVOKE ALL ON FUNCTION public.process_attendance_penalties(uuid)
   FROM PUBLIC, anon, authenticated, service_role;
