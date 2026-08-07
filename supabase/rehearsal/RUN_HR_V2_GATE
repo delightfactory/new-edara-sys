@@ -1,5 +1,5 @@
 HR V2 isolated database rehearsal gate
 Triggered: 2026-08-07
-Attempt: Batch 3 rollback-only behavioral integration rehearsal
-Scope: Batch 1, 2A, 2B, 3A1, 3A2, 3B1, 3B2, 3B3 + behavioral simulation
+Attempt: Batch 3C public-holiday precedence rehearsal
+Scope: Batch 1 through 3C + rollback-only behavioral simulations
 Production connections: forbidden
