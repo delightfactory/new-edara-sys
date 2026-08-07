@@ -1,4 +1,4 @@
 HR V2 isolated database rehearsal gate
 Triggered: 2026-08-08
-Attempt: prove Batch 4A with scope-aligned snapshot guard before payroll adapter integration
+Attempt: validate guarded Batch 4B payroll adapter after green Batch 4A baseline
 Scope: HR V2 isolated rehearsal only; zero production credentials or connections in GitHub Actions
