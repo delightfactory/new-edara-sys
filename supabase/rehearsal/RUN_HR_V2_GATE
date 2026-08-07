@@ -1,5 +1,5 @@
 HR V2 isolated database rehearsal gate
 Triggered: 2026-08-07
-Attempt: Batch 4A production-baseline alignment verification
-Scope: Batch 1 through 4A + rollback-only behavioral simulations
-Production connections: forbidden
+Attempt: Current production schema snapshot -> isolated restore -> Batch 1 through 4A
+Scope: schema only + synthetic rollback-only behavioral simulations
+Production operation: read-only schema dump only; no table data and no remote writes
