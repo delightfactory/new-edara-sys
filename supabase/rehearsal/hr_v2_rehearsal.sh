@@ -5,8 +5,10 @@ DB_URL="${DB_URL:-postgresql://postgres:postgres@127.0.0.1:54322/postgres}"
 ROOT_DIR="${ROOT_DIR:-$(pwd)}"
 MIGRATIONS_DIR="$ROOT_DIR/supabase/migrations"
 VERIFY_DIR="$ROOT_DIR/supabase/verification"
-SNAPSHOT_FILE="${PRODUCTION_SNAPSHOT_FILE:-}"
-SNAPSHOT_VERIFY="$ROOT_DIR/supabase/rehearsal/production_snapshot/verify_current_production_snapshot.sql"
+SNAPSHOT_DIR="$ROOT_DIR/supabase/rehearsal/production_snapshot"
+SNAPSHOT_VERIFY="$SNAPSHOT_DIR/verify_current_production_snapshot.sql"
+FUNCTION_MATERIALIZER="$ROOT_DIR/supabase/rehearsal/materialize_production_function_snapshot.py"
+GENERATED_FUNCTIONS="$SNAPSHOT_DIR/03_production_guard_functions.sql"
 
 run_sql_file() {
   local file="$1"
@@ -15,34 +17,47 @@ run_sql_file() {
   echo "::endgroup::"
 }
 
-if [[ -z "$SNAPSHOT_FILE" || ! -s "$SNAPSHOT_FILE" ]]; then
-  echo "A current production schema snapshot is required; historical migration reconstruction is disabled." >&2
-  exit 10
-fi
+for required in \
+  "$SNAPSHOT_DIR/00_primitives.sql" \
+  "$SNAPSHOT_DIR/01_hr_runtime_tables.sql" \
+  "$SNAPSHOT_DIR/02_permission_location_functions.sql" \
+  "$SNAPSHOT_DIR/02b_attendance_support_functions.sql" \
+  "$SNAPSHOT_DIR/04_synthetic_fixtures.sql" \
+  "$SNAPSHOT_VERIFY" \
+  "$FUNCTION_MATERIALIZER"
+do
+  if [[ ! -f "$required" ]]; then
+    echo "Missing isolated rehearsal input: $required" >&2
+    exit 10
+  fi
+done
 
-if [[ ! -f "$SNAPSHOT_VERIFY" ]]; then
-  echo "Missing production snapshot verification: $SNAPSHOT_VERIFY" >&2
-  exit 11
-fi
-
-# Supabase documents that a fresh target can inherit broad default privileges.
-# Revoke those defaults locally before restore so explicit dump grants remain authoritative.
+# Supabase local can inherit broad defaults. Keep the isolated target closed by
+# default before restoring the dependency-scoped production-derived snapshot.
 echo "::group::prepare isolated restore target"
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 <<'SQL'
 ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM anon, authenticated;
 SQL
 echo "::endgroup::"
 
-echo "::group::restore current production application schema"
-psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f "$SNAPSHOT_FILE"
+# Materialize only function definitions whose normalized body hashes exactly match
+# the read-only production capture. No migration chronology is replayed.
+echo "::group::materialize production-matched function snapshot"
+python3 "$FUNCTION_MATERIALIZER"
 echo "::endgroup::"
 
+run_sql_file "$SNAPSHOT_DIR/00_primitives.sql"
+run_sql_file "$SNAPSHOT_DIR/01_hr_runtime_tables.sql"
+run_sql_file "$SNAPSHOT_DIR/02_permission_location_functions.sql"
+run_sql_file "$SNAPSHOT_DIR/02b_attendance_support_functions.sql"
+run_sql_file "$GENERATED_FUNCTIONS"
 run_sql_file "$SNAPSHOT_VERIFY"
+run_sql_file "$SNAPSHOT_DIR/04_synthetic_fixtures.sql"
 
 # Four early V2 adapters deliberately guard pg_get_functiondef(), whose hash can
-# differ solely because a dump/restore normalizes line endings. If and only if
-# each normalized function body is the captured production body, reproduce the
-# captured production CRLF representation locally. No production object is touched.
+# differ solely because source files use LF while the captured production bodies
+# use CRLF. Change representation locally only after normalized body identity is
+# proven. No production object is touched.
 echo "::group::materialize exact production guard representation"
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 <<'SQL'
 DO $representation$
@@ -143,4 +158,4 @@ run_sql_file "$MIGRATIONS_DIR/20260807184500_hr_variable_schedules_v2_batch4a_pa
 run_sql_file "$VERIFY_DIR/20260807184600_hr_variable_schedules_v2_batch4a_verify.sql"
 run_sql_file "$VERIFY_DIR/20260807184700_hr_variable_schedules_v2_batch4a_metrics_simulation.sql"
 
-echo "HR V2 isolated production-snapshot rehearsal: PASS"
+echo "HR V2 isolated production-derived rehearsal: PASS"
