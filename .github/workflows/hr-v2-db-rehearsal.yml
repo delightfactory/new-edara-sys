@@ -29,6 +29,10 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Validate committed production snapshot payloads
+        shell: bash
+        run: python3 supabase/rehearsal/validate_production_snapshot_payload.py
+
       - name: Ensure PostgreSQL client exists
         shell: bash
         run: |
