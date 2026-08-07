@@ -1,4 +1,4 @@
 HR V2 isolated database rehearsal gate
 Triggered: 2026-08-08
-Attempt: validate Batch 4B real payroll simulation after generated-column fixture correction
+Attempt: validate Batch 4B real payroll simulation with rollback-only support-relation stubs
 Scope: HR V2 isolated rehearsal only; zero production credentials or connections in GitHub Actions
