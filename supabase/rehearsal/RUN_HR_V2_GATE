@@ -1,5 +1,5 @@
 HR V2 isolated database rehearsal gate
 Triggered: 2026-08-07
-Attempt: byte-exact catalog-derived HR schema/functions -> isolated local restore -> Batch 1 through 4A
+Attempt: validate exact captured payloads first -> isolated local restore -> Batch 1 through 4A
 Scope: dependency-scoped schema only + synthetic rollback-only behavioral simulations
 Production operation during GitHub Action: none; no credentials, no connection, no remote reads or writes
