@@ -1,5 +1,5 @@
 HR V2 isolated database rehearsal gate
 Triggered: 2026-08-07
-Attempt: Current production schema snapshot -> isolated restore -> Batch 1 through 4A
-Scope: schema only + synthetic rollback-only behavioral simulations
-Production operation: read-only schema dump only; no table data and no remote writes
+Attempt: committed production-derived HR schema -> isolated local restore -> Batch 1 through 4A
+Scope: dependency-scoped schema only + synthetic rollback-only behavioral simulations
+Production operation during GitHub Action: none; no credentials, no connection, no remote reads or writes
