@@ -18,7 +18,7 @@ jobs:
   rehearsal:
     name: Rebuild HR baseline and verify V2
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 15
 
     steps:
       - name: Checkout V2 branch
@@ -29,24 +29,31 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install PostgreSQL client
+      - name: Ensure PostgreSQL client exists
         shell: bash
         run: |
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y postgresql-client
+          fi
+          psql --version
 
       - name: Initialize isolated local Supabase project
         shell: bash
+        env:
+          SUPABASE_TELEMETRY_DISABLED: '1'
         run: |
           mkdir -p .hr-v2-local
           cd .hr-v2-local
           npx --yes supabase@2.110.0 init
 
-      - name: Start isolated local Supabase stack
+      - name: Start isolated Supabase database only
         shell: bash
+        env:
+          SUPABASE_TELEMETRY_DISABLED: '1'
         run: |
           cd .hr-v2-local
-          npx --yes supabase@2.110.0 start
+          npx --yes supabase@2.110.0 db start
 
       - name: Run HR baseline and V2 rehearsal
         shell: bash
@@ -56,18 +63,13 @@ jobs:
         run: |
           bash supabase/rehearsal/hr_v2_rehearsal.sh
 
-      - name: Show local Supabase status on failure
-        if: failure()
-        shell: bash
-        run: |
-          cd .hr-v2-local
-          npx --yes supabase@2.110.0 status || true
-
-      - name: Stop isolated local Supabase stack
+      - name: Stop and delete isolated local database
         if: always()
         shell: bash
+        env:
+          SUPABASE_TELEMETRY_DISABLED: '1'
         run: |
           if [ -d .hr-v2-local/supabase ]; then
             cd .hr-v2-local
-            npx --yes supabase@2.110.0 stop || true
+            npx --yes supabase@2.110.0 stop --no-backup || true
           fi
