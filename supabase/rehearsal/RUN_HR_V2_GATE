@@ -1,5 +1,5 @@
 HR V2 isolated database rehearsal gate
 Triggered: 2026-08-07
-Attempt: Batch 4A public-holiday payroll metrics fix verification
+Attempt: Batch 4A diagnostic rerun after holiday precedence fix
 Scope: Batch 1 through 4A + rollback-only behavioral simulations
 Production connections: forbidden
