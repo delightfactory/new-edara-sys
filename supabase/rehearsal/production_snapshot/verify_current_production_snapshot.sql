@@ -1,48 +1,42 @@
--- Verify that the isolated database was rebuilt from the current production
--- application schema before any HR Variable Schedules V2 migration is applied.
--- Production source was inspected read-only on 2026-08-07.
+-- Verify the isolated HR V2 baseline before any V2 migration is applied.
+-- The baseline is production-derived, dependency-scoped, schema-only, and contains
+-- no production rows. Production was inspected read-only on 2026-08-07.
 
 DO $snapshot$
 DECLARE
-  v_count bigint;
   v_hash text;
+  v_table text;
+  v_required_tables text[] := ARRAY[
+    'company_settings',
+    'hr_attendance_alerts',
+    'hr_attendance_days',
+    'hr_attendance_logs',
+    'hr_employees',
+    'hr_leave_balances',
+    'hr_leave_requests',
+    'hr_leave_types',
+    'hr_payroll_lines',
+    'hr_payroll_periods',
+    'hr_payroll_runs',
+    'hr_penalty_instances',
+    'hr_penalty_rules',
+    'hr_permission_requests',
+    'hr_public_holidays',
+    'hr_work_locations',
+    'role_permissions',
+    'roles',
+    'user_permission_overrides',
+    'user_roles'
+  ];
 BEGIN
-  -- Structural inventory: application-owned schemas only.
-  SELECT count(*) INTO v_count
-  FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
-  WHERE n.nspname = 'public' AND c.relkind = 'r';
-  IF v_count <> 125 THEN
-    RAISE EXCEPTION 'Production snapshot public table count mismatch: expected 125, got %', v_count;
-  END IF;
+  FOREACH v_table IN ARRAY v_required_tables LOOP
+    IF to_regclass('public.' || v_table) IS NULL THEN
+      RAISE EXCEPTION 'HR V2 production-derived snapshot is missing required table: %', v_table;
+    END IF;
+  END LOOP;
 
-  SELECT count(*) INTO v_count
-  FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
-  WHERE n.nspname = 'analytics' AND c.relkind = 'r';
-  IF v_count <> 17 THEN
-    RAISE EXCEPTION 'Production snapshot analytics table count mismatch: expected 17, got %', v_count;
-  END IF;
-
-  SELECT count(*) INTO v_count
-  FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
-  WHERE n.nspname = 'private' AND c.relkind = 'r';
-  IF v_count <> 2 THEN
-    RAISE EXCEPTION 'Production snapshot private table count mismatch: expected 2, got %', v_count;
-  END IF;
-
-  SELECT count(*) INTO v_count
-  FROM pg_policies WHERE schemaname = 'public';
-  IF v_count <> 265 THEN
-    RAISE EXCEPTION 'Production snapshot public RLS policy count mismatch: expected 265, got %', v_count;
-  END IF;
-
-  SELECT count(*) INTO v_count
-  FROM pg_policies WHERE schemaname = 'analytics';
-  IF v_count <> 18 THEN
-    RAISE EXCEPTION 'Production snapshot analytics RLS policy count mismatch: expected 18, got %', v_count;
-  END IF;
-
-  -- Current payroll schema sentinels. These are precisely the columns that the
-  -- old migration-reconstruction rehearsal was missing.
+  -- Current payroll sentinels that distinguish the real production baseline from
+  -- the historical rehearsal state that caused Batch 4A drift.
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.columns
     WHERE table_schema='public' AND table_name='hr_payroll_runs'
@@ -63,52 +57,24 @@ BEGIN
     RAISE EXCEPTION 'Current payroll deficit_carryover column is missing from snapshot';
   END IF;
 
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_schema='public' AND table_name='hr_advance_installments'
-      AND column_name='deferred_reason'
-  ) OR NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_schema='public' AND table_name='hr_advance_installments'
-      AND column_name='deferred_to_month'
-  ) OR NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_schema='public' AND table_name='hr_advance_installments'
-      AND column_name='deferred_to_year'
-  ) THEN
-    RAISE EXCEPTION 'Current advance-installment defer columns are missing from snapshot';
-  END IF;
-
-  -- A production snapshot must predate V2. Refuse a contaminated baseline.
+  -- The snapshot must be pre-V2. Refuse a contaminated baseline.
   IF to_regclass('public.hr_employee_work_schedules') IS NOT NULL
      OR to_regprocedure('public.hr_variable_schedules_v2_runtime_enabled()') IS NOT NULL THEN
-    RAISE EXCEPTION 'Production snapshot unexpectedly contains HR Variable Schedules V2 objects';
+    RAISE EXCEPTION 'Snapshot unexpectedly contains HR Variable Schedules V2 objects';
   END IF;
 
-  -- Exact current production function baselines. Normalized prosrc hashes avoid
-  -- file newline representation differences while still guarding implementation drift.
+  IF to_regprocedure('public.check_permission(uuid,text)') IS NULL
+     OR to_regprocedure('public.resolve_employee_attendance_location_context(uuid,numeric,numeric,text)') IS NULL
+     OR to_regprocedure('public.reprocess_attendance_day_penalties(uuid)') IS NULL THEN
+    RAISE EXCEPTION 'Required current HR support functions are missing from snapshot';
+  END IF;
+
   SELECT md5(replace(p.prosrc, E'\r\n', E'\n')) INTO v_hash
   FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
   WHERE n.nspname='public' AND p.proname='calculate_employee_payroll'
     AND pg_get_function_identity_arguments(p.oid)='p_employee_id uuid, p_run_id uuid';
   IF v_hash IS DISTINCT FROM 'c24e182e9088e1a219d40aafb9e8c43a' THEN
     RAISE EXCEPTION 'Snapshot calculate_employee_payroll mismatch: %', v_hash;
-  END IF;
-
-  SELECT md5(replace(p.prosrc, E'\r\n', E'\n')) INTO v_hash
-  FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
-  WHERE n.nspname='public' AND p.proname='calculate_payroll_run'
-    AND pg_get_function_identity_arguments(p.oid)='p_run_id uuid';
-  IF v_hash IS DISTINCT FROM '2b79ef75f35f8deb2f2daa768e64d50f' THEN
-    RAISE EXCEPTION 'Snapshot calculate_payroll_run mismatch: %', v_hash;
-  END IF;
-
-  SELECT md5(replace(p.prosrc, E'\r\n', E'\n')) INTO v_hash
-  FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
-  WHERE n.nspname='public' AND p.proname='approve_payroll_run'
-    AND pg_get_function_identity_arguments(p.oid)='p_run_id uuid, p_user_id uuid';
-  IF v_hash IS DISTINCT FROM '4a3e9678f6a4c7b74f422d47c8239465' THEN
-    RAISE EXCEPTION 'Snapshot approve_payroll_run mismatch: %', v_hash;
   END IF;
 
   SELECT md5(replace(p.prosrc, E'\r\n', E'\n')) INTO v_hash
