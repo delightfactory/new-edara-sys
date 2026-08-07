@@ -9,6 +9,9 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 FUNCTION_DIR = ROOT / "supabase" / "rehearsal" / "production_snapshot" / "functions"
 
+# Only functions that are actually restored/used by the Batch 1->4A rehearsal
+# belong in this payload gate. Payroll wrapper/approval functions are outside
+# Batch 4A and are not part of the isolated restore surface.
 EXPECTED = {
     "settle_attendance_day_against_leave.sql.b64": "f0cd9bc5b6787e76aa970de6a9ce9370",
     "is_employee_work_day.sql.b64": "561f564a44537961e799f5826cbf865b",
@@ -16,11 +19,9 @@ EXPECTED = {
     "run_auto_checkout.sql.b64": "d13869f50592c2dc31c63e9212183c81",
     "upsert_attendance_and_reprocess.sql.b64": "e00a7617452d6b2796366b9e9be12e90",
     "record_attendance_gps_v2.sql.b64": "12e9b106ce2992fd3268cadfde21558b",
-    "calculate_payroll_run.sql.b64": "2b79ef75f35f8deb2f2daa768e64d50f",
 }
 PENALTY_EXPECTED = "c05f834d11387ab8312965c16a065a0a"
 EMPLOYEE_PAYROLL_EXPECTED = "c24e182e9088e1a219d40aafb9e8c43a"
-APPROVE_PAYROLL_EXPECTED = "4a3e9678f6a4c7b74f422d47c8239465"
 
 
 def extract_body(definition: bytes) -> bytes:
@@ -85,12 +86,6 @@ def main() -> int:
             "calculate_employee_payroll.sql.b64",
             (1, 2, 3),
             EMPLOYEE_PAYROLL_EXPECTED,
-        ),
-        (
-            "approve_payroll_run",
-            "approve_payroll_run.sql.b64",
-            (1, 2, 3),
-            APPROVE_PAYROLL_EXPECTED,
         ),
     )
 
