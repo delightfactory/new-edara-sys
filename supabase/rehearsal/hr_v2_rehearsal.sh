@@ -222,4 +222,8 @@ run_sql_file "$VERIFY_DIR/20260807181700_hr_variable_schedules_v2_batch3c_holida
 
 run_sql_file "$VERIFY_DIR/20260807174000_hr_variable_schedules_v2_batch3_integration_simulation.sql"
 
+run_sql_file "$MIGRATIONS_DIR/20260807184500_hr_variable_schedules_v2_batch4a_payroll_schedule_metrics.sql"
+run_sql_file "$VERIFY_DIR/20260807184600_hr_variable_schedules_v2_batch4a_verify.sql"
+run_sql_file "$VERIFY_DIR/20260807184700_hr_variable_schedules_v2_batch4a_metrics_simulation.sql"
+
 echo "HR V2 isolated database rehearsal: PASS"
