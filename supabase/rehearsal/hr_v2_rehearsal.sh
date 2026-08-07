@@ -6,9 +6,8 @@ ROOT_DIR="${ROOT_DIR:-$(pwd)}"
 MIGRATIONS_DIR="$ROOT_DIR/supabase/migrations"
 VERIFY_DIR="$ROOT_DIR/supabase/verification"
 SNAPSHOT_DIR="$ROOT_DIR/supabase/rehearsal/production_snapshot"
+FUNCTION_SNAPSHOT_DIR="$SNAPSHOT_DIR/functions"
 SNAPSHOT_VERIFY="$SNAPSHOT_DIR/verify_current_production_snapshot.sql"
-FUNCTION_MATERIALIZER="$ROOT_DIR/supabase/rehearsal/materialize_production_function_snapshot.py"
-GENERATED_FUNCTIONS="$SNAPSHOT_DIR/03_production_guard_functions.sql"
 
 run_sql_file() {
   local file="$1"
@@ -17,15 +16,61 @@ run_sql_file() {
   echo "::endgroup::"
 }
 
-for required in \
-  "$SNAPSHOT_DIR/00_primitives.sql" \
-  "$SNAPSHOT_DIR/01_hr_runtime_tables.sql" \
-  "$SNAPSHOT_DIR/02_permission_location_functions.sql" \
-  "$SNAPSHOT_DIR/02b_attendance_support_functions.sql" \
-  "$SNAPSHOT_DIR/04_synthetic_fixtures.sql" \
-  "$SNAPSHOT_VERIFY" \
-  "$FUNCTION_MATERIALIZER"
-do
+run_b64_sql_file() {
+  local b64_file="$1"
+  local sql_file
+  sql_file="$(mktemp)"
+  echo "::group::apply snapshot $(basename "$b64_file")"
+  base64 --decode "$b64_file" > "$sql_file"
+  printf ';\n' >> "$sql_file"
+  if ! psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f "$sql_file"; then
+    rm -f "$sql_file"
+    echo "::endgroup::"
+    return 1
+  fi
+  rm -f "$sql_file"
+  echo "::endgroup::"
+}
+
+run_payroll_snapshot_parts() {
+  local sql_file
+  sql_file="$(mktemp)"
+  echo "::group::apply snapshot calculate_employee_payroll"
+  cat \
+    "$FUNCTION_SNAPSHOT_DIR/calculate_employee_payroll.sql.b64.part1" \
+    "$FUNCTION_SNAPSHOT_DIR/calculate_employee_payroll.sql.b64.part2" \
+    "$FUNCTION_SNAPSHOT_DIR/calculate_employee_payroll.sql.b64.part3" \
+    | base64 --decode > "$sql_file"
+  printf ';\n' >> "$sql_file"
+  if ! psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f "$sql_file"; then
+    rm -f "$sql_file"
+    echo "::endgroup::"
+    return 1
+  fi
+  rm -f "$sql_file"
+  echo "::endgroup::"
+}
+
+required_files=(
+  "$SNAPSHOT_DIR/00_primitives.sql"
+  "$SNAPSHOT_DIR/01_hr_runtime_tables.sql"
+  "$SNAPSHOT_DIR/02_permission_location_functions.sql"
+  "$SNAPSHOT_DIR/02b_attendance_support_functions.sql"
+  "$SNAPSHOT_DIR/04_synthetic_fixtures.sql"
+  "$SNAPSHOT_VERIFY"
+  "$FUNCTION_SNAPSHOT_DIR/process_attendance_penalties.sql.b64"
+  "$FUNCTION_SNAPSHOT_DIR/settle_attendance_day_against_leave.sql.b64"
+  "$FUNCTION_SNAPSHOT_DIR/is_employee_work_day.sql.b64"
+  "$FUNCTION_SNAPSHOT_DIR/mark_daily_absences.sql.b64"
+  "$FUNCTION_SNAPSHOT_DIR/run_auto_checkout.sql.b64"
+  "$FUNCTION_SNAPSHOT_DIR/upsert_attendance_and_reprocess.sql.b64"
+  "$FUNCTION_SNAPSHOT_DIR/record_attendance_gps_v2.sql.b64"
+  "$FUNCTION_SNAPSHOT_DIR/calculate_employee_payroll.sql.b64.part1"
+  "$FUNCTION_SNAPSHOT_DIR/calculate_employee_payroll.sql.b64.part2"
+  "$FUNCTION_SNAPSHOT_DIR/calculate_employee_payroll.sql.b64.part3"
+)
+
+for required in "${required_files[@]}"; do
   if [[ ! -f "$required" ]]; then
     echo "Missing isolated rehearsal input: $required" >&2
     exit 10
@@ -40,25 +85,31 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM anon, authen
 SQL
 echo "::endgroup::"
 
-# Materialize only function definitions whose normalized body hashes exactly match
-# the read-only production capture. No migration chronology is replayed.
-echo "::group::materialize production-matched function snapshot"
-python3 "$FUNCTION_MATERIALIZER"
-echo "::endgroup::"
-
+# Restore only the current production-derived HR runtime surface required by
+# Batch 1–4A. No historical migration chronology and no production connection.
 run_sql_file "$SNAPSHOT_DIR/00_primitives.sql"
 run_sql_file "$SNAPSHOT_DIR/01_hr_runtime_tables.sql"
 run_sql_file "$SNAPSHOT_DIR/02_permission_location_functions.sql"
+
+# Restore exact catalog-captured function definitions. The Base64 files are a
+# transport format only; they contain schema/function definitions, never rows.
+run_b64_sql_file "$FUNCTION_SNAPSHOT_DIR/process_attendance_penalties.sql.b64"
 run_sql_file "$SNAPSHOT_DIR/02b_attendance_support_functions.sql"
-run_sql_file "$GENERATED_FUNCTIONS"
+run_b64_sql_file "$FUNCTION_SNAPSHOT_DIR/settle_attendance_day_against_leave.sql.b64"
+run_b64_sql_file "$FUNCTION_SNAPSHOT_DIR/is_employee_work_day.sql.b64"
+run_b64_sql_file "$FUNCTION_SNAPSHOT_DIR/mark_daily_absences.sql.b64"
+run_b64_sql_file "$FUNCTION_SNAPSHOT_DIR/run_auto_checkout.sql.b64"
+run_b64_sql_file "$FUNCTION_SNAPSHOT_DIR/upsert_attendance_and_reprocess.sql.b64"
+run_b64_sql_file "$FUNCTION_SNAPSHOT_DIR/record_attendance_gps_v2.sql.b64"
+run_payroll_snapshot_parts
+
 run_sql_file "$SNAPSHOT_VERIFY"
 run_sql_file "$SNAPSHOT_DIR/04_synthetic_fixtures.sql"
 
-# Four early V2 adapters deliberately guard pg_get_functiondef(), whose hash can
-# differ solely because source files use LF while the captured production bodies
-# use CRLF. Change representation locally only after normalized body identity is
-# proven. No production object is touched.
-echo "::group::materialize exact production guard representation"
+# Four early V2 adapters deliberately guard pg_get_functiondef(). Exact catalog
+# snapshots normally reproduce those raw hashes already. Keep this block only as
+# a fail-closed representation check for line-ending normalization in local PG.
+echo "::group::verify exact production guard representation"
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 <<'SQL'
 DO $representation$
 DECLARE
@@ -95,14 +146,14 @@ BEGIN
       AND pg_get_function_identity_arguments(p.oid)=r.identity_args;
 
     IF v_definition IS NULL THEN
-      RAISE EXCEPTION 'Missing production function % during representation materialization', r.proname;
+      RAISE EXCEPTION 'Missing production function % during representation verification', r.proname;
     END IF;
 
     IF md5(replace((SELECT p.prosrc FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
                     WHERE n.nspname='public' AND p.proname=r.proname
                       AND pg_get_function_identity_arguments(p.oid)=r.identity_args), E'\r\n', E'\n'))
        IS DISTINCT FROM r.normalized_hash THEN
-      RAISE EXCEPTION 'Refusing representation change: normalized production body drifted for %', r.proname;
+      RAISE EXCEPTION 'Normalized production body drifted for %', r.proname;
     END IF;
 
     IF v_raw_hash IS DISTINCT FROM r.raw_hash THEN
