@@ -176,4 +176,8 @@ run_sql_file "$MIGRATIONS_DIR/20260807184500_hr_variable_schedules_v2_batch4a_pa
 run_sql_file "$VERIFY_DIR/20260807184600_hr_variable_schedules_v2_batch4a_verify.sql"
 run_sql_file "$VERIFY_DIR/20260807184700_hr_variable_schedules_v2_batch4a_metrics_simulation.sql"
 
+run_sql_file "$MIGRATIONS_DIR/20260808002000_hr_variable_schedules_v2_batch4b_payroll_adapter.sql"
+run_sql_file "$VERIFY_DIR/20260808002100_hr_variable_schedules_v2_batch4b_verify.sql"
+run_sql_file "$VERIFY_DIR/20260808002200_hr_variable_schedules_v2_batch4b_routing_simulation.sql"
+
 echo "HR V2 isolated production-derived rehearsal: PASS"
