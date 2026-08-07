@@ -88,6 +88,8 @@ BEGIN
       WHERE h.holiday_date = p_date
     ) THEN
       day_kind := 'public_holiday';
+      is_working_day := false;
+      scheduled_minutes := 0;
     ELSIF v_custom.is_working_day THEN
       day_kind := 'work_day';
     ELSE
