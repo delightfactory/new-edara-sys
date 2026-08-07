@@ -165,7 +165,12 @@ BEGIN
   FROM public.hr_employee_work_schedules s
   WHERE s.id = v_schedule_id;
 
+  -- During ON DELETE CASCADE, the parent row may already be invisible to the
+  -- child trigger. The parent lifecycle trigger has already authorized deletion.
   IF NOT FOUND THEN
+    IF TG_OP = 'DELETE' THEN
+      RETURN OLD;
+    END IF;
     RAISE EXCEPTION 'نسخة جدول العمل غير موجودة';
   END IF;
 
@@ -197,6 +202,7 @@ FOR EACH ROW EXECUTE FUNCTION public.guard_hr_employee_work_schedule_day_lifecyc
 
 -- Resolver contract:
 -- * returns exactly zero rows when no complete effective custom schedule exists;
+-- * a complete schedule has all seven weekdays and at least one working day;
 -- * never synthesizes company settings or employee weekly-off fallback;
 -- * therefore callers can preserve the exact legacy path when NOT FOUND.
 CREATE OR REPLACE FUNCTION public.resolve_employee_custom_schedule(
@@ -245,6 +251,12 @@ AS $function$
       FROM public.hr_employee_work_schedule_days all_days
       WHERE all_days.schedule_id = s.id
     ) = 7
+    AND EXISTS (
+      SELECT 1
+      FROM public.hr_employee_work_schedule_days work_days
+      WHERE work_days.schedule_id = s.id
+        AND work_days.is_working_day = true
+    )
   ORDER BY s.effective_from DESC
   LIMIT 1;
 $function$;
