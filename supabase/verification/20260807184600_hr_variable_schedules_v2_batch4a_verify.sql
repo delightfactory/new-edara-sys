@@ -17,10 +17,12 @@ BEGIN
   JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public'
     AND p.proname = 'calculate_employee_payroll'
-    AND pg_get_function_identity_arguments(p.oid) = 'p_payroll_run_id uuid, p_employee_id uuid';
+    AND pg_get_function_identity_arguments(p.oid) = 'p_employee_id uuid, p_run_id uuid';
 
-  IF v_hash IS DISTINCT FROM '89ebda07b9a367f3a5e56e3ae398c642' THEN
-    RAISE EXCEPTION 'Batch 4A verification failed: calculate_employee_payroll changed';
+  IF v_hash IS DISTINCT FROM 'c24e182e9088e1a219d40aafb9e8c43a' THEN
+    RAISE EXCEPTION
+      'Batch 4A verification failed: calculate_employee_payroll changed (actual=%)',
+      v_hash;
   END IF;
 
   SELECT md5(replace(p.prosrc, E'\r\n', E'\n'))
