@@ -1,4 +1,4 @@
 HR V2 isolated database rehearsal gate
-Triggered: 2026-08-07
-Attempt: validated catalog snapshot -> isolated local restore -> Batch 1 through 4A
+Triggered: 2026-08-08
+Attempt: re-prove corrected Batch 4A from current feature-branch head before payroll adapter integration
 Scope: HR V2 isolated rehearsal only; zero production credentials or connections in GitHub Actions
