@@ -16,9 +16,11 @@ EXPECTED = {
     "run_auto_checkout.sql.b64": "d13869f50592c2dc31c63e9212183c81",
     "upsert_attendance_and_reprocess.sql.b64": "e00a7617452d6b2796366b9e9be12e90",
     "record_attendance_gps_v2.sql.b64": "12e9b106ce2992fd3268cadfde21558b",
+    "calculate_payroll_run.sql.b64": "2b79ef75f35f8deb2f2daa768e64d50f",
 }
 PENALTY_EXPECTED = "c05f834d11387ab8312965c16a065a0a"
-PAYROLL_EXPECTED = "c24e182e9088e1a219d40aafb9e8c43a"
+EMPLOYEE_PAYROLL_EXPECTED = "c24e182e9088e1a219d40aafb9e8c43a"
+APPROVE_PAYROLL_EXPECTED = "4a3e9678f6a4c7b74f422d47c8239465"
 
 
 def extract_body(definition: bytes) -> bytes:
@@ -71,27 +73,34 @@ def main() -> int:
             print(f"ERROR {filename}: {exc}", file=sys.stderr)
             failed = True
 
-    try:
-        if not validate(
+    split_payloads = (
+        (
             "process_attendance_penalties",
-            decode_parts("process_attendance_penalties.sql.b64", (1, 2, 3, 4)),
+            "process_attendance_penalties.sql.b64",
+            (1, 2, 3, 4),
             PENALTY_EXPECTED,
-        ):
-            failed = True
-    except Exception as exc:
-        print(f"ERROR process_attendance_penalties: {exc}", file=sys.stderr)
-        failed = True
-
-    try:
-        if not validate(
+        ),
+        (
             "calculate_employee_payroll",
-            decode_parts("calculate_employee_payroll.sql.b64", (1, 2, 3)),
-            PAYROLL_EXPECTED,
-        ):
+            "calculate_employee_payroll.sql.b64",
+            (1, 2, 3),
+            EMPLOYEE_PAYROLL_EXPECTED,
+        ),
+        (
+            "approve_payroll_run",
+            "approve_payroll_run.sql.b64",
+            (1, 2, 3),
+            APPROVE_PAYROLL_EXPECTED,
+        ),
+    )
+
+    for name, stem, parts, expected in split_payloads:
+        try:
+            if not validate(name, decode_parts(stem, parts), expected):
+                failed = True
+        except Exception as exc:
+            print(f"ERROR {name}: {exc}", file=sys.stderr)
             failed = True
-    except Exception as exc:
-        print(f"ERROR calculate_employee_payroll: {exc}", file=sys.stderr)
-        failed = True
 
     return 1 if failed else 0
 
