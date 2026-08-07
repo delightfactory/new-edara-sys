@@ -5,6 +5,41 @@
 
 BEGIN;
 
+-- The isolated HR snapshot intentionally excludes unrelated payroll-support
+-- modules. The real payroll engine still reads these relations, so provide only
+-- the empty columns it actually touches inside this rollback-only simulation.
+CREATE TABLE public.hr_payroll_adjustments (
+  employee_id uuid NOT NULL,
+  type text NOT NULL,
+  amount numeric NOT NULL,
+  reason text NOT NULL,
+  effective_date date NOT NULL,
+  status text NOT NULL,
+  created_by uuid,
+  payroll_line_id uuid
+);
+
+CREATE TABLE public.hr_commission_records (
+  employee_id uuid NOT NULL,
+  period_id uuid NOT NULL,
+  commission_amount numeric NOT NULL DEFAULT 0,
+  is_eligible boolean NOT NULL DEFAULT false,
+  included_in_run uuid
+);
+
+CREATE TABLE public.hr_advances (
+  id uuid PRIMARY KEY,
+  employee_id uuid NOT NULL
+);
+
+CREATE TABLE public.hr_advance_installments (
+  advance_id uuid NOT NULL,
+  amount numeric NOT NULL DEFAULT 0,
+  due_year integer NOT NULL,
+  due_month integer NOT NULL,
+  status text NOT NULL
+);
+
 -- Isolate the payroll math from permissions/clearance and salary-history data.
 -- These replacements exist only inside this transaction and are fully rolled back.
 CREATE OR REPLACE FUNCTION public.check_permission(p_user_id uuid, p_permission text)
