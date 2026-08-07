@@ -1,5 +1,5 @@
 HR V2 isolated database rehearsal gate
 Triggered: 2026-08-07
-Attempt: Batch 3C public-holiday precedence rehearsal
+Attempt: Batch 3C holiday fixture-corrected rehearsal
 Scope: Batch 1 through 3C + rollback-only behavioral simulations
 Production connections: forbidden
