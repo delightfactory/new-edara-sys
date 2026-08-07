@@ -1,4 +1,4 @@
 HR V2 isolated database rehearsal gate
 Triggered: 2026-08-08
-Attempt: validate Batch 4B real custom payroll simulation after routing gate passed
+Attempt: rerun Batch 4B custom payroll simulation with current production-derived employee schema
 Scope: HR V2 isolated rehearsal only; zero production credentials or connections in GitHub Actions
