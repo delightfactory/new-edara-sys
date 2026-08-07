@@ -69,10 +69,10 @@ DECLARE
 BEGIN
   INSERT INTO public.hr_employees (
     id, employee_number, full_name, personal_phone, hire_date, status,
-    base_salary, gross_salary, salary_structure
+    base_salary, gross_salary
   ) VALUES (
     v_employee_id, 'V2-B4B-PAYROLL', 'V2 Batch 4B Payroll Fixture', '01000000013',
-    DATE '2019-01-01', 'active', 6000, 6000, 'gross'
+    DATE '2019-01-01', 'active', 6000, 6000
   );
 
   INSERT INTO public.hr_payroll_periods (
