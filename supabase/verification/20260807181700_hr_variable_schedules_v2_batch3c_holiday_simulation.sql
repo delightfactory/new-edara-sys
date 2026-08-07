@@ -60,16 +60,15 @@ BEGIN
     '16:00'::time
   FROM generate_series(0, 6) AS dow;
 
+  -- year is a generated column derived from holiday_date and must not be supplied.
   INSERT INTO public.hr_public_holidays (
     name,
     holiday_date,
-    year,
     is_recurring,
     notes
   ) VALUES (
     'V2 Batch 3C simulated official holiday',
     v_holiday_date,
-    EXTRACT(YEAR FROM v_holiday_date)::integer,
     false,
     'Rollback-only rehearsal fixture'
   );
