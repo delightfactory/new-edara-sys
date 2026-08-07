@@ -16,38 +16,76 @@ run_sql_file() {
   echo "::endgroup::"
 }
 
+prepare_exact_function_sql() {
+  local source_sql="$1"
+  local restore_sql="$2"
+  python3 - "$source_sql" "$restore_sql" <<'PY'
+import pathlib
+import sys
+
+source = pathlib.Path(sys.argv[1]).read_bytes().decode("utf-8")
+marker = "AS $function$"
+end_marker = "$function$"
+start_marker = source.find(marker)
+if start_marker < 0:
+    raise SystemExit(f"missing {marker!r} in captured function definition")
+body_start = start_marker + len(marker)
+body_end = source.rfind(end_marker)
+if body_end < body_start:
+    raise SystemExit("missing closing $function$ in captured function definition")
+body = source[body_start:body_end]
+
+# PostgreSQL's SQL scanner can normalize physical line endings while parsing a
+# dollar-quoted function definition. Render the captured body as an E-string so
+# CR/LF bytes, leading newlines and trailing spaces are restored intentionally.
+escaped = (
+    body.replace("\\", "\\\\")
+        .replace("'", "''")
+        .replace("\r", "\\r")
+        .replace("\n", "\\n")
+        .replace("\t", "\\t")
+)
+restored = source[:start_marker] + "AS E'" + escaped + "'" + source[body_end + len(end_marker):]
+pathlib.Path(sys.argv[2]).write_bytes(restored.encode("utf-8"))
+PY
+}
+
 run_b64_sql_file() {
   local b64_file="$1"
-  local sql_file
-  sql_file="$(mktemp)"
+  local captured_sql restore_sql
+  captured_sql="$(mktemp)"
+  restore_sql="$(mktemp)"
   echo "::group::apply snapshot $(basename "$b64_file")"
-  base64 --decode "$b64_file" > "$sql_file"
-  printf ';\n' >> "$sql_file"
-  if ! psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f "$sql_file"; then
-    rm -f "$sql_file"
+  base64 --decode "$b64_file" > "$captured_sql"
+  prepare_exact_function_sql "$captured_sql" "$restore_sql"
+  printf ';\n' >> "$restore_sql"
+  if ! psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f "$restore_sql"; then
+    rm -f "$captured_sql" "$restore_sql"
     echo "::endgroup::"
     return 1
   fi
-  rm -f "$sql_file"
+  rm -f "$captured_sql" "$restore_sql"
   echo "::endgroup::"
 }
 
 run_payroll_snapshot_parts() {
-  local sql_file
-  sql_file="$(mktemp)"
+  local captured_sql restore_sql
+  captured_sql="$(mktemp)"
+  restore_sql="$(mktemp)"
   echo "::group::apply snapshot calculate_employee_payroll"
   cat \
     "$FUNCTION_SNAPSHOT_DIR/calculate_employee_payroll.sql.b64.part1" \
     "$FUNCTION_SNAPSHOT_DIR/calculate_employee_payroll.sql.b64.part2" \
     "$FUNCTION_SNAPSHOT_DIR/calculate_employee_payroll.sql.b64.part3" \
-    | base64 --decode > "$sql_file"
-  printf ';\n' >> "$sql_file"
-  if ! psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f "$sql_file"; then
-    rm -f "$sql_file"
+    | base64 --decode > "$captured_sql"
+  prepare_exact_function_sql "$captured_sql" "$restore_sql"
+  printf ';\n' >> "$restore_sql"
+  if ! psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f "$restore_sql"; then
+    rm -f "$captured_sql" "$restore_sql"
     echo "::endgroup::"
     return 1
   fi
-  rm -f "$sql_file"
+  rm -f "$captured_sql" "$restore_sql"
   echo "::endgroup::"
 }
 
@@ -77,22 +115,20 @@ for required in "${required_files[@]}"; do
   fi
 done
 
-# Supabase local can inherit broad defaults. Keep the isolated target closed by
-# default before restoring the dependency-scoped production-derived snapshot.
 echo "::group::prepare isolated restore target"
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 <<'SQL'
 ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM anon, authenticated;
 SQL
 echo "::endgroup::"
 
-# Restore only the current production-derived HR runtime surface required by
-# Batch 1–4A. No historical migration chronology and no production connection.
+# Current production-derived HR runtime surface only. No historical migration
+# chronology is replayed and the Action has no production credentials/connection.
 run_sql_file "$SNAPSHOT_DIR/00_primitives.sql"
 run_sql_file "$SNAPSHOT_DIR/01_hr_runtime_tables.sql"
 run_sql_file "$SNAPSHOT_DIR/02_permission_location_functions.sql"
 
-# Restore exact catalog-captured function definitions. The Base64 files are a
-# transport format only; they contain schema/function definitions, never rows.
+# Exact catalog-captured function definitions. Base64 is transport only; the
+# restore step preserves the captured function-body bytes before guards run.
 run_b64_sql_file "$FUNCTION_SNAPSHOT_DIR/process_attendance_penalties.sql.b64"
 run_sql_file "$SNAPSHOT_DIR/02b_attendance_support_functions.sql"
 run_b64_sql_file "$FUNCTION_SNAPSHOT_DIR/settle_attendance_day_against_leave.sql.b64"
@@ -105,75 +141,6 @@ run_payroll_snapshot_parts
 
 run_sql_file "$SNAPSHOT_VERIFY"
 run_sql_file "$SNAPSHOT_DIR/04_synthetic_fixtures.sql"
-
-# Four early V2 adapters deliberately guard pg_get_functiondef(). Exact catalog
-# snapshots normally reproduce those raw hashes already. Keep this block only as
-# a fail-closed representation check for line-ending normalization in local PG.
-echo "::group::verify exact production guard representation"
-psql "$DB_URL" -X -v ON_ERROR_STOP=1 <<'SQL'
-DO $representation$
-DECLARE
-  r record;
-  v_definition text;
-  v_raw_hash text;
-BEGIN
-  FOR r IN
-    SELECT * FROM (VALUES
-      ('record_attendance_gps_v2',
-       'p_latitude numeric, p_longitude numeric, p_gps_accuracy numeric, p_log_type text, p_event_time timestamp with time zone',
-       '12e9b106ce2992fd3268cadfde21558b',
-       'bd70c45984e188a38cceb45eea00fa00'),
-      ('upsert_attendance_and_reprocess',
-       'p_employee_id uuid, p_shift_date date, p_punch_in_time timestamp with time zone, p_punch_out_time timestamp with time zone, p_status hr_attendance_status, p_notes text, p_user_id uuid',
-       'e00a7617452d6b2796366b9e9be12e90',
-       'a0123e9ec343603dee9adf4ec73739b4'),
-      ('is_employee_work_day',
-       'p_employee_id uuid, p_date date',
-       '561f564a44537961e799f5826cbf865b',
-       '3e047334df57ad284bea8e9504724dd0'),
-      ('mark_daily_absences',
-       'p_target_date date',
-       '45983089033bddad79c682d5b58f122e',
-       '21e4cb27c5d1008da928cbf14ad56f1b')
-    ) AS x(proname, identity_args, normalized_hash, raw_hash)
-  LOOP
-    SELECT pg_get_functiondef(p.oid), md5(pg_get_functiondef(p.oid))
-      INTO v_definition, v_raw_hash
-    FROM pg_proc p
-    JOIN pg_namespace n ON n.oid=p.pronamespace
-    WHERE n.nspname='public'
-      AND p.proname=r.proname
-      AND pg_get_function_identity_arguments(p.oid)=r.identity_args;
-
-    IF v_definition IS NULL THEN
-      RAISE EXCEPTION 'Missing production function % during representation verification', r.proname;
-    END IF;
-
-    IF md5(replace((SELECT p.prosrc FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
-                    WHERE n.nspname='public' AND p.proname=r.proname
-                      AND pg_get_function_identity_arguments(p.oid)=r.identity_args), E'\r\n', E'\n'))
-       IS DISTINCT FROM r.normalized_hash THEN
-      RAISE EXCEPTION 'Normalized production body drifted for %', r.proname;
-    END IF;
-
-    IF v_raw_hash IS DISTINCT FROM r.raw_hash THEN
-      v_definition := replace(replace(v_definition, E'\r\n', E'\n'), E'\n', E'\r\n');
-      EXECUTE v_definition;
-
-      SELECT md5(pg_get_functiondef(p.oid)) INTO v_raw_hash
-      FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
-      WHERE n.nspname='public' AND p.proname=r.proname
-        AND pg_get_function_identity_arguments(p.oid)=r.identity_args;
-
-      IF v_raw_hash IS DISTINCT FROM r.raw_hash THEN
-        RAISE EXCEPTION 'Could not reproduce captured production representation for % (actual=%)', r.proname, v_raw_hash;
-      END IF;
-    END IF;
-  END LOOP;
-END;
-$representation$;
-SQL
-echo "::endgroup::"
 
 run_sql_file "$MIGRATIONS_DIR/20260807114500_hr_variable_schedules_v2_batch1_schema.sql"
 run_sql_file "$VERIFY_DIR/20260807114600_hr_variable_schedules_v2_batch1_verify.sql"
