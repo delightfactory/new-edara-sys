@@ -43,6 +43,16 @@ jobs:
             exit "$status"
           fi
 
+      - name: Assemble validated split snapshot payloads
+        shell: bash
+        run: |
+          cat \
+            supabase/rehearsal/production_snapshot/functions/process_attendance_penalties.sql.b64.part1 \
+            supabase/rehearsal/production_snapshot/functions/process_attendance_penalties.sql.b64.part2 \
+            supabase/rehearsal/production_snapshot/functions/process_attendance_penalties.sql.b64.part3 \
+            supabase/rehearsal/production_snapshot/functions/process_attendance_penalties.sql.b64.part4 \
+            > supabase/rehearsal/production_snapshot/functions/process_attendance_penalties.sql.b64
+
       - name: Ensure PostgreSQL client exists
         shell: bash
         run: |
