@@ -61,7 +61,16 @@ jobs:
           DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
           ROOT_DIR: ${{ github.workspace }}
         run: |
-          bash supabase/rehearsal/hr_v2_rehearsal.sh
+          set +e
+          output="$(bash supabase/rehearsal/hr_v2_rehearsal.sh 2>&1)"
+          status=$?
+          set -e
+          printf '%s\n' "$output"
+          if [ "$status" -ne 0 ]; then
+            error_message="$(printf '%s\n' "$output" | tail -n 12 | tr '\n' ' ' | sed -e 's/%/%25/g' -e 's/\r/%0D/g')"
+            echo "::error title=HR V2 rehearsal failed::$error_message"
+            exit "$status"
+          fi
 
       - name: Stop and delete isolated local database
         if: always()
