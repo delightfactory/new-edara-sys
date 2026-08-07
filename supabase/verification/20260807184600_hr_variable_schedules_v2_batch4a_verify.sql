@@ -30,10 +30,11 @@ BEGIN
   FROM pg_proc p
   JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public'
-    AND p.proname = 'calculate_payroll_run';
+    AND p.proname = 'calculate_payroll_run'
+    AND pg_get_function_identity_arguments(p.oid) = 'p_run_id uuid';
 
-  IF v_hash IS DISTINCT FROM '5f7b0581e528bad0ff4b7c7aaa6ad56a' THEN
-    RAISE EXCEPTION 'Batch 4A verification failed: calculate_payroll_run changed';
+  IF v_hash IS DISTINCT FROM '2b79ef75f35f8deb2f2daa768e64d50f' THEN
+    RAISE EXCEPTION 'Batch 4A verification failed: calculate_payroll_run changed (actual=%)', v_hash;
   END IF;
 
   SELECT md5(replace(p.prosrc, E'\r\n', E'\n'))
@@ -41,10 +42,11 @@ BEGIN
   FROM pg_proc p
   JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public'
-    AND p.proname = 'approve_payroll_run';
+    AND p.proname = 'approve_payroll_run'
+    AND pg_get_function_identity_arguments(p.oid) = 'p_run_id uuid, p_user_id uuid';
 
-  IF v_hash IS DISTINCT FROM '94cd85ed5847e5a7f1eb452cd684f90c' THEN
-    RAISE EXCEPTION 'Batch 4A verification failed: approve_payroll_run changed';
+  IF v_hash IS DISTINCT FROM '4a3e9678f6a4c7b74f422d47c8239465' THEN
+    RAISE EXCEPTION 'Batch 4A verification failed: approve_payroll_run changed (actual=%)', v_hash;
   END IF;
 
   SELECT p.prosrc
@@ -69,7 +71,7 @@ BEGIN
   INTO v_metrics_body
   FROM pg_proc p
   JOIN pg_namespace n ON n.oid = p.pronamespace
-  WHERE n.nspname = 'public'
+  WHERE n.nname = 'public'
     AND p.proname = 'hr_v2_get_payroll_schedule_metrics'
     AND pg_get_function_identity_arguments(p.oid) = 'p_employee_id uuid, p_date_from date, p_date_to date';
 
