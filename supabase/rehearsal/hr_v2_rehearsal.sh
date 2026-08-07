@@ -13,15 +13,6 @@ run_sql_file() {
   echo "::endgroup::"
 }
 
-# Curated HR baseline only. This intentionally excludes production data seeds and
-# unrelated sales/analytics/inventory history. In particular, sales-only audit
-# migrations are not part of the HR reconstruction.
-#
-# The baseline gate is fail-closed. It first compares normalized PL/pgSQL bodies
-# so Windows CRLF vs Linux LF cannot create a false mismatch. Only after semantic
-# parity is proven do we re-serialize the four functions guarded by V2 using the
-# CRLF representation captured in production. This lets the original V2 migration
-# guards and verification files run UNCHANGED.
 BASELINE_FILES=(
   "01_foundation.sql"
   "02_master_data.sql"
@@ -134,11 +125,6 @@ $baseline$;
 SQL
 echo "::endgroup::"
 
-# Production currently stores the captured legacy PL/pgSQL bodies with CRLF line
-# endings. Git checkout on the Linux runner materializes the same SQL as LF. The
-# V2 migration guards intentionally use the raw production definition hashes, so
-# normalize ONLY this disposable database representation back to CRLF after the
-# semantic normalized-body gate above has already proven parity.
 echo "::group::materialize captured production function representation"
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 <<'SQL'
 DO $representation$
@@ -206,10 +192,6 @@ $raw_gate$;
 SQL
 echo "::endgroup::"
 
-# Each batch is verified immediately after its migration and before the next batch
-# is allowed to mutate any contract that the previous batch intentionally froze.
-# This preserves the meaning of batch-local assertions (for example Batch 3A1
-# proves mark_daily_absences is untouched before Batch 3A2 deliberately wraps it).
 run_sql_file "$MIGRATIONS_DIR/20260807114500_hr_variable_schedules_v2_batch1_schema.sql"
 run_sql_file "$VERIFY_DIR/20260807114600_hr_variable_schedules_v2_batch1_verify.sql"
 
@@ -233,6 +215,10 @@ run_sql_file "$VERIFY_DIR/20260807170600_hr_variable_schedules_v2_batch3b2_verif
 
 run_sql_file "$MIGRATIONS_DIR/20260807172500_hr_variable_schedules_v2_batch3b3_leave_settlement.sql"
 run_sql_file "$VERIFY_DIR/20260807172600_hr_variable_schedules_v2_batch3b3_verify.sql"
+
+run_sql_file "$MIGRATIONS_DIR/20260807181500_hr_variable_schedules_v2_batch3c_public_holiday_precedence.sql"
+run_sql_file "$VERIFY_DIR/20260807181600_hr_variable_schedules_v2_batch3c_verify.sql"
+run_sql_file "$VERIFY_DIR/20260807181700_hr_variable_schedules_v2_batch3c_holiday_simulation.sql"
 
 run_sql_file "$VERIFY_DIR/20260807174000_hr_variable_schedules_v2_batch3_integration_simulation.sql"
 
