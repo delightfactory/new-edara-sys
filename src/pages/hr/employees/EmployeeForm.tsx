@@ -1,7 +1,8 @@
 ﻿import { useState, useEffect, useCallback } from 'react'
 import { UserPlus, UserCog, Link, AlertCircle } from 'lucide-react'
 import type {
-  HREmployee, HREmployeeInput, HRGender, HRMaritalStatus, HRDayOfWeek, HRAttendancePolicyMode,
+  HREmployee, HREmployeeInput, HREmployeeWorkScheduleDay,
+  HRGender, HRMaritalStatus, HRDayOfWeek, HRAttendancePolicyMode,
 } from '@/lib/types/hr'
 import {
   useHRDepartments,
@@ -10,7 +11,11 @@ import {
   useCreateEmployee,
   useUpdateEmployee,
 } from '@/hooks/useQueryHooks'
-import { linkEmployeeToUser } from '@/lib/services/hr'
+import {
+  getEmployeeWeeklySchedule,
+  linkEmployeeToUser,
+  setEmployeeWeeklySchedule,
+} from '@/lib/services/hr'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
@@ -44,6 +49,47 @@ const EMPTY_FORM: HREmployeeInput = {
   attendance_checkout_mode: 'assigned_only',
   allowed_checkin_location_ids: [],
   allowed_checkout_location_ids: [],
+}
+
+const WEEK_DAYS: { value: HRDayOfWeek; label: string }[] = [
+  { value: 'saturday',  label: 'السبت' },
+  { value: 'sunday',    label: 'الأحد' },
+  { value: 'monday',    label: 'الإثنين' },
+  { value: 'tuesday',   label: 'الثلاثاء' },
+  { value: 'wednesday', label: 'الأربعاء' },
+  { value: 'thursday',  label: 'الخميس' },
+  { value: 'friday',    label: 'الجمعة' },
+]
+
+function defaultWeeklySchedule(): HREmployeeWorkScheduleDay[] {
+  return WEEK_DAYS.map(day => ({
+    day_of_week: day.value,
+    is_working_day: day.value !== 'friday',
+    start_time: day.value === 'friday' ? null : '08:00',
+    end_time: day.value === 'friday' ? null : '17:00',
+  }))
+}
+
+function tomorrowDateInput(): string {
+  const parts = new Intl.DateTimeFormat('en', {
+    timeZone: 'Africa/Cairo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date())
+  const getPart = (type: Intl.DateTimeFormatPartTypes) => (
+    Number(parts.find(part => part.type === type)?.value)
+  )
+  const cairoTomorrow = new Date(Date.UTC(
+    getPart('year'),
+    getPart('month') - 1,
+    getPart('day') + 1,
+  ))
+  return cairoTomorrow.toISOString().slice(0, 10)
+}
+
+function normalizeScheduleTime(value: string | null): string | null {
+  return value ? value.slice(0, 5) : null
 }
 
 // تحويل موظف موجود إلى HREmployeeInput (بدون الحقول المحسوبة!)
@@ -90,18 +136,28 @@ export default function EmployeeForm({ open, onClose, employee, onToast }: Props
 
   const [form, setForm] = useState<HREmployeeInput>(EMPTY_FORM)
   const [authEmail, setAuthEmail] = useState('')   // حقل الربط الاختياري
+  const [useCustomSchedule, setUseCustomSchedule] = useState(false)
+  const [weeklySchedule, setWeeklySchedule] = useState<HREmployeeWorkScheduleDay[]>(defaultWeeklySchedule)
+  const [scheduleEffectiveFrom, setScheduleEffectiveFrom] = useState(tomorrowDateInput)
+  const [loadedScheduleEffectiveFrom, setLoadedScheduleEffectiveFrom] = useState<string | null>(null)
+  const [scheduleDirty, setScheduleDirty] = useState(false)
+  const [scheduleLoading, setScheduleLoading] = useState(false)
+  const [scheduleLoadError, setScheduleLoadError] = useState('')
+  const [scheduleError, setScheduleError] = useState('')
+  const [savingSchedule, setSavingSchedule] = useState(false)
   const [activeStepIndex, setActiveStepIndex] = useState(0)
   const steps = [
     { id: 'basic',  label: 'البيانات الشخصية' },
     { id: 'job',    label: 'بيانات التوظيف' },
     { id: 'salary', label: 'الراتب والبدلات' },
+    { id: 'schedule', label: 'جدول العمل' },
   ] as const
   const activeTab = steps[activeStepIndex].id
   const [errors, setErrors] = useState<Partial<Record<keyof HREmployeeInput, string>>>({})
 
   const createMut = useCreateEmployee()
   const updateMut = useUpdateEmployee()
-  const loading = createMut.isPending || updateMut.isPending
+  const loading = createMut.isPending || updateMut.isPending || savingSchedule || scheduleLoading
 
   // ── جلب بيانات الرجوع ──────────────────
   const { data: departments = [] } = useHRDepartments()
@@ -113,11 +169,54 @@ export default function EmployeeForm({ open, onClose, employee, onToast }: Props
     if (open) {
       setForm(isEdit ? employeeToInput(employee!) : EMPTY_FORM)
       setAuthEmail('')
+      setUseCustomSchedule(false)
+      setWeeklySchedule(defaultWeeklySchedule())
+      setScheduleEffectiveFrom(tomorrowDateInput())
+      setLoadedScheduleEffectiveFrom(null)
+      setScheduleDirty(false)
+      setScheduleLoadError('')
+      setScheduleError('')
       setActiveStepIndex(0)
       setErrors({})
       setTabErrors({})
     }
   }, [open, isEdit, employee])
+
+  useEffect(() => {
+    if (!open) return
+
+    let cancelled = false
+    setScheduleLoading(true)
+    setScheduleLoadError('')
+
+    getEmployeeWeeklySchedule(employee?.id)
+      .then(result => {
+        if (cancelled) return
+        setUseCustomSchedule(result.has_custom_schedule)
+        setLoadedScheduleEffectiveFrom(result.effective_from)
+        setScheduleEffectiveFrom(
+          result.effective_from && result.effective_from >= tomorrowDateInput()
+            ? result.effective_from
+            : tomorrowDateInput()
+        )
+        setWeeklySchedule(result.schedule.map(day => ({
+          ...day,
+          start_time: normalizeScheduleTime(day.start_time),
+          end_time: normalizeScheduleTime(day.end_time),
+        })))
+        setScheduleDirty(false)
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setScheduleLoadError('تعذّر تحميل جدول العمل الحالي. أغلق النموذج وأعد فتحه قبل الحفظ.')
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setScheduleLoading(false)
+      })
+
+    return () => { cancelled = true }
+  }, [open, employee])
 
   const set = <K extends keyof HREmployeeInput>(key: K) =>
     (val: HREmployeeInput[K] | null) =>
@@ -131,6 +230,59 @@ export default function EmployeeForm({ open, onClose, employee, onToast }: Props
         : [...current, locationId]
       return { ...prev, [key]: next }
     })
+  }
+
+  const updateScheduleDay = (
+    day: HRDayOfWeek,
+    patch: Partial<HREmployeeWorkScheduleDay>
+  ) => {
+    setWeeklySchedule(current => current.map(item => {
+      if (item.day_of_week !== day) return item
+      const next = { ...item, ...patch }
+      if (patch.is_working_day === false) {
+        next.start_time = null
+        next.end_time = null
+      } else if (patch.is_working_day === true) {
+        const reference = current.find(candidate => (
+          candidate.is_working_day && candidate.start_time && candidate.end_time
+        ))
+        next.start_time = next.start_time ?? reference?.start_time ?? '08:00'
+        next.end_time = next.end_time ?? reference?.end_time ?? '17:00'
+      }
+      return next
+    }))
+    setScheduleDirty(true)
+    setScheduleError('')
+  }
+
+  function validateSchedule(): boolean {
+    if (scheduleEffectiveFrom < tomorrowDateInput()) {
+      setScheduleError('تاريخ بدء الجدول يجب أن يكون غداً أو بعده')
+      return false
+    }
+
+    if (!useCustomSchedule) {
+      setScheduleError('')
+      return true
+    }
+
+    const workingDays = weeklySchedule.filter(day => day.is_working_day)
+    if (workingDays.length === 0) {
+      setScheduleError('يجب تحديد يوم عمل واحد على الأقل')
+      return false
+    }
+
+    const invalid = workingDays.find(day => (
+      !day.start_time || !day.end_time || day.end_time <= day.start_time
+    ))
+    if (invalid) {
+      const label = WEEK_DAYS.find(day => day.value === invalid.day_of_week)?.label ?? invalid.day_of_week
+      setScheduleError(`راجع وقت البداية والنهاية ليوم ${label}`)
+      return false
+    }
+
+    setScheduleError('')
+    return true
   }
 
   const attendanceModeOptions: { value: HRAttendancePolicyMode; label: string }[] = [
@@ -167,6 +319,7 @@ export default function EmployeeForm({ open, onClose, employee, onToast }: Props
     if (!form.personal_phone.trim()) e.personal_phone = 'رقم الهاتف مطلوب'
     if (!form.hire_date)           e.hire_date = 'تاريخ التعيين مطلوب'
     if (form.base_salary <= 0)     e.base_salary = 'الراتب الأساسي يجب أن يكون أكبر من صفر'
+    const scheduleValid = validateSchedule()
     setErrors(e)
 
     // UX-01: تحديد أي تاب فيه خطأ
@@ -174,6 +327,7 @@ export default function EmployeeForm({ open, onClose, employee, onToast }: Props
     if (e.full_name || e.personal_phone) tabWithErrors['basic'] = true
     if (e.hire_date)                     tabWithErrors['job']   = true
     if (e.base_salary)                   tabWithErrors['salary'] = true
+    if (!scheduleValid || scheduleLoadError) tabWithErrors['schedule'] = true
     setTabErrors(tabWithErrors)
 
     // إذا التاب الحالي ليس فيه خطأ لكن تاب آخر فيه — انتقل له
@@ -183,7 +337,7 @@ export default function EmployeeForm({ open, onClose, employee, onToast }: Props
       const idx = steps.findIndex(s => s.id === firstErrorStepId)
       if (idx !== -1) setActiveStepIndex(idx)
     }
-    return Object.keys(e).length === 0
+    return Object.keys(e).length === 0 && scheduleValid && !scheduleLoadError
   }
 
   // ── Step Navigation ────────────────────────
@@ -198,6 +352,8 @@ export default function EmployeeForm({ open, onClose, employee, onToast }: Props
       if (!form.hire_date) { e.hire_date = 'تاريخ التعيين مطلوب'; isValid = false } else { delete e.hire_date }
     } else if (activeTab === 'salary') {
       if (form.base_salary <= 0) { e.base_salary = 'الراتب الأساسي يجب أن يكون أكبر من صفر'; isValid = false } else { delete e.base_salary }
+    } else if (activeTab === 'schedule') {
+      isValid = validateSchedule() && !scheduleLoadError
     }
     setErrors(e)
     if (!isValid) onToast('يرجى معالجة الأخطاء قبل الانتقال', 'warning')
@@ -218,18 +374,30 @@ export default function EmployeeForm({ open, onClose, employee, onToast }: Props
   async function handleSubmit() {
     if (!validate()) return
 
+    let employeeSaved = false
     try {
       let employeeId: string
+      setSavingSchedule(true)
 
       if (isEdit) {
         const updated = await updateMut.mutateAsync({ id: employee!.id, input: form })
         employeeId = updated.id
-        onToast('تم تحديث بيانات الموظف بنجاح', 'success')
       } else {
         const created = await createMut.mutateAsync(form)
         employeeId = created.id
-        onToast('تم إضافة الموظف بنجاح', 'success')
       }
+      employeeSaved = true
+
+      const shouldSaveSchedule = isEdit ? scheduleDirty : useCustomSchedule
+      if (shouldSaveSchedule) {
+        await setEmployeeWeeklySchedule(
+          employeeId,
+          useCustomSchedule ? weeklySchedule : null,
+          scheduleEffectiveFrom,
+        )
+      }
+
+      onToast(isEdit ? 'تم تحديث بيانات الموظف وجدول عمله بنجاح' : 'تم إضافة الموظف وجدول عمله بنجاح', 'success')
 
       // ── ربط الحساب بالبريد الإلكتروني (اختياري — لا يُلغي العملية إذا فشل) ──
       if (!isEdit && authEmail.trim()) {
@@ -253,9 +421,28 @@ export default function EmployeeForm({ open, onClose, employee, onToast }: Props
     } catch (err: unknown) {
       // عرض رسالة Supabase/PostgreSQL كما هي (عربية)
       const msg = err instanceof Error ? err.message : 'حدث خطأ غير متوقع'
-      onToast(msg, 'error')
+      if (employeeSaved) {
+        onToast(
+          `تم حفظ بيانات الموظف، لكن تعذّر حفظ تغيير جدول العمل: ${msg}. افتح الموظف وحاول حفظ الجدول مرة أخرى.`,
+          'warning',
+        )
+        onClose()
+      } else {
+        onToast(msg, 'error')
+      }
+    } finally {
+      setSavingSchedule(false)
     }
   }
+
+  const weeklyScheduledMinutes = weeklySchedule.reduce((total, day) => {
+    if (!day.is_working_day || !day.start_time || !day.end_time) return total
+    const [startHour, startMinute] = day.start_time.split(':').map(Number)
+    const [endHour, endMinute] = day.end_time.split(':').map(Number)
+    return total + ((endHour * 60 + endMinute) - (startHour * 60 + startMinute))
+  }, 0)
+  const hasPendingSchedule = !!loadedScheduleEffectiveFrom
+    && loadedScheduleEffectiveFrom >= tomorrowDateInput()
 
   return (
     <ResponsiveModal
@@ -625,9 +812,12 @@ export default function EmployeeForm({ open, onClose, employee, onToast }: Props
                 { value: 'friday',    label: 'الجمعة' },
                 { value: 'saturday',  label: 'السبت' },
                 { value: 'sunday',    label: 'الأحد' },
-                { value: 'thursday',  label: 'الخميس' },
                 { value: 'monday',    label: 'الإثنين' },
+                { value: 'tuesday',   label: 'الثلاثاء' },
+                { value: 'wednesday', label: 'الأربعاء' },
+                { value: 'thursday',  label: 'الخميس' },
               ]}
+              hint="يُستخدم فقط عند عدم تفعيل جدول عمل خاص"
             />
             <div className="form-group">
               <label className="form-label">موظف ميداني؟</label>
@@ -752,6 +942,146 @@ export default function EmployeeForm({ open, onClose, employee, onToast }: Props
         </div>
       )}
 
+      {/* ══ TAB 4: جدول العمل الأسبوعي ══ */}
+      {activeTab === 'schedule' && (
+        <div className="emp-form-section">
+          <div className="emp-schedule-intro">
+            <div>
+              <strong>جدول عمل خاص بالموظف</strong>
+              <p>
+                عند إيقافه يتبع الموظف مواعيد الشركة ويوم الراحة المحدد في بيانات التوظيف.
+                عند تفعيله تصبح المواعيد أدناه هي المرجع للحضور والتأخير والانصراف والأوفرتايم والراتب.
+              </p>
+            </div>
+            <label className="emp-toggle">
+              <input
+                type="checkbox"
+                checked={useCustomSchedule}
+                onChange={event => {
+                  setUseCustomSchedule(event.target.checked)
+                  setScheduleDirty(true)
+                  setScheduleError('')
+                }}
+                disabled={scheduleLoading || !!scheduleLoadError}
+              />
+              <span className="emp-toggle-track" />
+              <span className="emp-toggle-label">{useCustomSchedule ? 'مفعّل' : 'يتبع الشركة'}</span>
+            </label>
+          </div>
+
+          {!scheduleLoading && !scheduleLoadError && (
+            <div className="emp-schedule-effective">
+              <label htmlFor="employee-schedule-effective-from">يبدأ تطبيق التغيير من</label>
+              <input
+                id="employee-schedule-effective-from"
+                className="form-input"
+                type="date"
+                dir="ltr"
+                min={tomorrowDateInput()}
+                value={scheduleEffectiveFrom}
+                disabled={hasPendingSchedule}
+                onChange={event => {
+                  setScheduleEffectiveFrom(event.target.value)
+                  setScheduleDirty(true)
+                  setScheduleError('')
+                }}
+              />
+              <p>
+                {hasPendingSchedule
+                  ? `يوجد تغيير محفوظ سيبدأ في ${loadedScheduleEffectiveFrom}. يمكنك تعديل محتواه بنفس التاريخ.`
+                  : loadedScheduleEffectiveFrom
+                    ? `الجدول الحالي محفوظ منذ ${loadedScheduleEffectiveFrom}. أي تعديل جديد يبدأ من التاريخ المحدد دون تغيير الأيام السابقة.`
+                    : 'أي تغيير يبدأ من التاريخ المحدد دون تعديل أيام الحضور السابقة أو اليوم المفتوح.'}
+              </p>
+            </div>
+          )}
+
+          {scheduleLoading && (
+            <div className="emp-schedule-message">جارٍ تحميل جدول العمل…</div>
+          )}
+
+          {scheduleLoadError && (
+            <div className="emp-schedule-message emp-schedule-message--error">
+              <AlertCircle size={16} />
+              {scheduleLoadError}
+            </div>
+          )}
+
+          {useCustomSchedule && !scheduleLoading && !scheduleLoadError && (
+            <>
+              <div className="emp-schedule-table">
+                <div className="emp-schedule-row emp-schedule-row--header">
+                  <span>اليوم</span>
+                  <span>يوم عمل</span>
+                  <span>الحضور</span>
+                  <span>الانصراف</span>
+                  <span>الساعات</span>
+                </div>
+
+                {WEEK_DAYS.map(dayOption => {
+                  const day = weeklySchedule.find(item => item.day_of_week === dayOption.value)
+                    ?? defaultWeeklySchedule().find(item => item.day_of_week === dayOption.value)!
+                  const minutes = day.is_working_day && day.start_time && day.end_time
+                    ? Math.max(0,
+                      (Number(day.end_time.slice(0, 2)) * 60 + Number(day.end_time.slice(3, 5)))
+                      - (Number(day.start_time.slice(0, 2)) * 60 + Number(day.start_time.slice(3, 5)))
+                    )
+                    : 0
+
+                  return (
+                    <div key={dayOption.value} className={`emp-schedule-row ${day.is_working_day ? '' : 'emp-schedule-row--off'}`}>
+                      <strong>{dayOption.label}</strong>
+                      <label className="emp-schedule-working">
+                        <input
+                          type="checkbox"
+                          checked={day.is_working_day}
+                          onChange={event => updateScheduleDay(day.day_of_week, { is_working_day: event.target.checked })}
+                        />
+                        <span>{day.is_working_day ? 'عمل' : 'راحة'}</span>
+                      </label>
+                      <input
+                        className="form-input emp-schedule-time"
+                        type="time"
+                        dir="ltr"
+                        value={day.start_time ?? ''}
+                        disabled={!day.is_working_day}
+                        aria-label={`موعد حضور ${dayOption.label}`}
+                        onChange={event => updateScheduleDay(day.day_of_week, { start_time: event.target.value || null })}
+                      />
+                      <input
+                        className="form-input emp-schedule-time"
+                        type="time"
+                        dir="ltr"
+                        value={day.end_time ?? ''}
+                        disabled={!day.is_working_day}
+                        aria-label={`موعد انصراف ${dayOption.label}`}
+                        onChange={event => updateScheduleDay(day.day_of_week, { end_time: event.target.value || null })}
+                      />
+                      <span className="emp-schedule-hours">
+                        {day.is_working_day ? `${(minutes / 60).toFixed(minutes % 60 ? 1 : 0)} ساعة` : '—'}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+
+              <div className="emp-schedule-summary">
+                <span>{weeklySchedule.filter(day => day.is_working_day).length} أيام عمل أسبوعياً</span>
+                <strong>{(weeklyScheduledMinutes / 60).toFixed(weeklyScheduledMinutes % 60 ? 1 : 0)} ساعة أسبوعياً</strong>
+              </div>
+
+            </>
+          )}
+
+          {scheduleError && !scheduleLoading && !scheduleLoadError && (
+            <div className="emp-schedule-message emp-schedule-message--error">
+              <AlertCircle size={16} />
+              {scheduleError}
+            </div>
+          )}
+        </div>
+      )}
+
       <style>{`
         .emp-stepper {
           display: flex; justify-content: space-between; align-items: flex-start;
@@ -803,6 +1133,112 @@ export default function EmployeeForm({ open, onClose, employee, onToast }: Props
           font-size: var(--text-sm);
           color: var(--text-secondary);
           cursor: pointer;
+        }
+
+        .emp-schedule-intro {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: var(--space-4);
+          padding: var(--space-4);
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-md);
+          background: var(--bg-surface-2);
+        }
+        .emp-schedule-intro p {
+          margin: 6px 0 0;
+          color: var(--text-muted);
+          font-size: var(--text-xs);
+          line-height: 1.7;
+        }
+        .emp-schedule-effective {
+          display: grid;
+          grid-template-columns: minmax(150px, auto) minmax(180px, 240px) 1fr;
+          align-items: center;
+          gap: var(--space-3);
+          padding: var(--space-3);
+          margin-block: var(--space-4);
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-md);
+          background: var(--bg-surface-2);
+        }
+        .emp-schedule-effective label {
+          font-weight: 600;
+          color: var(--text-primary);
+        }
+        .emp-schedule-effective p {
+          margin: 0;
+          color: var(--text-secondary);
+          line-height: 1.7;
+          text-align: start;
+        }
+        .emp-schedule-table {
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-md);
+          overflow: hidden;
+        }
+        .emp-schedule-row {
+          display: grid;
+          grid-template-columns: minmax(90px, 1fr) minmax(80px, .8fr) minmax(105px, 1fr) minmax(105px, 1fr) minmax(75px, .8fr);
+          gap: var(--space-3);
+          align-items: center;
+          padding: var(--space-3) var(--space-4);
+          border-bottom: 1px solid var(--border-color);
+        }
+        .emp-schedule-row:last-child { border-bottom: 0; }
+        .emp-schedule-row--header {
+          color: var(--text-muted);
+          background: var(--bg-surface-2);
+          font-size: var(--text-xs);
+          font-weight: 700;
+        }
+        .emp-schedule-row--off {
+          color: var(--text-muted);
+          background: var(--bg-surface-2);
+        }
+        .emp-schedule-working {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: var(--text-sm);
+          cursor: pointer;
+        }
+        .emp-schedule-time { min-width: 0; text-align: center; }
+        .emp-schedule-hours { font-size: var(--text-sm); color: var(--text-secondary); }
+        .emp-schedule-summary {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: var(--space-3);
+          padding: var(--space-3) var(--space-4);
+          border-radius: var(--radius-md);
+          background: var(--bg-primary-light);
+          color: var(--color-primary);
+          font-size: var(--text-sm);
+        }
+        .emp-schedule-message {
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+          padding: var(--space-3);
+          border-radius: var(--radius-md);
+          background: var(--bg-surface-2);
+          color: var(--text-muted);
+          font-size: var(--text-sm);
+        }
+        .emp-schedule-message--error {
+          color: var(--color-danger);
+          background: var(--bg-danger-light);
+        }
+
+        @media (max-width: 720px) {
+          .emp-schedule-intro { align-items: flex-start; flex-direction: column; }
+          .emp-schedule-effective { grid-template-columns: 1fr; }
+          .emp-schedule-row {
+            grid-template-columns: 1fr 1fr;
+          }
+          .emp-schedule-row--header { display: none; }
+          .emp-schedule-hours { grid-column: 1 / -1; }
         }
 
         /* Auth link section */

@@ -229,6 +229,24 @@ export interface HREmployeeInput {
   notes?: string | null
 }
 
+/** One day inside a dated seven-day employee schedule version. */
+export interface HREmployeeWorkScheduleDay {
+  employee_id?: string
+  effective_from?: string
+  day_of_week: HRDayOfWeek
+  is_working_day: boolean
+  start_time: string | null       // TIME (HH:mm or HH:mm:ss)
+  end_time: string | null         // TIME (HH:mm or HH:mm:ss)
+  created_at?: string
+  updated_at?: string
+}
+
+export interface HREmployeeWorkScheduleEditor {
+  has_custom_schedule: boolean
+  effective_from: string | null
+  schedule: HREmployeeWorkScheduleDay[]
+}
+
 // ─────────────────────────────────────────────────────────────
 // 17. CONTRACTS — hr_contracts
 // ─────────────────────────────────────────────────────────────

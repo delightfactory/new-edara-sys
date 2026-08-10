@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase/client'
 import { getAuthUserId } from '@/lib/services/_get-user-id'
 import type {
-  HREmployee, HREmployeeInput,
+  HREmployee, HREmployeeInput, HREmployeeWorkScheduleDay, HREmployeeWorkScheduleEditor,
   HRDepartment, HRDepartmentInput,
   HRPosition, HRPositionInput,
   HRContract, HRContractInput,
@@ -242,6 +242,44 @@ export async function updateEmployee(id: string, input: Partial<HREmployeeInput>
     .single()
   if (error) throw error
   return data as HREmployee
+}
+
+/**
+ * Returns the latest saved version (including a pending future version), or
+ * the real company defaults. The database performs the permission check.
+ */
+export async function getEmployeeWeeklySchedule(
+  employeeId?: string
+): Promise<HREmployeeWorkScheduleEditor> {
+  const { data, error } = await supabase.rpc('get_employee_weekly_schedule_for_editor', {
+    p_employee_id: employeeId ?? null,
+  })
+  if (error) throw error
+  return data as HREmployeeWorkScheduleEditor
+}
+
+/**
+ * Saves a complete dated version atomically. Passing null schedules a return
+ * to company defaults without deleting historical schedule versions.
+ */
+export async function setEmployeeWeeklySchedule(
+  employeeId: string,
+  schedule: HREmployeeWorkScheduleDay[] | null,
+  effectiveFrom: string,
+): Promise<void> {
+  const payload = schedule?.map(day => ({
+    day_of_week: day.day_of_week,
+    is_working_day: day.is_working_day,
+    start_time: day.is_working_day ? day.start_time : null,
+    end_time: day.is_working_day ? day.end_time : null,
+  })) ?? null
+
+  const { error } = await supabase.rpc('set_employee_weekly_schedule', {
+    p_employee_id: employeeId,
+    p_schedule: payload,
+    p_effective_from: effectiveFrom,
+  })
+  if (error) throw error
 }
 
 /**
