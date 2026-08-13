@@ -442,6 +442,13 @@ CREATE INDEX idx_work_items_status_next_action
 CREATE INDEX idx_work_items_branch_department
   ON public.work_items(branch_id, owning_department_id);
 
+CREATE INDEX idx_work_items_department_status
+  ON public.work_items(owning_department_id, status)
+  WHERE owning_department_id IS NOT NULL;
+
+CREATE INDEX idx_work_items_status_created
+  ON public.work_items(status, created_at DESC);
+
 CREATE INDEX idx_work_items_last_meaningful_activity
   ON public.work_items(last_meaningful_activity_at)
   WHERE last_meaningful_activity_at IS NOT NULL;
@@ -526,17 +533,17 @@ REVOKE ALL ON TABLE public.work_dependencies FROM anon, authenticated;
 REVOKE ALL ON TABLE public.work_links FROM anon, authenticated;
 REVOKE ALL ON TABLE public.work_attachments FROM anon, authenticated;
 
--- Internal/service operations remain possible while browser access is closed.
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.work_items TO service_role;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.work_participants TO service_role;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.work_comments TO service_role;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.work_mentions TO service_role;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.work_events TO service_role;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.work_checklist_items TO service_role;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.work_dependencies TO service_role;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.work_links TO service_role;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.work_attachments TO service_role;
-GRANT USAGE, SELECT ON SEQUENCE public.work_items_work_number_seq TO service_role;
+-- Service-side reads are allowed. Writes remain closed until controlled
+-- SECURITY DEFINER mutation RPCs are installed in Migration C.
+GRANT SELECT ON TABLE public.work_items TO service_role;
+GRANT SELECT ON TABLE public.work_participants TO service_role;
+GRANT SELECT ON TABLE public.work_comments TO service_role;
+GRANT SELECT ON TABLE public.work_mentions TO service_role;
+GRANT SELECT ON TABLE public.work_events TO service_role;
+GRANT SELECT ON TABLE public.work_checklist_items TO service_role;
+GRANT SELECT ON TABLE public.work_dependencies TO service_role;
+GRANT SELECT ON TABLE public.work_links TO service_role;
+GRANT SELECT ON TABLE public.work_attachments TO service_role;
 
 RESET lock_timeout;
 RESET statement_timeout;
