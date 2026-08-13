@@ -12,6 +12,11 @@ const rls = readFileSync(resolve(
   'supabase/migrations/20260813195600_work_management_read_rls.sql',
 ), 'utf8')
 
+const hierarchyHardening = readFileSync(resolve(
+  process.cwd(),
+  'supabase/migrations/20260813195700_work_management_read_rls_hierarchy_hardening.sql',
+), 'utf8')
+
 describe('work management permissions and read RLS contract', () => {
   it('seeds the existing RBAC model by role name without UUIDs or grade hierarchy', () => {
     expect(permissions).toContain('INSERT INTO public.role_permissions(role_id, permission)')
@@ -33,6 +38,14 @@ describe('work management permissions and read RLS contract', () => {
     }
   })
 
+  it('separates assignment authority from team operation authority', () => {
+    expect(permissions).toContain("'work.items.assign'")
+    expect(permissions).toContain("'work.items.manage_team'")
+    expect(permissions).toContain("('sales_supervisor', 'work.items.manage_team')")
+    expect(permissions).toContain("('branch_manager', 'work.items.manage_team')")
+    expect(permissions).toContain("('hr_manager', 'work.items.manage_team')")
+  })
+
   it('derives browser identity from auth.uid and rejects inactive profiles', () => {
     expect(rls).toContain('auth.uid()')
     expect(rls).toContain("p.status::TEXT = 'active'")
@@ -44,6 +57,12 @@ describe('work management permissions and read RLS contract', () => {
     expect(rls).toContain('dc.manager_id = p_user_id')
     expect(rls).toContain('manager.id = mc.direct_manager_id')
     expect(rls).toContain('NOT manager.id = ANY(mc.path)')
+  })
+
+  it('requires active manager records in the hardened hierarchy resolver', () => {
+    expect(hierarchyHardening).toContain("manager.status::TEXT = 'active'")
+    expect(hierarchyHardening).toContain("manager_profile.status::TEXT = 'active'")
+    expect(hierarchyHardening).toContain('The target employee may be inactive')
   })
 
   it('requires visibility to both sides before exposing a dependency', () => {
