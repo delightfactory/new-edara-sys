@@ -4,6 +4,7 @@
 
 ## A — Foundation
 - [x] Canonical `work_items`
+- [x] Approved canonical state model (`draft/open/in_progress/waiting/pending_approval/done/cancelled`)
 - [x] Owner vs current assignee separation
 - [x] Source lineage / source key
 - [x] Next Action / due / waiting fields
@@ -13,7 +14,8 @@
 - [x] Participants
 - [x] Comments + progress updates
 - [x] Mentions
-- [x] Append-only event table foundation
+- [x] Event/timeline table foundation
+- [ ] Database-enforced `work_events` UPDATE/DELETE immutability
 - [x] Checklists
 - [x] Dependencies foundation
 - [x] Generic entity links foundation
@@ -154,6 +156,10 @@
 - [ ] `مطلوب مني الآن` Action Inbox
 
 ## J — UX
+- [x] TypeScript Work domain types
+- [x] RLS-backed read API
+- [x] TanStack Query read hooks
+- [x] Core status/priority/operational badge semantics
 - [ ] `/work` module shell
 - [ ] My Action Inbox
 - [ ] Work Item details
