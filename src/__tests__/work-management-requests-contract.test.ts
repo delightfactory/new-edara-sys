@@ -17,6 +17,8 @@ const atomicity = readFileSync(resolve(
   'supabase/migrations/20260814111100_work_management_request_triage_atomicity.sql',
 ), 'utf8')
 
+const dynamicSqlExecute = /(?:^|\n)\s*EXECUTE\b/i
+
 describe('work requests / queues contract', () => {
   it('creates queue, membership, request type and runtime tables with RLS', () => {
     for (const table of ['work_queues', 'work_queue_members', 'work_request_types', 'work_requests']) {
@@ -43,7 +45,7 @@ describe('work requests / queues contract', () => {
     expect(commands).toContain('private.work_validate_intake_payload')
     expect(commands).toContain("jsonb_array_elements(p_schema->'fields')")
     expect(commands).toContain("'REQUIRED_FIELD_MISSING'")
-    expect(commands).not.toContain('EXECUTE ')
+    expect(commands).not.toMatch(dynamicSqlExecute)
   })
 
   it('provides idempotent request submission and optimistic-concurrency triage', () => {
