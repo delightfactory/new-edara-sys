@@ -73,6 +73,14 @@ USING (
   bucket_id='work-attachments'
   AND private.work_storage_item_id(name) IS NOT NULL
   AND private.work_current_user_can_view_item(private.work_storage_item_id(name))
+  AND EXISTS (
+    SELECT 1
+    FROM public.work_attachments a
+    WHERE a.storage_bucket='work-attachments'
+      AND a.storage_path=name
+      AND a.work_item_id=private.work_storage_item_id(name)
+      AND a.removed_at IS NULL
+  )
 );
 
 DROP POLICY IF EXISTS work_attachments_storage_insert ON storage.objects;
@@ -84,8 +92,9 @@ WITH CHECK (
   AND private.work_current_user_can_attach_item(private.work_storage_item_id(name))
 );
 
--- Upsert/replacement is limited to the original uploader. Managers/collaborators
--- may add new files but cannot silently overwrite somebody else's object.
+-- Upsert/replacement is limited to the original uploader and to an active metadata
+-- row. Managers/collaborators may add new files but cannot silently overwrite
+-- somebody else's object.
 DROP POLICY IF EXISTS work_attachments_storage_update ON storage.objects;
 CREATE POLICY work_attachments_storage_update
 ON storage.objects FOR UPDATE TO authenticated
@@ -94,14 +103,24 @@ USING (
   AND owner_id=(select auth.uid())::TEXT
   AND private.work_storage_item_id(name) IS NOT NULL
   AND private.work_current_user_can_attach_item(private.work_storage_item_id(name))
+  AND EXISTS (
+    SELECT 1 FROM public.work_attachments a
+    WHERE a.storage_bucket='work-attachments' AND a.storage_path=name AND a.removed_at IS NULL
+  )
 )
 WITH CHECK (
   bucket_id='work-attachments'
   AND owner_id=(select auth.uid())::TEXT
   AND private.work_storage_item_id(name) IS NOT NULL
   AND private.work_current_user_can_attach_item(private.work_storage_item_id(name))
+  AND EXISTS (
+    SELECT 1 FROM public.work_attachments a
+    WHERE a.storage_bucket='work-attachments' AND a.storage_path=name AND a.removed_at IS NULL
+  )
 );
 
+-- Physical cleanup is allowed to the original uploader even after metadata is
+-- soft-removed, so a failed cleanup can be retried without reopening the record.
 DROP POLICY IF EXISTS work_attachments_storage_delete ON storage.objects;
 CREATE POLICY work_attachments_storage_delete
 ON storage.objects FOR DELETE TO authenticated
