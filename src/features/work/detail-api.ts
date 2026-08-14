@@ -61,7 +61,12 @@ export async function getWorkAttachments(workItemId: string): Promise<WorkAttach
 export async function downloadWorkAttachment(attachment: WorkAttachment): Promise<Blob> {
   const { data, error } = await supabase.storage
     .from(attachment.storage_bucket)
-    .download(attachment.storage_path)
+    .createSignedUrl(attachment.storage_path, 60, { download: attachment.original_filename })
+
   if (error) throw error
-  return data
+  if (!data?.signedUrl) throw new Error('تعذر إنشاء رابط تنزيل آمن للمرفق')
+
+  const response = await fetch(data.signedUrl, { credentials: 'omit' })
+  if (!response.ok) throw new Error('تعذر تنزيل المرفق')
+  return response.blob()
 }

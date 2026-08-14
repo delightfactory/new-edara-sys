@@ -2,9 +2,43 @@
 
 > Run this checklist against a **fresh isolated/local Supabase environment** using the exact head of `feature/work-management`. Do not point these scenarios at production.
 
+## 0. Pinned local toolchain
+The acceptance baseline is the same toolchain used by GitHub Actions:
+
+- Node.js **22** (`.nvmrc` is committed at repository root).
+- npm 10.x as shipped with the current Node 22 CI image.
+- Run `nvm use` (or the equivalent Node-version manager command) before dependency install/tests.
+- If a test fails only under a different major Node/npm combination, reproduce it first on Node 22 before classifying it as a merge blocker.
+
+The repository CI currently normalizes optional platform packages before `npm ci`; use the same sequence locally when validating the committed dependency state:
+
+```bash
+npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+npm ci --no-audit --no-fund
+npm test
+npm run build
+```
+
 ## 1. Database bootstrap
+The repository contains legacy pre-timestamp migration names that are part of historical deployment records and **must not be renamed in-place merely to satisfy a fresh local Supabase parser**. For an empty isolated acceptance database, create a disposable canonical staging directory:
+
+```bash
+node scripts/prepare-local-migrations.mjs .local-supabase/migrations
+```
+
+The generated directory:
+- contains one byte-identical SQL copy for every repository migration,
+- preserves deterministic legacy ordering,
+- gives every local copy a unique Supabase-compatible 14-digit version,
+- writes `manifest.json` with source/generated names, byte counts and SHA-256 hashes,
+- is git-ignored and is **local acceptance only**,
+- must never be used as a production migration push source.
+
+Validation:
 - [ ] Start from a clean Supabase/PostgreSQL-compatible database.
-- [ ] Apply the repository migration chain in order, including `20260815001000_work_management_governance_continuity.sql`.
+- [ ] Generate `.local-supabase/migrations` with the command above.
+- [ ] Confirm generated SQL count equals repository SQL migration count and manifest hashes/content match.
+- [ ] Apply the generated chain in order, including the source migrations through `20260815002000_work_management_acceptance_hardening.sql`.
 - [ ] Confirm no migration fails, hangs, or requires hand editing.
 - [ ] Confirm Work tables, RPCs, RLS policies, Storage bucket/policies, realtime publication entries, and cron registrations are present as expected.
 
@@ -14,7 +48,9 @@ Prepare representative users for Own / Team / All behavior plus Restricted/Priva
 - [ ] Employee can read/update only the Work scope granted by permissions and direct responsibility.
 - [ ] Team manager can manage team work but cannot cross unauthorized scope.
 - [ ] `work.items.manage` user can operate the management-level controls.
-- [ ] Restricted/Private Work does not leak through list, detail, dependency, notification, attachment, or linked-entity paths.
+- [ ] `/work/team` loads through the supervisor overview without PostgreSQL `42501` permission errors.
+- [ ] `/work/manage` → Queues loads active/inactive configuration permitted to queue managers without `42501` helper errors.
+- [ ] Restricted/Private Work does not leak through list, detail, dependency, notification, attachment, mention, or linked-entity paths.
 - [ ] An inactive profile fails Work commands.
 - [ ] A profile that remains active while its HR employee record is inactive also fails new Work assignment/execution authority as designed.
 - [ ] An active non-HR/system profile remains usable where its role permits it.
@@ -25,6 +61,7 @@ Prepare representative users for Own / Team / All behavior plus Restricted/Priva
 - [ ] Delegate executor without changing accountable owner.
 - [ ] Transfer ownership and confirm executor is not silently changed unless explicitly requested.
 - [ ] Add checklist, comments/progress, participant, dependency, attachment and entity link.
+- [ ] Add a comment/progress update with one or more UI-selected mentions and confirm only users who can already see the Work Item are offered.
 - [ ] Verify a blocking dependency/checklist prevents invalid completion.
 - [ ] Complete, cancel and reopen through supported flows.
 - [ ] Open the same Work Item in two sessions; mutate from session A then submit stale version from session B and confirm a version conflict rather than lost update.
@@ -76,7 +113,7 @@ Prepare representative users for Own / Team / All behavior plus Restricted/Priva
 
 ## 9. Attachments, links and notifications
 - [ ] Upload an allowed attachment and reject an oversized/unsupported file.
-- [ ] Confirm download uses a short-lived signed URL and unauthorized users cannot retrieve the object.
+- [ ] Confirm download requests a **60-second signed URL** and unauthorized users cannot retrieve the object.
 - [ ] Delete attachment metadata through the supported logical flow and confirm UI no longer exposes it.
 - [ ] Add each applicable allowlisted business-entity link and reject invalid/nonexistent references.
 - [ ] Confirm Work visibility does not grant permission to the linked entity itself.
