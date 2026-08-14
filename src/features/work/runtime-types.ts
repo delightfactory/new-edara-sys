@@ -52,6 +52,14 @@ export interface WorkOperationalFlagRow {
   is_at_risk: boolean
 }
 
+export interface WorkAssignmentCandidate {
+  user_id: string
+  full_name: string
+  branch_id: string | null
+  department_id: string | null
+  is_self: boolean
+}
+
 export interface CreateTaskCommand {
   title: string
   description?: string | null
