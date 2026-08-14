@@ -21,6 +21,45 @@ export class WorkCommandError extends Error {
   }
 }
 
+export interface WorkRequestIntakeField {
+  key: string
+  label: string
+  type: 'string' | 'number' | 'boolean' | 'array' | 'object'
+  required?: boolean
+  help?: string
+}
+
+export interface WorkRequestTypeOption {
+  id: string
+  code: string
+  name: string
+  description: string | null
+  target_queue_id: string
+  target_queue_name: string
+  intake_schema: {
+    version?: number
+    fields: WorkRequestIntakeField[]
+  }
+  expected_outcome_template: string | null
+  triage_sla_minutes: number | null
+  default_resolution_sla_minutes: number | null
+}
+
+export interface SubmitWorkRequestInput {
+  operationId: string
+  requestTypeId: string
+  title: string
+  description?: string | null
+  intakePayload: Record<string, unknown>
+}
+
+export interface SubmitWorkRequestResult extends WorkItemMutationResult {
+  queue_id: string
+  request_type_id: string
+  triage_due_at: string
+  due_at: string | null
+}
+
 const operationId = () => crypto.randomUUID()
 
 const WORK_ATTACHMENT_MAX_BYTES = 25 * 1024 * 1024
@@ -78,6 +117,65 @@ export async function listAssignmentCandidates(search = '', limit = 50): Promise
   })
   if (error) throw error
   return (data ?? []) as WorkAssignmentCandidate[]
+}
+
+export async function listAvailableRequestTypes(): Promise<WorkRequestTypeOption[]> {
+  const [queueResult, typeResult] = await Promise.all([
+    supabase
+      .from('work_queues')
+      .select('id,name,default_triage_sla_minutes,default_resolution_sla_minutes')
+      .eq('is_active', true),
+    supabase
+      .from('work_request_types')
+      .select('id,code,name,description,target_queue_id,intake_schema,expected_outcome_template,triage_sla_minutes,default_resolution_sla_minutes')
+      .eq('is_active', true)
+      .order('name'),
+  ])
+
+  if (queueResult.error) throw queueResult.error
+  if (typeResult.error) throw typeResult.error
+
+  const queues = new Map(
+    (queueResult.data ?? []).map(queue => [queue.id, queue]),
+  )
+
+  return (typeResult.data ?? [])
+    .map(row => {
+      const queue = queues.get(row.target_queue_id)
+      if (!queue) return null
+
+      const schema = row.intake_schema as { version?: number; fields?: WorkRequestIntakeField[] } | null
+      return {
+        id: row.id,
+        code: row.code,
+        name: row.name,
+        description: row.description,
+        target_queue_id: row.target_queue_id,
+        target_queue_name: queue.name,
+        intake_schema: {
+          version: schema?.version,
+          fields: Array.isArray(schema?.fields) ? schema.fields : [],
+        },
+        expected_outcome_template: row.expected_outcome_template,
+        triage_sla_minutes: row.triage_sla_minutes ?? queue.default_triage_sla_minutes,
+        default_resolution_sla_minutes:
+          row.default_resolution_sla_minutes ?? queue.default_resolution_sla_minutes,
+      } satisfies WorkRequestTypeOption
+    })
+    .filter((row): row is WorkRequestTypeOption => row !== null)
+}
+
+export async function submitWorkRequest(input: SubmitWorkRequestInput) {
+  return executeAtomic<SubmitWorkRequestResult>('work_submit_request', {
+    p_operation_id: input.operationId,
+    p_request_type_id: input.requestTypeId,
+    p_title: input.title,
+    p_description: input.description ?? null,
+    p_expected_outcome: null,
+    p_intake_payload: input.intakePayload,
+    p_priority: null,
+    p_visibility: null,
+  })
 }
 
 export async function createTask(input: CreateTaskCommand) {

@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   AlertTriangle,
   ArrowLeft,
   CheckCircle2,
   ClipboardCheck,
   Clock3,
+  FilePlus2,
   Inbox,
   PlayCircle,
   Plus,
@@ -23,6 +24,7 @@ import { useMyActionInbox, useOperationalFlags } from '@/features/work/runtime-h
 import type { WorkActionInboxItem, WorkOperationalFlagRow } from '@/features/work/runtime-types'
 import type { WorkOperationalFlags } from '@/features/work/types'
 import { formatWorkNumber } from '@/features/work/presentation'
+import SubmitRequestPanel from './SubmitRequestPanel'
 import './work.css'
 import './work-interactions.css'
 
@@ -77,6 +79,7 @@ function isPast(value: string | null) {
 
 export default function WorkHubPage() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const profile = useAuthStore(state => state.profile)
   const can = useAuthStore(state => state.can)
   const [mode, setMode] = useState<HubMode>('actions')
@@ -85,6 +88,7 @@ export default function WorkHubPage() {
   const canManageWork = MANAGEMENT_PERMISSIONS.some(permission => can(permission))
   const canViewTeam = TEAM_PERMISSIONS.some(permission => can(permission))
   const canCreateWork = can('work.items.create')
+  const canSubmitRequest = can('work.requests.create')
 
   const { data: actionInbox = [], isLoading: actionLoading } = useMyActionInbox(100)
   const { data: workItems = [], isLoading: workLoading } = useVisibleWorkItems({ limit: 150 })
@@ -132,6 +136,16 @@ export default function WorkHubPage() {
     })
   }, [actionInbox, normalizedSearch])
 
+  if (canSubmitRequest && searchParams.get('request') === 'new') {
+    return <SubmitRequestPanel initialTypeKey={searchParams.get('type')} />
+  }
+
+  const openRequestForm = () => {
+    const next = new URLSearchParams(searchParams)
+    next.set('request', 'new')
+    setSearchParams(next)
+  }
+
   return (
     <div className="work-page">
       <section className="work-hero">
@@ -145,6 +159,7 @@ export default function WorkHubPage() {
         <div className="work-hero-actions" aria-label="إجراءات مساحة العمل">
           {canViewTeam && <Button variant="secondary" icon={<Users2 size={17} />} onClick={() => navigate('/work/team')}>صورة الفريق</Button>}
           {canManageWork && <Button variant="secondary" icon={<Settings2 size={17} />} onClick={() => navigate('/work/manage')}>إدارة العمل</Button>}
+          {canSubmitRequest && <Button variant="secondary" icon={<FilePlus2 size={17} />} onClick={openRequestForm}>إرسال طلب</Button>}
           {canCreateWork && <Button icon={<Plus size={17} />} onClick={() => navigate('/work/new')}>مهمة جديدة</Button>}
         </div>
       </section>
@@ -199,7 +214,7 @@ export default function WorkHubPage() {
             <div className="work-empty">
               <div className="work-empty-icon"><CheckCircle2 size={22} /></div>
               <strong>لا يوجد إجراء مباشر مطلوب منك الآن</strong>
-              <span>يمكنك مراجعة كل الأعمال أو إنشاء مهمة جديدة.</span>
+              <span>يمكنك مراجعة كل الأعمال أو إنشاء مهمة أو إرسال طلب جديد.</span>
             </div>
           ) : (
             <div className="work-action-list">
