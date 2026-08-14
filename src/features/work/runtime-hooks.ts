@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useParams } from 'react-router-dom'
 import { workKeys } from './query-keys'
+import { listRequestAssignmentCandidates } from './assignment-api'
 import {
   acknowledgeWork,
   addWorkComment,
@@ -43,9 +45,14 @@ export function useOperationalFlags(workItemIds: string[] = []) {
 }
 
 export function useAssignmentCandidates(search = '') {
+  const { id: workItemId } = useParams<{ id: string }>()
+  const isWorkDetail = Boolean(workItemId)
+
   return useQuery({
-    queryKey: ['work', 'assignment-candidates', search.trim()],
-    queryFn: () => listAssignmentCandidates(search),
+    queryKey: ['work', 'assignment-candidates', isWorkDetail ? workItemId : 'task-create', search.trim()],
+    queryFn: () => isWorkDetail && workItemId
+      ? listRequestAssignmentCandidates(workItemId, search)
+      : listAssignmentCandidates(search),
     staleTime: 5 * 60_000,
   })
 }
