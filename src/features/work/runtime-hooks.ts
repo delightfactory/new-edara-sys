@@ -8,6 +8,7 @@ import {
   decideApproval,
   getMyActionInbox,
   getOperationalFlags,
+  listAssignmentCandidates,
   recordFirstView,
   removeWorkAttachment,
   resumeWork,
@@ -38,6 +39,14 @@ export function useOperationalFlags(workItemIds: string[] = []) {
     queryKey: ['work', 'operational-flags', stableIds],
     queryFn: () => getOperationalFlags(stableIds),
     enabled: stableIds.length > 0,
+  })
+}
+
+export function useAssignmentCandidates(search = '') {
+  return useQuery({
+    queryKey: ['work', 'assignment-candidates', search.trim()],
+    queryFn: () => listAssignmentCandidates(search),
+    staleTime: 5 * 60_000,
   })
 }
 
