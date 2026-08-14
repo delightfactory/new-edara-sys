@@ -28,20 +28,25 @@ jobs:
     name: Test and build
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      # Unit tests import the Supabase client even when service calls are mocked.
+      # Use non-secret inert values so CI never depends on production credentials.
+      VITE_SUPABASE_URL: https://example.supabase.co
+      VITE_SUPABASE_ANON_KEY: test-anon-key
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
 
-      # The repository lockfile currently has pre-existing dependency drift.
-      # Regenerate it only inside the ephemeral runner so Work verification can
-      # remain deterministic after normalization without mutating the branch.
+      # npm ci on this repository currently needs npm to normalize optional
+      # platform packages first. The normalization is ephemeral and must not
+      # mutate the committed branch.
       - name: Normalize lockfile in runner
         run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
 
