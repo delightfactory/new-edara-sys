@@ -10,8 +10,10 @@ import {
   PlayCircle,
   Plus,
   Search,
+  Settings2,
   ShieldCheck,
   Sparkles,
+  Users2,
 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { useAuthStore } from '@/stores/auth-store'
@@ -25,6 +27,16 @@ import './work.css'
 import './work-interactions.css'
 
 type HubMode = 'actions' | 'work' | 'attention'
+
+const MANAGEMENT_PERMISSIONS = [
+  'work.queues.manage',
+  'work.templates.manage',
+  'work.workflows.manage',
+  'work.recurrence.manage',
+  'work.policies.manage',
+]
+
+const TEAM_PERMISSIONS = ['work.items.read_team', 'work.items.read_all', 'work.items.manage_team']
 
 const ACTION_LABELS: Record<WorkActionInboxItem['action_kind'], { label: string; icon: typeof Inbox }> = {
   acknowledge: { label: 'تأكيد استلام', icon: CheckCircle2 },
@@ -65,9 +77,14 @@ function isPast(value: string | null) {
 
 export default function WorkHubPage() {
   const navigate = useNavigate()
-  const profile = useAuthStore(s => s.profile)
+  const profile = useAuthStore(state => state.profile)
+  const can = useAuthStore(state => state.can)
   const [mode, setMode] = useState<HubMode>('actions')
   const [search, setSearch] = useState('')
+
+  const canManageWork = MANAGEMENT_PERMISSIONS.some(permission => can(permission))
+  const canViewTeam = TEAM_PERMISSIONS.some(permission => can(permission))
+  const canCreateWork = can('work.items.create')
 
   const { data: actionInbox = [], isLoading: actionLoading } = useMyActionInbox(100)
   const { data: workItems = [], isLoading: workLoading } = useVisibleWorkItems({ limit: 150 })
@@ -125,7 +142,11 @@ export default function WorkHubPage() {
             ابدأ بما يحتاج تدخلك الآن، ثم راقب الأعمال المتأخرة أو المعطلة بدون خلطها بحالة المهمة الأساسية.
           </p>
         </div>
-        <Button icon={<Plus size={17} />} onClick={() => navigate('/work/new')}>مهمة جديدة</Button>
+        <div className="work-hero-actions" aria-label="إجراءات مساحة العمل">
+          {canViewTeam && <Button variant="secondary" icon={<Users2 size={17} />} onClick={() => navigate('/work/team')}>صورة الفريق</Button>}
+          {canManageWork && <Button variant="secondary" icon={<Settings2 size={17} />} onClick={() => navigate('/work/manage')}>إدارة العمل</Button>}
+          {canCreateWork && <Button icon={<Plus size={17} />} onClick={() => navigate('/work/new')}>مهمة جديدة</Button>}
+        </div>
       </section>
 
       <section className="work-summary-grid" aria-label="ملخص العمل">
@@ -159,12 +180,7 @@ export default function WorkHubPage() {
         </div>
         <label className="work-search">
           <Search size={16} aria-hidden="true" />
-          <input
-            value={search}
-            onChange={event => setSearch(event.target.value)}
-            placeholder="ابحث بالعنوان أو رقم العمل أو الإجراء التالي"
-            aria-label="البحث في الأعمال"
-          />
+          <input value={search} onChange={event => setSearch(event.target.value)} placeholder="ابحث بالعنوان أو رقم العمل أو الإجراء التالي" aria-label="البحث في الأعمال" />
         </label>
       </section>
 
@@ -178,9 +194,7 @@ export default function WorkHubPage() {
           </div>
 
           {actionLoading ? (
-            <div className="work-action-list">
-              {[1, 2, 3].map(i => <div key={i} className="skeleton skeleton-row" />)}
-            </div>
+            <div className="work-action-list">{[1, 2, 3].map(item => <div key={item} className="skeleton skeleton-row" />)}</div>
           ) : filteredActions.length === 0 ? (
             <div className="work-empty">
               <div className="work-empty-icon"><CheckCircle2 size={22} /></div>
@@ -207,12 +221,7 @@ export default function WorkHubPage() {
                       </div>
                     </div>
                     <div className="work-action-cta">
-                      <Button
-                        size="sm"
-                        variant={late ? 'primary' : 'secondary'}
-                        icon={<ArrowLeft size={15} />}
-                        onClick={() => navigate(action.deep_link || `/work/${action.work_item_id}`)}
-                      >
+                      <Button size="sm" variant={late ? 'primary' : 'secondary'} icon={<ArrowLeft size={15} />} onClick={() => navigate(action.deep_link || `/work/${action.work_item_id}`)}>
                         فتح وتنفيذ
                       </Button>
                     </div>
@@ -235,9 +244,7 @@ export default function WorkHubPage() {
           </div>
 
           {workLoading ? (
-            <div className="work-item-list">
-              {[1, 2, 3, 4].map(i => <div key={i} className="skeleton skeleton-row" />)}
-            </div>
+            <div className="work-item-list">{[1, 2, 3, 4].map(item => <div key={item} className="skeleton skeleton-row" />)}</div>
           ) : filteredItems.length === 0 ? (
             <div className="work-empty">
               <div className="work-empty-icon"><ClipboardCheck size={22} /></div>
@@ -251,14 +258,7 @@ export default function WorkHubPage() {
                 const ownerName = item.accountable_owner_user_id === profile?.id ? 'أنا' : 'المسؤول الحالي'
                 const assigneeName = item.current_assignee_user_id === profile?.id ? 'أنا' : item.current_assignee_user_id ? 'المكلف الحالي' : 'لم يُسند بعد'
                 return (
-                  <WorkItemCard
-                    key={item.id}
-                    item={item}
-                    ownerName={ownerName}
-                    assigneeName={assigneeName}
-                    flags={flags}
-                    onClick={() => navigate(`/work/${item.id}`)}
-                  />
+                  <WorkItemCard key={item.id} item={item} ownerName={ownerName} assigneeName={assigneeName} flags={flags} onClick={() => navigate(`/work/${item.id}`)} />
                 )
               })}
             </div>
@@ -266,15 +266,11 @@ export default function WorkHubPage() {
         </section>
       )}
 
-      <Button
-        className="work-mobile-create"
-        block
-        size="lg"
-        icon={<Plus size={18} />}
-        onClick={() => navigate('/work/new')}
-      >
-        مهمة جديدة
-      </Button>
+      {canCreateWork && (
+        <Button className="work-mobile-create" block size="lg" icon={<Plus size={18} />} onClick={() => navigate('/work/new')}>
+          مهمة جديدة
+        </Button>
+      )}
     </div>
   )
 }
