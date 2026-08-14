@@ -7,6 +7,7 @@ import type {
   SetWaitingCommand,
   TriageRequestCommand,
   WorkActionInboxItem,
+  WorkAssignmentCandidate,
   WorkOperationalFlagRow,
 } from './runtime-types'
 
@@ -68,6 +69,15 @@ export async function getOperationalFlags(workItemIds?: string[]): Promise<WorkO
   const { data, error } = await query
   if (error) throw error
   return (data ?? []) as WorkOperationalFlagRow[]
+}
+
+export async function listAssignmentCandidates(search = '', limit = 50): Promise<WorkAssignmentCandidate[]> {
+  const { data, error } = await supabase.rpc('work_list_assignment_candidates', {
+    p_search: search.trim() || null,
+    p_limit: Math.min(Math.max(limit, 1), 100),
+  })
+  if (error) throw error
+  return (data ?? []) as WorkAssignmentCandidate[]
 }
 
 export async function createTask(input: CreateTaskCommand) {
