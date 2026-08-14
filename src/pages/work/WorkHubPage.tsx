@@ -22,6 +22,7 @@ import type { WorkActionInboxItem, WorkOperationalFlagRow } from '@/features/wor
 import type { WorkOperationalFlags } from '@/features/work/types'
 import { formatWorkNumber } from '@/features/work/presentation'
 import './work.css'
+import './work-interactions.css'
 
 type HubMode = 'actions' | 'work' | 'attention'
 
