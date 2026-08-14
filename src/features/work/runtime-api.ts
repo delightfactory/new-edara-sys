@@ -22,6 +22,20 @@ export class WorkCommandError extends Error {
 
 const operationId = () => crypto.randomUUID()
 
+const WORK_ATTACHMENT_MAX_BYTES = 25 * 1024 * 1024
+const WORK_ATTACHMENT_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'application/pdf',
+  'text/plain',
+  'text/csv',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+])
+
 async function executeAtomic<T>(
   rpcName: string,
   args: Record<string, unknown>,
@@ -232,11 +246,18 @@ export async function uploadWorkAttachment(input: {
   purpose?: 'reference' | 'evidence' | 'output'
   commentId?: string | null
 }) {
+  if (input.file.size <= 0 || input.file.size > WORK_ATTACHMENT_MAX_BYTES) {
+    throw new WorkCommandError('INVALID_FILE_SIZE', 'حجم المرفق غير مسموح')
+  }
+  if (!WORK_ATTACHMENT_MIME_TYPES.has(input.file.type)) {
+    throw new WorkCommandError('INVALID_FILE_TYPE', 'نوع المرفق غير مسموح')
+  }
+
   const safeName = input.file.name.replace(/[^a-zA-Z0-9._-]+/g, '_').slice(-120) || 'attachment'
   const storagePath = `work/${input.workItemId}/${crypto.randomUUID()}-${safeName}`
   const { error: uploadError } = await supabase.storage
     .from('work-attachments')
-    .upload(storagePath, input.file, { upsert: false, contentType: input.file.type || undefined })
+    .upload(storagePath, input.file, { upsert: false, contentType: input.file.type })
   if (uploadError) throw uploadError
 
   try {
@@ -246,13 +267,18 @@ export async function uploadWorkAttachment(input: {
       p_expected_version: input.expectedVersion,
       p_storage_path: storagePath,
       p_original_filename: input.file.name,
-      p_mime_type: input.file.type || 'application/octet-stream',
+      p_mime_type: input.file.type,
       p_size_bytes: input.file.size,
       p_purpose: input.purpose ?? 'reference',
       p_comment_id: input.commentId ?? null,
     })
   } catch (error) {
-    await supabase.storage.from('work-attachments').remove([storagePath]).catch(() => undefined)
+    try {
+      await supabase.storage.from('work-attachments').remove([storagePath])
+    } catch {
+      // The object is not readable without active metadata, so a failed cleanup
+      // does not expose content. A service cleanup job can remove the orphan later.
+    }
     throw error
   }
 }
@@ -264,17 +290,24 @@ export async function removeWorkAttachment(input: {
   storagePath: string
   reason?: string | null
 }) {
-  const { error: storageError } = await supabase.storage
-    .from('work-attachments')
-    .remove([input.storagePath])
-  if (storageError) throw storageError
-
-  return executeAtomic<WorkItemMutationResult>('work_remove_attachment_metadata', {
+  const result = await executeAtomic<WorkItemMutationResult & {
+    storage_bucket: string
+    storage_path: string
+  }>('work_remove_attachment_metadata', {
     p_operation_id: operationId(),
     p_attachment_id: input.attachmentId,
     p_expected_version: input.expectedVersion,
     p_reason: input.reason ?? null,
   })
+
+  const { error: cleanupError } = await supabase.storage
+    .from('work-attachments')
+    .remove([input.storagePath])
+
+  return {
+    ...result,
+    storage_cleanup_pending: Boolean(cleanupError),
+  }
 }
 
 export function normalizeCommentKind(value?: WorkCommentKind): WorkCommentKind {
