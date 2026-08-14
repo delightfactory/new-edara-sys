@@ -2,6 +2,7 @@ import { useParams } from 'react-router-dom'
 import { useWorkItem } from '@/features/work/hooks'
 import WorkDetailCorePage from './WorkDetailCorePage'
 import WorkDetailExtensions from './WorkDetailExtensions'
+import WorkDetailAdministration from './WorkDetailAdministration'
 
 export default function WorkDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -11,8 +12,9 @@ export default function WorkDetailPage() {
     <>
       <WorkDetailCorePage />
       {itemQuery.data && (
-        <div className="work-page" aria-label="التعاون والروابط ودورة حياة العمل">
+        <div className="work-page" aria-label="التعاون والإدارة ودورة حياة العمل">
           <WorkDetailExtensions item={itemQuery.data} />
+          <WorkDetailAdministration item={itemQuery.data} />
         </div>
       )}
     </>

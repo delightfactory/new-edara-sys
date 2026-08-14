@@ -8,7 +8,11 @@ const app = read('src/App.tsx')
 const bottomNav = read('src/components/layout/BottomNav.tsx')
 const hub = read('src/pages/work/WorkHubPage.tsx')
 const createTask = read('src/pages/work/CreateTaskPage.tsx')
-const detail = read('src/pages/work/WorkDetailPage.tsx')
+const detailShell = read('src/pages/work/WorkDetailPage.tsx')
+const detailCore = read('src/pages/work/WorkDetailCorePage.tsx')
+const detailExtensions = read('src/pages/work/WorkDetailExtensions.tsx')
+const detailAdministration = read('src/pages/work/WorkDetailAdministration.tsx')
+const detailRuntime = [detailShell, detailCore, detailExtensions, detailAdministration].join('\n')
 const roleForm = read('src/pages/settings/roles/RoleFormPage.tsx')
 const runtimeApi = read('src/features/work/runtime-api.ts')
 const runtimeHooks = read('src/features/work/runtime-hooks.ts')
@@ -35,18 +39,23 @@ describe('operational Work UI architecture', () => {
     expect(bottomNav).toContain("'work.items.read_own', 'work.items.read_team', 'work.items.read_all'")
   })
 
-  it('keeps page components free from direct Supabase workflow mutations', () => {
-    for (const source of [hub, createTask, detail]) {
-      expect(source).not.toContain("from('@/lib/supabase/client')")
+  it('composes detail capabilities without rewriting the proven core page', () => {
+    expect(detailShell).toContain('<WorkDetailCorePage />')
+    expect(detailShell).toContain('<WorkDetailExtensions item={itemQuery.data} />')
+    expect(detailShell).toContain('<WorkDetailAdministration item={itemQuery.data} />')
+  })
+
+  it('keeps page components free from direct Work Item table mutations', () => {
+    for (const source of [hub, createTask, detailShell, detailCore, detailExtensions, detailAdministration]) {
       expect(source).not.toContain(".from('work_items').update")
       expect(source).not.toContain(".from('work_items').insert")
       expect(source).not.toContain(".from('work_items').delete")
     }
-    expect(detail).toContain('useStartWork')
-    expect(detail).toContain('useSetWorkWaiting')
-    expect(detail).toContain('useCompleteWork')
-    expect(detail).toContain('useDecideApproval')
-    expect(detail).toContain('useTriageRequest')
+    expect(detailRuntime).toContain('useStartWork')
+    expect(detailRuntime).toContain('useSetWorkWaiting')
+    expect(detailRuntime).toContain('useCompleteWork')
+    expect(detailRuntime).toContain('useDecideApproval')
+    expect(detailRuntime).toContain('useTriageRequest')
   })
 
   it('uses server-filtered task assignment candidates rather than exposing the profile directory', () => {
@@ -71,7 +80,7 @@ describe('operational Work UI architecture', () => {
     expect(responsibilityMigration).toContain("'owner',CASE")
     expect(responsibilityMigration).toContain("'assignee',CASE")
     expect(responsibilityMigration).toContain("'waiting_on',CASE")
-    expect(detail).toContain('useWorkResponsibility')
+    expect(detailRuntime).toContain('useWorkResponsibility')
   })
 
   it('centres the Work Hub on current action rather than dashboard-only analytics', () => {
