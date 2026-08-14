@@ -61,12 +61,25 @@ describe('work approval engine contract', () => {
 
   it('supports due-date approval without silently changing the due date', () => {
     expect(runtime).toContain('public.work_request_due_change')
-    expect(runtime).toContain("p_context_kind='due_change'")
+    expect(runtime).toContain("p_work_item_id,p_approval_template_id,'due_change'")
     expect(runtime).toContain("v_request.context_kind='due_change'")
-    const requestFn = runtime.indexOf('CREATE OR REPLACE FUNCTION public.work_request_due_change')
-    const dueUpdate = runtime.indexOf('SET due_at=v_new_due')
-    expect(requestFn).toBeGreaterThan(-1)
-    expect(dueUpdate).toBeLessThan(requestFn)
+
+    const requestStart = runtime.indexOf('CREATE OR REPLACE FUNCTION public.work_request_due_change')
+    const nextFunction = runtime.indexOf('CREATE OR REPLACE FUNCTION public.work_create_approval_delegation', requestStart)
+    expect(requestStart).toBeGreaterThan(-1)
+    expect(nextFunction).toBeGreaterThan(requestStart)
+
+    const requestBody = runtime.slice(requestStart, nextFunction)
+    expect(requestBody).toContain('private.work_start_approval_request')
+    expect(requestBody).toContain("'new_due_at',p_new_due_at")
+    expect(requestBody).not.toContain('SET due_at=')
+
+    const finalizerStart = runtime.indexOf('CREATE OR REPLACE FUNCTION private.work_finalize_approval_request')
+    const decideStart = runtime.indexOf('CREATE OR REPLACE FUNCTION public.work_decide_approval', finalizerStart)
+    const finalizerBody = runtime.slice(finalizerStart, decideStart)
+    expect(finalizerBody).toContain("ELSIF v_request.context_kind='due_change' THEN")
+    expect(finalizerBody).toContain('IF p_status=\'approved\' THEN')
+    expect(finalizerBody).toContain('SET due_at=v_new_due')
   })
 
   it('authors new versions instead of mutating published definitions', () => {
