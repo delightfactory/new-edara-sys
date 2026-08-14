@@ -1,6 +1,6 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, CalendarClock, CheckCircle2, UserRound, UsersRound } from 'lucide-react'
+import { CalendarClock, CheckCircle2, UserRound, UsersRound } from 'lucide-react'
 import { toast } from 'sonner'
 import Button from '@/components/ui/Button'
 import PageHeader from '@/components/shared/PageHeader'
@@ -46,6 +46,11 @@ export default function CreateTaskPage() {
     () => candidates.find(candidate => candidate.user_id === assigneeUserId),
     [candidates, assigneeUserId],
   )
+  const assigneeIsSelf = selectedAssignee?.is_self ?? false
+
+  useEffect(() => {
+    if (assigneeIsSelf) setAcknowledgementRequired(false)
+  }, [assigneeIsSelf])
 
   const validate = () => {
     const next: Record<string, string> = {}
@@ -77,7 +82,7 @@ export default function CreateTaskPage() {
         visibility,
         ownerUserId,
         assigneeUserId,
-        acknowledgementRequired: acknowledgementRequired && ownerUserId !== assigneeUserId,
+        acknowledgementRequired: acknowledgementRequired && !assigneeIsSelf,
         completionMode,
         activate: true,
       })
@@ -94,9 +99,6 @@ export default function CreateTaskPage() {
         title="مهمة جديدة"
         subtitle="اكتب المهمة بصيغة تجعل التنفيذ والمسؤولية واضحين من أول لحظة."
         backPath="/work"
-        actions={(
-          <Button variant="secondary" icon={<ArrowRight size={16} />} onClick={() => navigate('/work')}>رجوع</Button>
-        )}
       />
 
       <form className="work-form" onSubmit={handleSubmit} noValidate>
@@ -199,7 +201,7 @@ export default function CreateTaskPage() {
             <input
               type="checkbox"
               checked={acknowledgementRequired}
-              disabled={!assigneeUserId || assigneeUserId === ownerUserId}
+              disabled={!assigneeUserId || assigneeIsSelf}
               onChange={event => setAcknowledgementRequired(event.target.checked)}
             />
             <span>
