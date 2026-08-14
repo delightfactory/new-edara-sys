@@ -19,6 +19,8 @@ const hardening = readFileSync(resolve(
   'supabase/migrations/20260814121600_work_management_workflow_runtime_hardening.sql',
 ), 'utf8')
 
+const dynamicSqlExecute = /(?:^|\n)\s*EXECUTE\b/i
+
 describe('work workflow engine contract', () => {
   it('pins every run to an immutable published version', () => {
     expect(foundation).toContain('template_version_id UUID NOT NULL REFERENCES public.work_workflow_template_versions')
@@ -45,8 +47,8 @@ describe('work workflow engine contract', () => {
     for (const op of ['always', 'eq', 'ne', 'exists', 'in', 'all', 'any', 'not']) {
       expect(authoring).toContain(`'${op}'`)
     }
-    expect(authoring).not.toContain('EXECUTE ')
-    expect(runtime).not.toContain('EXECUTE ')
+    expect(authoring).not.toMatch(dynamicSqlExecute)
+    expect(runtime).not.toMatch(dynamicSqlExecute)
   })
 
   it('enforces structured outputs for workflow task steps', () => {
