@@ -10,6 +10,7 @@ import {
   getOperationalSettings,
   listApprovalTemplates,
   listApprovalTemplateVersions,
+  listManagementUsers,
   listRecurrenceDefinitions,
   listWorkQueueMembers,
   listWorkQueues,
@@ -26,6 +27,7 @@ import {
 
 const managementKeys = {
   all: ['work', 'management'] as const,
+  users: (search: string) => ['work', 'management', 'users', search] as const,
   queues: ['work', 'management', 'queues'] as const,
   queueMembers: ['work', 'management', 'queue-members'] as const,
   requestTypes: ['work', 'management', 'request-types'] as const,
@@ -40,6 +42,16 @@ const managementKeys = {
 function useInvalidateManagement() {
   const client = useQueryClient()
   return () => client.invalidateQueries({ queryKey: managementKeys.all })
+}
+
+export function useManagementUsers(search = '', enabled = true) {
+  const normalized = search.trim()
+  return useQuery({
+    queryKey: managementKeys.users(normalized),
+    queryFn: () => listManagementUsers(normalized),
+    enabled,
+    staleTime: 5 * 60_000,
+  })
 }
 
 export function useWorkQueues(enabled = true) {
