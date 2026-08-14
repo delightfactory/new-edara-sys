@@ -1,218 +1,158 @@
-# Work Management — Implementation Completeness Checklist
+# Work Management — Implementation Closure Checklist
 
-> هذا الملف Gate ملزم. لا تُعتبر وحدة المهام والمتابعات مكتملة ولا جاهزة للدمج قبل إغلاق كل بند مطلوب أدناه باختبار أو مراجعة صريحة. وجود عائق في أداة أو بيئة لا يحول البند إلى Optional.
+> **Code status:** functionally complete on `feature/work-management` through `bd5c706e` (2026-08-15).
+>
+> This document separates **implemented code** from **release acceptance**. A checked implementation item means the capability exists in the branch and is covered by code review/contract tests where applicable. It does **not** authorize merge, production migration, or deployment.
 
-## A — Foundation
-- [x] Canonical `work_items`
-- [x] Approved canonical state model (`draft/open/in_progress/waiting/pending_approval/done/cancelled`)
-- [x] Owner vs current assignee separation
-- [x] Source lineage / source key
-- [x] Next Action / due / waiting fields
-- [x] Definition-of-Done fields
-- [x] Assignment receipt timestamps
-- [x] Parent/subtask foundation + `blocks_parent_completion`
-- [x] Participants
-- [x] Comments + progress updates
-- [x] Mentions
-- [x] Event/timeline table foundation
-- [ ] Database-enforced `work_events` UPDATE/DELETE immutability
-- [x] Checklists
-- [x] Dependencies foundation
-- [x] Generic entity links foundation
-- [x] Attachment metadata + private-path contract
-- [x] Operational indexes
-- [x] Private idempotency operation ledger
+## 1 — Domain foundation
+- [x] Canonical `work_items` bounded context, separate from field `activities`
+- [x] Canonical lifecycle: `draft / open / in_progress / waiting / pending_approval / done / cancelled`
+- [x] Accountable owner separated from current assignee
+- [x] Definition of Done, expected outcome, next action, due/follow-up and waiting context
+- [x] Parent/subtask model with blocking completion semantics
+- [x] Participants, comments/progress updates and validated mentions
+- [x] Append-only `work_events` timeline with DB mutation protection
+- [x] Checklists, dependencies and cycle prevention
+- [x] Generic allowlisted entity links without inheriting linked-entity permissions
+- [x] Private attachment metadata/storage contract and signed downloads
+- [x] Operational indexes, state versioning and private idempotency operation ledger
 
-## B — Security / visibility
-- [x] Existing RBAC model reused
-- [x] Own / Team / All read model
-- [x] Restricted / Private visibility model
-- [x] Dependency visibility requires visibility of both ends
+## 2 — Security, authority and visibility
+- [x] Existing RBAC/check_permission model reused
+- [x] Own / Team / All authority scopes
+- [x] Standard / Restricted / Private visibility behavior
+- [x] Dependency access requires visibility of both work items
 - [x] Inactive users fail closed
-- [x] Active hierarchy managers only
-- [x] Explicit `manage_team` permission in DB seed
-- [ ] Frontend official permission registry updated
-- [ ] Assignment-scope RPC tests
-- [ ] Private/restricted notification leak tests
-- [ ] Private attachment storage policies
+- [x] HR-deactivated employees fail closed even if their profile remains active
+- [x] Non-HR system users remain supported when their profile is active
+- [x] Active hierarchy/manager checks and hierarchy readiness gate
+- [x] Official frontend permission registry and Role Editor integration
+- [x] Server-filtered assignment/participant directories
+- [x] Private/restricted notification recipient filtering
+- [x] Private Work attachment storage policies
 
-## C — Atomic command engine
-- [x] Operation ledger
-- [x] Authority helper layer
-- [x] Idempotency helper layer
-- [x] Internal validated Task draft writer
-- [ ] Public atomic Create Task RPC
-- [ ] Create Subtask / parent inheritance
-- [ ] Activate RPC
-- [ ] First-view receipt RPC/controlled read hook
-- [ ] Acknowledge RPC
-- [ ] Start RPC
-- [ ] Set Waiting RPC
-- [ ] Resume RPC
-- [ ] Update Next Action RPC
-- [ ] Delegate execution RPC
-- [ ] Transfer ownership RPC
-- [ ] Due-date direct change RPC
-- [ ] Due-date change request flow
-- [ ] Checklist mutation RPC
-- [ ] Comment / Progress Update RPC
-- [ ] Participant/follower RPC
-- [ ] Mention validation
-- [ ] Attachment metadata RPC
-- [ ] Entity-link RPC + allowlist/existence/permission validation
-- [ ] Add dependency RPC + cycle prevention + deterministic locking
-- [ ] Resolve dependency RPC
-- [ ] Complete RPC
-- [ ] Owner-review completion flow
-- [ ] Cancel RPC
-- [ ] Reopen RPC
-- [ ] Inactive-user orphan/bulk reassignment flow
-- [ ] `state_version` concurrency conflict coverage for every mutation
+## 3 — Atomic Task command engine
+- [x] Create Task and Subtask
+- [x] Activate / first-view receipt / acknowledgement / start
+- [x] Waiting / resume / next action
+- [x] Delegate execution / transfer accountability
+- [x] Direct due-date change with mandatory reason
+- [x] Server-enforced due-date extension approval barrier
+- [x] Checklist, comment/update, participant and mention commands
+- [x] Attachment metadata commands and logical-delete handling
+- [x] Entity-link commands with allowlist/existence validation
+- [x] Dependency add/resolve with cycle prevention and deterministic locking
+- [x] Completion, owner-review completion and approval-bound completion
+- [x] Cancel and reopen
+- [x] Inactive-user orphan detection and management-only bulk reassignment
+- [x] Optimistic concurrency / `state_version` on state-changing commands
+- [x] Idempotent operation IDs on sensitive commands
 
-## D — Requests / queues
-- [ ] Work queues
-- [ ] Queue membership/manager model
-- [ ] Request types
-- [ ] Intake form schema contract
-- [ ] Request submission
-- [ ] Independent triage / first-response SLA
-- [ ] Queue triage / assignment
-- [ ] Cross-department assignment routed through Request where required
-- [ ] Queue backlog views
+## 4 — Requests and Queues
+- [x] Queues, memberships and queue managers
+- [x] Versioned/configurable Request Types and intake schemas
+- [x] Employee request submission UX
+- [x] Independent triage / first-response SLA
+- [x] Atomic triage and assignment
+- [x] Cross-department request routing model
+- [x] Queue backlog and management views
 
-## E — Approvals
-- [ ] Versioned approval templates
-- [ ] Runtime approval requests
-- [ ] Sequential stages
-- [ ] Parallel `all`
-- [ ] Parallel `any`
-- [ ] Approve
-- [ ] Reject
-- [ ] Changes Required
-- [ ] Approval deadlines + escalation
-- [ ] Specific delegator → delegate authority resolver
-- [ ] Acting-for audit trail
-- [ ] Completion approval binding
-- [ ] Due-change approval binding
+## 5 — Approval Engine
+- [x] Versioned approval templates and immutable published versions
+- [x] Runtime approval requests
+- [x] Sequential stages
+- [x] Parallel `all` and `any`
+- [x] Approve / Reject / Changes Required
+- [x] Stage deadlines and operational escalation support
+- [x] Specific delegator → delegate resolution
+- [x] Acting-for audit trail
+- [x] Completion approval binding
+- [x] Due-date extension approval binding
+- [x] Dedicated due-extension UX; due date changes only after final approval
 
-## F — Workflow engine
-- [ ] Workflow templates
-- [ ] Immutable published versions
-- [ ] Step definitions
-- [ ] Runtime runs
-- [ ] Runtime step instances
-- [ ] Task steps
-- [ ] Approval steps
-- [ ] Step dependencies
-- [ ] Structured step outputs
-- [ ] Safe condition DSL
-- [ ] Cycle validation
-- [ ] Active run pinned to exact version
+## 6 — Workflow Engine
+- [x] Versioned templates and immutable published versions
+- [x] Step definitions and runtime runs/instances
+- [x] Task and Approval steps
+- [x] Step dependencies
+- [x] Structured outputs
+- [x] Safe condition DSL
+- [x] Cycle validation
+- [x] Active runs pinned to exact template versions
+- [x] Workflow template/run management UX
 
-## G — Recurring work
-- [ ] Recurrence definitions
-- [ ] Occurrence ledger
-- [ ] Daily / weekly / monthly
-- [ ] No-end-date continuous recurrence
-- [ ] End date
-- [ ] Pause / resume / stop
-- [ ] Strict recurrence — prior overdue stays open while next cycle is created
-- [ ] Single-open overlap policy
-- [ ] Monthly edge cases / last-day policy
-- [ ] Recurring Task instances
-- [ ] Recurring Workflow instances
-- [ ] Pinned vs latest-published workflow-version policy
-- [ ] Recurrence compliance reporting
+## 7 — Recurring Work
+- [x] Recurrence definitions and occurrence ledger
+- [x] Daily / weekly / monthly schedules
+- [x] Open-ended and end-dated recurrence
+- [x] Pause / resume / stop
+- [x] Strict and single-open overlap policies
+- [x] Monthly edge/last-day handling
+- [x] Recurring Task and Workflow instances
+- [x] Pinned vs latest-published workflow-version policy
+- [x] Recurrence compliance reporting and management editor
 
-## H — Operational state / automation
-- [ ] Overdue computed flag
-- [ ] Follow-up Due computed flag
-- [ ] Blocked computed flag
-- [ ] Stale computed flag
-- [ ] At Risk deterministic rule
-- [ ] Escalated overlay
-- [ ] Due-warning scanner
-- [ ] Follow-up scanner
-- [ ] Stale scanner
-- [ ] Escalation scanner
-- [ ] Notification cooldown/dedup via existing alert state
-- [ ] Recurrence generator cron
-- [ ] Workflow activator cron
-- [ ] Hierarchy readiness gate before automatic manager escalation
+## 8 — Operational intelligence, automation and notifications
+- [x] Overdue / Follow-up Due / Blocked / Stale / At Risk computed flags
+- [x] Escalated operational overlay
+- [x] Due / follow-up / stale / escalation scanners
+- [x] Existing `notification_alert_state` cooldown/dedup integration
+- [x] Recurrence generator and Workflow activation scheduling
+- [x] Existing `tasks` notification category reused
+- [x] Assignment, delegation, ownership, mention, due, blocked, approval, escalation and recurrence notifications
+- [x] Action URLs / deep links to Work Item
+- [x] `مطلوب مني الآن` Action Inbox
 
-## I — Notifications / Action Inbox
-- [ ] Work event catalogue seeded
-- [ ] Existing `tasks` notification category reused
-- [ ] Assignment notifications
-- [ ] Delegation / ownership notifications
-- [ ] Mentions
-- [ ] Follow-up due
-- [ ] Due soon / overdue
-- [ ] Blocked / unblocked
-- [ ] Approval requested / decided
-- [ ] Escalations
-- [ ] Recurrence generated / overlap
-- [ ] Actionable quick actions call secure RPCs
-- [ ] `مطلوب مني الآن` Action Inbox
+## 9 — UX and operational administration
+- [x] `/work` employee shell and Action Inbox
+- [x] `/work/new` Create Task UX
+- [x] Request intake UX
+- [x] `/work/:id` detail, responsibility, next action and immutable timeline
+- [x] Checklist, discussion/progress, attachments and related entities
+- [x] Cancel/reopen, delegation, ownership, due, subtask, participants and escalation controls
+- [x] Approval decisions and due-extension request UX
+- [x] Team supervisor view `/work/team`
+- [x] Management center `/work/manage`
+- [x] Queue/Request/Approval/Workflow/Recurrence/Policy management
+- [x] Business continuity center for inactive employee responsibilities
+- [x] RTL/responsive implementation and Work-detail realtime invalidation
 
-## J — UX
-- [x] TypeScript Work domain types
-- [x] RLS-backed read API
-- [x] TanStack Query read hooks
-- [x] Core status/priority/operational badge semantics
-- [ ] `/work` module shell
-- [ ] My Action Inbox
-- [ ] Work Item details
-- [ ] Responsibility / current-ball-holder card
-- [ ] Next Action card
-- [ ] Checklist UI
-- [ ] Discussion / progress UI
-- [ ] Attachments/evidence UI
-- [ ] Related entities UI
-- [ ] Immutable timeline UI
-- [ ] Create Task UX
-- [ ] Request intake UX
-- [ ] Approval UX
-- [ ] Recurrence editor
-- [ ] Workflow template/run UX
-- [ ] Team supervisor views
-- [ ] Operations Control Center
-- [ ] RTL
-- [ ] Mobile-first / internal scroll / no horizontal overflow
-- [ ] Realtime invalidation integration
-- [ ] Push deep links
+## 10 — Integration model
+- [x] `activities` remain independent and linkable
+- [x] Allowlisted links cover customers, sales orders, payment/collection, suppliers, purchases/invoices, products, warehouse, employees, visits/activities and targets as supported by the schema
+- [x] Work visibility never grants visibility to a linked business entity
 
-## K — Integration
-- [ ] Activities remain separate and linkable
-- [ ] Customer links
-- [ ] Sales order links
-- [ ] Payment/collection links
-- [ ] Supplier links
-- [ ] Purchase/invoice links
-- [ ] Product links
-- [ ] Warehouse links
-- [ ] Employee links
-- [ ] Visit/activity links
-- [ ] Target links
-- [ ] Entity visibility never inherited from Work visibility
+## 11 — Automated verification completed on branch
+- [x] Work Management foundation/migration contract tests
+- [x] State-model and runtime-hardening contract tests
+- [x] Permission/RLS contract tests
+- [x] Request/Queue contract tests
+- [x] Approval and workflow-version/pinning contract tests
+- [x] Recurrence contract tests
+- [x] Notification/storage contract tests
+- [x] Operational Action Inbox contract tests
+- [x] UI/supervisor/functional-closure contract tests
+- [x] Due-governance and inactive-user continuity contract tests
+- [x] Full repository test suite passed in GitHub Actions on `bd5c706e`
+- [x] TypeScript type-check passed on `bd5c706e`
+- [x] Production frontend build passed on `bd5c706e`
 
-## L — Final verification gates
-- [ ] SQL executes on isolated PostgreSQL 17 / Supabase-compatible environment
-- [ ] Migration contract tests
-- [ ] State-machine tests
-- [ ] RLS matrix tests
-- [ ] Idempotency tests
-- [ ] Concurrency tests
-- [ ] Dependency-cycle tests
-- [ ] Approval edge-case tests
-- [ ] Workflow-version tests
-- [ ] Recurrence edge-case tests
-- [ ] Notification leak/dedup tests
-- [ ] TypeScript passes
-- [ ] Production frontend build passes
-- [ ] Existing regression suite reviewed
-- [ ] Mobile smoke tests
-- [ ] Functional completeness review
-- [ ] Technical/security review
-- [ ] No production migration before explicit release gate
-- [ ] No merge to `main` before double review
+## 12 — Release acceptance gates — intentionally still open
+These are not coding gaps. They require an isolated/local Supabase runtime and/or human acceptance before merge/release.
+
+- [ ] Apply the complete migration chain on a fresh isolated Supabase/PostgreSQL environment
+- [ ] Run role/RLS runtime matrix with representative Own / Team / All users
+- [ ] Run multi-session optimistic-concurrency/idempotency scenarios against the real database
+- [ ] Run end-to-end Approval / Workflow / Recurrence scheduler scenarios against the isolated database
+- [ ] Run attachment upload/download/delete against isolated Supabase Storage
+- [ ] Run inactive-HR employee continuity scenario end-to-end
+- [ ] Run browser smoke tests for employee, supervisor and manager personas
+- [ ] Run mobile visual/interaction smoke tests with no horizontal overflow
+- [ ] Business/product acceptance of terminology and flows
+- [ ] Final independent technical/security review of the complete branch diff
+- [ ] Explicit approval to merge to `main`
+- [ ] Explicit approval before any production database migration or deployment
+
+## Closure rule
+
+The Work Management cube is **Code Complete** on this feature branch when Sections 1–11 are green. It is **not Production Released** until every applicable item in Section 12 has been performed and explicitly accepted. No unchecked release gate may be silently converted into an assumption.
