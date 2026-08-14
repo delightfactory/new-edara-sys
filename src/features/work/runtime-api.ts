@@ -138,31 +138,32 @@ export async function listAvailableRequestTypes(): Promise<WorkRequestTypeOption
   const queues = new Map(
     (queueResult.data ?? []).map(queue => [queue.id, queue]),
   )
+  const requestTypes: WorkRequestTypeOption[] = []
 
-  return (typeResult.data ?? [])
-    .map(row => {
-      const queue = queues.get(row.target_queue_id)
-      if (!queue) return null
+  for (const row of typeResult.data ?? []) {
+    const queue = queues.get(row.target_queue_id)
+    if (!queue) continue
 
-      const schema = row.intake_schema as { version?: number; fields?: WorkRequestIntakeField[] } | null
-      return {
-        id: row.id,
-        code: row.code,
-        name: row.name,
-        description: row.description,
-        target_queue_id: row.target_queue_id,
-        target_queue_name: queue.name,
-        intake_schema: {
-          version: schema?.version,
-          fields: Array.isArray(schema?.fields) ? schema.fields : [],
-        },
-        expected_outcome_template: row.expected_outcome_template,
-        triage_sla_minutes: row.triage_sla_minutes ?? queue.default_triage_sla_minutes,
-        default_resolution_sla_minutes:
-          row.default_resolution_sla_minutes ?? queue.default_resolution_sla_minutes,
-      } satisfies WorkRequestTypeOption
+    const schema = row.intake_schema as { version?: number; fields?: WorkRequestIntakeField[] } | null
+    requestTypes.push({
+      id: row.id,
+      code: row.code,
+      name: row.name,
+      description: row.description,
+      target_queue_id: row.target_queue_id,
+      target_queue_name: queue.name,
+      intake_schema: {
+        version: schema?.version,
+        fields: Array.isArray(schema?.fields) ? schema.fields : [],
+      },
+      expected_outcome_template: row.expected_outcome_template,
+      triage_sla_minutes: row.triage_sla_minutes ?? queue.default_triage_sla_minutes,
+      default_resolution_sla_minutes:
+        row.default_resolution_sla_minutes ?? queue.default_resolution_sla_minutes,
     })
-    .filter((row): row is WorkRequestTypeOption => row !== null)
+  }
+
+  return requestTypes
 }
 
 export async function submitWorkRequest(input: SubmitWorkRequestInput) {
