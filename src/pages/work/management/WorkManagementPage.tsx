@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, GitBranch, ListChecks, Repeat2, Settings2, Workflow } from 'lucide-react'
+import { ArrowRight, GitBranch, ListChecks, Repeat2, Settings2, UserRoundCog, Workflow } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import type { WorkManagementTab } from '@/features/work/management-types'
 import QueuesManagementPanel from './QueuesManagementPanel'
@@ -8,7 +8,10 @@ import ApprovalsManagementPanel from './ApprovalsManagementPanel'
 import WorkflowsManagementPanel from './WorkflowsManagementPanel'
 import RecurrenceManagementPanel from './RecurrenceManagementPanel'
 import PoliciesManagementPanel from './PoliciesManagementPanel'
+import WorkContinuityPanel from './WorkContinuityPanel'
 import './work-management.css'
+
+type ManagementTabId = WorkManagementTab | 'continuity'
 
 const TAB_DEFINITIONS = [
   { id: 'queues' as const, label: 'الطوابير والطلبات', permission: 'work.queues.manage', icon: ListChecks },
@@ -16,13 +19,14 @@ const TAB_DEFINITIONS = [
   { id: 'workflows' as const, label: 'مسارات العمل', permission: 'work.workflows.manage', icon: Workflow },
   { id: 'recurrence' as const, label: 'الأعمال الدورية', permission: 'work.recurrence.manage', icon: Repeat2 },
   { id: 'policies' as const, label: 'سياسات التشغيل', permission: 'work.policies.manage', icon: Settings2 },
+  { id: 'continuity' as const, label: 'استمرارية الأعمال', permission: 'work.items.manage', icon: UserRoundCog },
 ]
 
 export default function WorkManagementPage() {
   const navigate = useNavigate()
   const can = useAuthStore(state => state.can)
   const tabs = useMemo(() => TAB_DEFINITIONS.filter(tab => can(tab.permission)), [can])
-  const [requestedTab, setRequestedTab] = useState<WorkManagementTab | null>(null)
+  const [requestedTab, setRequestedTab] = useState<ManagementTabId | null>(null)
   const activeTab = requestedTab && tabs.some(tab => tab.id === requestedTab) ? requestedTab : tabs[0]?.id
 
   if (!activeTab) {
@@ -46,7 +50,7 @@ export default function WorkManagementPage() {
         <div>
           <div className="work-management-eyebrow">Operational Work Management</div>
           <h1 className="page-title">مركز إدارة العمل</h1>
-          <p className="page-subtitle">إدارة قواعد التشغيل والقوالب والطوابير من نقطة واحدة، بدون تغيير مباشر لبيانات التنفيذ.</p>
+          <p className="page-subtitle">إدارة قواعد التشغيل والقوالب والطوابير واستمرارية المسؤوليات من نقطة واحدة.</p>
         </div>
         <button type="button" className="btn btn-secondary" onClick={() => navigate('/work')}>
           <ArrowRight size={16} /> العودة للعمل
@@ -78,6 +82,7 @@ export default function WorkManagementPage() {
         {activeTab === 'workflows' && <WorkflowsManagementPanel />}
         {activeTab === 'recurrence' && <RecurrenceManagementPanel />}
         {activeTab === 'policies' && <PoliciesManagementPanel />}
+        {activeTab === 'continuity' && <WorkContinuityPanel />}
       </main>
     </div>
   )

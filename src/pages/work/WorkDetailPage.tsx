@@ -3,6 +3,7 @@ import { useWorkItem } from '@/features/work/hooks'
 import WorkDetailCorePage from './WorkDetailCorePage'
 import WorkDetailExtensions from './WorkDetailExtensions'
 import WorkDetailAdministration from './WorkDetailAdministration'
+import WorkDueGovernance from './WorkDueGovernance'
 
 export default function WorkDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -15,6 +16,7 @@ export default function WorkDetailPage() {
         <div className="work-page" aria-label="التعاون والإدارة ودورة حياة العمل">
           <WorkDetailExtensions item={itemQuery.data} />
           <WorkDetailAdministration item={itemQuery.data} />
+          <WorkDueGovernance item={itemQuery.data} />
         </div>
       )}
     </>
