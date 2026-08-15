@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import './styles/main.css'
+import './pages/work/work-polish.css'
 import { initSentry } from '@/lib/monitoring/sentry'
 import { bootOutputPlatform } from '@/features/output/boot'
 

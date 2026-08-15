@@ -1,0 +1,426 @@
+/* Final Work Management UX/responsive polish.
+ * Loaded globally but intentionally scoped to Work-specific class names.
+ */
+
+.work-page,
+.work-management-page {
+  width: 100%;
+  max-width: 1480px;
+  margin-inline: auto;
+}
+
+.work-page .work-hero {
+  align-items: center;
+  padding: clamp(18px, 2.4vw, 30px);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 16%, var(--border-primary));
+  border-radius: calc(var(--radius-lg) + 4px);
+  background:
+    radial-gradient(circle at 88% 10%, color-mix(in srgb, var(--color-primary) 11%, transparent), transparent 38%),
+    linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 96%, var(--color-primary)), var(--bg-surface));
+  box-shadow: var(--shadow-sm);
+}
+
+.work-page .work-hero-copy {
+  max-width: 780px;
+}
+
+.work-page .work-hero-title {
+  letter-spacing: -0.015em;
+}
+
+.work-page .work-hero-subtitle {
+  line-height: 1.75;
+}
+
+.work-page .work-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-2);
+  max-width: 620px;
+}
+
+.work-page .work-hero-actions .btn {
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+.work-page button.work-summary-card {
+  text-align: right;
+  cursor: pointer;
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+}
+
+.work-page button.work-summary-card:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--color-primary) 22%, var(--border-primary));
+  box-shadow: var(--shadow-md);
+}
+
+.work-summary-card > strong {
+  display: block;
+  margin-top: 7px;
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.work-summary-card > span {
+  display: block;
+  margin-top: 7px;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+.work-page .work-toolbar {
+  padding: var(--space-3);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--bg-surface) 96%, transparent);
+}
+
+.work-page .work-action-card,
+.work-page .work-panel,
+.work-page .work-form-card {
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--text-primary) 5%, transparent);
+}
+
+.work-page .work-panel-header {
+  min-height: 56px;
+}
+
+.work-page .work-panel-title,
+.work-page .work-form-section-title {
+  line-height: 1.45;
+}
+
+.work-page .work-form-card {
+  position: relative;
+}
+
+.work-page .work-form-section-title {
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.work-page .work-field input,
+.work-page .work-field select,
+.work-page .work-field textarea {
+  transition: border-color .14s ease, box-shadow .14s ease, background .14s ease;
+}
+
+.work-page .work-field input:hover,
+.work-page .work-field select:hover,
+.work-page .work-field textarea:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 22%, var(--border-primary));
+}
+
+.work-page .page-header {
+  gap: var(--space-3);
+  margin-bottom: 0;
+}
+
+.work-management-page .work-management-header {
+  padding: clamp(18px, 2vw, 26px);
+  border: 1px solid var(--border-primary);
+  border-radius: calc(var(--radius-lg) + 2px);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--bg-surface) 96%, var(--color-primary)), var(--bg-surface));
+  box-shadow: var(--shadow-sm);
+}
+
+.work-management-page .work-management-tabs {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+  scroll-snap-type: inline proximity;
+  padding: 6px;
+}
+
+.work-management-page .work-management-tab {
+  flex: 1 0 150px;
+  min-width: 145px;
+  scroll-snap-align: start;
+}
+
+.work-management-page .work-management-content {
+  min-width: 0;
+}
+
+.work-management-page .work-management-section {
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--text-primary) 5%, transparent);
+}
+
+.work-management-page .work-management-card {
+  transition: border-color .16s ease, transform .16s ease, box-shadow .16s ease;
+}
+
+.work-management-page .work-management-card:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 20%, var(--border-primary));
+  box-shadow: var(--shadow-sm);
+}
+
+.work-management-page .work-management-panel-header .page-subtitle {
+  max-width: 72ch;
+  line-height: 1.65;
+}
+
+.work-management-page .work-management-actions .btn,
+.work-management-page .work-management-panel-header > .btn {
+  min-height: 42px;
+}
+
+@media (max-width: 1024px) {
+  .work-page .work-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .work-page .work-hero-actions {
+    max-width: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .work-page {
+    gap: 12px;
+  }
+
+  .work-page .work-hero {
+    padding: 16px;
+    border-radius: 16px;
+    gap: 14px;
+  }
+
+  .work-page .work-hero-kicker {
+    margin-bottom: 2px;
+  }
+
+  .work-page .work-hero-title {
+    font-size: 1.35rem;
+  }
+
+  .work-page .work-hero-subtitle {
+    margin-top: 5px;
+    font-size: .82rem;
+    line-height: 1.65;
+  }
+
+  /* The old Work CSS hid the entire action area on phones. Keep every
+     permission-authorized entry point visible in a compact 2-column command grid. */
+  .work-page .work-hero-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    gap: 8px;
+  }
+
+  .work-page .work-hero-actions .btn {
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    justify-content: flex-start;
+    padding-inline: 11px;
+    font-size: .78rem;
+  }
+
+  /* Avoid duplicating the primary create action after restoring the full
+     mobile command surface. */
+  .work-page .work-mobile-create {
+    display: none !important;
+  }
+
+  .work-page .work-summary-grid {
+    gap: 8px;
+  }
+
+  .work-page .work-summary-card {
+    min-height: 105px;
+    padding: 13px;
+    border-radius: 14px;
+  }
+
+  .work-page .work-summary-hint {
+    display: none;
+  }
+
+  .work-page .work-toolbar {
+    padding: 8px;
+    gap: 8px;
+    border-radius: 14px;
+  }
+
+  .work-page .work-segmented {
+    padding: 3px;
+  }
+
+  .work-page .work-segmented button {
+    min-height: 40px;
+  }
+
+  .work-page .work-search input {
+    min-height: 46px;
+  }
+
+  .work-page .work-action-card,
+  .work-page .work-panel,
+  .work-page .work-form-card {
+    border-radius: 14px;
+  }
+
+  .work-page .work-panel-header {
+    min-height: 0;
+    padding: 13px 14px;
+    align-items: flex-start;
+  }
+
+  .work-page .work-panel-body {
+    padding: 14px;
+  }
+
+  .work-page .work-form-card {
+    padding: 15px;
+  }
+
+  .work-page .work-form-section-title {
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    font-size: .95rem;
+  }
+
+  .work-page .work-detail-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .work-page .work-detail-actions .btn {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+  }
+
+  .work-page .work-responsibility-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .work-page .work-responsibility-value {
+    max-width: none;
+    text-align: start;
+  }
+
+  .work-page .work-info-cell {
+    padding: 12px;
+  }
+
+  .work-page .work-form-actions {
+    gap: 8px;
+    border-radius: 14px 14px 0 0;
+  }
+
+  .work-page .work-form-actions .btn {
+    min-height: 46px;
+  }
+
+  .work-management-page {
+    gap: 12px;
+  }
+
+  .work-management-page .work-management-header {
+    padding: 15px;
+    border-radius: 15px;
+    gap: 12px;
+  }
+
+  .work-management-page .work-management-header > .btn {
+    min-height: 44px;
+  }
+
+  .work-management-page .work-management-tabs {
+    display: flex;
+    flex-wrap: nowrap !important;
+    gap: 6px;
+    margin-inline: -2px;
+    padding: 5px;
+    border-radius: 14px;
+  }
+
+  .work-management-page .work-management-tab {
+    flex: 0 0 auto !important;
+    flex-basis: auto !important;
+    min-width: max-content;
+    min-height: 42px;
+    padding: 9px 12px;
+    justify-content: center !important;
+    font-size: .76rem;
+  }
+
+  .work-management-page .work-management-section {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .work-management-page .work-management-panel-header {
+    gap: 10px;
+  }
+
+  .work-management-page .work-management-panel-header > .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .work-management-page .work-management-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .work-management-page .work-management-card {
+    padding: 13px;
+    border-radius: 12px;
+  }
+
+  .work-management-page .work-management-card-head {
+    gap: 8px;
+  }
+
+  .work-management-page .work-management-actions .btn {
+    flex: 1 1 132px;
+  }
+
+  .work-management-page .work-management-form-actions {
+    gap: 8px;
+  }
+
+  .work-management-page .work-management-form-actions .btn {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 420px) {
+  .work-page .work-hero-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .work-page .work-detail-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .work-management-page .work-management-tab {
+    flex-basis: auto !important;
+    justify-content: center !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .work-page button.work-summary-card,
+  .work-management-page .work-management-card {
+    transition: none;
+  }
+
+  .work-page button.work-summary-card:hover,
+  .work-management-page .work-management-card:hover {
+    transform: none;
+  }
+}

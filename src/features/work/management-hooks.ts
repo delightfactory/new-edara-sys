@@ -11,7 +11,6 @@ import {
   listApprovalTemplates,
   listApprovalTemplateVersions,
   listManagementUsers,
-  listRecurrenceDefinitions,
   listWorkQueueMembers,
   listWorkQueues,
   listWorkRequestTypes,
@@ -24,6 +23,7 @@ import {
   updateOperationalSettings,
   updateQueue,
 } from './management-api'
+import { listRecurrenceDefinitionsSecure } from './recurrence-read-api'
 
 const managementKeys = {
   all: ['work', 'management'] as const,
@@ -83,7 +83,7 @@ export function useWorkflowTemplateVersions(enabled = true) {
 }
 
 export function useRecurrenceDefinitions(enabled = true) {
-  return useQuery({ queryKey: managementKeys.recurrence, queryFn: listRecurrenceDefinitions, enabled })
+  return useQuery({ queryKey: managementKeys.recurrence, queryFn: listRecurrenceDefinitionsSecure, enabled })
 }
 
 export function useOperationalSettings(enabled = true) {
