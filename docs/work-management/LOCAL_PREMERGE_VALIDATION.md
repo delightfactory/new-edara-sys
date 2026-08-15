@@ -1,6 +1,6 @@
 # Work Management — Local Pre-Merge Validation
 
-> Run this checklist against a **fresh isolated/local Supabase environment** using the exact head of `feature/work-management`. Do not point these scenarios at production.
+> Run this checklist against the established **sanitized local baseline** for NEW-EDARA-SYS, fully isolated from production, using the exact head of `feature/work-management`. Never point these scenarios at production.
 
 ## 0. Pinned local toolchain
 The acceptance baseline is the same toolchain used by GitHub Actions:
@@ -8,9 +8,9 @@ The acceptance baseline is the same toolchain used by GitHub Actions:
 - Node.js **22** (`.nvmrc` is committed at repository root).
 - npm 10.x as shipped with the current Node 22 CI image.
 - Run `nvm use` (or the equivalent Node-version manager command) before dependency install/tests.
-- If a test fails only under a different major Node/npm combination, reproduce it first on Node 22 before classifying it as a merge blocker.
+- If a test fails only under a different major Node/npm combination, reproduce it first on Node 22 before classifying it as a Work Management blocker.
 
-The repository CI currently normalizes optional platform packages before `npm ci`; use the same sequence locally when validating the committed dependency state:
+The repository currently has pre-existing package-lock normalization drift. Until that repository-wide maintenance item is closed, validate using the same deterministic sequence used by Work Management CI:
 
 ```bash
 npm install --package-lock-only --ignore-scripts --no-audit --no-fund
@@ -19,28 +19,21 @@ npm test
 npm run build
 ```
 
-## 1. Database bootstrap
-The repository contains legacy pre-timestamp migration names that are part of historical deployment records and **must not be renamed in-place merely to satisfy a fresh local Supabase parser**. For an empty isolated acceptance database, create a disposable canonical staging directory:
+A raw `npm ci` failure caused solely by the known repository-wide lockfile drift is tracked separately from Work Management functional acceptance; failures that remain after the approved normalization sequence are blockers.
 
-```bash
-node scripts/prepare-local-migrations.mjs .local-supabase/migrations
-```
+## 1. Database acceptance baseline
+Work Management acceptance does **not** require rebuilding the entire legacy NEW-EDARA-SYS migration history from an empty database. The repository contains legacy migrations and seed history with independent bootstrap debt that predates this module.
 
-The generated directory:
-- contains one byte-identical SQL copy for every repository migration,
-- preserves deterministic legacy ordering,
-- gives every local copy a unique Supabase-compatible 14-digit version,
-- writes `manifest.json` with source/generated names, byte counts and SHA-256 hashes,
-- is git-ignored and is **local acceptance only**,
-- must never be used as a production migration push source.
+Use the already established sanitized isolated local database baseline and validate only the Work Management migration chain on top of it.
 
 Validation:
-- [ ] Start from a clean Supabase/PostgreSQL-compatible database.
-- [ ] Generate `.local-supabase/migrations` with the command above.
-- [ ] Confirm generated SQL count equals repository SQL migration count and manifest hashes/content match.
-- [ ] Apply the generated chain in order, including the source migrations through `20260815002000_work_management_acceptance_hardening.sql`.
-- [ ] Confirm no migration fails, hangs, or requires hand editing.
-- [ ] Confirm Work tables, RPCs, RLS policies, Storage bucket/policies, realtime publication entries, and cron registrations are present as expected.
+- [ ] Confirm the database is local/isolated and contains no production URL, production key, production network target, active cron delivery, or queued `pg_net` work.
+- [ ] Apply every Work Management migration in repository order through the latest Work Management migration, with no manual editing of those Work Management SQL files.
+- [ ] Confirm every Work Management migration succeeds on the sanitized baseline.
+- [ ] Confirm Work tables, RPCs, RLS policies, Storage bucket/policies, realtime publication entries, and Work cron registrations are present as expected.
+- [ ] Record any failure in a Work Management migration as a module blocker.
+
+> Full clean bootstrap of the repository's historical migrations is a separate repository-infrastructure maintenance track and must not be conflated with this module's release acceptance.
 
 ## 2. Representative users and RBAC/RLS
 Prepare representative users for Own / Team / All behavior plus Restricted/Private visibility.
@@ -48,7 +41,7 @@ Prepare representative users for Own / Team / All behavior plus Restricted/Priva
 - [ ] Employee can read/update only the Work scope granted by permissions and direct responsibility.
 - [ ] Team manager can manage team work but cannot cross unauthorized scope.
 - [ ] `work.items.manage` user can operate the management-level controls.
-- [ ] `/work/team` loads through the supervisor overview without PostgreSQL `42501` permission errors.
+- [ ] `/work/team` loads through the supervisor overview without PostgreSQL permission or return-type errors.
 - [ ] `/work/manage` → Queues loads active/inactive configuration permitted to queue managers without `42501` helper errors.
 - [ ] Restricted/Private Work does not leak through list, detail, dependency, notification, attachment, mention, or linked-entity paths.
 - [ ] An inactive profile fails Work commands.
@@ -131,10 +124,12 @@ Run at least employee, supervisor and manager personas.
 - [ ] Realtime changes refresh the Work detail without destroying in-progress form input unexpectedly.
 
 ## 11. Release gate
-Only after all applicable checks above are green:
+Only after all applicable Work Management checks above are green:
 
 - [ ] Record defects and fixes, rerun affected scenarios, and obtain a clean result.
 - [ ] Complete independent technical/security review of the final branch diff.
 - [ ] Complete business/product acceptance.
 - [ ] Obtain explicit approval before merging `feature/work-management` to `main`.
 - [ ] Obtain explicit approval before applying Work Management migrations or deploying the feature to production.
+
+Repository-wide legacy migration bootstrap repair and package-lock cleanup remain independent maintenance tracks unless they are shown to cause a Work Management runtime, migration, test, type-check, or build failure under the approved acceptance baseline.

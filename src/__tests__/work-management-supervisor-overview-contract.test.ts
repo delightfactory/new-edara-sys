@@ -6,6 +6,10 @@ const migration = readFileSync(resolve(
   process.cwd(),
   'supabase/migrations/20260814134500_work_management_supervisor_overview.sql',
 ), 'utf8')
+const typeFix = readFileSync(resolve(
+  process.cwd(),
+  'supabase/migrations/20260815003000_work_management_supervisor_overview_type_fix.sql',
+), 'utf8')
 
 describe('work supervisor overview contract', () => {
   it('requires team/all/manage-team authority before returning rows', () => {
@@ -39,5 +43,19 @@ describe('work supervisor overview contract', () => {
     expect(migration).toContain('LEAST(GREATEST(COALESCE(p_limit,300),1),500)')
     expect(migration).toContain('p_attention_only BOOLEAN DEFAULT false')
     expect(migration).toContain('p_assignee_user_id UUID DEFAULT NULL')
+  })
+
+  it('casts textual columns to the exact declared return types', () => {
+    for (const expression of [
+      'w.title::TEXT',
+      'owner.full_name::TEXT',
+      'assignee.full_name::TEXT',
+      'w.next_action_text::TEXT',
+      'w.waiting_reason::TEXT',
+    ]) {
+      expect(typeFix).toContain(expression)
+    }
+    expect(typeFix).toContain('private.work_user_can_view_row(')
+    expect(typeFix).toContain("'work.items.manage_team'")
   })
 })

@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const read = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf8')
+const normalizeWhitespace = (value: string) => value.replace(/\s+/g, ' ').trim()
 const migrationPath = 'supabase/migrations/20260815002000_work_management_acceptance_hardening.sql'
 
 describe('work management acceptance hardening', () => {
@@ -22,10 +23,10 @@ describe('work management acceptance hardening', () => {
     const migration = read(migrationPath)
     const policyStart = migration.indexOf('CREATE POLICY work_queues_select_visible')
     const nextPolicy = migration.indexOf('CREATE POLICY work_queue_members_select_visible')
-    const policy = migration.slice(policyStart, nextPolicy)
+    const policy = normalizeWhitespace(migration.slice(policyStart, nextPolicy))
 
     expect(policy).toContain("public.check_permission(auth.uid(),'work.queues.manage')")
-    expect(policy).toContain('OR (\n    is_active=true AND (')
+    expect(policy).toContain('OR ( is_active=true AND (')
   })
 
   it('provides a server-filtered mention directory and sends selected users through the existing atomic comment command', () => {
@@ -60,6 +61,6 @@ describe('work management acceptance hardening', () => {
     expect(nvmrc).toBe('22')
     expect(workflow).toContain("node-version: '22'")
     expect(runbook).toContain('Node.js **22**')
-    expect(runbook).toContain('prepare-local-migrations.mjs')
+    expect(runbook).toContain('sanitized local baseline')
   })
 })
