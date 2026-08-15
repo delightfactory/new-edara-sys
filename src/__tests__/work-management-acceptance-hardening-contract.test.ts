@@ -53,14 +53,19 @@ describe('work management acceptance hardening', () => {
     expect(api).not.toContain('.download(attachment.storage_path)')
   })
 
-  it('pins local acceptance to the same Node major used by CI', () => {
+  it('pins local acceptance to the same Node major and clean-install contract used by CI', () => {
     const nvmrc = read('.nvmrc').trim()
     const workflow = read('.github/workflows/work-management-ci.yml')
     const runbook = read('docs/work-management/LOCAL_PREMERGE_VALIDATION.md')
 
     expect(nvmrc).toBe('22')
     expect(workflow).toContain("node-version: '22'")
+    expect(workflow).toContain('npm ci --no-audit --no-fund')
+    expect(workflow).toContain('runs-on: windows-latest')
+    expect(workflow).not.toContain('Normalize lockfile in runner')
     expect(runbook).toContain('Node.js **22**')
     expect(runbook).toContain('sanitized local baseline')
+    expect(runbook).toContain('npm ci --no-audit --no-fund')
+    expect(runbook).not.toContain('package-lock normalization drift')
   })
 })

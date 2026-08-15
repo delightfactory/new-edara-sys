@@ -10,16 +10,15 @@ The acceptance baseline is the same toolchain used by GitHub Actions:
 - Run `nvm use` (or the equivalent Node-version manager command) before dependency install/tests.
 - If a test fails only under a different major Node/npm combination, reproduce it first on Node 22 before classifying it as a Work Management blocker.
 
-The repository currently has pre-existing package-lock normalization drift. Until that repository-wide maintenance item is closed, validate using the same deterministic sequence used by Work Management CI:
+The committed `package-lock.json` is required to support a clean install directly. Use:
 
 ```bash
-npm install --package-lock-only --ignore-scripts --no-audit --no-fund
 npm ci --no-audit --no-fund
 npm test
 npm run build
 ```
 
-A raw `npm ci` failure caused solely by the known repository-wide lockfile drift is tracked separately from Work Management functional acceptance; failures that remain after the approved normalization sequence are blockers.
+A raw `npm ci` failure is a release blocker. The lockfile is validated directly in Work Management CI on Linux and Windows; no pre-install lockfile normalization is part of the accepted path.
 
 ## 1. Database acceptance baseline
 Work Management acceptance does **not** require rebuilding the entire legacy NEW-EDARA-SYS migration history from an empty database. The repository contains legacy migrations and seed history with independent bootstrap debt that predates this module.
@@ -132,4 +131,4 @@ Only after all applicable Work Management checks above are green:
 - [ ] Obtain explicit approval before merging `feature/work-management` to `main`.
 - [ ] Obtain explicit approval before applying Work Management migrations or deploying the feature to production.
 
-Repository-wide legacy migration bootstrap repair and package-lock cleanup remain independent maintenance tracks unless they are shown to cause a Work Management runtime, migration, test, type-check, or build failure under the approved acceptance baseline.
+Repository-wide legacy migration bootstrap repair remains an independent maintenance track unless it is shown to cause a Work Management runtime, migration, test, type-check, or build failure under the approved acceptance baseline.

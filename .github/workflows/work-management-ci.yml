@@ -15,6 +15,8 @@ on:
       - 'supabase/migrations/*work_management*'
       - 'vercel.json'
       - '.github/workflows/work-management-ci.yml'
+      - 'package.json'
+      - 'package-lock.json'
 
 permissions:
   contents: read
@@ -44,18 +46,7 @@ jobs:
           node-version: '22'
           cache: npm
 
-      # npm ci on this repository currently needs npm to normalize optional
-      # platform packages first. The normalization is ephemeral and must not
-      # mutate the committed branch.
-      - name: Normalize lockfile in runner
-        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-
-      - name: Report committed lockfile drift
-        id: lock_drift
-        continue-on-error: true
-        run: git diff --exit-code -- package-lock.json
-
-      - name: Clean install from normalized lockfile
+      - name: Clean install from committed lockfile
         run: npm ci --no-audit --no-fund
 
       - name: Run tests
@@ -64,6 +55,20 @@ jobs:
       - name: Type-check and build
         run: npm run build
 
-      - name: Lockfile maintenance notice
-        if: steps.lock_drift.outcome == 'failure'
-        run: echo '::warning::Committed package-lock.json is out of sync and should be regenerated in a dedicated dependency-maintenance change.'
+  clean-install-windows:
+    name: Clean install (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Clean install from committed lockfile
+        run: npm ci --no-audit --no-fund
