@@ -52,11 +52,30 @@ describe('AI Operations credit case engine contract', () => {
     expect(migration).toContain('c.assigned_rep_id AS current_customer_rep_id')
     expect(migration).toContain('so.rep_id AS order_rep_id')
     expect(migration).toContain('so.created_by_id AS order_creator_id')
+    expect(migration).toContain('order_creator.full_name::TEXT AS order_creator_name')
     expect(migration).toContain('so.credit_override_by')
+    expect(migration).toContain('credit_override_actor.full_name::TEXT AS credit_override_by_name')
     expect(migration).toContain('due_hist.changed_by AS last_due_date_changed_by')
     expect(migration).toContain("'order_creator_not_necessarily_accountable'")
     expect(migration).toContain("'explicit_credit_override'")
     expect(migration).toContain("'governed_due_date_change'")
+  })
+
+  it('adds customer credit-policy history as evidence without treating it as invoice ownership', () => {
+    expect(migration).toContain('FROM public.customer_credit_history h')
+    expect(migration).toContain('credit_hist.limit_before AS last_credit_limit_before')
+    expect(migration).toContain('credit_hist.limit_after AS last_credit_limit_after')
+    expect(migration).toContain("'customer_credit_limit_change'")
+    expect(migration).toContain("'limit_before', b.last_credit_limit_before")
+    expect(migration).toContain("'limit_after', b.last_credit_limit_after")
+  })
+
+  it('bounds human-entered reason text and labels it as untrusted data', () => {
+    expect(migration).toContain('left(credit_hist.reason::TEXT, 500)')
+    expect(migration).toContain('left(due_hist.reason::TEXT, 500)')
+    expect(migration).toContain("'content_trust', 'untrusted_human_text'")
+    expect(migration).toContain("'human_text_policy', 'bounded_untrusted_data'")
+    expect(migration).toContain("'human_text_max_chars', 500")
   })
 
   it('reuses the existing Work link mechanism for exact invoice collision detection', () => {
@@ -64,6 +83,8 @@ describe('AI Operations credit case engine contract', () => {
     expect(migration).toContain("wl.entity_type = 'sales_order'")
     expect(migration).toContain('wl.entity_id = so.id')
     expect(migration).toContain("wi.status NOT IN ('done'::public.work_item_status, 'cancelled'::public.work_item_status)")
+    expect(migration).toContain('wi.title::TEXT AS title')
+    expect(migration).toContain('wl.relation_type::TEXT AS relation_type')
     expect(migration).not.toMatch(/CREATE\s+TABLE\s+(?:public\.)?work_(?:entity_)?links/i)
   })
 
