@@ -11,6 +11,7 @@ vi.mock('@/lib/supabase/client', () => ({
 import {
   getAiOperationsCaseDetail,
   getAiOperationsConsole,
+  AiOperationsContractError,
   AiOperationsUnavailableError,
 } from '@/features/ai-operations/service'
 
@@ -79,6 +80,40 @@ describe('AI Operations preview safety contract', () => {
 
     await expect(getAiOperationsCaseDetail('case-123', { mode: 'rpc' })).rejects.toBeInstanceOf(AiOperationsUnavailableError)
     expect(rpc).toHaveBeenCalledWith('ai_ops_get_case_detail', { p_case_id: 'case-123' })
+  })
+
+  it('fails closed when a future console RPC violates the approved payload contract', async () => {
+    rpc.mockResolvedValueOnce({
+      data: { mode: 'rpc', integration_state: 'ready', generated_at: 'badly-incomplete' },
+      error: null,
+    })
+
+    await expect(getAiOperationsConsole({ mode: 'rpc' })).rejects.toBeInstanceOf(AiOperationsContractError)
+  })
+
+  it('fails closed when a future case-detail RPC returns out-of-range confidence', async () => {
+    rpc.mockResolvedValueOnce({
+      data: {
+        case_id: 'case-123',
+        case_key: 'receivables:overdue_invoice:case-123',
+        business_date: '2026-08-16',
+        facts: [],
+        responsibility_evidence: [],
+        existing_work: [],
+        relevant_context_ids: [],
+        decision_review: {
+          decision_type: 'MONITOR',
+          concise_rationale: 'test',
+          why_this_owner: null,
+          why_now: null,
+          confidence: 1.5,
+          requires_human_review: false,
+        },
+      },
+      error: null,
+    })
+
+    await expect(getAiOperationsCaseDetail('case-123', { mode: 'rpc' })).rejects.toBeInstanceOf(AiOperationsContractError)
   })
 
   it('requires an explicit preview feature flag and defaults the data adapter to preview', () => {
