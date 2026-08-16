@@ -39,12 +39,12 @@ describe('AI Operations Sales current-state guard contract', () => {
     expect(migration).toContain('ORDER BY tp.snapshot_date DESC, tp.last_calc_at DESC NULLS LAST, tp.id DESC')
   })
 
-  it('never lets stale progress or contribution mismatch authorize an action', () => {
-    expect(migration).toContain("v_decision.decision_type IN ('CREATE_WORK','ESCALATE')")
-    expect(migration).toContain("v_sc.trust->>'requires_progress_refresh_for_current_action'")
+  it('blocks stale progress or contribution mismatch only from consequential action', () => {
+    expect(migration).toMatch(/IF v_decision\.decision_type IN \('CREATE_WORK','ESCALATE'\)\s+AND COALESCE\(\(v_sc\.trust->>'requires_progress_refresh_for_current_action'\)::BOOLEAN, true\)/)
     expect(migration).toContain("'sales_progress_stale_for_action'")
-    expect(migration).toContain("v_sc.trust->>'contribution_parity_ok'")
+    expect(migration).toMatch(/IF v_decision\.decision_type IN \('CREATE_WORK','ESCALATE'\)\s+AND COALESCE\(\(v_sc\.trust->>'contribution_parity_ok'\)::BOOLEAN, false\) = false/)
     expect(migration).toContain("'sales_contribution_parity_failed'")
+    expect(migration).toContain('A parity failure is useful evidence for INVESTIGATE/MONITOR')
   })
 
   it('rechecks governed target context and exact target-linked Work continuity', () => {
