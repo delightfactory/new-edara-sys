@@ -21,12 +21,22 @@ describe('AI Operations atomic Credit snapshot builder contract', () => {
     expect(migration).not.toMatch(/CREATE\s+TABLE|CREATE\s+TRIGGER|ALTER\s+TABLE/i)
   })
 
-  it('serializes competing retries and reuses an existing run snapshot before operational rereads', () => {
+  it('serializes competing retries and reuses only a snapshot with a durable receivables capture marker', () => {
     expect(migration).toContain("pg_advisory_xact_lock(hashtextextended('ai_ops:credit_snapshot:' || p_run_id::TEXT, 0))")
     expect(migration).toContain('FROM ai_ops.snapshots')
     expect(migration).toContain('WHERE run_id = p_run_id')
+    expect(migration).toContain('FROM ai_ops.snapshot_domain_captures dc')
+    expect(migration).toContain("dc.domain = 'receivables'")
+    expect(migration).toContain('existing credit snapshot is incomplete: missing receivables capture marker')
     expect(migration).toContain("'idempotent_reuse', true")
     expect(migration.indexOf("'idempotent_reuse', true")).toBeLessThan(migration.indexOf('FROM public.sales_orders so'))
+  })
+
+  it('supports zero-case idempotent reuse through the domain marker instead of counting case rows', () => {
+    expect(migration).toContain('v_evidence_bytes := v_domain_capture.evidence_bytes')
+    expect(migration).toContain("'domain_case_count', v_domain_capture.case_count")
+    expect(migration).toContain("'domain_capture_status', v_domain_capture.capture_status")
+    expect(migration).not.toContain('COALESCE(sum(sc.payload_bytes), 0)::BIGINT')
   })
 
   it('accepts only buildable run states and derives all date logic from the durable Cairo business date', () => {
@@ -62,7 +72,7 @@ describe('AI Operations atomic Credit snapshot builder contract', () => {
     expect(migration).toContain('القيمة ليست إقفالًا محاسبيًا نهائيًا')
   })
 
-  it('creates the immutable snapshot and captures case evidence in one function-level transaction path', () => {
+  it('creates snapshot, cases, immutable evidence and domain marker in one function-level transaction path', () => {
     const snapshotInsert = migration.indexOf('INSERT INTO ai_ops.snapshots(')
     const snapshotId = migration.indexOf('RETURNING id INTO v_snapshot_id')
     const capture = migration.indexOf('ai_ops.refresh_credit_cases(v_snapshot_id, v_run.business_date, v_case_limit)')
@@ -70,7 +80,8 @@ describe('AI Operations atomic Credit snapshot builder contract', () => {
     expect(snapshotInsert).toBeGreaterThan(-1)
     expect(snapshotId).toBeGreaterThan(snapshotInsert)
     expect(capture).toBeGreaterThan(snapshotId)
-    expect(migration).toContain('if evidence capture fails, the snapshot insert rolls back')
+    expect(migration).toContain('snapshot + cases + immutable evidence + domain')
+    expect(migration).toContain('either all commit or all roll back')
   })
 
   it('accounts for header plus frozen-case bytes as the estimated AI context budget', () => {
@@ -78,7 +89,6 @@ describe('AI Operations atomic Credit snapshot builder contract', () => {
     expect(migration).toContain("'snapshot_evidence_bytes', v_evidence_bytes")
     expect(migration).toContain('v_estimated_context_bytes := v_payload_bytes::BIGINT + v_evidence_bytes')
     expect(migration).toContain("'estimated_context_bytes', v_estimated_context_bytes")
-    expect(migration).toContain('COALESCE(sum(sc.payload_bytes), 0)::BIGINT')
   })
 
   it('never mutates operational Sales, Customer or Work data', () => {
