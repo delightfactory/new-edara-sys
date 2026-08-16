@@ -6,6 +6,7 @@ const read = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf8'
 
 const app = read('src/App.tsx')
 const bottomNav = read('src/components/layout/BottomNav.tsx')
+const sidebar = read('src/components/layout/Sidebar.tsx')
 const hub = read('src/pages/work/WorkHubPage.tsx')
 const createTask = read('src/pages/work/CreateTaskPage.tsx')
 const detailShell = read('src/pages/work/WorkDetailPage.tsx')
@@ -37,6 +38,16 @@ describe('operational Work UI architecture', () => {
     expect(bottomNav).toContain("id: 'work'")
     expect(bottomNav).toContain("path: '/work'")
     expect(bottomNav).toContain("'work.items.read_own', 'work.items.read_team', 'work.items.read_all'")
+  })
+
+  it('exposes permission-scoped Work destinations in the desktop sidebar', () => {
+    expect(sidebar).toContain("id: 'work', label: 'إدارة العمل'")
+    expect(sidebar).toContain("path: '/work', permission: WORK_READ_PERMISSIONS, end: true")
+    expect(sidebar).toContain("path: '/work/team'")
+    expect(sidebar).toContain('WORK_PERMISSIONS.ITEMS_MANAGE_TEAM')
+    expect(sidebar).toContain("path: '/work/manage'")
+    expect(sidebar).toContain('WORK_PERMISSIONS.WORKFLOWS_MANAGE')
+    expect(sidebar).toContain('end={child.end}')
   })
 
   it('composes detail capabilities without rewriting the proven core page', () => {
