@@ -12,6 +12,11 @@ const sourceMap = readFileSync(resolve(
   'docs/work-management/12_AI_OPERATIONS_CREDIT_SOURCE_MAP.md',
 ), 'utf8')
 
+const executableSql = migration
+  .split('\n')
+  .filter(line => !line.trimStart().startsWith('--'))
+  .join('\n')
+
 describe('AI Operations credit case engine contract', () => {
   it('is design-only and creates functions only inside the isolated ai_ops boundary', () => {
     expect(migration).toContain('DESIGN-TIME MIGRATION ONLY')
@@ -27,7 +32,7 @@ describe('AI Operations credit case engine contract', () => {
     expect(migration).toContain('p_business_date DATE')
     expect(migration).toContain('so.due_date < p_business_date')
     expect(migration).toContain('(p_business_date - so.due_date)::INTEGER')
-    expect(migration).not.toMatch(/CURRENT_DATE/i)
+    expect(executableSql).not.toMatch(/CURRENT_DATE/i)
     expect(sourceMap).toContain('database timezone is UTC')
   })
 
