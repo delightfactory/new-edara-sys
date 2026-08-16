@@ -4,11 +4,12 @@ import { useNotificationStore } from '@/stores/notification-store'
 import { useUiStore } from '@/stores/ui-store'
 import { signOut } from '@/lib/services/auth'
 import { PERMISSIONS } from '@/lib/permissions/constants'
+import { WORK_PERMISSIONS, WORK_READ_PERMISSIONS } from '@/lib/permissions/work'
 import {
   LayoutDashboard, ShoppingCart, Package, Warehouse, DollarSign,
   Users, Settings, ClipboardList, Target, BarChart3,
   LogOut, Moon, Sun, ChevronDown, X,
-  BoxesIcon, Truck, Building2, UserCog, Bell,
+  BoxesIcon, Truck, Building2, UserCog, Bell, ClipboardCheck,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
@@ -16,6 +17,7 @@ interface NavChild {
   label: string
   path: string
   permission?: string | string[]
+  end?: boolean
 }
 interface NavItem {
   id: string
@@ -42,6 +44,14 @@ const sections: NavSection[] = [
   {
     label: 'التشغيل',
     items: [
+      {
+        id: 'work', label: 'إدارة العمل', icon: ClipboardCheck,
+        children: [
+          { label: 'مساحة العمل', path: '/work', permission: WORK_READ_PERMISSIONS, end: true },
+          { label: 'أعمال الفريق', path: '/work/team', permission: [WORK_PERMISSIONS.ITEMS_READ_TEAM, WORK_PERMISSIONS.ITEMS_READ_ALL, WORK_PERMISSIONS.ITEMS_MANAGE_TEAM] },
+          { label: 'الإعدادات والإدارة', path: '/work/manage', permission: [WORK_PERMISSIONS.QUEUES_MANAGE, WORK_PERMISSIONS.TEMPLATES_MANAGE, WORK_PERMISSIONS.WORKFLOWS_MANAGE, WORK_PERMISSIONS.RECURRENCE_MANAGE, WORK_PERMISSIONS.POLICIES_MANAGE] },
+        ],
+      },
       {
         id: 'sales', label: 'المبيعات', icon: ShoppingCart,
         children: [
@@ -300,6 +310,7 @@ export default function Sidebar() {
             <NavLink
               key={child.path}
               to={child.path}
+              end={child.end}
               className={({ isActive }) => `si-child${isActive ? ' si-child--active' : ''}`}
               onClick={handleNavClick}
             >
