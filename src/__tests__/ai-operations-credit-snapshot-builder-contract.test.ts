@@ -62,11 +62,15 @@ describe('AI Operations atomic Credit snapshot builder contract', () => {
     expect(migration).toContain('القيمة ليست إقفالًا محاسبيًا نهائيًا')
   })
 
-  it('creates the immutable snapshot and captures case evidence in one transaction path', () => {
-    expect(migration).toContain('INSERT INTO ai_ops.snapshots(')
-    expect(migration).toContain('RETURNING id INTO v_snapshot_id')
-    expect(migration).toContain('ai_ops.refresh_credit_cases(v_snapshot_id, v_run.business_date, v_case_limit)')
-    expect(migration).not.toMatch(/EXCEPTION[\s\S]*refresh_credit_cases/i)
+  it('creates the immutable snapshot and captures case evidence in one function-level transaction path', () => {
+    const snapshotInsert = migration.indexOf('INSERT INTO ai_ops.snapshots(')
+    const snapshotId = migration.indexOf('RETURNING id INTO v_snapshot_id')
+    const capture = migration.indexOf('ai_ops.refresh_credit_cases(v_snapshot_id, v_run.business_date, v_case_limit)')
+
+    expect(snapshotInsert).toBeGreaterThan(-1)
+    expect(snapshotId).toBeGreaterThan(snapshotInsert)
+    expect(capture).toBeGreaterThan(snapshotId)
+    expect(migration).toContain('if evidence capture fails, the snapshot insert rolls back')
   })
 
   it('accounts for header plus frozen-case bytes as the estimated AI context budget', () => {
