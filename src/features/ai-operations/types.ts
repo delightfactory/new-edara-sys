@@ -16,6 +16,14 @@ export type AiOpsCaseStatus = 'open' | 'monitored' | 'actioned' | 'resolved' | '
 export type AiOpsAttentionClass = 'exception' | 'opportunity' | 'integrity' | 'continuity'
 export type AiOpsDecisionType = 'IGNORE' | 'MONITOR' | 'INVESTIGATE' | 'INFORM' | 'CREATE_WORK' | 'ESCALATE'
 export type AiOpsEvidenceStrength = 'direct' | 'supporting' | 'contextual'
+export type AiOpsContextConfidence =
+  | 'hard_policy'
+  | 'approved_human'
+  | 'explicit_human'
+  | 'system_record'
+  | 'system_inference'
+  | 'ai_inference'
+export type AiOpsContextLifecycle = 'permanent' | 'valid_until' | 'review_on' | 'one_time'
 
 export interface AiOpsSettings {
   planner_enabled: boolean
@@ -108,6 +116,30 @@ export interface AiOpsWorkCollision {
   title: string
 }
 
+export interface AiOpsFrozenContextEvidence {
+  id: string
+  subject_type: string
+  subject_id: string
+  context_type: string
+  summary: string
+  owner_user_id: string | null
+  owner_label: string | null
+  source_type: 'human' | 'system' | 'ai_proposed'
+  confidence_class: AiOpsContextConfidence
+  lifecycle_type: AiOpsContextLifecycle
+  valid_from: string
+  valid_until: string | null
+  review_on: string | null
+  visibility: 'management' | 'standard'
+  content_trust: 'governed_untrusted_text'
+}
+
+export interface AiOpsContextCoverage {
+  total: number
+  captured: number
+  truncated: boolean
+}
+
 export interface AiOpsCaseDecisionReview {
   decision_type: AiOpsDecisionType | null
   concise_rationale: string
@@ -125,6 +157,8 @@ export interface AiOpsCaseDetail {
   responsibility_evidence: AiOpsResponsibilityEvidence[]
   existing_work: AiOpsWorkCollision[]
   relevant_context_ids: string[]
+  frozen_context: AiOpsFrozenContextEvidence[]
+  context_coverage: AiOpsContextCoverage
   decision_review: AiOpsCaseDecisionReview
 }
 
@@ -137,14 +171,8 @@ export interface AiOpsOperationalContextItem {
   summary: string
   owner_label: string | null
   source_type: 'human' | 'system' | 'ai_proposed'
-  confidence_class:
-    | 'hard_policy'
-    | 'approved_human'
-    | 'explicit_human'
-    | 'system_record'
-    | 'system_inference'
-    | 'ai_inference'
-  lifecycle_type: 'permanent' | 'valid_until' | 'review_on' | 'one_time'
+  confidence_class: AiOpsContextConfidence
+  lifecycle_type: AiOpsContextLifecycle
   valid_until: string | null
   review_on: string | null
   status: 'active' | 'expired' | 'revoked' | 'consumed'
