@@ -21,9 +21,11 @@ This directory contains the design baseline, implementation closure notes, relea
 - `10_AI_OPERATIONS_PLANNER_REALITY_INTEGRATION_GATE.md` — reality review separating the durable EDARA planner core from replaceable AI worker adapters, defining what is production-real today, what remains Shadow/Human-review only, and the first closed-loop vertical slice.
 - `11_AI_OPERATIONS_EXISTING_ENTITY_MAP.md` — catalog-driven map of existing Work/entities that must be reused rather than duplicated.
 - `12_AI_OPERATIONS_CREDIT_SOURCE_MAP.md` — verified deployed Credit/Receivables source semantics, responsibility evidence and Work-collision sources.
-- `13_AI_OPERATIONS_PREVIEW_REVIEW.md` — database-free local Preview review flow for the control-center UI.
+- `13_AI_OPERATIONS_PREVIEW_REVIEW_GUIDE.md` — database-free local Preview review flow for the control-center UI.
 - `14_AI_OPERATIONS_CREDIT_SLICE_IMPLEMENTATION_DELTA.md` — implementation-time corrections: immutable snapshot-case evidence, atomic snapshot building, context byte budgeting, conservative trust and UI/worker boundary.
+- `15_AI_OPERATIONS_DECISION_PIPELINE_IMPLEMENTATION_DELTA.md` — staged-decision, validation, human-review and explicit Work-commit runtime contract.
+- `16_AI_OPERATIONS_SALES_TARGETS_SOURCE_MAP.md` — production-reality map and implementation boundary for Sales & Targets, including canonical target truth, contribution parity, responsibility evidence and activity-evidence limits.
 
-The AI Operations Planner now has **reviewable branch artifacts** (design-time SQL files, service contracts, Preview UI and tests), but this does **not** mean the AI layer has been migrated, enabled, scheduled or deployed.
+The AI Operations Planner has **reviewable branch artifacts** (design-time SQL files, service contracts, Preview/RPC UI and tests), but the presence of these files does **not** mean the AI layer has been migrated, enabled, scheduled or deployed to production.
 
-The production database currently remains unchanged by these AI Operations files. No production migration or deployment is authorised by the presence of the documents or SQL artifacts.
+Production remains unchanged by these AI Operations branch artifacts. No production migration or deployment is authorised by the presence of the documents or SQL files.
