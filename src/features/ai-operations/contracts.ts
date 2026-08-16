@@ -6,6 +6,9 @@ const caseSeverity = z.enum(['low', 'medium', 'high', 'critical'])
 const caseStatus = z.enum(['open', 'monitored', 'actioned', 'resolved', 'suppressed', 'expired'])
 const attentionClass = z.enum(['exception', 'opportunity', 'integrity', 'continuity'])
 const decisionType = z.enum(['IGNORE', 'MONITOR', 'INVESTIGATE', 'INFORM', 'CREATE_WORK', 'ESCALATE'])
+const decisionValidationState = z.enum(['pending', 'validated', 'rejected'])
+const humanReviewState = z.enum(['approved', 'rejected'])
+const commitStatus = z.enum(['not_requested', 'staged', 'committed', 'rejected', 'failed', 'skipped'])
 const evidenceStrength = z.enum(['direct', 'supporting', 'contextual'])
 const contextConfidence = z.enum(['hard_policy', 'approved_human', 'explicit_human', 'system_record', 'system_inference', 'ai_inference'])
 const contextLifecycle = z.enum(['permanent', 'valid_until', 'review_on', 'one_time'])
@@ -177,4 +180,83 @@ export const aiOpsCaseDetailSchema = z.object({
     confidence: z.number().min(0).max(1).nullable(),
     requires_human_review: z.boolean(),
   }),
+})
+
+const runLifecycle = z.object({
+  run_id: z.string().optional(),
+  status: runStatus.optional(),
+  checkpoint: z.string().optional(),
+  terminal: z.boolean().optional(),
+  changed: z.boolean().optional(),
+  reason: z.string().optional(),
+  pending_human_review: z.number().int().min(0).optional(),
+  pending_work_commit: z.number().int().min(0).optional(),
+  system_rejected_decisions: z.number().int().min(0).optional(),
+  blocked_work_commit: z.number().int().min(0).optional(),
+  unsupported_execution_decisions: z.number().int().min(0).optional(),
+})
+
+export const aiOpsCaseDecisionReviewResponseSchema = z.object({
+  case_id: z.string().min(1),
+  decision: z.object({
+    decision_id: z.string().min(1),
+    run_id: z.string().min(1),
+    run_status: runStatus,
+    run_checkpoint: z.string().min(1),
+    revision: z.number().int().positive(),
+    decision_type: decisionType,
+    concise_rationale: z.string().min(1),
+    why_this_owner: z.string().nullable(),
+    why_now: z.string().nullable(),
+    confidence: z.number().min(0).max(1).nullable(),
+    recommended_owner_user_id: z.string().nullable(),
+    recommended_owner_label: z.string().nullable(),
+    recommended_assignee_user_id: z.string().nullable(),
+    recommended_assignee_label: z.string().nullable(),
+    expected_outcome: z.string().nullable(),
+    next_action_text: z.string().nullable(),
+    due_at: z.string().nullable(),
+    review_after: z.string().nullable(),
+    validation_state: decisionValidationState,
+    validation_codes: z.array(z.string()),
+    requires_human_review: z.boolean(),
+    review_state: humanReviewState.nullable(),
+    reviewed_by_user_id: z.string().nullable(),
+    reviewed_by_label: z.string().nullable(),
+    reviewed_at: z.string().nullable(),
+    review_note: z.string().nullable(),
+    commit_status: commitStatus,
+    committed_work_item_id: z.string().nullable(),
+    committed_work_number: z.number().int().positive().nullable(),
+    committed_at: z.string().nullable(),
+    updated_at: z.string().min(1),
+  }).nullable(),
+})
+
+export const aiOpsReviewDecisionResultSchema = z.object({
+  reviewed: z.boolean(),
+  idempotent_reuse: z.boolean().optional(),
+  approval_blocked: z.boolean().optional(),
+  review_id: z.string().optional(),
+  decision_id: z.string().min(1),
+  review_state: humanReviewState.optional(),
+  validation_state: decisionValidationState.optional(),
+  validation_codes: z.array(z.string()).optional(),
+  reason: z.string().optional(),
+  execution_performed: z.boolean().optional(),
+  run_lifecycle: runLifecycle.optional(),
+})
+
+export const aiOpsCommitDecisionResultSchema = z.object({
+  committed: z.boolean(),
+  blocked: z.boolean().optional(),
+  idempotent_reuse: z.boolean().optional(),
+  decision_id: z.string().optional(),
+  reason: z.string().optional(),
+  work_item_id: z.string().optional(),
+  work_number: z.number().int().positive().optional(),
+  source_key: z.string().optional(),
+  operational_mutation: z.string().optional(),
+  validation_codes: z.array(z.string()).optional(),
+  run_lifecycle: runLifecycle.optional(),
 })
