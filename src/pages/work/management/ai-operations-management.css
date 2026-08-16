@@ -66,9 +66,7 @@
   color: #4f46e5;
 }
 
-.aiops-hero-copy {
-  min-width: 0;
-}
+.aiops-hero-copy { min-width: 0; }
 
 .aiops-eyebrow {
   font-size: 0.73rem;
@@ -137,14 +135,8 @@
   white-space: nowrap;
 }
 
-.aiops-grid {
-  display: grid;
-  gap: 12px;
-}
-
-.aiops-grid--metrics {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
+.aiops-grid { display: grid; gap: 12px; }
+.aiops-grid--metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
 .aiops-metric {
   border: 1px solid var(--color-border, #e5e7eb);
@@ -227,10 +219,7 @@
   background: var(--color-surface, #fff);
 }
 
-.aiops-case {
-  padding: 15px;
-}
-
+.aiops-case { padding: 15px; }
 .aiops-case--critical { border-inline-start: 4px solid #dc2626; }
 .aiops-case--high { border-inline-start: 4px solid #ea580c; }
 .aiops-case--medium { border-inline-start: 4px solid #ca8a04; }
@@ -252,10 +241,7 @@
   font-size: 0.72rem;
 }
 
-.aiops-case h3 {
-  margin: 5px 0 0;
-  font-size: 1rem;
-}
+.aiops-case h3 { margin: 5px 0 0; font-size: 1rem; }
 
 .aiops-severity,
 .aiops-decision-chip,
@@ -325,13 +311,111 @@
 
 .aiops-collision--linked { color: #4338ca; font-weight: 800; }
 
-.aiops-panel-card {
-  padding: 14px;
+.aiops-evidence-toggle {
+  margin-inline-start: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: transparent;
+  color: #4338ca;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 4px 0;
 }
 
-.aiops-panel-card--safety {
+.aiops-evidence-toggle svg { transition: transform 160ms ease; }
+.aiops-evidence-toggle svg.is-open { transform: rotate(180deg); }
+
+.aiops-case-detail {
+  display: grid;
+  gap: 12px;
+  margin-top: 13px;
+  padding-top: 13px;
+  border-top: 1px dashed var(--color-border, #e5e7eb);
+}
+
+.aiops-detail-loading,
+.aiops-detail-error {
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.76rem;
   background: var(--color-bg-subtle, #f8fafc);
 }
+
+.aiops-detail-error {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: #b91c1c;
+  background: #fef2f2;
+}
+
+.aiops-detail-section { display: grid; gap: 8px; }
+.aiops-detail-title { font-size: 0.78rem; font-weight: 900; }
+
+.aiops-facts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.aiops-facts-grid > div {
+  display: grid;
+  gap: 2px;
+  padding: 9px;
+  border-radius: 10px;
+  background: var(--color-bg-subtle, #f8fafc);
+}
+
+.aiops-facts-grid span { font-size: 0.67rem; color: var(--color-text-muted, #667085); }
+.aiops-facts-grid strong { font-size: 0.76rem; }
+
+.aiops-evidence-list { display: grid; gap: 7px; }
+.aiops-evidence {
+  padding: 10px;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 11px;
+}
+.aiops-evidence--direct { border-inline-start: 3px solid #4f46e5; }
+.aiops-evidence--supporting { border-inline-start: 3px solid #64748b; }
+.aiops-evidence--contextual { border-inline-start: 3px solid #cbd5e1; }
+
+.aiops-evidence-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+.aiops-evidence-head strong { font-size: 0.76rem; }
+.aiops-evidence-head span { font-size: 0.64rem; color: var(--color-text-muted, #667085); }
+.aiops-evidence-user { margin-top: 4px; font-size: 0.75rem; font-weight: 800; }
+.aiops-evidence p { margin: 5px 0 0; font-size: 0.71rem; line-height: 1.55; color: var(--color-text-muted, #667085); }
+
+.aiops-decision-review {
+  padding: 11px;
+  border-radius: 12px;
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+}
+.aiops-decision-review > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.aiops-decision-review span { font-size: 0.68rem; color: #6d28d9; }
+.aiops-decision-review strong { font-size: 0.8rem; color: #4c1d95; }
+.aiops-decision-review p { margin: 7px 0 0; font-size: 0.74rem; line-height: 1.65; }
+.aiops-decision-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.aiops-panel-card { padding: 14px; }
+.aiops-panel-card--safety { background: var(--color-bg-subtle, #f8fafc); }
 
 .aiops-run,
 .aiops-context-item {
@@ -430,7 +514,9 @@
   .aiops-metric { padding: 12px; }
   .aiops-metric-value { font-size: 1.2rem; }
   .aiops-case-head { flex-direction: column; }
-  .aiops-case-grid { grid-template-columns: 1fr; }
+  .aiops-case-grid,
+  .aiops-facts-grid { grid-template-columns: 1fr; }
+  .aiops-evidence-toggle { margin-inline-start: 0; width: 100%; justify-content: flex-start; }
   .aiops-side-column { grid-template-columns: 1fr; }
   .aiops-panel-card--safety { grid-column: auto; }
 }
