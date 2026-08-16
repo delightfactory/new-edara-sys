@@ -1,6 +1,6 @@
 # AI Operations — Sales & Targets Source Map
 
-**Status:** implementation source map for the next AI Operations domain  
+**Status:** implementation source map for the Sales & Targets AI Operations domain  
 **Branch:** `feature/work-management`  
 **Production posture:** production inspection is read-only; this document authorizes no production migration or mutation  
 **Parent specs:** `07_AI_OPERATIONS_PLANNER_SPEC.md`, `08_AI_OPERATIONS_PLANNER_ACCEPTANCE_SCENARIOS.md`
@@ -21,8 +21,6 @@ The domain must avoid low-value output such as "increase sales" or assigning a t
 
 ## 2. Reality-study findings from the live production schema
 
-The following facts were verified by read-only inspection on 2026-08-17.
-
 ### 2.1 Canonical target truth
 
 Existing operational sources:
@@ -32,9 +30,11 @@ Existing operational sources:
 - `public.target_types`
 - `public.target_adjustments`
 
-The deployed target engine is already the canonical deterministic calculator. `public.recalculate_target_progress(...)` defines target achievement and trajectory semantics and writes the official daily `target_progress` snapshot.
+The deployed target engine is already the canonical deterministic calculator. `public.recalculate_target_progress(...)` defines target achievement and trajectory semantics and writes the official `target_progress` snapshots.
 
-AI Operations **must not recalculate or replace that authority**. It consumes an already-calculated progress row for the requested business date.
+AI Operations **must not recalculate or replace that authority**. The planner consumes the latest official `target_progress` row at or before the requested planner business date.
+
+If that row belongs to an earlier date, the case remains visible, but every deterministic metric must remain aligned to that same snapshot date. The planner records `metrics_as_of`, snapshot age and freshness explicitly and must not present an older metric as current-state evidence.
 
 Relevant trend semantics in the deployed target engine:
 
@@ -53,9 +53,7 @@ This slice intentionally supports only:
 - `sales_value`
 - `product_qty`
 
-These two types have directly verifiable sales execution evidence and are the highest-value continuation after the Receivables slice.
-
-The following are deliberately deferred to their correct domains rather than mixed into Sales & Targets:
+The following remain in their proper domains rather than being mixed into this slice:
 
 - `reactivation` → Customer Health / Re-engagement
 - `category_spread` → Customer Health / Commercial Development
@@ -70,75 +68,75 @@ The following are deliberately deferred to their correct domains rather than mix
 
 - scope members are active `hr_employees` selected by target scope;
 - order ownership uses `sales_orders.rep_id` mapped to `hr_employees.user_id`;
-- only orders with status `delivered` or `completed` count;
-- business date is `sales_orders.delivered_at::date`;
-- ordinary value target uses `GREATEST(total_amount - returned_amount, 0)`;
-- product/category-filtered value target uses eligible order items and confirmed return items;
+- only `delivered` or `completed` orders count;
+- official sales date is `sales_orders.delivered_at::date`;
+- ordinary value targets use `GREATEST(total_amount - returned_amount, 0)`;
+- product/category-filtered targets use eligible order items less confirmed return items;
 - governorate/city/area filters are respected.
 
 #### `product_qty`
 
-- same target-scope membership and order-status/date boundary;
+- the same scope membership and delivery-date boundary apply;
 - achievement uses `GREATEST(delivered_quantity - returned_quantity, 0)`;
 - product/category filters are respected.
 
 AI contribution evidence must preserve these semantics. It must never use order creation date as the official sales date.
 
+When the latest official progress is older than the requested planner date, contribution evidence is recomputed only through `metrics_as_of` so its total can still be reconciled to the stored official achievement.
+
 ### 2.4 Responsibility evidence
 
 Target scope ownership is evidence, not hard routing.
 
-Verified current relationship model:
+- `individual` scope points to `hr_employees.id`; the employee `user_id` is an actor candidate;
+- `department` scope may use `hr_departments.manager_id` as management-accountability evidence;
+- `branch` scope may use `branches.manager_id` as management-accountability evidence;
+- `company` has no safe implicit actor in the target row and must not manufacture one;
+- `targets.assigned_by` identifies who assigned/set the target and is **context only**, not automatic accountability.
 
-- `individual` target scope points to `hr_employees.id`; the employee's `user_id` is the actor candidate;
-- `department` scope can use `hr_departments.manager_id` as management-accountability evidence;
-- `branch` scope can use `branches.manager_id` as management-accountability evidence;
-- `company` has no safe implicit actor in the target row and therefore must not manufacture an owner;
-- `targets.assigned_by` is the target assigner/setter and is **context only**, not automatic accountability.
-
-For the current Sales department target, production shows the department manager as Ahmed Abdelkader while the target was assigned by Ahmed Salama. The planner must keep these roles distinct.
+For the current Sales department target, production shows the department manager as Ahmed Abdelkader while the target was assigned by Ahmed Salama. The planner must keep those roles distinct.
 
 ### 2.5 Team contribution evidence
 
-Per-employee contribution can be deterministically reproduced with the same target rules. A read-only parity check against the active August sales-value target matched the official `target_progress.achieved_value` exactly.
+Per-employee contribution can be deterministically reproduced with the same target rules and checked against official `target_progress.achieved_value`.
 
 Contribution is **driver evidence**, not blame and not an automatic owner-selection rule.
 
+A parity mismatch is a trust failure that must remain visible; it must not be hidden by the reasoning layer.
+
 ### 2.6 Field-execution evidence
 
-Available sources:
+Available sources include:
 
 - `public.visit_plans`
 - `public.visit_plan_items`
 - `public.activities`
 - `public.activity_types`
 
-The live system contains explicit `visit` and `call` activity categories and operational visit plans.
+Field activity is not uniformly planned for every employee contributing to a department target. Therefore this slice may expose bounded field-execution evidence, but it **must not deterministically label a department target gap as "low activity" or "poor conversion" unless comparable governed expectations are available**.
 
-However, field activity is not uniformly planned for every employee currently contributing to a department sales target. Therefore this slice may expose bounded field-execution evidence, but it **must not deterministically label a department target gap as "low activity" or "poor conversion" unless comparable governed activity expectations are available**.
-
-This preserves acceptance scenarios D1/D2 without inventing a causal conclusion from incomplete activity coverage.
+Field-execution evidence is also bounded by `metrics_as_of`; it is never allowed to mix later visits/calls with an older official target snapshot.
 
 ### 2.7 Opportunity / pipeline data
 
 No trusted operational Lead / Opportunity / Pipeline table was found in the live production schema.
 
-Therefore the planned case family "high-value opportunity not being progressed" is **not implemented in this slice**. It remains a valid future case only after a canonical opportunity source exists.
+Therefore the planned case family "high-value opportunity not being progressed" is **not implemented in this slice**. It remains future scope only after a canonical opportunity source exists.
 
 ### 2.8 Existing Work collision
 
-`public.work_links.entity_id` is UUID in the current live schema, so a target UUID can be linked safely as:
+`public.work_links.entity_id` is UUID, so a target can be linked as:
 
 - `entity_type = 'target'`
 - `entity_id = targets.id`
 
-The Sales case kernel must surface an exact active Work collision and the planner must prefer existing Work over creating a duplicate.
+The case kernel surfaces exact active Work linked to the target so downstream reasoning can prefer continuity over duplicate work creation.
 
 ---
 
 ## 3. Case contract
 
-### 3.1 Domain and case type
+### 3.1 Identity
 
 ```text
 domain: sales
@@ -151,55 +149,65 @@ attention_class: exception
 
 ### 3.2 Eligibility
 
-A target is eligible only when all are true:
+A target is eligible when all are true:
 
-1. target is active and not paused;
-2. business date lies inside target period;
+1. it is active and not paused;
+2. requested business date lies inside the target period;
 3. type is `sales_value` or `product_qty`;
-4. a canonical `target_progress` row exists for the exact business date;
-5. progress trend is `behind` or `at_risk`.
+4. at least one canonical `target_progress` row exists at or before the requested business date;
+5. the latest such progress row is `behind` or `at_risk`.
 
-The AI kernel does **not** invoke `recalculate_target_progress`, because the planner's source capture must not mutate operational target tables.
+The AI kernel does **not** invoke `recalculate_target_progress`; planner source capture remains read-only against operational target tables.
 
-Missing/stale official progress is a trust/integrity concern, not permission for AI to manufacture fresh numbers.
+If the latest progress row predates the requested business date:
+
+- the case is **not hidden**;
+- `progress_snapshot_date` / `metrics_as_of` identify the true measurement date;
+- `progress_snapshot_age_days` records the gap;
+- `requires_progress_refresh_for_current_action = true`;
+- the evidence remains reviewable, but it is not treated as current-state action evidence until the official progress is refreshed.
+
+Missing official progress entirely is a source-integrity condition; AI must never manufacture the missing KPI.
 
 ### 3.3 Materiality and severity
 
-Initial severity policy intentionally avoids alarm inflation:
+Initial severity policy avoids alarm inflation:
 
 - `at_risk` → `medium`
 - `behind` → `high`
-- `critical` only when at least 75% of the target period has elapsed **and** the target remains behind with a materially poor projected/minimum position based on deterministic pace evidence.
+- `critical` only when at least 75% of the **official metrics-as-of target period** has elapsed and the target remains behind with a materially poor projected/minimum position.
 
-The first implementation keeps the case's factual trajectory gap visible so AI can prioritise among multiple `high` cases without turning every mid-month miss into `critical`.
+Severity, projection and pace all use the same canonical `metrics_as_of`. The requested planner date does not silently advance those calculations when the official snapshot is older.
 
 ### 3.4 Core facts
 
-Each case should expose:
+Each case exposes, where available:
 
 - target identity/name/type/unit;
 - target scope and period;
+- requested planner business date;
+- `progress_snapshot_date` and `metrics_as_of`;
+- snapshot age and exact-business-date flag;
 - target/minimum/stretch values;
 - official achieved value and achievement percentage;
-- expected progress percentage;
-- trajectory gap in percentage points;
-- remaining amount/quantity;
-- elapsed and remaining days;
-- required average daily pace from now;
-- actual average daily pace to date;
-- pace multiplier required to reach target;
-- product/category/geographic filters when present;
+- expected progress percentage from the official snapshot;
+- trajectory gap;
+- remaining amount/quantity as of the official snapshot;
+- elapsed/remaining days as of `metrics_as_of`;
+- actual and required daily pace as of `metrics_as_of`;
+- projected value from the same official window;
+- product/category/geographic filters;
 - last canonical progress calculation timestamp;
-- top deterministic employee contributions;
-- bounded field execution summary where applicable;
-- exact active linked Work if one exists.
+- deterministic team contributions reconciled to the same snapshot;
+- bounded field execution through the same snapshot date;
+- exact active linked Work when one exists.
 
 ### 3.5 Responsibility evidence
 
 Evidence may contain:
 
 - `scope_accountability`: individual actor or department/branch manager when explicitly present;
-- `target_assigner`: contextual evidence only;
+- `target_assigner`: context only;
 - `top_contributors`: execution/result evidence only;
 - `existing_active_work`: continuity evidence.
 
@@ -209,30 +217,30 @@ No actor is selected merely because they are the top or bottom contributor.
 
 ## 4. Decision-quality expectations
 
-This slice supports the parent acceptance scenarios D1 and D2 while remaining honest about evidence quality.
-
 ### D1 — trajectory gap with low governed activity
 
-If a later/current target has a valid planned/target activity baseline and actual execution is materially low, the reasoning layer may identify execution coverage as a plausible driver and recommend a bounded action owned according to real sales responsibility.
+If a valid governed activity baseline exists and execution is materially low, the reasoning layer may identify execution coverage as a plausible driver and recommend a bounded action owned according to real sales responsibility.
 
 ### D2 — trajectory gap despite healthy activity
 
-If activity expectations are met but outcome remains weak, the planner must not simply add more visits. It should investigate customer/product mix, conversion quality or offer execution and may place the review with the accountable sales owner rather than dumping additional activity on a rep.
+If activity expectations are met but outcome remains weak, the planner must not simply add more visits. It should investigate customer/product mix, conversion quality or offer execution.
 
 ### Current evidence limitation
 
 Where activity coverage is partial, the case records that limitation. The model may investigate but cannot state a causal conclusion as fact.
 
+If the official progress snapshot is older than the requested business date, the model may explain the historical evidence but must not form a current-state operational action from that stale measurement until official progress is refreshed.
+
 ---
 
 ## 5. Safety boundary
 
-The Sales & Targets source/case functions are allowed to:
+Sales & Targets source/case functions may:
 
 - `SELECT` from operational Sales, Target, HR, Product, Geography, Visit/Activity and Work tables;
-- write only planner-local case/snapshot state inside `ai_ops` when a capture is explicitly invoked.
+- write only planner-local case/snapshot state inside `ai_ops` during explicit capture.
 
-They are not allowed to:
+They may not:
 
 - call `recalculate_target_progress`;
 - update targets or target progress;
@@ -240,10 +248,10 @@ They are not allowed to:
 - alter visits/activities;
 - alter HR ownership;
 - create Work during case capture;
-- modify any source-table schema/index/trigger;
+- modify source-table schema/indexes/triggers;
 - infer employee performance scores.
 
-Work creation remains downstream of AI decision validation + human review + explicit Work commit.
+Work creation remains downstream of AI decision validation, human review and explicit Work commit.
 
 ---
 
@@ -255,25 +263,25 @@ Do **not** clone those orchestration functions per domain.
 
 Implementation order:
 
-1. implement and validate the Sales target candidate/case capture independently;
+1. implement and validate Sales target candidate/case capture independently;
 2. prove business-quality output on isolated/local data;
 3. generalise the existing snapshot builder/worker context **once** into a bounded multi-domain contract;
-4. attach future Customer, Inventory, Visits, Work and HR domains to that shared contract.
-
-This avoids duplicated orchestration and keeps each domain responsible only for its source truth, case detection and evidence contract.
+4. attach Customer, Inventory, Visits, Work and HR domains to that shared contract.
 
 ---
 
-## 7. Current live-data sanity check
+## 7. Runtime findings and correction
 
-On 2026-08-16 the live target engine had current `sales_value` / `product_qty` targets materially behind expected calendar trajectory, while canonical progress rows were fresh and available.
+Production read-only inspection confirmed the target recalculation job is active and runs every five minutes, while `snapshot_date` and `last_calc_at` are separate concepts.
 
-The production reality study also verified:
+Local acceptance testing exposed a real edge case: the copied local database contained active delayed targets but its latest official `target_progress.snapshot_date` was `2026-08-10`. The first Sales kernel required an exact progress row for the requested planner date, so valid target-gap cases disappeared as `0 rows`.
 
-- the Sales department has a real configured manager;
-- target assigner and department manager are different actors and therefore must remain distinct evidence;
-- team contribution can be reconciled to official target achievement;
-- field-plan/activity data exists but does not provide uniform activity expectations for every contributor;
-- no canonical opportunity pipeline exists.
+The follow-up freshness contract corrects this without touching operational data:
 
-These findings define the implementation boundary above.
+- select the latest official progress at or before the requested business date;
+- keep the case visible;
+- align contribution, activity, pace, projection and severity to that same `metrics_as_of`;
+- surface snapshot age/freshness explicitly;
+- require official progress refresh before treating an older snapshot as current-state action evidence.
+
+This preserves the Target Engine as the single KPI authority while preventing "no case" from being confused with "no exact snapshot for today".
