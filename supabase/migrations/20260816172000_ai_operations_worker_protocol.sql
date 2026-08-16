@@ -475,6 +475,18 @@ BEGIN
   END IF;
 
   IF EXISTS (
+    SELECT 1
+    FROM jsonb_array_elements(p_decisions) item
+    WHERE length(COALESCE(item->>'responsibility_summary','')) > 800
+       OR length(COALESCE(item->>'why_this_owner','')) > 800
+       OR length(COALESCE(item->>'why_now','')) > 800
+       OR length(COALESCE(item->>'expected_outcome','')) > 1000
+       OR length(COALESCE(item->>'next_action_text','')) > 1000
+  ) THEN
+    RAISE EXCEPTION 'decision payload failed bounded text validation';
+  END IF;
+
+  IF EXISTS (
     SELECT 1 FROM jsonb_array_elements(p_decisions) item
     WHERE item->>'decision_type' = 'MONITOR'
       AND NULLIF(item->>'review_after','') IS NULL
@@ -594,14 +606,14 @@ BEGIN
       v_owner,
       v_assignee,
       jsonb_build_object(
-        'summary', left(COALESCE(v_item->>'responsibility_summary',''), 800),
-        'why_this_owner', left(COALESCE(v_item->>'why_this_owner',''), 800),
-        'why_now', left(COALESCE(v_item->>'why_now',''), 800)
+        'summary', COALESCE(v_item->>'responsibility_summary',''),
+        'why_this_owner', COALESCE(v_item->>'why_this_owner',''),
+        'why_now', COALESCE(v_item->>'why_now','')
       ),
       btrim(v_item->>'concise_rationale'),
       (v_item->>'confidence')::NUMERIC,
-      NULLIF(left(COALESCE(v_item->>'expected_outcome',''), 1000), ''),
-      NULLIF(left(COALESCE(v_item->>'next_action_text',''), 1000), ''),
+      NULLIF(COALESCE(v_item->>'expected_outcome',''), ''),
+      NULLIF(COALESCE(v_item->>'next_action_text',''), ''),
       NULLIF(v_item->>'due_at','')::TIMESTAMPTZ,
       NULLIF(v_item->>'review_after','')::TIMESTAMPTZ,
       v_linked_work,
