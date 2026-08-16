@@ -21,13 +21,15 @@ describe('AI Operations immutable snapshot evidence contract', () => {
     expect(evidenceMigration).not.toMatch(/CREATE\s+TRIGGER[\s\S]*?ON\s+public\./i)
   })
 
-  it('freezes exact per-snapshot facts, responsibility evidence and trust', () => {
+  it('freezes exact per-snapshot facts, responsibility evidence, trust and serialized size', () => {
     expect(evidenceMigration).toContain('snapshot_id UUID NOT NULL')
     expect(evidenceMigration).toContain('case_id UUID NOT NULL')
     expect(evidenceMigration).toContain('snapshot_rank INTEGER NOT NULL')
     expect(evidenceMigration).toContain("facts JSONB NOT NULL DEFAULT '{}'::JSONB")
     expect(evidenceMigration).toContain("responsibility_evidence JSONB NOT NULL DEFAULT '{}'::JSONB")
     expect(evidenceMigration).toContain("trust JSONB NOT NULL DEFAULT '{}'::JSONB")
+    expect(evidenceMigration).toContain('payload_bytes INTEGER NOT NULL')
+    expect(evidenceMigration).toContain('ai_ops_snapshot_cases_payload_bytes_nonnegative')
     expect(evidenceMigration).toContain('UNIQUE (snapshot_id, case_key)')
     expect(evidenceMigration).toContain('UNIQUE (snapshot_id, snapshot_rank)')
   })
@@ -54,6 +56,22 @@ describe('AI Operations immutable snapshot evidence contract', () => {
     expect(captureMigration).toContain('v_candidate.responsibility_evidence')
     expect(captureMigration).toContain('v_candidate.trust')
     expect(captureMigration).toContain('snapshot_rank')
+  })
+
+  it('treats evidence capture as single-shot and pushes retry to the idempotent builder', () => {
+    expect(captureMigration).toContain('ai_ops snapshot evidence already captured')
+    expect(captureMigration).toContain('FROM ai_ops.snapshot_cases sc')
+    expect(captureMigration).toContain('WHERE sc.snapshot_id = p_snapshot_id')
+    expect(captureMigration).not.toContain('ON CONFLICT (snapshot_id, case_id) DO NOTHING')
+    expect(captureMigration).toContain('Retry through build_credit_snapshot()')
+  })
+
+  it('computes and persists a conservative byte budget per frozen case', () => {
+    expect(captureMigration).toContain('v_case_payload_bytes := octet_length(convert_to(')
+    expect(captureMigration).toContain("'responsibility_evidence', v_candidate.responsibility_evidence")
+    expect(captureMigration).toContain('v_case_payload_bytes')
+    expect(captureMigration).toContain('v_evidence_bytes := v_evidence_bytes + v_case_payload_bytes')
+    expect(captureMigration).toContain("'snapshot_evidence_bytes', v_evidence_bytes")
   })
 
   it('does not mutate any operational source or Work table', () => {
