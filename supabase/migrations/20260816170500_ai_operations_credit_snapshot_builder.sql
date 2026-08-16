@@ -44,13 +44,14 @@ DECLARE
   v_ar_status TEXT;
   v_ar_completed_at TIMESTAMPTZ;
   v_ar_stale BOOLEAN := true;
-  v_domain_state TEXT := 'partial';
   v_snapshot_status TEXT := 'ready';
   v_trust JSONB;
   v_pulse JSONB;
   v_coverage JSONB;
   v_payload JSONB;
   v_payload_bytes INTEGER;
+  v_evidence_bytes BIGINT := 0;
+  v_estimated_context_bytes BIGINT := 0;
   v_capture JSONB;
 BEGIN
   -- One builder at a time per run, including retry races.
@@ -69,6 +70,13 @@ BEGIN
   WHERE run_id = p_run_id;
 
   IF FOUND THEN
+    SELECT COALESCE(sum(sc.payload_bytes), 0)::BIGINT
+    INTO v_evidence_bytes
+    FROM ai_ops.snapshot_cases sc
+    WHERE sc.snapshot_id = v_existing.id;
+
+    v_estimated_context_bytes := COALESCE(v_existing.payload_bytes, 0)::BIGINT + v_evidence_bytes;
+
     RETURN jsonb_build_object(
       'snapshot_id', v_existing.id,
       'run_id', p_run_id,
@@ -78,7 +86,9 @@ BEGIN
       'generated_at', v_existing.generated_at,
       'data_as_of', v_existing.data_as_of,
       'coverage', v_existing.coverage,
-      'payload_bytes', v_existing.payload_bytes
+      'header_payload_bytes', v_existing.payload_bytes,
+      'snapshot_evidence_bytes', v_evidence_bytes,
+      'estimated_context_bytes', v_estimated_context_bytes
     );
   END IF;
 
@@ -159,6 +169,12 @@ BEGIN
     FROM analytics.get_system_trust_state() t
     WHERE t.component_name = 'fact_ar_collections_attributed_to_origin_sale_date'
     LIMIT 1;
+
+    IF NOT FOUND THEN
+      v_ar_status := 'UNKNOWN';
+      v_ar_completed_at := NULL;
+      v_ar_stale := true;
+    END IF;
   EXCEPTION
     WHEN undefined_function OR undefined_table OR invalid_schema_name THEN
       v_ar_status := 'NOT_DEPLOYED';
@@ -166,14 +182,10 @@ BEGIN
       v_ar_stale := true;
   END;
 
-  -- This source is operational/current-state, not an accounting close. Even
-  -- with healthy AR analytics we deliberately expose it as partial evidence.
-  IF v_ar_stale OR v_ar_status IN ('FAILED', 'PARTIAL_FAILURE', 'BLOCKED', 'RUNNING', 'NOT_DEPLOYED') THEN
-    v_domain_state := 'partial';
-  ELSE
-    v_domain_state := 'partial';
-  END IF;
-
+  -- The overdue source is operational current-state, not an accounting close.
+  -- Therefore this first domain is deliberately PARTIAL even when supporting
+  -- Analytics AR trust is healthy. Analytics trust only changes the explanatory
+  -- note; it never upgrades this operational number to accounting truth.
   IF v_circuit_breaker THEN
     v_snapshot_status := 'partial';
   END IF;
@@ -181,11 +193,12 @@ BEGIN
   v_trust := jsonb_build_object(
     'domain_status', jsonb_build_array(jsonb_build_object(
       'domain', 'receivables',
-      'state', v_domain_state,
+      'state', 'partial',
       'as_of', v_now,
       'note', CASE
-        WHEN v_ar_stale THEN
-          'مصدر التأخير تشغيلي مباشر؛ إشارة Analytics AR قديمة/غير مكتملة، لذلك لا يُسمح باعتبار القيمة إقفالًا محاسبيًا.'
+        WHEN COALESCE(v_ar_stale, true)
+          OR COALESCE(v_ar_status, 'UNKNOWN') IN ('FAILED', 'PARTIAL_FAILURE', 'BLOCKED', 'RUNNING', 'NOT_DEPLOYED', 'UNKNOWN') THEN
+          'مصدر التأخير تشغيلي مباشر؛ إشارة Analytics AR قديمة/غير متاحة أو غير مكتملة، لذلك لا يُسمح باعتبار القيمة إقفالًا محاسبيًا.'
         ELSE
           'مصدر التأخير تشغيلي مباشر ويطابق تقرير overdue الحالي؛ Analytics AR سليمة كإشارة مساندة، لكن القيمة ليست إقفالًا محاسبيًا نهائيًا.'
       END,
@@ -202,7 +215,7 @@ BEGIN
         'value', round(v_total_overdue, 2)::TEXT,
         'trend', 'unknown',
         'tone', CASE WHEN v_total_overdue > 0 THEN 'danger' ELSE 'good' END,
-        'hint', 'تعرض التعرض المتأخر التشغيلي؛ المسؤولية لا تُستنتج من الرقم وحده.'
+        'hint', 'تعرض التأخير التشغيلي؛ المسؤولية لا تُستنتج من الرقم وحده.'
       ),
       jsonb_build_object(
         'key', 'overdue_invoices',
@@ -255,6 +268,8 @@ BEGIN
     'free_text_policy', 'bounded_untrusted_data'
   );
 
+  -- Header envelope only. Per-case evidence bytes are frozen independently in
+  -- ai_ops.snapshot_cases and combined after capture for the real context budget.
   v_payload_bytes := octet_length(convert_to(
     jsonb_build_object(
       'trust', v_trust,
@@ -292,6 +307,8 @@ BEGIN
 
   -- Same transaction: if evidence capture fails, the snapshot insert rolls back.
   v_capture := ai_ops.refresh_credit_cases(v_snapshot_id, v_run.business_date, v_case_limit);
+  v_evidence_bytes := COALESCE((v_capture->>'snapshot_evidence_bytes')::BIGINT, 0);
+  v_estimated_context_bytes := v_payload_bytes::BIGINT + v_evidence_bytes;
 
   RETURN jsonb_build_object(
     'snapshot_id', v_snapshot_id,
@@ -302,7 +319,9 @@ BEGIN
     'generated_at', v_now,
     'data_as_of', v_now,
     'coverage', v_coverage,
-    'payload_bytes', v_payload_bytes,
+    'header_payload_bytes', v_payload_bytes,
+    'snapshot_evidence_bytes', v_evidence_bytes,
+    'estimated_context_bytes', v_estimated_context_bytes,
     'capture', v_capture
   );
 END;
@@ -313,7 +332,7 @@ REVOKE ALL ON FUNCTION ai_ops.build_credit_snapshot(UUID, INTEGER) FROM anon;
 REVOKE ALL ON FUNCTION ai_ops.build_credit_snapshot(UUID, INTEGER) FROM authenticated;
 
 COMMENT ON FUNCTION ai_ops.build_credit_snapshot(UUID, INTEGER) IS
-  'Atomic/idempotent planner-internal Credit snapshot builder. Bounded cases, immutable evidence, explicit business date and circuit-breaker coverage.';
+  'Atomic/idempotent planner-internal Credit snapshot builder. Bounded cases, immutable evidence, explicit business date, conservative trust, circuit breaker and serialized context budget.';
 
 RESET lock_timeout;
 RESET statement_timeout;
