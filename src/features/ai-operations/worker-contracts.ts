@@ -1,5 +1,11 @@
 import { z } from 'zod'
 
+function isFutureIsoDate(value: string | null | undefined) {
+  if (!value) return false
+  const timestamp = Date.parse(value)
+  return Number.isFinite(timestamp) && timestamp > Date.now()
+}
+
 export const aiOpsWorkerDecisionSchema = z.object({
   case_id: z.string().uuid(),
   decision_type: z.enum(['IGNORE', 'MONITOR', 'INVESTIGATE', 'INFORM', 'CREATE_WORK', 'ESCALATE']),
@@ -15,19 +21,31 @@ export const aiOpsWorkerDecisionSchema = z.object({
   due_at: z.string().datetime({ offset: true }).nullable().optional(),
   review_after: z.string().datetime({ offset: true }).nullable().optional(),
 }).strict().superRefine((value, context) => {
-  if (value.decision_type === 'MONITOR' && !value.review_after) {
-    context.addIssue({ code: z.ZodIssueCode.custom, path: ['review_after'], message: 'MONITOR requires review_after' })
+  if (value.decision_type === 'MONITOR') {
+    if (!value.review_after) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ['review_after'], message: 'MONITOR requires review_after' })
+    } else if (!isFutureIsoDate(value.review_after)) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ['review_after'], message: 'MONITOR review_after must be in the future' })
+    }
   }
 
   if (value.decision_type === 'CREATE_WORK') {
     if (!value.recommended_owner_user_id) {
       context.addIssue({ code: z.ZodIssueCode.custom, path: ['recommended_owner_user_id'], message: 'CREATE_WORK requires accountable owner' })
     }
+    if (!value.recommended_assignee_user_id) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ['recommended_assignee_user_id'], message: 'CREATE_WORK requires explicit assignee' })
+    }
     if (!value.expected_outcome?.trim()) {
       context.addIssue({ code: z.ZodIssueCode.custom, path: ['expected_outcome'], message: 'CREATE_WORK requires expected_outcome' })
     }
     if (!value.next_action_text?.trim()) {
       context.addIssue({ code: z.ZodIssueCode.custom, path: ['next_action_text'], message: 'CREATE_WORK requires next_action_text' })
+    }
+    if (!value.due_at) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ['due_at'], message: 'CREATE_WORK requires due_at' })
+    } else if (!isFutureIsoDate(value.due_at)) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ['due_at'], message: 'CREATE_WORK due_at must be in the future' })
     }
   }
 })
