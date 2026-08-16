@@ -5,6 +5,7 @@
 -- Depends on:
 --   * 20260816163504_ai_operations_foundation.sql
 --   * 20260816164500_ai_operations_snapshot_case_evidence.sql
+--   * 20260816164700_ai_operations_snapshot_domain_captures.sql
 --   * 20260816165500_ai_operations_credit_case_engine.sql
 --   * 20260816170000_ai_operations_credit_snapshot_capture.sql
 --
@@ -28,6 +29,7 @@ DECLARE
   v_run ai_ops.planner_runs%ROWTYPE;
   v_settings ai_ops.settings%ROWTYPE;
   v_existing ai_ops.snapshots%ROWTYPE;
+  v_domain_capture ai_ops.snapshot_domain_captures%ROWTYPE;
   v_snapshot_id UUID;
   v_now TIMESTAMPTZ := clock_timestamp();
   v_case_limit INTEGER;
@@ -54,7 +56,6 @@ DECLARE
   v_estimated_context_bytes BIGINT := 0;
   v_capture JSONB;
 BEGIN
-  -- One builder at a time per run, including retry races.
   PERFORM pg_advisory_xact_lock(hashtextextended('ai_ops:credit_snapshot:' || p_run_id::TEXT, 0));
 
   SELECT * INTO v_run
@@ -70,11 +71,16 @@ BEGIN
   WHERE run_id = p_run_id;
 
   IF FOUND THEN
-    SELECT COALESCE(sum(sc.payload_bytes), 0)::BIGINT
-    INTO v_evidence_bytes
-    FROM ai_ops.snapshot_cases sc
-    WHERE sc.snapshot_id = v_existing.id;
+    SELECT * INTO v_domain_capture
+    FROM ai_ops.snapshot_domain_captures dc
+    WHERE dc.snapshot_id = v_existing.id
+      AND dc.domain = 'receivables';
 
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'existing credit snapshot is incomplete: missing receivables capture marker for %', v_existing.id;
+    END IF;
+
+    v_evidence_bytes := v_domain_capture.evidence_bytes;
     v_estimated_context_bytes := COALESCE(v_existing.payload_bytes, 0)::BIGINT + v_evidence_bytes;
 
     RETURN jsonb_build_object(
@@ -82,6 +88,8 @@ BEGIN
       'run_id', p_run_id,
       'business_date', v_run.business_date,
       'status', v_existing.snapshot_status,
+      'domain_capture_status', v_domain_capture.capture_status,
+      'domain_case_count', v_domain_capture.case_count,
       'idempotent_reuse', true,
       'generated_at', v_existing.generated_at,
       'data_as_of', v_existing.data_as_of,
@@ -109,9 +117,6 @@ BEGIN
     v_settings.max_cases_per_snapshot
   );
 
-  -- Full aggregate over the same deployed overdue semantics used by the
-  -- candidate kernel. This is one bounded-domain scan of the current orders;
-  -- candidate/evidence extraction is the second scan. No historical raw dump.
   SELECT
     count(*)::BIGINT,
     COALESCE(sum(base.remaining_amount), 0)::NUMERIC,
@@ -158,9 +163,6 @@ BEGIN
   ) base;
 
   v_returned_cases := LEAST(v_total_cases, v_case_limit)::INTEGER;
-
-  -- A sudden >10x overflow (with a floor of 100) is treated as an operational
-  -- anomaly first, never as permission to create hundreds of actions.
   v_circuit_breaker := v_total_cases > GREATEST(v_settings.max_cases_per_snapshot * 10, 100);
 
   BEGIN
@@ -182,10 +184,6 @@ BEGIN
       v_ar_stale := true;
   END;
 
-  -- The overdue source is operational current-state, not an accounting close.
-  -- Therefore this first domain is deliberately PARTIAL even when supporting
-  -- Analytics AR trust is healthy. Analytics trust only changes the explanatory
-  -- note; it never upgrades this operational number to accounting truth.
   IF v_circuit_breaker THEN
     v_snapshot_status := 'partial';
   END IF;
@@ -209,38 +207,10 @@ BEGIN
 
   v_pulse := jsonb_build_object(
     'metrics', jsonb_build_array(
-      jsonb_build_object(
-        'key', 'overdue_ar',
-        'label', 'مديونيات متأخرة',
-        'value', round(v_total_overdue, 2)::TEXT,
-        'trend', 'unknown',
-        'tone', CASE WHEN v_total_overdue > 0 THEN 'danger' ELSE 'good' END,
-        'hint', 'تعرض التأخير التشغيلي؛ المسؤولية لا تُستنتج من الرقم وحده.'
-      ),
-      jsonb_build_object(
-        'key', 'overdue_invoices',
-        'label', 'فواتير متأخرة',
-        'value', v_total_cases::TEXT,
-        'trend', 'unknown',
-        'tone', CASE WHEN v_total_cases > 0 THEN 'warning' ELSE 'good' END,
-        'hint', 'عدد الفواتير ذات رصيد موجب بعد تاريخ الاستحقاق.'
-      ),
-      jsonb_build_object(
-        'key', 'overdue_customers',
-        'label', 'عملاء عليهم تأخير',
-        'value', v_customer_count::TEXT,
-        'trend', 'unknown',
-        'tone', 'neutral',
-        'hint', 'عدد العملاء المميزين داخل التعرض المتأخر.'
-      ),
-      jsonb_build_object(
-        'key', 'max_days_overdue',
-        'label', 'أقصى تأخير',
-        'value', v_max_days::TEXT || ' يوم',
-        'trend', 'unknown',
-        'tone', CASE WHEN v_max_days >= 60 THEN 'danger' WHEN v_max_days >= 30 THEN 'warning' ELSE 'neutral' END,
-        'hint', 'أقدم تعرض متأخر ضمن الصورة الحالية.'
-      )
+      jsonb_build_object('key','overdue_ar','label','مديونيات متأخرة','value',round(v_total_overdue, 2)::TEXT,'trend','unknown','tone',CASE WHEN v_total_overdue > 0 THEN 'danger' ELSE 'good' END,'hint','تعرض التأخير التشغيلي؛ المسؤولية لا تُستنتج من الرقم وحده.'),
+      jsonb_build_object('key','overdue_invoices','label','فواتير متأخرة','value',v_total_cases::TEXT,'trend','unknown','tone',CASE WHEN v_total_cases > 0 THEN 'warning' ELSE 'good' END,'hint','عدد الفواتير ذات رصيد موجب بعد تاريخ الاستحقاق.'),
+      jsonb_build_object('key','overdue_customers','label','عملاء عليهم تأخير','value',v_customer_count::TEXT,'trend','unknown','tone','neutral','hint','عدد العملاء المميزين داخل التعرض المتأخر.'),
+      jsonb_build_object('key','max_days_overdue','label','أقصى تأخير','value',v_max_days::TEXT || ' يوم','trend','unknown','tone',CASE WHEN v_max_days >= 60 THEN 'danger' WHEN v_max_days >= 30 THEN 'warning' ELSE 'neutral' END,'hint','أقدم تعرض متأخر ضمن الصورة الحالية.')
     )
   );
 
@@ -250,12 +220,7 @@ BEGIN
     'case_limit', v_case_limit,
     'has_more', v_total_cases > v_returned_cases,
     'circuit_breaker', v_circuit_breaker,
-    'buckets', jsonb_build_object(
-      'critical', v_critical_count,
-      'high', v_high_count,
-      'medium', v_medium_count,
-      'new', v_new_count
-    )
+    'buckets', jsonb_build_object('critical',v_critical_count,'high',v_high_count,'medium',v_medium_count,'new',v_new_count)
   );
 
   v_payload := jsonb_build_object(
@@ -268,44 +233,20 @@ BEGIN
     'free_text_policy', 'bounded_untrusted_data'
   );
 
-  -- Header envelope only. Per-case evidence bytes are frozen independently in
-  -- ai_ops.snapshot_cases and combined after capture for the real context budget.
   v_payload_bytes := octet_length(convert_to(
-    jsonb_build_object(
-      'trust', v_trust,
-      'company_pulse', v_pulse,
-      'coverage', v_coverage,
-      'payload', v_payload
-    )::TEXT,
+    jsonb_build_object('trust',v_trust,'company_pulse',v_pulse,'coverage',v_coverage,'payload',v_payload)::TEXT,
     'UTF8'
   ));
 
   INSERT INTO ai_ops.snapshots(
-    run_id,
-    payload_version,
-    generated_at,
-    data_as_of,
-    snapshot_status,
-    trust,
-    company_pulse,
-    coverage,
-    payload,
-    payload_bytes
+    run_id,payload_version,generated_at,data_as_of,snapshot_status,trust,company_pulse,coverage,payload,payload_bytes
   ) VALUES (
-    p_run_id,
-    'credit-overdue-v1',
-    v_now,
-    v_now,
-    v_snapshot_status,
-    v_trust,
-    v_pulse,
-    v_coverage,
-    v_payload,
-    v_payload_bytes
+    p_run_id,'credit-overdue-v1',v_now,v_now,v_snapshot_status,v_trust,v_pulse,v_coverage,v_payload,v_payload_bytes
   )
   RETURNING id INTO v_snapshot_id;
 
-  -- Same transaction: if evidence capture fails, the snapshot insert rolls back.
+  -- Same function transaction: snapshot + cases + immutable evidence + domain
+  -- completion marker either all commit or all roll back.
   v_capture := ai_ops.refresh_credit_cases(v_snapshot_id, v_run.business_date, v_case_limit);
   v_evidence_bytes := COALESCE((v_capture->>'snapshot_evidence_bytes')::BIGINT, 0);
   v_estimated_context_bytes := v_payload_bytes::BIGINT + v_evidence_bytes;
@@ -315,6 +256,8 @@ BEGIN
     'run_id', p_run_id,
     'business_date', v_run.business_date,
     'status', v_snapshot_status,
+    'domain_capture_status', v_capture->>'capture_status',
+    'domain_case_count', COALESCE((v_capture->>'snapshot_evidence_rows')::INTEGER, 0),
     'idempotent_reuse', false,
     'generated_at', v_now,
     'data_as_of', v_now,
@@ -332,7 +275,7 @@ REVOKE ALL ON FUNCTION ai_ops.build_credit_snapshot(UUID, INTEGER) FROM anon;
 REVOKE ALL ON FUNCTION ai_ops.build_credit_snapshot(UUID, INTEGER) FROM authenticated;
 
 COMMENT ON FUNCTION ai_ops.build_credit_snapshot(UUID, INTEGER) IS
-  'Atomic/idempotent planner-internal Credit snapshot builder. Bounded cases, immutable evidence, explicit business date, conservative trust, circuit breaker and serialized context budget.';
+  'Atomic/idempotent planner-internal Credit snapshot builder. Existing snapshots are reusable only with an immutable receivables domain capture marker, including zero-case captures.';
 
 RESET lock_timeout;
 RESET statement_timeout;
