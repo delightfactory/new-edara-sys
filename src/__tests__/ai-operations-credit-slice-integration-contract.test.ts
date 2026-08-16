@@ -47,6 +47,7 @@ describe('AI Operations Credit slice cross-migration integration contract', () =
     expect(sql.alignment).toContain('ADD COLUMN linked_work_item_id UUID')
     expect(sql.alignment).toContain('ADD COLUMN validated_at TIMESTAMPTZ')
     expect(sql.alignment).toContain('ADD COLUMN validated_by_user_id UUID')
+    expect(sql.alignment).not.toMatch(/validated_by_user_id\s+UUID\s+REFERENCES\s+public\.profiles/i)
     expect(sql.alignment).toContain('ADD COLUMN committed_at TIMESTAMPTZ')
     expect(sql.alignment).toContain("validation_state IN ('pending','validated','rejected')")
 
@@ -62,6 +63,7 @@ describe('AI Operations Credit slice cross-migration integration contract', () =
   it('keeps staged CREATE_WORK executable without hidden routing/deadline defaults', () => {
     expect(sql.inputGuard).toContain('NEW.recommended_owner_user_id IS NULL')
     expect(sql.inputGuard).toContain('NEW.recommended_assignee_user_id IS NULL')
+    expect(sql.inputGuard).toContain('length(NEW.next_action_text) > 500')
     expect(sql.inputGuard).toContain('NEW.due_at IS NULL')
     expect(sql.inputGuard).toContain('NEW.due_at <= v_now')
     expect(sql.inputGuard).toContain('MONITOR decisions require a future review_after')
@@ -129,7 +131,10 @@ describe('AI Operations Credit slice cross-migration integration contract', () =
     expect(sql.worker).not.toMatch(/GRANT\s+EXECUTE/i)
     expect(sql.contextAlignment).not.toMatch(/GRANT\s+EXECUTE/i)
 
-    const operationalMutation = /(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s+public\.(?:sales_orders|customers|customer_credit_history|sales_order_due_date_history)/i
+    const operationalMutation = /(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s+public\.(?:sales_orders|customers|customer_credit_history|sales_order_due_date_history|hr_employees|profiles)/i
+    expect(sql.foundation).not.toMatch(operationalMutation)
+    expect(sql.alignment).not.toMatch(operationalMutation)
+    expect(sql.worker).not.toMatch(operationalMutation)
     expect(sql.currentGuard).not.toMatch(operationalMutation)
     expect(sql.review).not.toMatch(operationalMutation)
     expect(sql.reviewFix).not.toMatch(operationalMutation)
