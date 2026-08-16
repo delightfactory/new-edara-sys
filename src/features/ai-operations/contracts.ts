@@ -7,6 +7,8 @@ const caseStatus = z.enum(['open', 'monitored', 'actioned', 'resolved', 'suppres
 const attentionClass = z.enum(['exception', 'opportunity', 'integrity', 'continuity'])
 const decisionType = z.enum(['IGNORE', 'MONITOR', 'INVESTIGATE', 'INFORM', 'CREATE_WORK', 'ESCALATE'])
 const evidenceStrength = z.enum(['direct', 'supporting', 'contextual'])
+const contextConfidence = z.enum(['hard_policy', 'approved_human', 'explicit_human', 'system_record', 'system_inference', 'ai_inference'])
+const contextLifecycle = z.enum(['permanent', 'valid_until', 'review_on', 'one_time'])
 
 const settings = z.object({
   planner_enabled: z.boolean(),
@@ -89,8 +91,8 @@ const contextItem = z.object({
   summary: z.string().min(1),
   owner_label: z.string().nullable(),
   source_type: z.enum(['human', 'system', 'ai_proposed']),
-  confidence_class: z.enum(['hard_policy', 'approved_human', 'explicit_human', 'system_record', 'system_inference', 'ai_inference']),
-  lifecycle_type: z.enum(['permanent', 'valid_until', 'review_on', 'one_time']),
+  confidence_class: contextConfidence,
+  lifecycle_type: contextLifecycle,
   valid_until: z.string().nullable(),
   review_on: z.string().nullable(),
   status: z.enum(['active', 'expired', 'revoked', 'consumed']),
@@ -128,6 +130,24 @@ const workCollision = z.object({
   title: z.string().min(1),
 })
 
+const frozenContext = z.object({
+  id: z.string().min(1),
+  subject_type: z.string().min(1),
+  subject_id: z.string().min(1),
+  context_type: z.string().min(1),
+  summary: z.string().min(1).max(500),
+  owner_user_id: z.string().nullable(),
+  owner_label: z.string().nullable(),
+  source_type: z.enum(['human', 'system', 'ai_proposed']),
+  confidence_class: contextConfidence,
+  lifecycle_type: contextLifecycle,
+  valid_from: z.string().min(1),
+  valid_until: z.string().nullable(),
+  review_on: z.string().nullable(),
+  visibility: z.enum(['management', 'standard']),
+  content_trust: z.literal('governed_untrusted_text'),
+})
+
 export const aiOpsCaseDetailSchema = z.object({
   case_id: z.string().min(1),
   case_key: z.string().min(1),
@@ -136,6 +156,19 @@ export const aiOpsCaseDetailSchema = z.object({
   responsibility_evidence: z.array(responsibilityEvidence),
   existing_work: z.array(workCollision),
   relevant_context_ids: z.array(z.string().min(1)),
+  frozen_context: z.array(frozenContext).max(5),
+  context_coverage: z.object({
+    total: z.number().int().min(0),
+    captured: z.number().int().min(0).max(5),
+    truncated: z.boolean(),
+  }).superRefine((value, context) => {
+    if (value.captured > value.total) {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: 'captured context cannot exceed total context' })
+    }
+    if (value.truncated !== (value.total > value.captured)) {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: 'context truncation flag does not match coverage counts' })
+    }
+  }),
   decision_review: z.object({
     decision_type: decisionType.nullable(),
     concise_rationale: z.string().min(1),
