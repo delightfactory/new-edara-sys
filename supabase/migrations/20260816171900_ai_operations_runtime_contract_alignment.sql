@@ -35,7 +35,7 @@ ALTER TABLE ai_ops.decisions
   ADD COLUMN due_at TIMESTAMPTZ,
   ADD COLUMN linked_work_item_id UUID,
   ADD COLUMN validated_at TIMESTAMPTZ,
-  ADD COLUMN validated_by_user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  ADD COLUMN validated_by_user_id UUID,
   ADD COLUMN committed_at TIMESTAMPTZ;
 
 -- The concrete first-slice validator intentionally collapses historical design
@@ -64,6 +64,8 @@ COMMENT ON COLUMN ai_ops.decisions.committed_work_item_id IS
   'Soft reference to Work created from an approved decision; kept soft to preserve bounded-context isolation.';
 COMMENT ON COLUMN ai_ops.decisions.linked_work_item_id IS
   'Decision-time Work reference for recommendations such as ESCALATE; execution remains separately governed.';
+COMMENT ON COLUMN ai_ops.decisions.validated_by_user_id IS
+  'Soft actor reference only. Intentionally has no foreign key to public.profiles so AI migration application never locks or couples to the operational profile table.';
 
 RESET lock_timeout;
 RESET statement_timeout;
