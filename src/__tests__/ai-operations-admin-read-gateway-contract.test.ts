@@ -51,7 +51,8 @@ describe('AI Operations management read gateway contract', () => {
     expect(migration).toContain('LIMIT 10')
     expect(migration).toContain('LIMIT 30')
     expect(migration).toContain('LIMIT v_settings.max_cases_per_snapshot')
-    expect(migration).toContain("c.status IN ('open', 'monitored', 'actioned', 'suppressed')")
+    expect(migration).toContain('WHERE sc.snapshot_id = v_snapshot.id')
+    expect(migration).toContain('ORDER BY sc.snapshot_rank ASC')
   })
 
   it('returns a safe not-ready payload when foundation exists but no snapshot has been generated', () => {
@@ -61,17 +62,26 @@ describe('AI Operations management read gateway contract', () => {
     expect(migration).toContain("'pulse', '[]'::JSONB")
   })
 
+  it('reads planner evidence from immutable snapshot_cases rather than mutable current case facts', () => {
+    expect(migration).toContain('FROM ai_ops.snapshot_cases sc')
+    expect(migration).toContain('JOIN ai_ops.cases c ON c.id = sc.case_id')
+    expect(migration).toContain('v_snapshot_case ai_ops.snapshot_cases%ROWTYPE')
+    expect(migration).toContain('v_snapshot_case.responsibility_evidence')
+    expect(migration).toContain('v_snapshot_case.facts')
+    expect(migration).not.toContain("jsonb_typeof(v_case.facts->'existing_active_work')")
+  })
+
   it('normalizes credit evidence without collapsing causal signals into one routing rule', () => {
     expect(migration).toContain("('credit_override', 'صاحب قرار تجاوز الائتمان', 'direct'")
     expect(migration).toContain("('last_due_date_change', 'آخر من عدّل تاريخ الاستحقاق', 'direct'")
     expect(migration).toContain("('customer_credit_change', 'آخر من عدّل حد ائتمان العميل', 'supporting'")
     expect(migration).toContain("('current_customer_rep', 'مندوب العميل الحالي', 'supporting'")
     expect(migration).toContain("('order_creator', 'منشئ الفاتورة', 'contextual'")
-    expect(migration).toContain("left(v_case.responsibility_evidence->e.evidence_key->>'reason', 500)")
+    expect(migration).toContain("left(v_snapshot_case.responsibility_evidence->e.evidence_key->>'reason', 500)")
   })
 
   it('includes exact existing Work and active operational context in lazy case review', () => {
-    expect(migration).toContain("jsonb_typeof(v_case.facts->'existing_active_work') = 'object'")
+    expect(migration).toContain("jsonb_typeof(v_snapshot_case.facts->'existing_active_work') = 'object'")
     expect(migration).toContain("c.subject_type = 'sales_order'")
     expect(migration).toContain("c.subject_type = 'customer'")
     expect(migration).toContain("'relevant_context_ids', v_context_ids")
