@@ -13,6 +13,16 @@ const limitsMigration = readFileSync(resolve(
   'supabase/migrations/20260816164000_ai_operations_worker_limits.sql',
 ), 'utf8')
 
+const inputGuardMigration = readFileSync(resolve(
+  process.cwd(),
+  'supabase/migrations/20260816172100_ai_operations_decision_input_guard.sql',
+), 'utf8')
+
+const contextAlignmentMigration = readFileSync(resolve(
+  process.cwd(),
+  'supabase/migrations/20260816172110_ai_operations_worker_context_contract_alignment.sql',
+), 'utf8')
+
 describe('AI Operations internal worker protocol contract', () => {
   it('is design-only, internal and unavailable to normal Supabase API roles', () => {
     expect(migration).toContain('DESIGN-TIME MIGRATION ONLY')
@@ -20,6 +30,8 @@ describe('AI Operations internal worker protocol contract', () => {
     expect(migration).toContain('REVOKE ALL ON FUNCTION ai_ops.worker_claim_next_run(TEXT, INTEGER) FROM PUBLIC, anon, authenticated, service_role;')
     expect(migration).toContain('REVOKE ALL ON FUNCTION ai_ops.worker_stage_decisions(UUID, TEXT, TEXT, JSONB) FROM PUBLIC, anon, authenticated, service_role;')
     expect(migration).not.toMatch(/GRANT\s+EXECUTE/i)
+    expect(contextAlignmentMigration).toContain('REVOKE ALL ON FUNCTION ai_ops.worker_get_context(UUID, TEXT)')
+    expect(contextAlignmentMigration).not.toMatch(/GRANT\s+EXECUTE/i)
   })
 
   it('claims due/recoverable runs with row locking and bounded leases', () => {
@@ -72,22 +84,27 @@ describe('AI Operations internal worker protocol contract', () => {
   it('keeps action recommendations bounded and stage-only', () => {
     expect(migration).toContain("item->>'decision_type' IN ('CREATE_WORK','ESCALATE')")
     expect(migration).toContain('v_action_count > v_settings.max_actions_per_run')
-    expect(migration).toContain("'validation_state',") === false
+    expect(migration).toContain('linked_work_item_id, validation_state, validation_detail')
     expect(migration).toContain("'stage_only', true")
     expect(migration).not.toMatch(/work_create_task|work_delegate|work_transfer_ownership|work_escalate\(/i)
     expect(migration).not.toMatch(/(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s+public\.(?:sales_orders|customers|work_items|work_links)/i)
   })
 
-  it('acknowledges the exact same post-commit staging retry without duplicating decisions', () => {
-    expect(migration).toContain("IF v_run.status = 'staged' THEN")
-    expect(migration).toContain("v_run.result_summary->>'worker_submission_hash' = v_submission_hash")
+  it('acknowledges an exact post-commit staging retry by persisted submission identity', () => {
+    expect(migration).toContain('v_existing_count = v_decision_count')
+    expect(migration).toContain('v_existing_hashes = 1')
+    expect(migration).toContain("d.management_only_metadata->>'worker_submission_hash' = v_submission_hash")
     expect(migration).toContain("'idempotent_reuse', true")
-    expect(migration).toContain('run already staged with a different worker/context/submission')
+    expect(migration).toContain('run already contains a different staged decision submission')
   })
 
-  it('rejects a MONITOR without a review date and a CREATE_WORK without accountable outcome/action', () => {
-    expect(migration).toContain('MONITOR decisions require a future review_after')
-    expect(migration).toContain('CREATE_WORK requires owner, expected_outcome and next_action_text')
+  it('keeps MONITOR and CREATE_WORK compatible with the first reviewed Work bridge', () => {
+    expect(inputGuardMigration).toContain('MONITOR decisions require a future review_after')
+    expect(inputGuardMigration).toContain('CREATE_WORK requires explicit owner, assignee, expected_outcome, next_action_text and due_at')
+    expect(inputGuardMigration).toContain('CREATE_WORK due_at must be in the future')
+    expect(contextAlignmentMigration).toContain("'recommended_assignee_user_id'")
+    expect(contextAlignmentMigration).toContain("'due_at'")
+    expect(contextAlignmentMigration).toContain('create_work_due_at_must_be_future')
 
     const monitor = aiOpsWorkerDecisionBatchSchema.safeParse([{
       case_id: '11111111-1111-4111-8111-111111111111',
@@ -102,6 +119,9 @@ describe('AI Operations internal worker protocol contract', () => {
       decision_type: 'CREATE_WORK',
       concise_rationale: 'الإجراء له قيمة تشغيلية واضحة.',
       confidence: 0.9,
+      recommended_owner_user_id: '22222222-2222-4222-8222-222222222222',
+      expected_outcome: 'تحصيل أو حسم موقف الفاتورة.',
+      next_action_text: 'راجع العميل وسجل نتيجة التحصيل.',
     }])
     expect(createWork.success).toBe(false)
   })
