@@ -5,14 +5,16 @@
 -- Depends on:
 --   * 20260816163504_ai_operations_foundation.sql
 --   * 20260816164500_ai_operations_snapshot_case_evidence.sql
+--   * 20260816164700_ai_operations_snapshot_domain_captures.sql
 --   * 20260816165500_ai_operations_credit_case_engine.sql
 --
 -- Replaces only the planner-local refresh routine so each mutable current case
 -- also gets an immutable per-snapshot evidence copy.
 --
--- Capture is intentionally single-shot per snapshot. Idempotent retry belongs
--- at build_credit_snapshot(), which reuses an existing snapshot before rereading
--- any operational data.
+-- Capture is intentionally single-shot per snapshot/domain. A durable domain
+-- marker proves completion even when the bounded result contains zero cases.
+-- Idempotent retry belongs at build_credit_snapshot(), which reuses an existing
+-- completed capture before rereading any operational data.
 -- ============================================================================
 
 SET lock_timeout = '5s';
@@ -36,6 +38,8 @@ DECLARE
   v_case_payload_bytes INTEGER;
   v_count INTEGER := 0;
   v_evidence_bytes BIGINT := 0;
+  v_capture_status TEXT := 'completed';
+  v_has_more BOOLEAN := false;
 BEGIN
   SELECT * INTO v_snapshot
   FROM ai_ops.snapshots
@@ -47,10 +51,27 @@ BEGIN
 
   IF EXISTS (
     SELECT 1
+    FROM ai_ops.snapshot_domain_captures dc
+    WHERE dc.snapshot_id = p_snapshot_id
+      AND dc.domain = 'receivables'
+  ) THEN
+    RAISE EXCEPTION 'ai_ops receivables domain already captured: %', p_snapshot_id;
+  END IF;
+
+  -- A snapshot_cases row without its immutable domain completion marker is an
+  -- inconsistent partial capture. Fail closed rather than silently recapturing.
+  IF EXISTS (
+    SELECT 1
     FROM ai_ops.snapshot_cases sc
     WHERE sc.snapshot_id = p_snapshot_id
+      AND sc.domain = 'receivables'
   ) THEN
-    RAISE EXCEPTION 'ai_ops snapshot evidence already captured: %', p_snapshot_id;
+    RAISE EXCEPTION 'ai_ops receivables evidence exists without capture marker: %', p_snapshot_id;
+  END IF;
+
+  v_has_more := COALESCE((v_snapshot.coverage->>'has_more')::BOOLEAN, false);
+  IF v_snapshot.snapshot_status <> 'ready' OR v_has_more THEN
+    v_capture_status := 'partial';
   END IF;
 
   FOR v_candidate IN
@@ -171,14 +192,44 @@ BEGIN
     v_evidence_bytes := v_evidence_bytes + v_case_payload_bytes;
   END LOOP;
 
+  -- This row is the completion proof. It is written even when v_count = 0.
+  INSERT INTO ai_ops.snapshot_domain_captures(
+    snapshot_id,
+    domain,
+    capture_version,
+    source_as_of,
+    business_date,
+    case_count,
+    evidence_bytes,
+    capture_status,
+    metadata
+  ) VALUES (
+    p_snapshot_id,
+    'receivables',
+    'credit-overdue-v1',
+    v_snapshot.data_as_of,
+    p_business_date,
+    v_count,
+    v_evidence_bytes,
+    v_capture_status,
+    jsonb_build_object(
+      'case_type', 'overdue_invoice',
+      'case_limit', LEAST(GREATEST(COALESCE(p_limit, 100), 1), 500),
+      'has_more', v_has_more,
+      'resolution_performed', false
+    )
+  );
+
   RETURN jsonb_build_object(
     'snapshot_id', p_snapshot_id,
     'business_date', p_business_date,
     'domain', 'receivables',
     'case_type', 'overdue_invoice',
+    'capture_status', v_capture_status,
     'candidates_upserted', v_count,
     'snapshot_evidence_rows', v_count,
     'snapshot_evidence_bytes', v_evidence_bytes,
+    'capture_marker_written', true,
     'resolution_performed', false
   );
 END;
@@ -189,7 +240,7 @@ REVOKE ALL ON FUNCTION ai_ops.refresh_credit_cases(UUID, DATE, INTEGER) FROM ano
 REVOKE ALL ON FUNCTION ai_ops.refresh_credit_cases(UUID, DATE, INTEGER) FROM authenticated;
 
 COMMENT ON FUNCTION ai_ops.refresh_credit_cases(UUID, DATE, INTEGER) IS
-  'Single-shot evidence capture: upserts current credit cases and freezes exact ranked evidence/serialized byte size for historical replay. Retry through build_credit_snapshot().';
+  'Single-shot receivables capture: updates current cases, freezes exact evidence/bytes, and writes an immutable domain completion marker even for zero cases. Retry through build_credit_snapshot().';
 
 RESET lock_timeout;
 RESET statement_timeout;
