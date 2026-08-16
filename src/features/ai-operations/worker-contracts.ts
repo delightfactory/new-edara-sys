@@ -94,6 +94,17 @@ const workerCaseSchema = z.object({
   trust: z.record(z.string(), z.unknown()),
 })
 
+const domainCaptureSchema = z.object({
+  domain: z.string().min(1),
+  capture_status: z.enum(['completed', 'partial', 'blocked']),
+  case_count: z.number().int().min(0),
+  evidence_bytes: z.number().int().min(0),
+  capture_version: z.string().min(1),
+  business_date: z.string().min(1),
+  source_as_of: z.string().min(1),
+  metadata: z.record(z.string(), z.unknown()),
+})
+
 const workerContextBodySchema = z.object({
   contract_version: z.string().min(1),
   run: z.object({
@@ -115,6 +126,8 @@ const workerContextBodySchema = z.object({
     trust: z.record(z.string(), z.unknown()),
     company_pulse: z.record(z.string(), z.unknown()),
     coverage: z.record(z.string(), z.unknown()),
+    // Legacy singular capture remains in the SQL contract for backward-compatible
+    // consumers; domain_captures is the authoritative multi-domain coverage list.
     domain_capture: z.object({
       domain: z.literal('receivables'),
       capture_status: z.enum(['completed', 'partial', 'blocked']),
@@ -122,6 +135,7 @@ const workerContextBodySchema = z.object({
       evidence_bytes: z.number().int().min(0),
       metadata: z.record(z.string(), z.unknown()),
     }),
+    domain_captures: z.array(domainCaptureSchema).min(2).max(20),
   }),
   cases: z.array(workerCaseSchema),
   decision_contract: z.object({
