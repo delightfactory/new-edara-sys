@@ -1,0 +1,17 @@
+export const workKeys = {
+  all: ['work'] as const,
+  lists: () => ['work', 'list'] as const,
+  list: (filters: Record<string, unknown> = {}) => ['work', 'list', filters] as const,
+  item: (id: string) => ['work', 'item', id] as const,
+  timeline: (id: string) => ['work', 'item', id, 'timeline'] as const,
+  comments: (id: string) => ['work', 'item', id, 'comments'] as const,
+  checklist: (id: string) => ['work', 'item', id, 'checklist'] as const,
+  dependencies: (id: string) => ['work', 'item', id, 'dependencies'] as const,
+  myActionInbox: () => ['work', 'my-action-inbox'] as const,
+  team: (filters: Record<string, unknown> = {}) => ['work', 'team', filters] as const,
+  requests: (filters: Record<string, unknown> = {}) => ['work', 'requests', filters] as const,
+  approvals: () => ['work', 'approvals'] as const,
+  recurring: () => ['work', 'recurring'] as const,
+  workflows: () => ['work', 'workflows'] as const,
+  controlCenter: (filters: Record<string, unknown> = {}) => ['work', 'control-center', filters] as const,
+} as const

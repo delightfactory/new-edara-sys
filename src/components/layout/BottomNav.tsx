@@ -1,5 +1,5 @@
-import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, ShoppingCart, Users, Menu } from 'lucide-react'
+import { NavLink } from 'react-router-dom'
+import { ClipboardCheck, LayoutDashboard, ShoppingCart, Users, Menu } from 'lucide-react'
 import { useUiStore } from '@/stores/ui-store'
 import { useAuthStore } from '@/stores/auth-store'
 
@@ -14,8 +14,9 @@ interface Tab {
 
 const tabs: Tab[] = [
   { id: 'home',      label: 'الرئيسية', icon: LayoutDashboard, path: '/' },
-  { id: 'sales',     label: 'المبيعات', icon: ShoppingCart,    path: '/sales/orders',  permission: 'sales.orders.read' },
-  { id: 'customers', label: 'العملاء',  icon: Users,           path: '/customers',     permission: 'customers.read' },
+  { id: 'work',      label: 'العمل',    icon: ClipboardCheck,  path: '/work', permission: ['work.items.read_own', 'work.items.read_team', 'work.items.read_all'] },
+  { id: 'sales',     label: 'المبيعات', icon: ShoppingCart,    path: '/sales/orders', permission: 'sales.orders.read' },
+  { id: 'customers', label: 'العملاء',  icon: Users,           path: '/customers', permission: 'customers.read' },
   { id: 'menu',      label: 'القائمة',  icon: Menu,            action: 'openMenu' },
 ]
 
@@ -91,12 +92,13 @@ export default function BottomNav() {
 
           .bottom-nav-tab {
             flex: 1;
+            min-width: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             gap: 3px;
-            padding: 0.25rem 0.5rem;
+            padding: 0.25rem 0.2rem;
             min-height: var(--touch-target);
             color: var(--text-muted);
             text-decoration: none;
@@ -112,6 +114,11 @@ export default function BottomNav() {
 
           .bottom-nav-tab:active {
             background: var(--bg-hover);
+          }
+
+          .bottom-nav-tab:focus-visible {
+            outline: 2px solid var(--color-primary);
+            outline-offset: -3px;
           }
 
           .bottom-nav-tab--active {
@@ -133,10 +140,18 @@ export default function BottomNav() {
           }
 
           .bottom-nav-label {
-            font-size: 0.6875rem; /* 11px — الحد الأدنى المقبول للعربية */
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 0.6875rem;
             font-weight: 600;
             line-height: 1;
             white-space: nowrap;
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            .bottom-nav-icon { transition: none; }
+            .bottom-nav-tab--active .bottom-nav-icon { transform: none; }
           }
         }
       `}</style>

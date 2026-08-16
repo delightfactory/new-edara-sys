@@ -1,0 +1,31 @@
+.work-summary-card[type='button'] {
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+  appearance: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.work-summary-card[type='button']:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 28%, var(--border-primary));
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.work-summary-card[type='button']:focus-visible,
+.work-action-card:focus-within {
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 44%, transparent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .work-summary-card[type='button'],
+  .work-action-card {
+    transition: none;
+  }
+
+  .work-summary-card[type='button']:hover {
+    transform: none;
+  }
+}

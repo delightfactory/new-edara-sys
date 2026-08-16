@@ -1,0 +1,61 @@
+export const WORK_PERMISSIONS = {
+  ITEMS_CREATE: 'work.items.create',
+  ITEMS_READ_OWN: 'work.items.read_own',
+  ITEMS_READ_TEAM: 'work.items.read_team',
+  ITEMS_READ_ALL: 'work.items.read_all',
+  ITEMS_READ_RESTRICTED: 'work.items.read_restricted',
+  ITEMS_READ_PRIVATE: 'work.items.read_private',
+  ITEMS_UPDATE_OWN: 'work.items.update_own',
+  ITEMS_MANAGE_TEAM: 'work.items.manage_team',
+  ITEMS_COMMENT: 'work.items.comment',
+  ITEMS_ASSIGN: 'work.items.assign',
+  ITEMS_ASSIGN_BRANCH: 'work.items.assign_branch',
+  ITEMS_DELEGATE: 'work.items.delegate',
+  ITEMS_TRANSFER_OWNERSHIP: 'work.items.transfer_ownership',
+  ITEMS_MANAGE: 'work.items.manage',
+  REQUESTS_CREATE: 'work.requests.create',
+  REQUESTS_TRIAGE: 'work.requests.triage',
+  QUEUES_MANAGE: 'work.queues.manage',
+  APPROVALS_DECIDE: 'work.approvals.decide',
+  TEMPLATES_MANAGE: 'work.templates.manage',
+  WORKFLOWS_MANAGE: 'work.workflows.manage',
+  POLICIES_MANAGE: 'work.policies.manage',
+  RECURRENCE_MANAGE: 'work.recurrence.manage',
+} as const
+
+export type WorkPermission = typeof WORK_PERMISSIONS[keyof typeof WORK_PERMISSIONS]
+
+export const WORK_READ_PERMISSIONS: WorkPermission[] = [
+  WORK_PERMISSIONS.ITEMS_READ_OWN,
+  WORK_PERMISSIONS.ITEMS_READ_TEAM,
+  WORK_PERMISSIONS.ITEMS_READ_ALL,
+]
+
+export const WORK_PERMISSION_GROUP = {
+  id: 'work',
+  label: 'إدارة العمل والمتابعات',
+  permissions: [
+    { key: WORK_PERMISSIONS.ITEMS_CREATE, label: 'إنشاء أعمال ومهام' },
+    { key: WORK_PERMISSIONS.ITEMS_READ_OWN, label: 'عرض الأعمال الخاصة به' },
+    { key: WORK_PERMISSIONS.ITEMS_READ_TEAM, label: 'عرض أعمال الفريق ضمن النطاق' },
+    { key: WORK_PERMISSIONS.ITEMS_READ_ALL, label: 'عرض جميع الأعمال' },
+    { key: WORK_PERMISSIONS.ITEMS_READ_RESTRICTED, label: 'عرض الأعمال المقيدة ضمن النطاق' },
+    { key: WORK_PERMISSIONS.ITEMS_READ_PRIVATE, label: 'عرض الأعمال الخاصة عالية الخصوصية' },
+    { key: WORK_PERMISSIONS.ITEMS_UPDATE_OWN, label: 'تنفيذ وتحديث الأعمال الخاصة به' },
+    { key: WORK_PERMISSIONS.ITEMS_MANAGE_TEAM, label: 'إدارة أعمال الفريق' },
+    { key: WORK_PERMISSIONS.ITEMS_COMMENT, label: 'التعليق وتحديث التقدم' },
+    { key: WORK_PERMISSIONS.ITEMS_ASSIGN, label: 'إسناد أعمال ضمن نطاق الفريق' },
+    { key: WORK_PERMISSIONS.ITEMS_ASSIGN_BRANCH, label: 'إسناد أعمال ضمن الفرع' },
+    { key: WORK_PERMISSIONS.ITEMS_DELEGATE, label: 'تفويض التنفيذ' },
+    { key: WORK_PERMISSIONS.ITEMS_TRANSFER_OWNERSHIP, label: 'نقل المسؤولية النهائية' },
+    { key: WORK_PERMISSIONS.ITEMS_MANAGE, label: 'إدارة شاملة للأعمال' },
+    { key: WORK_PERMISSIONS.REQUESTS_CREATE, label: 'إرسال طلبات لجهات العمل' },
+    { key: WORK_PERMISSIONS.REQUESTS_TRIAGE, label: 'فرز الطلبات الواردة' },
+    { key: WORK_PERMISSIONS.QUEUES_MANAGE, label: 'إدارة طوابير وفرق الطلبات' },
+    { key: WORK_PERMISSIONS.APPROVALS_DECIDE, label: 'اتخاذ قرارات الاعتماد' },
+    { key: WORK_PERMISSIONS.TEMPLATES_MANAGE, label: 'إدارة قوالب العمل والاعتماد' },
+    { key: WORK_PERMISSIONS.WORKFLOWS_MANAGE, label: 'إدارة مسارات العمل' },
+    { key: WORK_PERMISSIONS.POLICIES_MANAGE, label: 'إدارة سياسات التشغيل' },
+    { key: WORK_PERMISSIONS.RECURRENCE_MANAGE, label: 'إدارة الأعمال الدورية' },
+  ],
+} as const
