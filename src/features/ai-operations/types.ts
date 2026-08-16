@@ -15,6 +15,9 @@ export type AiOpsCaseSeverity = 'low' | 'medium' | 'high' | 'critical'
 export type AiOpsCaseStatus = 'open' | 'monitored' | 'actioned' | 'resolved' | 'suppressed' | 'expired'
 export type AiOpsAttentionClass = 'exception' | 'opportunity' | 'integrity' | 'continuity'
 export type AiOpsDecisionType = 'IGNORE' | 'MONITOR' | 'INVESTIGATE' | 'INFORM' | 'CREATE_WORK' | 'ESCALATE'
+export type AiOpsDecisionValidationState = 'pending' | 'validated' | 'rejected'
+export type AiOpsHumanReviewState = 'approved' | 'rejected'
+export type AiOpsCommitStatus = 'not_requested' | 'staged' | 'committed' | 'rejected' | 'failed' | 'skipped'
 export type AiOpsEvidenceStrength = 'direct' | 'supporting' | 'contextual'
 export type AiOpsContextConfidence =
   | 'hard_policy'
@@ -160,6 +163,87 @@ export interface AiOpsCaseDetail {
   frozen_context: AiOpsFrozenContextEvidence[]
   context_coverage: AiOpsContextCoverage
   decision_review: AiOpsCaseDecisionReview
+}
+
+export interface AiOpsDecisionReviewDetail {
+  decision_id: string
+  run_id: string
+  run_status: AiOpsRunStatus
+  run_checkpoint: string
+  revision: number
+  decision_type: AiOpsDecisionType
+  concise_rationale: string
+  why_this_owner: string | null
+  why_now: string | null
+  confidence: number | null
+  recommended_owner_user_id: string | null
+  recommended_owner_label: string | null
+  recommended_assignee_user_id: string | null
+  recommended_assignee_label: string | null
+  expected_outcome: string | null
+  next_action_text: string | null
+  due_at: string | null
+  review_after: string | null
+  validation_state: AiOpsDecisionValidationState
+  validation_codes: string[]
+  requires_human_review: boolean
+  review_state: AiOpsHumanReviewState | null
+  reviewed_by_user_id: string | null
+  reviewed_by_label: string | null
+  reviewed_at: string | null
+  review_note: string | null
+  commit_status: AiOpsCommitStatus
+  committed_work_item_id: string | null
+  committed_work_number: number | null
+  committed_at: string | null
+  updated_at: string
+}
+
+export interface AiOpsCaseDecisionReviewResponse {
+  case_id: string
+  decision: AiOpsDecisionReviewDetail | null
+}
+
+export interface AiOpsRunLifecycleResult {
+  run_id?: string
+  status?: AiOpsRunStatus
+  checkpoint?: string
+  terminal?: boolean
+  changed?: boolean
+  reason?: string
+  pending_human_review?: number
+  pending_work_commit?: number
+  system_rejected_decisions?: number
+  blocked_work_commit?: number
+  unsupported_execution_decisions?: number
+}
+
+export interface AiOpsReviewDecisionResult {
+  reviewed: boolean
+  idempotent_reuse?: boolean
+  approval_blocked?: boolean
+  review_id?: string
+  decision_id: string
+  review_state?: AiOpsHumanReviewState
+  validation_state?: AiOpsDecisionValidationState
+  validation_codes?: string[]
+  reason?: string
+  execution_performed?: boolean
+  run_lifecycle?: AiOpsRunLifecycleResult
+}
+
+export interface AiOpsCommitDecisionResult {
+  committed: boolean
+  blocked?: boolean
+  idempotent_reuse?: boolean
+  decision_id?: string
+  reason?: string
+  work_item_id?: string
+  work_number?: number
+  source_key?: string
+  operational_mutation?: string
+  validation_codes?: string[]
+  run_lifecycle?: AiOpsRunLifecycleResult
 }
 
 export interface AiOpsOperationalContextItem {
