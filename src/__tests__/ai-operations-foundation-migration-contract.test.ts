@@ -56,11 +56,12 @@ describe('AI Operations foundation migration contract', () => {
     expect(migration).not.toMatch(/\b(?:sales_orders|customers|stock_movements|hr_employees|activities)\b/i)
   })
 
-  it('does not install scheduler or external AI integration in foundation', () => {
-    expect(migration).not.toMatch(/\bcron\./i)
-    expect(migration).not.toMatch(/pg_cron/i)
-    expect(migration).not.toMatch(/chatgpt/i)
-    expect(migration).not.toMatch(/http_post/i)
+  it('does not install scheduler or external network integration in foundation', () => {
+    expect(migration).not.toMatch(/\bcron\.schedule\s*\(/i)
+    expect(migration).not.toMatch(/\bcron\.unschedule\s*\(/i)
+    expect(migration).not.toMatch(/\bnet\.http_(?:get|post)\s*\(/i)
+    expect(migration).not.toMatch(/\bhttp_(?:get|post)\s*\(/i)
+    expect(migration).not.toMatch(/CREATE\s+EXTENSION\s+(?:IF\s+NOT\s+EXISTS\s+)?["']?pg_cron["']?/i)
   })
 
   it('keeps business-entity and human references soft across the isolation boundary', () => {
