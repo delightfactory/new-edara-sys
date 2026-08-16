@@ -15,6 +15,7 @@ export type AiOpsCaseSeverity = 'low' | 'medium' | 'high' | 'critical'
 export type AiOpsCaseStatus = 'open' | 'monitored' | 'actioned' | 'resolved' | 'suppressed' | 'expired'
 export type AiOpsAttentionClass = 'exception' | 'opportunity' | 'integrity' | 'continuity'
 export type AiOpsDecisionType = 'IGNORE' | 'MONITOR' | 'INVESTIGATE' | 'INFORM' | 'CREATE_WORK' | 'ESCALATE'
+export type AiOpsEvidenceStrength = 'direct' | 'supporting' | 'contextual'
 
 export interface AiOpsSettings {
   planner_enabled: boolean
@@ -86,6 +87,45 @@ export interface AiOpsCase {
   linked_work_number: number | null
   recommended_decision: AiOpsDecisionType | null
   review_after: string | null
+}
+
+export interface AiOpsResponsibilityEvidence {
+  evidence_type: string
+  label: string
+  user_id: string | null
+  user_label: string | null
+  strength: AiOpsEvidenceStrength
+  active_work_actor: boolean | null
+  occurred_at: string | null
+  note: string | null
+}
+
+export interface AiOpsWorkCollision {
+  work_item_id: string
+  work_number: number
+  status: string
+  relation_type: string
+  title: string
+}
+
+export interface AiOpsCaseDecisionReview {
+  decision_type: AiOpsDecisionType | null
+  concise_rationale: string
+  why_this_owner: string | null
+  why_now: string | null
+  confidence: number | null
+  requires_human_review: boolean
+}
+
+export interface AiOpsCaseDetail {
+  case_id: string
+  case_key: string
+  business_date: string
+  facts: Array<{ label: string; value: string }>
+  responsibility_evidence: AiOpsResponsibilityEvidence[]
+  existing_work: AiOpsWorkCollision[]
+  relevant_context_ids: string[]
+  decision_review: AiOpsCaseDecisionReview
 }
 
 export interface AiOpsOperationalContextItem {
