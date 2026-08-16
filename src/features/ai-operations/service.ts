@@ -1,5 +1,6 @@
 import { AI_OPERATIONS_DATA_MODE } from '@/lib/config/features'
 import { supabase } from '@/lib/supabase/client'
+import { aiOpsCaseDetailSchema, aiOpsConsoleSnapshotSchema } from './contracts'
 import { AI_OPERATIONS_PREVIEW_DATA } from './preview-data'
 import { AI_OPERATIONS_PREVIEW_CASE_DETAILS } from './preview-case-details'
 import type { AiOpsCaseDetail, AiOpsConsoleSnapshot, AiOpsDataMode } from './types'
@@ -13,18 +14,39 @@ export class AiOperationsUnavailableError extends Error {
   }
 }
 
+export class AiOperationsContractError extends Error {
+  readonly code = 'AI_OPERATIONS_INVALID_PAYLOAD'
+
+  constructor(message = 'استجابة AI Operations لا تطابق عقد البيانات المعتمد.') {
+    super(message)
+    this.name = 'AiOperationsContractError'
+  }
+}
+
 export interface AiOperationsServiceOptions {
   mode?: AiOpsDataMode
 }
 
+function parseConsolePayload(payload: unknown): AiOpsConsoleSnapshot {
+  const parsed = aiOpsConsoleSnapshotSchema.safeParse(payload)
+  if (!parsed.success) throw new AiOperationsContractError()
+  return parsed.data as AiOpsConsoleSnapshot
+}
+
+function parseCaseDetailPayload(payload: unknown): AiOpsCaseDetail {
+  const parsed = aiOpsCaseDetailSchema.safeParse(payload)
+  if (!parsed.success) throw new AiOperationsContractError('تفاصيل حالة AI Operations لا تطابق عقد البيانات المعتمد.')
+  return parsed.data as AiOpsCaseDetail
+}
+
 function clonePreview(): AiOpsConsoleSnapshot {
-  return structuredClone(AI_OPERATIONS_PREVIEW_DATA)
+  return parseConsolePayload(structuredClone(AI_OPERATIONS_PREVIEW_DATA))
 }
 
 function clonePreviewCaseDetail(caseId: string): AiOpsCaseDetail {
   const detail = AI_OPERATIONS_PREVIEW_CASE_DETAILS[caseId]
   if (!detail) throw new Error('لا توجد تفاصيل Preview لهذه الحالة.')
-  return structuredClone(detail)
+  return parseCaseDetailPayload(structuredClone(detail))
 }
 
 function isMissingRpc(error: { code?: string; message?: string | null }) {
@@ -41,11 +63,7 @@ async function loadConsoleFromRpc(): Promise<AiOpsConsoleSnapshot> {
     throw error
   }
 
-  if (!data || typeof data !== 'object') {
-    throw new AiOperationsUnavailableError('لم تُرجع طبقة AI Operations Snapshot صالحة.')
-  }
-
-  return data as unknown as AiOpsConsoleSnapshot
+  return parseConsolePayload(data)
 }
 
 async function loadCaseDetailFromRpc(caseId: string): Promise<AiOpsCaseDetail> {
@@ -58,11 +76,7 @@ async function loadCaseDetailFromRpc(caseId: string): Promise<AiOpsCaseDetail> {
     throw error
   }
 
-  if (!data || typeof data !== 'object') {
-    throw new AiOperationsUnavailableError('لم تُرجع طبقة AI Operations تفاصيل حالة صالحة.')
-  }
-
-  return data as unknown as AiOpsCaseDetail
+  return parseCaseDetailPayload(data)
 }
 
 export async function getAiOperationsConsole(
