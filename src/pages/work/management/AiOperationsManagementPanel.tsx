@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import {
   Activity,
   AlertTriangle,
   Bot,
   BrainCircuit,
   CheckCircle2,
+  ChevronDown,
   CircleGauge,
   Clock3,
   DatabaseZap,
@@ -20,7 +22,7 @@ import {
   UserRoundCog,
 } from 'lucide-react'
 import { AI_OPERATIONS_DATA_MODE } from '@/lib/config/features'
-import { useAiOperationsConsole } from '@/features/ai-operations/hooks'
+import { useAiOperationsCaseDetail, useAiOperationsConsole } from '@/features/ai-operations/hooks'
 import type {
   AiOpsCase,
   AiOpsCaseSeverity,
@@ -53,6 +55,12 @@ const trustLabels: Record<AiOpsTrustSignal['state'], string> = {
   blocked: 'محجوب',
   unknown: 'غير معروف',
 }
+
+const evidenceStrengthLabels = {
+  direct: 'دليل مباشر',
+  supporting: 'دليل مساند',
+  contextual: 'سياق',
+} as const
 
 function formatDateTime(value: string | null) {
   if (!value) return '—'
@@ -101,6 +109,10 @@ function TrustBadge({ signal }: { signal: AiOpsTrustSignal }) {
 }
 
 function CaseCard({ item }: { item: AiOpsCase }) {
+  const [expanded, setExpanded] = useState(false)
+  const detailQuery = useAiOperationsCaseDetail(item.id, expanded)
+  const detail = detailQuery.data
+
   return (
     <article className={`aiops-case aiops-case--${item.severity}`}>
       <div className="aiops-case-head">
@@ -147,7 +159,72 @@ function CaseCard({ item }: { item: AiOpsCase }) {
           <span className="aiops-collision"><ListChecks size={14} /> لا يوجد Work متعارض حاليًا</span>
         )}
         <span><Clock3 size={14} /> ظهر أول مرة {formatDateTime(item.first_seen_at)}</span>
+        <button
+          type="button"
+          className="aiops-evidence-toggle"
+          aria-expanded={expanded}
+          onClick={() => setExpanded(value => !value)}
+        >
+          <ChevronDown size={14} className={expanded ? 'is-open' : undefined} />
+          {expanded ? 'إخفاء أدلة القرار' : 'راجع أدلة القرار'}
+        </button>
       </div>
+
+      {expanded && (
+        <div className="aiops-case-detail">
+          {detailQuery.isLoading && <div className="aiops-detail-loading">جاري تحميل الأدلة...</div>}
+          {detailQuery.error && (
+            <div className="aiops-detail-error">
+              <AlertTriangle size={14} /> {detailQuery.error instanceof Error ? detailQuery.error.message : 'تعذر تحميل الأدلة.'}
+            </div>
+          )}
+          {detail && (
+            <>
+              <div className="aiops-detail-section">
+                <div className="aiops-detail-title">الحقائق المستخدمة</div>
+                <div className="aiops-facts-grid">
+                  {detail.facts.map(fact => (
+                    <div key={fact.label}>
+                      <span>{fact.label}</span>
+                      <strong>{fact.value}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="aiops-detail-section">
+                <div className="aiops-detail-title">أدلة المسؤولية — لا يوجد Routing جامد</div>
+                <div className="aiops-evidence-list">
+                  {detail.responsibility_evidence.map((evidence, index) => (
+                    <article key={`${evidence.evidence_type}-${index}`} className={`aiops-evidence aiops-evidence--${evidence.strength}`}>
+                      <div className="aiops-evidence-head">
+                        <strong>{evidence.label}</strong>
+                        <span>{evidenceStrengthLabels[evidence.strength]}</span>
+                      </div>
+                      <div className="aiops-evidence-user">{evidence.user_label ?? 'بدون مستخدم محدد'}</div>
+                      {evidence.note && <p>{evidence.note}</p>}
+                    </article>
+                  ))}
+                </div>
+              </div>
+
+              <div className="aiops-decision-review">
+                <div>
+                  <span>القرار المقترح</span>
+                  <strong>{detail.decision_review.decision_type ? decisionLabels[detail.decision_review.decision_type] : 'لم يُحسم بعد'}</strong>
+                </div>
+                <p>{detail.decision_review.concise_rationale}</p>
+                {detail.decision_review.why_this_owner && <p><b>لماذا هذه المسؤولية؟</b> {detail.decision_review.why_this_owner}</p>}
+                {detail.decision_review.why_now && <p><b>لماذا الآن؟</b> {detail.decision_review.why_now}</p>}
+                <div className="aiops-decision-meta">
+                  <span>الثقة: {detail.decision_review.confidence == null ? '—' : `${Math.round(detail.decision_review.confidence * 100)}%`}</span>
+                  <span>{detail.decision_review.requires_human_review ? 'يتطلب مراجعة بشرية' : 'لا يتطلب تنفيذًا بشريًا إضافيًا في الـPreview'}</span>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </article>
   )
 }
