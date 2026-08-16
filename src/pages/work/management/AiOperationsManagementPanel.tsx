@@ -22,7 +22,13 @@ import {
   UserRoundCog,
 } from 'lucide-react'
 import { AI_OPERATIONS_DATA_MODE } from '@/lib/config/features'
-import { useAiOperationsCaseDetail, useAiOperationsConsole } from '@/features/ai-operations/hooks'
+import {
+  useAiOperationsCaseDetail,
+  useAiOperationsConsole,
+  useAiOperationsDecisionReview,
+  useCommitAiOperationsDecision,
+  useReviewAiOperationsDecision,
+} from '@/features/ai-operations/hooks'
 import type {
   AiOpsCase,
   AiOpsCaseSeverity,
@@ -31,6 +37,7 @@ import type {
   AiOpsTrustSignal,
 } from '@/features/ai-operations/types'
 import './ai-operations-management.css'
+import './ai-operations-review.css'
 
 const severityLabels: Record<AiOpsCaseSeverity, string> = {
   low: 'منخفض',
@@ -88,7 +95,7 @@ function runStatusLabel(status: AiOpsPlannerRun['status']) {
     pending: 'في الانتظار',
     claimed: 'تم الاستلام',
     reasoning: 'قيد التحليل',
-    staged: 'قرارات مبدئية',
+    staged: 'بانتظار الإغلاق',
     committing: 'قيد التنفيذ',
     completed: 'مكتمل',
     partial: 'مكتمل جزئيًا',
@@ -96,6 +103,22 @@ function runStatusLabel(status: AiOpsPlannerRun['status']) {
     abandoned: 'متروك',
   }
   return labels[status]
+}
+
+function commitBlockMessage(reason?: string) {
+  const labels: Record<string, string> = {
+    shadow_mode: 'Shadow Mode يمنع إنشاء Work تشغيلية.',
+    planner_disabled: 'الـPlanner متوقف؛ لا يمكن تنفيذ قرار جديد.',
+    current_state_changed: 'تغير الواقع التشغيلي منذ التحليل؛ تم إيقاف التنفيذ ويجب انتظار تحليل جديد.',
+    human_approval_required: 'القرار يحتاج موافقة بشرية أولًا.',
+    decision_not_validated: 'القرار لم يجتز التحقق الحالي.',
+    source_key_collision: 'وجد تعارض غير متوقع مع Work أخرى؛ تم إيقاف التنفيذ احترازيًا.',
+    bridge_supports_create_work_only: 'الـslice الحالي ينفذ CREATE_WORK فقط.',
+    work_actor_became_unavailable: 'أحد أطراف المسؤولية لم يعد متاحًا للتكليف.',
+    proposed_due_at_not_future: 'الموعد المقترح لم يعد في المستقبل.',
+    explicit_owner_assignee_and_due_required: 'ينقص القرار مالك أو منفذ أو موعد صريح.',
+  }
+  return reason ? (labels[reason] ?? `تم إيقاف التنفيذ: ${reason}`) : 'تم إيقاف التنفيذ احترازيًا.'
 }
 
 function TrustBadge({ signal }: { signal: AiOpsTrustSignal }) {
@@ -108,7 +131,258 @@ function TrustBadge({ signal }: { signal: AiOpsTrustSignal }) {
   )
 }
 
-function CaseCard({ item }: { item: AiOpsCase }) {
+function DecisionReviewPanel({
+  caseId,
+  isPreview,
+  plannerEnabled,
+  shadowMode,
+}: {
+  caseId: string
+  isPreview: boolean
+  plannerEnabled: boolean
+  shadowMode: boolean
+}) {
+  const [reviewNote, setReviewNote] = useState('')
+  const [actionMessage, setActionMessage] = useState<string | null>(null)
+  const [actionError, setActionError] = useState(false)
+  const reviewQuery = useAiOperationsDecisionReview(caseId, !isPreview)
+  const reviewMutation = useReviewAiOperationsDecision()
+  const commitMutation = useCommitAiOperationsDecision()
+  const decision = reviewQuery.data?.decision ?? null
+  const busy = reviewMutation.isPending || commitMutation.isPending
+
+  if (isPreview) {
+    return (
+      <div className="aiops-review-readonly">
+        Preview للقراءة فقط. الموافقة والرفض وإنشاء Work لا تُحاكى محليًا ولا تستدعي Supabase.
+      </div>
+    )
+  }
+
+  if (reviewQuery.isLoading) {
+    return <div className="aiops-detail-loading">جاري تحميل حالة المراجعة والتنفيذ...</div>
+  }
+
+  if (reviewQuery.error) {
+    return (
+      <div className="aiops-detail-error">
+        <AlertTriangle size={14} />
+        {reviewQuery.error instanceof Error ? reviewQuery.error.message : 'تعذر تحميل حالة القرار.'}
+      </div>
+    )
+  }
+
+  if (!decision) {
+    return <div className="aiops-review-readonly">لم يصدر قرار Planner محفوظ لهذه الحالة بعد.</div>
+  }
+
+  const canReview = plannerEnabled
+    && !shadowMode
+    && decision.run_status === 'staged'
+    && decision.review_state === null
+    && decision.validation_state !== 'rejected'
+
+  const canCommit = plannerEnabled
+    && !shadowMode
+    && decision.run_status === 'staged'
+    && decision.decision_type === 'CREATE_WORK'
+    && decision.review_state === 'approved'
+    && decision.validation_state === 'validated'
+    && decision.commit_status !== 'committed'
+
+  const validationTone = decision.validation_state === 'validated'
+    ? 'good'
+    : decision.validation_state === 'rejected' ? 'danger' : 'warning'
+  const reviewTone = decision.review_state === 'approved'
+    ? 'good'
+    : decision.review_state === 'rejected' ? 'danger' : 'warning'
+  const commitTone = decision.commit_status === 'committed'
+    ? 'good'
+    : ['rejected', 'failed'].includes(decision.commit_status) ? 'danger' : 'warning'
+
+  const handleReview = async (reviewState: 'approved' | 'rejected') => {
+    setActionMessage(null)
+    setActionError(false)
+    try {
+      const result = await reviewMutation.mutateAsync({
+        decisionId: decision.decision_id,
+        reviewState,
+        reviewNote,
+      })
+      if (result.approval_blocked) {
+        setActionError(true)
+        setActionMessage('تغير الواقع التشغيلي منذ التحليل؛ تم رفض صلاحية القرار للتنفيذ بدون إنشاء أي Work.')
+        return
+      }
+      setReviewNote('')
+      setActionMessage(
+        reviewState === 'approved'
+          ? decision.decision_type === 'CREATE_WORK'
+            ? 'تم اعتماد القرار بعد إعادة التحقق. لم تُنشأ Work بعد؛ التنفيذ خطوة مستقلة أدناه.'
+            : 'تم اعتماد القرار وإغلاق خطوة المراجعة بدون إنشاء Work تلقائيًا.'
+          : 'تم رفض القرار وتسجيل المراجعة كسجل غير قابل للاستبدال.',
+      )
+    } catch (error) {
+      setActionError(true)
+      setActionMessage(error instanceof Error ? error.message : 'تعذر تسجيل المراجعة.')
+    }
+  }
+
+  const handleCommit = async () => {
+    setActionMessage(null)
+    setActionError(false)
+    try {
+      const result = await commitMutation.mutateAsync({ decisionId: decision.decision_id })
+      if (!result.committed) {
+        setActionError(true)
+        setActionMessage(commitBlockMessage(result.reason))
+        return
+      }
+      setActionMessage(
+        result.work_number
+          ? `تم إنشاء Work #${result.work_number} بعد إعادة التحقق داخل نفس معاملة التنفيذ.`
+          : 'تم إنشاء Work المعتمدة بعد إعادة التحقق داخل نفس معاملة التنفيذ.',
+      )
+    } catch (error) {
+      setActionError(true)
+      setActionMessage(error instanceof Error ? error.message : 'تعذر إنشاء Work المعتمدة.')
+    }
+  }
+
+  return (
+    <section className="aiops-review-live" aria-label="المراجعة البشرية للقرار">
+      <div className="aiops-review-live-head">
+        <div>
+          <h4>بوابة المراجعة والتنفيذ</h4>
+          <p>الموافقة لا تنشئ Work. التنفيذ أمر مستقل ويعيد فحص الواقع التشغيلي داخل نفس المعاملة.</p>
+        </div>
+        <span className="aiops-decision-chip">{decisionLabels[decision.decision_type]}</span>
+      </div>
+
+      <div className="aiops-state-row">
+        <span className={`aiops-state-chip aiops-state-chip--${validationTone}`}>
+          تحقق: {decision.validation_state === 'validated' ? 'سليم حاليًا' : decision.validation_state === 'rejected' ? 'مرفوض / قديم' : 'بانتظار التحقق'}
+        </span>
+        <span className={`aiops-state-chip aiops-state-chip--${reviewTone}`}>
+          مراجعة: {decision.review_state === 'approved' ? 'معتمد' : decision.review_state === 'rejected' ? 'مرفوض' : 'لم يُراجع'}
+        </span>
+        <span className={`aiops-state-chip aiops-state-chip--${commitTone}`}>
+          تنفيذ: {decision.commit_status === 'committed' ? 'تم إنشاء Work' : decision.commit_status === 'rejected' ? 'موقوف' : decision.commit_status === 'failed' ? 'فشل' : 'لم يُنفذ'}
+        </span>
+        <span className="aiops-state-chip">Run: {runStatusLabel(decision.run_status)} · {decision.run_checkpoint}</span>
+      </div>
+
+      <div className="aiops-review-grid">
+        <div className="aiops-review-field">
+          <span>Accountable Owner</span>
+          <strong>{decision.recommended_owner_label ?? 'غير محدد'}</strong>
+        </div>
+        <div className="aiops-review-field">
+          <span>Assignee / المنفذ</span>
+          <strong>{decision.recommended_assignee_label ?? 'غير محدد'}</strong>
+        </div>
+        <div className="aiops-review-field">
+          <span>الموعد المقترح</span>
+          <strong>{formatDateTime(decision.due_at)}</strong>
+        </div>
+        <div className="aiops-review-field">
+          <span>موعد المراجعة</span>
+          <strong>{formatDateTime(decision.review_after)}</strong>
+        </div>
+        <div className="aiops-review-field aiops-review-field--wide">
+          <span>الإجراء التالي</span>
+          <p>{decision.next_action_text ?? 'لا يوجد إجراء تنفيذي مقترح.'}</p>
+        </div>
+        <div className="aiops-review-field aiops-review-field--wide">
+          <span>النتيجة المتوقعة</span>
+          <p>{decision.expected_outcome ?? 'لا توجد نتيجة تنفيذية محددة لهذا النوع من القرار.'}</p>
+        </div>
+      </div>
+
+      {decision.validation_codes.length > 0 && (
+        <div className="aiops-validation-codes" aria-label="أسباب رفض التحقق">
+          {decision.validation_codes.map((code, index) => (
+            <span className="aiops-validation-code" key={`${code}-${index}`}>{code}</span>
+          ))}
+        </div>
+      )}
+
+      {decision.review_state && (
+        <div className="aiops-reviewed-box">
+          <strong>{decision.review_state === 'approved' ? 'اعتماد بشري مسجل' : 'رفض بشري مسجل'}</strong>
+          <span>{decision.reviewed_by_label ?? 'مراجع مخول'} · {formatDateTime(decision.reviewed_at)}</span>
+          {decision.review_note && <span>{decision.review_note}</span>}
+        </div>
+      )}
+
+      {decision.committed_work_number && (
+        <div className="aiops-reviewed-box">
+          <strong>Work الناتجة: #{decision.committed_work_number}</strong>
+          <span>تم الإنشاء: {formatDateTime(decision.committed_at)}</span>
+        </div>
+      )}
+
+      {shadowMode && (
+        <div className="aiops-review-readonly">Shadow Mode مفعّل: القرارات تُقاس كتوصيات تحليلية فقط ولا تدخل مسار الاعتماد أو التنفيذ.</div>
+      )}
+      {!plannerEnabled && (
+        <div className="aiops-review-readonly">الـPlanner متوقف حاليًا؛ لا يمكن اعتماد أو تنفيذ قرار جديد.</div>
+      )}
+      {decision.decision_type === 'ESCALATE' && decision.review_state === 'approved' && (
+        <div className="aiops-review-readonly">تنفيذ ESCALATE غير مدعوم في Credit slice الحالية؛ تُسجل المراجعة وتغلق الـRun كـpartial بدل ادعاء تنفيذ لم يحدث.</div>
+      )}
+
+      {canReview && (
+        <div className="aiops-review-note">
+          <label htmlFor={`aiops-review-note-${decision.decision_id}`}>ملاحظة المراجع — اختيارية</label>
+          <textarea
+            id={`aiops-review-note-${decision.decision_id}`}
+            value={reviewNote}
+            maxLength={1000}
+            onChange={event => setReviewNote(event.target.value)}
+            placeholder="سجل فقط ما يضيف سياقًا إداريًا مفيدًا للقرار."
+          />
+        </div>
+      )}
+
+      <div className="aiops-review-actions">
+        {canReview && (
+          <>
+            <button type="button" className="btn btn-primary" disabled={busy} onClick={() => handleReview('approved')}>
+              <CheckCircle2 size={16} /> اعتماد القرار
+            </button>
+            <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => handleReview('rejected')}>
+              <AlertTriangle size={16} /> رفض القرار
+            </button>
+          </>
+        )}
+        {canCommit && (
+          <button type="button" className="btn btn-primary" disabled={busy} onClick={handleCommit}>
+            <PlayCircle size={16} /> إنشاء Work المعتمدة
+          </button>
+        )}
+      </div>
+
+      {actionMessage && (
+        <div className={`aiops-review-message${actionError ? ' aiops-review-message--danger' : ''}`} role="status">
+          {actionMessage}
+        </div>
+      )}
+    </section>
+  )
+}
+
+function CaseCard({
+  item,
+  isPreview,
+  plannerEnabled,
+  shadowMode,
+}: {
+  item: AiOpsCase
+  isPreview: boolean
+  plannerEnabled: boolean
+  shadowMode: boolean
+}) {
   const [expanded, setExpanded] = useState(false)
   const detailQuery = useAiOperationsCaseDetail(item.id, expanded)
   const detail = detailQuery.data
@@ -218,9 +492,16 @@ function CaseCard({ item }: { item: AiOpsCase }) {
                 {detail.decision_review.why_now && <p><b>لماذا الآن؟</b> {detail.decision_review.why_now}</p>}
                 <div className="aiops-decision-meta">
                   <span>الثقة: {detail.decision_review.confidence == null ? '—' : `${Math.round(detail.decision_review.confidence * 100)}%`}</span>
-                  <span>{detail.decision_review.requires_human_review ? 'يتطلب مراجعة بشرية' : 'لا يتطلب تنفيذًا بشريًا إضافيًا في الـPreview'}</span>
+                  <span>{detail.decision_review.requires_human_review ? 'يتطلب مراجعة بشرية قبل أي تنفيذ' : 'قرار تحليلي غير تنفيذي'}</span>
                 </div>
               </div>
+
+              <DecisionReviewPanel
+                caseId={item.id}
+                isPreview={isPreview}
+                plannerEnabled={plannerEnabled}
+                shadowMode={shadowMode}
+              />
             </>
           )}
         </div>
@@ -271,7 +552,7 @@ export default function AiOperationsManagementPanel() {
           <span>
             {isPreview
               ? 'كل الأرقام والأسماء داخل هذه الشاشة بيانات مراجعة ثابتة. لا يتم قراءة أو كتابة أي بيانات تشغيلية.'
-              : 'هذه الشاشة متصلة بطبقة AI Operations المعتمدة.'}
+              : 'هذه الشاشة متصلة بطبقة AI Operations المعتمدة؛ أي تنفيذ يظل خلف مراجعة بشرية وأمر منفصل.'}
           </span>
         </div>
         <span className="aiops-mode-chip">{AI_OPERATIONS_DATA_MODE.toUpperCase()}</span>
@@ -322,11 +603,19 @@ export default function AiOperationsManagementPanel() {
               <h3><Sparkles size={18} /> حالات تستحق الانتباه</h3>
               <p>Case ≠ Task. وجود الحالة لا يعني تلقائيًا إنشاء عمل جديد.</p>
             </div>
-            <span>{data.attention.length} حالات في Preview</span>
+            <span>{data.attention.length} حالات {isPreview ? 'في Preview' : 'في التحليل الحالي'}</span>
           </div>
 
           <div className="aiops-case-list">
-            {data.attention.map(item => <CaseCard key={item.id} item={item} />)}
+            {data.attention.map(item => (
+              <CaseCard
+                key={item.id}
+                item={item}
+                isPreview={isPreview}
+                plannerEnabled={data.settings.planner_enabled}
+                shadowMode={data.settings.shadow_mode}
+              />
+            ))}
           </div>
         </div>
 
@@ -375,10 +664,20 @@ export default function AiOperationsManagementPanel() {
           <section className="aiops-panel-card aiops-panel-card--safety">
             <div className="aiops-panel-title"><CheckCircle2 size={17} /> حدود التنفيذ الحالية</div>
             <ul className="aiops-safety-list">
-              <li>لا Migration مطبقة على الإنتاج.</li>
-              <li>لا Cron أو ChatGPT worker مفعّل.</li>
-              <li>لا إنشاء Work تلقائي.</li>
-              <li>Preview لا يستدعي Supabase AI RPCs.</li>
+              {isPreview ? (
+                <>
+                  <li>Preview لا يستدعي Supabase AI RPCs.</li>
+                  <li>لا يمكن اعتماد أو رفض أو تنفيذ قرارات من Preview.</li>
+                  <li>البيانات المعروضة Fixtures ثابتة للمراجعة البصرية فقط.</li>
+                </>
+              ) : (
+                <>
+                  <li>الموافقة البشرية لا تنشئ Work تلقائيًا.</li>
+                  <li>CREATE_WORK فقط هي المدعومة تنفيذيًا في Credit slice الحالية.</li>
+                  <li>التنفيذ يعيد التحقق من الواقع داخل نفس المعاملة.</li>
+                  <li>Planner Off وShadow Mode يعملان كـKill Switch قبل أي Work جديدة.</li>
+                </>
+              )}
             </ul>
           </section>
         </aside>
