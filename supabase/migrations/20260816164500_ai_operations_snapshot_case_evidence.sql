@@ -10,6 +10,12 @@
 --   run saw historically. This table freezes the exact bounded case evidence
 --   attached to each immutable snapshot.
 --
+-- Resource accounting:
+--   snapshots.payload_bytes measures the compact snapshot/header envelope.
+--   snapshot_cases.payload_bytes measures each frozen case evidence envelope.
+--   Their sum provides a cheap conservative serialized-context budget before
+--   a planner worker requests the snapshot.
+--
 -- This remains fully inside ai_ops. No operational table is altered.
 -- ============================================================================
 
@@ -34,12 +40,14 @@ CREATE TABLE ai_ops.snapshot_cases (
   facts JSONB NOT NULL DEFAULT '{}'::JSONB,
   responsibility_evidence JSONB NOT NULL DEFAULT '{}'::JSONB,
   trust JSONB NOT NULL DEFAULT '{}'::JSONB,
+  payload_bytes INTEGER NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
   CONSTRAINT ai_ops_snapshot_cases_pkey PRIMARY KEY (snapshot_id, case_id),
   CONSTRAINT ai_ops_snapshot_cases_key_uniq UNIQUE (snapshot_id, case_key),
   CONSTRAINT ai_ops_snapshot_cases_rank_uniq UNIQUE (snapshot_id, snapshot_rank),
   CONSTRAINT ai_ops_snapshot_cases_rank_positive CHECK (snapshot_rank > 0),
+  CONSTRAINT ai_ops_snapshot_cases_payload_bytes_nonnegative CHECK (payload_bytes >= 0),
   CONSTRAINT ai_ops_snapshot_cases_key_not_blank CHECK (btrim(case_key) <> ''),
   CONSTRAINT ai_ops_snapshot_cases_entity_pair CHECK (
     (entity_type IS NULL AND entity_id IS NULL)
@@ -62,7 +70,7 @@ CREATE INDEX idx_ai_ops_snapshot_cases_domain_rank
   ON ai_ops.snapshot_cases(snapshot_id, domain, snapshot_rank);
 
 COMMENT ON TABLE ai_ops.snapshot_cases IS
-  'Immutable per-snapshot copy of the exact bounded case evidence seen by the planner. ai_ops.cases remains current mutable case state.';
+  'Immutable per-snapshot copy of the exact bounded case evidence seen by the planner. payload_bytes supports preflight AI context budgeting; ai_ops.cases remains current mutable case state.';
 
 -- Reuse the foundation immutability guard for the evidence rows.
 CREATE TRIGGER trg_ai_ops_snapshot_cases_immutable
