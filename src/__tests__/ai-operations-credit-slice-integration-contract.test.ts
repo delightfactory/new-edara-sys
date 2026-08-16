@@ -29,12 +29,13 @@ describe('AI Operations Credit slice cross-migration integration contract', () =
     expect([...ordered].sort()).toEqual(ordered)
     expect(files.alignment < files.worker).toBe(true)
     expect(files.worker < files.validation).toBe(true)
+    expect(files.validation < files.currentGuard).toBe(true)
     expect(files.currentGuard < files.review).toBe(true)
     expect(files.reviewFix < files.bridge).toBe(true)
   })
 
   it('aligns foundation drift before worker references claimed/prompt and final decision fields', () => {
-    expect(sql.foundation).toContain('validation_status TEXT NOT NULL DEFAULT \'pending\'')
+    expect(sql.foundation).toContain("validation_status TEXT NOT NULL DEFAULT 'pending'")
     expect(sql.foundation).toContain('work_item_id UUID')
 
     expect(sql.alignment).toContain('ADD COLUMN claimed_at TIMESTAMPTZ')
@@ -52,15 +53,15 @@ describe('AI Operations Credit slice cross-migration integration contract', () =
     expect(sql.worker).toContain('claimed_at = v_now')
     expect(sql.worker).toContain("'prompt_version', v_run.prompt_version")
     expect(sql.worker).toContain('linked_work_item_id, validation_state, validation_detail')
-    expect(sql.validation).toContain("validation_state = 'validated'")
+    expect(sql.currentGuard).toContain("validation_state = 'validated'")
     expect(sql.reviewFix).toContain("validation_state = 'rejected'")
     expect(sql.bridge).toContain('committed_work_item_id')
     expect(sql.bridge).toContain('committed_at')
   })
 
   it('keeps staged CREATE_WORK executable without hidden routing/deadline defaults', () => {
-    expect(sql.inputGuard).toContain('recommended_owner_user_id IS NULL')
-    expect(sql.inputGuard).toContain('recommended_assignee_user_id IS NULL')
+    expect(sql.inputGuard).toContain('NEW.recommended_owner_user_id IS NULL')
+    expect(sql.inputGuard).toContain('NEW.recommended_assignee_user_id IS NULL')
     expect(sql.inputGuard).toContain('NEW.due_at IS NULL')
     expect(sql.inputGuard).toContain('NEW.due_at <= v_now')
     expect(sql.inputGuard).toContain('MONITOR decisions require a future review_after')
@@ -71,14 +72,17 @@ describe('AI Operations Credit slice cross-migration integration contract', () =
     expect(sql.contextAlignment).toContain("'next_action_text'")
     expect(sql.contextAlignment).toContain("'due_at'")
     expect(sql.contextAlignment).toContain('create_work_due_at_must_be_future')
+    expect(sql.contextAlignment).toContain('monitor_review_after_must_be_future')
 
     expect(sql.bridge).toContain("'explicit_owner_assignee_and_due_required'")
     expect(sql.bridge).not.toMatch(/COALESCE\(v_decision\.recommended_assignee_user_id\s*,/)
     expect(sql.bridge).not.toMatch(/COALESCE\(v_decision\.due_at\s*,/)
   })
 
-  it('uses one current-state safety source across validation, approval revalidation and commit', () => {
+  it('uses one current-state safety source for final validation, approval revalidation and commit', () => {
     expect(sql.currentGuard).toContain('CREATE OR REPLACE FUNCTION ai_ops.current_decision_issues')
+    expect(sql.currentGuard).toContain('CREATE OR REPLACE FUNCTION ai_ops.validate_staged_run')
+    expect(sql.currentGuard).toContain('v_reasons := ai_ops.current_decision_issues(v_decision.id)')
     expect(sql.reviewFix).toContain('ai_ops.current_decision_issues(p_decision_id)')
     expect(sql.bridge).toContain('ai_ops.current_decision_issues(p_decision_id)')
 
@@ -89,24 +93,24 @@ describe('AI Operations Credit slice cross-migration integration contract', () =
   })
 
   it('keeps technical validation distinct from immutable human review', () => {
-    expect(sql.validation).toContain("validation_state = 'validated'")
+    expect(sql.currentGuard).toContain("validation_state = 'validated'")
     expect(sql.review).toContain('CREATE TABLE ai_ops.decision_reviews')
-    expect(sql.review).toContain("review_state IN ('approved','rejected')")
+    expect(sql.review).toContain("CHECK (review_state IN ('approved','rejected'))")
     expect(sql.bridge).toContain("v_review.review_state <> 'approved'")
     expect(sql.bridge).toContain("v_decision.validation_state <> 'validated'")
   })
 
-  it('matches the deployed Work Engine field/event contract and preserves system provenance', () => {
+  it('matches deployed Work Engine fields/events and preserves system provenance', () => {
     expect(sql.bridge).toContain('accountable_owner_user_id,')
     expect(sql.bridge).toContain('current_assignee_user_id,')
     expect(sql.bridge).toContain('creator_user_id,')
     expect(sql.bridge).toContain('requester_user_id,')
     expect(sql.bridge).toContain('state_version,')
     expect(sql.bridge).toContain("'system'::public.work_source_kind")
-    expect(sql.bridge).toContain("private.work_append_system_event(uuid,text,public.work_item_status,public.work_item_status,jsonb)")
+    expect(sql.bridge).toContain('private.work_append_system_event(uuid,text,public.work_item_status,public.work_item_status,jsonb)')
     expect(sql.bridge).toContain("'work.created'")
     expect(sql.bridge).toContain("'work.activated'")
-    expect(sql.bridge).not.toContain("private.work_append_system_event(uuid,text,jsonb)")
+    expect(sql.bridge).not.toContain('private.work_append_system_event(uuid,text,jsonb)')
   })
 
   it('keeps first operational bridge human-approved CREATE_WORK-only and idempotent', () => {
@@ -126,7 +130,7 @@ describe('AI Operations Credit slice cross-migration integration contract', () =
     expect(sql.contextAlignment).not.toMatch(/GRANT\s+EXECUTE/i)
 
     const operationalMutation = /(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s+public\.(?:sales_orders|customers|customer_credit_history|sales_order_due_date_history)/i
-    expect(sql.validation).not.toMatch(operationalMutation)
+    expect(sql.currentGuard).not.toMatch(operationalMutation)
     expect(sql.review).not.toMatch(operationalMutation)
     expect(sql.reviewFix).not.toMatch(operationalMutation)
     expect(sql.bridge).not.toMatch(operationalMutation)
