@@ -35,8 +35,9 @@ BEGIN
        OR NEW.recommended_assignee_user_id IS NULL
        OR NULLIF(btrim(COALESCE(NEW.expected_outcome, '')), '') IS NULL
        OR NULLIF(btrim(COALESCE(NEW.next_action_text, '')), '') IS NULL
+       OR length(NEW.next_action_text) > 500
        OR NEW.due_at IS NULL THEN
-      RAISE EXCEPTION 'CREATE_WORK requires explicit owner, assignee, expected_outcome, next_action_text and due_at';
+      RAISE EXCEPTION 'CREATE_WORK requires explicit owner, assignee, expected_outcome, next_action_text <= 500 chars and due_at';
     END IF;
 
     IF NEW.due_at <= v_now THEN
@@ -58,7 +59,7 @@ REVOKE ALL ON FUNCTION ai_ops.enforce_decision_insert_contract()
   FROM PUBLIC, anon, authenticated, service_role;
 
 COMMENT ON FUNCTION ai_ops.enforce_decision_insert_contract() IS
-  'Fail-closed insert guard keeping staged decision payloads compatible with the reviewed first-slice Work bridge; never supplies defaults.';
+  'Fail-closed insert guard keeping staged decision payloads compatible with the reviewed first-slice Work bridge and the deployed Work next_action_text(500) limit; never supplies defaults.';
 
 RESET lock_timeout;
 RESET statement_timeout;
