@@ -8,11 +8,12 @@
 --   ai_ops.cases is the CURRENT materialized case state and is intentionally
 --   updated across planner runs. It cannot by itself prove what evidence an AI
 --   run saw historically. This table freezes the exact bounded case evidence
---   attached to each immutable snapshot.
+--   attached to each immutable snapshot, including governed operational context.
 --
 -- Resource accounting:
 --   snapshots.payload_bytes measures the compact snapshot/header envelope.
---   snapshot_cases.payload_bytes measures each frozen case evidence envelope.
+--   snapshot_cases.payload_bytes measures each frozen case evidence envelope,
+--   including its bounded context evidence.
 --   Their sum provides a cheap conservative serialized-context budget before
 --   a planner worker requests the snapshot.
 --
@@ -39,6 +40,7 @@ CREATE TABLE ai_ops.snapshot_cases (
   source_as_of TIMESTAMPTZ NOT NULL,
   facts JSONB NOT NULL DEFAULT '{}'::JSONB,
   responsibility_evidence JSONB NOT NULL DEFAULT '{}'::JSONB,
+  operational_context JSONB NOT NULL DEFAULT '{"items":[],"total":0,"captured":0,"truncated":false}'::JSONB,
   trust JSONB NOT NULL DEFAULT '{}'::JSONB,
   payload_bytes INTEGER NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -62,7 +64,16 @@ CREATE TABLE ai_ops.snapshot_cases (
   CONSTRAINT ai_ops_snapshot_cases_json_objects CHECK (
     jsonb_typeof(facts) = 'object'
     AND jsonb_typeof(responsibility_evidence) = 'object'
+    AND jsonb_typeof(operational_context) = 'object'
     AND jsonb_typeof(trust) = 'object'
+  ),
+  CONSTRAINT ai_ops_snapshot_cases_context_shape CHECK (
+    jsonb_typeof(operational_context->'items') = 'array'
+    AND COALESCE((operational_context->>'total')::INTEGER, -1) >= 0
+    AND COALESCE((operational_context->>'captured')::INTEGER, -1) >= 0
+    AND COALESCE((operational_context->>'captured')::INTEGER, 0)
+      <= COALESCE((operational_context->>'total')::INTEGER, 0)
+    AND jsonb_typeof(operational_context->'truncated') = 'boolean'
   )
 );
 
@@ -70,9 +81,8 @@ CREATE INDEX idx_ai_ops_snapshot_cases_domain_rank
   ON ai_ops.snapshot_cases(snapshot_id, domain, snapshot_rank);
 
 COMMENT ON TABLE ai_ops.snapshot_cases IS
-  'Immutable per-snapshot copy of the exact bounded case evidence seen by the planner. payload_bytes supports preflight AI context budgeting; ai_ops.cases remains current mutable case state.';
+  'Immutable per-snapshot copy of exact bounded facts, causal evidence and governed context seen by the planner. payload_bytes supports preflight AI context budgeting; ai_ops.cases remains current mutable case state.';
 
--- Reuse the foundation immutability guard for the evidence rows.
 CREATE TRIGGER trg_ai_ops_snapshot_cases_immutable
   BEFORE UPDATE OR DELETE ON ai_ops.snapshot_cases
   FOR EACH ROW EXECUTE FUNCTION ai_ops.reject_snapshot_mutation();
