@@ -9,6 +9,7 @@
 --   * deterministic Cairo business-date semantics
 --   * causal/responsibility evidence without unsupported blame inference
 --   * exact Work collision detection through existing public.work_links
+--   * bounded human-entered reason text (data, never instructions)
 --   * optional persistence into ai_ops.cases for an already-created snapshot
 --
 -- Explicitly NOT included:
@@ -52,8 +53,18 @@ RETURNS TABLE(
   order_rep_name TEXT,
   order_rep_active BOOLEAN,
   order_creator_id UUID,
+  order_creator_name TEXT,
   credit_override BOOLEAN,
   credit_override_by UUID,
+  credit_override_by_name TEXT,
+  customer_credit_limit NUMERIC,
+  customer_credit_days INTEGER,
+  last_credit_changed_at TIMESTAMPTZ,
+  last_credit_changed_by UUID,
+  last_credit_changed_by_name TEXT,
+  last_credit_reason TEXT,
+  last_credit_limit_before NUMERIC,
+  last_credit_limit_after NUMERIC,
   last_due_date_changed_at TIMESTAMPTZ,
   last_due_date_changed_by UUID,
   last_due_date_changed_by_name TEXT,
@@ -61,6 +72,8 @@ RETURNS TABLE(
   linked_work_item_id UUID,
   linked_work_number BIGINT,
   linked_work_status public.work_item_status,
+  linked_work_title TEXT,
+  linked_work_relation_type TEXT,
   facts JSONB,
   responsibility_evidence JSONB,
   trust JSONB
@@ -111,19 +124,46 @@ AS $$
         ELSE private.work_actor_is_active(so.rep_id)
       END AS order_rep_active,
       so.created_by_id AS order_creator_id,
+      order_creator.full_name::TEXT AS order_creator_name,
       COALESCE(so.credit_override, false) AS credit_override,
       so.credit_override_by,
+      credit_override_actor.full_name::TEXT AS credit_override_by_name,
+      COALESCE(c.credit_limit, 0)::NUMERIC AS customer_credit_limit,
+      COALESCE(c.credit_days, 0)::INTEGER AS customer_credit_days,
+      credit_hist.created_at AS last_credit_changed_at,
+      credit_hist.changed_by AS last_credit_changed_by,
+      credit_actor.full_name::TEXT AS last_credit_changed_by_name,
+      left(credit_hist.reason::TEXT, 500) AS last_credit_reason,
+      credit_hist.limit_before AS last_credit_limit_before,
+      credit_hist.limit_after AS last_credit_limit_after,
       due_hist.created_at AS last_due_date_changed_at,
       due_hist.changed_by AS last_due_date_changed_by,
       due_actor.full_name::TEXT AS last_due_date_changed_by_name,
-      due_hist.reason::TEXT AS last_due_date_reason,
+      left(due_hist.reason::TEXT, 500) AS last_due_date_reason,
       linked.work_item_id AS linked_work_item_id,
       linked.work_number AS linked_work_number,
-      linked.status AS linked_work_status
+      linked.status AS linked_work_status,
+      linked.title AS linked_work_title,
+      linked.relation_type AS linked_work_relation_type
     FROM public.sales_orders so
     JOIN public.customers c ON c.id = so.customer_id
     LEFT JOIN public.profiles customer_rep ON customer_rep.id = c.assigned_rep_id
     LEFT JOIN public.profiles order_rep ON order_rep.id = so.rep_id
+    LEFT JOIN public.profiles order_creator ON order_creator.id = so.created_by_id
+    LEFT JOIN public.profiles credit_override_actor ON credit_override_actor.id = so.credit_override_by
+    LEFT JOIN LATERAL (
+      SELECT
+        h.created_at,
+        h.changed_by,
+        h.reason,
+        h.limit_before,
+        h.limit_after
+      FROM public.customer_credit_history h
+      WHERE h.customer_id = so.customer_id
+      ORDER BY h.created_at DESC, h.id DESC
+      LIMIT 1
+    ) credit_hist ON true
+    LEFT JOIN public.profiles credit_actor ON credit_actor.id = credit_hist.changed_by
     LEFT JOIN LATERAL (
       SELECT
         h.created_at,
@@ -131,7 +171,7 @@ AS $$
         h.reason
       FROM public.sales_order_due_date_history h
       WHERE h.order_id = so.id
-      ORDER BY h.created_at DESC
+      ORDER BY h.created_at DESC, h.id DESC
       LIMIT 1
     ) due_hist ON true
     LEFT JOIN public.profiles due_actor ON due_actor.id = due_hist.changed_by
@@ -139,13 +179,15 @@ AS $$
       SELECT
         wi.id AS work_item_id,
         wi.work_number,
-        wi.status
+        wi.status,
+        wi.title::TEXT AS title,
+        wl.relation_type::TEXT AS relation_type
       FROM public.work_links wl
       JOIN public.work_items wi ON wi.id = wl.work_item_id
       WHERE wl.entity_type = 'sales_order'
         AND wl.entity_id = so.id
         AND wi.status NOT IN ('done'::public.work_item_status, 'cancelled'::public.work_item_status)
-      ORDER BY wi.updated_at DESC, wi.id
+      ORDER BY wi.updated_at DESC, wi.id, wl.id
       LIMIT 1
     ) linked ON true
     WHERE so.status IN (
@@ -193,8 +235,18 @@ AS $$
     b.order_rep_name,
     b.order_rep_active,
     b.order_creator_id,
+    b.order_creator_name,
     b.credit_override,
     b.credit_override_by,
+    b.credit_override_by_name,
+    b.customer_credit_limit,
+    b.customer_credit_days,
+    b.last_credit_changed_at,
+    b.last_credit_changed_by,
+    b.last_credit_changed_by_name,
+    b.last_credit_reason,
+    b.last_credit_limit_before,
+    b.last_credit_limit_after,
     b.last_due_date_changed_at,
     b.last_due_date_changed_by,
     b.last_due_date_changed_by_name,
@@ -202,6 +254,8 @@ AS $$
     b.linked_work_item_id,
     b.linked_work_number,
     b.linked_work_status,
+    b.linked_work_title,
+    b.linked_work_relation_type,
     jsonb_build_object(
       'order_id', b.order_id,
       'order_number', b.order_number,
@@ -214,14 +268,20 @@ AS $$
       'days_overdue', b.days_overdue,
       'overdue_bucket', b.overdue_bucket,
       'credit_override', b.credit_override,
+      'customer_credit_limit', b.customer_credit_limit,
+      'customer_credit_days', b.customer_credit_days,
+      'last_credit_changed_at', b.last_credit_changed_at,
+      'last_credit_limit_before', b.last_credit_limit_before,
+      'last_credit_limit_after', b.last_credit_limit_after,
       'last_due_date_changed_at', b.last_due_date_changed_at,
-      'last_due_date_reason', b.last_due_date_reason,
       'existing_active_work', CASE
         WHEN b.linked_work_item_id IS NULL THEN NULL
         ELSE jsonb_build_object(
           'work_item_id', b.linked_work_item_id,
           'work_number', b.linked_work_number,
-          'status', b.linked_work_status
+          'status', b.linked_work_status,
+          'title', b.linked_work_title,
+          'relation_type', b.linked_work_relation_type
         )
       END
     ) AS facts,
@@ -246,13 +306,28 @@ AS $$
       END,
       'order_creator', jsonb_build_object(
         'user_id', b.order_creator_id,
+        'full_name', b.order_creator_name,
         'evidence_type', 'order_creator_not_necessarily_accountable'
       ),
       'credit_override', CASE
         WHEN NOT b.credit_override THEN NULL
         ELSE jsonb_build_object(
           'user_id', b.credit_override_by,
+          'full_name', b.credit_override_by_name,
           'evidence_type', 'explicit_credit_override'
+        )
+      END,
+      'customer_credit_change', CASE
+        WHEN b.last_credit_changed_at IS NULL THEN NULL
+        ELSE jsonb_build_object(
+          'changed_at', b.last_credit_changed_at,
+          'user_id', b.last_credit_changed_by,
+          'full_name', b.last_credit_changed_by_name,
+          'limit_before', b.last_credit_limit_before,
+          'limit_after', b.last_credit_limit_after,
+          'reason', b.last_credit_reason,
+          'content_trust', 'untrusted_human_text',
+          'evidence_type', 'customer_credit_limit_change'
         )
       END,
       'last_due_date_change', CASE
@@ -262,6 +337,7 @@ AS $$
           'user_id', b.last_due_date_changed_by,
           'full_name', b.last_due_date_changed_by_name,
           'reason', b.last_due_date_reason,
+          'content_trust', 'untrusted_human_text',
           'evidence_type', 'governed_due_date_change'
         )
       END
@@ -271,7 +347,9 @@ AS $$
       'confidence', 'system_record',
       'business_date', p_business_date,
       'remaining_balance_formula', 'total-paid-returned',
-      'timezone_semantics', 'explicit_business_date'
+      'timezone_semantics', 'explicit_business_date',
+      'human_text_policy', 'bounded_untrusted_data',
+      'human_text_max_chars', 500
     ) AS trust
   FROM bounded b;
 $$;
