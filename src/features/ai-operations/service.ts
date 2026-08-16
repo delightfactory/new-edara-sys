@@ -1,9 +1,23 @@
 import { AI_OPERATIONS_DATA_MODE } from '@/lib/config/features'
 import { supabase } from '@/lib/supabase/client'
-import { aiOpsCaseDetailSchema, aiOpsConsoleSnapshotSchema } from './contracts'
+import {
+  aiOpsCaseDecisionReviewResponseSchema,
+  aiOpsCaseDetailSchema,
+  aiOpsCommitDecisionResultSchema,
+  aiOpsConsoleSnapshotSchema,
+  aiOpsReviewDecisionResultSchema,
+} from './contracts'
 import { AI_OPERATIONS_PREVIEW_DATA } from './preview-data'
 import { AI_OPERATIONS_PREVIEW_CASE_DETAILS } from './preview-case-details'
-import type { AiOpsCaseDetail, AiOpsConsoleSnapshot, AiOpsDataMode } from './types'
+import type {
+  AiOpsCaseDecisionReviewResponse,
+  AiOpsCaseDetail,
+  AiOpsCommitDecisionResult,
+  AiOpsConsoleSnapshot,
+  AiOpsDataMode,
+  AiOpsHumanReviewState,
+  AiOpsReviewDecisionResult,
+} from './types'
 
 export class AiOperationsUnavailableError extends Error {
   readonly code = 'AI_OPERATIONS_NOT_READY'
@@ -39,6 +53,24 @@ function parseCaseDetailPayload(payload: unknown): AiOpsCaseDetail {
   return parsed.data as AiOpsCaseDetail
 }
 
+function parseDecisionReviewPayload(payload: unknown): AiOpsCaseDecisionReviewResponse {
+  const parsed = aiOpsCaseDecisionReviewResponseSchema.safeParse(payload)
+  if (!parsed.success) throw new AiOperationsContractError('بيانات مراجعة قرار AI Operations لا تطابق العقد المعتمد.')
+  return parsed.data as AiOpsCaseDecisionReviewResponse
+}
+
+function parseReviewResult(payload: unknown): AiOpsReviewDecisionResult {
+  const parsed = aiOpsReviewDecisionResultSchema.safeParse(payload)
+  if (!parsed.success) throw new AiOperationsContractError('نتيجة مراجعة قرار AI Operations غير صالحة.')
+  return parsed.data as AiOpsReviewDecisionResult
+}
+
+function parseCommitResult(payload: unknown): AiOpsCommitDecisionResult {
+  const parsed = aiOpsCommitDecisionResultSchema.safeParse(payload)
+  if (!parsed.success) throw new AiOperationsContractError('نتيجة إنشاء Work من قرار AI Operations غير صالحة.')
+  return parsed.data as AiOpsCommitDecisionResult
+}
+
 function clonePreview(): AiOpsConsoleSnapshot {
   return parseConsolePayload(structuredClone(AI_OPERATIONS_PREVIEW_DATA))
 }
@@ -51,6 +83,12 @@ function clonePreviewCaseDetail(caseId: string): AiOpsCaseDetail {
 
 function isMissingRpc(error: { code?: string; message?: string | null }) {
   return error.code === 'PGRST202' || /Could not find the function/i.test(error.message ?? '')
+}
+
+function assertRpcMutationMode(mode: AiOpsDataMode) {
+  if (mode !== 'rpc') {
+    throw new AiOperationsUnavailableError('Preview للقراءة فقط؛ لا يمكن اعتماد أو تنفيذ قرارات AI Operations منه.')
+  }
 }
 
 async function loadConsoleFromRpc(): Promise<AiOpsConsoleSnapshot> {
@@ -67,8 +105,6 @@ async function loadConsoleFromRpc(): Promise<AiOpsConsoleSnapshot> {
 }
 
 async function loadCaseDetailFromRpc(caseId: string): Promise<AiOpsCaseDetail> {
-  // Future bounded drill-down. It remains unavailable until the reviewed gateway
-  // migration is explicitly approved; preview mode never calls it.
   const { data, error } = await supabase.rpc('ai_ops_get_case_detail', { p_case_id: caseId })
 
   if (error) {
@@ -77,6 +113,17 @@ async function loadCaseDetailFromRpc(caseId: string): Promise<AiOpsCaseDetail> {
   }
 
   return parseCaseDetailPayload(data)
+}
+
+async function loadDecisionReviewFromRpc(caseId: string): Promise<AiOpsCaseDecisionReviewResponse> {
+  const { data, error } = await supabase.rpc('ai_ops_get_case_decision_review', { p_case_id: caseId })
+
+  if (error) {
+    if (isMissingRpc(error)) throw new AiOperationsUnavailableError()
+    throw error
+  }
+
+  return parseDecisionReviewPayload(data)
 }
 
 export async function getAiOperationsConsole(
@@ -97,4 +144,62 @@ export async function getAiOperationsCaseDetail(
 
   if (mode === 'preview') return clonePreviewCaseDetail(caseId)
   return loadCaseDetailFromRpc(caseId)
+}
+
+export async function getAiOperationsDecisionReview(
+  caseId: string,
+  options: AiOperationsServiceOptions = {},
+): Promise<AiOpsCaseDecisionReviewResponse> {
+  const mode = options.mode ?? AI_OPERATIONS_DATA_MODE
+  if (!caseId.trim()) throw new Error('Case ID مطلوب لتحميل مراجعة القرار.')
+
+  if (mode === 'preview') {
+    return parseDecisionReviewPayload({ case_id: caseId, decision: null })
+  }
+
+  return loadDecisionReviewFromRpc(caseId)
+}
+
+export async function reviewAiOperationsDecision(
+  decisionId: string,
+  reviewState: AiOpsHumanReviewState,
+  reviewNote?: string | null,
+  options: AiOperationsServiceOptions = {},
+): Promise<AiOpsReviewDecisionResult> {
+  const mode = options.mode ?? AI_OPERATIONS_DATA_MODE
+  assertRpcMutationMode(mode)
+  if (!decisionId.trim()) throw new Error('Decision ID مطلوب للمراجعة.')
+
+  const { data, error } = await supabase.rpc('ai_ops_review_decision', {
+    p_decision_id: decisionId,
+    p_review_state: reviewState,
+    p_review_note: reviewNote?.trim() || null,
+  })
+
+  if (error) {
+    if (isMissingRpc(error)) throw new AiOperationsUnavailableError()
+    throw error
+  }
+
+  return parseReviewResult(data)
+}
+
+export async function commitAiOperationsDecision(
+  decisionId: string,
+  options: AiOperationsServiceOptions = {},
+): Promise<AiOpsCommitDecisionResult> {
+  const mode = options.mode ?? AI_OPERATIONS_DATA_MODE
+  assertRpcMutationMode(mode)
+  if (!decisionId.trim()) throw new Error('Decision ID مطلوب لإنشاء Work.')
+
+  const { data, error } = await supabase.rpc('ai_ops_commit_reviewed_decision', {
+    p_decision_id: decisionId,
+  })
+
+  if (error) {
+    if (isMissingRpc(error)) throw new AiOperationsUnavailableError()
+    throw error
+  }
+
+  return parseCommitResult(data)
 }
