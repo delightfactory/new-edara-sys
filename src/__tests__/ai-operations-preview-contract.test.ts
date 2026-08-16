@@ -133,7 +133,7 @@ describe('AI Operations preview safety contract', () => {
   it('labels sample data clearly and documents that no database migration is applied', () => {
     expect(consolePanel).toContain('Preview آمن — بدون اتصال بقاعدة AI Operations')
     expect(consolePanel).toContain('بيانات مراجعة ثابتة')
-    expect(consolePanel).toContain('لا Migration مطبقة على الإنتاج')
+    expect(consolePanel).toContain('لا يتم قراءة أو كتابة أي بيانات تشغيلية.')
     expect(consolePanel).toContain('Preview لا يستدعي Supabase AI RPCs')
     expect(consolePanel).toContain('أدلة المسؤولية — لا يوجد Routing جامد')
   })
