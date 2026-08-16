@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const rpc = vi.fn()
+const { rpc } = vi.hoisted(() => ({ rpc: vi.fn() }))
 
 vi.mock('@/lib/supabase/client', () => ({
   supabase: { rpc },
