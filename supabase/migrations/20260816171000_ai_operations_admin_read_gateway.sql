@@ -63,7 +63,7 @@ BEGIN
   ORDER BY s.generated_at DESC, s.id DESC
   LIMIT 1;
 
-  SELECT COALESCE(jsonb_agg(run_row ORDER BY run_row.scheduled_for DESC), '[]'::JSONB)
+  SELECT COALESCE(jsonb_agg(run_row ORDER BY scheduled_for DESC), '[]'::JSONB)
   INTO v_runs
   FROM (
     SELECT jsonb_build_object(
