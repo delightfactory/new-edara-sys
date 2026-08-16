@@ -9,6 +9,10 @@
 --
 -- Replaces only the planner-local refresh routine so each mutable current case
 -- also gets an immutable per-snapshot evidence copy.
+--
+-- Capture is intentionally single-shot per snapshot. Idempotent retry belongs
+-- at build_credit_snapshot(), which reuses an existing snapshot before rereading
+-- any operational data.
 -- ============================================================================
 
 SET lock_timeout = '5s';
@@ -29,7 +33,9 @@ DECLARE
   v_candidate RECORD;
   v_case_id UUID;
   v_case_status TEXT;
+  v_case_payload_bytes INTEGER;
   v_count INTEGER := 0;
+  v_evidence_bytes BIGINT := 0;
 BEGIN
   SELECT * INTO v_snapshot
   FROM ai_ops.snapshots
@@ -37,6 +43,14 @@ BEGIN
 
   IF NOT FOUND THEN
     RAISE EXCEPTION 'ai_ops snapshot not found: %', p_snapshot_id;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM ai_ops.snapshot_cases sc
+    WHERE sc.snapshot_id = p_snapshot_id
+  ) THEN
+    RAISE EXCEPTION 'ai_ops snapshot evidence already captured: %', p_snapshot_id;
   END IF;
 
   FOR v_candidate IN
@@ -105,6 +119,19 @@ BEGIN
       updated_at = clock_timestamp()
     RETURNING id, status INTO v_case_id, v_case_status;
 
+    v_case_payload_bytes := octet_length(convert_to(
+      jsonb_build_object(
+        'case_key', v_candidate.case_key,
+        'domain', 'receivables',
+        'case_type', 'overdue_invoice',
+        'severity', v_candidate.severity,
+        'facts', v_candidate.facts,
+        'responsibility_evidence', v_candidate.responsibility_evidence,
+        'trust', v_candidate.trust
+      )::TEXT,
+      'UTF8'
+    ));
+
     INSERT INTO ai_ops.snapshot_cases(
       snapshot_id,
       case_id,
@@ -120,7 +147,8 @@ BEGIN
       source_as_of,
       facts,
       responsibility_evidence,
-      trust
+      trust,
+      payload_bytes
     ) VALUES (
       p_snapshot_id,
       v_case_id,
@@ -136,9 +164,11 @@ BEGIN
       v_snapshot.data_as_of,
       v_candidate.facts,
       v_candidate.responsibility_evidence,
-      v_candidate.trust
-    )
-    ON CONFLICT (snapshot_id, case_id) DO NOTHING;
+      v_candidate.trust,
+      v_case_payload_bytes
+    );
+
+    v_evidence_bytes := v_evidence_bytes + v_case_payload_bytes;
   END LOOP;
 
   RETURN jsonb_build_object(
@@ -148,6 +178,7 @@ BEGIN
     'case_type', 'overdue_invoice',
     'candidates_upserted', v_count,
     'snapshot_evidence_rows', v_count,
+    'snapshot_evidence_bytes', v_evidence_bytes,
     'resolution_performed', false
   );
 END;
@@ -158,7 +189,7 @@ REVOKE ALL ON FUNCTION ai_ops.refresh_credit_cases(UUID, DATE, INTEGER) FROM ano
 REVOKE ALL ON FUNCTION ai_ops.refresh_credit_cases(UUID, DATE, INTEGER) FROM authenticated;
 
 COMMENT ON FUNCTION ai_ops.refresh_credit_cases(UUID, DATE, INTEGER) IS
-  'Upserts current credit cases and freezes the exact ranked evidence in ai_ops.snapshot_cases for historical replay.';
+  'Single-shot evidence capture: upserts current credit cases and freezes exact ranked evidence/serialized byte size for historical replay. Retry through build_credit_snapshot().';
 
 RESET lock_timeout;
 RESET statement_timeout;
