@@ -17,7 +17,7 @@ export const aiOpsWorkerDecisionSchema = z.object({
   why_this_owner: z.string().max(800).optional(),
   why_now: z.string().max(800).optional(),
   expected_outcome: z.string().max(1000).optional(),
-  next_action_text: z.string().max(1000).optional(),
+  next_action_text: z.string().max(500).optional(),
   due_at: z.string().datetime({ offset: true }).nullable().optional(),
   review_after: z.string().datetime({ offset: true }).nullable().optional(),
 }).strict().superRefine((value, context) => {
