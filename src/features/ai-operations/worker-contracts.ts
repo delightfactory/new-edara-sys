@@ -131,7 +131,9 @@ const workerContextBodySchema = z.object({
     action_decisions: z.array(z.enum(['CREATE_WORK', 'ESCALATE'])),
     max_actions_per_run: z.number().int().min(0),
     monitor_requires_review_after: z.literal(true),
+    monitor_review_after_must_be_future: z.literal(true),
     create_work_requires: z.array(z.string()),
+    create_work_due_at_must_be_future: z.literal(true),
     rationale_is_concise_not_chain_of_thought: z.literal(true),
   }),
 })
