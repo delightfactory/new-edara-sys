@@ -4,12 +4,15 @@
 -- DESIGN-TIME MIGRATION ONLY. Do not apply until explicitly reviewed/approved.
 -- Depends on:
 --   * 20260816163504_ai_operations_foundation.sql
+--   * 20260816164500_ai_operations_snapshot_case_evidence.sql
 --   * 20260816165500_ai_operations_credit_case_engine.sql
+--   * 20260816170000_ai_operations_credit_snapshot_capture.sql
 --
 -- Purpose:
 --   * expose a SMALL, read-only management presentation surface
 --   * keep ai_ops tables private/non-Data-API
 --   * follow the deployed Work Management auth/permission pattern
+--   * read planner evidence from immutable snapshot_cases, never mutable facts
 --   * keep this UI gateway separate from any future AI-worker gateway
 --
 -- Security:
@@ -165,65 +168,60 @@ BEGIN
     ELSE '[]'::JSONB
   END;
 
-  SELECT COALESCE(jsonb_agg(case_row ORDER BY sort_severity DESC, sort_seen DESC), '[]'::JSONB)
+  SELECT COALESCE(jsonb_agg(case_row ORDER BY snapshot_rank ASC), '[]'::JSONB)
   INTO v_attention
   FROM (
     SELECT
-      CASE c.severity
-        WHEN 'critical' THEN 4
-        WHEN 'high' THEN 3
-        WHEN 'medium' THEN 2
-        ELSE 1
-      END AS sort_severity,
-      c.last_seen_at AS sort_seen,
+      sc.snapshot_rank,
       jsonb_build_object(
         'id', c.id,
-        'case_key', c.case_key,
-        'domain', c.domain,
-        'case_type', c.case_type,
-        'entity_type', c.entity_type,
-        'entity_id', c.entity_id,
+        'case_key', sc.case_key,
+        'domain', sc.domain,
+        'case_type', sc.case_type,
+        'entity_type', sc.entity_type,
+        'entity_id', sc.entity_id,
         'entity_label', CASE
-          WHEN c.domain = 'receivables' AND c.case_type = 'overdue_invoice' THEN
-            concat_ws(' · ', NULLIF(c.facts->>'order_number', ''), NULLIF(c.facts->>'customer_name', ''))
-          ELSE COALESCE(NULLIF(c.facts->>'entity_label', ''), c.case_key)
+          WHEN sc.domain = 'receivables' AND sc.case_type = 'overdue_invoice' THEN
+            concat_ws(' · ', NULLIF(sc.facts->>'order_number', ''), NULLIF(sc.facts->>'customer_name', ''))
+          ELSE COALESCE(NULLIF(sc.facts->>'entity_label', ''), sc.case_key)
         END,
-        'attention_class', c.attention_class,
-        'severity', c.severity,
+        'attention_class', sc.attention_class,
+        'severity', sc.severity,
         'status', c.status,
         'title', CASE
-          WHEN c.domain = 'receivables' AND c.case_type = 'overdue_invoice' THEN
+          WHEN sc.domain = 'receivables' AND sc.case_type = 'overdue_invoice' THEN
             'فاتورة متأخرة تحتاج مراجعة ائتمانية'
-          ELSE COALESCE(NULLIF(c.facts->>'title', ''), c.case_type)
+          ELSE COALESCE(NULLIF(sc.facts->>'title', ''), sc.case_type)
         END,
         'reason', CASE
-          WHEN c.domain = 'receivables' AND c.case_type = 'overdue_invoice' THEN
+          WHEN sc.domain = 'receivables' AND sc.case_type = 'overdue_invoice' THEN
             format(
               'الرصيد المتبقي %s؛ التأخير %s يوم. الحالة تحتاج تفسيرًا سببيًا قبل توجيه أي عمل.',
-              COALESCE(c.facts->>'remaining_amount', '—'),
-              COALESCE(c.facts->>'days_overdue', '—')
+              COALESCE(sc.facts->>'remaining_amount', '—'),
+              COALESCE(sc.facts->>'days_overdue', '—')
             )
-          ELSE COALESCE(NULLIF(c.facts->>'reason', ''), 'تحتاج الحالة مراجعة الأدلة قبل اتخاذ إجراء.')
+          ELSE COALESCE(NULLIF(sc.facts->>'reason', ''), 'تحتاج الحالة مراجعة الأدلة قبل اتخاذ إجراء.')
         END,
         'first_seen_at', c.first_seen_at,
         'last_seen_at', c.last_seen_at,
-        'source_as_of', c.source_as_of,
+        'source_as_of', sc.source_as_of,
         'responsibility_label', owner_profile.full_name,
         'responsibility_basis', latest_decision.responsibility_basis->>'summary',
         'value_label', CASE
-          WHEN c.facts ? 'remaining_amount' THEN (c.facts->>'remaining_amount') || ' EGP'
-          ELSE c.facts->>'value_label'
+          WHEN sc.facts ? 'remaining_amount' THEN (sc.facts->>'remaining_amount') || ' EGP'
+          ELSE sc.facts->>'value_label'
         END,
-        'has_existing_work', COALESCE((c.facts->'existing_active_work') IS NOT NULL, false),
+        'has_existing_work', COALESCE((sc.facts->'existing_active_work') IS NOT NULL, false),
         'linked_work_number', CASE
-          WHEN jsonb_typeof(c.facts->'existing_active_work') = 'object'
-            THEN (c.facts->'existing_active_work'->>'work_number')::BIGINT
+          WHEN jsonb_typeof(sc.facts->'existing_active_work') = 'object'
+            THEN (sc.facts->'existing_active_work'->>'work_number')::BIGINT
           ELSE NULL
         END,
         'recommended_decision', latest_decision.decision_type,
         'review_after', latest_decision.review_after
       ) AS case_row
-    FROM ai_ops.cases c
+    FROM ai_ops.snapshot_cases sc
+    JOIN ai_ops.cases c ON c.id = sc.case_id
     LEFT JOIN LATERAL (
       SELECT d.*
       FROM ai_ops.decisions d
@@ -233,9 +231,8 @@ BEGIN
     ) latest_decision ON true
     LEFT JOIN public.profiles owner_profile
       ON owner_profile.id = latest_decision.recommended_owner_user_id
-    WHERE c.last_snapshot_id = v_snapshot.id
-      AND c.status IN ('open', 'monitored', 'actioned', 'suppressed')
-    ORDER BY sort_severity DESC, c.last_seen_at DESC, c.id
+    WHERE sc.snapshot_id = v_snapshot.id
+    ORDER BY sc.snapshot_rank ASC
     LIMIT v_settings.max_cases_per_snapshot
   ) q;
 
@@ -270,7 +267,7 @@ GRANT EXECUTE ON FUNCTION public.ai_ops_get_console_snapshot() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.ai_ops_get_console_snapshot() TO service_role;
 
 COMMENT ON FUNCTION public.ai_ops_get_console_snapshot() IS
-  'Management UI read gateway for AI Operations. Requires active authenticated actor + work.policies.manage. Not a worker gateway.';
+  'Management UI read gateway for AI Operations. Requires active authenticated actor + work.policies.manage. Reads immutable snapshot evidence. Not a worker gateway.';
 
 CREATE OR REPLACE FUNCTION public.ai_ops_get_case_detail(p_case_id UUID)
 RETURNS JSONB
@@ -282,6 +279,7 @@ AS $$
 DECLARE
   v_actor UUID := auth.uid();
   v_case ai_ops.cases%ROWTYPE;
+  v_snapshot_case ai_ops.snapshot_cases%ROWTYPE;
   v_decision ai_ops.decisions%ROWTYPE;
   v_evidence JSONB := '[]'::JSONB;
   v_work JSONB := '[]'::JSONB;
@@ -305,13 +303,24 @@ BEGIN
     RAISE EXCEPTION 'AI Operations case not found';
   END IF;
 
+  SELECT sc.* INTO v_snapshot_case
+  FROM ai_ops.snapshot_cases sc
+  JOIN ai_ops.snapshots s ON s.id = sc.snapshot_id
+  WHERE sc.case_id = v_case.id
+  ORDER BY s.generated_at DESC, sc.snapshot_rank ASC
+  LIMIT 1;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'AI Operations immutable case evidence not found';
+  END IF;
+
   SELECT d.* INTO v_decision
   FROM ai_ops.decisions d
   WHERE d.case_id = v_case.id
   ORDER BY d.created_at DESC, d.revision DESC, d.id DESC
   LIMIT 1;
 
-  IF v_case.domain = 'receivables' AND v_case.case_type = 'overdue_invoice' THEN
+  IF v_snapshot_case.domain = 'receivables' AND v_snapshot_case.case_type = 'overdue_invoice' THEN
     WITH evidence_rows AS (
       SELECT * FROM (VALUES
         ('credit_override', 'صاحب قرار تجاوز الائتمان', 'direct', 'دليل مباشر على قرار استثناء ائتماني لهذه الفاتورة.'),
@@ -324,20 +333,20 @@ BEGIN
     )
     SELECT COALESCE(jsonb_agg(
       jsonb_build_object(
-        'evidence_type', COALESCE(v_case.responsibility_evidence->e.evidence_key->>'evidence_type', e.evidence_key),
+        'evidence_type', COALESCE(v_snapshot_case.responsibility_evidence->e.evidence_key->>'evidence_type', e.evidence_key),
         'label', e.label,
-        'user_id', v_case.responsibility_evidence->e.evidence_key->>'user_id',
-        'user_label', v_case.responsibility_evidence->e.evidence_key->>'full_name',
+        'user_id', v_snapshot_case.responsibility_evidence->e.evidence_key->>'user_id',
+        'user_label', v_snapshot_case.responsibility_evidence->e.evidence_key->>'full_name',
         'strength', e.strength,
         'active_work_actor', CASE
-          WHEN jsonb_typeof(v_case.responsibility_evidence->e.evidence_key->'active_work_actor') = 'boolean'
-            THEN (v_case.responsibility_evidence->e.evidence_key->>'active_work_actor')::BOOLEAN
+          WHEN jsonb_typeof(v_snapshot_case.responsibility_evidence->e.evidence_key->'active_work_actor') = 'boolean'
+            THEN (v_snapshot_case.responsibility_evidence->e.evidence_key->>'active_work_actor')::BOOLEAN
           ELSE NULL
         END,
-        'occurred_at', v_case.responsibility_evidence->e.evidence_key->>'changed_at',
+        'occurred_at', v_snapshot_case.responsibility_evidence->e.evidence_key->>'changed_at',
         'note', CASE
-          WHEN NULLIF(v_case.responsibility_evidence->e.evidence_key->>'reason', '') IS NOT NULL THEN
-            e.fixed_note || ' السبب المسجل: ' || left(v_case.responsibility_evidence->e.evidence_key->>'reason', 500)
+          WHEN NULLIF(v_snapshot_case.responsibility_evidence->e.evidence_key->>'reason', '') IS NOT NULL THEN
+            e.fixed_note || ' السبب المسجل: ' || left(v_snapshot_case.responsibility_evidence->e.evidence_key->>'reason', 500)
           ELSE e.fixed_note
         END
       )
@@ -345,15 +354,15 @@ BEGIN
     ), '[]'::JSONB)
     INTO v_evidence
     FROM evidence_rows e
-    WHERE jsonb_typeof(v_case.responsibility_evidence->e.evidence_key) = 'object';
+    WHERE jsonb_typeof(v_snapshot_case.responsibility_evidence->e.evidence_key) = 'object';
 
-    IF jsonb_typeof(v_case.facts->'existing_active_work') = 'object' THEN
+    IF jsonb_typeof(v_snapshot_case.facts->'existing_active_work') = 'object' THEN
       v_work := jsonb_build_array(jsonb_build_object(
-        'work_item_id', v_case.facts->'existing_active_work'->>'work_item_id',
-        'work_number', (v_case.facts->'existing_active_work'->>'work_number')::BIGINT,
-        'status', v_case.facts->'existing_active_work'->>'status',
-        'relation_type', COALESCE(v_case.facts->'existing_active_work'->>'relation_type', 'relates_to'),
-        'title', COALESCE(v_case.facts->'existing_active_work'->>'title', 'Work قائمة مرتبطة بالفاتورة')
+        'work_item_id', v_snapshot_case.facts->'existing_active_work'->>'work_item_id',
+        'work_number', (v_snapshot_case.facts->'existing_active_work'->>'work_number')::BIGINT,
+        'status', v_snapshot_case.facts->'existing_active_work'->>'status',
+        'relation_type', COALESCE(v_snapshot_case.facts->'existing_active_work'->>'relation_type', 'relates_to'),
+        'title', COALESCE(v_snapshot_case.facts->'existing_active_work'->>'title', 'Work قائمة مرتبطة بالفاتورة')
       ));
     END IF;
 
@@ -363,26 +372,26 @@ BEGIN
     WHERE c.status = 'active'
       AND (c.valid_until IS NULL OR c.valid_until > clock_timestamp())
       AND (
-        (c.subject_type = 'sales_order' AND c.subject_id = v_case.entity_id)
+        (c.subject_type = 'sales_order' AND c.subject_id = v_snapshot_case.entity_id)
         OR (
           c.subject_type = 'customer'
-          AND c.subject_id = NULLIF(v_case.facts->>'customer_id', '')::UUID
+          AND c.subject_id = NULLIF(v_snapshot_case.facts->>'customer_id', '')::UUID
         )
       );
   END IF;
 
   RETURN jsonb_build_object(
     'case_id', v_case.id,
-    'case_key', v_case.case_key,
-    'business_date', COALESCE(v_case.trust->>'business_date', v_case.last_seen_at::DATE::TEXT),
+    'case_key', v_snapshot_case.case_key,
+    'business_date', COALESCE(v_snapshot_case.trust->>'business_date', v_snapshot_case.created_at::DATE::TEXT),
     'facts', CASE
-      WHEN v_case.domain = 'receivables' AND v_case.case_type = 'overdue_invoice' THEN
+      WHEN v_snapshot_case.domain = 'receivables' AND v_snapshot_case.case_type = 'overdue_invoice' THEN
         jsonb_build_array(
-          jsonb_build_object('label', 'الرصيد المتبقي', 'value', COALESCE(v_case.facts->>'remaining_amount', '—') || ' EGP'),
-          jsonb_build_object('label', 'أيام التأخير', 'value', COALESCE(v_case.facts->>'days_overdue', '—') || ' يوم'),
-          jsonb_build_object('label', 'تاريخ الاستحقاق', 'value', COALESCE(v_case.facts->>'due_date', '—')),
-          jsonb_build_object('label', 'حد ائتمان العميل', 'value', COALESCE(v_case.facts->>'customer_credit_limit', '—') || ' EGP'),
-          jsonb_build_object('label', 'أيام الائتمان الحالية', 'value', COALESCE(v_case.facts->>'customer_credit_days', '—') || ' يوم')
+          jsonb_build_object('label', 'الرصيد المتبقي', 'value', COALESCE(v_snapshot_case.facts->>'remaining_amount', '—') || ' EGP'),
+          jsonb_build_object('label', 'أيام التأخير', 'value', COALESCE(v_snapshot_case.facts->>'days_overdue', '—') || ' يوم'),
+          jsonb_build_object('label', 'تاريخ الاستحقاق', 'value', COALESCE(v_snapshot_case.facts->>'due_date', '—')),
+          jsonb_build_object('label', 'حد ائتمان العميل', 'value', COALESCE(v_snapshot_case.facts->>'customer_credit_limit', '—') || ' EGP'),
+          jsonb_build_object('label', 'أيام الائتمان الحالية', 'value', COALESCE(v_snapshot_case.facts->>'customer_credit_days', '—') || ' يوم')
         )
       ELSE '[]'::JSONB
     END,
@@ -414,7 +423,7 @@ GRANT EXECUTE ON FUNCTION public.ai_ops_get_case_detail(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.ai_ops_get_case_detail(UUID) TO service_role;
 
 COMMENT ON FUNCTION public.ai_ops_get_case_detail(UUID) IS
-  'Lazy management-only AI Operations case drill-down. Read-only, permission-gated and separate from worker execution APIs.';
+  'Lazy management-only AI Operations case drill-down from immutable snapshot evidence. Read-only, permission-gated and separate from worker execution APIs.';
 
 RESET lock_timeout;
 RESET statement_timeout;
