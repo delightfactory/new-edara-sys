@@ -170,7 +170,11 @@ BEGIN
     v_reasons := v_reasons || jsonb_build_array('sales_progress_stale_for_action');
   END IF;
 
-  IF COALESCE((v_sc.trust->>'contribution_parity_ok')::BOOLEAN, false) = false THEN
+  -- A parity failure is useful evidence for INVESTIGATE/MONITOR. It blocks only
+  -- consequential action; otherwise the planner could not explicitly surface
+  -- the integrity problem for human review.
+  IF v_decision.decision_type IN ('CREATE_WORK','ESCALATE')
+     AND COALESCE((v_sc.trust->>'contribution_parity_ok')::BOOLEAN, false) = false THEN
     v_reasons := v_reasons || jsonb_build_array('sales_contribution_parity_failed');
   END IF;
 
