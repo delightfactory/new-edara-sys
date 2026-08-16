@@ -8,7 +8,11 @@ vi.mock('@/lib/supabase/client', () => ({
   supabase: { rpc },
 }))
 
-import { getAiOperationsConsole, AiOperationsUnavailableError } from '@/features/ai-operations/service'
+import {
+  getAiOperationsCaseDetail,
+  getAiOperationsConsole,
+  AiOperationsUnavailableError,
+} from '@/features/ai-operations/service'
 
 const features = readFileSync(resolve(process.cwd(), 'src/lib/config/features.ts'), 'utf8')
 const envExample = readFileSync(resolve(process.cwd(), '.env.example'), 'utf8')
@@ -36,6 +40,16 @@ describe('AI Operations preview safety contract', () => {
     expect(snapshot.attention.length).toBeGreaterThan(0)
   })
 
+  it('loads causal case evidence lazily in preview without touching Supabase', async () => {
+    const detail = await getAiOperationsCaseDetail('preview-case-001', { mode: 'preview' })
+
+    expect(rpc).not.toHaveBeenCalled()
+    expect(detail.decision_review.decision_type).toBe('MONITOR')
+    expect(detail.responsibility_evidence.some(item => item.evidence_type === 'explicit_credit_override' && item.strength === 'direct')).toBe(true)
+    expect(detail.responsibility_evidence.some(item => item.evidence_type === 'current_customer_assignment' && item.strength === 'supporting')).toBe(true)
+    expect(detail.decision_review.why_this_owner).toContain('صاحب قرار الاستثناء الائتماني')
+  })
+
   it('keeps preview fixtures isolated per call', async () => {
     const first = await getAiOperationsConsole({ mode: 'preview' })
     const second = await getAiOperationsConsole({ mode: 'preview' })
@@ -57,6 +71,16 @@ describe('AI Operations preview safety contract', () => {
     expect(rpc).toHaveBeenCalledWith('ai_ops_get_console_snapshot')
   })
 
+  it('keeps the future case-detail RPC explicit and bounded', async () => {
+    rpc.mockResolvedValueOnce({
+      data: null,
+      error: { code: 'PGRST202', message: 'Could not find the function public.ai_ops_get_case_detail' },
+    })
+
+    await expect(getAiOperationsCaseDetail('case-123', { mode: 'rpc' })).rejects.toBeInstanceOf(AiOperationsUnavailableError)
+    expect(rpc).toHaveBeenCalledWith('ai_ops_get_case_detail', { p_case_id: 'case-123' })
+  })
+
   it('requires an explicit preview feature flag and defaults the data adapter to preview', () => {
     expect(features).toContain("VITE_AI_OPERATIONS_PREVIEW === 'true'")
     expect(features).toContain("VITE_AI_OPERATIONS_DATA_MODE === 'rpc' ? 'rpc' : 'preview'")
@@ -76,5 +100,6 @@ describe('AI Operations preview safety contract', () => {
     expect(consolePanel).toContain('بيانات مراجعة ثابتة')
     expect(consolePanel).toContain('لا Migration مطبقة على الإنتاج')
     expect(consolePanel).toContain('Preview لا يستدعي Supabase AI RPCs')
+    expect(consolePanel).toContain('أدلة المسؤولية — لا يوجد Routing جامد')
   })
 })
