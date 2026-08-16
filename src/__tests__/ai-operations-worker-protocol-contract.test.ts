@@ -73,11 +73,12 @@ describe('AI Operations internal worker protocol contract', () => {
     expect(migration).toContain("'zero_action_run', v_action_count = 0")
   })
 
-  it('rejects chain-of-thought-like extra fields and limits rationale/action text', () => {
+  it('rejects chain-of-thought-like extra fields and bounds rationale/action text', () => {
     expect(migration).toContain('decision payload contains unsupported fields')
     expect(migration).toContain("'case_id','decision_type','concise_rationale','confidence'")
     expect(migration).toContain('NOT BETWEEN 1 AND 1200')
     expect(migration).toContain("length(COALESCE(item->>'expected_outcome','')) > 1000")
+    expect(inputGuardMigration).toContain('length(NEW.next_action_text) > 500')
     expect(migration).toContain("'chain_of_thought_stored', false")
   })
 
@@ -100,7 +101,7 @@ describe('AI Operations internal worker protocol contract', () => {
 
   it('keeps MONITOR and CREATE_WORK compatible with the first reviewed Work bridge', () => {
     expect(inputGuardMigration).toContain('MONITOR decisions require a future review_after')
-    expect(inputGuardMigration).toContain('CREATE_WORK requires explicit owner, assignee, expected_outcome, next_action_text and due_at')
+    expect(inputGuardMigration).toContain('CREATE_WORK requires explicit owner, assignee, expected_outcome, next_action_text <= 500 chars and due_at')
     expect(inputGuardMigration).toContain('CREATE_WORK due_at must be in the future')
     expect(contextAlignmentMigration).toContain("'recommended_assignee_user_id'")
     expect(contextAlignmentMigration).toContain("'due_at'")
@@ -124,5 +125,18 @@ describe('AI Operations internal worker protocol contract', () => {
       next_action_text: 'راجع العميل وسجل نتيجة التحصيل.',
     }])
     expect(createWork.success).toBe(false)
+
+    const oversizedNextAction = aiOpsWorkerDecisionBatchSchema.safeParse([{
+      case_id: '11111111-1111-4111-8111-111111111111',
+      decision_type: 'CREATE_WORK',
+      concise_rationale: 'الإجراء له قيمة تشغيلية واضحة.',
+      confidence: 0.9,
+      recommended_owner_user_id: '22222222-2222-4222-8222-222222222222',
+      recommended_assignee_user_id: '33333333-3333-4333-8333-333333333333',
+      expected_outcome: 'تحصيل أو حسم موقف الفاتورة.',
+      next_action_text: 'أ'.repeat(501),
+      due_at: new Date(Date.now() + 60_000).toISOString(),
+    }])
+    expect(oversizedNextAction.success).toBe(false)
   })
 })
