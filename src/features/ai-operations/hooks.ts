@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AI_OPERATIONS_DATA_MODE } from '@/lib/config/features'
 import {
   commitAiOperationsDecision,
+  setAiOperationsCaseDisposition,
   getAiOperationsCaseDetail,
   getAiOperationsConsole,
   getAiOperationsDecisionReview,
@@ -77,6 +78,26 @@ export function useCommitAiOperationsDecision() {
 
   return useMutation({
     mutationFn: ({ decisionId }: { decisionId: string }) => commitAiOperationsDecision(decisionId, { mode }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: aiOperationsKeys.all })
+    },
+  })
+}
+
+export function useSetAiOperationsCaseDisposition() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      caseId,
+      action,
+      until,
+      note,
+    }: {
+      caseId: string
+      action: 'snooze' | 'dismiss'
+      until: string | null
+      note?: string | null
+    }) => setAiOperationsCaseDisposition(caseId, action, until, note),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: aiOperationsKeys.all })
     },

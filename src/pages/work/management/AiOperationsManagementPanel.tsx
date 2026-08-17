@@ -28,6 +28,7 @@ import {
   useAiOperationsDecisionReview,
   useCommitAiOperationsDecision,
   useReviewAiOperationsDecision,
+  useSetAiOperationsCaseDisposition,
 } from '@/features/ai-operations/hooks'
 import type {
   AiOpsCase,
@@ -117,6 +118,9 @@ function commitBlockMessage(reason?: string) {
     work_actor_became_unavailable: 'أحد أطراف المسؤولية لم يعد متاحًا للتكليف.',
     proposed_due_at_not_future: 'الموعد المقترح لم يعد في المستقبل.',
     explicit_owner_assignee_and_due_required: 'ينقص القرار مالك أو منفذ أو موعد صريح.',
+    frozen_escalation_target_mismatch: 'تغيرت Work المستهدفة منذ التحليل؛ أوقف التنفيذ وانتظر تحليلًا جديدًا.',
+    active_coverage_or_work_health_recovery_collision_now: 'يوجد بالفعل إجراء تغطية أو معالجة نشط لنفس Work؛ لن يتم إنشاء إجراء مكرر.',
+    assignee_has_frozen_hr_unavailability_conflict: 'المنفذ المقترح لديه تعارض توافر موثق داخل نفس Snapshot.',
   }
   return reason ? (labels[reason] ?? `تم إيقاف التنفيذ: ${reason}`) : 'تم إيقاف التنفيذ احترازيًا.'
 }
@@ -148,8 +152,9 @@ function DecisionReviewPanel({
   const reviewQuery = useAiOperationsDecisionReview(caseId, !isPreview)
   const reviewMutation = useReviewAiOperationsDecision()
   const commitMutation = useCommitAiOperationsDecision()
+  const dispositionMutation = useSetAiOperationsCaseDisposition()
   const decision = reviewQuery.data?.decision ?? null
-  const busy = reviewMutation.isPending || commitMutation.isPending
+  const busy = reviewMutation.isPending || commitMutation.isPending || dispositionMutation.isPending
 
   if (isPreview) {
     return (
@@ -185,9 +190,15 @@ function DecisionReviewPanel({
   const canCommit = plannerEnabled
     && !shadowMode
     && decision.run_status === 'staged'
-    && decision.decision_type === 'CREATE_WORK'
+    && ['CREATE_WORK', 'ESCALATE'].includes(decision.decision_type)
     && decision.review_state === 'approved'
     && decision.validation_state === 'validated'
+    && decision.commit_status !== 'committed'
+
+  const canDisposition = plannerEnabled
+    && !shadowMode
+    && decision.run_status === 'staged'
+    && decision.review_state !== 'approved'
     && decision.commit_status !== 'committed'
 
   const validationTone = decision.validation_state === 'validated'
@@ -217,9 +228,9 @@ function DecisionReviewPanel({
       setReviewNote('')
       setActionMessage(
         reviewState === 'approved'
-          ? decision.decision_type === 'CREATE_WORK'
-            ? 'تم اعتماد القرار بعد إعادة التحقق. لم تُنشأ Work بعد؛ التنفيذ خطوة مستقلة أدناه.'
-            : 'تم اعتماد القرار وإغلاق خطوة المراجعة بدون إنشاء Work تلقائيًا.'
+          ? ['CREATE_WORK', 'ESCALATE'].includes(decision.decision_type)
+            ? 'تم اعتماد القرار بعد إعادة التحقق. لم يحدث تنفيذ تشغيلي بعد؛ التنفيذ خطوة مستقلة أدناه.'
+            : 'تم اعتماد القرار وإغلاق خطوة المراجعة بدون تنفيذ تشغيلي تلقائي.'
           : 'تم رفض القرار وتسجيل المراجعة كسجل غير قابل للاستبدال.',
       )
     } catch (error) {
@@ -238,14 +249,36 @@ function DecisionReviewPanel({
         setActionMessage(commitBlockMessage(result.reason))
         return
       }
+      const isEscalation = result.operational_mutation === 'work_escalation_overlay'
       setActionMessage(
-        result.work_number
-          ? `تم إنشاء Work #${result.work_number} بعد إعادة التحقق داخل نفس معاملة التنفيذ.`
-          : 'تم إنشاء Work المعتمدة بعد إعادة التحقق داخل نفس معاملة التنفيذ.',
+        isEscalation
+          ? result.work_number
+            ? `تم تنفيذ التصعيد على Work #${result.work_number} بعد إعادة التحقق داخل نفس معاملة التنفيذ.`
+            : 'تم تنفيذ التصعيد المعتمد بعد إعادة التحقق داخل نفس معاملة التنفيذ.'
+          : result.work_number
+            ? `تم إنشاء Work #${result.work_number} بعد إعادة التحقق داخل نفس معاملة التنفيذ.`
+            : 'تم إنشاء Work المعتمدة بعد إعادة التحقق داخل نفس معاملة التنفيذ.',
       )
     } catch (error) {
       setActionError(true)
       setActionMessage(error instanceof Error ? error.message : 'تعذر إنشاء Work المعتمدة.')
+    }
+  }
+
+  const handleDisposition = async (action: 'snooze' | 'dismiss') => {
+    setActionMessage(null)
+    setActionError(false)
+    try {
+      const hours = action === 'snooze' ? 24 : 24 * 7
+      const until = new Date(Date.now() + hours * 60 * 60 * 1000).toISOString()
+      await dispositionMutation.mutateAsync({ caseId, action, until, note: reviewNote })
+      setReviewNote('')
+      setActionMessage(action === 'snooze'
+        ? 'تم تأجيل الحالة 24 ساعة مع حفظ القرار الحالي كسياق للمراجعة القادمة.'
+        : 'تم استبعاد الحالة مؤقتًا لمدة 7 أيام؛ أي وقائع جديدة بعد انتهاء المدة ستسمح بإعادة تقييمها.')
+    } catch (error) {
+      setActionError(true)
+      setActionMessage(error instanceof Error ? error.message : 'تعذر تحديث حالة AI Operations.')
     }
   }
 
@@ -267,7 +300,7 @@ function DecisionReviewPanel({
           مراجعة: {decision.review_state === 'approved' ? 'معتمد' : decision.review_state === 'rejected' ? 'مرفوض' : 'لم يُراجع'}
         </span>
         <span className={`aiops-state-chip aiops-state-chip--${commitTone}`}>
-          تنفيذ: {decision.commit_status === 'committed' ? 'تم إنشاء Work' : decision.commit_status === 'rejected' ? 'موقوف' : decision.commit_status === 'failed' ? 'فشل' : 'لم يُنفذ'}
+          تنفيذ: {decision.commit_status === 'committed' ? 'تم التنفيذ' : decision.commit_status === 'rejected' ? 'موقوف' : decision.commit_status === 'failed' ? 'فشل' : 'لم يُنفذ'}
         </span>
         <span className="aiops-state-chip">Run: {runStatusLabel(decision.run_status)} · {decision.run_checkpoint}</span>
       </div>
@@ -317,8 +350,8 @@ function DecisionReviewPanel({
 
       {decision.committed_work_number && (
         <div className="aiops-reviewed-box">
-          <strong>Work الناتجة: #{decision.committed_work_number}</strong>
-          <span>تم الإنشاء: {formatDateTime(decision.committed_at)}</span>
+          <strong>{decision.decision_type === 'ESCALATE' ? 'Work المصعّدة' : 'Work الناتجة'}: #{decision.committed_work_number}</strong>
+          <span>تم التنفيذ: {formatDateTime(decision.committed_at)}</span>
         </div>
       )}
 
@@ -327,9 +360,6 @@ function DecisionReviewPanel({
       )}
       {!plannerEnabled && (
         <div className="aiops-review-readonly">الـPlanner متوقف حاليًا؛ لا يمكن اعتماد أو تنفيذ قرار جديد.</div>
-      )}
-      {decision.decision_type === 'ESCALATE' && decision.review_state === 'approved' && (
-        <div className="aiops-review-readonly">تنفيذ ESCALATE غير مدعوم في Credit slice الحالية؛ تُسجل المراجعة وتغلق الـRun كـpartial بدل ادعاء تنفيذ لم يحدث.</div>
       )}
 
       {canReview && (
@@ -358,8 +388,18 @@ function DecisionReviewPanel({
         )}
         {canCommit && (
           <button type="button" className="btn btn-primary" disabled={busy} onClick={handleCommit}>
-            <PlayCircle size={16} /> إنشاء Work المعتمدة
+            <PlayCircle size={16} /> {decision.decision_type === 'ESCALATE' ? 'تنفيذ التصعيد المعتمد' : 'إنشاء Work المعتمدة'}
           </button>
+        )}
+        {canDisposition && (
+          <>
+            <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => handleDisposition('snooze')}>
+              <Clock3 size={16} /> تأجيل 24 ساعة
+            </button>
+            <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => handleDisposition('dismiss')}>
+              <RotateCcw size={16} /> استبعاد مؤقت 7 أيام
+            </button>
+          </>
         )}
       </div>
 

@@ -203,3 +203,44 @@ export async function commitAiOperationsDecision(
 
   return parseCommitResult(data)
 }
+
+export type AiOperationsCaseDispositionAction = 'snooze' | 'dismiss'
+
+export interface AiOperationsCaseDispositionResult {
+  updated: boolean
+  idempotent_reuse?: boolean
+  case_id: string
+  case_status?: string
+  suppressed_until?: string | null
+  feedback_recorded?: boolean
+}
+
+export async function setAiOperationsCaseDisposition(
+  caseId: string,
+  action: AiOperationsCaseDispositionAction,
+  until: string | null,
+  note?: string | null,
+  options: AiOperationsServiceOptions = {},
+): Promise<AiOperationsCaseDispositionResult> {
+  const mode = options.mode ?? AI_OPERATIONS_DATA_MODE
+  assertRpcMutationMode(mode)
+  if (!caseId.trim()) throw new Error('Case ID مطلوب لتحديث الحالة.')
+
+  const { data, error } = await supabase.rpc('ai_ops_set_case_disposition', {
+    p_case_id: caseId,
+    p_action: action,
+    p_until: until,
+    p_note: note?.trim() || null,
+  })
+
+  if (error) {
+    if (isMissingRpc(error)) throw new AiOperationsUnavailableError()
+    throw error
+  }
+
+  if (!data || typeof data !== 'object' || Array.isArray(data) || (data as { case_id?: unknown }).case_id !== caseId) {
+    throw new AiOperationsContractError('نتيجة تحديث حالة AI Operations غير صالحة.')
+  }
+
+  return data as AiOperationsCaseDispositionResult
+}
