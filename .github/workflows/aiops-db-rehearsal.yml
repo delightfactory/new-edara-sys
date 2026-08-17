@@ -65,7 +65,19 @@ jobs:
           ROOT_DIR: ${{ github.workspace }}
         run: |
           set -euo pipefail
-          mapfile -t migrations < <(find "$ROOT_DIR/supabase/migrations" -maxdepth 1 -type f -name '*.sql' -printf '%f\n' | LC_ALL=C sort)
+          mapfile -t migrations < <(python3 - "$ROOT_DIR/supabase/migrations" <<'PY'
+          import pathlib, re, sys
+          root = pathlib.Path(sys.argv[1])
+          def key(path):
+              name = path.name
+              match = re.match(r'^(\d+)(.*)$', name)
+              if not match:
+                  return (10**30, name)
+              return (int(match.group(1)), match.group(2))
+          for path in sorted(root.glob('*.sql'), key=key):
+              print(path.name)
+          PY
+          )
           echo "Migration files: ${#migrations[@]}"
           for migration in "${migrations[@]}"; do
             echo "::group::$migration"
