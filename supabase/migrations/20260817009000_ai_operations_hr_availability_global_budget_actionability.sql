@@ -41,6 +41,11 @@ BEGIN
   SELECT * INTO v_snapshot FROM ai_ops.snapshots WHERE run_id=p_run_id;
   IF FOUND THEN
     IF EXISTS (SELECT 1 FROM ai_ops.snapshot_domain_captures dc WHERE dc.snapshot_id=v_snapshot.id AND dc.domain='hr_availability') THEN
+      IF NOT (SELECT COUNT(*)=7 FROM ai_ops.snapshot_domain_captures dc
+        WHERE dc.snapshot_id=v_snapshot.id
+          AND dc.domain=ANY(ARRAY['receivables','sales','customer_health','inventory','field_execution','work_health','hr_availability']::TEXT[])) THEN
+        RAISE EXCEPTION 'existing seven-domain snapshot is missing a required immutable domain capture marker';
+      END IF;
       SELECT COUNT(*)::INTEGER INTO v_total FROM ai_ops.snapshot_cases sc WHERE sc.snapshot_id=v_snapshot.id;
       IF v_total>v_limit THEN RAISE EXCEPTION 'existing snapshot case count % exceeds global limit %',v_total,v_limit; END IF;
       SELECT COALESCE(jsonb_agg(jsonb_build_object(
@@ -100,9 +105,13 @@ BEGIN
     END IF;
     SELECT COUNT(*)::INTEGER INTO v_existing_cases FROM ai_ops.snapshot_cases sc WHERE sc.snapshot_id=v_snapshot.id;
     v_remaining:=GREATEST(v_limit-v_existing_cases,0);
+    -- Re-read HR demand against the exact immutable snapshot data_as_of.
     SELECT COUNT(*)::INTEGER INTO v_hr_demand
     FROM ai_ops.hr_availability_candidates(v_run.business_date,v_snapshot.data_as_of,2000);
-    v_hr_alloc:=LEAST(v_hr_alloc,v_hr_demand,v_remaining);
+    -- Rebind the final HR allocation to the exact frozen snapshot timestamp and
+    -- consume only genuinely remaining capacity. If the preserved six-domain
+    -- build under-used its quota, HR may safely consume that residual budget.
+    v_hr_alloc:=LEAST(v_hr_demand,v_remaining);
   END IF;
 
   IF v_hr_alloc>0 THEN
