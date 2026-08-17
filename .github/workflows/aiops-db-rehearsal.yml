@@ -129,13 +129,92 @@ jobs:
           END $$;
           SQL
 
-      - name: Exercise safe planner-disabled worker path
+      - name: Exercise zero-case seven-domain worker lifecycle
         shell: bash
         env:
           DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
         run: |
           psql "$DB_URL" -X -v ON_ERROR_STOP=1 <<'SQL'
-          SELECT ai_ops.materialize_due_runs(clock_timestamp()) AS materialize_result;
+          DO $$
+          DECLARE
+            v_now timestamptz := clock_timestamp();
+            v_local_now timestamp := clock_timestamp() AT TIME ZONE 'Africa/Cairo';
+            v_day smallint := extract(dow from clock_timestamp() AT TIME ZONE 'Africa/Cairo')::smallint;
+            v_materialized jsonb;
+            v_claim jsonb;
+            v_context jsonb;
+            v_stage jsonb;
+            v_retry jsonb;
+            v_run_id uuid;
+            v_hash text;
+            v_status text;
+            v_checkpoint text;
+          BEGIN
+            UPDATE ai_ops.settings
+            SET planner_enabled=true, shadow_mode=true, auto_commit_enabled=false,
+                updated_at=clock_timestamp();
+
+            INSERT INTO ai_ops.run_schedules(
+              code,run_type,timezone,local_time,weekdays,recovery_window_minutes,enabled,settings
+            ) VALUES (
+              'ci_zero_case','morning','Africa/Cairo',
+              (v_local_now::time - interval '1 minute')::time,
+              ARRAY[v_day]::smallint[],180,true,'{}'::jsonb
+            );
+
+            v_materialized := public.ai_ops_worker_materialize_due_runs();
+            IF COALESCE((v_materialized->>'materialized')::integer,0) <> 1 THEN
+              RAISE EXCEPTION 'expected one due run materialized, got %', v_materialized;
+            END IF;
+
+            v_claim := public.ai_ops_worker_claim_next_run('ci-zero-worker',1200);
+            IF COALESCE((v_claim->>'claimed')::boolean,false) IS NOT TRUE THEN
+              RAISE EXCEPTION 'worker did not claim due run: %', v_claim;
+            END IF;
+            v_run_id := (v_claim->>'run_id')::uuid;
+
+            v_context := public.ai_ops_worker_get_context(v_run_id,'ci-zero-worker');
+            IF COALESCE((v_context->>'blocked')::boolean,false) THEN
+              RAISE EXCEPTION 'zero-case context unexpectedly blocked: %', v_context;
+            END IF;
+            v_hash := v_context->>'context_hash';
+            IF v_hash IS NULL THEN
+              RAISE EXCEPTION 'worker context hash missing';
+            END IF;
+            IF jsonb_array_length(v_context->'context'->'snapshot'->'domain_captures') <> 7 THEN
+              RAISE EXCEPTION 'worker context did not contain seven domain captures';
+            END IF;
+            IF jsonb_array_length(v_context->'context'->'cases') <> 0 THEN
+              RAISE EXCEPTION 'fresh isolated database should produce zero operational cases';
+            END IF;
+
+            v_stage := public.ai_ops_worker_stage_decisions(
+              v_run_id,'ci-zero-worker',v_hash,'[]'::jsonb
+            );
+            IF COALESCE((v_stage->>'staged')::boolean,false) IS NOT TRUE THEN
+              RAISE EXCEPTION 'zero-case decision set was not staged: %', v_stage;
+            END IF;
+            IF v_stage->'run_lifecycle'->>'status' IS DISTINCT FROM 'completed' THEN
+              RAISE EXCEPTION 'zero-case run did not close completed: %', v_stage;
+            END IF;
+
+            SELECT status,checkpoint INTO v_status,v_checkpoint
+            FROM ai_ops.planner_runs WHERE id=v_run_id;
+            IF v_status <> 'completed' OR v_checkpoint <> 'completed_zero_cases' THEN
+              RAISE EXCEPTION 'zero-case durable lifecycle mismatch: % / %', v_status,v_checkpoint;
+            END IF;
+
+            v_retry := public.ai_ops_worker_stage_decisions(
+              v_run_id,'ci-zero-worker',v_hash,'[]'::jsonb
+            );
+            IF COALESCE((v_retry->>'idempotent_reuse')::boolean,false) IS NOT TRUE THEN
+              RAISE EXCEPTION 'zero-case staging retry was not idempotent: %', v_retry;
+            END IF;
+
+            UPDATE ai_ops.settings
+            SET planner_enabled=false, shadow_mode=true, auto_commit_enabled=false,
+                updated_at=clock_timestamp();
+          END $$;
           SQL
 
       - name: Stop and delete isolated database
