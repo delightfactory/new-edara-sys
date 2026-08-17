@@ -36,7 +36,9 @@ jobs:
           cache: npm
 
       - name: Apply closure patch
-        run: python3 scripts/apply-aiops-closure.py
+        run: |
+          python3 scripts/apply-aiops-closure.py
+          python3 scripts/fix-aiops-closure-hook.py
 
       - name: Clean install
         run: npm ci --no-audit --no-fund
