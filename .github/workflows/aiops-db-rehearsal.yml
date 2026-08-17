@@ -1,0 +1,138 @@
+name: AI Operations Isolated Database Rehearsal
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/work-management
+    paths:
+      - supabase/rehearsal/RUN_AI_OPS_GATE
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aiops-db-rehearsal
+  cancel-in-progress: false
+
+jobs:
+  rehearsal:
+    name: Apply full migration chain and verify AI Operations runtime contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v7
+        with:
+          ref: feature/work-management
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Ensure PostgreSQL client exists
+        shell: bash
+        run: |
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y postgresql-client
+          fi
+          psql --version
+
+      - name: Initialize isolated Supabase project
+        shell: bash
+        env:
+          SUPABASE_TELEMETRY_DISABLED: '1'
+        run: |
+          mkdir -p .aiops-local
+          cd .aiops-local
+          npx --yes supabase@2.110.0 init
+
+      - name: Start isolated Supabase database only
+        shell: bash
+        env:
+          SUPABASE_TELEMETRY_DISABLED: '1'
+        run: |
+          cd .aiops-local
+          npx --yes supabase@2.110.0 db start
+
+      - name: Apply repository migration chain from zero
+        shell: bash
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+          ROOT_DIR: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          mapfile -t migrations < <(find "$ROOT_DIR/supabase/migrations" -maxdepth 1 -type f -name '*.sql' -printf '%f\n' | sort -V)
+          echo "Migration files: ${#migrations[@]}"
+          for migration in "${migrations[@]}"; do
+            echo "::group::$migration"
+            set +e
+            output="$(psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f "$ROOT_DIR/supabase/migrations/$migration" 2>&1)"
+            status=$?
+            set -e
+            printf '%s\n' "$output"
+            echo "::endgroup::"
+            if [ "$status" -ne 0 ]; then
+              error_message="$(printf '%s\n' "$output" | tail -n 18 | tr '\n' ' ' | sed -e 's/%/%25/g' -e 's/\r/%0D/g')"
+              echo "::error title=Migration failed: $migration::$error_message"
+              exit "$status"
+            fi
+          done
+
+      - name: Verify final AI Operations database surface
+        shell: bash
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          psql "$DB_URL" -X -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          DECLARE
+            v_domains text[];
+          BEGIN
+            IF to_regnamespace('ai_ops') IS NULL THEN
+              RAISE EXCEPTION 'ai_ops schema missing';
+            END IF;
+            v_domains := ai_ops.required_operational_domains();
+            IF cardinality(v_domains) <> 7 THEN
+              RAISE EXCEPTION 'expected seven operational domains, got %', cardinality(v_domains);
+            END IF;
+            IF to_regprocedure('public.ai_ops_commit_reviewed_decision(uuid)') IS NULL THEN
+              RAISE EXCEPTION 'reviewed decision commit gateway missing';
+            END IF;
+            IF to_regprocedure('public.ai_ops_set_case_disposition(uuid,text,timestamp with time zone,text)') IS NULL THEN
+              RAISE EXCEPTION 'case disposition gateway missing';
+            END IF;
+            IF to_regprocedure('public.ai_ops_worker_get_context(uuid,text)') IS NULL THEN
+              RAISE EXCEPTION 'service worker context gateway missing';
+            END IF;
+            IF has_function_privilege('authenticated','public.ai_ops_worker_get_context(uuid,text)','EXECUTE') THEN
+              RAISE EXCEPTION 'authenticated browser role can execute worker context gateway';
+            END IF;
+            IF NOT has_function_privilege('service_role','public.ai_ops_worker_get_context(uuid,text)','EXECUTE') THEN
+              RAISE EXCEPTION 'service_role lacks worker context gateway';
+            END IF;
+          END $$;
+          SQL
+
+      - name: Exercise safe planner-disabled worker path
+        shell: bash
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          psql "$DB_URL" -X -v ON_ERROR_STOP=1 <<'SQL'
+          SELECT ai_ops.materialize_due_runs(clock_timestamp()) AS materialize_result;
+          SQL
+
+      - name: Stop and delete isolated database
+        if: always()
+        shell: bash
+        env:
+          SUPABASE_TELEMETRY_DISABLED: '1'
+        run: |
+          if [ -d .aiops-local/supabase ]; then
+            cd .aiops-local
+            npx --yes supabase@2.110.0 stop --no-backup || true
+          fi
