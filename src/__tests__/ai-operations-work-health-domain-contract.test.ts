@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-const read = (name) => readFileSync(resolve(process.cwd(), `supabase/migrations/${name}`), 'utf8')
+const read = (name: string) => readFileSync(resolve(process.cwd(), `supabase/migrations/${name}`), 'utf8')
 
 const caseSql = read('20260817008100_ai_operations_work_health_case_engine.sql')
 const snapshotSql = read('20260817008200_ai_operations_work_health_snapshot_capture.sql')
