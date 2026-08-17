@@ -103,6 +103,8 @@ The canonical snapshot now supports immutable capture markers for:
 
 Unused reserved capacity may spill to another domain. If Customer Health demand exists but no global capacity remains, the snapshot records a `partial` zero-row capture marker rather than pretending the domain had no Cases.
 
+`partial` now has an explicit actionability distinction. Whole-domain coverage may be partial solely because the global budget intentionally omitted lower-ranked Cases. A selected Case can still be consequentially actionable only when its own immutable evidence is fully accounted for, the parent snapshot is `ready`, the capture version has trusted bounded-selection semantics, and `has_more=true` is the sole proven reason for partial coverage. Source/evidence partials, blocked snapshots, ambiguous metadata and zero-capacity markers remain fail closed.
+
 A previously captured Receivables/Sales snapshot may receive Customer Health only before a worker context hash is bound. Once reasoning has a context identity, the evidence set is immutable.
 
 The existing generic worker already consumes every `snapshot_case` and every `domain_capture`; no parallel Customer Health AI worker is introduced.
@@ -125,7 +127,7 @@ It fails closed when material state changed, including:
 - active customer-linked Work now collides;
 - escalation no longer points to active customer-linked Work;
 - proposed owner/assignee is unavailable;
-- Customer Health capture is incomplete for action;
+- selected Case evidence is incomplete/untrusted for action; bounded coverage-only partial does not by itself block a fully frozen selected Case;
 - newer governed customer/employee/target context appeared.
 
 The audited Receivables/Sales guard is preserved as a private primitive and Customer Health is added through the same canonical dispatcher.
@@ -159,7 +161,7 @@ Before proceeding to Inventory, the current branch should pass:
 
 - static architecture/security review;
 - Customer Health deterministic Case contract tests;
-- immutable snapshot/global budget contract tests;
+- immutable snapshot/global budget contract tests, including bounded-partial selected-Case actionability;
 - current-state drift contract tests;
 - human-reviewed Work bridge contract tests;
 - repository test/type-check/build/clean-install CI on the current HEAD.
