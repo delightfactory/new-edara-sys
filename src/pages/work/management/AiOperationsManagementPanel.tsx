@@ -713,7 +713,7 @@ export default function AiOperationsManagementPanel() {
               ) : (
                 <>
                   <li>الموافقة البشرية لا تنشئ Work تلقائيًا.</li>
-                  <li>CREATE_WORK فقط هي المدعومة تنفيذيًا في Credit slice الحالية.</li>
+                  <li>CREATE_WORK وESCALATE لا يُنفذان إلا بعد اعتماد بشري صريح وخطوة تنفيذ مستقلة.</li>
                   <li>التنفيذ يعيد التحقق من الواقع داخل نفس المعاملة.</li>
                   <li>Planner Off وShadow Mode يعملان كـKill Switch قبل أي Work جديدة.</li>
                 </>
