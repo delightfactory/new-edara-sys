@@ -904,30 +904,39 @@ REVOKE EXECUTE ON FUNCTION public.notify_expiring_contracts() FROM authenticated
 -- SECTION 4: CRON JOBS (pg_cron — already enabled)
 -- ═══════════════════════════════════════════════════════════════════════════
 
--- Idempotent: unschedule before re-scheduling
+-- Idempotent when pg_cron is available. Fresh/local databases may not have
+-- pg_cron enabled; notification functions must still migrate successfully and
+-- can be scheduled later when the extension is enabled.
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'notify-absent-employees') THEN
-    PERFORM cron.unschedule('notify-absent-employees');
-  END IF;
-  IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'notify-expiring-contracts') THEN
-    PERFORM cron.unschedule('notify-expiring-contracts');
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron')
+     AND to_regclass('cron.job') IS NOT NULL THEN
+    BEGIN
+      PERFORM cron.unschedule('notify-absent-employees');
+    EXCEPTION WHEN OTHERS THEN
+      NULL;
+    END;
+    BEGIN
+      PERFORM cron.unschedule('notify-expiring-contracts');
+    EXCEPTION WHEN OTHERS THEN
+      NULL;
+    END;
+
+    PERFORM cron.schedule(
+      'notify-absent-employees',
+      '0 14 * * *',
+      'SELECT public.notify_absent_employees();'
+    );
+    PERFORM cron.schedule(
+      'notify-expiring-contracts',
+      '0 8 * * *',
+      'SELECT public.notify_expiring_contracts();'
+    );
+    RAISE NOTICE '[46_notification_full_coverage] pg_cron jobs scheduled';
+  ELSE
+    RAISE NOTICE '[46_notification_full_coverage] pg_cron unavailable — notification functions installed; schedule jobs after enabling pg_cron';
   END IF;
 END $$;
-
--- Daily at 14:00 UTC (≈ 16:00 Cairo Standard Time — end of workday)
-SELECT cron.schedule(
-  'notify-absent-employees',
-  '0 14 * * *',
-  $$ SELECT public.notify_absent_employees(); $$
-);
-
--- Daily at 08:00 UTC (≈ 10:00 Cairo — morning check)
-SELECT cron.schedule(
-  'notify-expiring-contracts',
-  '0 8 * * *',
-  $$ SELECT public.notify_expiring_contracts(); $$
-);
 
 
 -- ═══════════════════════════════════════════════════════════════════════════
@@ -976,9 +985,14 @@ BEGIN
   )
     AND  trigger_schema = 'public';
 
-  SELECT COUNT(*) INTO v_cron_count
-  FROM   cron.job
-  WHERE  jobname IN ('notify-absent-employees', 'notify-expiring-contracts');
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron')
+     AND to_regclass('cron.job') IS NOT NULL THEN
+    SELECT COUNT(*) INTO v_cron_count
+    FROM   cron.job
+    WHERE  jobname IN ('notify-absent-employees', 'notify-expiring-contracts');
+  ELSE
+    v_cron_count := 0;
+  END IF;
 
   RAISE NOTICE '══════════════════════════════════════════════';
   RAISE NOTICE '[46_notification_full_coverage] RESULT:';
@@ -989,5 +1003,5 @@ BEGIN
 
   IF v_event_count  < 13 THEN RAISE WARNING '  ⚠️  Missing event keys'; END IF;
   IF v_trigger_count < 6  THEN RAISE WARNING '  ⚠️  Missing triggers';   END IF;
-  IF v_cron_count   < 2   THEN RAISE WARNING '  ⚠️  Missing cron jobs';  END IF;
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') AND v_cron_count < 2 THEN RAISE WARNING '  ⚠️  Missing cron jobs'; END IF;
 END $$;
