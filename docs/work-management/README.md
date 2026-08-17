@@ -24,7 +24,14 @@ This directory contains the design baseline, implementation closure notes, relea
 - `13_AI_OPERATIONS_PREVIEW_REVIEW_GUIDE.md` — database-free local Preview review flow for the control-center UI.
 - `14_AI_OPERATIONS_CREDIT_SLICE_IMPLEMENTATION_DELTA.md` — implementation-time corrections: immutable snapshot-case evidence, atomic snapshot building, context byte budgeting, conservative trust and UI/worker boundary.
 - `15_AI_OPERATIONS_DECISION_PIPELINE_IMPLEMENTATION_DELTA.md` — staged-decision, validation, human-review and explicit Work-commit runtime contract.
-- `16_AI_OPERATIONS_SALES_TARGETS_SOURCE_MAP.md` — production-reality map and implementation boundary for Sales & Targets, including canonical target truth, contribution parity, responsibility evidence and activity-evidence limits.
+- `16_AI_OPERATIONS_SALES_TARGETS_SOURCE_MAP.md` — production-reality map and implementation boundary for Sales & Targets.
+- `17_AI_OPERATIONS_MULTI_DOMAIN_SALES_INTEGRATION.md` — shared multi-domain worker/snapshot integration for Sales & Targets.
+- `18_AI_OPERATIONS_BUILD_ALL_DOMAINS_ACCEPTANCE_STRATEGY.md` — approved build-all strategy and deferred integrated local runtime acceptance.
+- `19_AI_OPERATIONS_CUSTOMER_HEALTH_DOMAIN.md` — Customer Health / Re-engagement deterministic Case, validation and reviewed Work contract.
+- `20_AI_OPERATIONS_INVENTORY_DOMAIN.md` — Inventory deterministic Case, snapshot, actionability and reviewed Work contract.
+- `21_AI_OPERATIONS_FIELD_EXECUTION_DOMAIN.md` — Visits / Field Execution domain implementation contract.
+- `22_AI_OPERATIONS_WORK_HEALTH_DOMAIN.md` — native Work Health continuity domain and recovery Work contract.
+- `23_AI_OPERATIONS_HR_AVAILABILITY_DOMAIN.md` — HR / Availability planning-constraint domain using official schedules, approved leave and explicit attendance state without employee scoring.
 
 The AI Operations Planner has **reviewable branch artifacts** (design-time SQL files, service contracts, Preview/RPC UI and tests), but the presence of these files does **not** mean the AI layer has been migrated, enabled, scheduled or deployed to production.
 
