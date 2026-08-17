@@ -29,6 +29,13 @@ function parseModelJson(text: string) {
   return JSON.parse(cleaned)
 }
 
+function stagedRunRemainsReviewable(staged: unknown) {
+  if (!staged || typeof staged !== 'object' || Array.isArray(staged)) return true
+  const lifecycle = (staged as { run_lifecycle?: unknown }).run_lifecycle
+  if (!lifecycle || typeof lifecycle !== 'object' || Array.isArray(lifecycle)) return true
+  return (lifecycle as { status?: unknown }).status === 'staged'
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (req.method !== 'POST') return jsonResponse({ error: 'method_not_allowed' }, 405)
@@ -142,7 +149,12 @@ Deno.serve(async (req) => {
       p_context_hash: contextResult.context_hash,
       p_decisions: decisions,
     })
-    const validated = await rpc('ai_ops_worker_validate_staged_run', { p_run_id: claimedRunId })
+
+    // Staging deliberately closes zero-case and shadow-mode runs. Validation is
+    // only legal while the durable lifecycle remains staged for human review.
+    const validated = stagedRunRemainsReviewable(staged)
+      ? await rpc('ai_ops_worker_validate_staged_run', { p_run_id: claimedRunId })
+      : { skipped: true, reason: 'run_terminal_after_staging' }
 
     return jsonResponse({ ok: true, claimed: true, run_id: claimedRunId, staged, validated })
   } catch (error) {
