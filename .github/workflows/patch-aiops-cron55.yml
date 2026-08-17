@@ -1,0 +1,60 @@
+name: Patch AI Ops Cron 55
+
+on:
+  push:
+    branches:
+      - feature/work-management
+    paths:
+      - .github/workflows/patch-aiops-cron55.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v7
+        with:
+          ref: feature/work-management
+          fetch-depth: 0
+
+      - name: Patch migration 55 pg_cron portability
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('supabase/migrations/55_notification_wave2_inventory_and_cron.sql')
+          text = path.read_text(encoding='utf-8')
+          original = text
+
+          start = text.index('-- PART 5: Cron Job Scheduling')
+          verify = text.index('-- VERIFICATION', start)
+          section_prefix = '-- ═══════════════════════════════════════════════════════════════════════════\n-- PART 5: Cron Job Scheduling\n-- ═══════════════════════════════════════════════════════════════════════════\n'
+          replacement = section_prefix + '''-- Fresh/local databases may not have pg_cron enabled. Install the alert\n-- functions regardless, and schedule only when the extension/catalog exists.\nDO $$\nBEGIN\n  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron')\n     AND to_regclass('cron.job') IS NOT NULL THEN\n    BEGIN\n      PERFORM cron.unschedule('check-low-stock-alerts');\n    EXCEPTION WHEN OTHERS THEN\n      NULL;\n    END;\n    BEGIN\n      PERFORM cron.unschedule('check-overdue-invoices');\n    EXCEPTION WHEN OTHERS THEN\n      NULL;\n    END;\n\n    PERFORM cron.schedule(\n      'check-low-stock-alerts',\n      '0 */4 * * *',\n      'SELECT public.check_low_stock_alerts();'\n    );\n    PERFORM cron.schedule(\n      'check-overdue-invoices',\n      '0 7 * * *',\n      'SELECT public.check_overdue_invoices();'\n    );\n    RAISE NOTICE '[55_notification_wave2] pg_cron jobs scheduled';\n  ELSE\n    RAISE NOTICE '[55_notification_wave2] pg_cron unavailable — alert functions installed; schedule jobs after enabling pg_cron';\n  END IF;\nEND $$;\n\n\n-- ═══════════════════════════════════════════════════════════════════════════\n'''
+          text = text[:start] + replacement + text[verify:]
+
+          verify_start = text.index('-- VERIFICATION', start)
+          verification = '''-- VERIFICATION\n-- ═══════════════════════════════════════════════════════════════════════════\nDO $$\nDECLARE\n  v_fn_count       INTEGER;\n  v_trg_count      INTEGER;\n  v_cron_count     INTEGER := 0;\n  v_cron_available BOOLEAN := FALSE;\nBEGIN\n  SELECT COUNT(*) INTO v_fn_count\n  FROM pg_proc\n  WHERE proname IN (\n    'notify_on_stock_transfer_change',\n    'notify_on_stock_adjustment_change',\n    'check_low_stock_alerts',\n    'check_overdue_invoices'\n  );\n\n  SELECT COUNT(*) INTO v_trg_count\n  FROM information_schema.triggers\n  WHERE trigger_name IN (\n    'trg_notify_stock_transfer_change',\n    'trg_notify_stock_adjustment_change'\n  );\n\n  v_cron_available := EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron')\n                      AND to_regclass('cron.job') IS NOT NULL;\n  IF v_cron_available THEN\n    EXECUTE $sql$\n      SELECT COUNT(*)\n      FROM cron.job\n      WHERE jobname IN ('check-low-stock-alerts', 'check-overdue-invoices')\n    $sql$ INTO v_cron_count;\n  END IF;\n\n  RAISE NOTICE '══════════════════════════════════════════════════════════';\n  RAISE NOTICE '[55_notification_wave2] VERIFICATION RESULT:';\n  RAISE NOTICE '  Functions registered:  % / 4', v_fn_count;\n  RAISE NOTICE '  Triggers registered:   % / 2', v_trg_count;\n  RAISE NOTICE '  Cron jobs registered:  % / 2 (available=%)', v_cron_count, v_cron_available;\n\n  RAISE NOTICE '  inventory.transfer.completed event: %',\n    CASE WHEN EXISTS (SELECT 1 FROM notification_event_types WHERE event_key = 'inventory.transfer.completed')\n    THEN '✅ seeded' ELSE '❌ MISSING' END;\n\n  RAISE NOTICE '  trg_notify_stock_transfer_change: %',\n    CASE WHEN EXISTS (SELECT 1 FROM information_schema.triggers WHERE trigger_name = 'trg_notify_stock_transfer_change')\n    THEN '✅ created' ELSE '❌ MISSING' END;\n\n  RAISE NOTICE '  trg_notify_stock_adjustment_change: %',\n    CASE WHEN EXISTS (SELECT 1 FROM information_schema.triggers WHERE trigger_name = 'trg_notify_stock_adjustment_change')\n    THEN '✅ created' ELSE '❌ MISSING' END;\n\n  IF v_cron_available THEN\n    RAISE NOTICE '  Cron scheduling: %', CASE WHEN v_cron_count = 2 THEN '✅ scheduled' ELSE '❌ INCOMPLETE' END;\n  ELSE\n    RAISE NOTICE '  Cron scheduling: ⚪ deferred — pg_cron unavailable in this database';\n  END IF;\n\n  IF v_fn_count = 4\n     AND v_trg_count = 2\n     AND (NOT v_cron_available OR v_cron_count = 2) THEN\n    RAISE NOTICE '  ✅ Wave 2 complete';\n  ELSE\n    RAISE WARNING '[55_wave2] ⚠️ Expected 4 functions / 2 triggers and, when available, 2 cron jobs';\n  END IF;\n  RAISE NOTICE '══════════════════════════════════════════════════════════';\nEND $$;\n'''
+          text = text[:verify_start] + verification
+
+          if text == original:
+              raise SystemExit('Patch made no change')
+          if 'FROM cron.job' in text and 'EXECUTE $sql$' not in text:
+              raise SystemExit('Unexpected unguarded cron.job reference remains')
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Commit patch and remove temporary workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/patch-aiops-cron55.yml
+          git add supabase/migrations/55_notification_wave2_inventory_and_cron.sql
+          git diff --cached --check
+          git commit -m "fix(notifications): guard wave2 cron scheduling"
+          git push origin HEAD:feature/work-management
