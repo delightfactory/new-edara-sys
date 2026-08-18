@@ -167,7 +167,9 @@ BEGIN
   END IF;
 
   -- Same-run duplicate operational actions must resolve deterministically before
-  -- Work is created. Keep the earliest staged decision and reject later duplicates.
+  -- Work is created. Keep the earliest still-viable staged decision and reject
+  -- only later duplicates. A technically rejected earlier decision never masks
+  -- a later alternative that could still be executable.
   IF v_decision.decision_type = 'CREATE_WORK'
      AND v_sc.entity_id IS NOT NULL
      AND EXISTS (
@@ -179,6 +181,7 @@ BEGIN
        WHERE d2.run_id = v_decision.run_id
          AND d2.id <> v_decision.id
          AND d2.decision_type = 'CREATE_WORK'
+         AND d2.validation_state IN ('pending','validated')
          AND sc2.entity_type = v_sc.entity_type
          AND sc2.entity_id = v_sc.entity_id
          AND (
@@ -197,6 +200,7 @@ BEGIN
        WHERE d2.run_id = v_decision.run_id
          AND d2.id <> v_decision.id
          AND d2.decision_type = 'ESCALATE'
+         AND d2.validation_state IN ('pending','validated')
          AND d2.linked_work_item_id = v_decision.linked_work_item_id
          AND (
            d2.created_at < v_decision.created_at
