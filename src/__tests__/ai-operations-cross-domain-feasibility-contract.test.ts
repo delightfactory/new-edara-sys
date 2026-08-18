@@ -26,6 +26,7 @@ describe('AI Operations cross-domain feasibility', () => {
     expect(hardeningMigration).toContain('assignee_explicitly_unavailable_for_immediate_action')
     expect(hardeningMigration).toContain('duplicate_same_entity_create_work_in_run')
     expect(hardeningMigration).toContain('duplicate_linked_work_escalation_in_run')
+    expect(hardeningMigration).toContain("d2.validation_state IN ('pending','validated')")
     expect(hardeningMigration).toContain('assignee_has_frozen_hr_unavailability_conflict')
     expect(hardeningMigration).toContain("ad.status::TEXT IN (\n          'on_leave','absent_authorized','absent_unauthorized','weekly_off','public_holiday'")
   })
