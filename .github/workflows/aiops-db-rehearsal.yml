@@ -5,14 +5,22 @@ on:
   push:
     branches:
       - feature/work-management
+      - fix/ai-operations-final-hardening
     paths:
       - supabase/rehearsal/RUN_AI_OPS_GATE
+      - supabase/migrations/*ai_operations*.sql
+      - .github/workflows/aiops-db-rehearsal.yml
+  pull_request:
+    paths:
+      - supabase/rehearsal/RUN_AI_OPS_GATE
+      - supabase/migrations/*ai_operations*.sql
+      - .github/workflows/aiops-db-rehearsal.yml
 
 permissions:
   contents: read
 
 concurrency:
-  group: aiops-db-rehearsal
+  group: aiops-db-rehearsal-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -22,10 +30,24 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: Checkout feature branch
+      - name: Checkout triggering commit
         uses: actions/checkout@v7
         with:
-          ref: feature/work-management
+          fetch-depth: 1
+
+      - name: Verify production migration history is untouched
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main --depth=1
+          git diff --exit-code origin/main -- \
+            supabase/migrations/46_notification_full_coverage.sql \
+            supabase/migrations/50_notification_dispatch_complete_fix.sql \
+            supabase/migrations/55_notification_wave2_inventory_and_cron.sql
+          if [ -e supabase/migrations/67b_customer_code_sequence_reservation.sql ]; then
+            echo "::error::Local rehearsal compatibility must not be shipped as a production migration"
+            exit 1
+          fi
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -58,6 +80,22 @@ jobs:
           cd .aiops-local
           npx --yes supabase@2.110.0 db start
 
+      - name: Prepare isolated database prerequisites
+        shell: bash
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          psql "$DB_URL" -X -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE EXTENSION IF NOT EXISTS pg_cron;
+          DO $$
+          BEGIN
+            IF to_regnamespace('cron') IS NULL THEN
+              RAISE EXCEPTION 'pg_cron prerequisite is unavailable in isolated database';
+            END IF;
+          END $$;
+          SQL
+
       - name: Apply repository migration chain from zero
         shell: bash
         env:
@@ -80,6 +118,32 @@ jobs:
           )
           echo "Migration files: ${#migrations[@]}"
           for migration in "${migrations[@]}"; do
+            # Rehearsal-only compatibility hook. Migration 68 imports explicit
+            # legacy CUS-xxxxx codes while also inserting rows that use the
+            # generator. Reserve that legacy range only in this disposable DB;
+            # never ship this as a production migration.
+            if [ "$migration" = "68_seed_customers.sql" ]; then
+              psql "$DB_URL" -X -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          DECLARE
+            v_existing_max bigint := 0;
+            v_sequence_last bigint := 0;
+            v_target bigint;
+          BEGIN
+            IF to_regclass('public.customers') IS NOT NULL
+               AND to_regclass('public.customer_code_seq') IS NOT NULL THEN
+              SELECT COALESCE(MAX(substring(code FROM '^CUS-([0-9]+)$')::bigint),0)
+                INTO v_existing_max
+              FROM public.customers
+              WHERE code ~ '^CUS-[0-9]+$';
+              SELECT last_value INTO v_sequence_last FROM public.customer_code_seq;
+              v_target := GREATEST(v_existing_max,v_sequence_last,1657);
+              PERFORM setval('public.customer_code_seq'::regclass,v_target,true);
+            END IF;
+          END $$;
+          SQL
+            fi
+
             echo "::group::$migration"
             set +e
             output="$(psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f "$ROOT_DIR/supabase/migrations/$migration" 2>&1)"
@@ -120,11 +184,17 @@ jobs:
             IF to_regprocedure('public.ai_ops_worker_get_context(uuid,text)') IS NULL THEN
               RAISE EXCEPTION 'service worker context gateway missing';
             END IF;
+            IF to_regprocedure('ai_ops.current_cross_domain_feasibility_evidence(uuid)') IS NULL THEN
+              RAISE EXCEPTION 'cross-domain feasibility evidence hardening missing';
+            END IF;
             IF has_function_privilege('authenticated','public.ai_ops_worker_get_context(uuid,text)','EXECUTE') THEN
               RAISE EXCEPTION 'authenticated browser role can execute worker context gateway';
             END IF;
             IF NOT has_function_privilege('service_role','public.ai_ops_worker_get_context(uuid,text)','EXECUTE') THEN
               RAISE EXCEPTION 'service_role lacks worker context gateway';
+            END IF;
+            IF has_function_privilege('authenticated','ai_ops.current_cross_domain_feasibility_evidence(uuid)','EXECUTE') THEN
+              RAISE EXCEPTION 'authenticated browser role can execute internal feasibility evidence';
             END IF;
           END $$;
           SQL
