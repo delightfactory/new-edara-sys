@@ -38,6 +38,8 @@ DECLARE
   v_now TIMESTAMPTZ := clock_timestamp();
   v_today DATE := (clock_timestamp() AT TIME ZONE 'Africa/Cairo')::DATE;
   v_blocking JSONB := '[]'::JSONB;
+  v_assignee_approved_leave_conflict BOOLEAN := false;
+  v_assignee_other_availability_conflict BOOLEAN := false;
   v_active_work_count INTEGER := 0;
   v_overdue_work_count INTEGER := 0;
   v_urgent_overdue_work_count INTEGER := 0;
@@ -113,7 +115,8 @@ BEGIN
   END IF;
 
   -- Resolve the assignee through the current HR source of truth. Only explicit,
-  -- current unavailability can become a blocker. Missing attendance never means absence.
+  -- current unavailability can become a blocker. Missing availability evidence
+  -- never means absence.
   IF v_decision.recommended_assignee_user_id IS NOT NULL THEN
     SELECT he.id
     INTO v_assignee_employee_id
@@ -126,29 +129,35 @@ BEGIN
     LIMIT 1;
   END IF;
 
-  -- A same-day/immediate action cannot be assigned through a known approved leave
-  -- or explicit unavailable attendance state. Future-dated leave is evidence for
-  -- planning, not a blanket blocker because the Work may be executed before due date.
+  -- Same-day/immediate feasibility must reuse the canonical HR Availability
+  -- candidate kernel. Cross-domain hardening must not independently interpret
+  -- leave or attendance transaction tables. Only a positively emitted current
+  -- conflict becomes a blocker; missing evidence remains non-blocking.
   IF v_assignee_employee_id IS NOT NULL AND v_due_local_date <= v_today THEN
-    IF EXISTS (
-      SELECT 1
-      FROM public.hr_leave_requests lr
-      WHERE lr.employee_id = v_assignee_employee_id
-        AND lr.status::TEXT = 'approved'
-        AND v_today BETWEEN lr.start_date AND lr.end_date
-    ) THEN
+    SELECT
+      COALESCE(bool_or(c.case_type = 'approved_leave_allocation_conflict'), false),
+      COALESCE(bool_or(c.case_type IN (
+        'nonworking_schedule_allocation_conflict',
+        'explicit_attendance_unavailable',
+        'employee_status_unavailable'
+      )), false)
+    INTO
+      v_assignee_approved_leave_conflict,
+      v_assignee_other_availability_conflict
+    FROM ai_ops.hr_availability_candidates(v_today, v_now, 2000) c
+    WHERE c.affected_employee_id = v_assignee_employee_id
+      AND c.case_type IN (
+        'approved_leave_allocation_conflict',
+        'nonworking_schedule_allocation_conflict',
+        'explicit_attendance_unavailable',
+        'employee_status_unavailable'
+      );
+
+    IF v_assignee_approved_leave_conflict THEN
       v_blocking := v_blocking || jsonb_build_array('assignee_on_approved_leave_for_immediate_action');
     END IF;
 
-    IF EXISTS (
-      SELECT 1
-      FROM public.hr_attendance_days ad
-      WHERE ad.employee_id = v_assignee_employee_id
-        AND ad.work_date = v_today
-        AND ad.status::TEXT IN (
-          'on_leave','absent_authorized','absent_unauthorized','weekly_off','public_holiday'
-        )
-    ) THEN
+    IF v_assignee_other_availability_conflict THEN
       v_blocking := v_blocking || jsonb_build_array('assignee_explicitly_unavailable_for_immediate_action');
     END IF;
   END IF;

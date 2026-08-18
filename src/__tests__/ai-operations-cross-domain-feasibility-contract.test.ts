@@ -20,15 +20,22 @@ describe('AI Operations cross-domain feasibility', () => {
     expect(initialMigration).toContain('private.work_actor_is_active')
   })
 
-  it('hardens feasibility with explicit current availability and deterministic duplicate blocking', () => {
+  it('reuses canonical HR availability evidence and deterministically blocks only viable duplicates', () => {
     expect(hardeningMigration).toContain('current_cross_domain_feasibility_evidence')
+    expect(hardeningMigration).toContain('ai_ops.hr_availability_candidates(v_today, v_now, 2000)')
+    expect(hardeningMigration).toContain("'approved_leave_allocation_conflict'")
+    expect(hardeningMigration).toContain("'explicit_attendance_unavailable'")
     expect(hardeningMigration).toContain('assignee_on_approved_leave_for_immediate_action')
     expect(hardeningMigration).toContain('assignee_explicitly_unavailable_for_immediate_action')
     expect(hardeningMigration).toContain('duplicate_same_entity_create_work_in_run')
     expect(hardeningMigration).toContain('duplicate_linked_work_escalation_in_run')
-    expect(hardeningMigration).toContain("d2.validation_state IN ('pending','validated')")
+    const duplicateEligibilityFilters = hardeningMigration.match(
+      /d2\.validation_state IN \('pending','validated'\)/g,
+    ) ?? []
+    expect(duplicateEligibilityFilters).toHaveLength(2)
     expect(hardeningMigration).toContain('assignee_has_frozen_hr_unavailability_conflict')
-    expect(hardeningMigration).toContain("ad.status::TEXT IN (\n          'on_leave','absent_authorized','absent_unauthorized','weekly_off','public_holiday'")
+    expect(hardeningMigration).not.toContain('public.hr_leave_requests')
+    expect(hardeningMigration).not.toContain('public.hr_attendance_days')
   })
 
   it('surfaces workload, visits and dependency/approval evidence without inventing a productivity threshold', () => {
