@@ -8,6 +8,11 @@ const migration = readFileSync(resolve(
   'supabase/migrations/20260817006000_ai_operations_multi_domain_worker.sql',
 ), 'utf8')
 
+const closure = readFileSync(resolve(
+  process.cwd(),
+  'supabase/migrations/20260817010400_ai_operations_snapshot_global_context_freeze.sql',
+), 'utf8')
+
 const executableSql = migration
   .split('\n')
   .filter(line => !line.trimStart().startsWith('--'))
@@ -55,6 +60,8 @@ describe('AI Operations multi-domain worker contract', () => {
     expect(migration).not.toMatch(/WHERE sc\.snapshot_id = v_snapshot\.id\s+AND sc\.domain = 'receivables'/)
     expect(migration).toContain("'all_domain_captures_complete'")
     expect(migration).toContain("'multi_domain_context', true")
+    expect(closure).toContain("'{planner_policy}'")
+    expect(closure).toContain("'{global_operational_context}'")
   })
 
   it('recomputes byte budget and context identity after sales evidence is included', () => {
@@ -94,14 +101,17 @@ describe('AI Operations multi-domain worker contract', () => {
     }
   })
 
-  it('types both receivables and sales domain captures in the worker response', () => {
+  it('types the final multi-domain context including policy and frozen global planning frame', () => {
     const now = new Date().toISOString()
     const parsed = aiOpsWorkerContextResponseSchema.safeParse({
       blocked: false,
       context_hash: 'a'.repeat(32),
       context_hash_algorithm: 'md5-jsonb-identity',
-      context_bytes: 1024,
+      context_bytes: 2048,
       context_limit_bytes: 65536,
+      prompt_hash: 'b'.repeat(32),
+      planner_policy_version: 'v1',
+      prompt_version: 'v2',
       context: {
         contract_version: 'v1',
         run: {
@@ -112,7 +122,7 @@ describe('AI Operations multi-domain worker contract', () => {
           scheduled_for: now,
           attempt_no: 1,
           planner_policy_version: 'v1',
-          prompt_version: 'v1',
+          prompt_version: 'v2',
         },
         snapshot: {
           snapshot_id: '22222222-2222-4222-8222-222222222222',
@@ -165,6 +175,24 @@ describe('AI Operations multi-domain worker contract', () => {
           create_work_requires: ['recommended_owner_user_id','recommended_assignee_user_id','expected_outcome','next_action_text','due_at'],
           create_work_due_at_must_be_future: true,
           rationale_is_concise_not_chain_of_thought: true,
+        },
+        planner_policy: {
+          policy_version: 'v1',
+          prompt_version: 'v2',
+          prompt_hash: 'b'.repeat(32),
+          system_prompt: 'Versioned bounded management policy',
+          methodology: { zero_actions_valid: true },
+        },
+        global_operational_context: {
+          source: 'same_frozen_snapshot',
+          actor_feasibility: [],
+          cross_domain_entity_links: { customers: [], products: [] },
+        },
+        reconciliation: {
+          complete_domains_reconciled: 7,
+          domains_skipped_as_partial: 0,
+          cases_resolved: 0,
+          cases_reopened_after_terminal_work: 0,
         },
       },
     })
