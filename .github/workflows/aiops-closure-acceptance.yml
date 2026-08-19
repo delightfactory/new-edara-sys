@@ -1,0 +1,322 @@
+name: AI Operations Closure Acceptance
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/work-management
+    paths:
+      - supabase/rehearsal/RUN_AI_OPS_GATE
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aiops-closure-acceptance
+  cancel-in-progress: false
+
+jobs:
+  repository-gates:
+    name: Tests, type-check and production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VITE_SUPABASE_URL: https://example.supabase.co
+      VITE_SUPABASE_ANON_KEY: test-anon-key
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: feature/work-management
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Clean install
+        run: npm ci --no-audit --no-fund
+      - name: Full test suite
+        run: npm test
+      - name: Type-check and production build
+        run: npm run build
+
+  clean-install-windows:
+    name: Clean install on Windows
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: feature/work-management
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Clean install
+        run: npm ci --no-audit --no-fund
+
+  isolated-db:
+    name: Full migration chain and replay-safe worker runtime
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: feature/work-management
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Ensure PostgreSQL client exists
+        shell: bash
+        run: |
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y postgresql-client
+          fi
+          psql --version
+      - name: Initialize isolated Supabase project
+        shell: bash
+        env:
+          SUPABASE_TELEMETRY_DISABLED: '1'
+        run: |
+          mkdir -p .aiops-local
+          cd .aiops-local
+          npx --yes supabase@2.110.0 init
+      - name: Start isolated database
+        shell: bash
+        env:
+          SUPABASE_TELEMETRY_DISABLED: '1'
+        run: |
+          cd .aiops-local
+          npx --yes supabase@2.110.0 db start
+      - name: Apply complete repository migration chain from zero
+        shell: bash
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+          ROOT_DIR: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          mapfile -t migrations < <(python3 - "$ROOT_DIR/supabase/migrations" <<'PY'
+          import pathlib, re, sys
+          root = pathlib.Path(sys.argv[1])
+          def key(path):
+              match = re.match(r'^(\d+)(.*)$', path.name)
+              return (int(match.group(1)), match.group(2)) if match else (10**30, path.name)
+          for path in sorted(root.glob('*.sql'), key=key):
+              print(path.name)
+          PY
+          )
+          echo "Migration files: ${#migrations[@]}"
+          for migration in "${migrations[@]}"; do
+            echo "::group::$migration"
+            set +e
+            output="$(psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f "$ROOT_DIR/supabase/migrations/$migration" 2>&1)"
+            status=$?
+            set -e
+            printf '%s\n' "$output"
+            echo "::endgroup::"
+            if [ "$status" -ne 0 ]; then
+              error_message="$(printf '%s\n' "$output" | tail -n 20 | tr '\n' ' ' | sed -e 's/%/%25/g' -e 's/\r/%0D/g')"
+              echo "::error title=Migration failed: $migration::$error_message"
+              exit "$status"
+            fi
+          done
+      - name: Verify final closure surface and security
+        shell: bash
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          psql "$DB_URL" -X -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          DECLARE
+            v_domains text[];
+            v_settings ai_ops.settings%ROWTYPE;
+            v_prompt text;
+            v_prompt_hash text;
+          BEGIN
+            SELECT * INTO v_settings FROM ai_ops.settings WHERE singleton=true;
+            IF NOT FOUND THEN RAISE EXCEPTION 'AI Operations settings missing'; END IF;
+            IF v_settings.planner_enabled OR NOT v_settings.shadow_mode OR v_settings.auto_commit_enabled THEN
+              RAISE EXCEPTION 'closure defaults are not safe: %',row_to_json(v_settings);
+            END IF;
+            IF v_settings.prompt_version IS DISTINCT FROM 'v3' THEN
+              RAISE EXCEPTION 'expected final prompt v3, got %',v_settings.prompt_version;
+            END IF;
+
+            v_domains:=ai_ops.required_operational_domains();
+            IF cardinality(v_domains)<>7 THEN
+              RAISE EXCEPTION 'expected seven operational domains, got %',cardinality(v_domains);
+            END IF;
+
+            FOR v_prompt IN SELECT unnest(ARRAY[
+              'ai_ops.planner_policies',
+              'ai_ops.case_outcomes',
+              'ai_ops.snapshot_global_context',
+              'ai_ops.snapshot_reconciliation',
+              'ai_ops.snapshot_context_runtime_metadata',
+              'ai_ops.decision_review_bindings',
+              'ai_ops.operational_context_events'
+            ]) LOOP
+              IF to_regclass(v_prompt) IS NULL THEN RAISE EXCEPTION 'required closure relation missing: %',v_prompt; END IF;
+            END LOOP;
+
+            SELECT p.system_prompt,p.prompt_hash
+            INTO v_prompt,v_prompt_hash
+            FROM ai_ops.planner_policies p
+            WHERE p.policy_version='v1' AND p.prompt_version='v3' AND p.enabled=true;
+            IF v_prompt IS NULL OR v_prompt_hash IS DISTINCT FROM md5(v_prompt) THEN
+              RAISE EXCEPTION 'v3 policy/hash contract invalid';
+            END IF;
+            IF position('FINAL OUTPUT CONTRACT PRECEDENCE' in v_prompt)=0
+               OR position('Compare expected business value with interruption cost' in v_prompt)=0 THEN
+              RAISE EXCEPTION 'v3 policy is missing required management methodology/contract';
+            END IF;
+
+            IF to_regprocedure('ai_ops.decision_full_fingerprint(uuid)') IS NULL
+               OR to_regprocedure('ai_ops.build_actor_feasibility_evidence(uuid)') IS NULL
+               OR to_regprocedure('ai_ops.build_cross_domain_entity_links(uuid)') IS NULL
+               OR to_regprocedure('ai_ops.capture_snapshot_reconciliation(uuid,uuid,jsonb)') IS NULL
+               OR to_regprocedure('ai_ops.capture_first_context_attempt(uuid,uuid,integer)') IS NULL THEN
+              RAISE EXCEPTION 'one or more closure internal helpers are missing';
+            END IF;
+
+            IF to_regprocedure('public.ai_ops_worker_get_context(uuid,text)') IS NULL
+               OR to_regprocedure('public.ai_ops_worker_stage_decisions(uuid,text,text,jsonb)') IS NULL
+               OR to_regprocedure('public.ai_ops_commit_reviewed_decision(uuid)') IS NULL
+               OR to_regprocedure('public.ai_ops_revise_decision(uuid,uuid,uuid,text,text,timestamp with time zone,text,text,text)') IS NULL
+               OR to_regprocedure('public.ai_ops_create_operational_context(text,uuid,text,text,uuid,timestamp with time zone,text)') IS NULL
+               OR to_regprocedure('public.ai_ops_revoke_operational_context(uuid,text)') IS NULL THEN
+              RAISE EXCEPTION 'one or more final public gateways are missing';
+            END IF;
+            IF to_regprocedure('public.ai_ops_revise_decision(uuid,uuid,uuid,text,text,timestamp with time zone,text)') IS NOT NULL THEN
+              RAISE EXCEPTION 'legacy public revision signature still exists';
+            END IF;
+
+            IF has_function_privilege('authenticated','public.ai_ops_worker_get_context(uuid,text)','EXECUTE')
+               OR has_function_privilege('anon','public.ai_ops_worker_get_context(uuid,text)','EXECUTE') THEN
+              RAISE EXCEPTION 'browser roles can execute worker context gateway';
+            END IF;
+            IF NOT has_function_privilege('service_role','public.ai_ops_worker_get_context(uuid,text)','EXECUTE') THEN
+              RAISE EXCEPTION 'service_role lacks worker context gateway';
+            END IF;
+          END $$;
+          SQL
+      - name: Exercise deterministic zero-case v3 lifecycle and exact context replay
+        shell: bash
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          psql "$DB_URL" -X -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          DECLARE
+            v_local_now timestamp:=clock_timestamp() AT TIME ZONE 'Africa/Cairo';
+            v_day smallint:=extract(dow from clock_timestamp() AT TIME ZONE 'Africa/Cairo')::smallint;
+            v_materialized jsonb;
+            v_claim jsonb;
+            v_context1 jsonb;
+            v_context2 jsonb;
+            v_stage jsonb;
+            v_retry jsonb;
+            v_run_id uuid;
+            v_snapshot_id uuid;
+            v_hash text;
+            v_status text;
+            v_checkpoint text;
+          BEGIN
+            UPDATE ai_ops.settings
+            SET planner_enabled=true,shadow_mode=true,auto_commit_enabled=false,updated_at=clock_timestamp();
+
+            INSERT INTO ai_ops.run_schedules(
+              code,run_type,timezone,local_time,weekdays,recovery_window_minutes,enabled,settings
+            ) VALUES (
+              'closure_zero_case','morning','Africa/Cairo',
+              (v_local_now::time-interval '1 minute')::time,
+              ARRAY[v_day]::smallint[],180,true,'{}'::jsonb
+            );
+
+            v_materialized:=public.ai_ops_worker_materialize_due_runs();
+            IF COALESCE((v_materialized->>'materialized')::integer,0)<>1 THEN
+              RAISE EXCEPTION 'expected one materialized run: %',v_materialized;
+            END IF;
+
+            v_claim:=public.ai_ops_worker_claim_next_run('closure-worker',1200);
+            IF COALESCE((v_claim->>'claimed')::boolean,false) IS NOT TRUE THEN
+              RAISE EXCEPTION 'worker did not claim run: %',v_claim;
+            END IF;
+            v_run_id:=(v_claim->>'run_id')::uuid;
+
+            v_context1:=public.ai_ops_worker_get_context(v_run_id,'closure-worker');
+            IF COALESCE((v_context1->>'blocked')::boolean,false) THEN
+              RAISE EXCEPTION 'first worker context blocked: %',v_context1;
+            END IF;
+            IF v_context1->>'prompt_version' IS DISTINCT FROM 'v3'
+               OR v_context1->'context'->'planner_policy'->>'prompt_version' IS DISTINCT FROM 'v3'
+               OR v_context1->'context'->'decision_contract'->>'final_output_contract_version' IS DISTINCT FROM 'v3' THEN
+              RAISE EXCEPTION 'final v3 policy/decision contract mismatch';
+            END IF;
+            IF jsonb_array_length(v_context1->'context'->'snapshot'->'domain_captures')<>7 THEN
+              RAISE EXCEPTION 'worker context does not contain seven domain captures';
+            END IF;
+            IF jsonb_array_length(v_context1->'context'->'cases')<>0 THEN
+              RAISE EXCEPTION 'fresh isolated database should produce zero cases';
+            END IF;
+            IF jsonb_array_length(v_context1->'context'->'decision_contract'->'action_quality_requires')<>7 THEN
+              RAISE EXCEPTION 'quality decision contract incomplete';
+            END IF;
+            IF COALESCE((v_context1->'context'->'global_operational_context'->'learning_evidence_semantics'->>'strict_snapshot_as_of')::boolean,false) IS NOT TRUE THEN
+              RAISE EXCEPTION 'learning evidence is not snapshot-as-of guarded';
+            END IF;
+            IF COALESCE((v_context1->'context'->'global_operational_context'->'feasibility_semantics'->>'explicit_hr_unavailability_is_hard')::boolean,false) IS NOT TRUE THEN
+              RAISE EXCEPTION 'cross-domain feasibility semantics missing';
+            END IF;
+
+            v_hash:=v_context1->>'context_hash';
+            v_context2:=public.ai_ops_worker_get_context(v_run_id,'closure-worker');
+            IF COALESCE((v_context2->>'blocked')::boolean,false) THEN
+              RAISE EXCEPTION 'second worker context blocked: %',v_context2;
+            END IF;
+            IF v_context2->>'context_hash' IS DISTINCT FROM v_hash THEN
+              RAISE EXCEPTION 'same snapshot replay changed context hash: % -> %',v_hash,v_context2->>'context_hash';
+            END IF;
+            IF v_context2->'context' IS DISTINCT FROM v_context1->'context' THEN
+              RAISE EXCEPTION 'same snapshot replay changed model context payload';
+            END IF;
+
+            SELECT s.id INTO v_snapshot_id FROM ai_ops.snapshots s WHERE s.run_id=v_run_id;
+            IF NOT EXISTS (SELECT 1 FROM ai_ops.snapshot_global_context x WHERE x.snapshot_id=v_snapshot_id)
+               OR NOT EXISTS (SELECT 1 FROM ai_ops.snapshot_reconciliation x WHERE x.snapshot_id=v_snapshot_id)
+               OR NOT EXISTS (SELECT 1 FROM ai_ops.snapshot_context_runtime_metadata x WHERE x.snapshot_id=v_snapshot_id) THEN
+              RAISE EXCEPTION 'one or more immutable replay evidence rows were not frozen';
+            END IF;
+
+            v_stage:=public.ai_ops_worker_stage_decisions(v_run_id,'closure-worker',v_hash,'[]'::jsonb);
+            IF COALESCE((v_stage->>'staged')::boolean,false) IS NOT TRUE
+               OR COALESCE((v_stage->>'structured_decision_quality')::boolean,false) IS NOT TRUE
+               OR NULLIF(v_stage->>'quality_submission_hash','') IS NULL THEN
+              RAISE EXCEPTION 'zero-case quality staging failed: %',v_stage;
+            END IF;
+            IF v_stage->'run_lifecycle'->>'status' IS DISTINCT FROM 'completed' THEN
+              RAISE EXCEPTION 'zero-case run did not close completed: %',v_stage;
+            END IF;
+
+            SELECT status,checkpoint INTO v_status,v_checkpoint
+            FROM ai_ops.planner_runs WHERE id=v_run_id;
+            IF v_status<>'completed' OR v_checkpoint<>'completed_zero_cases' THEN
+              RAISE EXCEPTION 'durable zero-case lifecycle mismatch: % / %',v_status,v_checkpoint;
+            END IF;
+
+            v_retry:=public.ai_ops_worker_stage_decisions(v_run_id,'closure-worker',v_hash,'[]'::jsonb);
+            IF COALESCE((v_retry->>'idempotent_reuse')::boolean,false) IS NOT TRUE
+               OR v_retry->>'quality_submission_hash' IS DISTINCT FROM v_stage->>'quality_submission_hash' THEN
+              RAISE EXCEPTION 'exact staging retry is not idempotent: %',v_retry;
+            END IF;
+          END $$;
+          SQL
+      - name: Stop isolated database
+        if: always()
+        shell: bash
+        env:
+          SUPABASE_TELEMETRY_DISABLED: '1'
+        run: |
+          if [ -d .aiops-local/supabase ]; then
+            cd .aiops-local
+            npx --yes supabase@2.110.0 stop --no-backup || true
+          fi
