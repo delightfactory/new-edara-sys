@@ -94,7 +94,6 @@ export default function WorkManagementPage() {
       <main className="work-management-content">
         {activeTab === 'queues' && <QueuesManagementPanel />}
         {activeTab === 'approvals' && <ApprovalsManagementPanel />}
-        {activeTab === 'workflows' && <ApprovalsManagementPanel /> === false}
         {activeTab === 'workflows' && <WorkflowsManagementPanel />}
         {activeTab === 'recurrence' && <RecurrenceManagementPanel />}
         {activeTab === 'policies' && <PoliciesManagementPanel />}
