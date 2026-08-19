@@ -202,6 +202,8 @@ export interface ReviseAiOperationsDecisionInput {
   expectedOutcome: string
   nextActionText: string
   dueAt: string
+  successSignal: string
+  employeeSafeReason: string
   revisionNote?: string | null
 }
 
@@ -219,6 +221,8 @@ export async function reviseAiOperationsDecision(
     p_expected_outcome: input.expectedOutcome.trim(),
     p_next_action_text: input.nextActionText.trim(),
     p_due_at: input.dueAt,
+    p_success_signal: input.successSignal.trim(),
+    p_employee_safe_reason: input.employeeSafeReason.trim(),
     p_revision_note: input.revisionNote?.trim() || null,
   })
   if (error) {
