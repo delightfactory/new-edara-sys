@@ -130,15 +130,15 @@ jobs:
 
             SELECT prompt_version INTO v_prompt_version
             FROM ai_ops.settings WHERE singleton=true;
-            IF v_prompt_version IS DISTINCT FROM 'v2' THEN
-              RAISE EXCEPTION 'expected configured prompt version v2, got %', v_prompt_version;
+            IF v_prompt_version IS DISTINCT FROM 'v3' THEN
+              RAISE EXCEPTION 'expected configured prompt version v3, got %', v_prompt_version;
             END IF;
 
             SELECT prompt_hash,system_prompt INTO v_policy_hash,v_prompt
             FROM ai_ops.planner_policies
-            WHERE policy_version='v1' AND prompt_version='v2' AND enabled=true;
+            WHERE policy_version='v1' AND prompt_version='v3' AND enabled=true;
             IF v_policy_hash IS NULL OR v_policy_hash <> md5(v_prompt) THEN
-              RAISE EXCEPTION 'planner v2 policy/hash contract is invalid';
+              RAISE EXCEPTION 'planner v3 policy/hash contract is invalid';
             END IF;
 
             IF to_regprocedure('ai_ops.decision_full_fingerprint(uuid)') IS NULL THEN
@@ -238,8 +238,8 @@ jobs:
 
             SELECT prompt_version INTO v_run_prompt_version
             FROM ai_ops.planner_runs WHERE id=v_run_id;
-            IF v_run_prompt_version IS DISTINCT FROM 'v2' THEN
-              RAISE EXCEPTION 'materialized run did not freeze prompt v2: %',v_run_prompt_version;
+            IF v_run_prompt_version IS DISTINCT FROM 'v3' THEN
+              RAISE EXCEPTION 'materialized run did not freeze prompt v3: %',v_run_prompt_version;
             END IF;
 
             v_context := public.ai_ops_worker_get_context(v_run_id,'ci-zero-worker');
@@ -251,8 +251,8 @@ jobs:
             IF v_hash IS NULL OR v_prompt_hash IS NULL THEN
               RAISE EXCEPTION 'worker context/prompt hash missing';
             END IF;
-            IF v_context->>'prompt_version' IS DISTINCT FROM 'v2' THEN
-              RAISE EXCEPTION 'worker did not return prompt v2';
+            IF v_context->>'prompt_version' IS DISTINCT FROM 'v3' THEN
+              RAISE EXCEPTION 'worker did not return prompt v3';
             END IF;
             IF v_context->'context'->'planner_policy'->>'system_prompt' IS NULL THEN
               RAISE EXCEPTION 'versioned planner policy missing from worker context';
@@ -260,8 +260,14 @@ jobs:
             IF v_context->'context'->'planner_policy'->>'prompt_hash' IS DISTINCT FROM v_prompt_hash THEN
               RAISE EXCEPTION 'context planner policy hash mismatch';
             END IF;
-            IF v_context->'context'->'planner_policy'->>'prompt_version' IS DISTINCT FROM 'v2' THEN
-              RAISE EXCEPTION 'context planner policy is not v2';
+            IF v_context->'context'->'planner_policy'->>'prompt_version' IS DISTINCT FROM 'v3' THEN
+              RAISE EXCEPTION 'context planner policy is not v3';
+            END IF;
+            IF v_context->'context'->'decision_contract'->>'final_output_contract_version' IS DISTINCT FROM 'v3' THEN
+              RAISE EXCEPTION 'worker decision contract is not aligned to v3';
+            END IF;
+            IF jsonb_array_length(v_context->'context'->'decision_contract'->'action_quality_requires') <> 7 THEN
+              RAISE EXCEPTION 'worker action quality contract is incomplete';
             END IF;
 
             v_global := v_context->'context'->'global_operational_context';
