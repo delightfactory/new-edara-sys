@@ -10,6 +10,10 @@ const decisionValidationState = z.enum(['pending', 'validated', 'rejected'])
 const humanReviewState = z.enum(['approved', 'rejected'])
 const commitStatus = z.enum(['not_requested', 'staged', 'committed', 'rejected', 'failed', 'skipped'])
 const evidenceStrength = z.enum(['direct', 'supporting', 'contextual'])
+const businessImpact = z.enum(['low', 'medium', 'high', 'critical'])
+const urgency = z.enum(['low', 'normal', 'high', 'immediate'])
+const reversibility = z.enum(['reversible', 'review_required', 'sensitive'])
+const estimatedEffort = z.enum(['S', 'M', 'L'])
 const contextConfidence = z.enum(['hard_policy', 'approved_human', 'explicit_human', 'system_record', 'system_inference', 'ai_inference'])
 const contextLifecycle = z.enum(['permanent', 'valid_until', 'review_on', 'one_time'])
 
@@ -209,6 +213,13 @@ export const aiOpsCaseDecisionReviewResponseSchema = z.object({
     why_this_owner: z.string().nullable(),
     why_now: z.string().nullable(),
     confidence: z.number().min(0).max(1).nullable(),
+    business_impact: businessImpact.nullable(),
+    urgency: urgency.nullable(),
+    evidence_completeness: z.number().min(0).max(1).nullable(),
+    reversibility: reversibility.nullable(),
+    estimated_effort: estimatedEffort.nullable(),
+    success_signal: z.string().max(500).nullable(),
+    employee_safe_reason: z.string().max(500).nullable(),
     recommended_owner_user_id: z.string().nullable(),
     recommended_owner_label: z.string().nullable(),
     recommended_assignee_user_id: z.string().nullable(),
