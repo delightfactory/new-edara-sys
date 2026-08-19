@@ -105,6 +105,7 @@ jobs:
             v_domains text[];
             v_policy_hash text;
             v_prompt text;
+            v_prompt_version text;
           BEGIN
             IF to_regnamespace('ai_ops') IS NULL THEN
               RAISE EXCEPTION 'ai_ops schema missing';
@@ -113,6 +114,7 @@ jobs:
             IF cardinality(v_domains) <> 7 THEN
               RAISE EXCEPTION 'expected seven operational domains, got %', cardinality(v_domains);
             END IF;
+
             IF to_regclass('ai_ops.planner_policies') IS NULL THEN
               RAISE EXCEPTION 'planner policy registry missing';
             END IF;
@@ -122,11 +124,31 @@ jobs:
             IF to_regclass('ai_ops.snapshot_global_context') IS NULL THEN
               RAISE EXCEPTION 'frozen snapshot global context missing';
             END IF;
+            IF to_regclass('ai_ops.decision_review_bindings') IS NULL THEN
+              RAISE EXCEPTION 'full decision review fingerprint binding missing';
+            END IF;
+
+            SELECT prompt_version INTO v_prompt_version
+            FROM ai_ops.settings WHERE singleton=true;
+            IF v_prompt_version IS DISTINCT FROM 'v2' THEN
+              RAISE EXCEPTION 'expected configured prompt version v2, got %', v_prompt_version;
+            END IF;
+
             SELECT prompt_hash,system_prompt INTO v_policy_hash,v_prompt
             FROM ai_ops.planner_policies
-            WHERE policy_version='v1' AND prompt_version='v1' AND enabled=true;
+            WHERE policy_version='v1' AND prompt_version='v2' AND enabled=true;
             IF v_policy_hash IS NULL OR v_policy_hash <> md5(v_prompt) THEN
-              RAISE EXCEPTION 'planner policy/hash contract is invalid';
+              RAISE EXCEPTION 'planner v2 policy/hash contract is invalid';
+            END IF;
+
+            IF to_regprocedure('ai_ops.decision_full_fingerprint(uuid)') IS NULL THEN
+              RAISE EXCEPTION 'full decision fingerprint helper missing';
+            END IF;
+            IF to_regprocedure('ai_ops.build_actor_feasibility_evidence(uuid)') IS NULL THEN
+              RAISE EXCEPTION 'actor feasibility evidence builder missing';
+            END IF;
+            IF to_regprocedure('ai_ops.build_cross_domain_entity_links(uuid)') IS NULL THEN
+              RAISE EXCEPTION 'cross-domain entity-link builder missing';
             END IF;
             IF to_regprocedure('public.ai_ops_commit_reviewed_decision(uuid)') IS NULL THEN
               RAISE EXCEPTION 'reviewed decision commit gateway missing';
@@ -134,8 +156,11 @@ jobs:
             IF to_regprocedure('public.ai_ops_set_case_disposition(uuid,text,timestamp with time zone,text)') IS NULL THEN
               RAISE EXCEPTION 'case disposition gateway missing';
             END IF;
-            IF to_regprocedure('public.ai_ops_revise_decision(uuid,uuid,uuid,text,text,timestamp with time zone,text)') IS NULL THEN
-              RAISE EXCEPTION 'decision revision gateway missing';
+            IF to_regprocedure('public.ai_ops_revise_decision(uuid,uuid,uuid,text,text,timestamp with time zone,text,text,text)') IS NULL THEN
+              RAISE EXCEPTION 'quality-aligned decision revision gateway missing';
+            END IF;
+            IF to_regprocedure('public.ai_ops_revise_decision(uuid,uuid,uuid,text,text,timestamp with time zone,text)') IS NOT NULL THEN
+              RAISE EXCEPTION 'legacy public revision signature still exists';
             END IF;
             IF to_regprocedure('public.ai_ops_create_operational_context(text,uuid,text,text,uuid,timestamp with time zone,text)') IS NULL THEN
               RAISE EXCEPTION 'operational context create gateway missing';
@@ -146,11 +171,19 @@ jobs:
             IF to_regprocedure('public.ai_ops_worker_get_context(uuid,text)') IS NULL THEN
               RAISE EXCEPTION 'service worker context gateway missing';
             END IF;
+
             IF has_function_privilege('authenticated','public.ai_ops_worker_get_context(uuid,text)','EXECUTE') THEN
               RAISE EXCEPTION 'authenticated browser role can execute worker context gateway';
             END IF;
             IF NOT has_function_privilege('service_role','public.ai_ops_worker_get_context(uuid,text)','EXECUTE') THEN
               RAISE EXCEPTION 'service_role lacks worker context gateway';
+            END IF;
+            IF NOT has_function_privilege(
+              'authenticated',
+              'public.ai_ops_revise_decision(uuid,uuid,uuid,text,text,timestamp with time zone,text,text,text)',
+              'EXECUTE'
+            ) THEN
+              RAISE EXCEPTION 'authenticated management role lacks final revision gateway';
             END IF;
           END $$;
           SQL
@@ -163,12 +196,12 @@ jobs:
           psql "$DB_URL" -X -v ON_ERROR_STOP=1 <<'SQL'
           DO $$
           DECLARE
-            v_now timestamptz := clock_timestamp();
             v_local_now timestamp := clock_timestamp() AT TIME ZONE 'Africa/Cairo';
             v_day smallint := extract(dow from clock_timestamp() AT TIME ZONE 'Africa/Cairo')::smallint;
             v_materialized jsonb;
             v_claim jsonb;
             v_context jsonb;
+            v_global jsonb;
             v_stage jsonb;
             v_retry jsonb;
             v_run_id uuid;
@@ -178,6 +211,7 @@ jobs:
             v_status text;
             v_checkpoint text;
             v_stored_prompt_hash text;
+            v_run_prompt_version text;
           BEGIN
             UPDATE ai_ops.settings
             SET planner_enabled=true, shadow_mode=true, auto_commit_enabled=false,
@@ -202,6 +236,12 @@ jobs:
             END IF;
             v_run_id := (v_claim->>'run_id')::uuid;
 
+            SELECT prompt_version INTO v_run_prompt_version
+            FROM ai_ops.planner_runs WHERE id=v_run_id;
+            IF v_run_prompt_version IS DISTINCT FROM 'v2' THEN
+              RAISE EXCEPTION 'materialized run did not freeze prompt v2: %',v_run_prompt_version;
+            END IF;
+
             v_context := public.ai_ops_worker_get_context(v_run_id,'ci-zero-worker');
             IF COALESCE((v_context->>'blocked')::boolean,false) THEN
               RAISE EXCEPTION 'zero-case context unexpectedly blocked: %', v_context;
@@ -211,15 +251,33 @@ jobs:
             IF v_hash IS NULL OR v_prompt_hash IS NULL THEN
               RAISE EXCEPTION 'worker context/prompt hash missing';
             END IF;
+            IF v_context->>'prompt_version' IS DISTINCT FROM 'v2' THEN
+              RAISE EXCEPTION 'worker did not return prompt v2';
+            END IF;
             IF v_context->'context'->'planner_policy'->>'system_prompt' IS NULL THEN
               RAISE EXCEPTION 'versioned planner policy missing from worker context';
             END IF;
             IF v_context->'context'->'planner_policy'->>'prompt_hash' IS DISTINCT FROM v_prompt_hash THEN
               RAISE EXCEPTION 'context planner policy hash mismatch';
             END IF;
-            IF v_context->'context'->'global_operational_context'->>'source' IS DISTINCT FROM 'same_frozen_snapshot' THEN
+            IF v_context->'context'->'planner_policy'->>'prompt_version' IS DISTINCT FROM 'v2' THEN
+              RAISE EXCEPTION 'context planner policy is not v2';
+            END IF;
+
+            v_global := v_context->'context'->'global_operational_context';
+            IF v_global->>'source' IS DISTINCT FROM 'same_frozen_snapshot' THEN
               RAISE EXCEPTION 'global operational context missing or not frozen-source based';
             END IF;
+            IF jsonb_typeof(v_global->'actor_feasibility') IS DISTINCT FROM 'array' THEN
+              RAISE EXCEPTION 'actor feasibility summary missing';
+            END IF;
+            IF jsonb_typeof(v_global->'cross_domain_entity_links') IS DISTINCT FROM 'object' THEN
+              RAISE EXCEPTION 'cross-domain entity links missing';
+            END IF;
+            IF COALESCE((v_global->'feasibility_semantics'->>'explicit_hr_unavailability_is_hard')::boolean,false) IS NOT TRUE THEN
+              RAISE EXCEPTION 'feasibility semantics are incomplete';
+            END IF;
+
             IF jsonb_array_length(v_context->'context'->'snapshot'->'domain_captures') <> 7 THEN
               RAISE EXCEPTION 'worker context did not contain seven domain captures';
             END IF;
@@ -245,6 +303,10 @@ jobs:
             IF COALESCE((v_stage->>'staged')::boolean,false) IS NOT TRUE THEN
               RAISE EXCEPTION 'zero-case decision set was not staged: %', v_stage;
             END IF;
+            IF COALESCE((v_stage->>'structured_decision_quality')::boolean,false) IS NOT TRUE
+               OR NULLIF(v_stage->>'quality_submission_hash','') IS NULL THEN
+              RAISE EXCEPTION 'structured quality staging envelope missing: %',v_stage;
+            END IF;
             IF v_stage->'run_lifecycle'->>'status' IS DISTINCT FROM 'completed' THEN
               RAISE EXCEPTION 'zero-case run did not close completed: %', v_stage;
             END IF;
@@ -260,6 +322,9 @@ jobs:
             );
             IF COALESCE((v_retry->>'idempotent_reuse')::boolean,false) IS NOT TRUE THEN
               RAISE EXCEPTION 'zero-case staging retry was not idempotent: %', v_retry;
+            END IF;
+            IF v_retry->>'quality_submission_hash' IS DISTINCT FROM v_stage->>'quality_submission_hash' THEN
+              RAISE EXCEPTION 'quality submission hash changed across exact retry';
             END IF;
 
             UPDATE ai_ops.settings
