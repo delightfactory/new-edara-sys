@@ -37,6 +37,11 @@ import type {
   AiOpsPlannerRun,
   AiOpsTrustSignal,
 } from '@/features/ai-operations/types'
+import {
+  AiOperationsCaseContextEditor,
+  AiOperationsContextRevokeButton,
+  AiOperationsDecisionRevisionEditor,
+} from './AiOperationsGovernanceControls'
 import './ai-operations-management.css'
 import './ai-operations-review.css'
 
@@ -186,6 +191,13 @@ function DecisionReviewPanel({
     && decision.run_status === 'staged'
     && decision.review_state === null
     && decision.validation_state !== 'rejected'
+
+  const canRevise = plannerEnabled
+    && !shadowMode
+    && decision.run_status === 'staged'
+    && decision.review_state === null
+    && decision.commit_status !== 'committed'
+    && decision.decision_type === 'CREATE_WORK'
 
   const canCommit = plannerEnabled
     && !shadowMode
@@ -375,6 +387,8 @@ function DecisionReviewPanel({
         </div>
       )}
 
+      {canRevise && <AiOperationsDecisionRevisionEditor decision={decision} disabled={busy} />}
+
       <div className="aiops-review-actions">
         {canReview && (
           <>
@@ -536,6 +550,8 @@ function CaseCard({
                 </div>
               </div>
 
+              <AiOperationsCaseContextEditor item={item} disabled={isPreview} />
+
               <DecisionReviewPanel
                 caseId={item.id}
                 isPreview={isPreview}
@@ -683,7 +699,7 @@ export default function AiOperationsManagementPanel() {
 
           <section className="aiops-panel-card">
             <div className="aiops-panel-title"><UserRoundCog size={17} /> السياق التشغيلي</div>
-            <p className="aiops-panel-note">معلومات إدارية لا يمكن استنتاجها بأمان من المعاملات وحدها.</p>
+            <p className="aiops-panel-note">معلومات إدارية لا يمكن استنتاجها بأمان من المعاملات وحدها. كل سياق بشري جديد مؤقت ومراجعته لا تمنح أي صلاحية تنفيذية.</p>
             <div className="aiops-context-list">
               {data.context.map(item => (
                 <article key={item.id} className="aiops-context-item">
@@ -696,6 +712,7 @@ export default function AiOperationsManagementPanel() {
                     {item.review_on && <span>مراجعة: {item.review_on}</span>}
                     {item.valid_until && <span>ينتهي: {formatDateTime(item.valid_until)}</span>}
                   </div>
+                  <AiOperationsContextRevokeButton item={item} disabled={isPreview} />
                 </article>
               ))}
             </div>
@@ -707,12 +724,14 @@ export default function AiOperationsManagementPanel() {
               {isPreview ? (
                 <>
                   <li>Preview لا يستدعي Supabase AI RPCs.</li>
-                  <li>لا يمكن اعتماد أو رفض أو تنفيذ قرارات من Preview.</li>
+                  <li>لا يمكن اعتماد أو رفض أو تعديل أو تنفيذ قرارات من Preview.</li>
                   <li>البيانات المعروضة Fixtures ثابتة للمراجعة البصرية فقط.</li>
                 </>
               ) : (
                 <>
                   <li>الموافقة البشرية لا تنشئ Work تلقائيًا.</li>
+                  <li>تعديل القرار ينشئ Revision جديدة ويعيد التحقق ولا يمسح القرار الأصلي.</li>
+                  <li>السياق الإداري بيانات توجيه مؤقتة وليس أمر تنفيذ.</li>
                   <li>CREATE_WORK وESCALATE لا يُنفذان إلا بعد اعتماد بشري صريح وخطوة تنفيذ مستقلة.</li>
                   <li>التنفيذ يعيد التحقق من الواقع داخل نفس المعاملة.</li>
                   <li>Planner Off وShadow Mode يعملان كـKill Switch قبل أي Work جديدة.</li>
