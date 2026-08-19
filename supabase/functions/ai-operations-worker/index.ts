@@ -10,6 +10,8 @@ const allowedFields = new Set([
   'recommended_owner_user_id','recommended_assignee_user_id',
   'responsibility_summary','why_this_owner','why_now',
   'expected_outcome','next_action_text','due_at','review_after',
+  'business_impact','urgency','evidence_completeness','reversibility',
+  'estimated_effort','success_signal','employee_safe_reason',
 ])
 
 function jsonResponse(body: unknown, status = 200) {
