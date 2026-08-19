@@ -103,6 +103,8 @@ jobs:
           DO $$
           DECLARE
             v_domains text[];
+            v_policy_hash text;
+            v_prompt text;
           BEGIN
             IF to_regnamespace('ai_ops') IS NULL THEN
               RAISE EXCEPTION 'ai_ops schema missing';
@@ -111,11 +113,35 @@ jobs:
             IF cardinality(v_domains) <> 7 THEN
               RAISE EXCEPTION 'expected seven operational domains, got %', cardinality(v_domains);
             END IF;
+            IF to_regclass('ai_ops.planner_policies') IS NULL THEN
+              RAISE EXCEPTION 'planner policy registry missing';
+            END IF;
+            IF to_regclass('ai_ops.case_outcomes') IS NULL THEN
+              RAISE EXCEPTION 'case outcomes ledger missing';
+            END IF;
+            IF to_regclass('ai_ops.snapshot_global_context') IS NULL THEN
+              RAISE EXCEPTION 'frozen snapshot global context missing';
+            END IF;
+            SELECT prompt_hash,system_prompt INTO v_policy_hash,v_prompt
+            FROM ai_ops.planner_policies
+            WHERE policy_version='v1' AND prompt_version='v1' AND enabled=true;
+            IF v_policy_hash IS NULL OR v_policy_hash <> md5(v_prompt) THEN
+              RAISE EXCEPTION 'planner policy/hash contract is invalid';
+            END IF;
             IF to_regprocedure('public.ai_ops_commit_reviewed_decision(uuid)') IS NULL THEN
               RAISE EXCEPTION 'reviewed decision commit gateway missing';
             END IF;
             IF to_regprocedure('public.ai_ops_set_case_disposition(uuid,text,timestamp with time zone,text)') IS NULL THEN
               RAISE EXCEPTION 'case disposition gateway missing';
+            END IF;
+            IF to_regprocedure('public.ai_ops_revise_decision(uuid,uuid,uuid,text,text,timestamp with time zone,text)') IS NULL THEN
+              RAISE EXCEPTION 'decision revision gateway missing';
+            END IF;
+            IF to_regprocedure('public.ai_ops_create_operational_context(text,uuid,text,text,uuid,timestamp with time zone,text)') IS NULL THEN
+              RAISE EXCEPTION 'operational context create gateway missing';
+            END IF;
+            IF to_regprocedure('public.ai_ops_revoke_operational_context(uuid,text)') IS NULL THEN
+              RAISE EXCEPTION 'operational context revoke gateway missing';
             END IF;
             IF to_regprocedure('public.ai_ops_worker_get_context(uuid,text)') IS NULL THEN
               RAISE EXCEPTION 'service worker context gateway missing';
@@ -146,9 +172,12 @@ jobs:
             v_stage jsonb;
             v_retry jsonb;
             v_run_id uuid;
+            v_snapshot_id uuid;
             v_hash text;
+            v_prompt_hash text;
             v_status text;
             v_checkpoint text;
+            v_stored_prompt_hash text;
           BEGIN
             UPDATE ai_ops.settings
             SET planner_enabled=true, shadow_mode=true, auto_commit_enabled=false,
@@ -178,14 +207,36 @@ jobs:
               RAISE EXCEPTION 'zero-case context unexpectedly blocked: %', v_context;
             END IF;
             v_hash := v_context->>'context_hash';
-            IF v_hash IS NULL THEN
-              RAISE EXCEPTION 'worker context hash missing';
+            v_prompt_hash := v_context->>'prompt_hash';
+            IF v_hash IS NULL OR v_prompt_hash IS NULL THEN
+              RAISE EXCEPTION 'worker context/prompt hash missing';
+            END IF;
+            IF v_context->'context'->'planner_policy'->>'system_prompt' IS NULL THEN
+              RAISE EXCEPTION 'versioned planner policy missing from worker context';
+            END IF;
+            IF v_context->'context'->'planner_policy'->>'prompt_hash' IS DISTINCT FROM v_prompt_hash THEN
+              RAISE EXCEPTION 'context planner policy hash mismatch';
+            END IF;
+            IF v_context->'context'->'global_operational_context'->>'source' IS DISTINCT FROM 'same_frozen_snapshot' THEN
+              RAISE EXCEPTION 'global operational context missing or not frozen-source based';
             END IF;
             IF jsonb_array_length(v_context->'context'->'snapshot'->'domain_captures') <> 7 THEN
               RAISE EXCEPTION 'worker context did not contain seven domain captures';
             END IF;
             IF jsonb_array_length(v_context->'context'->'cases') <> 0 THEN
               RAISE EXCEPTION 'fresh isolated database should produce zero operational cases';
+            END IF;
+
+            SELECT s.id INTO v_snapshot_id FROM ai_ops.snapshots s WHERE s.run_id=v_run_id;
+            IF NOT EXISTS (
+              SELECT 1 FROM ai_ops.snapshot_global_context sg
+              WHERE sg.snapshot_id=v_snapshot_id AND sg.run_id=v_run_id
+            ) THEN
+              RAISE EXCEPTION 'global context was not frozen for replay';
+            END IF;
+            SELECT prompt_hash INTO v_stored_prompt_hash FROM ai_ops.planner_runs WHERE id=v_run_id;
+            IF v_stored_prompt_hash IS DISTINCT FROM v_prompt_hash THEN
+              RAISE EXCEPTION 'planner run did not persist exact prompt hash';
             END IF;
 
             v_stage := public.ai_ops_worker_stage_decisions(
