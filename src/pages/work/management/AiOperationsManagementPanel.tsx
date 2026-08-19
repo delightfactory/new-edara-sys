@@ -31,11 +31,15 @@ import {
   useSetAiOperationsCaseDisposition,
 } from '@/features/ai-operations/hooks'
 import type {
+  AiOpsBusinessImpact,
   AiOpsCase,
   AiOpsCaseSeverity,
   AiOpsDecisionType,
+  AiOpsEstimatedEffort,
   AiOpsPlannerRun,
+  AiOpsReversibility,
   AiOpsTrustSignal,
+  AiOpsUrgency,
 } from '@/features/ai-operations/types'
 import {
   AiOperationsCaseContextEditor,
@@ -74,6 +78,32 @@ const evidenceStrengthLabels = {
   supporting: 'دليل مساند',
   contextual: 'سياق',
 } as const
+
+const businessImpactLabels: Record<AiOpsBusinessImpact, string> = {
+  low: 'محدود',
+  medium: 'متوسط',
+  high: 'مرتفع',
+  critical: 'حرج',
+}
+
+const urgencyLabels: Record<AiOpsUrgency, string> = {
+  low: 'منخفضة',
+  normal: 'عادية',
+  high: 'مرتفعة',
+  immediate: 'فورية',
+}
+
+const reversibilityLabels: Record<AiOpsReversibility, string> = {
+  reversible: 'قابل للرجوع',
+  review_required: 'يحتاج مراجعة',
+  sensitive: 'حساس',
+}
+
+const effortLabels: Record<AiOpsEstimatedEffort, string> = {
+  S: 'S — تدخل قصير',
+  M: 'M — تركيز متوسط',
+  L: 'L — عمل يحتاج تخطيط',
+}
 
 function formatDateTime(value: string | null) {
   if (!value) return '—'
@@ -334,6 +364,30 @@ function DecisionReviewPanel({
           <span>موعد المراجعة</span>
           <strong>{formatDateTime(decision.review_after)}</strong>
         </div>
+        <div className="aiops-review-field">
+          <span>الأثر التجاري</span>
+          <strong>{decision.business_impact ? businessImpactLabels[decision.business_impact] : '—'}</strong>
+        </div>
+        <div className="aiops-review-field">
+          <span>الإلحاح</span>
+          <strong>{decision.urgency ? urgencyLabels[decision.urgency] : '—'}</strong>
+        </div>
+        <div className="aiops-review-field">
+          <span>اكتمال الأدلة</span>
+          <strong>{decision.evidence_completeness == null ? '—' : `${Math.round(decision.evidence_completeness * 100)}%`}</strong>
+        </div>
+        <div className="aiops-review-field">
+          <span>الـEffort</span>
+          <strong>{decision.estimated_effort ? effortLabels[decision.estimated_effort] : '—'}</strong>
+        </div>
+        <div className="aiops-review-field">
+          <span>قابلية الرجوع</span>
+          <strong>{decision.reversibility ? reversibilityLabels[decision.reversibility] : '—'}</strong>
+        </div>
+        <div className="aiops-review-field">
+          <span>الثقة</span>
+          <strong>{decision.confidence == null ? '—' : `${Math.round(decision.confidence * 100)}%`}</strong>
+        </div>
         <div className="aiops-review-field aiops-review-field--wide">
           <span>الإجراء التالي</span>
           <p>{decision.next_action_text ?? 'لا يوجد إجراء تنفيذي مقترح.'}</p>
@@ -341,6 +395,14 @@ function DecisionReviewPanel({
         <div className="aiops-review-field aiops-review-field--wide">
           <span>النتيجة المتوقعة</span>
           <p>{decision.expected_outcome ?? 'لا توجد نتيجة تنفيذية محددة لهذا النوع من القرار.'}</p>
+        </div>
+        <div className="aiops-review-field aiops-review-field--wide">
+          <span>إشارة النجاح التي سنراجعها</span>
+          <p>{decision.success_signal ?? '—'}</p>
+        </div>
+        <div className="aiops-review-field aiops-review-field--wide">
+          <span>السبب الآمن الذي يصل للموظف</span>
+          <p>{decision.employee_safe_reason ?? '—'}</p>
         </div>
       </div>
 
