@@ -32,6 +32,8 @@ export function AiOperationsDecisionRevisionEditor({
   const [assigneeId, setAssigneeId] = useState('')
   const [expectedOutcome, setExpectedOutcome] = useState('')
   const [nextActionText, setNextActionText] = useState('')
+  const [successSignal, setSuccessSignal] = useState('')
+  const [employeeSafeReason, setEmployeeSafeReason] = useState('')
   const [dueAt, setDueAt] = useState('')
   const [revisionNote, setRevisionNote] = useState('')
   const [message, setMessage] = useState<string | null>(null)
@@ -46,6 +48,8 @@ export function AiOperationsDecisionRevisionEditor({
     setAssigneeId(decision.recommended_assignee_user_id ?? '')
     setExpectedOutcome(decision.expected_outcome ?? '')
     setNextActionText(decision.next_action_text ?? '')
+    setSuccessSignal(decision.success_signal ?? '')
+    setEmployeeSafeReason(decision.employee_safe_reason ?? '')
     setDueAt(toDateTimeLocal(decision.due_at))
     setRevisionNote('')
     setMessage(null)
@@ -57,8 +61,11 @@ export function AiOperationsDecisionRevisionEditor({
     setMessage(null)
     setError(false)
     try {
-      if (!ownerId || !assigneeId || !expectedOutcome.trim() || !nextActionText.trim() || !dueAt) {
-        throw new Error('حدد المالك والمنفذ والنتيجة والإجراء والموعد قبل حفظ التعديل.')
+      if (
+        !ownerId || !assigneeId || !expectedOutcome.trim() || !nextActionText.trim()
+        || !successSignal.trim() || !employeeSafeReason.trim() || !dueAt
+      ) {
+        throw new Error('حدد المالك والمنفذ والنتيجة والإجراء وإشارة النجاح والسبب الآمن للموظف والموعد قبل حفظ التعديل.')
       }
       const parsedDue = new Date(dueAt)
       if (Number.isNaN(parsedDue.getTime())) throw new Error('الموعد المعدل غير صالح.')
@@ -70,6 +77,8 @@ export function AiOperationsDecisionRevisionEditor({
         expectedOutcome,
         nextActionText,
         dueAt: parsedDue.toISOString(),
+        successSignal,
+        employeeSafeReason,
         revisionNote,
       })
       setOpen(false)
@@ -96,7 +105,7 @@ export function AiOperationsDecisionRevisionEditor({
       {open && (
         <div className="aiops-governance-editor">
           <div className="aiops-governance-warning">
-            <ShieldAlert size={15} /> التعديل ينشئ Revision جديدة؛ القرار الأصلي يظل محفوظًا ولا يحدث أي تنفيذ.
+            <ShieldAlert size={15} /> التعديل ينشئ Revision جديدة؛ القرار الأصلي يظل محفوظًا ولا يحدث أي تنفيذ. إشارة النجاح والسبب الذي يصل للموظف يتحركان مع النسخة الجديدة حتى لا نعتمد هدفًا قديمًا لمهمة معدلة.
           </div>
           <div className="aiops-governance-grid">
             <label>
@@ -124,6 +133,14 @@ export function AiOperationsDecisionRevisionEditor({
             <label className="aiops-governance-wide">
               <span>النتيجة المتوقعة</span>
               <textarea maxLength={1000} value={expectedOutcome} onChange={event => setExpectedOutcome(event.target.value)} disabled={revision.isPending} />
+            </label>
+            <label className="aiops-governance-wide">
+              <span>إشارة النجاح التي سنراجعها</span>
+              <textarea maxLength={500} value={successSignal} onChange={event => setSuccessSignal(event.target.value)} disabled={revision.isPending} />
+            </label>
+            <label className="aiops-governance-wide">
+              <span>السبب الآمن الذي يصل للموظف</span>
+              <textarea maxLength={500} value={employeeSafeReason} onChange={event => setEmployeeSafeReason(event.target.value)} disabled={revision.isPending} />
             </label>
             <label className="aiops-governance-wide">
               <span>سبب التعديل — اختياري</span>
