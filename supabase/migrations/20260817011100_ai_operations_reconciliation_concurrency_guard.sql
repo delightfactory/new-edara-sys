@@ -24,6 +24,7 @@ DECLARE
   v_reopened INTEGER := 0;
   v_skipped_domains INTEGER := 0;
   v_stale_case_skips INTEGER := 0;
+  v_domain_stale_case_skips INTEGER := 0;
   v_complete_domains INTEGER := 0;
   v_now TIMESTAMPTZ := clock_timestamp();
   v_outcome_type TEXT;
@@ -84,7 +85,7 @@ BEGIN
       v_resolved:=v_resolved+1;
     END LOOP;
 
-    SELECT count(*)::INTEGER INTO v_stale_case_skips
+    SELECT count(*)::INTEGER INTO v_domain_stale_case_skips
     FROM ai_ops.cases c
     WHERE c.domain=v_domain.domain
       AND c.status IN ('open','monitored','actioned','suppressed')
@@ -93,6 +94,7 @@ BEGIN
         SELECT 1 FROM ai_ops.snapshot_cases sc
         WHERE sc.snapshot_id=p_snapshot_id AND sc.case_id=c.id
       );
+    v_stale_case_skips:=v_stale_case_skips+COALESCE(v_domain_stale_case_skips,0);
 
     -- A persistent Case may be reopened after its latest AI-linked Work is done
     -- or cancelled only if THIS snapshot is still the Case's latest captured
