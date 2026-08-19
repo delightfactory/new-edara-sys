@@ -19,6 +19,10 @@ export type AiOpsDecisionValidationState = 'pending' | 'validated' | 'rejected'
 export type AiOpsHumanReviewState = 'approved' | 'rejected'
 export type AiOpsCommitStatus = 'not_requested' | 'staged' | 'committed' | 'rejected' | 'failed' | 'skipped'
 export type AiOpsEvidenceStrength = 'direct' | 'supporting' | 'contextual'
+export type AiOpsBusinessImpact = 'low' | 'medium' | 'high' | 'critical'
+export type AiOpsUrgency = 'low' | 'normal' | 'high' | 'immediate'
+export type AiOpsReversibility = 'reversible' | 'review_required' | 'sensitive'
+export type AiOpsEstimatedEffort = 'S' | 'M' | 'L'
 export type AiOpsContextConfidence =
   | 'hard_policy'
   | 'approved_human'
@@ -176,6 +180,13 @@ export interface AiOpsDecisionReviewDetail {
   why_this_owner: string | null
   why_now: string | null
   confidence: number | null
+  business_impact: AiOpsBusinessImpact | null
+  urgency: AiOpsUrgency | null
+  evidence_completeness: number | null
+  reversibility: AiOpsReversibility | null
+  estimated_effort: AiOpsEstimatedEffort | null
+  success_signal: string | null
+  employee_safe_reason: string | null
   recommended_owner_user_id: string | null
   recommended_owner_label: string | null
   recommended_assignee_user_id: string | null
