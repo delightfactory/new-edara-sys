@@ -757,33 +757,41 @@ REVOKE EXECUTE ON FUNCTION public.check_overdue_invoices() FROM authenticated;
 
 
 -- ═══════════════════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════════
 -- PART 5: Cron Job Scheduling
 -- ═══════════════════════════════════════════════════════════════════════════
--- Pattern: unschedule→schedule (idempotent, matches migration 46 pattern)
-
+-- Fresh/local databases may not have pg_cron enabled. Install the alert
+-- functions regardless, and schedule only when the extension/catalog exists.
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'check-low-stock-alerts') THEN
-    PERFORM cron.unschedule('check-low-stock-alerts');
-  END IF;
-  IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'check-overdue-invoices') THEN
-    PERFORM cron.unschedule('check-overdue-invoices');
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron')
+     AND to_regclass('cron.job') IS NOT NULL THEN
+    BEGIN
+      PERFORM cron.unschedule('check-low-stock-alerts');
+    EXCEPTION WHEN OTHERS THEN
+      NULL;
+    END;
+    BEGIN
+      PERFORM cron.unschedule('check-overdue-invoices');
+    EXCEPTION WHEN OTHERS THEN
+      NULL;
+    END;
+
+    PERFORM cron.schedule(
+      'check-low-stock-alerts',
+      '0 */4 * * *',
+      'SELECT public.check_low_stock_alerts();'
+    );
+    PERFORM cron.schedule(
+      'check-overdue-invoices',
+      '0 7 * * *',
+      'SELECT public.check_overdue_invoices();'
+    );
+    RAISE NOTICE '[55_notification_wave2] pg_cron jobs scheduled';
+  ELSE
+    RAISE NOTICE '[55_notification_wave2] pg_cron unavailable — alert functions installed; schedule jobs after enabling pg_cron';
   END IF;
 END $$;
-
--- Every 4 hours — stock levels can change frequently; daily may miss shifts
-SELECT cron.schedule(
-  'check-low-stock-alerts',
-  '0 */4 * * *',
-  $$ SELECT public.check_low_stock_alerts(); $$
-);
-
--- Daily at 07:00 UTC (≈ 09:00 Cairo) — morning collections briefing
-SELECT cron.schedule(
-  'check-overdue-invoices',
-  '0 7 * * *',
-  $$ SELECT public.check_overdue_invoices(); $$
-);
 
 
 -- ═══════════════════════════════════════════════════════════════════════════
@@ -791,9 +799,10 @@ SELECT cron.schedule(
 -- ═══════════════════════════════════════════════════════════════════════════
 DO $$
 DECLARE
-  v_fn_count  INTEGER;
-  v_trg_count INTEGER;
-  v_cron_count INTEGER;
+  v_fn_count       INTEGER;
+  v_trg_count      INTEGER;
+  v_cron_count     INTEGER := 0;
+  v_cron_available BOOLEAN := FALSE;
 BEGIN
   SELECT COUNT(*) INTO v_fn_count
   FROM pg_proc
@@ -811,21 +820,26 @@ BEGIN
     'trg_notify_stock_adjustment_change'
   );
 
-  SELECT COUNT(*) INTO v_cron_count
-  FROM cron.job
-  WHERE jobname IN ('check-low-stock-alerts', 'check-overdue-invoices');
+  v_cron_available := EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron')
+                      AND to_regclass('cron.job') IS NOT NULL;
+  IF v_cron_available THEN
+    EXECUTE $sql$
+      SELECT COUNT(*)
+      FROM cron.job
+      WHERE jobname IN ('check-low-stock-alerts', 'check-overdue-invoices')
+    $sql$ INTO v_cron_count;
+  END IF;
 
   RAISE NOTICE '══════════════════════════════════════════════════════════';
   RAISE NOTICE '[55_notification_wave2] VERIFICATION RESULT:';
   RAISE NOTICE '  Functions registered:  % / 4', v_fn_count;
   RAISE NOTICE '  Triggers registered:   % / 2', v_trg_count;
-  RAISE NOTICE '  Cron jobs registered:  % / 2', v_cron_count;
+  RAISE NOTICE '  Cron jobs registered:  % / 2 (available=%)', v_cron_count, v_cron_available;
 
   RAISE NOTICE '  inventory.transfer.completed event: %',
     CASE WHEN EXISTS (SELECT 1 FROM notification_event_types WHERE event_key = 'inventory.transfer.completed')
     THEN '✅ seeded' ELSE '❌ MISSING' END;
 
-  -- Verify no Wave 1 triggers damaged
   RAISE NOTICE '  trg_notify_stock_transfer_change: %',
     CASE WHEN EXISTS (SELECT 1 FROM information_schema.triggers WHERE trigger_name = 'trg_notify_stock_transfer_change')
     THEN '✅ created' ELSE '❌ MISSING' END;
@@ -834,18 +848,18 @@ BEGIN
     CASE WHEN EXISTS (SELECT 1 FROM information_schema.triggers WHERE trigger_name = 'trg_notify_stock_adjustment_change')
     THEN '✅ created' ELSE '❌ MISSING' END;
 
-  RAISE NOTICE '  check-low-stock-alerts cron: %',
-    CASE WHEN EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'check-low-stock-alerts')
-    THEN '✅ scheduled' ELSE '❌ MISSING' END;
+  IF v_cron_available THEN
+    RAISE NOTICE '  Cron scheduling: %', CASE WHEN v_cron_count = 2 THEN '✅ scheduled' ELSE '❌ INCOMPLETE' END;
+  ELSE
+    RAISE NOTICE '  Cron scheduling: ⚪ deferred — pg_cron unavailable in this database';
+  END IF;
 
-  RAISE NOTICE '  check-overdue-invoices cron: %',
-    CASE WHEN EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'check-overdue-invoices')
-    THEN '✅ scheduled' ELSE '❌ MISSING' END;
-
-  IF v_fn_count = 4 AND v_trg_count = 2 AND v_cron_count = 2 THEN
+  IF v_fn_count = 4
+     AND v_trg_count = 2
+     AND (NOT v_cron_available OR v_cron_count = 2) THEN
     RAISE NOTICE '  ✅ Wave 2 complete';
   ELSE
-    RAISE WARNING '[55_wave2] ⚠️  Expected 4 fn / 2 triggers / 2 crons — check above';
+    RAISE WARNING '[55_wave2] ⚠️ Expected 4 functions / 2 triggers and, when available, 2 cron jobs';
   END IF;
   RAISE NOTICE '══════════════════════════════════════════════════════════';
 END $$;

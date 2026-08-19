@@ -1,0 +1,325 @@
+.aiops-review-live {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 14px;
+  background: var(--color-surface, #fff);
+}
+
+.aiops-review-live-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.aiops-review-live-head > div {
+  min-width: 0;
+}
+
+.aiops-review-live-head h4 {
+  margin: 0;
+  font-size: 0.86rem;
+}
+
+.aiops-review-live-head p {
+  margin: 4px 0 0;
+  color: var(--color-text-muted, #667085);
+  font-size: 0.72rem;
+  line-height: 1.55;
+}
+
+.aiops-state-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.aiops-state-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 999px;
+  background: var(--color-bg-subtle, #f8fafc);
+  color: var(--color-text-secondary, #344054);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.aiops-state-chip--good {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.aiops-state-chip--warning {
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.aiops-state-chip--danger {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.aiops-review-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.aiops-review-field {
+  min-width: 0;
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: var(--color-bg-subtle, #f8fafc);
+}
+
+.aiops-review-field--wide {
+  grid-column: 1 / -1;
+}
+
+.aiops-review-field span {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--color-text-muted, #667085);
+  font-size: 0.66rem;
+}
+
+.aiops-review-field strong,
+.aiops-review-field p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-text-primary, #101828);
+  font-size: 0.76rem;
+  line-height: 1.6;
+}
+
+.aiops-validation-codes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.aiops-validation-code {
+  padding: 4px 7px;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 0.65rem;
+  overflow-wrap: anywhere;
+}
+
+.aiops-review-note {
+  display: grid;
+  gap: 5px;
+}
+
+.aiops-review-note label {
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.aiops-review-note textarea {
+  width: 100%;
+  min-height: 76px;
+  resize: vertical;
+  box-sizing: border-box;
+  padding: 9px 10px;
+  border: 1px solid var(--color-border, #d0d5dd);
+  border-radius: 10px;
+  background: var(--color-surface, #fff);
+  color: inherit;
+  font: inherit;
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.aiops-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.aiops-review-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+}
+
+.aiops-review-message,
+.aiops-review-readonly {
+  padding: 9px 10px;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  line-height: 1.55;
+}
+
+.aiops-review-message {
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1e40af;
+}
+
+.aiops-review-message--danger {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.aiops-review-readonly {
+  border: 1px solid #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.aiops-reviewed-box {
+  display: grid;
+  gap: 4px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: #f8fafc;
+  font-size: 0.72rem;
+}
+
+.aiops-reviewed-box strong {
+  font-size: 0.75rem;
+}
+
+.aiops-governance-control {
+  display: grid;
+  gap: 8px;
+}
+
+.aiops-governance-control > .btn {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.aiops-governance-editor {
+  display: grid;
+  gap: 10px;
+  padding: 11px;
+  border: 1px solid var(--color-border, #d0d5dd);
+  border-radius: 12px;
+  background: var(--color-bg-subtle, #f8fafc);
+}
+
+.aiops-governance-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: var(--color-text-secondary, #344054);
+  font-size: 0.7rem;
+  line-height: 1.55;
+}
+
+.aiops-governance-warning svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.aiops-governance-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.aiops-governance-grid label {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: var(--color-text-secondary, #344054);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.aiops-governance-grid input,
+.aiops-governance-grid select,
+.aiops-governance-grid textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border, #d0d5dd);
+  border-radius: 9px;
+  background: var(--color-surface, #fff);
+  color: inherit;
+  font: inherit;
+  font-weight: 500;
+  padding: 8px 9px;
+}
+
+.aiops-governance-grid textarea {
+  min-height: 72px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.aiops-governance-wide {
+  grid-column: 1 / -1;
+}
+
+.aiops-context-revoke {
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.aiops-context-revoke-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  justify-self: start;
+  border: 0;
+  background: transparent;
+  color: #b42318;
+  padding: 3px 0;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.aiops-context-revoke-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.aiops-context-revoke span {
+  font-size: 0.66rem;
+  color: var(--color-text-muted, #667085);
+}
+
+@media (max-width: 720px) {
+  .aiops-review-live-head {
+    display: grid;
+  }
+
+  .aiops-review-grid,
+  .aiops-governance-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .aiops-review-field--wide,
+  .aiops-governance-wide {
+    grid-column: auto;
+  }
+
+  .aiops-review-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .aiops-review-actions button,
+  .aiops-governance-control > .btn {
+    width: 100%;
+  }
+}

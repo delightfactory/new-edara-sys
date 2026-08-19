@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, GitBranch, ListChecks, Repeat2, Settings2, UserRoundCog, Workflow } from 'lucide-react'
+import { ArrowRight, BrainCircuit, GitBranch, ListChecks, Repeat2, Settings2, UserRoundCog, Workflow } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
+import { AI_OPERATIONS_DATA_MODE, AI_OPERATIONS_PREVIEW } from '@/lib/config/features'
 import type { WorkManagementTab } from '@/features/work/management-types'
 import QueuesManagementPanel from './QueuesManagementPanel'
 import ApprovalsManagementPanel from './ApprovalsManagementPanel'
@@ -9,9 +10,10 @@ import WorkflowsManagementPanel from './WorkflowsManagementPanel'
 import RecurrenceManagementPanel from './RecurrenceManagementPanel'
 import PoliciesManagementPanel from './PoliciesManagementPanel'
 import WorkContinuityPanel from './WorkContinuityPanel'
+import AiOperationsManagementPanel from './AiOperationsManagementPanel'
 import './work-management.css'
 
-type ManagementTabId = WorkManagementTab | 'continuity'
+type ManagementTabId = WorkManagementTab | 'continuity' | 'ai-operations'
 
 const TAB_DEFINITIONS = [
   { id: 'queues' as const, label: 'الطوابير والطلبات', permission: 'work.queues.manage', icon: ListChecks },
@@ -22,10 +24,23 @@ const TAB_DEFINITIONS = [
   { id: 'continuity' as const, label: 'استمرارية الأعمال', permission: 'work.items.manage', icon: UserRoundCog },
 ]
 
+const AI_OPERATIONS_TAB = {
+  id: 'ai-operations' as const,
+  label: 'AI Operations',
+  permission: 'work.policies.manage',
+  icon: BrainCircuit,
+}
+
 export default function WorkManagementPage() {
   const navigate = useNavigate()
   const can = useAuthStore(state => state.can)
-  const tabs = useMemo(() => TAB_DEFINITIONS.filter(tab => can(tab.permission)), [can])
+  const aiOperationsAvailable = AI_OPERATIONS_PREVIEW || AI_OPERATIONS_DATA_MODE === 'rpc'
+  const tabs = useMemo(() => {
+    const definitions = aiOperationsAvailable
+      ? [...TAB_DEFINITIONS, AI_OPERATIONS_TAB]
+      : TAB_DEFINITIONS
+    return definitions.filter(tab => can(tab.permission))
+  }, [aiOperationsAvailable, can])
   const [requestedTab, setRequestedTab] = useState<ManagementTabId | null>(null)
   const activeTab = requestedTab && tabs.some(tab => tab.id === requestedTab) ? requestedTab : tabs[0]?.id
 
@@ -83,6 +98,7 @@ export default function WorkManagementPage() {
         {activeTab === 'recurrence' && <RecurrenceManagementPanel />}
         {activeTab === 'policies' && <PoliciesManagementPanel />}
         {activeTab === 'continuity' && <WorkContinuityPanel />}
+        {activeTab === 'ai-operations' && aiOperationsAvailable && <AiOperationsManagementPanel />}
       </main>
     </div>
   )
