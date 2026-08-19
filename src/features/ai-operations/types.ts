@@ -246,6 +246,30 @@ export interface AiOpsCommitDecisionResult {
   run_lifecycle?: AiOpsRunLifecycleResult
 }
 
+export interface AiOpsDecisionRevisionResult {
+  revised: boolean
+  old_decision_id: string
+  decision_id: string
+  revision: number
+  validation_state: AiOpsDecisionValidationState
+  validation_codes: string[]
+  execution_performed: boolean
+}
+
+export interface AiOpsOperationalContextMutationResult {
+  created?: boolean
+  revoked?: boolean
+  blocked?: boolean
+  idempotent_reuse?: boolean
+  reason?: string
+  context_id: string
+  subject_type?: string
+  subject_id?: string
+  context_type?: string
+  valid_until?: string
+  status: 'active' | 'expired' | 'revoked' | 'consumed'
+}
+
 export interface AiOpsOperationalContextItem {
   id: string
   subject_type: string
