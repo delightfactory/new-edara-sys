@@ -8,13 +8,29 @@ on:
       - fix/ai-operations-final-hardening
     paths:
       - supabase/migrations/*ai_operations*.sql
-      - src/__tests__/ai-operations-*.test.ts
+      - supabase/functions/ai-operations-worker/**
+      - supabase/config.toml
+      - supabase/maintenance/ai_ops_operator_*.sql
+      - supabase/maintenance/AI_OPS_RELEASE_RUNBOOK.md
+      - src/__tests__/ai-operations-*.test.*
+      - scripts/lint-source-hygiene.mjs
+      - package.json
+      - .gitattributes
       - .github/workflows/aiops-db-rehearsal.yml
+      - .github/workflows/deploy-ai-operations-worker.yml
   pull_request:
     paths:
       - supabase/migrations/*ai_operations*.sql
-      - src/__tests__/ai-operations-*.test.ts
+      - supabase/functions/ai-operations-worker/**
+      - supabase/config.toml
+      - supabase/maintenance/ai_ops_operator_*.sql
+      - supabase/maintenance/AI_OPS_RELEASE_RUNBOOK.md
+      - src/__tests__/ai-operations-*.test.*
+      - scripts/lint-source-hygiene.mjs
+      - package.json
+      - .gitattributes
       - .github/workflows/aiops-db-rehearsal.yml
+      - .github/workflows/deploy-ai-operations-worker.yml
 
 permissions:
   contents: read
@@ -27,7 +43,7 @@ jobs:
   safety-contract:
     name: Protect production history and verify AI Operations contracts
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     steps:
       - name: Checkout triggering commit
@@ -59,8 +75,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Verify cross-domain feasibility contract
-        run: npm test -- src/__tests__/ai-operations-cross-domain-feasibility-contract.test.ts
+      - name: Verify all AI Operations source contracts
+        shell: bash
+        run: npm test -- src/__tests__/ai-operations-*.test.ts src/__tests__/ai-operations-*.test.cjs
+
+      - name: Verify application build
+        run: npm run build
+
+      - name: Verify deterministic lint gate
+        run: npm run lint
 
       - name: Record database qualification boundary
         if: always()
@@ -70,6 +93,8 @@ jobs:
             echo "### AI Operations database qualification boundary"
             echo ""
             echo "This workflow intentionally does **not** create a database from the repository migration folder and does **not** claim that the repository is a canonical bootstrap source."
+            echo ""
+            echo "It does run the complete AI Operations source-contract suite plus build and lint gates."
             echo ""
             echo "Until a curated/sanitized database bootstrap is committed to the repository, database qualification must be performed against the curated local test baseline by applying the approved AI Operations migration set **one file at a time**, stopping on the first error."
             echo ""
