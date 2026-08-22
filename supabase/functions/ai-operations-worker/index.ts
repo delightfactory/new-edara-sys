@@ -2,7 +2,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-ai-ops-worker-secret',
+  'Access-Control-Allow-Headers': 'content-type, x-ai-ops-worker-secret',
 }
 
 const allowedFields = new Set([
@@ -76,14 +76,12 @@ Deno.serve(async (req) => {
     600_000,
   )
 
-  if (!supabaseUrl || !serviceRoleKey || !modelBaseUrl || !modelApiKey || !model) {
+  if (!supabaseUrl || !serviceRoleKey || !workerSecret || !modelBaseUrl || !modelApiKey || !model) {
     return jsonResponse({ error: 'worker_not_configured' }, 503)
   }
 
-  const bearer = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
   const suppliedSecret = req.headers.get('x-ai-ops-worker-secret')
-  const authorized = bearer === serviceRoleKey || (!!workerSecret && suppliedSecret === workerSecret)
-  if (!authorized) return jsonResponse({ error: 'unauthorized' }, 401)
+  if (suppliedSecret !== workerSecret) return jsonResponse({ error: 'unauthorized' }, 401)
 
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
