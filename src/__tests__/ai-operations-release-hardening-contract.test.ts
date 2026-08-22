@@ -17,6 +17,8 @@ const scheduler = readText('supabase/maintenance/ai_ops_operator_schedule.sql')
 const killSwitch = readText('supabase/maintenance/ai_ops_operator_unschedule.sql')
 const deployment = readText('.github/workflows/deploy-ai-operations-worker.yml')
 const runbook = readText('supabase/maintenance/AI_OPS_RELEASE_RUNBOOK.md')
+const cloneRunner = readText('supabase/rehearsal/run_ai_ops_clone_rehearsal.sh')
+const cloneContextGate = readText('supabase/rehearsal/verify_ai_ops_clone_context.sql')
 
 describe('AI Operations release hardening contract', () => {
   it('compiles the early Field Execution migration against the production activity schema', () => {
@@ -49,13 +51,17 @@ describe('AI Operations release hardening contract', () => {
     expect(worker).toContain("return 'model_http_non_retryable'")
   })
 
-  it('pins service-to-service Edge authentication explicitly', () => {
+  it('pins service-to-service Edge authentication to the dedicated worker secret only', () => {
     expect(config).toContain('[functions.ai-operations-worker]')
     expect(config).toMatch(/\[functions\.ai-operations-worker\]\nverify_jwt = false(?:\n|$)/)
+    expect(worker).toContain('!workerSecret')
+    expect(worker).toContain("req.headers.get('x-ai-ops-worker-secret')")
+    expect(worker).toContain('suppliedSecret !== workerSecret')
+    expect(worker).not.toContain('bearer === serviceRoleKey')
   })
 
   it('schedules through pg_cron and pg_net using a dedicated Vault secret, never the service-role key', () => {
-    expect(scheduler).toContain("cron.schedule(")
+    expect(scheduler).toContain('cron.schedule(')
     expect(scheduler).toContain("'ai-operations-worker-poller'")
     expect(scheduler).toContain('net.http_post(')
     expect(scheduler).toContain('vault.decrypted_secrets')
@@ -63,7 +69,7 @@ describe('AI Operations release hardening contract', () => {
     expect(scheduler).toContain("name = 'ai_ops_worker_secret'")
     expect(scheduler).toContain("'x-ai-ops-worker-secret'")
     expect(scheduler).not.toContain('SUPABASE_SERVICE_ROLE_KEY')
-    expect(killSwitch).toContain("cron.unschedule(v_job.jobid)")
+    expect(killSwitch).toContain('cron.unschedule(v_job.jobid)')
   })
 
   it('keeps production deployment manual and separated from activation', () => {
@@ -73,6 +79,23 @@ describe('AI Operations release hardening contract', () => {
     expect(deployment).not.toContain('db push')
     expect(deployment).not.toContain('cron.schedule')
     expect(deployment).not.toContain('planner_enabled=true')
+  })
+
+  it('provides a guarded sequential migration and realistic clone context rehearsal', () => {
+    expect(cloneRunner).toContain('AI_OPS_REHEARSAL_DB_URL')
+    expect(cloneRunner).toContain('AI_OPS_REHEARSAL_CONFIRM')
+    expect(cloneRunner).toContain('ISOLATED_PRODUCTION_CLONE')
+    expect(cloneRunner).toContain("schema_name='ai_ops'")
+    expect(cloneRunner).toContain('20260816163504_ai_operations_foundation.sql')
+    expect(cloneRunner).toContain('20260817010300_ai_operations_worker_context_budget_hardening.sql')
+    expect(cloneRunner).toContain('-v ON_ERROR_STOP=1')
+
+    expect(cloneContextGate).toContain("COALESCE((v_context->>'blocked')::BOOLEAN, false)")
+    expect(cloneContextGate).toContain('v_context_limit <> 65536')
+    expect(cloneContextGate).toContain('v_capture_count <> v_required_domains')
+    expect(cloneContextGate).toContain("c ? 'responsibility_evidence'")
+    expect(cloneContextGate).toContain("c ? 'operational_context'")
+    expect(cloneContextGate).toContain('ROLLBACK;')
   })
 
   it('makes a final production-clone lifecycle rehearsal a GO requirement', () => {
