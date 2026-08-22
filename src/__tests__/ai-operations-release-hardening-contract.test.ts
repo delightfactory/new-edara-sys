@@ -19,6 +19,7 @@ const deployment = readText('.github/workflows/deploy-ai-operations-worker.yml')
 const runbook = readText('supabase/maintenance/AI_OPS_RELEASE_RUNBOOK.md')
 const cloneRunner = readText('supabase/rehearsal/run_ai_ops_clone_rehearsal.sh')
 const cloneContextGate = readText('supabase/rehearsal/verify_ai_ops_clone_context.sql')
+const cloneEdgePrepare = readText('supabase/rehearsal/prepare_ai_ops_clone_edge_run.sql')
 const edgeRehearsal = readText('supabase/rehearsal/run_ai_ops_edge_rehearsal.sh')
 
 describe('AI Operations release hardening contract', () => {
@@ -99,6 +100,16 @@ describe('AI Operations release hardening contract', () => {
     expect(cloneContextGate).toContain('ROLLBACK;')
   })
 
+  it('can prepare the isolated clone for an actual Edge/model claim without enabling auto-commit', () => {
+    expect(cloneRunner).toContain('AI_OPS_PREPARE_EDGE_RUN')
+    expect(cloneRunner).toContain('prepare_ai_ops_clone_edge_run.sql')
+    expect(cloneEdgePrepare).toContain('planner_enabled = true')
+    expect(cloneEdgePrepare).toContain('shadow_mode = true')
+    expect(cloneEdgePrepare).toContain('auto_commit_enabled = false')
+    expect(cloneEdgePrepare).toContain("'release_edge_rehearsal'")
+    expect(cloneEdgePrepare).toContain('ai_ops_worker_materialize_due_runs')
+  })
+
   it('provides a guarded actual Edge/model stage and validation rehearsal', () => {
     expect(edgeRehearsal).toContain('AI_OPS_REHEARSAL_CONFIRM')
     expect(edgeRehearsal).toContain('ISOLATED_PRODUCTION_CLONE')
@@ -112,9 +123,9 @@ describe('AI Operations release hardening contract', () => {
 
   it('makes a final production-clone lifecycle rehearsal a GO requirement', () => {
     expect(runbook).toContain('Mandatory isolated production-clone rehearsal')
-    expect(runbook).toContain('require `blocked=false`')
-    expect(runbook).toContain('all seven required domain capture markers')
-    expect(runbook).toContain('actual Edge Worker path')
+    expect(runbook).toContain('`blocked=false`')
+    expect(runbook).toContain('all seven required domain captures')
+    expect(runbook).toContain('actual Edge/model lifecycle')
     expect(runbook).toContain('Release remains **NO-GO** until all are true')
   })
 })
