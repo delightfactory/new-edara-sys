@@ -10,6 +10,7 @@ This runbook is the release gate for the AI Operations Operator. It is not an in
 - Never replay the full historical migration directory against production.
 - Apply only the explicitly approved AI Operations release migration set, one file at a time, stopping on the first failure.
 - Do not store the Supabase service-role key in pg_cron. The scheduler uses a dedicated worker secret stored in Vault.
+- Never replace, disable, or unschedule unrelated production cron jobs; AI Operations owns only the named `ai-operations-worker-poller` job.
 - A migration failure is handled with a forward fix unless a tested rollback exists for that exact migration. Do not improvise destructive rollback SQL.
 
 ## 2. Production facts verified read-only on 2026-08-22
@@ -21,7 +22,7 @@ Before this hardening branch is released, production was inspected read-only and
 - `public.activities` has `type_id`; it does not have an `activities.type` column.
 - `public.activity_types.id` is the lookup target and `activity_types.code` is the stable activity code.
 - `pg_cron`, `pg_net`, and `supabase_vault` are installed.
-- `cron.job` contains no jobs.
+- `cron.job` currently contains 12 active existing jobs; none is named `ai-operations-worker-poller`.
 
 Re-run the read-only preflight immediately before release; do not rely solely on this historical observation.
 
@@ -177,10 +178,11 @@ The script:
 - validates `pg_cron` and `pg_net`;
 - validates both required Vault secrets;
 - replaces only the named `ai-operations-worker-poller` job;
+- leaves every unrelated existing cron job untouched;
 - calls the Edge Function through `pg_net` once per minute;
 - sends the dedicated worker secret, not the service-role key.
 
-Verify the resulting row in `cron.job`.
+Verify the resulting row in `cron.job` and re-check that unrelated production jobs remain unchanged.
 
 ## 11. First live activation
 
@@ -206,7 +208,7 @@ For any unsafe or unexplained behavior:
 4. preserve run/decision evidence for diagnosis;
 5. use a reviewed forward fix for database changes rather than deleting historical migrations.
 
-Disabling the planner is the primary logical kill switch; unscheduling the poller is the transport-level kill switch.
+Disabling the planner is the primary logical kill switch; unscheduling the poller is the transport-level kill switch. Neither action may alter unrelated cron jobs.
 
 ## 13. Final GO criteria
 
@@ -215,7 +217,7 @@ Release remains **NO-GO** until all are true:
 - sequential migration rehearsal passes on the final production clone;
 - realistic seven-domain context remains within the hard byte budget while retaining decision-critical evidence;
 - actual Edge/model lifecycle passes with timeout/heartbeat behavior;
-- scheduler/auth/secrets path is proven without exposing the service-role key;
+- scheduler/auth/secrets path is proven without exposing the service-role key or altering unrelated cron jobs;
 - full automated test/build/lint gates are green and Windows/Linux line endings are stable;
 - the final integration branch is conflict-free;
 - the final PR targets `main`, is no longer Draft, and represents the exact qualified release SHA;
