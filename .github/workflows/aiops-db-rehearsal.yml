@@ -12,6 +12,7 @@ on:
       - supabase/config.toml
       - supabase/maintenance/ai_ops_operator_*.sql
       - supabase/maintenance/AI_OPS_RELEASE_RUNBOOK.md
+      - supabase/rehearsal/**
       - src/__tests__/ai-operations-*.test.*
       - scripts/lint-source-hygiene.mjs
       - package.json
@@ -25,6 +26,7 @@ on:
       - supabase/config.toml
       - supabase/maintenance/ai_ops_operator_*.sql
       - supabase/maintenance/AI_OPS_RELEASE_RUNBOOK.md
+      - supabase/rehearsal/**
       - src/__tests__/ai-operations-*.test.*
       - scripts/lint-source-hygiene.mjs
       - package.json
@@ -95,6 +97,8 @@ jobs:
             echo "This workflow intentionally does **not** create a database from the repository migration folder and does **not** claim that the repository is a canonical bootstrap source."
             echo ""
             echo "It does run the complete AI Operations source-contract suite plus build and lint gates."
+            echo ""
+            echo "The guarded scripts under supabase/rehearsal are the executable production-clone qualification path and require an explicitly confirmed isolated clone."
             echo ""
             echo "Until a curated/sanitized database bootstrap is committed to the repository, database qualification must be performed against the curated local test baseline by applying the approved AI Operations migration set **one file at a time**, stopping on the first error."
             echo ""
