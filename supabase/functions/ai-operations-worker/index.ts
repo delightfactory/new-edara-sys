@@ -14,6 +14,9 @@ const allowedFields = new Set([
 
 const leaseSeconds = 1200
 const heartbeatIntervalMs = 45_000
+const modelTimeoutMinMs = 5_000
+const modelTimeoutDefaultMs = 90_000
+const modelTimeoutMaxMs = 120_000
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -71,9 +74,9 @@ Deno.serve(async (req) => {
   const model = Deno.env.get('AI_OPS_MODEL')
   const modelTimeoutMs = boundedInteger(
     Deno.env.get('AI_OPS_MODEL_TIMEOUT_MS'),
-    90_000,
-    5_000,
-    600_000,
+    modelTimeoutDefaultMs,
+    modelTimeoutMinMs,
+    modelTimeoutMaxMs,
   )
 
   if (!supabaseUrl || !serviceRoleKey || !workerSecret || !modelBaseUrl || !modelApiKey || !model) {
