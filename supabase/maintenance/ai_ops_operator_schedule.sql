@@ -11,6 +11,10 @@
 -- This script deliberately does not store or use the Supabase service-role key.
 -- It is idempotent with respect to the named cron job: an existing job with the
 -- same name is removed before the replacement is created.
+--
+-- Timeout contract: the worker caps a single model wait at 120 seconds. Keep
+-- pg_net above that ceiling with 30 seconds for context RPCs, staging/validation
+-- and response delivery so the scheduler cannot abandon a still-valid worker call.
 
 DO $$
 DECLARE
@@ -73,7 +77,7 @@ SELECT cron.schedule(
         )
       ),
       body := '{}'::jsonb,
-      timeout_milliseconds := 10000
+      timeout_milliseconds := 150000
     );
   $cron$
 );
