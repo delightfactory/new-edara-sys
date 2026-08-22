@@ -19,6 +19,7 @@ const deployment = readText('.github/workflows/deploy-ai-operations-worker.yml')
 const runbook = readText('supabase/maintenance/AI_OPS_RELEASE_RUNBOOK.md')
 const cloneRunner = readText('supabase/rehearsal/run_ai_ops_clone_rehearsal.sh')
 const cloneContextGate = readText('supabase/rehearsal/verify_ai_ops_clone_context.sql')
+const edgeRehearsal = readText('supabase/rehearsal/run_ai_ops_edge_rehearsal.sh')
 
 describe('AI Operations release hardening contract', () => {
   it('compiles the early Field Execution migration against the production activity schema', () => {
@@ -96,6 +97,17 @@ describe('AI Operations release hardening contract', () => {
     expect(cloneContextGate).toContain("c ? 'responsibility_evidence'")
     expect(cloneContextGate).toContain("c ? 'operational_context'")
     expect(cloneContextGate).toContain('ROLLBACK;')
+  })
+
+  it('provides a guarded actual Edge/model stage and validation rehearsal', () => {
+    expect(edgeRehearsal).toContain('AI_OPS_REHEARSAL_CONFIRM')
+    expect(edgeRehearsal).toContain('ISOLATED_PRODUCTION_CLONE')
+    expect(edgeRehearsal).toContain('AI_OPS_EDGE_REHEARSAL_URL')
+    expect(edgeRehearsal).toContain('AI_OPS_EDGE_REHEARSAL_SECRET')
+    expect(edgeRehearsal).toContain('x-ai-ops-worker-secret')
+    expect(edgeRehearsal).toContain("body?.blocked === true")
+    expect(edgeRehearsal).toContain("body?.claimed !== true")
+    expect(edgeRehearsal).toContain('!body?.staged || !body?.validated')
   })
 
   it('makes a final production-clone lifecycle rehearsal a GO requirement', () => {
