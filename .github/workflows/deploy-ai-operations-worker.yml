@@ -1,0 +1,96 @@
+name: Deploy AI Operations Worker
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type DEPLOY_AI_OPS_WORKER to allow the deployment step'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-ai-operations-worker-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Qualify and deploy the AI Operations Edge Worker
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: production
+
+    steps:
+      - name: Enforce explicit deployment confirmation
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ inputs.confirm }}" != "DEPLOY_AI_OPS_WORKER" ]; then
+            echo "::error::Deployment confirmation token did not match."
+            exit 1
+          fi
+
+      - name: Checkout exact triggering commit
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify worker release contracts
+        run: |
+          npm test -- src/__tests__/ai-operations-release-hardening-contract.test.ts
+          npm run build
+          npm run lint
+
+      - name: Verify pinned Edge authentication config
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F '[functions.ai-operations-worker]' supabase/config.toml
+          grep -F 'verify_jwt = false' supabase/config.toml
+
+      - name: Verify deployment credentials are configured
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_ACCESS_TOKEN" || { echo "::error::SUPABASE_ACCESS_TOKEN is missing"; exit 1; }
+          test -n "$SUPABASE_PROJECT_REF" || { echo "::error::SUPABASE_PROJECT_REF is missing"; exit 1; }
+
+      - name: Deploy AI Operations Edge Worker only
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes supabase@2.110.0 functions deploy ai-operations-worker \
+            --project-ref "$SUPABASE_PROJECT_REF"
+
+      - name: Record activation boundary
+        if: success()
+        shell: bash
+        run: |
+          {
+            echo '### AI Operations worker deployment boundary'
+            echo ''
+            echo 'The Edge Function was deployed, but this workflow intentionally does **not**:'
+            echo '- apply database migrations;'
+            echo '- create or modify Vault secrets;'
+            echo '- create pg_cron jobs;'
+            echo '- enable planner settings or run schedules.'
+            echo ''
+            echo 'Continue only through `supabase/maintenance/AI_OPS_RELEASE_RUNBOOK.md`.'
+          } >> "$GITHUB_STEP_SUMMARY"
