@@ -39,6 +39,9 @@ It must also contain:
 - `supabase/config.toml`
 - `supabase/maintenance/ai_ops_operator_schedule.sql`
 - `supabase/maintenance/ai_ops_operator_unschedule.sql`
+- `supabase/rehearsal/run_ai_ops_clone_rehearsal.sh`
+- `supabase/rehearsal/verify_ai_ops_clone_context.sql`
+- `supabase/rehearsal/run_ai_ops_edge_rehearsal.sh`
 - the manual deployment workflow
 - AI Operations contract tests
 
@@ -89,34 +92,37 @@ Do not proceed merely because migrations are additive; a partially applied relea
 
 Use the curated isolated database derived from the final production state. Do not modify production for this rehearsal.
 
-Apply the approved AI Operations migration set one file at a time in timestamp order with `ON_ERROR_STOP=1`. Stop on the first error. The rehearsal must prove the sequential chain itself, not only the final schema.
+The guarded runner is:
 
-After every logical stage, verify at minimum:
+```bash
+AI_OPS_REHEARSAL_CONFIRM=ISOLATED_PRODUCTION_CLONE \
+AI_OPS_REHEARSAL_DB_URL='<isolated clone connection string>' \
+bash supabase/rehearsal/run_ai_ops_clone_rehearsal.sh
+```
+
+The runner refuses to proceed without the explicit clone confirmation, refuses a baseline where `ai_ops` already exists, applies the approved AI Operations migration files one by one with `ON_ERROR_STOP=1`, and then executes the realistic seven-domain context gate.
+
+The context gate must prove:
 
 - expected schemas/tables/functions exist;
-- browser roles cannot execute private worker gateways;
-- `service_role` can execute only the intended service gateways;
-- settings remain fail-safe;
-- required operational domain captures are complete;
-- no operational source data was mutated by snapshot/candidate construction.
+- all seven required domain captures are present;
+- `blocked=false`;
+- `context_bytes <= context_limit_bytes`;
+- `context_limit_bytes` remains exactly 65,536 rather than being raised to make the test pass;
+- selected frozen cases retain identifiers, responsibility evidence, operational/feasibility evidence and trust/facts keys after compaction;
+- the context hash is produced;
+- the probe itself is rolled back after verification.
 
-The end-to-end lifecycle on the clone must then execute:
+The actual Edge/model lifecycle is a separate mandatory gate. Prepare a due run on the isolated clone, deploy/configure the rehearsal Edge Function against that clone, then run:
 
-1. enable the planner on the clone only;
-2. keep `shadow_mode=true` and `auto_commit_enabled=false`;
-3. create/enable a controlled test run schedule;
-4. materialize a due run;
-5. claim it with a worker id;
-6. fetch worker context;
-7. require `blocked=false`;
-8. require `context_bytes <= context_limit_bytes` without increasing the 65,536-byte safety limit merely to make the test pass;
-9. require all seven required domain capture markers;
-10. require the selected cases to retain identifiers, responsibility evidence, feasibility evidence and actionable quantitative facts after compaction;
-11. invoke the configured model through the actual Edge Worker path;
-12. stage exactly one decision per selected frozen case;
-13. validate the staged run;
-14. confirm shadow mode did not auto-commit Work;
-15. repeat an idempotency/retry path and confirm no duplicate Work or decisions are created.
+```bash
+AI_OPS_REHEARSAL_CONFIRM=ISOLATED_PRODUCTION_CLONE \
+AI_OPS_EDGE_REHEARSAL_URL='<isolated Edge function URL>' \
+AI_OPS_EDGE_REHEARSAL_SECRET='<dedicated rehearsal worker secret>' \
+bash supabase/rehearsal/run_ai_ops_edge_rehearsal.sh
+```
+
+That gate requires a successful claim and completes the actual Edge → model → stage → validate lifecycle. It fails on blocked context, unsuccessful model/worker response, missing claim, or incomplete stage/validation response.
 
 The production-clone rehearsal is the authoritative database/runtime qualification. A source-code contract test alone is not a substitute.
 
@@ -143,14 +149,14 @@ Configure the Edge Function environment with secret values supplied through the 
 - `AI_OPS_MODEL`
 - optional `AI_OPS_MODEL_TIMEOUT_MS` (default is 90000 ms)
 
-`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are platform-provided runtime values. Do not copy the service-role key into the cron scheduler.
+`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are platform-provided runtime values. The service-role key is used only inside the Edge Function to execute the private RPC surface. It is not an accepted inbound HTTP credential and must not be copied into the cron scheduler.
 
 For the database scheduler, create Vault secrets:
 
 - `ai_ops_edge_function_url` — full `.../functions/v1/ai-operations-worker` URL
 - `ai_ops_worker_secret` — exactly the same dedicated secret as `INTERNAL_AI_OPS_WORKER_SECRET`
 
-The function is configured with `verify_jwt=false` because invocation is service-to-service. The handler itself requires the dedicated worker secret (or a deliberately controlled service credential for manual operations).
+The function is configured with `verify_jwt=false` because invocation is service-to-service. Every POST must present the dedicated `x-ai-ops-worker-secret`; the handler rejects requests if the dedicated secret is missing or mismatched.
 
 ## 9. Edge deployment
 
@@ -208,9 +214,9 @@ Release remains **NO-GO** until all are true:
 
 - sequential migration rehearsal passes on the final production clone;
 - realistic seven-domain context remains within the hard byte budget while retaining decision-critical evidence;
-- actual Edge model lifecycle passes with timeout/heartbeat behavior;
+- actual Edge/model lifecycle passes with timeout/heartbeat behavior;
 - scheduler/auth/secrets path is proven without exposing the service-role key;
-- full automated test/build/lint gates are green on Linux and Windows-relevant line-ending tests are stable;
+- full automated test/build/lint gates are green and Windows/Linux line endings are stable;
 - the final integration branch is conflict-free;
 - the final PR targets `main`, is no longer Draft, and represents the exact qualified release SHA;
 - a short independent final review issues GO.
