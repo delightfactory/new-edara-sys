@@ -21,6 +21,8 @@ const cloneRunner = readText('supabase/rehearsal/run_ai_ops_clone_rehearsal.sh')
 const cloneContextGate = readText('supabase/rehearsal/verify_ai_ops_clone_context.sql')
 const cloneEdgePrepare = readText('supabase/rehearsal/prepare_ai_ops_clone_edge_run.sql')
 const edgeRehearsal = readText('supabase/rehearsal/run_ai_ops_edge_rehearsal.sh')
+const finalClosureGate = readText('.github/workflows/aiops-final-closure-gate.yml')
+const closureAcceptance = readText('.github/workflows/aiops-closure-acceptance.yml')
 
 describe('AI Operations release hardening contract', () => {
   it('compiles the early Field Execution migration against the production activity schema', () => {
@@ -124,6 +126,23 @@ describe('AI Operations release hardening contract', () => {
     expect(cloneContextGate).toContain("pg_temp.worker_json_has_meaningful_value(c->'trust')")
     expect(cloneContextGate).toContain('missing, empty, null or marker-only decision evidence')
     expect(cloneContextGate).toContain('ROLLBACK;')
+  })
+
+  it('does not misrepresent the historical migration folder as a zero-state database bootstrap', () => {
+    for (const workflow of [finalClosureGate, closureAcceptance]) {
+      expect(workflow).not.toContain('Apply every repository migration from zero')
+      expect(workflow).not.toContain('Apply complete repository migration chain from zero')
+      expect(workflow).not.toMatch(/supabase(?:@\S+)?\s+db\s+start/)
+      expect(workflow).not.toMatch(/\bref:\s*feature\/work-management\b/)
+      expect(workflow).toContain('production-derived clone')
+    }
+    expect(finalClosureGate).toContain('actions/checkout@v7')
+    expect(finalClosureGate).toContain("- '.github/workflows/aiops-final-closure-gate.yml'")
+    expect(finalClosureGate).toContain("- '.github/workflows/aiops-closure-acceptance.yml'")
+    expect(finalClosureGate).toContain('deno@2.9.5 check')
+    expect(closureAcceptance).toContain('deno@2.9.5 check')
+    expect(finalClosureGate).toContain('Duplicate AI Operations migration versions')
+    expect(finalClosureGate).toContain('20260817012300_ai_operations_legacy_prompt_stage_compatibility.sql')
   })
 
   it('can prepare the isolated clone for an actual Edge/model claim without enabling auto-commit', () => {
