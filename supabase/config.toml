@@ -1,0 +1,8 @@
+project_id = "new-edara-sys"
+
+# AI Operations is invoked service-to-service by the internal scheduler.
+# Platform JWT verification is deliberately disabled for this function only;
+# the handler requires its dedicated x-ai-ops-worker-secret on every POST.
+# Never expose this endpoint as a public browser API.
+[functions.ai-operations-worker]
+verify_jwt = false

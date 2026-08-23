@@ -1,8 +1,8 @@
 # AI Operations — Closure Implementation Review
 
-**Branch:** `feature/work-management`  
-**Purpose:** close the four pre-smoke functional/intellectual gaps found in the final architecture audit.  
-**Production:** untouched; no merge or production AI Operations migration is authorized by this document.  
+**Branch:** `feature/work-management`
+**Purpose:** close the four pre-smoke functional/intellectual gaps found in the final architecture audit.
+**Production:** untouched; no merge or production AI Operations migration is authorized by this document.
 **Target state:** development closure / ready for isolated runtime acceptance, followed by realistic mixed-domain smoke testing.
 
 ## 1. Closure verdict

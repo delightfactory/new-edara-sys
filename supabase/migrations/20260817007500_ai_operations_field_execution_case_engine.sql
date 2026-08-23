@@ -118,9 +118,10 @@ enriched AS (
   ) pending ON true
   LEFT JOIN LATERAL (
     SELECT COALESCE(a.end_time,a.start_time,a.created_at) AS latest_activity_at,
-           a.type::TEXT AS latest_activity_type
+           COALESCE(at.code::TEXT,'activity') AS latest_activity_type
     FROM public.activities a
     JOIN public.visit_plan_items vpi ON vpi.id=a.visit_plan_item_id
+    LEFT JOIN public.activity_types at ON at.id=a.type_id
     WHERE vpi.plan_id=pr.visit_plan_id AND a.deleted_at IS NULL
     ORDER BY COALESCE(a.end_time,a.start_time,a.created_at) DESC,a.id
     LIMIT 1

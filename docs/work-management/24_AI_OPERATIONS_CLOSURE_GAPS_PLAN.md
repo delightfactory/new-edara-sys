@@ -1,6 +1,6 @@
 # AI Operations — Final Closure Plan Before Runtime Acceptance
 
-**Branch:** `feature/work-management`  
+**Branch:** `feature/work-management`
 **Scope:** close the four remaining operational-intelligence gaps without bypassing or weakening the existing seven-domain Case -> Snapshot -> Decision -> Validation -> Human Review -> Work lifecycle.
 
 ## Release posture

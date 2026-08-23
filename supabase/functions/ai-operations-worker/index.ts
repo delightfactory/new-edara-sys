@@ -2,7 +2,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-ai-ops-worker-secret',
+  'Access-Control-Allow-Headers': 'content-type, x-ai-ops-worker-secret',
 }
 
 const allowedFields = new Set([
@@ -13,6 +13,12 @@ const allowedFields = new Set([
   'business_impact','urgency','evidence_completeness','reversibility',
   'estimated_effort','success_signal','employee_safe_reason',
 ])
+
+const leaseSeconds = 1200
+const heartbeatIntervalMs = 45_000
+const modelTimeoutMinMs = 5_000
+const modelTimeoutDefaultMs = 90_000
+const modelTimeoutMaxMs = 120_000
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -36,6 +42,26 @@ function stagedRunRemainsReviewable(staged: unknown) {
   const lifecycle = (staged as { run_lifecycle?: unknown }).run_lifecycle
   if (!lifecycle || typeof lifecycle !== 'object' || Array.isArray(lifecycle)) return true
   return (lifecycle as { status?: unknown }).status === 'staged'
+}
+
+function boundedInteger(raw: string | undefined, fallback: number, min: number, max: number) {
+  if (!raw) return fallback
+  const parsed = Number.parseInt(raw, 10)
+  if (!Number.isFinite(parsed)) return fallback
+  return Math.min(Math.max(parsed, min), max)
+}
+
+function classifyFailure(message: string) {
+  if (message.startsWith('model_timeout_')) return 'model_timeout'
+  if (/^model_http_(429|5\d\d):/.test(message)) return 'model_http_retryable'
+  if (/^model_http_4\d\d:/.test(message)) return 'model_http_non_retryable'
+  if (
+    message.includes('model response has no text content') ||
+    message.includes('model response does not contain decisions array') ||
+    message.includes('invalid decision object') ||
+    message.includes('Unexpected token')
+  ) return 'model_contract_failure'
+  return 'edge_worker_failure'
 }
 
 function readVersionedPolicy(contextResult: Record<string, unknown>) {
@@ -87,15 +113,19 @@ Deno.serve(async (req) => {
   const modelBaseUrl = Deno.env.get('AI_OPS_MODEL_BASE_URL')
   const modelApiKey = Deno.env.get('AI_OPS_MODEL_API_KEY')
   const model = Deno.env.get('AI_OPS_MODEL')
+  const modelTimeoutMs = boundedInteger(
+    Deno.env.get('AI_OPS_MODEL_TIMEOUT_MS'),
+    modelTimeoutDefaultMs,
+    modelTimeoutMinMs,
+    modelTimeoutMaxMs,
+  )
 
-  if (!supabaseUrl || !serviceRoleKey || !modelBaseUrl || !modelApiKey || !model) {
+  if (!supabaseUrl || !serviceRoleKey || !workerSecret || !modelBaseUrl || !modelApiKey || !model) {
     return jsonResponse({ error: 'worker_not_configured' }, 503)
   }
 
-  const bearer = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
   const suppliedSecret = req.headers.get('x-ai-ops-worker-secret')
-  const authorized = bearer === serviceRoleKey || (!!workerSecret && suppliedSecret === workerSecret)
-  if (!authorized) return jsonResponse({ error: 'unauthorized' }, 401)
+  if (suppliedSecret !== workerSecret) return jsonResponse({ error: 'unauthorized' }, 401)
 
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -109,11 +139,20 @@ Deno.serve(async (req) => {
     return data
   }
 
+  const heartbeat = async () => {
+    if (!claimedRunId) return
+    await rpc('ai_ops_worker_heartbeat', {
+      p_run_id: claimedRunId,
+      p_worker_id: workerId,
+      p_lease_seconds: leaseSeconds,
+    })
+  }
+
   try {
     await rpc('ai_ops_worker_materialize_due_runs')
     const claim = await rpc('ai_ops_worker_claim_next_run', {
       p_worker_id: workerId,
-      p_lease_seconds: 1200,
+      p_lease_seconds: leaseSeconds,
     }) as Record<string, unknown> | null
 
     if (!claim || claim.claimed !== true || typeof claim.run_id !== 'string') {
@@ -134,27 +173,43 @@ Deno.serve(async (req) => {
 
     const versionedPolicy = readVersionedPolicy(contextResult)
 
-    await rpc('ai_ops_worker_heartbeat', {
-      p_run_id: claimedRunId,
-      p_worker_id: workerId,
-      p_lease_seconds: 1200,
-    })
+    await heartbeat()
 
-    const modelResponse = await fetch(completionsUrl(modelBaseUrl), {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${modelApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        temperature: 0.1,
-        messages: [
-          { role: 'system', content: versionedPolicy.systemPrompt },
-          { role: 'user', content: JSON.stringify(contextResult.context) },
-        ],
-      }),
-    })
+    const abortController = new AbortController()
+    const timeoutHandle = setTimeout(() => abortController.abort(), modelTimeoutMs)
+    const heartbeatHandle = setInterval(() => {
+      void heartbeat().catch((error) => {
+        console.error('ai_ops_worker_heartbeat_failed', error)
+      })
+    }, heartbeatIntervalMs)
+
+    let modelResponse: Response
+    try {
+      modelResponse = await fetch(completionsUrl(modelBaseUrl), {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${modelApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        signal: abortController.signal,
+        body: JSON.stringify({
+          model,
+          temperature: 0.1,
+          messages: [
+            { role: 'system', content: versionedPolicy.systemPrompt },
+            { role: 'user', content: JSON.stringify(contextResult.context) },
+          ],
+        }),
+      })
+    } catch (error) {
+      if (abortController.signal.aborted) {
+        throw new Error(`model_timeout_${modelTimeoutMs}ms`)
+      }
+      throw error
+    } finally {
+      clearTimeout(timeoutHandle)
+      clearInterval(heartbeatHandle)
+    }
     if (!modelResponse.ok) {
       throw new Error(`model_http_${modelResponse.status}: ${(await modelResponse.text()).slice(0, 500)}`)
     }
@@ -174,6 +229,8 @@ Deno.serve(async (req) => {
       }
       return clean
     })
+
+    await heartbeat()
 
     const staged = await rpc('ai_ops_worker_stage_decisions', {
       p_run_id: claimedRunId,
@@ -200,18 +257,19 @@ Deno.serve(async (req) => {
     })
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
+    const errorClass = classifyFailure(message)
     if (claimedRunId) {
       try {
         await rpc('ai_ops_worker_fail_run', {
           p_run_id: claimedRunId,
           p_worker_id: workerId,
-          p_error_class: 'edge_worker_failure',
+          p_error_class: errorClass,
           p_error_message: message.slice(0, 1500),
         })
       } catch (_) {
         // Preserve the original failure; durable lease expiry remains the recovery path.
       }
     }
-    return jsonResponse({ ok: false, run_id: claimedRunId, error: message }, 500)
+    return jsonResponse({ ok: false, run_id: claimedRunId, error_class: errorClass, error: message }, 500)
   }
 })

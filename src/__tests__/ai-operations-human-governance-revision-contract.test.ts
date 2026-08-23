@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 const migration = readFileSync(resolve(
   process.cwd(),
-  'supabase/migrations/20260817010300_ai_operations_human_context_decision_revision.sql',
+  'supabase/migrations/20260817010310_ai_operations_human_context_decision_revision.sql',
 ), 'utf8')
 const lifecycle = readFileSync(resolve(
   process.cwd(),

@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 const worker = readFileSync(resolve(process.cwd(),'supabase/functions/ai-operations-worker/index.ts'),'utf8')
 const policy = readFileSync(resolve(
   process.cwd(),
-  'supabase/migrations/20260817010200_ai_operations_policy_global_outcome_closure.sql',
+  'supabase/migrations/20260817010210_ai_operations_policy_global_outcome_closure.sql',
 ),'utf8')
 
 describe('AI Operations Edge worker', () => {
