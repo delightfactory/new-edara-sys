@@ -123,11 +123,13 @@ describe('AI Operations preview safety contract', () => {
     expect(envExample).toContain('VITE_AI_OPERATIONS_DATA_MODE=preview')
   })
 
-  it('does not surface the management tab unless the preview flag is enabled', () => {
+  it('surfaces the management console only in explicit preview or live RPC mode', () => {
     expect(managementPage).toContain('AI_OPERATIONS_PREVIEW')
+    expect(managementPage).toContain('AI_OPERATIONS_DATA_MODE')
     expect(managementPage).toContain("id: 'ai-operations' as const")
-    expect(managementPage).toMatch(/const\s+definitions\s*=\s*AI_OPERATIONS_PREVIEW\s*\?\s*\[\.\.\.TAB_DEFINITIONS,\s*AI_OPERATIONS_TAB\]\s*:\s*TAB_DEFINITIONS/s)
-    expect(managementPage).toMatch(/activeTab\s*===\s*'ai-operations'\s*&&\s*AI_OPERATIONS_PREVIEW\s*&&\s*<AiOperationsManagementPanel\s*\/>/s)
+    expect(managementPage).toMatch(/const\s+aiOperationsAvailable\s*=\s*AI_OPERATIONS_PREVIEW\s*\|\|\s*AI_OPERATIONS_DATA_MODE\s*===\s*'rpc'/s)
+    expect(managementPage).toMatch(/const\s+definitions\s*=\s*aiOperationsAvailable\s*\?\s*\[\.\.\.TAB_DEFINITIONS,\s*AI_OPERATIONS_TAB\]\s*:\s*TAB_DEFINITIONS/s)
+    expect(managementPage).toMatch(/activeTab\s*===\s*'ai-operations'\s*&&\s*aiOperationsAvailable\s*&&\s*<AiOperationsManagementPanel\s*\/>/s)
   })
 
   it('labels sample data clearly and documents that no database migration is applied', () => {

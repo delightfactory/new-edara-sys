@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, BrainCircuit, GitBranch, ListChecks, Repeat2, Settings2, UserRoundCog, Workflow } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
-import { AI_OPERATIONS_PREVIEW } from '@/lib/config/features'
+import { AI_OPERATIONS_DATA_MODE, AI_OPERATIONS_PREVIEW } from '@/lib/config/features'
 import type { WorkManagementTab } from '@/features/work/management-types'
 import QueuesManagementPanel from './QueuesManagementPanel'
 import ApprovalsManagementPanel from './ApprovalsManagementPanel'
@@ -34,12 +34,13 @@ const AI_OPERATIONS_TAB = {
 export default function WorkManagementPage() {
   const navigate = useNavigate()
   const can = useAuthStore(state => state.can)
+  const aiOperationsAvailable = AI_OPERATIONS_PREVIEW || AI_OPERATIONS_DATA_MODE === 'rpc'
   const tabs = useMemo(() => {
-    const definitions = AI_OPERATIONS_PREVIEW
+    const definitions = aiOperationsAvailable
       ? [...TAB_DEFINITIONS, AI_OPERATIONS_TAB]
       : TAB_DEFINITIONS
     return definitions.filter(tab => can(tab.permission))
-  }, [can])
+  }, [aiOperationsAvailable, can])
   const [requestedTab, setRequestedTab] = useState<ManagementTabId | null>(null)
   const activeTab = requestedTab && tabs.some(tab => tab.id === requestedTab) ? requestedTab : tabs[0]?.id
 
@@ -97,7 +98,7 @@ export default function WorkManagementPage() {
         {activeTab === 'recurrence' && <RecurrenceManagementPanel />}
         {activeTab === 'policies' && <PoliciesManagementPanel />}
         {activeTab === 'continuity' && <WorkContinuityPanel />}
-        {activeTab === 'ai-operations' && AI_OPERATIONS_PREVIEW && <AiOperationsManagementPanel />}
+        {activeTab === 'ai-operations' && aiOperationsAvailable && <AiOperationsManagementPanel />}
       </main>
     </div>
   )

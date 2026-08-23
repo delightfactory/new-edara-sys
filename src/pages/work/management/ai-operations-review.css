@@ -193,16 +193,123 @@
   font-size: 0.75rem;
 }
 
+.aiops-governance-control {
+  display: grid;
+  gap: 8px;
+}
+
+.aiops-governance-control > .btn {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.aiops-governance-editor {
+  display: grid;
+  gap: 10px;
+  padding: 11px;
+  border: 1px solid var(--color-border, #d0d5dd);
+  border-radius: 12px;
+  background: var(--color-bg-subtle, #f8fafc);
+}
+
+.aiops-governance-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: var(--color-text-secondary, #344054);
+  font-size: 0.7rem;
+  line-height: 1.55;
+}
+
+.aiops-governance-warning svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.aiops-governance-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.aiops-governance-grid label {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: var(--color-text-secondary, #344054);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.aiops-governance-grid input,
+.aiops-governance-grid select,
+.aiops-governance-grid textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border, #d0d5dd);
+  border-radius: 9px;
+  background: var(--color-surface, #fff);
+  color: inherit;
+  font: inherit;
+  font-weight: 500;
+  padding: 8px 9px;
+}
+
+.aiops-governance-grid textarea {
+  min-height: 72px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.aiops-governance-wide {
+  grid-column: 1 / -1;
+}
+
+.aiops-context-revoke {
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.aiops-context-revoke-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  justify-self: start;
+  border: 0;
+  background: transparent;
+  color: #b42318;
+  padding: 3px 0;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.aiops-context-revoke-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.aiops-context-revoke span {
+  font-size: 0.66rem;
+  color: var(--color-text-muted, #667085);
+}
+
 @media (max-width: 720px) {
   .aiops-review-live-head {
     display: grid;
   }
 
-  .aiops-review-grid {
+  .aiops-review-grid,
+  .aiops-governance-grid {
     grid-template-columns: 1fr;
   }
 
-  .aiops-review-field--wide {
+  .aiops-review-field--wide,
+  .aiops-governance-wide {
     grid-column: auto;
   }
 
@@ -211,7 +318,8 @@
     grid-template-columns: 1fr;
   }
 
-  .aiops-review-actions button {
+  .aiops-review-actions button,
+  .aiops-governance-control > .btn {
     width: 100%;
   }
 }

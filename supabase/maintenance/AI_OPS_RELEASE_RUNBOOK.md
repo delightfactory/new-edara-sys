@@ -33,6 +33,7 @@ The release candidate must contain all AI Operations migrations from the approve
 - `20260816163504_ai_operations_foundation.sql`
 - all subsequent approved `*_ai_operations_*.sql` migrations in timestamp order
 - `20260817010300_ai_operations_worker_context_budget_hardening.sql`
+- `20260817012300_ai_operations_legacy_prompt_stage_compatibility.sql` as the current terminal migration
 
 It must also contain:
 

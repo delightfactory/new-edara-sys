@@ -1,0 +1,242 @@
+name: AI Operations Final Pre-Smoke DB Gate
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/*ai_operations*'
+      - 'supabase/functions/ai-operations-worker/**'
+      - 'src/features/ai-operations/**'
+      - 'src/pages/work/management/AiOperations*'
+      - 'src/__tests__/ai-operations*'
+      - 'docs/work-management/**'
+      - '.github/workflows/aiops-final-closure-gate.yml'
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/work-management
+    paths:
+      - '.github/workflows/aiops-final-closure-gate.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aiops-final-pre-smoke-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  isolated-db:
+    name: Full migration chain + final worker replay contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Initialize isolated Supabase
+        shell: bash
+        env:
+          SUPABASE_TELEMETRY_DISABLED: '1'
+        run: |
+          mkdir -p .aiops-final
+          cd .aiops-final
+          npx --yes supabase@2.110.0 init
+          npx --yes supabase@2.110.0 db start
+      - name: Apply every repository migration from zero
+        shell: bash
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+          ROOT_DIR: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          mapfile -t migrations < <(python3 - "$ROOT_DIR/supabase/migrations" <<'PY'
+          import pathlib, re, sys
+          root = pathlib.Path(sys.argv[1])
+          def key(path):
+              m = re.match(r'^(\d+)(.*)$', path.name)
+              return (int(m.group(1)), m.group(2)) if m else (10**30, path.name)
+          for path in sorted(root.glob('*.sql'), key=key):
+              print(path.name)
+          PY
+          )
+          for migration in "${migrations[@]}"; do
+            echo "::group::$migration"
+            psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f "$ROOT_DIR/supabase/migrations/$migration"
+            echo "::endgroup::"
+          done
+      - name: Verify final AI Operations surface
+        shell: bash
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          psql "$DB_URL" -X -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          DECLARE
+            v_settings ai_ops.settings%ROWTYPE;
+            v_domains text[];
+            v_prompt text;
+            v_prompt_hash text;
+          BEGIN
+            SELECT * INTO v_settings FROM ai_ops.settings WHERE singleton=true;
+            IF NOT FOUND THEN RAISE EXCEPTION 'AI Operations settings missing'; END IF;
+            IF v_settings.planner_enabled OR NOT v_settings.shadow_mode OR v_settings.auto_commit_enabled THEN
+              RAISE EXCEPTION 'unsafe AI Operations defaults';
+            END IF;
+            IF v_settings.prompt_version IS DISTINCT FROM 'v3' THEN
+              RAISE EXCEPTION 'expected final prompt v3, got %',v_settings.prompt_version;
+            END IF;
+
+            v_domains:=ai_ops.required_operational_domains();
+            IF cardinality(v_domains)<>7 THEN
+              RAISE EXCEPTION 'expected seven domains, got %',cardinality(v_domains);
+            END IF;
+
+            SELECT p.system_prompt,p.prompt_hash INTO v_prompt,v_prompt_hash
+            FROM ai_ops.planner_policies p
+            WHERE p.policy_version='v1' AND p.prompt_version='v3' AND p.enabled=true;
+            IF v_prompt IS NULL OR v_prompt_hash IS DISTINCT FROM md5(v_prompt) THEN
+              RAISE EXCEPTION 'final prompt/hash registry is invalid';
+            END IF;
+            IF position('FINAL OUTPUT CONTRACT PRECEDENCE' in v_prompt)=0
+               OR position('Compare expected business value with interruption cost' in v_prompt)=0 THEN
+              RAISE EXCEPTION 'final management reasoning policy is incomplete';
+            END IF;
+
+            IF to_regclass('ai_ops.snapshot_global_context') IS NULL
+               OR to_regclass('ai_ops.snapshot_reconciliation') IS NULL
+               OR to_regclass('ai_ops.snapshot_context_runtime_metadata') IS NULL
+               OR to_regclass('ai_ops.case_outcomes') IS NULL
+               OR to_regclass('ai_ops.decision_review_bindings') IS NULL THEN
+              RAISE EXCEPTION 'closure evidence tables are incomplete';
+            END IF;
+
+            IF to_regprocedure('public.ai_ops_worker_get_context(uuid,text)') IS NULL
+               OR to_regprocedure('public.ai_ops_worker_stage_decisions(uuid,text,text,jsonb)') IS NULL
+               OR to_regprocedure('public.ai_ops_review_decision(uuid,text,text)') IS NULL
+               OR to_regprocedure('public.ai_ops_commit_reviewed_decision(uuid)') IS NULL
+               OR to_regprocedure('public.ai_ops_revise_decision(uuid,uuid,uuid,text,text,timestamp with time zone,text,text,text)') IS NULL
+               OR to_regprocedure('public.ai_ops_create_operational_context(text,uuid,text,text,uuid,timestamp with time zone,text)') IS NULL
+               OR to_regprocedure('public.ai_ops_revoke_operational_context(uuid,text)') IS NULL THEN
+              RAISE EXCEPTION 'final public gateway surface is incomplete';
+            END IF;
+            IF to_regprocedure('public.ai_ops_revise_decision(uuid,uuid,uuid,text,text,timestamp with time zone,text)') IS NOT NULL THEN
+              RAISE EXCEPTION 'legacy public revision signature still exposed';
+            END IF;
+            IF has_function_privilege('authenticated','public.ai_ops_worker_get_context(uuid,text)','EXECUTE')
+               OR has_function_privilege('anon','public.ai_ops_worker_get_context(uuid,text)','EXECUTE')
+               OR NOT has_function_privilege('service_role','public.ai_ops_worker_get_context(uuid,text)','EXECUTE') THEN
+              RAISE EXCEPTION 'worker gateway privilege boundary is invalid';
+            END IF;
+          END $$;
+          SQL
+      - name: Exercise same-snapshot replay and zero-case lifecycle
+        shell: bash
+        env:
+          DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          psql "$DB_URL" -X -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          DECLARE
+            v_local_now timestamp:=clock_timestamp() AT TIME ZONE 'Africa/Cairo';
+            v_day smallint:=extract(dow from clock_timestamp() AT TIME ZONE 'Africa/Cairo')::smallint;
+            v_materialized jsonb;
+            v_claim jsonb;
+            v_context1 jsonb;
+            v_context2 jsonb;
+            v_stage jsonb;
+            v_retry jsonb;
+            v_run_id uuid;
+            v_snapshot_id uuid;
+            v_hash text;
+            v_status text;
+            v_checkpoint text;
+          BEGIN
+            UPDATE ai_ops.settings
+            SET planner_enabled=true,shadow_mode=true,auto_commit_enabled=false,updated_at=clock_timestamp();
+
+            INSERT INTO ai_ops.run_schedules(
+              code,run_type,timezone,local_time,weekdays,recovery_window_minutes,enabled,settings
+            ) VALUES (
+              'final_gate_zero','morning','Africa/Cairo',
+              (v_local_now::time-interval '1 minute')::time,
+              ARRAY[v_day]::smallint[],180,true,'{}'::jsonb
+            );
+
+            v_materialized:=public.ai_ops_worker_materialize_due_runs();
+            IF COALESCE((v_materialized->>'materialized')::integer,0)<>1 THEN
+              RAISE EXCEPTION 'expected one due run: %',v_materialized;
+            END IF;
+            v_claim:=public.ai_ops_worker_claim_next_run('final-gate-worker',1200);
+            IF COALESCE((v_claim->>'claimed')::boolean,false) IS NOT TRUE THEN
+              RAISE EXCEPTION 'worker did not claim run: %',v_claim;
+            END IF;
+            v_run_id:=(v_claim->>'run_id')::uuid;
+
+            v_context1:=public.ai_ops_worker_get_context(v_run_id,'final-gate-worker');
+            IF COALESCE((v_context1->>'blocked')::boolean,false) THEN
+              RAISE EXCEPTION 'worker context blocked: %',v_context1;
+            END IF;
+            IF v_context1->>'prompt_version' IS DISTINCT FROM 'v3'
+               OR v_context1->'context'->'planner_policy'->>'prompt_version' IS DISTINCT FROM 'v3'
+               OR v_context1->'context'->'decision_contract'->>'final_output_contract_version' IS DISTINCT FROM 'v3' THEN
+              RAISE EXCEPTION 'v3 model contract mismatch';
+            END IF;
+            IF jsonb_array_length(v_context1->'context'->'snapshot'->'domain_captures')<>7
+               OR jsonb_array_length(v_context1->'context'->'cases')<>0 THEN
+              RAISE EXCEPTION 'unexpected zero-case seven-domain context shape';
+            END IF;
+            IF jsonb_array_length(v_context1->'context'->'decision_contract'->'action_quality_requires')<>7 THEN
+              RAISE EXCEPTION 'structured action quality contract incomplete';
+            END IF;
+            IF COALESCE((v_context1->'context'->'global_operational_context'->'learning_evidence_semantics'->>'strict_snapshot_as_of')::boolean,false) IS NOT TRUE
+               OR COALESCE((v_context1->'context'->'global_operational_context'->'feasibility_semantics'->>'explicit_hr_unavailability_is_hard')::boolean,false) IS NOT TRUE THEN
+              RAISE EXCEPTION 'global planning frame semantics incomplete';
+            END IF;
+
+            v_hash:=v_context1->>'context_hash';
+            v_context2:=public.ai_ops_worker_get_context(v_run_id,'final-gate-worker');
+            IF COALESCE((v_context2->>'blocked')::boolean,false)
+               OR v_context2->>'context_hash' IS DISTINCT FROM v_hash
+               OR v_context2->'context' IS DISTINCT FROM v_context1->'context' THEN
+              RAISE EXCEPTION 'same-snapshot model context is not replay-stable';
+            END IF;
+
+            SELECT s.id INTO v_snapshot_id FROM ai_ops.snapshots s WHERE s.run_id=v_run_id;
+            IF NOT EXISTS (SELECT 1 FROM ai_ops.snapshot_global_context x WHERE x.snapshot_id=v_snapshot_id)
+               OR NOT EXISTS (SELECT 1 FROM ai_ops.snapshot_reconciliation x WHERE x.snapshot_id=v_snapshot_id)
+               OR NOT EXISTS (SELECT 1 FROM ai_ops.snapshot_context_runtime_metadata x WHERE x.snapshot_id=v_snapshot_id) THEN
+              RAISE EXCEPTION 'immutable replay evidence not frozen';
+            END IF;
+
+            v_stage:=public.ai_ops_worker_stage_decisions(v_run_id,'final-gate-worker',v_hash,'[]'::jsonb);
+            IF COALESCE((v_stage->>'staged')::boolean,false) IS NOT TRUE
+               OR COALESCE((v_stage->>'structured_decision_quality')::boolean,false) IS NOT TRUE
+               OR NULLIF(v_stage->>'quality_submission_hash','') IS NULL
+               OR v_stage->'run_lifecycle'->>'status' IS DISTINCT FROM 'completed' THEN
+              RAISE EXCEPTION 'zero-case v3 staging/lifecycle failed: %',v_stage;
+            END IF;
+
+            SELECT status,checkpoint INTO v_status,v_checkpoint
+            FROM ai_ops.planner_runs WHERE id=v_run_id;
+            IF v_status<>'completed' OR v_checkpoint<>'completed_zero_cases' THEN
+              RAISE EXCEPTION 'durable zero-case lifecycle mismatch';
+            END IF;
+
+            v_retry:=public.ai_ops_worker_stage_decisions(v_run_id,'final-gate-worker',v_hash,'[]'::jsonb);
+            IF COALESCE((v_retry->>'idempotent_reuse')::boolean,false) IS NOT TRUE
+               OR v_retry->>'quality_submission_hash' IS DISTINCT FROM v_stage->>'quality_submission_hash' THEN
+              RAISE EXCEPTION 'exact staging retry is not idempotent';
+            END IF;
+          END $$;
+          SQL
+      - name: Stop isolated Supabase
+        if: always()
+        shell: bash
+        env:
+          SUPABASE_TELEMETRY_DISABLED: '1'
+        run: |
+          if [ -d .aiops-final/supabase ]; then
+            cd .aiops-final
+            npx --yes supabase@2.110.0 stop --no-backup || true
+          fi

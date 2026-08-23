@@ -98,6 +98,9 @@ describe('AI Operations release hardening contract', () => {
     expect(cloneRunner).toContain("schema_name='ai_ops'")
     expect(cloneRunner).toContain('20260816163504_ai_operations_foundation.sql')
     expect(cloneRunner).toContain('20260817010300_ai_operations_worker_context_budget_hardening.sql')
+    expect(cloneRunner).toContain('20260817012300_ai_operations_legacy_prompt_stage_compatibility.sql')
+    expect(cloneRunner).toContain('Duplicate AI Operations migration versions')
+    expect(cloneRunner).toContain("sed -E 's/^([0-9]{14}).*/\\1/'")
     expect(cloneRunner).toContain('-v ON_ERROR_STOP=1')
 
     expect(cloneContextGate).toContain("COALESCE((v_context->>'blocked')::BOOLEAN, false)")

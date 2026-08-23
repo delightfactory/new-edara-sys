@@ -2,11 +2,16 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AI_OPERATIONS_DATA_MODE } from '@/lib/config/features'
 import {
   commitAiOperationsDecision,
-  setAiOperationsCaseDisposition,
+  createAiOperationsOperationalContext,
   getAiOperationsCaseDetail,
   getAiOperationsConsole,
   getAiOperationsDecisionReview,
+  revokeAiOperationsOperationalContext,
+  reviseAiOperationsDecision,
   reviewAiOperationsDecision,
+  setAiOperationsCaseDisposition,
+  type CreateAiOperationsContextInput,
+  type ReviseAiOperationsDecisionInput,
 } from './service'
 import type { AiOpsHumanReviewState } from './types'
 
@@ -52,10 +57,13 @@ export function useAiOperationsDecisionReview(caseId: string | null, enabled = t
   })
 }
 
+function invalidateAiOperations(queryClient: ReturnType<typeof useQueryClient>) {
+  return queryClient.invalidateQueries({ queryKey: aiOperationsKeys.all })
+}
+
 export function useReviewAiOperationsDecision() {
   const queryClient = useQueryClient()
   const mode = AI_OPERATIONS_DATA_MODE
-
   return useMutation({
     mutationFn: ({
       decisionId,
@@ -66,21 +74,44 @@ export function useReviewAiOperationsDecision() {
       reviewState: AiOpsHumanReviewState
       reviewNote?: string | null
     }) => reviewAiOperationsDecision(decisionId, reviewState, reviewNote, { mode }),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: aiOperationsKeys.all })
-    },
+    onSuccess: () => invalidateAiOperations(queryClient),
   })
 }
 
 export function useCommitAiOperationsDecision() {
   const queryClient = useQueryClient()
   const mode = AI_OPERATIONS_DATA_MODE
-
   return useMutation({
     mutationFn: ({ decisionId }: { decisionId: string }) => commitAiOperationsDecision(decisionId, { mode }),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: aiOperationsKeys.all })
-    },
+    onSuccess: () => invalidateAiOperations(queryClient),
+  })
+}
+
+export function useReviseAiOperationsDecision() {
+  const queryClient = useQueryClient()
+  const mode = AI_OPERATIONS_DATA_MODE
+  return useMutation({
+    mutationFn: (input: ReviseAiOperationsDecisionInput) => reviseAiOperationsDecision(input, { mode }),
+    onSuccess: () => invalidateAiOperations(queryClient),
+  })
+}
+
+export function useCreateAiOperationsContext() {
+  const queryClient = useQueryClient()
+  const mode = AI_OPERATIONS_DATA_MODE
+  return useMutation({
+    mutationFn: (input: CreateAiOperationsContextInput) => createAiOperationsOperationalContext(input, { mode }),
+    onSuccess: () => invalidateAiOperations(queryClient),
+  })
+}
+
+export function useRevokeAiOperationsContext() {
+  const queryClient = useQueryClient()
+  const mode = AI_OPERATIONS_DATA_MODE
+  return useMutation({
+    mutationFn: ({ contextId, note }: { contextId: string; note?: string | null }) =>
+      revokeAiOperationsOperationalContext(contextId, note, { mode }),
+    onSuccess: () => invalidateAiOperations(queryClient),
   })
 }
 
@@ -98,8 +129,6 @@ export function useSetAiOperationsCaseDisposition() {
       until: string | null
       note?: string | null
     }) => setAiOperationsCaseDisposition(caseId, action, until, note),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: aiOperationsKeys.all })
-    },
+    onSuccess: () => invalidateAiOperations(queryClient),
   })
 }

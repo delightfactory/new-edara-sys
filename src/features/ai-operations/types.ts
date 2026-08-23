@@ -19,6 +19,10 @@ export type AiOpsDecisionValidationState = 'pending' | 'validated' | 'rejected'
 export type AiOpsHumanReviewState = 'approved' | 'rejected'
 export type AiOpsCommitStatus = 'not_requested' | 'staged' | 'committed' | 'rejected' | 'failed' | 'skipped'
 export type AiOpsEvidenceStrength = 'direct' | 'supporting' | 'contextual'
+export type AiOpsBusinessImpact = 'low' | 'medium' | 'high' | 'critical'
+export type AiOpsUrgency = 'low' | 'normal' | 'high' | 'immediate'
+export type AiOpsReversibility = 'reversible' | 'review_required' | 'sensitive'
+export type AiOpsEstimatedEffort = 'S' | 'M' | 'L'
 export type AiOpsContextConfidence =
   | 'hard_policy'
   | 'approved_human'
@@ -176,6 +180,13 @@ export interface AiOpsDecisionReviewDetail {
   why_this_owner: string | null
   why_now: string | null
   confidence: number | null
+  business_impact: AiOpsBusinessImpact | null
+  urgency: AiOpsUrgency | null
+  evidence_completeness: number | null
+  reversibility: AiOpsReversibility | null
+  estimated_effort: AiOpsEstimatedEffort | null
+  success_signal: string | null
+  employee_safe_reason: string | null
   recommended_owner_user_id: string | null
   recommended_owner_label: string | null
   recommended_assignee_user_id: string | null
@@ -244,6 +255,30 @@ export interface AiOpsCommitDecisionResult {
   operational_mutation?: string
   validation_codes?: string[]
   run_lifecycle?: AiOpsRunLifecycleResult
+}
+
+export interface AiOpsDecisionRevisionResult {
+  revised: boolean
+  old_decision_id: string
+  decision_id: string
+  revision: number
+  validation_state: AiOpsDecisionValidationState
+  validation_codes: string[]
+  execution_performed: boolean
+}
+
+export interface AiOpsOperationalContextMutationResult {
+  created?: boolean
+  revoked?: boolean
+  blocked?: boolean
+  idempotent_reuse?: boolean
+  reason?: string
+  context_id: string
+  subject_type?: string
+  subject_id?: string
+  context_type?: string
+  valid_until?: string
+  status: 'active' | 'expired' | 'revoked' | 'consumed'
 }
 
 export interface AiOpsOperationalContextItem {

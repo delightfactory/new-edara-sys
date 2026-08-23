@@ -49,8 +49,20 @@ if [[ "${migrations[0]}" != "20260816163504_ai_operations_foundation.sql" ]]; th
   exit 4
 fi
 
+duplicate_versions="$(printf '%s\n' "${migrations[@]}" | sed -E 's/^([0-9]{14}).*/\1/' | sort | uniq -d)"
+if [[ -n "$duplicate_versions" ]]; then
+  echo "Duplicate AI Operations migration versions: $duplicate_versions" >&2
+  exit 4
+fi
+
+if ! printf '%s\n' "${migrations[@]}" | grep -Fxq \
+  '20260817010300_ai_operations_worker_context_budget_hardening.sql'; then
+  echo "Worker context budget hardening migration is missing" >&2
+  exit 4
+fi
+
 last_index=$((${#migrations[@]} - 1))
-if [[ "${migrations[$last_index]}" != "20260817010300_ai_operations_worker_context_budget_hardening.sql" ]]; then
+if [[ "${migrations[$last_index]}" != "20260817012300_ai_operations_legacy_prompt_stage_compatibility.sql" ]]; then
   echo "Unexpected terminal AI Operations migration: ${migrations[$last_index]}" >&2
   exit 4
 fi

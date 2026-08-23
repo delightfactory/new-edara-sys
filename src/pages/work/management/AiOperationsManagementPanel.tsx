@@ -31,12 +31,21 @@ import {
   useSetAiOperationsCaseDisposition,
 } from '@/features/ai-operations/hooks'
 import type {
+  AiOpsBusinessImpact,
   AiOpsCase,
   AiOpsCaseSeverity,
   AiOpsDecisionType,
+  AiOpsEstimatedEffort,
   AiOpsPlannerRun,
+  AiOpsReversibility,
   AiOpsTrustSignal,
+  AiOpsUrgency,
 } from '@/features/ai-operations/types'
+import {
+  AiOperationsCaseContextEditor,
+  AiOperationsContextRevokeButton,
+  AiOperationsDecisionRevisionEditor,
+} from './AiOperationsGovernanceControls'
 import './ai-operations-management.css'
 import './ai-operations-review.css'
 
@@ -69,6 +78,32 @@ const evidenceStrengthLabels = {
   supporting: 'دليل مساند',
   contextual: 'سياق',
 } as const
+
+const businessImpactLabels: Record<AiOpsBusinessImpact, string> = {
+  low: 'محدود',
+  medium: 'متوسط',
+  high: 'مرتفع',
+  critical: 'حرج',
+}
+
+const urgencyLabels: Record<AiOpsUrgency, string> = {
+  low: 'منخفضة',
+  normal: 'عادية',
+  high: 'مرتفعة',
+  immediate: 'فورية',
+}
+
+const reversibilityLabels: Record<AiOpsReversibility, string> = {
+  reversible: 'قابل للرجوع',
+  review_required: 'يحتاج مراجعة',
+  sensitive: 'حساس',
+}
+
+const effortLabels: Record<AiOpsEstimatedEffort, string> = {
+  S: 'S — تدخل قصير',
+  M: 'M — تركيز متوسط',
+  L: 'L — عمل يحتاج تخطيط',
+}
 
 function formatDateTime(value: string | null) {
   if (!value) return '—'
@@ -186,6 +221,13 @@ function DecisionReviewPanel({
     && decision.run_status === 'staged'
     && decision.review_state === null
     && decision.validation_state !== 'rejected'
+
+  const canRevise = plannerEnabled
+    && !shadowMode
+    && decision.run_status === 'staged'
+    && decision.review_state === null
+    && decision.commit_status !== 'committed'
+    && decision.decision_type === 'CREATE_WORK'
 
   const canCommit = plannerEnabled
     && !shadowMode
@@ -322,6 +364,30 @@ function DecisionReviewPanel({
           <span>موعد المراجعة</span>
           <strong>{formatDateTime(decision.review_after)}</strong>
         </div>
+        <div className="aiops-review-field">
+          <span>الأثر التجاري</span>
+          <strong>{decision.business_impact ? businessImpactLabels[decision.business_impact] : '—'}</strong>
+        </div>
+        <div className="aiops-review-field">
+          <span>الإلحاح</span>
+          <strong>{decision.urgency ? urgencyLabels[decision.urgency] : '—'}</strong>
+        </div>
+        <div className="aiops-review-field">
+          <span>اكتمال الأدلة</span>
+          <strong>{decision.evidence_completeness == null ? '—' : `${Math.round(decision.evidence_completeness * 100)}%`}</strong>
+        </div>
+        <div className="aiops-review-field">
+          <span>الـEffort</span>
+          <strong>{decision.estimated_effort ? effortLabels[decision.estimated_effort] : '—'}</strong>
+        </div>
+        <div className="aiops-review-field">
+          <span>قابلية الرجوع</span>
+          <strong>{decision.reversibility ? reversibilityLabels[decision.reversibility] : '—'}</strong>
+        </div>
+        <div className="aiops-review-field">
+          <span>الثقة</span>
+          <strong>{decision.confidence == null ? '—' : `${Math.round(decision.confidence * 100)}%`}</strong>
+        </div>
         <div className="aiops-review-field aiops-review-field--wide">
           <span>الإجراء التالي</span>
           <p>{decision.next_action_text ?? 'لا يوجد إجراء تنفيذي مقترح.'}</p>
@@ -329,6 +395,14 @@ function DecisionReviewPanel({
         <div className="aiops-review-field aiops-review-field--wide">
           <span>النتيجة المتوقعة</span>
           <p>{decision.expected_outcome ?? 'لا توجد نتيجة تنفيذية محددة لهذا النوع من القرار.'}</p>
+        </div>
+        <div className="aiops-review-field aiops-review-field--wide">
+          <span>إشارة النجاح التي سنراجعها</span>
+          <p>{decision.success_signal ?? '—'}</p>
+        </div>
+        <div className="aiops-review-field aiops-review-field--wide">
+          <span>السبب الآمن الذي يصل للموظف</span>
+          <p>{decision.employee_safe_reason ?? '—'}</p>
         </div>
       </div>
 
@@ -374,6 +448,8 @@ function DecisionReviewPanel({
           />
         </div>
       )}
+
+      {canRevise && <AiOperationsDecisionRevisionEditor decision={decision} disabled={busy} />}
 
       <div className="aiops-review-actions">
         {canReview && (
@@ -536,6 +612,8 @@ function CaseCard({
                 </div>
               </div>
 
+              <AiOperationsCaseContextEditor item={item} disabled={isPreview} />
+
               <DecisionReviewPanel
                 caseId={item.id}
                 isPreview={isPreview}
@@ -683,7 +761,7 @@ export default function AiOperationsManagementPanel() {
 
           <section className="aiops-panel-card">
             <div className="aiops-panel-title"><UserRoundCog size={17} /> السياق التشغيلي</div>
-            <p className="aiops-panel-note">معلومات إدارية لا يمكن استنتاجها بأمان من المعاملات وحدها.</p>
+            <p className="aiops-panel-note">معلومات إدارية لا يمكن استنتاجها بأمان من المعاملات وحدها. كل سياق بشري جديد مؤقت ومراجعته لا تمنح أي صلاحية تنفيذية.</p>
             <div className="aiops-context-list">
               {data.context.map(item => (
                 <article key={item.id} className="aiops-context-item">
@@ -696,6 +774,7 @@ export default function AiOperationsManagementPanel() {
                     {item.review_on && <span>مراجعة: {item.review_on}</span>}
                     {item.valid_until && <span>ينتهي: {formatDateTime(item.valid_until)}</span>}
                   </div>
+                  <AiOperationsContextRevokeButton item={item} disabled={isPreview} />
                 </article>
               ))}
             </div>
@@ -707,12 +786,14 @@ export default function AiOperationsManagementPanel() {
               {isPreview ? (
                 <>
                   <li>Preview لا يستدعي Supabase AI RPCs.</li>
-                  <li>لا يمكن اعتماد أو رفض أو تنفيذ قرارات من Preview.</li>
+                  <li>لا يمكن اعتماد أو رفض أو تعديل أو تنفيذ قرارات من Preview.</li>
                   <li>البيانات المعروضة Fixtures ثابتة للمراجعة البصرية فقط.</li>
                 </>
               ) : (
                 <>
                   <li>الموافقة البشرية لا تنشئ Work تلقائيًا.</li>
+                  <li>تعديل القرار ينشئ Revision جديدة ويعيد التحقق ولا يمسح القرار الأصلي.</li>
+                  <li>السياق الإداري بيانات توجيه مؤقتة وليس أمر تنفيذ.</li>
                   <li>CREATE_WORK وESCALATE لا يُنفذان إلا بعد اعتماد بشري صريح وخطوة تنفيذ مستقلة.</li>
                   <li>التنفيذ يعيد التحقق من الواقع داخل نفس المعاملة.</li>
                   <li>Planner Off وShadow Mode يعملان كـKill Switch قبل أي Work جديدة.</li>

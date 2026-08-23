@@ -6,6 +6,11 @@ function isFutureIsoDate(value: string | null | undefined) {
   return Number.isFinite(timestamp) && timestamp > Date.now()
 }
 
+const businessImpact = z.enum(['low', 'medium', 'high', 'critical'])
+const urgency = z.enum(['low', 'normal', 'high', 'immediate'])
+const reversibility = z.enum(['reversible', 'review_required', 'sensitive'])
+const estimatedEffort = z.enum(['S', 'M', 'L'])
+
 export const aiOpsWorkerDecisionSchema = z.object({
   case_id: z.string().uuid(),
   decision_type: z.enum(['IGNORE', 'MONITOR', 'INVESTIGATE', 'INFORM', 'CREATE_WORK', 'ESCALATE']),
@@ -20,6 +25,13 @@ export const aiOpsWorkerDecisionSchema = z.object({
   next_action_text: z.string().max(500).optional(),
   due_at: z.string().datetime({ offset: true }).nullable().optional(),
   review_after: z.string().datetime({ offset: true }).nullable().optional(),
+  business_impact: businessImpact.optional(),
+  urgency: urgency.optional(),
+  evidence_completeness: z.number().min(0).max(1).optional(),
+  reversibility: reversibility.optional(),
+  estimated_effort: estimatedEffort.optional(),
+  success_signal: z.string().trim().min(1).max(500).optional(),
+  employee_safe_reason: z.string().trim().min(1).max(500).optional(),
 }).strict().superRefine((value, context) => {
   if (value.decision_type === 'MONITOR') {
     if (!value.review_after) {
@@ -46,6 +58,19 @@ export const aiOpsWorkerDecisionSchema = z.object({
       context.addIssue({ code: z.ZodIssueCode.custom, path: ['due_at'], message: 'CREATE_WORK requires due_at' })
     } else if (!isFutureIsoDate(value.due_at)) {
       context.addIssue({ code: z.ZodIssueCode.custom, path: ['due_at'], message: 'CREATE_WORK due_at must be in the future' })
+    }
+  }
+
+  if (value.decision_type === 'CREATE_WORK' || value.decision_type === 'ESCALATE') {
+    const required: Array<keyof typeof value> = [
+      'business_impact', 'urgency', 'evidence_completeness', 'reversibility',
+      'estimated_effort', 'success_signal', 'employee_safe_reason',
+    ]
+    for (const key of required) {
+      const fieldValue = value[key]
+      if (fieldValue === undefined || fieldValue === null || (typeof fieldValue === 'string' && !fieldValue.trim())) {
+        context.addIssue({ code: z.ZodIssueCode.custom, path: [key], message: `${key} is required for action decisions` })
+      }
     }
   }
 })
@@ -105,6 +130,14 @@ const domainCaptureSchema = z.object({
   metadata: z.record(z.string(), z.unknown()),
 })
 
+const plannerPolicySchema = z.object({
+  policy_version: z.string().min(1),
+  prompt_version: z.string().min(1),
+  prompt_hash: z.string().regex(/^[a-f0-9]{32}$/),
+  system_prompt: z.string().min(1),
+  methodology: z.record(z.string(), z.unknown()),
+})
+
 const workerContextBodySchema = z.object({
   contract_version: z.string().min(1),
   run: z.object({
@@ -126,8 +159,6 @@ const workerContextBodySchema = z.object({
     trust: z.record(z.string(), z.unknown()),
     company_pulse: z.record(z.string(), z.unknown()),
     coverage: z.record(z.string(), z.unknown()),
-    // Legacy singular capture remains in the SQL contract for backward-compatible
-    // consumers; domain_captures is the authoritative multi-domain coverage list.
     domain_capture: z.object({
       domain: z.literal('receivables'),
       capture_status: z.enum(['completed', 'partial', 'blocked']),
@@ -150,16 +181,21 @@ const workerContextBodySchema = z.object({
     create_work_due_at_must_be_future: z.literal(true),
     rationale_is_concise_not_chain_of_thought: z.literal(true),
   }),
+  planner_policy: plannerPolicySchema,
+  global_operational_context: z.record(z.string(), z.unknown()),
+  reconciliation: z.record(z.string(), z.unknown()),
 })
 
 export const aiOpsWorkerContextResponseSchema = z.discriminatedUnion('blocked', [
   z.object({
     blocked: z.literal(true),
-    reason: z.literal('context_budget_exceeded'),
+    reason: z.string().min(1),
     run_id: z.string().uuid(),
-    snapshot_id: z.string().uuid(),
-    context_bytes: z.number().int().positive(),
-    context_limit_bytes: z.number().int().positive(),
+    snapshot_id: z.string().uuid().optional(),
+    context_bytes: z.number().int().positive().optional(),
+    context_limit_bytes: z.number().int().positive().optional(),
+    planner_policy_version: z.string().optional(),
+    prompt_version: z.string().optional(),
   }),
   z.object({
     blocked: z.literal(false),
@@ -167,6 +203,9 @@ export const aiOpsWorkerContextResponseSchema = z.discriminatedUnion('blocked', 
     context_hash_algorithm: z.literal('md5-jsonb-identity'),
     context_bytes: z.number().int().positive(),
     context_limit_bytes: z.number().int().positive(),
+    prompt_hash: z.string().regex(/^[a-f0-9]{32}$/),
+    planner_policy_version: z.string().min(1),
+    prompt_version: z.string().min(1),
     context: workerContextBodySchema,
   }),
 ])
