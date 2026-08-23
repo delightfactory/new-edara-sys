@@ -110,7 +110,8 @@ The context gate must prove:
 - `blocked=false`;
 - `context_bytes <= context_limit_bytes`;
 - `context_limit_bytes` remains exactly 65,536 rather than being raised to make the test pass;
-- selected frozen cases retain identifiers, responsibility evidence, operational/feasibility evidence and trust/facts keys after compaction;
+- all seven required capture markers remain present, while selected cases cover exactly every demand-bearing capture (`case_count > 0`, `has_more=true`, or `global_budget_exhausted=true`) and no zero-demand or unknown domain;
+- every selected frozen case retains meaningful, non-empty responsibility, operational/feasibility, trust and facts values after compaction; key-only or compaction-marker-only evidence fails the gate;
 - the context hash is produced;
 - the probe itself is rolled back after verification.
 

@@ -136,6 +136,8 @@ DECLARE
   v_any_blocked BOOLEAN := false;
   v_required_domain_count INTEGER;
   v_context_case_limit INTEGER;
+  v_context_envelope_reserve_bytes CONSTANT INTEGER := 20480;
+  v_compacted_case_budget_bytes CONSTANT INTEGER := 6144;
   v_array_limit INTEGER := 3;
   v_string_limit INTEGER := 420;
   v_compaction_tier TEXT := 'bounded-v1';
@@ -173,15 +175,22 @@ BEGIN
     RAISE EXCEPTION 'AI Operations required-domain registry is empty';
   END IF;
 
-  -- Reserve 12 KiB for run/snapshot/contracts and target roughly 1.4 KiB per
-  -- selected case before nested evidence compaction. This bounds fresh capture
-  -- volume from the same hard byte budget instead of raising that budget.
+  -- Selection is derived from the serialized worker budget, not the configured
+  -- snapshot count. Reserve 20 KiB for the run, seven capture markers, pulse and
+  -- decision contract, then reserve 6 KiB for each compacted case envelope.
+  -- The exact post-serialization byte check below remains authoritative and
+  -- fail-closed because source schemas may add object keys in future releases.
+  -- At least one slot per required domain is retained whenever that domain has
+  -- demand; larger configured byte budgets scale the case count deterministically.
   v_context_case_limit := LEAST(
     v_settings.max_cases_per_snapshot,
     GREATEST(
       v_required_domain_count,
       floor(
-        GREATEST(v_settings.max_worker_context_bytes - 12288, 0)::NUMERIC / 1400
+        GREATEST(
+          v_settings.max_worker_context_bytes - v_context_envelope_reserve_bytes,
+          0
+        )::NUMERIC / v_compacted_case_budget_bytes
       )::INTEGER
     )
   );
@@ -421,7 +430,7 @@ REVOKE ALL ON FUNCTION ai_ops.worker_get_context(UUID,TEXT)
   FROM PUBLIC,anon,authenticated,service_role;
 
 COMMENT ON FUNCTION ai_ops.worker_get_context(UUID,TEXT) IS
-  'Canonical seven-domain worker context: byte-budget-aware fresh capture plus deterministic nested evidence compaction; preserves all selected frozen cases and fails closed above max_worker_context_bytes.';
+  'Canonical seven-domain worker context: conservatively derives selected cases from the hard serialized-byte budget and seven-domain fairness floor, preserves every selected frozen case with deterministic evidence compaction, and fails closed above max_worker_context_bytes.';
 
 RESET lock_timeout;
 RESET statement_timeout;

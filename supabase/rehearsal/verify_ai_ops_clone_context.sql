@@ -6,6 +6,50 @@
 
 BEGIN;
 
+-- Test-only recursive predicate. pg_temp keeps this behavioral assertion out
+-- of the production API surface, and the enclosing transaction removes it.
+CREATE FUNCTION pg_temp.worker_json_has_meaningful_value(p_value JSONB)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+IMMUTABLE
+SET search_path = ''
+AS $$
+DECLARE
+  v_type TEXT;
+BEGIN
+  IF p_value IS NULL OR p_value = 'null'::JSONB THEN
+    RETURN false;
+  END IF;
+
+  v_type := jsonb_typeof(p_value);
+
+  IF v_type = 'object' THEN
+    RETURN EXISTS (
+      SELECT 1
+      FROM jsonb_each(p_value) AS e(key, value)
+      WHERE e.key NOT IN ('_truncated', '_truncated_depth', '_total_items')
+        AND pg_temp.worker_json_has_meaningful_value(e.value)
+    );
+  END IF;
+
+  IF v_type = 'array' THEN
+    RETURN EXISTS (
+      SELECT 1
+      FROM jsonb_array_elements(p_value) AS e(value)
+      WHERE pg_temp.worker_json_has_meaningful_value(e.value)
+    );
+  END IF;
+
+  IF v_type = 'string' THEN
+    RETURN btrim(p_value #>> '{}') <> ''
+      AND btrim(p_value #>> '{}') !~ '^(…)?\[truncated\]$';
+  END IF;
+
+  -- Zero and false remain meaningful operational facts.
+  RETURN v_type IN ('number', 'boolean');
+END;
+$$;
+
 DO $$
 DECLARE
   v_now TIMESTAMPTZ := clock_timestamp();
@@ -21,6 +65,8 @@ DECLARE
   v_capture_count INTEGER;
   v_case_count INTEGER;
   v_bad_case_count INTEGER;
+  v_case_domain_count INTEGER;
+  v_expected_case_domain_count INTEGER;
 BEGIN
   IF to_regnamespace('ai_ops') IS NULL THEN
     RAISE EXCEPTION 'ai_ops schema is missing after migration rehearsal';
@@ -95,6 +141,53 @@ BEGIN
 
   v_case_count := jsonb_array_length(v_context->'context'->'cases');
 
+  SELECT count(DISTINCT c->>'domain')::INTEGER INTO v_case_domain_count
+  FROM jsonb_array_elements(v_context->'context'->'cases') c
+  WHERE c->>'domain' = ANY(ai_ops.required_operational_domains());
+
+  SELECT count(*)::INTEGER INTO v_expected_case_domain_count
+  FROM jsonb_array_elements(v_context->'context'->'snapshot'->'domain_captures') dc
+  WHERE (
+      COALESCE((dc->>'case_count')::INTEGER, 0) > 0
+      OR COALESCE((dc->>'has_more')::BOOLEAN, false)
+      OR COALESCE((dc->>'global_budget_exhausted')::BOOLEAN, false)
+    )
+    AND dc->>'domain' = ANY(ai_ops.required_operational_domains());
+
+  IF v_case_domain_count <> v_expected_case_domain_count
+     OR EXISTS (
+       SELECT 1
+       FROM jsonb_array_elements(v_context->'context'->'snapshot'->'domain_captures') dc
+       WHERE (
+           COALESCE((dc->>'case_count')::INTEGER, 0) > 0
+           OR COALESCE((dc->>'has_more')::BOOLEAN, false)
+           OR COALESCE((dc->>'global_budget_exhausted')::BOOLEAN, false)
+         )
+         AND dc->>'domain' = ANY(ai_ops.required_operational_domains())
+         AND NOT EXISTS (
+           SELECT 1
+           FROM jsonb_array_elements(v_context->'context'->'cases') c
+           WHERE c->>'domain' = dc->>'domain'
+         )
+     )
+     OR EXISTS (
+       SELECT 1
+       FROM jsonb_array_elements(v_context->'context'->'cases') c
+       WHERE NOT EXISTS (
+         SELECT 1
+         FROM jsonb_array_elements(v_context->'context'->'snapshot'->'domain_captures') dc
+         WHERE dc->>'domain' = c->>'domain'
+           AND (
+             COALESCE((dc->>'case_count')::INTEGER, 0) > 0
+             OR COALESCE((dc->>'has_more')::BOOLEAN, false)
+             OR COALESCE((dc->>'global_budget_exhausted')::BOOLEAN, false)
+           )
+       )
+     ) THEN
+    RAISE EXCEPTION 'worker case domains % do not exactly match % demand-bearing domain captures',
+      v_case_domain_count, v_expected_case_domain_count;
+  END IF;
+
   SELECT count(*)::INTEGER INTO v_bad_case_count
   FROM jsonb_array_elements(v_context->'context'->'cases') c
   WHERE NOT (
@@ -108,10 +201,14 @@ BEGIN
     AND c ? 'responsibility_evidence'
     AND c ? 'operational_context'
     AND c ? 'trust'
+    AND pg_temp.worker_json_has_meaningful_value(c->'facts')
+    AND pg_temp.worker_json_has_meaningful_value(c->'responsibility_evidence')
+    AND pg_temp.worker_json_has_meaningful_value(c->'operational_context')
+    AND pg_temp.worker_json_has_meaningful_value(c->'trust')
   );
 
   IF v_bad_case_count > 0 THEN
-    RAISE EXCEPTION '%/% frozen cases lost decision-critical evidence keys after compaction',
+    RAISE EXCEPTION '%/% frozen cases contain missing, empty, null or marker-only decision evidence after compaction',
       v_bad_case_count, v_case_count;
   END IF;
 
