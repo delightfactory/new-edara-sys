@@ -40,7 +40,7 @@ export default function SubNav({
           if (item.disabled) {
             return (
               <span
-                key={`${item.to}-${String(item.label)}`}
+                key={item.to}
                 className="ds-subnav__item ds-subnav__item--disabled"
                 aria-disabled="true"
               >
@@ -55,7 +55,7 @@ export default function SubNav({
 
           return (
             <NavLink
-              key={`${item.to}-${String(item.label)}`}
+              key={item.to}
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
