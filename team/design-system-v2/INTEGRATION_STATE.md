@@ -2,82 +2,83 @@
 
 ## Reviewed baseline
 
-- Review date: `2026-09-15`
+- Review date: `2026-09-16`
 - Development branch: `design-system-v2-development`
-- Exact development HEAD immediately before PR integration review: `13a2a65abff4af0a0d78740d9ee69e677b299735`
-- Completed implementation PR: `#28 — DS2-UI-001: migrate customer basic-info form to V2 composition`
-- Exact reviewed / merged PR HEAD: `b6bfceeb8327437e274222c7e2f75e83c4a65061`
+- Exact current development HEAD before this state write: `ad0b29b8f4b192375f605310ecccc9a6a798be15`
+- Active implementation slice: `DS2-UI-002 — Customer detail secondary tabs/patterns`
+- Active PR: `#29 — DS2-UI-002: migrate customer secondary surfaces to shared V2 patterns`
 - PR base: `design-system-v2-development`
-- PR changed-file scope: `src/pages/customers/CustomerFormPage.tsx`, `src/pages/customers/CustomerFormPage.v2.test.ts`
-- Integration disposition: `MERGED_GREEN_DEV`
-- Squash merge commit: `cdcc1a57cc3367fdd161fddb3d9e5b42e92e4829`
-- Post-merge Workstream synchronization commit: `2a30b29613336efb444114fe431b15b814dd04b9`
+- PR starting baseline: `d05a1d06a4214d5a4e0b222c5e7586155a9841f2`
+- Exact current PR HEAD: `3ee43a7cb27fb24e009a28dd6b95b01abfd4a664`
+- PR state: `OPEN / DRAFT / mergeable`
+- Changed-file scope: four Customer presentation/test files only
+- Integration disposition: `NO_MERGE_IN_PROGRESS`
+- Current evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 
-## Freshness / shared-memory reconciliation
+## Integrator decision
 
-The previous `BLOCKED_QA` integration state targeted superseded PR HEAD `ccbf9decab1257634874fc348525d6a50f588857` and was stale for the current fixed head.
+**NO MERGE.**
 
-Before merge, the Integrator revalidated the current repository state and exact PR evidence:
+PR #29 is the single active implementation PR and is progressing normally, but it has not reached the development integration gate.
 
-- Product Design Director independently revalidated exact PR HEAD `b6bfceeb8327437e274222c7e2f75e83c4a65061` and recorded architectural `PASS` with no current blocking contradiction.
-- UI Production Engineer recorded the bounded QA correction on the same exact HEAD and `TESTS_AUTHORED_NOT_EXECUTED`.
-- Design QA issued `AGENT-REVIEW: GREEN-DEV` on exact HEAD `b6bfceeb8327437e274222c7e2f75e83c4a65061` with `SOURCE_REVIEW_PASS` and honest `TESTS_AUTHORED_NOT_EXECUTED` evidence.
-- The earlier P2 partial-ARIA-tabs blocker was explicitly resolved: retained legacy section-switch controls remain `type="button"`; incomplete `tablist` / `tab` / `aria-selected` semantics were removed; focused tests guard against partial reintroduction.
-- Current development drift from the PR merge base was governance/state documentation only. Compare against the then-current development head showed the PR's effective product delta remained exactly the same two Customer files.
-- The PR was mergeable. It was still Draft at integration time, so the Integrator transitioned it to Ready for Review without changing the PR HEAD, then re-used the exact-head approval evidence and performed a squash merge.
+The current exact HEAD does not have an `AGENT-REVIEW: GREEN-DEV` marker, Design QA has not issued `SOURCE_REVIEW_PASS` for this slice/head, and the PR remains intentionally Draft/WIP. The UI Production Engineer state explicitly says `CustomerFormPage` wiring and removal of duplicate legacy secondary markup are still pending before REVIEW handoff.
 
-No peer role state contained a still-current `BLOCKING` contradiction for the reviewed head.
+No merge, queue advancement, Team Memory rewrite, Decision Log change, issue #27 blocker comment, preview deployment, hosted CI activity, or `main` activity is justified in this run.
 
 ## Gate evaluation
 
-### Passed
+### Not yet satisfied
 
-- Base branch: exact `design-system-v2-development`.
-- Exact-head `AGENT-REVIEW: GREEN-DEV`: PASS.
-- `SOURCE_REVIEW_PASS`: PASS.
-- Test evidence label: `TESTS_AUTHORED_NOT_EXECUTED` — honest and allowed by quota policy.
-- Known build/type failure: none outstanding or recorded for the merged head.
-- Material review blocker: none current on the merged head.
-- Functional isolation: PASS.
-- Changed-file scope: two Customer presentation/test files only.
-- No DB/migration/RPC/service/RBAC/RLS/permission-definition/route-guard/query-cache/validation/workflow/business-calculation change.
-- No workflow/deployment/Vercel enabling change.
-- No GitHub Actions/hosted CI was triggered or required.
-- No preview deployment was created.
-- No change to `main`.
+- Exact-head `AGENT-REVIEW: GREEN-DEV`: **ABSENT** for PR #29 HEAD `3ee43a7...`.
+- Exact-head `SOURCE_REVIEW_PASS`: **ABSENT** for DS2-UI-002.
+- Design QA state is stale for this slice; it still records completed PR #28 / DS2-UI-001.
+- PR lifecycle: **DRAFT / IN_PROGRESS**, not review-ready.
+- Implementation completeness: `CustomerFormPage` adoption/wiring and duplicate legacy-secondary-surface removal remain pending according to the current UI Implementation State.
 
-## Integrated result
+### Currently clean / non-blocking
 
-`DS2-UI-001` is complete in the isolated development workstream.
+- Base branch is correctly `design-system-v2-development`.
+- PR is mergeable at GitHub metadata level.
+- Current changed files are limited to:
+  - `src/pages/customers/CustomerDetailTabs.tsx`
+  - `src/pages/customers/CustomerDetailTabs.test.tsx`
+  - `src/pages/customers/CustomerSecondaryPanels.tsx`
+  - `src/pages/customers/CustomerSecondaryPanels.test.tsx`
+- Current patch is presentation/test-only and shows no DB, migration, RPC, service, RBAC/RLS, permission-definition, route, query/cache, validation, workflow, business-calculation, workflow-config or Vercel change.
+- Product Design Director's latest state records architectural direction `PASS`; its two System Fit corrections are resolved on the current feature HEAD.
+- No current peer-state `BLOCKING` contradiction applies to the active WIP.
+- No known TypeScript/build failure is recorded.
+- No GitHub Actions/hosted CI or Vercel preview evidence is required or claimed.
 
-Integrated system effects:
-- Customer basic-info composition now consumes shared `PageHeader`, `FormSection`, `FormGrid`, and `FormActions`.
-- Existing Customer create/update/GPS/lookup/credit/default-branch/default-contact behavior remains preserved.
-- Mobile one-column/sticky-action composition, deliberate Tablet density and dense Desktop entry remain governed by shared V2 form contracts.
-- Customer-local partial ARIA Tabs semantics were not introduced.
-- The real Customer flow has now proven the need for complete shared Tabs/SubNav semantics as future component-depth work.
+## Freshness / branch drift
 
-Development evidence remains source-level only for this slice. No runtime visual pass, executed test suite, preview build or release/main approval is implied.
+The feature branch started from `d05a1d06a4214d5a4e0b222c5e7586155a9841f2`.
 
-## Queue advancement
+Current development HEAD `ad0b29b8f4b192375f605310ecccc9a6a798be15` is five commits ahead of that baseline, but compare shows drift only in:
 
-Workstream was synchronized after merge:
-- `DS2-UI-001` -> `DONE`
-- merge commit recorded: `cdcc1a57cc3367fdd161fddb3d9e5b42e92e4829`
-- evidence recorded: `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
-- exactly one next dependency-safe slice moved to `READY`: `DS2-UI-002 — Customer detail secondary tabs/patterns`
+- `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md`
+- `team/design-system-v2/DESIGN_DIRECTOR_STATE.md`
+- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
-The next slice must preserve the finished basic-info composition and should use the proven Customer secondary-section need to establish/adopt a reusable complete Tabs/SubNav contract rather than repeat partial page-local semantics. Dialog/destructive-confirmation redesign remains deferred until shared overlay contracts are ready.
+No shared component or product-code drift exists after the feature baseline. Do not merge-sync PR #29 merely to absorb governance/state drift; exact feature-head stability remains preferable while implementation is active.
 
-## Durable decisions
+## Preserve
 
-No durable Design System rule was superseded by this merge. `team/design-system-v2/DECISION_LOG.md` was intentionally left unchanged.
+- the existing complete shared `Tabs` keyboard/focus/ARIA/RTL contract;
+- neutral shared `Badge` for tab count metadata and `StatusBadge` only for semantic state;
+- shared `Button` for newly migrated Customer secondary-panel actions;
+- Customer CRUD/GPS/lookup/credit/count/permission behavior;
+- completed DS2-UI-001 basic-info composition;
+- overlay/ConfirmDialog and DataTable redesign remain deferred;
+- no backend/business/query/permission/validation changes;
+- no hosted CI, Vercel preview or `main` activity;
+- one active implementation slice only.
 
 ## Cross-role handoff
 
-- **To:** UI Production Engineer, Product Design Director, Design QA
-- **What changed:** PR #28 exact GREEN-DEV head `b6bfceeb8327437e274222c7e2f75e83c4a65061` was squash-merged into `design-system-v2-development` as `cdcc1a57cc3367fdd161fddb3d9e5b42e92e4829`; `DS2-UI-001` is DONE and `DS2-UI-002` is the single READY slice.
-- **Preserve:** all Customer business/permission/GPS/lookup/create/update behavior; shared V2 basic-info form grammar; ordinary non-submitting legacy section-switch behavior unless replaced by a complete reusable Tabs/SubNav contract; no hosted CI; no Vercel preview; no `main` merge.
-- **Need from you:** UI Production Engineer should bootstrap from the latest development head and execute only `DS2-UI-002`; Product Design Director should keep the shared Tabs/SubNav requirement coherent and bounded; Design QA should independently review the next exact PR head when handed off.
-- **Blocker level:** `NONE` for integration; runtime/release validation remains a separate milestone gate.
-- **Baseline:** merged product commit `cdcc1a57cc3367fdd161fddb3d9e5b42e92e4829`; post-merge Workstream sync `2a30b29613336efb444114fe431b15b814dd04b9`
+- **To:** UI Production Engineer, Design QA, Product Design Director
+- **What changed:** Integrator revalidated live PR #29 exact HEAD `3ee43a7cb27fb24e009a28dd6b95b01abfd4a664` against current development HEAD `ad0b29b8f4b192375f605310ecccc9a6a798be15`; integration remains correctly held because the PR is still Draft/IN_PROGRESS with no exact-head GREEN-DEV or SOURCE_REVIEW_PASS.
+- **Preserve:** current shared Tabs/Button/Badge direction, Customer functional boundaries, deferred overlay/DataTable work, exact feature-head discipline and quota/deployment restrictions.
+- **Need from you:** UI Production Engineer should finish the same-slice `CustomerFormPage` wiring/removal of duplicate legacy secondary markup, then explicitly hand the completed exact HEAD to Design QA. QA should independently review that exact head. Integrator should act only after exact-head `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` exists.
+- **Blocker level:** `NONE` — normal implementation progression, not a persistent blocker.
+- **Baseline:** development `ad0b29b8f4b192375f605310ecccc9a6a798be15`; PR #29 HEAD `3ee43a7cb27fb24e009a28dd6b95b01abfd4a664`
