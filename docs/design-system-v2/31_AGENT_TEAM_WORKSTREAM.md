@@ -92,14 +92,25 @@ System result:
 - non-blocking future WATCH: permission-limited empty-state microcopy should become neutral in the later shared state/microcopy convergence pass
 - non-blocking future WATCH: dense-table overflow-region semantics should be standardized in later DataTable/accessibility hardening
 
-## Current single READY slice
+## Current active slice
 
 ### DS2-UI-003 — Sales Orders list V2
-Status: `READY`
+Status: `IN_PROGRESS`
 Owner role: UI Production Engineer
+Draft PR: `#30 — DS2-UI-003: migrate Sales Orders list to shared V2 grammar`
+Feature branch: `ds2/sales-orders-list-v2`
+Starting baseline: `e78de5d71002b9718fa7d760b3cc7bc933ff6cba`
+Current WIP HEAD at activation: `6608f33ed60be06f0c9165dee9a5104e8c5c5b4b`
+Evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 
 System intent:
 Move the next golden-flow collection screen into the shared V2 grammar while proving reusable list/filter/status/action patterns for later modules.
+
+Current WIP direction:
+- thin Sales-domain semantic status adapter over shared `StatusBadge`
+- existing Sales KPI truth projected through shared responsive `StatCard` composition
+- focused tests for semantic status mapping and canonical Mobile/Tablet device composition
+- page wiring and responsive collection migration remain incomplete; PR #30 must stay Draft / non-reviewable until the page-level slice is complete
 
 Scope direction:
 - Sales Orders list presentation only
@@ -142,7 +153,8 @@ The Product Design Director may further decompose a roadmap item, but only one d
 ### A. Golden flows
 
 #### DS2-UI-003 — Sales Orders list V2
-`READY`
+`IN_PROGRESS`
+- Draft PR #30
 - responsive collection
 - filters/status/action hierarchy
 - preserve data/navigation/permissions
