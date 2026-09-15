@@ -1,0 +1,141 @@
+/*
+ * Delight Design System V2 — Semantic Foundations
+ *
+ * Compatibility layer over the existing physical tokens in tokens.css.
+ * This file intentionally introduces aliases only: importing it must not
+ * visually change an existing screen until a component explicitly consumes
+ * a V2 token.
+ */
+
+:root {
+  /* ===== Surfaces ===== */
+  --ds-surface-app:      var(--bg-app);
+  --ds-surface-default:  var(--bg-surface);
+  --ds-surface-subtle:   var(--bg-surface-2);
+  --ds-surface-input:    var(--bg-input);
+  --ds-surface-hover:    var(--bg-hover);
+  --ds-surface-active:   var(--bg-active);
+  --ds-surface-accent:   var(--bg-accent);
+  --ds-surface-overlay:  var(--overlay-bg);
+  --ds-surface-modal:    var(--modal-bg);
+
+  /* ===== Text ===== */
+  --ds-text-primary:     var(--text-primary);
+  --ds-text-secondary:   var(--text-secondary);
+  --ds-text-muted:       var(--text-muted);
+  --ds-text-inverse:     var(--text-inverse);
+  --ds-text-link:        var(--text-link);
+
+  /* ===== Borders / focus ===== */
+  --ds-border-default:   var(--border-primary);
+  --ds-border-subtle:    var(--divider);
+  --ds-border-focus:     var(--border-focus);
+  --ds-focus-color:      var(--color-primary);
+  --ds-focus-ring:       var(--shadow-focus);
+
+  /* ===== Actions ===== */
+  --ds-action-primary:             var(--color-primary);
+  --ds-action-primary-hover:       var(--color-primary-hover);
+  --ds-action-primary-subtle:      var(--color-primary-light);
+  --ds-action-destructive:         var(--color-danger);
+  --ds-action-destructive-subtle:  var(--color-danger-light);
+  --ds-action-success:             var(--color-success);
+  --ds-action-success-subtle:      var(--color-success-light);
+
+  /* ===== Semantic status families ===== */
+  --ds-status-neutral-fg:  var(--text-secondary);
+  --ds-status-neutral-bg:  var(--bg-secondary);
+  --ds-status-neutral-border: var(--border-primary);
+
+  --ds-status-info-fg:     var(--color-info);
+  --ds-status-info-bg:     var(--color-info-light);
+  --ds-status-info-border: color-mix(in srgb, var(--color-info) 28%, var(--border-primary));
+
+  --ds-status-success-fg:  var(--color-success);
+  --ds-status-success-bg:  var(--color-success-light);
+  --ds-status-success-border: color-mix(in srgb, var(--color-success) 28%, var(--border-primary));
+
+  --ds-status-warning-fg:  var(--color-warning);
+  --ds-status-warning-bg:  var(--color-warning-light);
+  --ds-status-warning-border: color-mix(in srgb, var(--color-warning) 30%, var(--border-primary));
+
+  --ds-status-danger-fg:   var(--color-danger);
+  --ds-status-danger-bg:   var(--color-danger-light);
+  --ds-status-danger-border: color-mix(in srgb, var(--color-danger) 28%, var(--border-primary));
+
+  /* ===== Typography roles ===== */
+  --ds-type-page-title-size:      var(--text-2xl);
+  --ds-type-page-title-weight:    700;
+  --ds-type-page-title-line:      1.3;
+
+  --ds-type-section-title-size:   var(--text-lg);
+  --ds-type-section-title-weight: 700;
+  --ds-type-section-title-line:   1.4;
+
+  --ds-type-card-title-size:      var(--text-base);
+  --ds-type-card-title-weight:    700;
+  --ds-type-card-title-line:      1.45;
+
+  --ds-type-body-size:            var(--text-sm);
+  --ds-type-body-weight:          400;
+  --ds-type-body-line:            1.65;
+
+  --ds-type-body-strong-weight:   600;
+  --ds-type-label-size:           var(--text-sm);
+  --ds-type-label-weight:         600;
+  --ds-type-helper-size:          var(--text-xs);
+  --ds-type-caption-size:         var(--text-xs);
+
+  --ds-type-kpi-size:             var(--text-2xl);
+  --ds-type-kpi-weight:           700;
+  --ds-type-numeric-font-variant: tabular-nums;
+
+  /* ===== Spacing / density roles ===== */
+  --ds-page-gutter-mobile:        var(--space-3);
+  --ds-page-gutter-tablet:        var(--space-4);
+  --ds-page-gutter-desktop:       var(--space-6);
+
+  --ds-section-gap-comfortable:   var(--space-6);
+  --ds-section-gap-standard:      var(--space-4);
+  --ds-section-gap-compact:       var(--space-3);
+
+  --ds-field-gap:                 var(--space-2);
+  --ds-form-section-gap:          var(--space-5);
+  --ds-inline-action-gap:         var(--space-2);
+
+  /* ===== Control sizing ===== */
+  --ds-control-height-compact:    36px;
+  --ds-control-height-standard:   42px;
+  --ds-control-height-touch:      var(--touch-target); /* 44px */
+  --ds-control-height-task:       48px;
+  --ds-icon-hit-target:           var(--touch-target);
+
+  /* ===== Shape / elevation roles ===== */
+  --ds-radius-control:            var(--radius-md);
+  --ds-radius-card:               var(--radius-lg);
+  --ds-radius-dialog:             var(--radius-lg);
+  --ds-radius-pill:               var(--radius-full);
+
+  --ds-elevation-flat:            none;
+  --ds-elevation-raised:          var(--shadow-sm);
+  --ds-elevation-floating:        var(--shadow-md);
+  --ds-elevation-overlay:         var(--shadow-xl);
+
+  /* ===== Motion roles ===== */
+  --ds-motion-fast:               var(--transition-fast);
+  --ds-motion-base:               var(--transition-base);
+  --ds-motion-slow:               var(--transition-slow);
+
+  /* ===== Device / safe-area roles ===== */
+  --ds-mobile-app-bar-height:      var(--app-bar-height);
+  --ds-mobile-bottom-nav-height:   var(--bottom-nav-height);
+  --ds-mobile-fab-size:            var(--fab-size);
+  --ds-safe-area-bottom:           env(safe-area-inset-bottom, 0px);
+  --ds-safe-area-top:              env(safe-area-inset-top, 0px);
+
+  /* ===== Layout sizing roles ===== */
+  --ds-sidebar-width:              var(--sidebar-width);
+  --ds-sidebar-collapsed-width:    var(--sidebar-collapsed-width);
+  --ds-content-reading-width:      72rem;
+  --ds-form-reading-width:         52rem;
+}
