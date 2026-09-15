@@ -5,6 +5,11 @@ on:
     branches:
       - feature/work-management
   pull_request:
+    # Design System V2 development PRs target `design-system-v2-development`.
+    # Keep GitHub Actions off that workstream while Actions quota is intentionally
+    # conserved. CI remains available for PRs whose base is `main`.
+    branches:
+      - main
     paths:
       - 'src/features/work/**'
       - 'src/pages/work/**'
