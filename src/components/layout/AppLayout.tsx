@@ -1,4 +1,5 @@
 import { Outlet } from 'react-router-dom'
+import { Menu } from 'lucide-react'
 import Sidebar from './Sidebar'
 import BottomNav from './BottomNav'
 import FAB from './FAB'
@@ -8,6 +9,7 @@ import InstallBanner from '@/components/pwa/InstallBanner'
 import { NotificationBell, NotificationPanel } from '@/components/notifications'
 import GeoPermissionDialog from '@/components/shared/GeoPermissionDialog'
 import { useGeoOnboarding } from '@/hooks/useGeoOnboarding'
+import { useUiStore } from '@/stores/ui-store'
 import { useContext } from 'react'
 
 function AppBarTitle() {
@@ -16,48 +18,49 @@ function AppBarTitle() {
 }
 
 /**
- * AppLayout — Responsive App Shell
+ * AppLayout — Device-aware application shell.
  *
- * DESKTOP (≥769px): Collapsible sidebar (right), content fills rest.
- * MOBILE (≤768px):
- *   - Glassmorphism App Bar at top (page title + bell). No hamburger.
- *   - Content area scrolls beneath App Bar and above BottomNav.
- *   - Bottom Navigation for primary routing (Home / Sales / Customers / Menu).
- *   - Context-aware FAB above Bottom Nav.
- *   - Sidebar remains a drawer opened by BottomNav "القائمة" tab.
+ * DESKTOP (>1024px): persistent right sidebar + dense content surface.
+ * TABLET (769–1024px): top app bar + menu button + sidebar drawer.
+ * MOBILE (≤768px): top app bar + BottomNav + context-aware FAB; full menu opens
+ * from the existing BottomNav "القائمة" shortcut.
  */
 export default function AppLayout() {
   const geoOnboarding = useGeoOnboarding()
+  const setSidebarOpen = useUiStore(s => s.setSidebarOpen)
 
   return (
     <PageTitleProvider>
       <div className="app-layout">
         <Sidebar />
 
-        {/* ── Mobile App Bar ─────────────────────────────── */}
         <header className="app-bar" aria-label="شريط التطبيق">
-          <AppBarTitle />
+          <div className="app-bar-start">
+            <button
+              type="button"
+              className="app-bar-menu"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="فتح القائمة الرئيسية"
+            >
+              <Menu size={20} />
+            </button>
+            <AppBarTitle />
+          </div>
           <NotificationBell className="app-bar-bell" />
         </header>
 
-        {/* ── Main Content ──────────────────────────────── */}
         <main className="app-main">
           <Outlet />
         </main>
 
-        {/* ── Mobile Shell ─────────────────────────────── */}
         <FAB />
         <BottomNav />
 
-        {/* ── PWA Utilities ─────────────────────────────── */}
         <OfflineDetector />
         <InstallBanner />
 
-        {/* ── Notification Panel ────────────────────────── */}
         <NotificationPanel />
 
-        {/* ── GPS Onboarding ───────────────────── */}
-        {/* يُعرض مرة واحدة فقط بعد 2.5ث من فتح التطبيق إذا كانت الصلاحية لم تُحدّد بعد */}
         <GeoPermissionDialog
           open={geoOnboarding.showDialog}
           context="app_onboarding"
@@ -66,7 +69,6 @@ export default function AppLayout() {
         />
 
         <style>{`
-          /* ── Layout Shell ──────────────────────────── */
           .app-layout {
             display: flex;
             min-height: 100vh;
@@ -83,27 +85,40 @@ export default function AppLayout() {
             transition: margin-inline-start 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           }
 
-          /* ── App Bar (Mobile Only) ──────────────────── */
           .app-bar {
             display: none;
           }
 
-          @media (max-width: 768px) {
-            /* Reset desktop sidebar margin */
+          .app-bar-start {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            min-width: 0;
+          }
+
+          .app-bar-menu {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: var(--touch-target);
+            height: var(--touch-target);
+            flex: 0 0 var(--touch-target);
+            border: none;
+            border-radius: var(--radius-full);
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+          }
+
+          @media (max-width: 1024px) {
             .app-main {
               margin-inline-start: 0;
-              /* Push content below App Bar */
               padding-top: var(--app-bar-height);
-              /* Prevent BottomNav from covering content */
-              padding-bottom: var(--bottom-nav-height);
-              /* ROOT FIX: prevent flex children (scrollable tabs/chips) from
-                 expanding this container beyond viewport width */
               min-width: 0;
               overflow-x: hidden;
               max-width: 100vw;
             }
 
-            /* Glassmorphism App Bar */
             .app-bar {
               display: flex;
               align-items: center;
@@ -123,14 +138,18 @@ export default function AppLayout() {
             }
 
             .app-bar-title {
+              min-width: 0;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
               font-size: var(--text-base);
               font-weight: 700;
               color: var(--text-primary);
               letter-spacing: 0.01em;
             }
 
-            .app-bar-bell {
-              display: flex;
+            .app-bar-bell,
+            .app-bar-menu {
               align-items: center;
               justify-content: center;
               width: var(--touch-target);
@@ -145,9 +164,53 @@ export default function AppLayout() {
             }
 
             .app-bar-bell:hover,
-            .app-bar-bell:active {
+            .app-bar-bell:active,
+            .app-bar-menu:hover,
+            .app-bar-menu:active {
               background: var(--bg-hover);
               color: var(--text-primary);
+            }
+          }
+
+          /* Tablet: compact shell. Sidebar becomes an on-demand drawer. */
+          @media (min-width: 769px) and (max-width: 1024px) {
+            .app-bar-menu {
+              display: flex;
+            }
+
+            .sb-ov {
+              display: block;
+              position: fixed;
+              inset: 0;
+              z-index: calc(var(--z-sidebar, 200) - 1);
+              background: rgba(0, 0, 0, 0.4);
+              backdrop-filter: blur(3px);
+              -webkit-backdrop-filter: blur(3px);
+            }
+
+            .sb {
+              transform: translateX(110%);
+              width: min(320px, 82vw);
+              box-shadow: -12px 0 48px rgba(0, 0, 0, 0.24);
+            }
+
+            .sb--open {
+              transform: translateX(0);
+            }
+
+            .sb-close {
+              display: flex;
+            }
+          }
+
+          /* Mobile keeps BottomNav as the primary global navigation surface. */
+          @media (max-width: 768px) {
+            .app-main {
+              padding-bottom: var(--bottom-nav-height);
+            }
+
+            .app-bar-menu {
+              display: none;
             }
           }
         `}</style>
