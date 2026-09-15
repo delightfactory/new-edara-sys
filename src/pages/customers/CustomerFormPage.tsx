@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ArrowRight, Save, Loader2, Plus, Trash2, Edit, MapPin, User, Building, Phone, CreditCard, History, Users, Star, Navigation, UserPlus } from 'lucide-react'
+import { Save, Loader2, Plus, Trash2, Edit, MapPin, User, Building, Phone, CreditCard, History, Users, Star, Navigation, UserPlus } from 'lucide-react'
 import { getCustomer, createCustomer, updateCustomer, getCustomerBranches, saveCustomerBranch, deleteCustomerBranch, getCustomerContacts, saveCustomerContact, deleteCustomerContact, getCreditHistory } from '@/lib/services/customers'
 import { getGovernorates, getCities, getAreas } from '@/lib/services/geography'
 import { getPriceLists } from '@/lib/services/price-lists'
@@ -9,7 +9,11 @@ import { supabase } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
 import type { Customer, CustomerInput, CustomerBranch, CustomerContact, CustomerCreditHistory, Governorate, City, Area, PriceList } from '@/lib/types/master-data'
 import PermissionGuard from '@/components/shared/PermissionGuard'
+import PageHeader from '@/components/shared/PageHeader'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
+import FormSection from '@/components/patterns/FormSection'
+import FormGrid from '@/components/patterns/FormGrid'
+import FormActions from '@/components/patterns/FormActions'
 
 export default function CustomerFormPage() {
   const { id } = useParams()
@@ -350,15 +354,11 @@ export default function CustomerFormPage() {
 
   return (
     <div className="page-container animate-enter">
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-info">
-          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/customers')} style={{ marginBottom: 'var(--space-2)' }}>
-            <ArrowRight size={14} /> العودة للعملاء
-          </button>
-          <h1 className="page-title">{isEdit ? 'تفاصيل العميل' : 'إضافة عميل جديد'}</h1>
-        </div>
-      </div>
+      <PageHeader
+        title={isEdit ? 'تفاصيل العميل' : 'إضافة عميل جديد'}
+        backPath="/customers"
+        backLabel="العودة للعملاء"
+      />
 
       {/* ═══════ بطاقة الملخص (تعديل فقط) ═══════ */}
       {isEdit && customerData && (
@@ -395,17 +395,17 @@ export default function CustomerFormPage() {
       {/* ═══════ التابات ═══════ */}
       {isEdit && (
         <div className="tabs" style={{ marginBottom: 'var(--space-4)' }}>
-          <button className={`tab ${tab === 'info' ? 'active' : ''}`} onClick={() => setTab('info')}>
+          <button type="button" className={`tab ${tab === 'info' ? 'active' : ''}`} onClick={() => setTab('info')}>
             البيانات الأساسية
           </button>
-          <button className={`tab ${tab === 'branches' ? 'active' : ''}`} onClick={() => setTab('branches')}>
+          <button type="button" className={`tab ${tab === 'branches' ? 'active' : ''}`} onClick={() => setTab('branches')}>
             الفروع {counts.branches > 0 && <span className="badge badge-neutral" style={{ marginRight: 'var(--space-1)', fontSize: '10px', padding: '0 6px' }}>{counts.branches}</span>}
           </button>
-          <button className={`tab ${tab === 'contacts' ? 'active' : ''}`} onClick={() => setTab('contacts')}>
+          <button type="button" className={`tab ${tab === 'contacts' ? 'active' : ''}`} onClick={() => setTab('contacts')}>
             جهات الاتصال {counts.contacts > 0 && <span className="badge badge-neutral" style={{ marginRight: 'var(--space-1)', fontSize: '10px', padding: '0 6px' }}>{counts.contacts}</span>}
           </button>
           {can('customers.credit.update') && (
-            <button className={`tab ${tab === 'credit' ? 'active' : ''}`} onClick={() => setTab('credit')}>
+            <button type="button" className={`tab ${tab === 'credit' ? 'active' : ''}`} onClick={() => setTab('credit')}>
               سجل الائتمان {counts.credit > 0 && <span className="badge badge-neutral" style={{ marginRight: 'var(--space-1)', fontSize: '10px', padding: '0 6px' }}>{counts.credit}</span>}
             </button>
           )}
@@ -415,235 +415,224 @@ export default function CustomerFormPage() {
       {/* ═══════ TAB: INFO ═══════ */}
       {tab === 'info' && (
         <form onSubmit={handleSubmit}>
-          {/* Basic Info */}
-          <div className="edara-card" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-4)' }}>
-            <h2 style={{ fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 'var(--space-5)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-              <User size={18} style={{ color: 'var(--color-primary)' }} /> المعلومات الأساسية
-            </h2>
-            <div className="grid grid-2 gap-4">
-              <div className="form-group">
-                <label className="form-label required">اسم العميل</label>
-                <input className="form-input" value={form.name} onChange={e => updateForm('name', e.target.value)} autoFocus />
-              </div>
-              <div className="form-group">
-                <label className="form-label">نوع العميل</label>
-                <select className="form-select" value={form.type} onChange={e => updateForm('type', e.target.value)}>
-                  <option value="retail">تجزئة</option>
-                  <option value="wholesale">جملة</option>
-                  <option value="distributor">موزع</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">الهاتف</label>
-                <input className="form-input" type="tel" inputMode="tel" dir="ltr" enterKeyHint="next"
-                  value={form.phone || ''} onChange={e => updateForm('phone', e.target.value)} placeholder="الهاتف الأرضي" />
-              </div>
-              <div className="form-group">
-                <label className="form-label">الجوال</label>
-                <input className="form-input" type="tel" inputMode="tel" dir="ltr" enterKeyHint="next"
-                  value={form.mobile || ''} onChange={e => updateForm('mobile', e.target.value)} placeholder="رقم الجوال" />
-              </div>
-              <div className="form-group">
-                <label className="form-label">البريد الإلكتروني</label>
-                <input type="email" inputMode="email" className="form-input" dir="ltr" enterKeyHint="next"
-                  value={form.email || ''} onChange={e => updateForm('email', e.target.value)} placeholder="email@example.com" />
-              </div>
-              <div className="form-group">
-                <label className="form-label">الرقم الضريبي</label>
-                <input className="form-input" dir="ltr" value={form.tax_number || ''} onChange={e => updateForm('tax_number', e.target.value)} placeholder="رقم التسجيل الضريبي" />
-              </div>
-            </div>
-          </div>
-
-          {/* Address */}
-          <div className="edara-card" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-4)' }}>
-            <h2 style={{ fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 'var(--space-5)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-              <MapPin size={18} style={{ color: 'var(--color-primary)' }} /> العنوان
-            </h2>
-            <div className="grid grid-3 gap-4">
-              <div className="form-group">
-                <label className="form-label">المحافظة</label>
-                <select className="form-select" value={form.governorate_id || ''} onChange={e => handleGovChange(e.target.value)}>
-                  <option value="">اختر المحافظة</option>
-                  {governorates.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">المدينة</label>
-                <select className="form-select" value={form.city_id || ''} onChange={e => handleCityChange(e.target.value)} disabled={!cities.length}>
-                  <option value="">اختر المدينة</option>
-                  {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">المنطقة</label>
-                <select className="form-select" value={form.area_id || ''} onChange={e => updateForm('area_id', e.target.value || null)} disabled={!areas.length}>
-                  <option value="">اختر المنطقة</option>
-                  {areas.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                </select>
-              </div>
-            </div>
-            <div className="form-group" style={{ marginTop: 'var(--space-4)' }}>
-              <label className="form-label">العنوان التفصيلي</label>
-              <textarea className="form-textarea" rows={2} value={form.address || ''} onChange={e => updateForm('address', e.target.value)} placeholder="الشارع، رقم المبنى، الطابق..." />
-            </div>
-            {/* GPS Location */}
-            <div className="gps-row" style={{ marginTop: 'var(--space-4)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                <MapPin size={16} style={{ color: 'var(--color-primary)' }} />
-                {location.lat ? (
-                  <div style={{ fontSize: 'var(--text-xs)' }}>
-                    <span style={{ fontWeight: 600 }}>الموقع GPS:</span>{' '}
-                    <span dir="ltr">{location.lat?.toFixed(6)}, {location.lng?.toFixed(6)}</span>
-                    {location.accuracy && <span style={{ color: 'var(--text-muted)' }}> (دقة: {location.accuracy.toFixed(0)}م)</span>}
-                    {location.updatedAt && <span style={{ color: 'var(--text-muted)' }}> — {new Date(location.updatedAt).toLocaleDateString('ar-EG-u-nu-latn')}</span>}
-                  </div>
-                ) : (
-                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>لم يتم تحديد الموقع بعد</span>
-                )}
-              </div>
-              <button type="button" className="btn btn-sm btn-primary" onClick={captureGPS} disabled={gpsLoading} style={{ flexShrink: 0 }}>
-                {gpsLoading ? <Loader2 size={14} className="animate-spin" /> : <Navigation size={14} />}
-                {gpsLoading ? 'جاري السحب...' : location.lat ? 'تحديث الموقع' : 'سحب الموقع'}
-              </button>
-            </div>
-          </div>
-
-          {/* Payment + Credit + Assignment */}
-          <div className="edara-card" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-4)' }}>
-            <h2 style={{ fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 'var(--space-5)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-              <CreditCard size={18} style={{ color: 'var(--color-primary)' }} /> شروط الدفع والائتمان
-            </h2>
-            <div className="grid grid-3 gap-4">
-              <div className="form-group">
-                <label className="form-label">طريقة الدفع</label>
-                <select className="form-select" value={form.payment_terms} onChange={e => updateForm('payment_terms', e.target.value)}>
-                  <option value="cash">نقدي</option>
-                  <option value="credit">آجل</option>
-                  <option value="mixed">مختلط</option>
-                </select>
-              </div>
-              <PermissionGuard permission="finance.credit.manage" mode="disable"
-                disabledTitle="فقط مدير المالية يمكنه تعديل حد الائتمان">
+          <div className="grid gap-4">
+            <FormSection title="المعلومات الأساسية" icon={<User size={18} />}>
+              <FormGrid columns={2}>
                 <div className="form-group">
-                  <label className="form-label">حد الائتمان</label>
+                  <label className="form-label required">اسم العميل</label>
+                  <input className="form-input" value={form.name} onChange={e => updateForm('name', e.target.value)} autoFocus />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">نوع العميل</label>
+                  <select className="form-select" value={form.type} onChange={e => updateForm('type', e.target.value)}>
+                    <option value="retail">تجزئة</option>
+                    <option value="wholesale">جملة</option>
+                    <option value="distributor">موزع</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">الهاتف</label>
+                  <input className="form-input" type="tel" inputMode="tel" dir="ltr" enterKeyHint="next"
+                    value={form.phone || ''} onChange={e => updateForm('phone', e.target.value)} placeholder="الهاتف الأرضي" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">الجوال</label>
+                  <input className="form-input" type="tel" inputMode="tel" dir="ltr" enterKeyHint="next"
+                    value={form.mobile || ''} onChange={e => updateForm('mobile', e.target.value)} placeholder="رقم الجوال" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">البريد الإلكتروني</label>
+                  <input type="email" inputMode="email" className="form-input" dir="ltr" enterKeyHint="next"
+                    value={form.email || ''} onChange={e => updateForm('email', e.target.value)} placeholder="email@example.com" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">الرقم الضريبي</label>
+                  <input className="form-input" dir="ltr" value={form.tax_number || ''} onChange={e => updateForm('tax_number', e.target.value)} placeholder="رقم التسجيل الضريبي" />
+                </div>
+              </FormGrid>
+            </FormSection>
+
+            <FormSection title="العنوان" icon={<MapPin size={18} />}>
+              <FormGrid columns={3}>
+                <div className="form-group">
+                  <label className="form-label">المحافظة</label>
+                  <select className="form-select" value={form.governorate_id || ''} onChange={e => handleGovChange(e.target.value)}>
+                    <option value="">اختر المحافظة</option>
+                    {governorates.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">المدينة</label>
+                  <select className="form-select" value={form.city_id || ''} onChange={e => handleCityChange(e.target.value)} disabled={!cities.length}>
+                    <option value="">اختر المدينة</option>
+                    {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">المنطقة</label>
+                  <select className="form-select" value={form.area_id || ''} onChange={e => updateForm('area_id', e.target.value || null)} disabled={!areas.length}>
+                    <option value="">اختر المنطقة</option>
+                    {areas.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                  </select>
+                </div>
+              </FormGrid>
+              <div className="form-group" style={{ marginTop: 'var(--space-4)' }}>
+                <label className="form-label">العنوان التفصيلي</label>
+                <textarea className="form-textarea" rows={2} value={form.address || ''} onChange={e => updateForm('address', e.target.value)} placeholder="الشارع، رقم المبنى، الطابق..." />
+              </div>
+              <div className="gps-row" style={{ marginTop: 'var(--space-4)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                  <MapPin size={16} style={{ color: 'var(--color-primary)' }} />
+                  {location.lat ? (
+                    <div style={{ fontSize: 'var(--text-xs)' }}>
+                      <span style={{ fontWeight: 600 }}>الموقع GPS:</span>{' '}
+                      <span dir="ltr">{location.lat?.toFixed(6)}, {location.lng?.toFixed(6)}</span>
+                      {location.accuracy && <span style={{ color: 'var(--text-muted)' }}> (دقة: {location.accuracy.toFixed(0)}م)</span>}
+                      {location.updatedAt && <span style={{ color: 'var(--text-muted)' }}> — {new Date(location.updatedAt).toLocaleDateString('ar-EG-u-nu-latn')}</span>}
+                    </div>
+                  ) : (
+                    <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>لم يتم تحديد الموقع بعد</span>
+                  )}
+                </div>
+                <button type="button" className="btn btn-sm btn-primary" onClick={captureGPS} disabled={gpsLoading} style={{ flexShrink: 0 }}>
+                  {gpsLoading ? <Loader2 size={14} className="animate-spin" /> : <Navigation size={14} />}
+                  {gpsLoading ? 'جاري السحب...' : location.lat ? 'تحديث الموقع' : 'سحب الموقع'}
+                </button>
+              </div>
+            </FormSection>
+
+            <FormSection title="شروط الدفع والائتمان" icon={<CreditCard size={18} />}>
+              <FormGrid columns={3}>
+                <div className="form-group">
+                  <label className="form-label">طريقة الدفع</label>
+                  <select className="form-select" value={form.payment_terms} onChange={e => updateForm('payment_terms', e.target.value)}>
+                    <option value="cash">نقدي</option>
+                    <option value="credit">آجل</option>
+                    <option value="mixed">مختلط</option>
+                  </select>
+                </div>
+                <PermissionGuard permission="finance.credit.manage" mode="disable"
+                  disabledTitle="فقط مدير المالية يمكنه تعديل حد الائتمان">
+                  <div className="form-group">
+                    <label className="form-label">حد الائتمان</label>
+                    <input type="number" inputMode="decimal" enterKeyHint="next" className="form-input" dir="ltr"
+                      min={0} step={100} value={form.credit_limit} onChange={e => updateForm('credit_limit', +e.target.value)} />
+                  </div>
+                </PermissionGuard>
+                <div className="form-group">
+                  <label className="form-label">أيام السداد</label>
                   <input type="number" inputMode="decimal" enterKeyHint="next" className="form-input" dir="ltr"
-                    min={0} step={100} value={form.credit_limit} onChange={e => updateForm('credit_limit', +e.target.value)} />
+                    min={0} value={form.credit_days} onChange={e => updateForm('credit_days', +e.target.value)} />
                 </div>
-              </PermissionGuard>
-              <div className="form-group">
-                <label className="form-label">أيام السداد</label>
-                <input type="number" inputMode="decimal" enterKeyHint="next" className="form-input" dir="ltr"
-                  min={0} value={form.credit_days} onChange={e => updateForm('credit_days', +e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">الرصيد الافتتاحي</label>
-                <input type="number" inputMode="decimal" enterKeyHint="done" className="form-input" dir="ltr"
-                  step={0.01} value={form.opening_balance} onChange={e => updateForm('opening_balance', +e.target.value)} />
-              </div>
-            </div>
-            <div className="grid grid-2 gap-4" style={{ marginTop: 'var(--space-4)' }}>
-              <div className="form-group">
-                <label className="form-label">قائمة الأسعار</label>
-                <select className="form-select" value={form.price_list_id || ''} onChange={e => updateForm('price_list_id', e.target.value || null)}>
-                  <option value="">بدون (القائمة الافتراضية)</option>
-                  {priceLists.filter(pl => pl.is_active).map(pl => (
-                    <option key={pl.id} value={pl.id}>{pl.name}{pl.is_default ? ' ⭐' : ''}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">المندوب المسؤول</label>
-                <select className="form-select" value={form.assigned_rep_id || ''} onChange={e => updateForm('assigned_rep_id', e.target.value || null)}>
-                  <option value="">بدون مندوب</option>
-                  {reps.map(r => <option key={r.id} value={r.id}>{r.full_name}</option>)}
-                </select>
-              </div>
-            </div>
+                <div className="form-group">
+                  <label className="form-label">الرصيد الافتتاحي</label>
+                  <input type="number" inputMode="decimal" enterKeyHint="done" className="form-input" dir="ltr"
+                    step={0.01} value={form.opening_balance} onChange={e => updateForm('opening_balance', +e.target.value)} />
+                </div>
+              </FormGrid>
+              <FormGrid columns={2} style={{ marginTop: 'var(--space-4)' }}>
+                <div className="form-group">
+                  <label className="form-label">قائمة الأسعار</label>
+                  <select className="form-select" value={form.price_list_id || ''} onChange={e => updateForm('price_list_id', e.target.value || null)}>
+                    <option value="">بدون (القائمة الافتراضية)</option>
+                    {priceLists.filter(pl => pl.is_active).map(pl => (
+                      <option key={pl.id} value={pl.id}>{pl.name}{pl.is_default ? ' ⭐' : ''}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">المندوب المسؤول</label>
+                  <select className="form-select" value={form.assigned_rep_id || ''} onChange={e => updateForm('assigned_rep_id', e.target.value || null)}>
+                    <option value="">بدون مندوب</option>
+                    {reps.map(r => <option key={r.id} value={r.id}>{r.full_name}</option>)}
+                  </select>
+                </div>
+              </FormGrid>
+            </FormSection>
+
+            {!isEdit && (
+              <FormSection
+                title="بيانات أولية (فرع + جهة اتصال)"
+                description="سيتم إنشاء فرع رئيسي وجهة اتصال أساسية تلقائياً عند حفظ العميل. الفرع يستخدم العنوان والهاتف والموقع المدخل أعلاه."
+                icon={<UserPlus size={18} />}
+                surface="subtle"
+              >
+                <div style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-4)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: createDefaults.createBranch ? 'var(--space-3)' : 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontWeight: 600, fontSize: 'var(--text-sm)' }}>
+                      <Building size={14} style={{ color: 'var(--color-primary)' }} /> إنشاء فرع رئيسي تلقائياً
+                    </div>
+                    <label className="toggle-switch">
+                      <input type="checkbox" checked={createDefaults.createBranch} onChange={e => setCreateDefaults(d => ({ ...d, createBranch: e.target.checked }))} />
+                      <span className="toggle-slider" />
+                    </label>
+                  </div>
+                  {createDefaults.createBranch && (
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label" style={{ fontSize: 'var(--text-xs)' }}>اسم الفرع <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(يتزامن مع اسم العميل)</span></label>
+                      <input className="form-input" value={createDefaults.branchName}
+                        onChange={e => setCreateDefaults(d => ({ ...d, branchName: e.target.value, branchNameManual: true }))} placeholder="يأخذ اسم العميل تلقائياً" />
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ padding: 'var(--space-4)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: createDefaults.createContact ? 'var(--space-3)' : 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontWeight: 600, fontSize: 'var(--text-sm)' }}>
+                      <Users size={14} style={{ color: 'var(--color-primary)' }} /> إنشاء جهة اتصال أساسية
+                    </div>
+                    <label className="toggle-switch">
+                      <input type="checkbox" checked={createDefaults.createContact} onChange={e => setCreateDefaults(d => ({ ...d, createContact: e.target.checked }))} />
+                      <span className="toggle-slider" />
+                    </label>
+                  </div>
+                  {createDefaults.createContact && (
+                    <FormGrid columns={2} compact>
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontSize: 'var(--text-xs)' }}>اسم جهة الاتصال</label>
+                        <input className="form-input" value={createDefaults.contactName}
+                          onChange={e => setCreateDefaults(d => ({ ...d, contactName: e.target.value }))} placeholder="مثال: أحمد محمد" />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontSize: 'var(--text-xs)' }}>الوظيفة</label>
+                        <input className="form-input" value={createDefaults.contactRole}
+                          onChange={e => setCreateDefaults(d => ({ ...d, contactRole: e.target.value }))} placeholder="مدير المشتريات" />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontSize: 'var(--text-xs)' }}>هاتف جهة الاتصال</label>
+                        <input className="form-input" dir="ltr" value={createDefaults.contactPhone}
+                          onChange={e => setCreateDefaults(d => ({ ...d, contactPhone: e.target.value }))} placeholder="يستخدم جوال العميل إن ترك فارغاً" />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontSize: 'var(--text-xs)' }}>بريد جهة الاتصال</label>
+                        <input className="form-input" dir="ltr" value={createDefaults.contactEmail}
+                          onChange={e => setCreateDefaults(d => ({ ...d, contactEmail: e.target.value }))} placeholder="يستخدم بريد العميل إن ترك فارغاً" />
+                      </div>
+                    </FormGrid>
+                  )}
+                </div>
+              </FormSection>
+            )}
+
+            <FormSection title="ملاحظات">
+              <textarea
+                aria-label="ملاحظات"
+                className="form-textarea"
+                rows={2}
+                value={form.notes || ''}
+                onChange={e => updateForm('notes', e.target.value)}
+                placeholder="ملاحظات إضافية عن العميل..."
+              />
+            </FormSection>
           </div>
 
-          {/* ═══════ Creation Defaults: Branch + Contact ═══════ */}
-          {!isEdit && (
-            <div className="edara-card" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-4)', border: '1px dashed var(--border-primary)' }}>
-              <h2 style={{ fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 'var(--space-5)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                <UserPlus size={18} style={{ color: 'var(--color-primary)' }} /> بيانات أولية (فرع + جهة اتصال)
-              </h2>
-              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 'var(--space-4)' }}>
-                سيتم إنشاء فرع رئيسي وجهة اتصال أساسية تلقائياً عند حفظ العميل. الفرع يستخدم العنوان والهاتف والموقع المدخل أعلاه.
-              </p>
-
-              {/* Default Branch */}
-              <div style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-4)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: createDefaults.createBranch ? 'var(--space-3)' : 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontWeight: 600, fontSize: 'var(--text-sm)' }}>
-                    <Building size={14} style={{ color: 'var(--color-primary)' }} /> إنشاء فرع رئيسي تلقائياً
-                  </div>
-                  <label className="toggle-switch">
-                    <input type="checkbox" checked={createDefaults.createBranch} onChange={e => setCreateDefaults(d => ({ ...d, createBranch: e.target.checked }))} />
-                    <span className="toggle-slider" />
-                  </label>
-                </div>
-                {createDefaults.createBranch && (
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label" style={{ fontSize: 'var(--text-xs)' }}>اسم الفرع <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(يتزامن مع اسم العميل)</span></label>
-                    <input className="form-input" value={createDefaults.branchName}
-                      onChange={e => setCreateDefaults(d => ({ ...d, branchName: e.target.value, branchNameManual: true }))} placeholder="يأخذ اسم العميل تلقائياً" />
-                  </div>
-                )}
-              </div>
-
-              {/* Default Contact */}
-              <div style={{ padding: 'var(--space-4)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: createDefaults.createContact ? 'var(--space-3)' : 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontWeight: 600, fontSize: 'var(--text-sm)' }}>
-                    <Users size={14} style={{ color: 'var(--color-primary)' }} /> إنشاء جهة اتصال أساسية
-                  </div>
-                  <label className="toggle-switch">
-                    <input type="checkbox" checked={createDefaults.createContact} onChange={e => setCreateDefaults(d => ({ ...d, createContact: e.target.checked }))} />
-                    <span className="toggle-slider" />
-                  </label>
-                </div>
-                {createDefaults.createContact && (
-                  <div className="grid grid-2 gap-3">
-                    <div className="form-group">
-                      <label className="form-label" style={{ fontSize: 'var(--text-xs)' }}>اسم جهة الاتصال</label>
-                      <input className="form-input" value={createDefaults.contactName}
-                        onChange={e => setCreateDefaults(d => ({ ...d, contactName: e.target.value }))} placeholder="مثال: أحمد محمد" />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label" style={{ fontSize: 'var(--text-xs)' }}>الوظيفة</label>
-                      <input className="form-input" value={createDefaults.contactRole}
-                        onChange={e => setCreateDefaults(d => ({ ...d, contactRole: e.target.value }))} placeholder="مدير المشتريات" />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label" style={{ fontSize: 'var(--text-xs)' }}>هاتف جهة الاتصال</label>
-                      <input className="form-input" dir="ltr" value={createDefaults.contactPhone}
-                        onChange={e => setCreateDefaults(d => ({ ...d, contactPhone: e.target.value }))} placeholder="يستخدم جوال العميل إن ترك فارغاً" />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label" style={{ fontSize: 'var(--text-xs)' }}>بريد جهة الاتصال</label>
-                      <input className="form-input" dir="ltr" value={createDefaults.contactEmail}
-                        onChange={e => setCreateDefaults(d => ({ ...d, contactEmail: e.target.value }))} placeholder="يستخدم بريد العميل إن ترك فارغاً" />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Notes */}
-          <div className="edara-card" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-4)' }}>
-            <label className="form-label">ملاحظات</label>
-            <textarea className="form-textarea" rows={2} value={form.notes || ''} onChange={e => updateForm('notes', e.target.value)} placeholder="ملاحظات إضافية عن العميل..." />
-          </div>
-
-          <div className="flex justify-between" style={{ paddingTop: 'var(--space-4)' }}>
+          <FormActions align="between" stickyOnMobile>
             <button type="button" className="btn btn-secondary" onClick={() => navigate('/customers')}>إلغاء</button>
             <button type="submit" className="btn btn-primary btn-lg" disabled={saving}>
               {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
               {saving ? 'جاري الحفظ...' : isEdit ? 'تحديث' : 'حفظ العميل'}
             </button>
-          </div>
+          </FormActions>
         </form>
       )}
 
