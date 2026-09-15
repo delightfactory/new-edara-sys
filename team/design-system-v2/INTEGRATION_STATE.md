@@ -4,75 +4,80 @@
 
 - Review date: `2026-09-15`
 - Development branch: `design-system-v2-development`
-- Exact current development HEAD at integration review: `1531e593891f9b92bec583e080dc8f6bd33f60a8`
-- Active implementation PR: `#28 — DS2-UI-001: migrate customer basic-info form to V2 composition`
-- Exact current PR HEAD: `ccbf9decab1257634874fc348525d6a50f588857`
+- Exact development HEAD immediately before PR integration review: `13a2a65abff4af0a0d78740d9ee69e677b299735`
+- Completed implementation PR: `#28 — DS2-UI-001: migrate customer basic-info form to V2 composition`
+- Exact reviewed / merged PR HEAD: `b6bfceeb8327437e274222c7e2f75e83c4a65061`
 - PR base: `design-system-v2-development`
-- PR state at review: `OPEN / DRAFT / MERGEABLE`
-- Integration disposition: `BLOCKED_QA — NO_MERGE`
+- PR changed-file scope: `src/pages/customers/CustomerFormPage.tsx`, `src/pages/customers/CustomerFormPage.v2.test.ts`
+- Integration disposition: `MERGED_GREEN_DEV`
+- Squash merge commit: `cdcc1a57cc3367fdd161fddb3d9e5b42e92e4829`
+- Post-merge Workstream synchronization commit: `2a30b29613336efb444114fe431b15b814dd04b9`
 
 ## Freshness / shared-memory reconciliation
 
-The Integrator re-read Team Memory, all peer role states, durable decisions, Workstream, issue #27, the live PR metadata and the exact PR review marker before deciding.
+The previous `BLOCKED_QA` integration state targeted superseded PR HEAD `ccbf9decab1257634874fc348525d6a50f588857` and was stale for the current fixed head.
 
-Current source-of-truth alignment:
-- Workstream still has `DS2-UI-001` in `REVIEW`.
-- UI Implementation State hands exact PR HEAD `ccbf9dec...` to QA with `TESTS_AUTHORED_NOT_EXECUTED`.
-- Product Design Director marked the partial tab semantics as a `WATCH`, not a design-direction blocker.
-- Design QA has now resolved that watchpoint as a current `BLOCKING` accessibility/system-contract defect on the exact same PR HEAD.
-- The live PR comment contains `AGENT-REVIEW: BLOCKED` for `ccbf9dec...`; there is no `AGENT-REVIEW: GREEN-DEV` and no `SOURCE_REVIEW_PASS`.
-- Development advanced after the QA state write only through the QA blocker/state documentation commit. No relevant shared component/product-code drift was found that supersedes the QA finding.
+Before merge, the Integrator revalidated the current repository state and exact PR evidence:
 
-Team Memory is lifecycle-stale (it still says the first implementation/QA material runs are pending), but it does not contradict the active slice identity or durable rules. It should be refreshed by the Integrator only after a successful merge, per ownership policy.
+- Product Design Director independently revalidated exact PR HEAD `b6bfceeb8327437e274222c7e2f75e83c4a65061` and recorded architectural `PASS` with no current blocking contradiction.
+- UI Production Engineer recorded the bounded QA correction on the same exact HEAD and `TESTS_AUTHORED_NOT_EXECUTED`.
+- Design QA issued `AGENT-REVIEW: GREEN-DEV` on exact HEAD `b6bfceeb8327437e274222c7e2f75e83c4a65061` with `SOURCE_REVIEW_PASS` and honest `TESTS_AUTHORED_NOT_EXECUTED` evidence.
+- The earlier P2 partial-ARIA-tabs blocker was explicitly resolved: retained legacy section-switch controls remain `type="button"`; incomplete `tablist` / `tab` / `aria-selected` semantics were removed; focused tests guard against partial reintroduction.
+- Current development drift from the PR merge base was governance/state documentation only. Compare against the then-current development head showed the PR's effective product delta remained exactly the same two Customer files.
+- The PR was mergeable. It was still Draft at integration time, so the Integrator transitioned it to Ready for Review without changing the PR HEAD, then re-used the exact-head approval evidence and performed a squash merge.
+
+No peer role state contained a still-current `BLOCKING` contradiction for the reviewed head.
 
 ## Gate evaluation
 
-### Passed / currently clean
+### Passed
 
-- Base branch is exactly `design-system-v2-development`.
-- PR changed-file scope remains limited to:
-  - `src/pages/customers/CustomerFormPage.tsx`
-  - `src/pages/customers/CustomerFormPage.v2.test.ts`
-- Current source/diff evidence remains presentation/composition + focused test changes only; no DB, migration, RPC, service, RBAC/RLS, permission-definition, route-guard, query/cache, workflow-state, business-calculation, workflow/deployment file or Vercel change is present.
-- Implementer evidence is honestly labeled `TESTS_AUTHORED_NOT_EXECUTED`.
-- No hosted GitHub Actions/CI execution was required, triggered or treated as evidence.
-- No known build/type failure is recorded for the current PR HEAD.
-- Shared form-composition direction and Mobile/Tablet/Desktop source-level layout remain accepted outside the QA blocker.
+- Base branch: exact `design-system-v2-development`.
+- Exact-head `AGENT-REVIEW: GREEN-DEV`: PASS.
+- `SOURCE_REVIEW_PASS`: PASS.
+- Test evidence label: `TESTS_AUTHORED_NOT_EXECUTED` — honest and allowed by quota policy.
+- Known build/type failure: none outstanding or recorded for the merged head.
+- Material review blocker: none current on the merged head.
+- Functional isolation: PASS.
+- Changed-file scope: two Customer presentation/test files only.
+- No DB/migration/RPC/service/RBAC/RLS/permission-definition/route-guard/query-cache/validation/workflow/business-calculation change.
+- No workflow/deployment/Vercel enabling change.
+- No GitHub Actions/hosted CI was triggered or required.
+- No preview deployment was created.
+- No change to `main`.
 
-### Blocking / not satisfied
+## Integrated result
 
-- Exact current HEAD `ccbf9decab1257634874fc348525d6a50f588857` has `AGENT-REVIEW: BLOCKED`, not `GREEN-DEV`.
-- Design QA records a current `BLOCKING` contradiction for the slice.
-- `SOURCE_REVIEW_PASS` is explicitly withheld on this HEAD.
-- The blocker is the newly introduced partial ARIA tab contract on retained legacy tabs: `tablist` / `tab` / `aria-selected` are added without the associated tabpanel relationships and keyboard/focus contract, and the focused test currently locks those partial semantics in.
+`DS2-UI-001` is complete in the isolated development workstream.
 
-Therefore the development integration gate is closed for PR #28.
+Integrated system effects:
+- Customer basic-info composition now consumes shared `PageHeader`, `FormSection`, `FormGrid`, and `FormActions`.
+- Existing Customer create/update/GPS/lookup/credit/default-branch/default-contact behavior remains preserved.
+- Mobile one-column/sticky-action composition, deliberate Tablet density and dense Desktop entry remain governed by shared V2 form contracts.
+- Customer-local partial ARIA Tabs semantics were not introduced.
+- The real Customer flow has now proven the need for complete shared Tabs/SubNav semantics as future component-depth work.
 
-## Required bounded correction before re-review
+Development evidence remains source-level only for this slice. No runtime visual pass, executed test suite, preview build or release/main approval is implied.
 
-The current QA handoff is precise and remains inside DS2-UI-001:
+## Queue advancement
 
-1. keep the legacy tab buttons explicitly `type="button"`;
-2. remove the newly introduced `role="tablist"`, `role="tab"`, and `aria-selected` semantics;
-3. update the focused test so it protects non-submit behavior and existing permission boundaries without asserting the incomplete ARIA widget contract;
-4. keep complete Tabs/SubNav keyboard/tabpanel semantics deferred to the future shared component-depth slice;
-5. submit the new exact PR HEAD for independent Design QA re-review.
+Workstream was synchronized after merge:
+- `DS2-UI-001` -> `DONE`
+- merge commit recorded: `cdcc1a57cc3367fdd161fddb3d9e5b42e92e4829`
+- evidence recorded: `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
+- exactly one next dependency-safe slice moved to `READY`: `DS2-UI-002 — Customer detail secondary tabs/patterns`
 
-Do not broaden the PR into a Tabs redesign and do not merge-sync the feature branch merely for governance-document drift.
+The next slice must preserve the finished basic-info composition and should use the proven Customer secondary-section need to establish/adopt a reusable complete Tabs/SubNav contract rather than repeat partial page-local semantics. Dialog/destructive-confirmation redesign remains deferred until shared overlay contracts are ready.
 
-## Merge decision
+## Durable decisions
 
-**NO_MERGE — QA BLOCKING finding is current and exact-head approval is absent.**
-
-No Workstream status, Team Memory, Decision Log, next READY slice, preview branch, Vercel configuration or `main` branch was changed by this integration run.
-
-The existing issue #27 QA blocker entry is already current and precise, so no duplicate coordination comment was added.
+No durable Design System rule was superseded by this merge. `team/design-system-v2/DECISION_LOG.md` was intentionally left unchanged.
 
 ## Cross-role handoff
 
-- **To:** UI Production Engineer, Design QA, Product Design Director
-- **What changed:** Integrator revalidated the live PR and peer states and changed integration disposition from normal `WAITING_QA` to `BLOCKED_QA`; exact PR HEAD `ccbf9dec...` is explicitly ineligible for merge because Design QA recorded a current blocking partial-ARIA-tabs defect and withheld `SOURCE_REVIEW_PASS` / `GREEN-DEV`.
-- **Preserve:** bounded Customer basic-info form-composition scope; all customer business/permission behavior; shared `PageHeader` / `FormSection` / `FormGrid` / `FormActions`; honest `TESTS_AUTHORED_NOT_EXECUTED`; no hosted CI/deploy; no governance-only HEAD churn; no broad Tabs redesign.
-- **Need from you:** UI Production Engineer applies only the bounded QA fix and hands the new exact PR HEAD back to Design QA. Design QA re-reviews that new HEAD independently. Product Design Director should keep full Tabs/SubNav semantics in the future shared component-depth program unless new evidence changes the system direction.
-- **Blocker level:** `BLOCKING`
-- **Baseline:** development `1531e593891f9b92bec583e080dc8f6bd33f60a8`; PR #28 head `ccbf9decab1257634874fc348525d6a50f588857`
+- **To:** UI Production Engineer, Product Design Director, Design QA
+- **What changed:** PR #28 exact GREEN-DEV head `b6bfceeb8327437e274222c7e2f75e83c4a65061` was squash-merged into `design-system-v2-development` as `cdcc1a57cc3367fdd161fddb3d9e5b42e92e4829`; `DS2-UI-001` is DONE and `DS2-UI-002` is the single READY slice.
+- **Preserve:** all Customer business/permission/GPS/lookup/create/update behavior; shared V2 basic-info form grammar; ordinary non-submitting legacy section-switch behavior unless replaced by a complete reusable Tabs/SubNav contract; no hosted CI; no Vercel preview; no `main` merge.
+- **Need from you:** UI Production Engineer should bootstrap from the latest development head and execute only `DS2-UI-002`; Product Design Director should keep the shared Tabs/SubNav requirement coherent and bounded; Design QA should independently review the next exact PR head when handed off.
+- **Blocker level:** `NONE` for integration; runtime/release validation remains a separate milestone gate.
+- **Baseline:** merged product commit `cdcc1a57cc3367fdd161fddb3d9e5b42e92e4829`; post-merge Workstream sync `2a30b29613336efb444114fe431b15b814dd04b9`
