@@ -2,92 +2,93 @@
 
 ## Reviewed baseline
 
+- Review date: `2026-09-15`
 - Development branch: `design-system-v2-development`
-- Exact current development HEAD reviewed: `c8748dc84488351f7aec0c17c5267100090b07c7`
+- Exact current development HEAD reviewed: `7b5824dc1f590491ca95b6ecc603bb8be65b9ac7`
 - Active implementation PR: #28 — `DS2-UI-001: migrate customer basic-info form to V2 composition`
-- Exact PR HEAD reviewed for design-direction alignment: `ccbf9decab1257634874fc348525d6a50f588857`
+- Exact PR HEAD reviewed for design-direction alignment: `b6bfceeb8327437e274222c7e2f75e83c4a65061`
 - PR state: Draft / Open / mergeable clean
-- Current workstream state: `DS2-UI-001` = `REVIEW`
-- Evidence available: source/diff inspection + `TESTS_AUTHORED_NOT_EXECUTED`; no runtime visual evidence claimed
+- Current live QA disposition: `AGENT-REVIEW: GREEN-DEV`
+- Evidence: `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
+- Runtime/preview/release evidence: not claimed
 
 ## Independent professional judgment
 
-**ARCHITECTURAL ALIGNMENT: PASS WITH WATCHPOINTS.**
+**ARCHITECTURAL ALIGNMENT: PASS.**
 
-PR #28 remains aligned with the North Star and the declared DS2-UI-001 boundary. It is a bounded form-composition migration, not a Customer-module redesign.
+The current exact PR HEAD remains correctly bounded to `DS2-UI-001` and advances the shared V2 form grammar without creating a Customer-local mini design system or changing product behavior.
 
-The changed-file scope is limited to:
-- `src/pages/customers/CustomerFormPage.tsx`
-- `src/pages/customers/CustomerFormPage.v2.test.ts`
-
-The implementation consumes existing shared V2 grammar rather than creating a customer-local component system:
+The implementation uses the established system layers:
 - `PageHeader`
 - `FormSection`
 - `FormGrid`
 - `FormActions`
 - existing `PermissionGuard`
 
-The shared responsive contracts support the intended device model:
-- Mobile form grids collapse to one column;
-- Tablet caps three/four-column requests at two columns through 1024px;
-- Desktop may use the requested two/three-column density;
-- Mobile sticky form actions are explicitly positioned above the Design System bottom-navigation height and safe-area inset.
+The migration remains consistent with the documented device strategy and Customer Create/Edit golden-flow acceptance:
+- Mobile defaults to one-column grouped form composition and uses the shared sticky action contract without competing with BottomNav/safe-area rules;
+- Tablet deliberately caps the denser form grids to two columns rather than inheriting compressed Desktop density;
+- Desktop retains useful two/three-column master-data entry density;
+- existing Arabic/RTL composition and LTR treatment for phone/email/GPS/numeric values are preserved;
+- GPS, saving and credit permission-disabled behavior remain existing domain/control responsibilities rather than new presentation logic.
 
-No source-level reason was found to broaden the slice before Design QA. Customer create/update, GPS, credit guard, lookup and default branch/contact behavior remain outside the presentation layer and are intended to remain unchanged.
+No source-level design reason exists to broaden or delay this slice before integration.
+
+## Previous watchpoint — resolved
+
+### Legacy Customer section-switch semantics
+
+The previous Design Director `WATCH` on partial ARIA Tabs semantics is resolved on exact HEAD `b6bfceeb8327437e274222c7e2f75e83c4a65061`.
+
+Independent source check confirms the retained section switches are ordinary `type="button"` controls and the incomplete `tablist` / `tab` / `aria-selected` widget contract is no longer present.
+
+This is the correct system decision for this slice:
+- preserve safe non-submit behavior now;
+- do not invent a page-local partial Tabs abstraction;
+- keep full keyboard/focus/tabpanel semantics for the future shared `Tabs/SubNav/SegmentedControl` component-depth slice.
+
+The fix from previously blocked HEAD `ccbf9dec...` to current HEAD is exactly two commits across the same two PR files, so scope did not expand.
 
 ## Current design-system watchpoints
 
-### 1. Tabs semantics — `WATCH`
+### 1. Shared Tabs/SubNav remains future component-depth work — `WATCH`
 
-The PR deliberately does not introduce a shared Tabs primitive, which is correct scope discipline. However it adds `role="tablist"`, `role="tab"` and `aria-selected` to the existing legacy tab buttons while the page does not currently show a complete shared keyboard/focus/tabpanel contract.
+The current slice intentionally defers complete Tabs/SubNav semantics. This is not a blocker for DS2-UI-001, but the need is now proven by a real migrated screen and should remain visible in the shared component-depth roadmap rather than being forgotten or reimplemented locally on a later page.
 
-Design QA should explicitly decide this point on the exact PR HEAD. Do not allow Customer Form to become the place where EDARA invents a one-off partial ARIA Tabs implementation.
+### 2. Lifecycle metadata freshness — `WATCH`
 
-Preferred system rule for this slice:
-- keep `type="button"` regardless, because tabs must not submit the form;
-- if the ARIA tab contract is incomplete, retain ordinary button semantics for now and defer full tab semantics to the future shared Tabs/SubNav component-depth slice;
-- if QA can prove the current semantics are complete enough, preserve them without expanding this PR into a broad Tabs redesign.
+`DESIGN_QA_STATE.md` and the live PR are current and GREEN-DEV for `b6bfceeb...`.
 
-This is a `WATCH`, not a current architecture blocker.
+`INTEGRATION_STATE.md` still records the earlier blocker on `ccbf9dec...`; it is stale by PR HEAD and cannot be treated as a current blocking contradiction. The Integrator must independently revalidate the current head before merge.
 
-### 2. Creation-default subgroups — bounded legacy composition
-
-The branch/contact creation-default blocks still contain local inline subgroup styling inside the new shared `FormSection`. That is acceptable for DS2-UI-001 because extracting a new customer-specific subgroup primitive would be premature.
-
-Do not promote these local blocks as system patterns until another real form proves the same need.
-
-### 3. Exact-head churn from governance-only baseline drift — `WATCH`
-
-After PR #28 was merge-synced to development baseline `d01f6c0b...`, the development branch advanced to `c8748dc...` only through Workstream / UI Implementation State documentation refreshes. No shared component or product-code drift occurred. The PR remains mergeable clean.
-
-Therefore the feature branch should **not be merge-synced again solely for governance/state-file drift before QA**. Repeated non-functional syncs would move the PR HEAD and unnecessarily invalidate exact-head review evidence.
-
-QA should review `ccbf9decab1257634874fc348525d6a50f588857` unless the product/test code itself changes or a relevant shared component changes.
+`31_AGENT_TEAM_WORKSTREAM.md` and `TEAM_MEMORY.md` still contain lifecycle/head references from before the bounded fix/QA re-review. This is coordination drift only. Per ownership rules, the Integrator should reconcile integrated truth after successful merge rather than causing another governance-only feature-branch sync.
 
 ## Cross-role context comparison
 
-- UI Production Engineer reports `REVIEW_READY` on exact PR HEAD `ccbf9dec...`; this agrees with the independent architecture review.
-- Design QA has not yet published a material review; no QA disposition exists to synthesize.
-- Integration State has not yet been initialized by a material integration run; no merge evidence exists.
-- Team Memory still describes the pre-implementation lifecycle snapshot. That is stale for lifecycle status but does not conflict with the current design direction or slice identity. Workstream + Implementation State + live PR are the current activity evidence. Integrator should refresh Team Memory after successful integration per ownership rules.
+- **UI Production Engineer:** current and aligned; reports `REVIEW_READY_AFTER_QA_FIX` on exact HEAD `b6bfceeb...` with no implementation blocker.
+- **Design QA:** current and aligned; independently issued `GREEN-DEV` + `SOURCE_REVIEW_PASS` on exact HEAD `b6bfceeb...`; evidence honestly remains `TESTS_AUTHORED_NOT_EXECUTED`.
+- **Development Integrator:** stale; its last state blocks the superseded `ccbf9dec...` head and must be re-evaluated against the new exact GREEN-DEV head.
+- **Team Memory / Workstream:** lifecycle metadata is stale but design direction and active-slice identity remain correct.
 
-No cross-role `BLOCKING` contradiction exists at this review.
+No current peer-state `BLOCKING` contradiction applies to exact PR HEAD `b6bfceeb8327437e274222c7e2f75e83c4a65061`.
 
 ## Preserve
 
 - zero backend/business behavior drift;
-- existing customer create/update/GPS/credit/default-branch/default-contact semantics;
-- the shared form grammar and device strategy;
+- existing customer create/update/GPS/credit/default-branch/default-contact/lookup semantics;
+- shared `PageHeader` / `FormSection` / `FormGrid` / `FormActions` grammar;
+- Mobile-primary / deliberate Tablet / dense Desktop device strategy;
+- ordinary non-submitting legacy section-switch behavior until shared Tabs/SubNav is implemented properly;
 - one active implementation slice only;
-- no hosted CI / no Vercel preview from agents;
-- no Customer-specific primitive extraction without recurring evidence;
-- exact-head review discipline without governance-only SHA churn.
+- no hosted CI / no agent-created Vercel preview;
+- no governance-only feature-HEAD churn;
+- runtime visual acceptance remains a separate owner-requested milestone gate.
 
 ## Cross-role handoff
 
-- **To:** Design QA, UI Production Engineer, Development Integrator
-- **What changed:** PR #28 is now active and architecturally aligned with DS2-UI-001; current development drift after its last sync is documentation-only. One accessibility/system watchpoint remains around partial legacy-tab ARIA semantics.
-- **Preserve:** bounded form-composition scope, shared V2 patterns, all customer business/permission behavior, current PR HEAD unless relevant product/shared-component code changes.
-- **Need from you:** Design QA should independently review exact HEAD `ccbf9decab1257634874fc348525d6a50f588857`, especially sticky mobile actions and the tab-semantics watchpoint. UI Engineer should change the PR only for material QA findings. Integrator should not require another docs-only merge-sync and must wait for exact-head `GREEN-DEV`.
-- **Blocker level:** `WATCH`
-- **Baseline:** development `c8748dc84488351f7aec0c17c5267100090b07c7`; PR #28 `ccbf9decab1257634874fc348525d6a50f588857`
+- **To:** Development Integrator, UI Production Engineer, Design QA
+- **What changed:** Design Director independently revalidated the bounded QA fix and now considers exact PR #28 HEAD `b6bfceeb8327437e274222c7e2f75e83c4a65061` architecturally PASS; the previous tab-semantics watchpoint is resolved without scope expansion.
+- **Preserve:** all functional-isolation invariants, shared V2 form composition, device strategy, non-submitting legacy section switches, deferred full Tabs/SubNav contract, and exact review HEAD unless relevant product/shared-component code changes.
+- **Need from you:** Integrator should treat its old `BLOCKED_QA` state as stale, independently revalidate the live exact GREEN-DEV head/base/diff and merge only if its normal gates remain satisfied. UI Engineer and QA should no-op unless a new material finding or head movement occurs.
+- **Blocker level:** `NONE` for design architecture; lifecycle metadata is `WATCH` only.
+- **Baseline:** development `7b5824dc1f590491ca95b6ecc603bb8be65b9ac7`; PR #28 HEAD `b6bfceeb8327437e274222c7e2f75e83c4a65061`
