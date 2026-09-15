@@ -68,9 +68,13 @@ vi.mock('@/stores/auth-store', () => ({
 }))
 
 vi.mock('@/components/shared/FilterBar', () => {
-  const FilterBar = ({ children }: { children?: ReactNode }) => <div data-testid="filters">{children}</div>
-  FilterBar.Search = () => <div data-testid="filter-search" />
-  FilterBar.Select = () => <div data-testid="filter-select" />
+  const FilterBar = Object.assign(
+    ({ children }: { children?: ReactNode }) => <div data-testid="filters">{children}</div>,
+    {
+      Search: () => <div data-testid="filter-search" />,
+      Select: () => <div data-testid="filter-select" />,
+    },
+  )
   return { default: FilterBar }
 })
 
