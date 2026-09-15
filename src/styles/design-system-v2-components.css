@@ -1,0 +1,35 @@
+/* Delight Design System V2 — component-level compatibility styles. */
+
+/* Accessible focus treatment for the existing Button primitive and all V2 consumers. */
+.btn:focus-visible {
+  outline: 2px solid var(--ds-focus-color);
+  outline-offset: 2px;
+  box-shadow: var(--ds-focus-ring);
+}
+
+.btn[aria-busy='true'] {
+  cursor: progress;
+}
+
+/*
+ * V2 touch target opt-in.
+ * This class intentionally does not change legacy button sizes globally.
+ */
+.btn-touch {
+  min-height: var(--ds-control-height-touch);
+}
+
+.btn-icon.btn-touch {
+  min-width: var(--ds-icon-hit-target);
+  min-height: var(--ds-icon-hit-target);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn {
+    transition: none;
+  }
+
+  .btn:active {
+    transform: none;
+  }
+}

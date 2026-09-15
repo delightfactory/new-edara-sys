@@ -1,23 +1,46 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode, Children } from 'react'
 import { cn } from '@/lib/utils/helpers'
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'ghost'
   size?: 'sm' | 'md' | 'lg'
   loading?: boolean
   icon?: ReactNode
   block?: boolean
+  /**
+   * Keeps the visual size/density variant while guaranteeing a touch-friendly
+   * minimum hit target. V2 mobile/task surfaces should opt in during migration.
+   * Legacy consumers remain unchanged until explicitly migrated.
+   */
+  touchTarget?: boolean
 }
 
 /**
- * Button — مكون زر موحد يغلف CSS classes الموجودة
- * يدعم: variant, size, loading, icon, block
- * تلقائياً يضيف btn-icon عند وجود أيقونة فقط بدون نص
+ * Button — shared action primitive.
+ *
+ * Backward-compatible with the existing `.btn*` CSS API while exposing the
+ * V2 interaction contract (loading semantics + optional touch target).
  */
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant = 'primary', size = 'md', loading, icon, block, className, children, disabled, ...props }, ref) => {
-    const hasChildren = Children.count(children) > 0 || (typeof children === 'string' && children.trim().length > 0)
-    const isIconOnly = !!icon && !hasChildren && !loading
+  (
+    {
+      variant = 'primary',
+      size = 'md',
+      loading = false,
+      icon,
+      block,
+      touchTarget = false,
+      className,
+      children,
+      disabled,
+      ...props
+    },
+    ref,
+  ) => {
+    const hasChildren = Children.toArray(children).some(child =>
+      typeof child === 'string' ? child.trim().length > 0 : child != null,
+    )
+    const isIconOnly = !!icon && !hasChildren
 
     const classes = cn(
       'btn',
@@ -25,8 +48,9 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       size === 'sm' && 'btn-sm',
       size === 'lg' && 'btn-lg',
       isIconOnly && 'btn-icon',
+      touchTarget && 'btn-touch',
       block && 'btn-block',
-      className
+      className,
     )
 
     return (
@@ -34,17 +58,19 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         className={classes}
         disabled={disabled || loading}
+        aria-busy={loading || undefined}
+        data-loading={loading ? 'true' : undefined}
         {...props}
       >
         {loading ? (
-          <span className="spinner spinner-sm" />
+          <span className="spinner spinner-sm" aria-hidden="true" />
         ) : icon ? (
           icon
         ) : null}
         {children}
       </button>
     )
-  }
+  },
 )
 
 Button.displayName = 'Button'
