@@ -44,10 +44,10 @@ Rules:
 The repository is the team's shared room and durable memory. The four scheduled agents must behave as one informed team rather than isolated jobs.
 
 The authoritative communication contract is:
-- `team/design-system-v2/COMMUNICATION_PROTOCOL.md`
+- `docs/design-system-v2/34_AGENT_TEAM_COMMUNICATION_PROTOCOL.md`
 
 Before any material action, every role must read, in addition to the normal governance documents:
-- `team/design-system-v2/COMMUNICATION_PROTOCOL.md`
+- `docs/design-system-v2/34_AGENT_TEAM_COMMUNICATION_PROTOCOL.md`
 - `team/design-system-v2/TEAM_MEMORY.md`
 - `team/design-system-v2/DESIGN_DIRECTOR_STATE.md`
 - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
