@@ -1,0 +1,107 @@
+/* Delight Design System V2 — responsive collection and pagination patterns. */
+
+.ds-responsive-collection {
+  min-width: 0;
+}
+
+.ds-responsive-collection__body {
+  min-width: 0;
+}
+
+.ds-responsive-collection__footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  margin-top: var(--space-4);
+}
+
+/* ===== Pagination ===== */
+.ds-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.ds-pagination__pages {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.ds-pagination__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--ds-control-height-touch);
+  min-width: var(--ds-control-height-touch);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--ds-border-default);
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-surface-default);
+  color: var(--ds-text-secondary);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ds-pagination__button:hover:not(:disabled) {
+  background: var(--ds-surface-hover);
+  color: var(--ds-text-primary);
+}
+
+.ds-pagination__button:focus-visible {
+  outline: 2px solid var(--ds-focus-color);
+  outline-offset: 2px;
+}
+
+.ds-pagination__button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ds-pagination__page--active {
+  border-color: var(--ds-action-primary);
+  background: var(--ds-action-primary);
+  color: var(--ds-text-inverse);
+}
+
+.ds-pagination__ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  color: var(--ds-text-muted);
+}
+
+.ds-pagination__summary {
+  min-width: 4.5rem;
+  text-align: center;
+  color: var(--ds-text-secondary);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 768px) {
+  .ds-pagination {
+    width: 100%;
+  }
+
+  .ds-pagination--compact .ds-pagination__previous,
+  .ds-pagination--compact .ds-pagination__next {
+    flex: 1 1 0;
+  }
+
+  .ds-pagination:not(.ds-pagination--compact) {
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding-bottom: var(--space-1);
+  }
+
+  .ds-pagination:not(.ds-pagination--compact) .ds-pagination__button {
+    flex: 0 0 auto;
+  }
+}
