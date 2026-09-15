@@ -82,7 +82,9 @@ See `33_TEST_AND_VALIDATION_POLICY.md`.
 
 ## Current baseline
 
-Already present before the continuous team loop:
+Integrated through `DS2-UI-001` on merge commit `cdcc1a57cc3367fdd161fddb3d9e5b42e92e4829` before the post-merge governance synchronization commits.
+
+The development branch includes:
 
 - Design System V2 blueprint and semantic foundations
 - Button/IconButton and form primitives
@@ -98,52 +100,52 @@ Already present before the continuous team loop:
 - Sidebar V2 feature flag (off by default on development)
 - Dashboard V2 migration
 - Customers List V2 migration
+- Customer basic-info form V2 composition (`DS2-UI-001`)
 - TypeScript-safe Sidebar visible-entry projection fix on development
 - North Star / professional quality specification
 - explicit test/validation policy without GitHub Actions
 - repository-native Team Memory, role-state handoffs and durable decision log
 
-## Active slice
+## Completed slice
 
 ### DS2-UI-001 — Customer Form: basic-info composition
-Status: `REVIEW`
+Status: `DONE`
+Merged PR: `#28`
+Reviewed exact PR HEAD: `b6bfceeb8327437e274222c7e2f75e83c4a65061`
+Squash merge commit: `cdcc1a57cc3367fdd161fddb3d9e5b42e92e4829`
+Evidence: `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
+Runtime/preview/release evidence: not claimed
+
+System result:
+- Customer basic-info form now uses shared `PageHeader`, `FormSection`, `FormGrid`, and `FormActions` composition.
+- Existing create/update, GPS, credit permission, lookup, default branch/contact and secondary Customer behaviors remain preserved.
+- Mobile/Tablet/Desktop form density remains governed by shared V2 contracts.
+- Retained legacy Customer section-switch controls are explicitly non-submitting ordinary buttons; incomplete ARIA Tabs semantics were intentionally removed.
+- Complete Tabs/SubNav keyboard/focus/tabpanel semantics remain future shared component-depth work.
+
+## Next READY slice
+
+### DS2-UI-002 — Customer detail secondary tabs/patterns
+Status: `READY`
 Owner role: UI Production Engineer
-Draft PR: `#28`
-Exact current PR HEAD handed to Design QA: `ccbf9decab1257634874fc348525d6a50f588857`
-Implementation/test content HEAD before non-force baseline sync: `8daaf6a3df1ced8a6a5e6c04fad251ae802710cc`
-Evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 
 System intent:
-Prove the shared form grammar on a real high-value operational master-data form without touching business behavior.
+Continue the Customer golden flow by migrating secondary edit surfaces into the shared V2 language, while using the proven need for a real shared Tabs/SubNav contract rather than creating Customer-local navigation semantics.
 
-Scope:
-- migrate only the `info` tab composition to existing V2 patterns
-- use shared PageHeader / Tabs where safe
-- use FormSection / FormGrid / FormActions
-- preserve every existing field and handler
-- preserve customer create/update behavior
-- preserve default branch/default contact creation behavior
-- preserve GPS behavior
-- preserve finance credit permission guard
-- preserve lookup loading for governorates/cities/areas/price lists/reps
-- preserve edit-mode branches/contacts/credit tabs outside the slice
+Scope direction:
+- branches / contacts / credit secondary surfaces
+- establish or adopt shared Tabs/SubNav section-switch grammar at the minimum reusable boundary required by the real Customer screen
+- preserve all existing tab visibility, counts, handlers, permissions and business behavior
+- keep dialogs/destructive confirmation redesign deferred until shared overlay contracts are explicitly ready
+- preserve the completed basic-info V2 composition without reopening DS2-UI-001
 
-Explicit exclusions:
-- no service changes
-- no query changes
-- no validation-semantic changes
-- no branch/contact CRUD redesign
-- no credit-history redesign
-- no modal redesign in this slice
-
-Acceptance:
-- create and edit modes retain same fields and submit behavior
-- Mobile/Tablet/Desktop composition is deliberate
-- field hierarchy and section scanning improve materially
-- mobile controls/actions are touch-safe
-- no hidden action becomes unavailable
-- RTL/Arabic labels and long values remain stable
-- focused tests protect material submit/permission/composition risk where practical
+Acceptance direction:
+- no partial ARIA Tabs widget contract
+- if shared Tabs/SubNav semantics are introduced, keyboard/focus/panel relationships must be complete enough for the shared component contract
+- Mobile/Tablet/Desktop section navigation remains deliberate and touch-safe
+- no Customer-local mini design system
+- no backend/service/query/permission/business behavior changes
+- focused test artifacts protect the material navigation/permission/composition contract; execution evidence remains governed by `33_TEST_AND_VALIDATION_POLICY.md`
 
 ## Product migration roadmap
 
@@ -152,9 +154,10 @@ The Director selects the smallest dependency-safe slice from this roadmap; order
 ### A. Golden flows
 
 #### DS2-UI-002 — Customer detail secondary tabs/patterns
-`BACKLOG`
+`READY`
 - branches / contacts / credit tab surfaces
 - dialogs and destructive confirmations only after shared overlay contracts are ready
+- shared Tabs/SubNav semantics must be complete if introduced; do not repeat partial legacy ARIA semantics
 
 #### DS2-UI-003 — Sales Orders list V2
 `BACKLOG`
@@ -180,7 +183,7 @@ These are opened when a migrated screen proves a recurring gap; they are not spe
 - MobileDataCard semantic migration from legacy DataCard
 - Modal/ResponsiveSheet/ConfirmDialog V2 convergence
 - Combobox/AsyncCombobox keyboard/focus hardening
-- Tabs/SubNav/SegmentedControl adoption cleanup
+- Tabs/SubNav/SegmentedControl adoption cleanup — now explicitly proven by the Customer secondary-section flow; implement only at a reusable, complete semantic boundary
 - EntityHeader / TransactionHeader
 - Timeline / ActivityFeed / AuditTimeline
 - FinancialSummary / InventorySummary / ApprovalPanel
