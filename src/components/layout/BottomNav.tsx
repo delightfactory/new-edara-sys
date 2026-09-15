@@ -2,71 +2,53 @@ import { NavLink } from 'react-router-dom'
 import { ClipboardCheck, LayoutDashboard, ShoppingCart, Users, Menu } from 'lucide-react'
 import { useUiStore } from '@/stores/ui-store'
 import { useAuthStore } from '@/stores/auth-store'
+import { getVisibleMobilePrimaryDestinations } from '@/navigation/mobile'
 
-interface Tab {
-  id: string
-  label: string
-  icon: React.ElementType
-  path?: string
-  permission?: string | string[]
-  action?: 'openMenu'
-}
-
-const tabs: Tab[] = [
-  { id: 'home',      label: 'الرئيسية', icon: LayoutDashboard, path: '/' },
-  { id: 'work',      label: 'العمل',    icon: ClipboardCheck,  path: '/work', permission: ['work.items.read_own', 'work.items.read_team', 'work.items.read_all'] },
-  { id: 'sales',     label: 'المبيعات', icon: ShoppingCart,    path: '/sales/orders', permission: 'sales.orders.read' },
-  { id: 'customers', label: 'العملاء',  icon: Users,           path: '/customers', permission: 'customers.read' },
-  { id: 'menu',      label: 'القائمة',  icon: Menu,            action: 'openMenu' },
-]
+const iconByDestinationId = {
+  dashboard: LayoutDashboard,
+  work: ClipboardCheck,
+  'sales-orders': ShoppingCart,
+  customers: Users,
+} as const
 
 export default function BottomNav() {
   const { setSidebarOpen } = useUiStore()
   const can = useAuthStore(s => s.can)
   const canAny = useAuthStore(s => s.canAny)
 
-  const canAccess = (perm?: string | string[]) => {
-    if (!perm) return true
-    return Array.isArray(perm) ? canAny(perm) : can(perm)
-  }
-
-  const visibleTabs = tabs.filter(t => canAccess(t.permission))
+  const visibleTabs = getVisibleMobilePrimaryDestinations({ can, canAny })
 
   return (
     <nav className="bottom-nav" aria-label="التنقل الرئيسي">
       {visibleTabs.map(tab => {
-        const Icon = tab.icon
-
-        if (tab.action === 'openMenu') {
-          return (
-            <button
-              key={tab.id}
-              className="bottom-nav-tab"
-              onClick={() => setSidebarOpen(true)}
-              aria-label="فتح القائمة الجانبية"
-              type="button"
-            >
-              <span className="bottom-nav-icon"><Icon size={22} /></span>
-              <span className="bottom-nav-label">{tab.label}</span>
-            </button>
-          )
-        }
+        const Icon = iconByDestinationId[tab.id as keyof typeof iconByDestinationId]
+        if (!Icon) return null
 
         return (
           <NavLink
             key={tab.id}
-            to={tab.path!}
-            end={tab.path === '/'}
+            to={tab.path}
+            end={tab.exact}
             className={({ isActive }) =>
               `bottom-nav-tab ${isActive ? 'bottom-nav-tab--active' : ''}`
             }
-            aria-label={tab.label}
+            aria-label={tab.mobileLabel}
           >
             <span className="bottom-nav-icon"><Icon size={22} /></span>
-            <span className="bottom-nav-label">{tab.label}</span>
+            <span className="bottom-nav-label">{tab.mobileLabel}</span>
           </NavLink>
         )
       })}
+
+      <button
+        className="bottom-nav-tab"
+        onClick={() => setSidebarOpen(true)}
+        aria-label="فتح القائمة الجانبية"
+        type="button"
+      >
+        <span className="bottom-nav-icon"><Menu size={22} /></span>
+        <span className="bottom-nav-label">القائمة</span>
+      </button>
 
       <style>{`
         .bottom-nav {
