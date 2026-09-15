@@ -39,6 +39,35 @@ Rules:
 - if a role has nothing actionable, it no-ops instead of inventing work
 - preview deployment is outside this state machine and only happens on explicit user request
 
+## Repository-native team communication
+
+The repository is the team's shared room and durable memory. The four scheduled agents must behave as one informed team rather than isolated jobs.
+
+The authoritative communication contract is:
+- `team/design-system-v2/COMMUNICATION_PROTOCOL.md`
+
+Before any material action, every role must read, in addition to the normal governance documents:
+- `team/design-system-v2/COMMUNICATION_PROTOCOL.md`
+- `team/design-system-v2/TEAM_MEMORY.md`
+- `team/design-system-v2/DESIGN_DIRECTOR_STATE.md`
+- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
+- `team/design-system-v2/DESIGN_QA_STATE.md`
+- `team/design-system-v2/INTEGRATION_STATE.md`
+- `team/design-system-v2/DECISION_LOG.md`
+- issue #27 and the active PR when one exists
+
+Communication rules:
+- each role owns and updates only its own state file in normal operation
+- Product Design Director and Development Integrator keep `TEAM_MEMORY.md` synchronized when direction or integrated baseline materially changes
+- all material handoffs carry exact SHA/baseline, what changed, evidence, invariants to preserve, required next action, blocker level and freshness condition
+- peer state is context, not a substitute for independent professional judgment
+- Design QA must always judge the exact PR HEAD independently
+- issue #27 is a concise chronological event stream for material events, not hourly status chatter
+- no-op runs create no repository noise
+- a mismatch between Workstream, Team Memory, implementation state and active PR is a coordination blocker; do not start a second slice until reconciled
+
+This model follows the same repository-as-shared-room principle that proved effective in the Garment Ops autonomous team.
+
 ## GitHub Actions / execution budget
 
 - Hosted GitHub Actions are forbidden to this workstream while quota protection is active.
@@ -72,6 +101,7 @@ Already present before the continuous team loop:
 - TypeScript-safe Sidebar visible-entry projection fix on development
 - North Star / professional quality specification
 - explicit test/validation policy without GitHub Actions
+- repository-native Team Memory, role-state handoffs and durable decision log
 
 ## Active slice
 
@@ -287,6 +317,7 @@ After merge:
 - [ ] update completed slice to DONE with merge SHA/evidence
 - [ ] move exactly one dependency-safe next roadmap item to READY
 - [ ] preserve long-horizon full-system roadmap
+- [ ] refresh `team/design-system-v2/TEAM_MEMORY.md` when integrated truth changes
 - [ ] do not create preview deployment
 - [ ] do not merge development into main
 
