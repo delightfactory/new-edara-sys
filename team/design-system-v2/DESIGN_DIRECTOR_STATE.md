@@ -3,7 +3,7 @@
 ## Reviewed baseline
 
 - Development branch: `design-system-v2-development`
-- Exact reviewed HEAD after communication-governance update: `d8577d446e637d027e4bb42c52209c1372bfa664`
+- Exact reviewed HEAD after communication-governance reconciliation: `2c522cbbc30c825fef93e1da76ca7ed10a2917d5`
 - Open implementation PRs targeting development at review time: none
 - Current queue state: exactly one READY slice
 
@@ -30,9 +30,11 @@ The source-backed audit and Golden Flow acceptance both identify Customer Create
 Repository-native communication is now a required part of the workstream.
 
 Canonical protocol:
-`team/design-system-v2/COMMUNICATION_PROTOCOL.md`
+`docs/design-system-v2/34_AGENT_TEAM_COMMUNICATION_PROTOCOL.md`
 
 All scheduled roles must read Team Memory, every peer role-state file, Decision Log, issue #27 and the active PR before material action. Each role owns its own state file; cross-role handoffs must be exact-head aware and actionable. Peer state informs but never replaces independent professional judgment.
+
+The duplicate protocol path created during concurrent setup was removed. Workstream, Team Memory and Issue #27 now converge on the single canonical communication protocol.
 
 This resolves the gap between having scheduled roles and having an actual coordinated autonomous team.
 
@@ -55,13 +57,9 @@ This resolves the gap between having scheduled roles and having an actual coordi
 
 ## Cross-role handoff
 
-- **From:** Product Design Director
 - **To:** UI Production Engineer, Design QA, Development Integrator
-- **Slice:** `DS2-UI-001`
-- **Baseline:** `d8577d446e637d027e4bb42c52209c1372bfa664`
-- **What changed:** communication protocol is now explicit and mandatory; workstream requires every agent to read shared memory and all peer states before material action. Current Customer Form slice remains READY and architecturally valid.
-- **Evidence:** `SOURCE_REVIEW_PASS` for scope/system-fit review only; no implementation/runtime evidence claimed.
-- **Preserve:** North Star, functional isolation, device strategy, shared-component ownership, no hosted CI/deploy.
-- **Need next:** UI Production Engineer should claim `DS2-UI-001` from the exact latest development HEAD, implement the bounded info-tab composition, publish implementation state, then hand exact PR HEAD to Design QA.
-- **Blocker:** `NONE`
-- **Freshness:** this handoff becomes stale if development HEAD materially changes before branch creation, an implementation PR appears, or active-slice truth changes.
+- **What changed:** canonical repository-native communication is active and reconciled under `docs/design-system-v2/34_AGENT_TEAM_COMMUNICATION_PROTOCOL.md`; current Customer Form slice remains READY and architecturally valid.
+- **Preserve:** North Star, functional isolation, device strategy, shared-component ownership, no hosted CI/deploy, one active slice.
+- **Need from you:** UI Production Engineer should claim `DS2-UI-001` from the exact latest development HEAD, publish exact branch/PR/head evidence in its role state, then hand the exact PR HEAD to Design QA. QA and Integrator must consume all peer states before acting.
+- **Blocker level:** `NONE`
+- **Baseline:** `2c522cbbc30c825fef93e1da76ca7ed10a2917d5`
