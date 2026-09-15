@@ -109,7 +109,8 @@ Already present before the continuous team loop:
 Status: `REVIEW`
 Owner role: UI Production Engineer
 Draft PR: `#28`
-Implementation/test HEAD handed to Design QA: `8daaf6a3df1ced8a6a5e6c04fad251ae802710cc`
+Exact current PR HEAD handed to Design QA: `ccbf9decab1257634874fc348525d6a50f588857`
+Implementation/test content HEAD before non-force baseline sync: `8daaf6a3df1ced8a6a5e6c04fad251ae802710cc`
 Evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 
 System intent:
