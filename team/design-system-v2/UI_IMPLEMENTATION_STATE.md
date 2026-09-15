@@ -5,7 +5,9 @@
 - Development baseline used to create the feature branch: `9acb9b7582c97709f69b6acec68d864762f8802e`
 - Feature branch: `ds2/customer-form-basic-info-v2`
 - Draft PR: #28 — `DS2-UI-001: migrate customer basic-info form to V2 composition`
-- Exact implementation/test HEAD handed to review: `8daaf6a3df1ced8a6a5e6c04fad251ae802710cc`
+- Implementation/test HEAD before coordination-baseline sync: `8daaf6a3df1ced8a6a5e6c04fad251ae802710cc`
+- Exact current PR HEAD handed to review: `ccbf9decab1257634874fc348525d6a50f588857`
+- Current PR HEAD is a non-force merge-sync that brings the feature branch onto development coordination baseline `d01f6c0b891fa8b1615993a675555bb365454460`; the product/test blobs are unchanged from `8daaf6a...`.
 - Active slice: `DS2-UI-001 — Customer Form: basic-info composition`
 - Implementation disposition: `REVIEW_READY`
 
@@ -22,6 +24,7 @@ The Customer Form `info` composition was migrated onto the existing V2 grammar w
 
 ## Files changed
 
+Product/test diff for PR #28:
 - `src/pages/customers/CustomerFormPage.tsx`
 - `src/pages/customers/CustomerFormPage.v2.test.ts`
 
@@ -87,8 +90,8 @@ Hosted GitHub Actions were not triggered. No approved local repository runtime i
 ## Cross-role handoff
 
 - **To:** Design QA
-- **What changed:** PR #28 migrates the Customer basic-info form composition to shared V2 PageHeader/FormSection/FormGrid/FormActions while preserving existing handlers and permission boundaries; focused source-contract tests were added.
+- **What changed:** PR #28 migrates the Customer basic-info form composition to shared V2 PageHeader/FormSection/FormGrid/FormActions while preserving existing handlers and permission boundaries; focused source-contract tests were added. The feature branch was then merge-synced to the current coordination baseline without changing product/test blobs.
 - **Preserve:** all customer create/update, GPS, lookup, credit guard, default branch/contact and secondary-tab behavior; no backend/query/validation expansion.
-- **Need from you:** independently review exact PR HEAD `8daaf6a3df1ced8a6a5e6c04fad251ae802710cc` for functional isolation, shared-system fit, RTL/accessibility and Mobile/Tablet/Desktop composition. Give special attention to Mobile sticky actions and the deliberate retention of legacy tab visuals.
+- **Need from you:** independently review exact PR HEAD `ccbf9decab1257634874fc348525d6a50f588857` for functional isolation, shared-system fit, RTL/accessibility and Mobile/Tablet/Desktop composition. Give special attention to Mobile sticky actions and the deliberate retention of legacy tab visuals.
 - **Blocker level:** `NONE`
-- **Baseline:** feature branch created from `9acb9b7582c97709f69b6acec68d864762f8802e`; review the live PR HEAD for freshness before disposition.
+- **Baseline:** feature branch originally created from `9acb9b7582c97709f69b6acec68d864762f8802e`, then non-force merge-synced with development baseline `d01f6c0b891fa8b1615993a675555bb365454460`; review the live PR HEAD for freshness before disposition.
