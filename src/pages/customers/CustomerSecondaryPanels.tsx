@@ -6,6 +6,7 @@ import KeyValueList from '@/components/patterns/KeyValueList'
 import SectionHeader from '@/components/patterns/SectionHeader'
 import StatePanel from '@/components/patterns/StatePanel'
 import StatusBadge from '@/components/patterns/StatusBadge'
+import Button from '@/components/ui/Button'
 
 const collectionGridStyle: CSSProperties = {
   display: 'grid',
@@ -47,9 +48,9 @@ export function CustomerBranchesPanel({
         title="فروع العميل"
         icon={<Building size={18} />}
         action={canUpdate ? (
-          <button type="button" className="btn btn-primary btn-sm btn-touch" onClick={onAdd}>
-            <Plus size={14} /> إضافة فرع
-          </button>
+          <Button type="button" variant="primary" size="sm" touchTarget icon={<Plus size={14} />} onClick={onAdd}>
+            إضافة فرع
+          </Button>
         ) : undefined}
       />
 
@@ -61,9 +62,9 @@ export function CustomerBranchesPanel({
             title="لا يوجد فروع لهذا العميل"
             description="أضف فرعاً لتسجيل مواقع التسليم."
             action={canUpdate ? (
-              <button type="button" className="btn btn-secondary btn-sm btn-touch" onClick={onAdd}>
-                <Plus size={14} /> إضافة أول فرع
-              </button>
+              <Button type="button" variant="secondary" size="sm" touchTarget icon={<Plus size={14} />} onClick={onAdd}>
+                إضافة أول فرع
+              </Button>
             ) : undefined}
             compact
           />
@@ -101,17 +102,25 @@ export function CustomerBranchesPanel({
 
                 {canUpdate && (
                   <div style={cardActionsStyle}>
-                    <button type="button" className="btn btn-ghost btn-sm btn-touch" onClick={() => onEdit(branch)}>
-                      <Edit size={14} /> تعديل
-                    </button>
-                    <button
+                    <Button
                       type="button"
-                      className="btn btn-danger btn-sm btn-icon btn-touch"
+                      variant="ghost"
+                      size="sm"
+                      touchTarget
+                      icon={<Edit size={14} />}
+                      onClick={() => onEdit(branch)}
+                    >
+                      تعديل
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="danger"
+                      size="sm"
+                      touchTarget
+                      icon={<Trash2 size={14} />}
                       aria-label={`حذف فرع ${branch.name}`}
                       onClick={() => onDelete(branch.id, branch.name)}
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    />
                   </div>
                 )}
               </Card>
@@ -144,9 +153,9 @@ export function CustomerContactsPanel({
         title="جهات الاتصال"
         icon={<Users size={18} />}
         action={canUpdate ? (
-          <button type="button" className="btn btn-primary btn-sm btn-touch" onClick={onAdd}>
-            <Plus size={14} /> إضافة جهة اتصال
-          </button>
+          <Button type="button" variant="primary" size="sm" touchTarget icon={<Plus size={14} />} onClick={onAdd}>
+            إضافة جهة اتصال
+          </Button>
         ) : undefined}
       />
 
@@ -158,9 +167,9 @@ export function CustomerContactsPanel({
             title="لا يوجد جهات اتصال"
             description="أضف جهات الاتصال الخاصة بهذا العميل."
             action={canUpdate ? (
-              <button type="button" className="btn btn-secondary btn-sm btn-touch" onClick={onAdd}>
-                <Plus size={14} /> إضافة أول جهة اتصال
-              </button>
+              <Button type="button" variant="secondary" size="sm" touchTarget icon={<Plus size={14} />} onClick={onAdd}>
+                إضافة أول جهة اتصال
+              </Button>
             ) : undefined}
             compact
           />
@@ -188,17 +197,25 @@ export function CustomerContactsPanel({
 
                 {canUpdate && (
                   <div style={cardActionsStyle}>
-                    <button type="button" className="btn btn-ghost btn-sm btn-touch" onClick={() => onEdit(contact)}>
-                      <Edit size={14} /> تعديل
-                    </button>
-                    <button
+                    <Button
                       type="button"
-                      className="btn btn-danger btn-sm btn-icon btn-touch"
+                      variant="ghost"
+                      size="sm"
+                      touchTarget
+                      icon={<Edit size={14} />}
+                      onClick={() => onEdit(contact)}
+                    >
+                      تعديل
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="danger"
+                      size="sm"
+                      touchTarget
+                      icon={<Trash2 size={14} />}
                       aria-label={`حذف جهة الاتصال ${contact.name}`}
                       onClick={() => onDelete(contact.id, contact.name)}
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    />
                   </div>
                 )}
               </Card>
