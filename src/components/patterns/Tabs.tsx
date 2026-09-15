@@ -20,14 +20,15 @@ export interface TabsProps {
   onValueChange: (value: string) => void
   items: TabItem[]
   ariaLabel: string
+  direction?: 'rtl' | 'ltr'
   className?: string
   listClassName?: string
   panelClassName?: string
   compact?: boolean
 }
 
-function compactId(value: string) {
-  return value.replace(/:/g, '')
+function safeId(value: string) {
+  return value.replace(/[^a-zA-Z0-9_-]/g, '-')
 }
 
 /**
@@ -41,14 +42,20 @@ export default function Tabs({
   onValueChange,
   items,
   ariaLabel,
+  direction,
   className,
   listClassName,
   panelClassName,
   compact = false,
 }: TabsProps) {
-  const generatedId = compactId(useId())
+  const generatedId = safeId(useId())
   const refs = useRef<Record<string, HTMLButtonElement | null>>({})
   const activeItem = items.find(item => item.value === value && !item.disabled)
+  const resolvedDirection = direction ?? (
+    typeof document !== 'undefined' && document.documentElement.dir === 'rtl'
+      ? 'rtl'
+      : 'ltr'
+  )
 
   const moveFocus = (currentValue: string, delta: number) => {
     const enabledItems = items.filter(item => !item.disabled)
@@ -85,15 +92,16 @@ export default function Tabs({
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
 
     event.preventDefault()
-    const direction = getComputedStyle(event.currentTarget).direction
-    const isRtl = direction === 'rtl'
     const physicalDelta = event.key === 'ArrowRight' ? 1 : -1
-    const logicalDelta = isRtl ? -physicalDelta : physicalDelta
+    const logicalDelta = resolvedDirection === 'rtl' ? -physicalDelta : physicalDelta
     moveFocus(item.value, logicalDelta)
   }
 
   return (
-    <div className={cn('ds-tabs', compact && 'ds-tabs--compact', className)}>
+    <div
+      className={cn('ds-tabs', compact && 'ds-tabs--compact', className)}
+      dir={resolvedDirection}
+    >
       <div
         className={cn('ds-tabs__list', listClassName)}
         role="tablist"
@@ -101,8 +109,9 @@ export default function Tabs({
       >
         {items.map(item => {
           const selected = item.value === value && !item.disabled
-          const tabId = `ds-tabs-${generatedId}-${item.value}-tab`
-          const panelId = `ds-tabs-${generatedId}-${item.value}-panel`
+          const itemId = safeId(item.value)
+          const tabId = `ds-tabs-${generatedId}-${itemId}-tab`
+          const panelId = `ds-tabs-${generatedId}-${itemId}-panel`
 
           return (
             <button
@@ -129,17 +138,20 @@ export default function Tabs({
         })}
       </div>
 
-      {activeItem?.panel !== undefined && (
-        <div
-          id={`ds-tabs-${generatedId}-${activeItem.value}-panel`}
-          className={cn('ds-tabs__panel', panelClassName)}
-          role="tabpanel"
-          aria-labelledby={`ds-tabs-${generatedId}-${activeItem.value}-tab`}
-          tabIndex={0}
-        >
-          {activeItem.panel}
-        </div>
-      )}
+      {activeItem?.panel !== undefined && (() => {
+        const activeId = safeId(activeItem.value)
+        return (
+          <div
+            id={`ds-tabs-${generatedId}-${activeId}-panel`}
+            className={cn('ds-tabs__panel', panelClassName)}
+            role="tabpanel"
+            aria-labelledby={`ds-tabs-${generatedId}-${activeId}-tab`}
+            tabIndex={0}
+          >
+            {activeItem.panel}
+          </div>
+        )
+      })()}
     </div>
   )
 }
