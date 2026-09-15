@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
@@ -67,7 +68,7 @@ vi.mock('@/stores/auth-store', () => ({
 }))
 
 vi.mock('@/components/shared/FilterBar', () => {
-  const FilterBar = ({ children }: { children?: React.ReactNode }) => <div data-testid="filters">{children}</div>
+  const FilterBar = ({ children }: { children?: ReactNode }) => <div data-testid="filters">{children}</div>
   FilterBar.Search = () => <div data-testid="filter-search" />
   FilterBar.Select = () => <div data-testid="filter-select" />
   return { default: FilterBar }
@@ -80,7 +81,7 @@ vi.mock('@/components/shared/DataTable', () => ({
 }))
 
 vi.mock('@/components/ui/DataCard', () => ({
-  default: ({ title }: { title: React.ReactNode }) => <div data-testid="mobile-card">{title}</div>,
+  default: ({ title }: { title: ReactNode }) => <div data-testid="mobile-card">{title}</div>,
 }))
 
 vi.mock('@/components/ui/ResponsiveModal', () => ({
