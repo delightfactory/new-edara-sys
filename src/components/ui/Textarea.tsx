@@ -1,8 +1,8 @@
-import { forwardRef, type InputHTMLAttributes, type ReactNode } from 'react'
+import { forwardRef, type ReactNode, type TextareaHTMLAttributes } from 'react'
 import { cn } from '@/lib/utils/helpers'
 import Field from './Field'
 
-export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: ReactNode
   error?: ReactNode
   hint?: ReactNode
@@ -13,14 +13,7 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   register?: Record<string, unknown>
 }
 
-/**
- * Input — shared text/number input composed through the V2 Field anatomy.
- *
- * Backward-compatible with the existing label/error/hint API. `required`
- * remains presentation/accessibility metadata during legacy migration and does
- * not introduce new native browser validation by itself.
- */
-const Input = forwardRef<HTMLInputElement, InputProps>(
+const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   (
     {
       label,
@@ -50,12 +43,12 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         const mergedDescription = [explicitDescription, describedBy].filter(Boolean).join(' ') || undefined
 
         return (
-          <input
+          <textarea
             ref={ref}
             {...register}
             {...props}
             id={controlId}
-            className={cn('form-input', invalid && 'error', className)}
+            className={cn('form-textarea', invalid && 'error', className)}
             aria-describedby={mergedDescription}
             aria-invalid={invalid || undefined}
             aria-required={required || undefined}
@@ -66,5 +59,5 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
   ),
 )
 
-Input.displayName = 'Input'
-export default Input
+Textarea.displayName = 'Textarea'
+export default Textarea

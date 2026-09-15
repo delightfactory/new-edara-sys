@@ -24,6 +24,35 @@
   min-height: var(--ds-icon-hit-target);
 }
 
+/* ===== V2 Field anatomy ===== */
+.ds-field-optional {
+  margin-inline-start: var(--space-2);
+  color: var(--ds-text-muted);
+  font-size: var(--ds-type-caption-size);
+  font-weight: 400;
+}
+
+.ds-field .form-select.error,
+.ds-field .form-textarea.error {
+  border-color: var(--ds-status-danger-fg);
+}
+
+.ds-field .form-select.error:focus,
+.ds-field .form-textarea.error:focus {
+  border-color: var(--ds-status-danger-fg);
+  box-shadow: 0 0 0 3px var(--ds-status-danger-bg);
+}
+
+.ds-field .form-input[readonly],
+.ds-field .form-textarea[readonly] {
+  background: var(--ds-surface-subtle);
+  color: var(--ds-text-secondary);
+}
+
+.ds-field [aria-invalid='true'] {
+  border-color: var(--ds-status-danger-fg);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .btn {
     transition: none;
