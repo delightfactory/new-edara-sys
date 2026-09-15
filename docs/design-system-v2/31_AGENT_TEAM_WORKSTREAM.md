@@ -106,8 +106,11 @@ Already present before the continuous team loop:
 ## Active slice
 
 ### DS2-UI-001 — Customer Form: basic-info composition
-Status: `READY`
+Status: `REVIEW`
 Owner role: UI Production Engineer
+Draft PR: `#28`
+Implementation/test HEAD handed to Design QA: `8daaf6a3df1ced8a6a5e6c04fad251ae802710cc`
+Evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 
 System intent:
 Prove the shared form grammar on a real high-value operational master-data form without touching business behavior.
