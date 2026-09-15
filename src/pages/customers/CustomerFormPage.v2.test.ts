@@ -26,9 +26,11 @@ describe('CustomerFormPage V2 composition contract', () => {
     expect(source).toContain('onClick={captureGPS}')
   })
 
-  it('keeps tabs explicit and non-submitting while preserving their permission boundary', () => {
-    expect(source).toContain('role="tablist"')
-    expect(source).toContain('type="button" role="tab" aria-selected={tab === \'info\'}')
-    expect(source).toContain('type="button" role="tab" aria-selected={tab === \'credit\'}')
+  it('keeps legacy tabs non-submitting without inventing a partial ARIA tab contract', () => {
+    expect(source).toContain('type="button" className={`tab ${tab === \'info\' ? \'active\' : \'\'}`}')
+    expect(source).toContain('type="button" className={`tab ${tab === \'credit\' ? \'active\' : \'\'}`}')
+    expect(source).not.toContain('role="tablist"')
+    expect(source).not.toContain('role="tab"')
+    expect(source).not.toContain('aria-selected')
   })
 })
