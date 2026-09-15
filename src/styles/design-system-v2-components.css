@@ -53,6 +53,185 @@
   border-color: var(--ds-status-danger-fg);
 }
 
+/* ===== V2 StatusBadge ===== */
+.ds-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  max-width: 100%;
+  padding: 0.2rem 0.625rem;
+  border: 1px solid transparent;
+  border-radius: var(--ds-radius-pill);
+  font-size: var(--ds-type-caption-size);
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.ds-status-badge__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.ds-status-badge--neutral {
+  color: var(--ds-status-neutral-fg);
+  background: var(--ds-status-neutral-bg);
+  border-color: var(--ds-status-neutral-border);
+}
+
+.ds-status-badge--info {
+  color: var(--ds-status-info-fg);
+  background: var(--ds-status-info-bg);
+  border-color: var(--ds-status-info-border);
+}
+
+.ds-status-badge--success {
+  color: var(--ds-status-success-fg);
+  background: var(--ds-status-success-bg);
+  border-color: var(--ds-status-success-border);
+}
+
+.ds-status-badge--warning {
+  color: var(--ds-status-warning-fg);
+  background: var(--ds-status-warning-bg);
+  border-color: var(--ds-status-warning-border);
+}
+
+.ds-status-badge--danger {
+  color: var(--ds-status-danger-fg);
+  background: var(--ds-status-danger-bg);
+  border-color: var(--ds-status-danger-border);
+}
+
+/* ===== V2 AlertPanel ===== */
+.ds-alert-panel {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--ds-status-info-border);
+  border-radius: var(--ds-radius-card);
+  background: var(--ds-status-info-bg);
+  color: var(--ds-text-primary);
+}
+
+.ds-alert-panel__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  color: var(--ds-status-info-fg);
+  padding-top: 1px;
+}
+
+.ds-alert-panel__content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ds-alert-panel__title {
+  margin-bottom: var(--space-1);
+  font-size: var(--ds-type-card-title-size);
+  font-weight: var(--ds-type-card-title-weight);
+  line-height: var(--ds-type-card-title-line);
+}
+
+.ds-alert-panel__body {
+  color: var(--ds-text-secondary);
+  font-size: var(--ds-type-body-size);
+  line-height: var(--ds-type-body-line);
+}
+
+.ds-alert-panel__action {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.ds-alert-panel--neutral {
+  background: var(--ds-status-neutral-bg);
+  border-color: var(--ds-status-neutral-border);
+}
+.ds-alert-panel--neutral .ds-alert-panel__icon { color: var(--ds-status-neutral-fg); }
+
+.ds-alert-panel--success {
+  background: var(--ds-status-success-bg);
+  border-color: var(--ds-status-success-border);
+}
+.ds-alert-panel--success .ds-alert-panel__icon { color: var(--ds-status-success-fg); }
+
+.ds-alert-panel--warning {
+  background: var(--ds-status-warning-bg);
+  border-color: var(--ds-status-warning-border);
+}
+.ds-alert-panel--warning .ds-alert-panel__icon { color: var(--ds-status-warning-fg); }
+
+.ds-alert-panel--danger {
+  background: var(--ds-status-danger-bg);
+  border-color: var(--ds-status-danger-border);
+}
+.ds-alert-panel--danger .ds-alert-panel__icon { color: var(--ds-status-danger-fg); }
+
+/* ===== V2 StatePanel ===== */
+.ds-state-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-10) var(--space-6);
+  text-align: center;
+  color: var(--ds-text-secondary);
+}
+
+.ds-state-panel--compact {
+  padding: var(--space-5) var(--space-4);
+}
+
+.ds-state-panel__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-1);
+  color: var(--ds-text-muted);
+}
+
+.ds-state-panel__title {
+  color: var(--ds-text-primary);
+  font-size: var(--ds-type-section-title-size);
+  font-weight: var(--ds-type-section-title-weight);
+  line-height: var(--ds-type-section-title-line);
+}
+
+.ds-state-panel__description {
+  max-width: 34rem;
+  font-size: var(--ds-type-body-size);
+  line-height: var(--ds-type-body-line);
+}
+
+.ds-state-panel__action {
+  margin-top: var(--space-2);
+}
+
+.ds-state-panel--error .ds-state-panel__icon { color: var(--ds-status-danger-fg); }
+.ds-state-panel--permission .ds-state-panel__icon,
+.ds-state-panel--offline .ds-state-panel__icon { color: var(--ds-status-warning-fg); }
+.ds-state-panel--sync .ds-state-panel__icon { color: var(--ds-status-info-fg); }
+.ds-state-panel--success .ds-state-panel__icon { color: var(--ds-status-success-fg); }
+
+@media (max-width: 768px) {
+  .ds-alert-panel {
+    flex-wrap: wrap;
+  }
+
+  .ds-alert-panel__action {
+    width: 100%;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .btn {
     transition: none;
