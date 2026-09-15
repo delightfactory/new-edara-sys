@@ -394,18 +394,18 @@ export default function CustomerFormPage() {
 
       {/* ═══════ التابات ═══════ */}
       {isEdit && (
-        <div className="tabs" style={{ marginBottom: 'var(--space-4)' }} role="tablist" aria-label="أقسام بيانات العميل">
-          <button type="button" role="tab" aria-selected={tab === 'info'} className={`tab ${tab === 'info' ? 'active' : ''}`} onClick={() => setTab('info')}>
+        <div className="tabs" style={{ marginBottom: 'var(--space-4)' }}>
+          <button type="button" className={`tab ${tab === 'info' ? 'active' : ''}`} onClick={() => setTab('info')}>
             البيانات الأساسية
           </button>
-          <button type="button" role="tab" aria-selected={tab === 'branches'} className={`tab ${tab === 'branches' ? 'active' : ''}`} onClick={() => setTab('branches')}>
+          <button type="button" className={`tab ${tab === 'branches' ? 'active' : ''}`} onClick={() => setTab('branches')}>
             الفروع {counts.branches > 0 && <span className="badge badge-neutral" style={{ marginRight: 'var(--space-1)', fontSize: '10px', padding: '0 6px' }}>{counts.branches}</span>}
           </button>
-          <button type="button" role="tab" aria-selected={tab === 'contacts'} className={`tab ${tab === 'contacts' ? 'active' : ''}`} onClick={() => setTab('contacts')}>
+          <button type="button" className={`tab ${tab === 'contacts' ? 'active' : ''}`} onClick={() => setTab('contacts')}>
             جهات الاتصال {counts.contacts > 0 && <span className="badge badge-neutral" style={{ marginRight: 'var(--space-1)', fontSize: '10px', padding: '0 6px' }}>{counts.contacts}</span>}
           </button>
           {can('customers.credit.update') && (
-            <button type="button" role="tab" aria-selected={tab === 'credit'} className={`tab ${tab === 'credit' ? 'active' : ''}`} onClick={() => setTab('credit')}>
+            <button type="button" className={`tab ${tab === 'credit' ? 'active' : ''}`} onClick={() => setTab('credit')}>
               سجل الائتمان {counts.credit > 0 && <span className="badge badge-neutral" style={{ marginRight: 'var(--space-1)', fontSize: '10px', padding: '0 6px' }}>{counts.credit}</span>}
             </button>
           )}
