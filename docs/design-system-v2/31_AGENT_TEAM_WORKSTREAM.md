@@ -123,25 +123,29 @@ System result:
 - Retained legacy Customer section-switch controls are explicitly non-submitting ordinary buttons; incomplete ARIA Tabs semantics were intentionally removed.
 - Complete Tabs/SubNav keyboard/focus/tabpanel semantics remain future shared component-depth work.
 
-## Next READY slice
+## Active implementation slice
 
 ### DS2-UI-002 — Customer detail secondary tabs/patterns
-Status: `READY`
+Status: `IN_PROGRESS`
 Owner role: UI Production Engineer
+Draft PR: `#29`
+Feature branch: `ds2/customer-secondary-tabs-v2`
+Starting baseline: `d05a1d06a4214d5a4e0b222c5e7586155a9841f2`
+Current implementation evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 
 System intent:
-Continue the Customer golden flow by migrating secondary edit surfaces into the shared V2 language, while using the proven need for a real shared Tabs/SubNav contract rather than creating Customer-local navigation semantics.
+Continue the Customer golden flow by migrating secondary edit surfaces into the shared V2 language, while using the proven need for the existing shared complete Tabs contract rather than creating Customer-local navigation semantics.
 
 Scope direction:
 - branches / contacts / credit secondary surfaces
-- establish or adopt shared Tabs/SubNav section-switch grammar at the minimum reusable boundary required by the real Customer screen
+- adopt shared Tabs section-switch grammar at the minimum reusable boundary required by the real Customer screen
 - preserve all existing tab visibility, counts, handlers, permissions and business behavior
 - keep dialogs/destructive confirmation redesign deferred until shared overlay contracts are explicitly ready
 - preserve the completed basic-info V2 composition without reopening DS2-UI-001
 
 Acceptance direction:
 - no partial ARIA Tabs widget contract
-- if shared Tabs/SubNav semantics are introduced, keyboard/focus/panel relationships must be complete enough for the shared component contract
+- shared Tabs keyboard/focus/panel relationships remain complete
 - Mobile/Tablet/Desktop section navigation remains deliberate and touch-safe
 - no Customer-local mini design system
 - no backend/service/query/permission/business behavior changes
@@ -154,10 +158,11 @@ The Director selects the smallest dependency-safe slice from this roadmap; order
 ### A. Golden flows
 
 #### DS2-UI-002 — Customer detail secondary tabs/patterns
-`READY`
+`IN_PROGRESS`
 - branches / contacts / credit tab surfaces
+- Draft PR #29 is the single active implementation PR
 - dialogs and destructive confirmations only after shared overlay contracts are ready
-- shared Tabs/SubNav semantics must be complete if introduced; do not repeat partial legacy ARIA semantics
+- adopt the already-existing complete shared Tabs semantics; do not repeat partial legacy ARIA semantics
 
 #### DS2-UI-003 — Sales Orders list V2
 `BACKLOG`
@@ -183,7 +188,7 @@ These are opened when a migrated screen proves a recurring gap; they are not spe
 - MobileDataCard semantic migration from legacy DataCard
 - Modal/ResponsiveSheet/ConfirmDialog V2 convergence
 - Combobox/AsyncCombobox keyboard/focus hardening
-- Tabs/SubNav/SegmentedControl adoption cleanup — now explicitly proven by the Customer secondary-section flow; implement only at a reusable, complete semantic boundary
+- Tabs/SubNav/SegmentedControl adoption cleanup — now explicitly proven by the Customer secondary-section flow; existing shared contract should be adopted before any extension
 - EntityHeader / TransactionHeader
 - Timeline / ActivityFeed / AuditTimeline
 - FinancialSummary / InventorySummary / ApprovalPanel
