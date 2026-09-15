@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom'
 import { Menu } from 'lucide-react'
 import Sidebar from './Sidebar'
+import SidebarV2 from './SidebarV2'
 import BottomNav from './BottomNav'
 import FAB from './FAB'
 import PageTitleContext, { PageTitleProvider } from './PageTitleContext'
@@ -10,6 +11,7 @@ import { NotificationBell, NotificationPanel } from '@/components/notifications'
 import GeoPermissionDialog from '@/components/shared/GeoPermissionDialog'
 import { useGeoOnboarding } from '@/hooks/useGeoOnboarding'
 import { useUiStore } from '@/stores/ui-store'
+import { DESIGN_SYSTEM_V2_SIDEBAR } from '@/lib/config/features'
 import { useContext } from 'react'
 
 function AppBarTitle() {
@@ -32,7 +34,7 @@ export default function AppLayout() {
   return (
     <PageTitleProvider>
       <div className="app-layout">
-        <Sidebar />
+        {DESIGN_SYSTEM_V2_SIDEBAR ? <SidebarV2 /> : <Sidebar />}
 
         <header className="app-bar" aria-label="شريط التطبيق">
           <div className="app-bar-start">
