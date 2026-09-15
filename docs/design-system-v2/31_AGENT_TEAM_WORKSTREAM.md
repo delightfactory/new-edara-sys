@@ -126,11 +126,12 @@ System result:
 ## Active implementation slice
 
 ### DS2-UI-002 — Customer detail secondary tabs/patterns
-Status: `IN_PROGRESS`
+Status: `REVIEW`
 Owner role: UI Production Engineer
 Draft PR: `#29`
 Feature branch: `ds2/customer-secondary-tabs-v2`
 Starting baseline: `d05a1d06a4214d5a4e0b222c5e7586155a9841f2`
+Exact review-ready PR HEAD: `1cb3853bf3cf94b2a25edd637d0083006e5d2191`
 Current implementation evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 
 System intent:
@@ -158,9 +159,10 @@ The Director selects the smallest dependency-safe slice from this roadmap; order
 ### A. Golden flows
 
 #### DS2-UI-002 — Customer detail secondary tabs/patterns
-`IN_PROGRESS`
+`REVIEW`
 - branches / contacts / credit tab surfaces
-- Draft PR #29 is the single active implementation PR
+- Draft PR #29 exact review-ready HEAD: `1cb3853bf3cf94b2a25edd637d0083006e5d2191`
+- CustomerFormPage now adopts the shared Tabs composition and extracted V2 panels; duplicate legacy secondary markup is removed
 - dialogs and destructive confirmations only after shared overlay contracts are ready
 - adopt the already-existing complete shared Tabs semantics; do not repeat partial legacy ARIA semantics
 
