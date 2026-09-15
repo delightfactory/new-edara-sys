@@ -1,0 +1,85 @@
+/* Delight Design System V2 — form composition patterns. */
+
+.ds-form-section {
+  display: grid;
+  gap: var(--ds-form-section-gap);
+  min-width: 0;
+}
+
+.ds-form-section__header,
+.ds-form-section__body,
+.ds-form-section__footer {
+  min-width: 0;
+}
+
+.ds-form-section__body {
+  display: grid;
+  gap: var(--ds-section-gap-standard);
+}
+
+.ds-form-section__footer {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--ds-border-subtle);
+}
+
+.ds-form-grid {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.ds-form-grid--compact {
+  gap: var(--space-3);
+}
+
+.ds-form-grid--cols-1 { grid-template-columns: minmax(0, 1fr); }
+.ds-form-grid--cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ds-form-grid--cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ds-form-grid--cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+.ds-form-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.ds-form-actions--start { justify-content: flex-start; }
+.ds-form-actions--end { justify-content: flex-end; }
+.ds-form-actions--between { justify-content: space-between; }
+
+@media (max-width: 1024px) and (min-width: 769px) {
+  .ds-form-grid--cols-3,
+  .ds-form-grid--cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .ds-form-grid--cols-2,
+  .ds-form-grid--cols-3,
+  .ds-form-grid--cols-4 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ds-form-actions {
+    align-items: stretch;
+  }
+
+  .ds-form-actions > .btn {
+    flex: 1 1 auto;
+  }
+
+  .ds-form-actions--sticky-mobile {
+    position: sticky;
+    bottom: calc(var(--ds-mobile-bottom-nav-height) + var(--ds-safe-area-bottom));
+    z-index: var(--z-sticky);
+    padding: var(--space-3);
+    border: 1px solid var(--ds-border-default);
+    border-radius: var(--ds-radius-card);
+    background: color-mix(in srgb, var(--ds-surface-default) 94%, transparent);
+    box-shadow: var(--ds-elevation-floating);
+    backdrop-filter: blur(12px);
+  }
+}
