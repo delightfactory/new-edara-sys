@@ -1,42 +1,69 @@
-import { forwardRef, type InputHTMLAttributes } from 'react'
+import { forwardRef, type InputHTMLAttributes, type ReactNode } from 'react'
 import { cn } from '@/lib/utils/helpers'
+import Field from './Field'
 
-interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
-  label?: string
-  error?: string
-  hint?: string
+export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+  label?: ReactNode
+  error?: ReactNode
+  hint?: ReactNode
   required?: boolean
+  optional?: boolean
+  fieldClassName?: string
   /** react-hook-form register function return */
   register?: Record<string, unknown>
 }
 
 /**
- * Input — مكون حقل إدخال موحد
- * يغلف form-group + form-label + form-input + form-error
+ * Input — shared text/number input composed through the V2 Field anatomy.
+ *
+ * Backward-compatible with the existing label/error/hint API. `required`
+ * remains presentation/accessibility metadata during legacy migration and does
+ * not introduce new native browser validation by itself.
  */
 const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, hint, required, register, className, id, ...props }, ref) => {
-    const inputId = id || label?.replace(/\s/g, '_')
+  (
+    {
+      label,
+      error,
+      hint,
+      required,
+      optional,
+      fieldClassName,
+      register,
+      className,
+      id,
+      ...props
+    },
+    ref,
+  ) => (
+    <Field
+      id={id}
+      label={label}
+      error={error}
+      hint={hint}
+      required={required}
+      optional={optional}
+      className={fieldClassName}
+    >
+      {({ controlId, describedBy, invalid }) => {
+        const explicitDescription = props['aria-describedby']
+        const mergedDescription = [explicitDescription, describedBy].filter(Boolean).join(' ') || undefined
 
-    return (
-      <div className="form-group">
-        {label && (
-          <label className={cn('form-label', required && 'required')} htmlFor={inputId}>
-            {label}
-          </label>
-        )}
-        <input
-          ref={ref}
-          id={inputId}
-          className={cn('form-input', error && 'error', className)}
-          {...register}
-          {...props}
-        />
-        {error && <span className="form-error">{error}</span>}
-        {hint && !error && <span className="form-hint">{hint}</span>}
-      </div>
-    )
-  }
+        return (
+          <input
+            ref={ref}
+            {...register}
+            {...props}
+            id={controlId}
+            className={cn('form-input', invalid && 'error', className)}
+            aria-describedby={mergedDescription}
+            aria-invalid={invalid || undefined}
+            aria-required={required || undefined}
+          />
+        )
+      }}
+    </Field>
+  ),
 )
 
 Input.displayName = 'Input'
