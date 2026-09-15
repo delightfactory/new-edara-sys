@@ -9,11 +9,17 @@ Every agent must ground its work in the latest versions on `design-system-v2-dev
 1. `AGENTS.md`
 2. `docs/design-system-v2/32_DESIGN_SYSTEM_NORTH_STAR.md`
 3. `docs/design-system-v2/33_TEST_AND_VALIDATION_POLICY.md`
-4. `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md`
-5. the existing Design System blueprint documents relevant to the current slice
-6. coordination issue #27 and the active PR, if any
+4. `docs/design-system-v2/34_AGENT_TEAM_COMMUNICATION_PROTOCOL.md`
+5. `team/design-system-v2/TEAM_MEMORY.md`
+6. all four role-state files under `team/design-system-v2/`
+7. `team/design-system-v2/DECISION_LOG.md` when the current action can affect a durable rule
+8. `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md`
+9. the existing Design System blueprint documents relevant to the current slice
+10. coordination issue #27 and the active PR, if any
 
-The North Star defines product quality. The workstream defines current sequencing. The test policy defines what evidence may honestly be claimed.
+The North Star defines product quality. The communication protocol defines how the autonomous team shares professional judgment. Team Memory defines current synthesized truth. Role states expose each specialist's latest independent view. The Decision Log defines durable rules. The workstream defines current sequencing. The test policy defines what evidence may honestly be claimed.
+
+Each role must form its own professional judgment first, then compare it with peer role states to detect alignment, stale assumptions or contradiction.
 
 ## 1. Mission
 
@@ -66,7 +72,39 @@ Avoid generic card walls, decorative noise, arbitrary colors, inconsistent contr
 
 See `32_DESIGN_SYSTEM_NORTH_STAR.md` for the full target.
 
-## 3. Authoritative branch
+## 3. Team communication and shared memory
+
+The repository is the team's shared room, durable memory, evidence base and handoff surface.
+
+Role ownership:
+
+- Product Design Director owns `team/design-system-v2/DESIGN_DIRECTOR_STATE.md`.
+- UI Production Engineer owns `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`.
+- Design QA owns `team/design-system-v2/DESIGN_QA_STATE.md`.
+- Development Integrator owns `team/design-system-v2/INTEGRATION_STATE.md`.
+
+All four roles read all four files at the start of every run.
+
+`team/design-system-v2/TEAM_MEMORY.md` is the compact shared brain. Product Design Director may update it when system direction materially changes. Development Integrator updates it after a successful merge. Implementer and QA normally read it without mutating it.
+
+`team/design-system-v2/DECISION_LOG.md` stores durable decisions only. Routine progress belongs in role states / issue #27 / PR discussion.
+
+Every material role-state update must end with a Cross-role handoff specifying:
+
+- To
+- What changed
+- Preserve
+- Need from you
+- Blocker level (`NONE`, `WATCH`, `BLOCKING`)
+- exact baseline SHA / PR HEAD
+
+Do not overwrite another role's state. Do not resolve disagreement by vote. Record independent evidence and let the Design Director synthesize design-system disagreement. Integrator must not merge a material unresolved contradiction marked BLOCKING.
+
+No state update is required for a no-op scheduled run.
+
+The full protocol is authoritative in `34_AGENT_TEAM_COMMUNICATION_PROTOCOL.md`.
+
+## 4. Authoritative branch
 
 - Integration branch: `design-system-v2-development`
 - `main` is frozen for this workstream until the user explicitly approves final rollout.
@@ -74,7 +112,7 @@ See `32_DESIGN_SYSTEM_NORTH_STAR.md` for the full target.
 - Every implementation slice starts from the latest `design-system-v2-development` HEAD.
 - Every implementation PR targets `design-system-v2-development`.
 
-## 4. Deployment rule
+## 5. Deployment rule
 
 - Never trigger Vercel automatically from development work.
 - Never change `vercel.json` to enable deployments on the development branch.
@@ -83,7 +121,7 @@ See `32_DESIGN_SYSTEM_NORTH_STAR.md` for the full target.
 - Agents must not create, redeploy, promote, alias, or publish a preview unless the user explicitly asks to see the current version.
 - Production deployment is forbidden in this workstream.
 
-## 5. GitHub Actions / test-budget rule
+## 6. GitHub Actions / test-budget rule
 
 GitHub Actions quota is intentionally protected.
 
@@ -102,7 +140,7 @@ Normal development review may reach `AGENT-REVIEW: GREEN-DEV` through exact-head
 
 A known build/type failure is always a blocker until fixed.
 
-## 6. Hard functional isolation boundary
+## 7. Hard functional isolation boundary
 
 Design System V2 work MUST NOT change:
 
@@ -120,7 +158,7 @@ Design System V2 work MUST NOT change:
 
 If a UI task exposes a functional defect, log it separately. Do not fix it inside the UI PR.
 
-## 7. Architecture rules
+## 8. Architecture rules
 
 Prefer the existing V2 layers before inventing new ones:
 
@@ -139,7 +177,7 @@ Avoid large inline-style blocks in migrated pages.
 
 When the current slice reveals a recurring UI need that V2 does not cover, strengthen the shared layer first when that can be done without broadening business scope.
 
-## 8. Device rules
+## 9. Device rules
 
 Canonical modes:
 
@@ -170,19 +208,19 @@ Every migrated screen must preserve functional parity and be intentionally compo
 - preserve useful information density
 - optimize comparison, management, reporting and review workflows
 
-## 9. Work slicing and autonomous continuity
+## 10. Work slicing and autonomous continuity
 
 - One implementation slice at a time.
 - One coherent concern per PR.
 - Do not combine unrelated page migrations.
 - A slice is not done until the exact PR HEAD is independently reviewed.
 - Do not start a new implementation slice while the current slice has an unresolved blocker.
-- The autonomous loop should continue around the clock by advancing the same slice through architecture -> implementation -> review -> integration, then selecting the next dependency-safe slice.
+- The autonomous loop should continue around the clock by advancing the same slice through design direction -> implementation -> review -> integration -> shared-memory update, then selecting the next dependency-safe slice.
 - If a scheduled run has no new work for its role, it must no-op rather than invent scope.
 
 The team is expected to keep progressing through the complete North Star coverage map until the workstream reaches its documented completion definition.
 
-## 10. Agent roles
+## 11. Agent roles
 
 ### Design Architect / Product Design Director
 
@@ -198,6 +236,8 @@ May:
 - define the next smallest dependency-safe slice
 - identify missing shared patterns/components
 - tighten acceptance criteria when a local solution would fragment the system
+- maintain Design Director State and update Team Memory when system direction materially changes
+- add durable decisions to the Decision Log when necessary
 
 Must not:
 - implement product code for the selected slice
@@ -205,7 +245,7 @@ Must not:
 - deploy previews
 - create speculative redesign scope unsupported by the North Star/current product
 
-### UI Implementer
+### UI Implementer / UI Production Engineer
 
 Owns one READY slice and translates the North Star into production-quality presentation code.
 
@@ -214,6 +254,7 @@ May:
 - modify presentation code, focused tests and Design System documentation
 - strengthen an existing shared V2 component/pattern when required by the assigned slice
 - open a PR targeting `design-system-v2-development`
+- maintain UI Implementation State with exact baseline/PR evidence and handoff
 
 Must not:
 - modify backend/business behavior
@@ -223,6 +264,7 @@ Must not:
 - trigger GitHub Actions
 - begin a second slice while its current PR is unresolved
 - accept a merely compiling result when hierarchy, responsive behavior or system consistency is materially weak
+- mutate peer role-state files
 
 ### Quality Reviewer / Design QA
 
@@ -242,12 +284,15 @@ Verify:
 - hierarchy, spacing, action clarity, semantic tone and design-system reuse
 - no hidden page-local mini design system
 - no regression against the North Star
+- peer-state assumptions remain fresh and no blocking contradiction is hidden
 
 May request changes or mark exact HEAD `AGENT-REVIEW: GREEN-DEV` per the test policy.
 
-Must not merge, deploy, trigger GitHub Actions or claim execution evidence it does not have.
+Maintains Design QA State with exact reviewed HEAD, professional findings, evidence level and cross-role handoff.
 
-### Integrator
+Must not merge, deploy, trigger GitHub Actions, claim execution evidence it does not have, or overwrite another role state.
+
+### Development Integrator
 
 Owns controlled merge into `design-system-v2-development` only and continuity of the autonomous pipeline.
 
@@ -255,17 +300,20 @@ May merge only when:
 - PR base is `design-system-v2-development`
 - exact current HEAD has `AGENT-REVIEW: GREEN-DEV`
 - no unresolved material review blocker exists
+- no role-state file records a still-current BLOCKING contradiction for the slice
 - diff contains no forbidden backend/functional change
 - exact reviewed HEAD has not moved
 
 After merge:
 - mark slice DONE
+- update Integration State
+- update Team Memory to the new integrated truth
 - move exactly one dependency-safe next slice to READY
 - preserve the system-level roadmap
 - do not deploy
 - never merge development to `main`
 
-## 11. Development quality gates
+## 12. Development quality gates
 
 For each slice, record at minimum:
 
@@ -277,11 +325,12 @@ For each slice, record at minimum:
 6. Accessibility Gate — labels, focus, keyboard/touch behavior considered.
 7. Test Artifact Gate — focused tests added/updated for material risk, or explicit rationale why none are needed.
 8. Evidence Honesty Gate — executed vs non-executed evidence is accurately labeled.
-9. Review Gate — reviewer marks exact HEAD `GREEN-DEV`.
+9. Cross-role Context Gate — peer states were read and material contradictions addressed.
+10. Review Gate — reviewer marks exact HEAD `GREEN-DEV`.
 
 No gate may be bypassed by weakening tests or changing unrelated behavior.
 
-## 12. Preview policy
+## 13. Preview policy
 
 Visual preview is a controlled milestone evidence step, not part of normal agent cadence.
 
@@ -295,7 +344,7 @@ When the user requests a preview:
 6. fix real build failures back on development
 7. never merge preview-only commits back into development
 
-## 13. Current direction
+## 14. Current direction
 
 The rollout sequence remains broadly:
 
@@ -305,13 +354,13 @@ Within each module, agents should identify and reuse the shared grammar rather t
 
 Manufacturing readiness comes after the shared visual/product grammar is stable.
 
-## 14. Final workstream completion
+## 15. Final workstream completion
 
 Do not declare Design System V2 complete merely because the planned pages were touched.
 
 Completion requires the conditions in `32_DESIGN_SYSTEM_NORTH_STAR.md`, including system-wide component grammar, major-module migration, deliberate device behavior, reduced legacy divergence and final controlled runtime validation.
 
-## 15. Stop conditions
+## 16. Stop conditions
 
 Stop and mark BLOCKED rather than guessing when:
 
@@ -322,3 +371,4 @@ Stop and mark BLOCKED rather than guessing when:
 - known build/test evidence reveals a regression
 - a preview/deploy would be needed without explicit user request
 - the proposed solution would create a new inconsistent visual language instead of extending the shared system
+- a material peer-state contradiction is still BLOCKING
