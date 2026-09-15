@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Building, History, User, Users } from 'lucide-react'
 import Tabs from '@/components/patterns/Tabs'
-import StatusBadge from '@/components/patterns/StatusBadge'
+import Badge from '@/components/ui/Badge'
 
 export type CustomerDetailTab = 'info' | 'branches' | 'contacts' | 'credit'
 
@@ -22,7 +22,11 @@ export interface CustomerDetailTabsProps {
 
 function countBadge(count: number, label: string) {
   if (count <= 0) return undefined
-  return <StatusBadge label={<span aria-label={`${label}: ${count}`}>{count}</span>} tone="neutral" />
+  return (
+    <Badge variant="neutral">
+      <span aria-label={`${label}: ${count}`}>{count}</span>
+    </Badge>
+  )
 }
 
 /**
