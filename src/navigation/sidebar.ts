@@ -106,11 +106,13 @@ export function getVisibleSidebarSections(evaluator: PermissionEvaluator): Visib
 
   return SIDEBAR_SECTIONS
     .map(section => {
-      const entries = section.entries.flatMap(entry => {
+      const entries = section.entries.reduce<Array<VisibleSidebarLeaf | VisibleSidebarGroup>>((result, entry) => {
         if (entry.kind === 'leaf') {
           const destination = destinations.get(entry.destinationId)
-          if (!destination || !canShowNavigation(destination.permission, evaluator)) return []
-          return [{ kind: 'leaf' as const, id: entry.id, destination }]
+          if (destination && canShowNavigation(destination.permission, evaluator)) {
+            result.push({ kind: 'leaf', id: entry.id, destination })
+          }
+          return result
         }
 
         const visibleDestinations = entry.destinationIds
@@ -118,14 +120,17 @@ export function getVisibleSidebarSections(evaluator: PermissionEvaluator): Visib
           .filter((destination): destination is NavigationDestination => Boolean(destination))
           .filter(destination => canShowNavigation(destination.permission, evaluator))
 
-        if (visibleDestinations.length === 0) return []
-        return [{
-          kind: 'group' as const,
-          id: entry.id,
-          label: entry.label,
-          destinations: visibleDestinations,
-        }]
-      })
+        if (visibleDestinations.length > 0) {
+          result.push({
+            kind: 'group',
+            id: entry.id,
+            label: entry.label,
+            destinations: visibleDestinations,
+          })
+        }
+
+        return result
+      }, [])
 
       return {
         id: section.id,
