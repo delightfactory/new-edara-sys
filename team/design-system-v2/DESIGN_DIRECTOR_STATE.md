@@ -4,123 +4,115 @@
 
 - Review date: `2026-09-16`
 - Development branch: `design-system-v2-development`
-- Exact current development HEAD reviewed: `62d173cbb6f6cf7dcf8215fcc4efff0dcaaad66e`
-- Active implementation slice: `DS2-UI-002 — Customer detail secondary tabs/patterns`
+- Exact current development HEAD reviewed before this state write: `3d108312db9e2eb6ed2e863ac9d8cde467ce1db2`
+- Active slice: `DS2-UI-002 — Customer detail secondary tabs/patterns`
 - Active Draft PR: `#29 — DS2-UI-002: migrate customer secondary surfaces to shared V2 patterns`
 - Feature branch: `ds2/customer-secondary-tabs-v2`
 - Starting baseline: `d05a1d06a4214d5a4e0b222c5e7586155a9841f2`
-- Exact current PR HEAD reviewed: `b61970556f93a2a7f068ce4e3843aed691661ec7`
-- PR state: `OPEN / DRAFT / mergeable`
-- Current implementation disposition: `IN_PROGRESS`
-- Current evidence: `TESTS_AUTHORED_NOT_EXECUTED`
+- Exact current PR HEAD independently reviewed: `1cb3853bf3cf94b2a25edd637d0083006e5d2191`
+- Live GitHub REST mergeability recheck: `mergeable=true / mergeable_state=clean`
+- Current QA disposition: `AGENT-REVIEW: GREEN-DEV`
+- Evidence: `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Runtime/preview/release evidence: not claimed
 
 ## Independent professional judgment
 
-**ARCHITECTURAL DIRECTION: PASS, WITH TWO REQUIRED SYSTEM-FIT CORRECTIONS BEFORE REVIEW HANDOFF.**
+**ARCHITECTURAL PASS — NO DESIGN-SYSTEM BLOCKER FOR CONTROLLED DEVELOPMENT INTEGRATION.**
 
-The implementation direction is correct and should continue on the same PR/slice.
+I independently revalidated the exact review-ready PR #29 head against the North Star, the current shared `Tabs` contract, the Customer functional boundary and the current development drift before reading the final QA disposition as approval evidence.
 
-The strongest architectural decision in the current WIP is to **adopt the existing shared `Tabs` contract rather than invent another Customer-local navigation primitive**. The repository already has a complete controlled content-tabs pattern with `tablist` / `tab` / `tabpanel` relationships, roving focus, Home/End navigation, disabled handling and RTL-aware arrow behavior. `CustomerDetailTabs` is therefore appropriately thin: Customer labels, counts, permission visibility and panel composition are domain-owned while keyboard/focus/ARIA mechanics remain shared-system owned.
+The slice now lands at the correct reusable boundary:
 
-The extracted branches / contacts / credit-history panels also move in the right direction by reusing shared `Card`, `SectionHeader`, `KeyValueList`, `StatePanel` and semantic primary-marker treatment instead of preserving the old page-local card/empty-state markup.
+- `CustomerDetailTabs` is a thin Customer-domain composition over the existing shared `Tabs` component;
+- shared `Tabs` owns the complete `tablist` / `tab` / `tabpanel`, focus, Home/End and RTL arrow contract rather than Customer reimplementing it;
+- branch/contact record counts use neutral shared `Badge` metadata;
+- `أساسي` remains semantic `StatusBadge` emphasis;
+- newly migrated mutation actions use shared `Button` with touch-target behavior;
+- branches/contacts reuse shared `Card`, `SectionHeader`, `KeyValueList` and `StatePanel`;
+- the legacy duplicate section switcher and duplicate secondary render trees are removed from `CustomerFormPage`;
+- credit history stays deliberately bounded to the existing dense table contract rather than expanding this slice into an unproven DataTable program;
+- existing ResponsiveModal / destructive-confirmation flows remain outside the slice.
 
-No backend/business/query/permission/validation/workflow scope expansion is present in the current four-file WIP.
+No backend, service, query/cache, permission-definition, RBAC/RLS, route, validation, workflow or business-calculation expansion is present in the six-file PR.
 
-## Required system-fit corrections before `REVIEW`
+The two System Fit corrections required in my earlier WIP review are visibly resolved on this exact head. There is no still-current design contradiction requiring implementation changes before integration.
 
-### 1. New V2 actions must consume the shared `Button` primitive — `REQUIRED BEFORE REVIEW`
+## North Star fit
 
-`CustomerSecondaryPanels.tsx` currently creates new action controls with raw legacy markup such as:
+### Shared-system coherence
 
-- `button.btn.btn-primary...`
-- `button.btn.btn-secondary...`
-- `button.btn.btn-ghost...`
-- `button.btn.btn-danger...`
+**PASS.** The migration strengthens one common grammar instead of creating a Customer-only mini design system. The shared component responsibility split is appropriate: Customer owns labels/counts/data/callback composition; shared components own interaction and visual semantics.
 
-This reproduces the CSS implementation detail directly inside newly migrated V2 presentation code even though `src/components/ui/Button.tsx` already owns the shared semantic action contract, including variant, size, icon-only behavior and touch-target semantics.
+### Device composition
 
-Direction:
-- migrate newly introduced Add/Edit/Delete/empty-state actions in the extracted V2 panels to the shared `Button` primitive;
-- preserve the exact existing callbacks, permission visibility and accessible labels;
-- use `touchTarget` where the current WIP intends `btn-touch`;
-- do **not** redesign the branch/contact ResponsiveModal footer in this slice; those legacy modal internals remain explicitly out of scope.
+- **Mobile:** complete shared Tabs provides touch-sized horizontally usable navigation; branch/contact cards collapse safely; shared Buttons preserve operational touch targets; the dense credit table is isolated inside a horizontal scroller rather than forcing ordinary page overflow.
+- **Tablet:** collection layout remains adaptive and touch-first without imposing a fixed Desktop grid.
+- **Desktop:** branch/contact collections use width efficiently and the credit-history comparison surface retains useful density.
 
-If raw new action markup remains at review handoff, Design QA should treat it as a System Fit failure because the slice would be migrating visual surfaces while bypassing an already-proven shared primitive.
+### RTL / accessibility
 
-### 2. Tab record counts are neutral metadata, not domain statuses — `REQUIRED BEFORE REVIEW`
+**PASS at source level.** The Customer wrapper inherits complete shared Tabs semantics instead of partial ARIA. LTR facts remain explicitly directed where appropriate, and destructive icon-only actions have explicit accessible labels.
 
-`CustomerDetailTabs.countBadge()` currently uses `StatusBadge` for branch/contact/credit record counts.
+### State / permission boundaries
 
-The shared contract explicitly defines `StatusBadge` as the visual mapping for **domain statuses**. A numeric record count is metadata, not status truth. The repository already has the neutral `Badge` primitive for this class of compact label/count.
+**PASS for the bounded slice.** `customers.update` continues to own Branch/Contact mutation visibility; `customers.credit.update` continues to own credit-section visibility; existing create/update/GPS/lookup/finance-credit behavior is not altered.
 
-Direction:
-- use the neutral shared `Badge` primitive for tab counts;
-- retain the accessible count label;
-- keep `StatusBadge` for actual semantic state such as the branch/contact `أساسي` marker where status-like emphasis is justified.
+## Non-blocking system watches
 
-This distinction matters because Design System V2 must make semantic components predictable across modules; visual similarity alone is not enough reason to overload `StatusBadge`.
+### 1. Permission-limited empty-state microcopy
 
-## Explicit non-expansion boundary
+Design QA correctly identified that view-only users can see empty-state descriptions such as `أضف فرعاً...` / `أضف جهات الاتصال...` while mutation controls are absent.
 
-### Credit history table — preserve, do not invent DataTable in this slice
+Disposition: `WATCH`, not a reason to reopen DS2-UI-002. Carry this into the future shared StatePanel/microcopy convergence program so permission-limited empty states use neutral explanatory language consistently across modules.
 
-The credit-history WIP intentionally retains the existing `data-table` presentation and the existing displayed difference arithmetic (`limit_after - limit_before`). Source comparison confirms that arithmetic and table content already exist in the Customer page; this extraction is not creating a new business calculation.
+### 2. Focusable credit-history scroller naming
 
-Although the North Star includes a future DataTable V2 contract, there is no implemented shared `DataTable` pattern in the current V2 patterns directory. Therefore DS2-UI-002 should **not** expand into a speculative DataTable build merely to remove this legacy table now.
+The scroller is keyboard-focusable and currently carries `aria-label` on a generic `div`. This is not a functional or integration blocker because the table itself remains semantically intact, but the later DataTable/accessibility hardening program should standardize focusable overflow-region semantics (including when a named `region` is warranted) across dense tables rather than solving it only for Customer credit history.
 
-Keep the bounded horizontal-scroll wrapper / existing table semantics for this Customer slice, then let the later shared DataTable component-depth program own cross-module convergence.
+## Freshness / development drift
 
-### Local layout styles — WATCH, not a blocker
+The feature branch started at `d05a1d06a4214d5a4e0b222c5e7586155a9841f2`.
 
-The tokenized `collectionGridStyle`, action-row layout and spacing wrappers are bounded local composition, not new semantic primitives. They may remain for this slice if wiring stays contained. Do not create a speculative generic grid/action-row abstraction solely to eliminate a few local layout declarations.
-
-However, continue avoiding growth into a large Customer-only style subsystem; recurring evidence in later screens should drive shared layout extraction.
-
-## Device / interaction direction
-
-- **Mobile:** shared Tabs horizontal navigation and touch behavior are directionally correct; branch/contact cards should remain single-column friendly and action targets touch-safe through shared Button semantics.
-- **Tablet:** preserve deliberate card density rather than compressing a Desktop table/grid.
-- **Desktop:** cards may use available width efficiently; credit history may retain dense table presentation.
-- **RTL / Arabic:** Tabs inherits shared RTL keyboard direction; phone/email/GPS/numeric facts stay explicitly LTR where appropriate.
-- **States:** shared `StatePanel` empty states are the correct direction; permission-limited branches/contacts must expose no mutation actions.
-
-## Freshness / branch drift
-
-The feature branch started from `d05a1d06...`. Current development HEAD `62d173cbb...` is three commits ahead, but compare shows only:
+Current development HEAD `3d108312db9e2eb6ed2e863ac9d8cde467ce1db2` is nine commits ahead of that baseline. Compare shows the drift is restricted to:
 
 - `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md`
+- `team/design-system-v2/DESIGN_DIRECTOR_STATE.md`
+- `team/design-system-v2/DESIGN_QA_STATE.md`
+- `team/design-system-v2/INTEGRATION_STATE.md`
 - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
-No shared component or product-code drift occurred after the feature baseline. **Do not merge-sync PR #29 merely to absorb governance/state drift.** Preserve exact feature-head stability while implementation is active; normal freshness revalidation happens before review/integration.
+No shared component or product-code drift exists after the feature baseline. Do not move the feature HEAD merely to absorb governance/state updates; exact reviewed-head stability is more valuable.
+
+Live GitHub REST recheck reports PR #29 as cleanly mergeable on the exact reviewed head. Draft status is a lifecycle flag, not a design blocker; the Integrator owns any Ready-for-Review transition immediately before merge if its gate requires it.
 
 ## Cross-role context comparison
 
-- **UI Production Engineer:** current and aligned on the primary architectural direction: existing complete shared Tabs is adopted, not reinvented; PR remains intentionally WIP and not QA-ready.
-- **Design QA:** its stored state belongs to completed PR #28 and is stale for DS2-UI-002. Correct behavior is no-op until an explicit review-ready #29 HEAD is handed off.
-- **Development Integrator:** correctly records DS2-UI-001 merged and DS2-UI-002 next. It must no-op while #29 remains WIP/Draft without exact-head GREEN-DEV.
-- **Team Memory / Workstream:** current enough on active slice identity and Tabs direction.
+- **UI Production Engineer:** current and aligned; exact review-ready head `1cb3853b...`, implementation `REVIEW`, both earlier Director corrections resolved.
+- **Design QA:** current and aligned; exact-head `GREEN-DEV` + `SOURCE_REVIEW_PASS`, honest `TESTS_AUTHORED_NOT_EXECUTED`; only the view-only microcopy WATCH remains.
+- **Development Integrator:** stored state is stale and still targets WIP head `3ee43a7...` with `NO_MERGE_IN_PROGRESS`. That disposition is superseded by the exact-head QA approval and must now be revalidated, not treated as a current blocker.
+- **Team Memory:** still reflects the integrated post-DS2-UI-001 truth and should remain unchanged until integration actually occurs.
+- **Workstream:** correctly records DS2-UI-002 as `REVIEW` on exact head `1cb3853b...`.
 
-No peer-state `BLOCKING` contradiction exists. The two System Fit corrections above are implementation guidance that must be resolved before the slice is handed to QA, not a reason to stop the active WIP.
+No still-current peer-state `BLOCKING` contradiction applies.
 
 ## Preserve
 
-- complete existing shared Tabs keyboard/focus/ARIA/RTL contract;
-- one Customer-domain composition over Tabs, not another navigation implementation;
-- completed DS2-UI-001 basic-info composition;
-- all Customer CRUD/GPS/lookup/credit/count/permission behavior;
-- caller-owned mutation callbacks and existing permission booleans;
-- branch/contact modal and destructive-confirmation redesign remains out of scope;
-- credit-history arithmetic remains display-equivalent to legacy behavior;
-- no backend/business/query/permission/validation/workflow changes;
-- no GitHub Actions, Vercel preview or `main` activity;
-- no governance-only feature-HEAD churn.
+- exact PR #29 head stability until Integrator revalidation;
+- complete shared Tabs keyboard/focus/ARIA/RTL contract;
+- neutral `Badge` counts versus semantic `StatusBadge` state;
+- shared `Button` action semantics/touch targets;
+- Customer CRUD/GPS/lookup/credit/count/permission behavior;
+- completed DS2-UI-001 form composition;
+- existing overlay/delete flows and credit-table semantics until their dedicated shared programs;
+- no backend/business/query/permission/validation changes;
+- no hosted CI, Vercel preview or `main` activity;
+- one active implementation slice only.
 
 ## Cross-role handoff
 
-- **To:** UI Production Engineer, Design QA, Development Integrator
-- **What changed:** Design Director independently reviewed active PR #29 WIP HEAD `b61970556f93a2a7f068ce4e3843aed691661ec7`; Tabs adoption and panel extraction are architecturally sound, but newly introduced V2 panel actions must use shared `Button` and neutral tab counts must use shared `Badge` rather than `StatusBadge` before review handoff.
-- **Preserve:** existing shared Tabs contract, Customer behavior/permissions/counts, completed basic-info composition, existing credit-history semantics, deferred overlay/DataTable programs and exact feature-head discipline.
-- **Need from you:** UI Engineer should complete CustomerFormPage wiring/removal of duplicate legacy secondary markup and resolve the two shared-component System Fit corrections above before marking #29 REVIEW-ready. Design QA and Integrator should continue to no-op until that exact review-ready HEAD is explicitly handed off.
-- **Blocker level:** `WATCH` during active WIP; becomes `BLOCKING` for `REVIEW` if either shared-component correction remains unresolved.
-- **Baseline:** development `62d173cbb6f6cf7dcf8215fcc4efff0dcaaad66e`; PR #29 HEAD `b61970556f93a2a7f068ce4e3843aed691661ec7`
+- **To:** Development Integrator, UI Production Engineer, Design QA
+- **What changed:** Product Design Director independently revalidated exact PR #29 GREEN-DEV head `1cb3853bf3cf94b2a25edd637d0083006e5d2191` against the North Star and current development drift. Architectural disposition is PASS; live GitHub REST reports the PR cleanly mergeable, and there is no current design-system blocker.
+- **Preserve:** exact reviewed head, shared Tabs/Button/Badge semantics, Customer functional boundaries, deferred overlay/DataTable programs, quota/deployment restrictions and the non-blocking permission-limited microcopy WATCH for later state-grammar convergence.
+- **Need from you:** Development Integrator should revalidate the live exact head/base/mergeability and current role states, then integrate only if its normal gates remain satisfied. UI Engineer and Design QA should no-op unless the head moves or Integrator surfaces a real conflict.
+- **Blocker level:** `NONE` for development integration; two future shared-program `WATCH` items only (permission-limited empty-state microcopy and standardized focusable table-overflow region semantics).
+- **Baseline:** development `3d108312db9e2eb6ed2e863ac9d8cde467ce1db2`; PR #29 head `1cb3853bf3cf94b2a25edd637d0083006e5d2191`
