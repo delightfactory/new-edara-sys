@@ -38,16 +38,16 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-UI-005`.
+Product UI is integrated through `DS2-INV-001`.
 
 Latest product integration:
-- PR: `#32 — DS2-UI-005: establish Sales transaction detail V2 header pattern`
-- Exact reviewed PR HEAD: `de7c99cb099ac4ccff941e1eb5f2dafacebd7ca6`
-- Squash merge commit: `58b0f3f8f54f04636d3a35dd7d658edb7bcf5068`
+- PR: `#34 — DS2-INV-001: establish Inventory stock list V2 presentation`
+- Exact reviewed PR HEAD: `819832d23cb9aafc895f56dc4b9f5ba2d21530b3`
+- Squash merge commit: `805995a5c0d9a118c415d647ed34e63dee326527`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Runtime/preview/release evidence: not claimed
 
-The development branch now includes the shared semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales Orders list V2, Sales Order form V2 foundation, and the first live shared `TransactionHeader` proof on Sales transaction detail.
+The development branch now includes the shared semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales Orders list V2, Sales Order form V2 foundation, Sales transaction-detail header V2, and the first Inventory list/card migration with deliberate Desktop/Tablet/Mobile composition.
 
 ## Completed slices
 
@@ -116,34 +116,46 @@ System result:
 - the stale-baseline TypeScript blocker was closed by inheriting the already-integrated Development hotfix before exact-head review;
 - `DocumentActions` Mobile sticky-header density remains a non-blocking runtime `WATCH` for a future owner-requested visual review.
 
-## Current single active slice
-
 ### DS2-INV-001 — Inventory list surfaces
-Status: `REVIEW`
+Status: `DONE`
+Merged PR: `#34`
+Reviewed HEAD: `819832d23cb9aafc895f56dc4b9f5ba2d21530b3`
+Squash merge: `805995a5c0d9a118c415d647ed34e63dee326527`
+Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
+Runtime/preview/release evidence: not claimed
+
+System result:
+- `StockPage` now uses one `ResponsiveCollection<Stock>` boundary rather than CSS-hidden duplicate device collection trees;
+- Desktop retains dense paged `DataTable` comparison/review behavior and authorized cost/value columns;
+- Tablet uses deliberate two-column `StockBalanceCard` composition with authorized weighted-cost + total-value parity and numbered direct page jumps;
+- Mobile uses one-column operational stock cards and preserves compact previous/next paged-query semantics;
+- `StockBalanceCard` remains a thin Inventory-domain composition over shared `Card + KeyValueList + StatusBadge`;
+- Tablet pagination now reuses shared `Button + touchTarget`, explicit accessible names, `aria-current="page"`, semantic 44px minimum numeric hit width and Arabic RTL-native `السابق` / `التالي` cues;
+- stock health, quantities, valuation, warehouse/product links, `finance.view_costs`, review math, routes, queries, filters, page size and pagination behavior remain page/domain-owned;
+- no transfer/adjustment workflow, backend/business/query/cache/RBAC/RLS/permission/deployment semantics changed;
+- full shared numbered Pagination convergence remains a non-blocking component-depth `WATCH`.
+
+## Current single READY slice
+
+### DS2-INV-002 — Transfer/adjustment operational flows
+Status: `READY`
 Owner role: UI Production Engineer
-Feature branch: `ds2/inventory-stock-list-v2`
-Draft PR: `#34`
-Exact implementation baseline: `61c2fcac8152550d72f4b94be5e85fd9979dd94d`
-Candidate implementation/test HEAD before review handoff: `20d37fd542867a6d8be51f37fed3bbab489f0164`
-Current bounded concern: `StockPage balance collection + responsive stock card presentation`
 
 System intent:
-Begin the Inventory module using the proven shared list/action grammar, without turning the queue into isolated page polishing.
+Continue the Inventory module through the smallest representative dependency-safe transfer/adjustment presentation concern, reusing the now-proven Inventory collection/status/action grammar without changing inventory truth.
 
-Review candidate result:
-- `StockPage` now uses one `ResponsiveCollection` boundary instead of CSS-hidden Desktop/Mobile collection trees;
-- Desktop retains its dense paged DataTable and full cost/value columns;
-- Tablet uses a deliberate two-column stock card grid while retaining the existing numbered page-jump capability and cost/value visibility for authorized users;
-- Mobile uses one-column shared stock cards and preserves its previous/next numbered-page query semantics;
-- Inventory cards compose shared `Card`, `KeyValueList`, `StatusBadge`; Mobile pagination uses shared touch-safe `Button` behavior;
-- stock health, quantities, valuation, warehouse/product links, cost permission, local review-mode math, routes, queries, pagination and filter behavior remain page/domain-owned;
-- focused tests protect card hierarchy, permission-owned valuation, review callback/accessibility, device composition, pagination and functional boundaries;
-- evidence is `TESTS_AUTHORED_NOT_EXECUTED`; no hosted CI/Vercel evidence is claimed.
+Initial direction:
+- Product Design Director should bound one representative transfer or adjustment operational surface before implementation expands;
+- preserve all stock movement, warehouse, quantity, costing, reservation, approval, permission, validation, route, query/service and transaction semantics exactly;
+- reuse existing V2 `PageHeader`, form/action primitives, `TransactionHeader`/action registry, status/state grammar, responsive sheets/dialogs and Inventory card/summary patterns where they genuinely fit;
+- Mobile remains task-oriented and touch-safe, Tablet deliberate, Desktop efficient for review/data entry;
+- strengthen only the smallest recurring shared V2 gap proven by the selected live operational flow;
+- focused tests must protect material device/permission/action/state/submit wiring; evidence follows `33_TEST_AND_VALIDATION_POLICY.md`.
 
 Explicit exclusions:
-- no inventory calculation, stock movement, costing, reservation or warehouse business changes;
-- no DB/RPC/service/query/cache/RBAC/RLS/permission/route-guard changes;
-- no speculative redesign of transfer/adjustment flows inside this list slice;
+- no stock movement/calculation/costing/reservation or accounting behavior change;
+- no DB/migration/RPC/service/query/cache/RBAC/RLS/permission/route-guard/validation/workflow semantic change;
+- no speculative broad Inventory redesign or global Pagination convergence inside this slice;
 - no deployment/preview/main changes.
 
 ## Product migration roadmap
@@ -177,8 +189,8 @@ Open only when a real migrated screen proves the recurring gap:
 - chart/report legend/metric grammar
 
 ### C. Inventory
-- `DS2-INV-001` Inventory list surfaces — `REVIEW`
-- `DS2-INV-002` Transfer/adjustment operational flows — `BACKLOG`
+- `DS2-INV-001` Inventory list surfaces — `DONE`
+- `DS2-INV-002` Transfer/adjustment operational flows — `READY`
 
 ### D. Procurement
 - `DS2-PROC-001` Purchase list surfaces — `BACKLOG`
