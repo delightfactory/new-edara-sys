@@ -135,22 +135,26 @@ System result:
 - no transfer/adjustment workflow, backend/business/query/cache/RBAC/RLS/permission/deployment semantics changed;
 - full shared numbered Pagination convergence remains a non-blocking component-depth `WATCH`.
 
-## Current single READY slice
+## Current single active slice
 
 ### DS2-INV-002 — Transfer/adjustment operational flows
-Status: `READY`
+Status: `REVIEW`
 Owner role: UI Production Engineer
+Active Draft PR: `#35 — DS2-INV-002: establish transfer flow V2 presentation`
+Exact slice baseline: `27437916d5afd047e794dd5bf86a2ddbf2becbdb`
+Bounded first concern: `TransfersPage transfer collection/presentation only`
 
 System intent:
 Continue the Inventory module through the smallest representative dependency-safe transfer/adjustment presentation concern, reusing the now-proven Inventory collection/status/action grammar without changing inventory truth.
 
-Initial direction:
-- Product Design Director should bound one representative transfer or adjustment operational surface before implementation expands;
-- preserve all stock movement, warehouse, quantity, costing, reservation, approval, permission, validation, route, query/service and transaction semantics exactly;
-- reuse existing V2 `PageHeader`, form/action primitives, `TransactionHeader`/action registry, status/state grammar, responsive sheets/dialogs and Inventory card/summary patterns where they genuinely fit;
-- Mobile remains task-oriented and touch-safe, Tablet deliberate, Desktop efficient for review/data entry;
-- strengthen only the smallest recurring shared V2 gap proven by the selected live operational flow;
-- focused tests must protect material device/permission/action/state/submit wiring; evidence follows `33_TEST_AND_VALIDATION_POLICY.md`.
+Review boundary:
+- the live `TransfersPage` collection now uses one `ResponsiveCollection<StockTransfer>` boundary instead of CSS-hidden duplicate device collection trees;
+- dense Desktop table, expanded-item review and authorized cost visibility remain intact;
+- Tablet/Mobile use deliberate `TransferCard` composition over shared V2 primitives with touch-safe actions and previous/next paging only;
+- transfer direction (`إرسال` / `طلب`) is neutral categorical `Badge` metadata; only workflow status uses semantic `StatusBadge` tone;
+- the exact page-owned ship / approve-and-ship / receive / cancel predicates and callbacks are centralized once for presentation reuse without changing truth;
+- query `pageSize: 25`, filter/page behavior, create modal, confirmation flow, routes, services, stock availability/reservation/validation and permission ownership remain unchanged;
+- `TransferDetailPage`, `AdjustmentsPage` and create-flow redesign remain unopened and outside this bounded concern.
 
 Explicit exclusions:
 - no stock movement/calculation/costing/reservation or accounting behavior change;
@@ -190,7 +194,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### C. Inventory
 - `DS2-INV-001` Inventory list surfaces — `DONE`
-- `DS2-INV-002` Transfer/adjustment operational flows — `READY`
+- `DS2-INV-002` Transfer/adjustment operational flows — `REVIEW`
 
 ### D. Procurement
 - `DS2-PROC-001` Purchase list surfaces — `BACKLOG`

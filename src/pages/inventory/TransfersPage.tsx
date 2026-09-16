@@ -1,9 +1,9 @@
 import { useState, Fragment, useMemo, useRef, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   ArrowLeftRight, Plus, ChevronDown, ChevronUp,
-  Truck, PackageCheck, X as XIcon, Send, Download, Search, Warehouse as WarehouseIcon
+  Truck, PackageCheck, X as XIcon, Send, Download, Search
 } from 'lucide-react'
 import {
   createTransfer, shipTransfer,
@@ -18,9 +18,11 @@ import type { StockTransfer, Warehouse, TransferStatus } from '@/lib/types/maste
 import { formatNumber, formatCurrency, formatDateShort } from '@/lib/utils/format'
 import PageHeader from '@/components/shared/PageHeader'
 import { ProductLink, WarehouseLink } from '@/components/shared/EntityLink'
+import ResponsiveCollection from '@/components/patterns/ResponsiveCollection'
+import StatusBadge, { type SemanticTone } from '@/components/patterns/StatusBadge'
+import { TransferCard } from '@/components/inventory/TransferListPresentation'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
-import Modal from '@/components/ui/Modal'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
@@ -154,7 +156,7 @@ export default function TransfersPage() {
     queryKey: ['my-warehouses'],
     queryFn: () => getMyWarehouses(),
     staleTime: 5 * 60 * 1000,
-    // نجلب دائماً — حتى لو كان المستخدم أدمن 
+    // نجلب دائماً — حتى لو كان المستخدم أدمن
     // لأن الأدمن قد يملك مخزناً شخصياً ويجب تعيينه افتراضياً
   })
   const myWarehouses = myWarehousesData as Warehouse[]
@@ -185,7 +187,6 @@ export default function TransfersPage() {
     transfer: StockTransfer; action: 'ship' | 'approve_ship' | 'receive' | 'cancel'
   } | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
-
 
   // ─── Create Modal Helpers ───
   // تعيين المخزن الافتراضي: الأول من مخازن المستخدم
@@ -336,15 +337,159 @@ export default function TransfersPage() {
     finally { setActionLoading(false); setConfirmAction(null) }
   }
 
-  const statusMap: Record<string, { label: string; variant: 'warning' | 'info' | 'primary' | 'success' | 'danger' }> = {
-    pending: { label: 'معلق', variant: 'warning' },
-    approved: { label: 'معتمد', variant: 'info' },
-    in_transit: { label: 'قيد الشحن', variant: 'primary' },
-    received: { label: 'مُستلم', variant: 'success' },
-    cancelled: { label: 'ملغي', variant: 'danger' },
+  const statusMap: Record<string, { label: string; tone: SemanticTone }> = {
+    pending: { label: 'معلق', tone: 'warning' },
+    approved: { label: 'معتمد', tone: 'info' },
+    in_transit: { label: 'قيد الشحن', tone: 'info' },
+    received: { label: 'مُستلم', tone: 'success' },
+    cancelled: { label: 'ملغي', tone: 'danger' },
   }
 
   const directionLabel = (d: string) => d === 'push' ? 'إرسال' : 'طلب'
+  const myWhIds = useMemo(() => new Set(myWarehouses.map(w => w.id)), [myWarehouses])
+  const userId = useAuthStore.getState().profile?.id
+
+  const getTransferAccess = (t: StockTransfer) => ({
+    iManageSource: isAdmin || myWhIds.has(t.from_warehouse_id),
+    iManageDest: isAdmin || myWhIds.has(t.to_warehouse_id),
+    iAmCreator: isAdmin || t.requested_by === userId,
+  })
+
+  const renderTransferActions = (t: StockTransfer, touchTarget = false) => {
+    const { iManageSource, iManageDest, iAmCreator } = getTransferAccess(t)
+
+    return (
+      <>
+        {t.status === 'pending' && t.direction === 'push' && iManageSource && (
+          <Button
+            variant="primary"
+            size="sm"
+            touchTarget={touchTarget}
+            icon={<Truck size={12} />}
+            onClick={() => setConfirmAction({ transfer: t, action: 'ship' })}
+          >
+            شحن
+          </Button>
+        )}
+        {t.status === 'pending' && t.direction === 'pull' && iManageSource && (
+          <Button
+            variant="primary"
+            size="sm"
+            touchTarget={touchTarget}
+            icon={<Truck size={12} />}
+            onClick={() => setConfirmAction({ transfer: t, action: 'approve_ship' })}
+          >
+            موافقة وشحن
+          </Button>
+        )}
+        {t.status === 'in_transit' && iManageDest && t.approved_by !== userId && (
+          <Button
+            variant="success"
+            size="sm"
+            touchTarget={touchTarget}
+            icon={<PackageCheck size={12} />}
+            onClick={() => setConfirmAction({ transfer: t, action: 'receive' })}
+          >
+            استلام
+          </Button>
+        )}
+        {t.status === 'pending' && iAmCreator && (
+          <Button
+            variant="danger"
+            size="sm"
+            touchTarget={touchTarget}
+            icon={<XIcon size={12} />}
+            onClick={() => setConfirmAction({ transfer: t, action: 'cancel' })}
+          >
+            إلغاء
+          </Button>
+        )}
+        {t.status === 'in_transit' && iManageSource && (
+          <Button
+            variant="danger"
+            size="sm"
+            touchTarget={touchTarget}
+            icon={<XIcon size={12} />}
+            onClick={() => setConfirmAction({ transfer: t, action: 'cancel' })}
+          >
+            إلغاء
+          </Button>
+        )}
+      </>
+    )
+  }
+
+  const renderTransferCard = (t: StockTransfer, mode: 'mobile' | 'tablet') => {
+    const st = statusMap[t.status]
+
+    return (
+      <TransferCard
+        key={t.id}
+        mode={mode}
+        summary={{
+          number: t.number,
+          directionLabel: directionLabel(t.direction),
+          directionIcon: t.direction === 'push' ? <Send size={10} /> : <Download size={10} />,
+          statusLabel: st?.label || t.status,
+          statusTone: st?.tone || 'neutral',
+          createdAt: formatDateShort(t.created_at),
+          fromWarehouse: <WarehouseLink name={t.from_warehouse?.name} />,
+          toWarehouse: <WarehouseLink name={t.to_warehouse?.name} />,
+        }}
+        actions={renderTransferActions(t, true)}
+        onOpen={() => navigate(`/inventory/transfers/${t.id}`)}
+        openLabel={`عرض تفاصيل التحويل ${t.number}`}
+      />
+    )
+  }
+
+  const renderCardPagination = () => {
+    if (totalPages <= 1) return null
+
+    return (
+      <nav
+        aria-label="ترقيم صفحات تحويلات المخزون"
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-4)', paddingBlock: 'var(--space-4)' }}
+      >
+        <Button
+          variant="ghost"
+          size="sm"
+          touchTarget
+          aria-label="الصفحة السابقة"
+          disabled={page <= 1}
+          onClick={() => setPage(p => p - 1)}
+        >
+          السابق
+        </Button>
+        <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>{page} / {totalPages}</span>
+        <Button
+          variant="ghost"
+          size="sm"
+          touchTarget
+          aria-label="الصفحة التالية"
+          disabled={page >= totalPages}
+          onClick={() => setPage(p => p + 1)}
+        >
+          التالي
+        </Button>
+      </nav>
+    )
+  }
+
+  const renderCardCollection = (items: StockTransfer[], mode: 'mobile' | 'tablet') => (
+    <div>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: mode === 'tablet' ? 'repeat(2, minmax(0, 1fr))' : 'minmax(0, 1fr)',
+          gap: 'var(--space-3)',
+        }}
+      >
+        {items.map(t => renderTransferCard(t, mode))}
+      </div>
+      {renderCardPagination()}
+    </div>
+  )
 
   const confirmConfig = confirmAction ? {
     ship: { title: 'تأكيد الشحن', message: `سيتم خصم المخزون من "${confirmAction.transfer.from_warehouse?.name}" وإرسال البنود. هل تريد المتابعة؟`, variant: 'info' as const, text: 'شحن' },
@@ -372,199 +517,134 @@ export default function TransfersPage() {
         </select>
       </div>
 
-      {/* ── DESKTOP: transfers table ─────────────────────────── */}
-      <div className="tr-table-view edara-card" style={{ overflow: 'auto' }}>
-        {loading ? (
-          <div style={{ padding: 'var(--space-6)' }}>
-            {[1,2,3,4,5].map(i => <div key={i} className="skeleton skeleton-row" />)}
-          </div>
-        ) : transfers.length === 0 ? (
-          <div className="empty-state" style={{ padding: 'var(--space-8)' }}>
+      <ResponsiveCollection<StockTransfer>
+        items={transfers}
+        loading={loading}
+        emptyState={(
+          <div className="edara-card empty-state" style={{ padding: 'var(--space-8)' }}>
             <ArrowLeftRight size={48} className="empty-state-icon" />
             <p className="empty-state-title">لا يوجد تحويلات</p>
             <p className="empty-state-text">أنشئ تحويل جديد لنقل البضائع بين المخازن</p>
           </div>
-        ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th style={{ width: 30 }}></th>
-                <th>الرقم</th>
-                <th>النوع</th>
-                <th>من</th>
-                <th>إلى</th>
-                <th className="hide-mobile">التاريخ</th>
-                <th>الحالة</th>
-                <th style={{ width: 200 }}>إجراءات</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transfers.map(t => (
-                <Fragment key={t.id}>
-                  <tr>
-                    <td>
-                      <Button variant="ghost" size="sm" onClick={() => setExpandedId(expandedId === t.id ? null : t.id)}>
-                        {expandedId === t.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                      </Button>
-                    </td>
-                    <td>
-                      <span dir="ltr" style={{ fontFamily: 'monospace', fontSize: 'var(--text-xs)', color: 'var(--color-primary)', cursor: 'pointer', textDecoration: 'underline' }}
-                        onClick={() => navigate(`/inventory/transfers/${t.id}`)}>{t.number}</span>
-                    </td>
-                    <td>
-                      <Badge variant={t.direction === 'push' ? 'primary' : 'info'}>
-                        {t.direction === 'push' ? <><Send size={10} /> إرسال</> : <><Download size={10} /> طلب</>}
-                      </Badge>
-                    </td>
-                    <td><WarehouseLink name={t.from_warehouse?.name} /></td>
-                    <td><WarehouseLink name={t.to_warehouse?.name} /></td>
-                    <td className="hide-mobile" style={{ fontSize: 'var(--text-xs)' }}>{formatDateShort(t.created_at)}</td>
-                    <td><Badge variant={statusMap[t.status]?.variant || 'neutral'}>{statusMap[t.status]?.label || t.status}</Badge></td>
-                    <td>
-                      {(() => {
-                        const myWhIds = new Set(myWarehouses.map(w => w.id))
-                        const userId = useAuthStore.getState().profile?.id
-                        const iManageSource = isAdmin || myWhIds.has(t.from_warehouse_id)
-                        const iManageDest = isAdmin || myWhIds.has(t.to_warehouse_id)
-                        const iAmCreator = isAdmin || t.requested_by === userId
-                        return (
-                          <div className="flex gap-1" style={{ flexWrap: 'wrap' }}>
-                            {t.status === 'pending' && t.direction === 'push' && iManageSource && (
-                              <Button variant="primary" size="sm" onClick={() => setConfirmAction({ transfer: t, action: 'ship' })}><Truck size={12} /> شحن</Button>
-                            )}
-                            {t.status === 'pending' && t.direction === 'pull' && iManageSource && (
-                              <Button variant="primary" size="sm" onClick={() => setConfirmAction({ transfer: t, action: 'approve_ship' })}><Truck size={12} /> موافقة وشحن</Button>
-                            )}
-                            {t.status === 'in_transit' && iManageDest && t.approved_by !== userId && (
-                              <Button variant="success" size="sm" onClick={() => setConfirmAction({ transfer: t, action: 'receive' })}><PackageCheck size={12} /> استلام</Button>
-                            )}
-                            {t.status === 'pending' && iAmCreator && (
-                              <Button variant="danger" size="sm" onClick={() => setConfirmAction({ transfer: t, action: 'cancel' })}><XIcon size={12} /></Button>
-                            )}
-                            {t.status === 'in_transit' && iManageSource && (
-                              <Button variant="danger" size="sm" onClick={() => setConfirmAction({ transfer: t, action: 'cancel' })}><XIcon size={12} /></Button>
-                            )}
-                          </div>
-                        )
-                      })()}
-                    </td>
-                  </tr>
-                  {expandedId === t.id && t.items && t.items.length > 0 && (
+        )}
+        renderDesktop={items => (
+          <div className="edara-card" style={{ overflow: 'auto' }}>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th style={{ width: 30 }}></th>
+                  <th>الرقم</th>
+                  <th>النوع</th>
+                  <th>من</th>
+                  <th>إلى</th>
+                  <th>التاريخ</th>
+                  <th>الحالة</th>
+                  <th style={{ width: 200 }}>إجراءات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map(t => (
+                  <Fragment key={t.id}>
                     <tr>
-                      <td colSpan={8} style={{ padding: 'var(--space-3) var(--space-6)', background: 'var(--bg-secondary)' }}>
-                        <table style={{ width: '100%', fontSize: 'var(--text-xs)' }}>
-                          <thead><tr><th>المنتج</th><th>الوحدة</th><th>الكمية</th><th>الكمية المستلمة</th>{canViewCosts && <th>تكلفة الوحدة</th>}</tr></thead>
-                          <tbody>
-                            {t.items.map((it: any) => (
-                              <tr key={it.id}>
-                                <td><ProductLink id={it.product_id} name={it.product?.name || it.product_id} /></td>
-                                <td>{it.unit?.symbol || it.unit_id}</td>
-                                <td>{formatNumber(it.quantity)}</td>
-                                <td>{it.received_quantity ? formatNumber(it.received_quantity) : '—'}</td>
-                                {canViewCosts && <td>{it.unit_cost ? formatCurrency(it.unit_cost) : '—'}</td>}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                        {t.notes && <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 'var(--space-2)' }}>ملاحظات: {t.notes}</p>}
-                        {t.sent_at && <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>تاريخ الشحن: {formatDateShort(t.sent_at)}</p>}
-                        {t.received_at && <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>تاريخ الاستلام: {formatDateShort(t.received_at)}</p>}
+                      <td>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          aria-label={`${expandedId === t.id ? 'طي' : 'عرض'} بنود التحويل ${t.number}`}
+                          aria-expanded={expandedId === t.id}
+                          onClick={() => setExpandedId(expandedId === t.id ? null : t.id)}
+                        >
+                          {expandedId === t.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                        </Button>
+                      </td>
+                      <td>
+                        <Link
+                          to={`/inventory/transfers/${t.id}`}
+                          dir="ltr"
+                          aria-label={`عرض تفاصيل التحويل ${t.number}`}
+                          style={{ fontFamily: 'monospace', fontSize: 'var(--text-xs)', color: 'var(--color-primary)', textDecoration: 'underline' }}
+                        >
+                          {t.number}
+                        </Link>
+                      </td>
+                      <td>
+                        <Badge variant="neutral">
+                          {t.direction === 'push' ? <><Send size={10} /> إرسال</> : <><Download size={10} /> طلب</>}
+                        </Badge>
+                      </td>
+                      <td><WarehouseLink name={t.from_warehouse?.name} /></td>
+                      <td><WarehouseLink name={t.to_warehouse?.name} /></td>
+                      <td style={{ fontSize: 'var(--text-xs)' }}>{formatDateShort(t.created_at)}</td>
+                      <td>
+                        <StatusBadge
+                          label={statusMap[t.status]?.label || t.status}
+                          tone={statusMap[t.status]?.tone || 'neutral'}
+                        />
+                      </td>
+                      <td>
+                        <div className="flex gap-1" style={{ flexWrap: 'wrap' }}>
+                          {renderTransferActions(t)}
+                        </div>
                       </td>
                     </tr>
-                  )}
-                </Fragment>
-              ))}
-            </tbody>
-          </table>
-        )}
+                    {expandedId === t.id && t.items && t.items.length > 0 && (
+                      <tr>
+                        <td colSpan={8} style={{ padding: 'var(--space-3) var(--space-6)', background: 'var(--bg-secondary)' }}>
+                          <table style={{ width: '100%', fontSize: 'var(--text-xs)' }}>
+                            <thead><tr><th>المنتج</th><th>الوحدة</th><th>الكمية</th><th>الكمية المستلمة</th>{canViewCosts && <th>تكلفة الوحدة</th>}</tr></thead>
+                            <tbody>
+                              {t.items.map((it: any) => (
+                                <tr key={it.id}>
+                                  <td><ProductLink id={it.product_id} name={it.product?.name || it.product_id} /></td>
+                                  <td>{it.unit?.symbol || it.unit_id}</td>
+                                  <td>{formatNumber(it.quantity)}</td>
+                                  <td>{it.received_quantity ? formatNumber(it.received_quantity) : '—'}</td>
+                                  {canViewCosts && <td>{it.unit_cost ? formatCurrency(it.unit_cost) : '—'}</td>}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                          {t.notes && <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 'var(--space-2)' }}>ملاحظات: {t.notes}</p>}
+                          {t.sent_at && <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>تاريخ الشحن: {formatDateShort(t.sent_at)}</p>}
+                          {t.received_at && <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>تاريخ الاستلام: {formatDateShort(t.received_at)}</p>}
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                ))}
+              </tbody>
+            </table>
 
-        {totalPages > 1 && (
-          <div className="pagination" style={{ padding: 'var(--space-4)' }}>
-            <span className="pagination-info">صفحة {page} من {totalPages}</span>
-            <div className="pagination-buttons">
-              <button className="pagination-btn" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>‹</button>
-              <button className="pagination-btn" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>›</button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── MOBILE: Transfer Card List ───────────────────────────── */}
-      <div className="tr-card-view">
-        {loading ? (
-          <div className="mobile-card-list">
-            {[1,2,3].map(i => <div key={i} className="edara-card" style={{ height: 104 }}><div className="skeleton" style={{ height: '100%' }} /></div>)}
-          </div>
-        ) : transfers.length === 0 ? (
-          <div className="edara-card" style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)' }}>
-            <ArrowLeftRight size={40} style={{ margin: '0 auto 12px', display: 'block', opacity: 0.3 }} />
-            <p>لا يوجد تحويلات</p>
-          </div>
-        ) : (
-          <div className="mobile-card-list">
-            {transfers.map((t: StockTransfer) => {
-              const st = statusMap[t.status]
-              const myWhIds = new Set(myWarehouses.map(w => w.id))
-              const userId = useAuthStore.getState().profile?.id
-              const iManageSource = isAdmin || myWhIds.has(t.from_warehouse_id)
-              const iManageDest   = isAdmin || myWhIds.has(t.to_warehouse_id)
-              const iAmCreator    = isAdmin || t.requested_by === userId
-              return (
-                <div key={t.id} className="edara-card tr-mobile-card" onClick={() => navigate(`/inventory/transfers/${t.id}`)}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--color-primary)' }} dir="ltr">{t.number}</span>
-                        <Badge variant={t.direction === 'push' ? 'primary' : 'info'}>
-                          {t.direction === 'push' ? <><Send size={9} /> إرسال</> : <><Download size={9} /> طلب</>}
-                        </Badge>
-                      </div>
-                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 3 }}>{formatDateShort(t.created_at)}</div>
-                    </div>
-                    <Badge variant={st?.variant || 'neutral'}>{st?.label || t.status}</Badge>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 8 }}>
-                    <WarehouseIcon size={11} />
-                    <span><WarehouseLink name={t.from_warehouse?.name} /></span>
-                    <ArrowLeftRight size={10} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
-                    <span><WarehouseLink name={t.to_warehouse?.name} /></span>
-                  </div>
-                  {/* Action buttons inline in card */}
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }} onClick={e => e.stopPropagation()}>
-                    {t.status === 'pending' && t.direction === 'push' && iManageSource && (
-                      <Button variant="primary" size="sm" icon={<Truck size={12} />}
-                        onClick={() => setConfirmAction({ transfer: t, action: 'ship' })}>شحن</Button>
-                    )}
-                    {t.status === 'pending' && t.direction === 'pull' && iManageSource && (
-                      <Button variant="primary" size="sm" icon={<Truck size={12} />}
-                        onClick={() => setConfirmAction({ transfer: t, action: 'approve_ship' })}>موافقة وشحن</Button>
-                    )}
-                    {t.status === 'in_transit' && iManageDest && t.approved_by !== userId && (
-                      <Button variant="success" size="sm" icon={<PackageCheck size={12} />}
-                        onClick={() => setConfirmAction({ transfer: t, action: 'receive' })}>استلام</Button>
-                    )}
-                    {(t.status === 'pending' && iAmCreator) && (
-                      <Button variant="danger" size="sm" icon={<XIcon size={12} />}
-                        onClick={() => setConfirmAction({ transfer: t, action: 'cancel' })}>إلغاء</Button>
-                    )}
-                    {t.status === 'in_transit' && iManageSource && (
-                      <Button variant="danger" size="sm" icon={<XIcon size={12} />}
-                        onClick={() => setConfirmAction({ transfer: t, action: 'cancel' })}>إلغاء</Button>
-                    )}
-                  </div>
+            {totalPages > 1 && (
+              <div className="pagination" style={{ padding: 'var(--space-4)' }}>
+                <span className="pagination-info">صفحة {page} من {totalPages}</span>
+                <div className="pagination-buttons">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label="الصفحة السابقة"
+                    disabled={page <= 1}
+                    onClick={() => setPage(p => p - 1)}
+                  >
+                    السابق
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label="الصفحة التالية"
+                    disabled={page >= totalPages}
+                    onClick={() => setPage(p => p + 1)}
+                  >
+                    التالي
+                  </Button>
                 </div>
-              )
-            })}
+              </div>
+            )}
           </div>
         )}
-        {totalPages > 1 && (
-          <div className="mobile-pagination">
-            <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>السابق</Button>
-            <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>{page} / {totalPages}</span>
-            <Button variant="ghost" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>التالي</Button>
-          </div>
-        )}
-      </div>
+        renderTablet={items => renderCardCollection(items, 'tablet')}
+        renderMobile={items => renderCardCollection(items, 'mobile')}
+      />
 
       {/* Mobile FAB */}
       {can('inventory.transfers.create') && (
@@ -606,7 +686,7 @@ export default function TransfersPage() {
               {/* Push + غير أدمن: مقفول على مخزني */}
               <select className="form-select" value={createForm.from_warehouse_id}
                 onChange={e => handleSourceWarehouseChange(e.target.value)}
-              disabled={myWhLocked && direction === 'push'}
+                disabled={myWhLocked && direction === 'push'}
                 style={myWhLocked && direction === 'push' ? { background: 'var(--bg-secondary)', fontWeight: 600 } : {}}
               >
                 <option value="">اختر</option>
@@ -700,12 +780,6 @@ export default function TransfersPage() {
       )}
 
       <style>{`
-        .tr-table-view { display: block; }
-        .tr-card-view  { display: none; }
-        .tr-mobile-card { padding: var(--space-4); cursor: pointer; transition: background 0.12s; }
-        .tr-mobile-card:hover { background: var(--bg-hover); }
-        .mobile-card-list { display: flex; flex-direction: column; gap: var(--space-3); }
-        .mobile-pagination { display: flex; align-items: center; justify-content: center; gap: var(--space-4); padding: var(--space-4) 0; }
         .tr-fab {
           position: fixed; bottom: calc(70px + var(--space-4)); left: var(--space-4);
           width: 56px; height: 56px; border-radius: 50%;
@@ -717,8 +791,6 @@ export default function TransfersPage() {
         .tr-fab:hover { transform: scale(1.06); }
         @media (max-width: 768px) {
           .desktop-only-btn { display: none !important; }
-          .tr-table-view { display: none; }
-          .tr-card-view  { display: block; }
         }
         @media (min-width: 769px) { .tr-fab { display: none; } }
       `}</style>
