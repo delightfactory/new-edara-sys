@@ -4,116 +4,99 @@
 
 - Review date: `2026-09-17`
 - Development branch: `design-system-v2-development`
-- Exact Development HEAD independently inspected: `7f1afec73b6b2102c5fd0cc977ac1b56a9fc8d51`
-- Latest integrated product slice: `DS2-PROC-001 — Purchase list surfaces` via PR `#36`.
-- Open implementation PRs targeting Development: `NONE`.
-- Current single READY slice: `DS2-PROC-002 — Purchase Invoice form decomposition`.
-- Product Design disposition: `READY — BOUNDED TO PURCHASE INVOICE FORM SHELL FOUNDATION`.
+- Exact Development HEAD independently inspected before this state write: `18f76d616be87e29d321822b601b1ec2f2687825`
+- Active slice: `DS2-PROC-002 — Purchase Invoice form decomposition`
+- Active implementation PR: `#37 — DS2-PROC-002: establish purchase invoice form V2 shell`
+- PR base: `design-system-v2-development`
+- Slice baseline: `e4866c9350c507bce260beb07d880fbce55718f3`
+- Exact PR HEAD independently inspected: `751d54278b120ad560981b9f019ec0a0135b3061`
+- Current Product Design disposition: `BLOCKED — P2 INTER-SECTION SPACING / HIERARCHY REGRESSION`
+- Evidence level: source inspection only; `TESTS_AUTHORED_NOT_EXECUTED`; no runtime/build/lint/preview PASS claimed.
 
 ## Independent professional judgment
 
-**DS2-PROC-002 is dependency-safe now, but it must stay substantially narrower than a whole Purchase Invoice rewrite.** The live `PurchaseInvoiceForm.tsx` is a large multi-mode transactional surface containing supplier/product lookup, inventory receiving, landed-cost calculations, WAC-sensitive data, billing/payment/accounting transitions, permissions, mobile item entry and document output. Pulling those concerns into one Design-System migration would create unacceptable functional risk.
+**PR #37 is architecturally aligned with the PROC002 shell boundary, but it is not yet acceptable for integration because the migrated basic-information `FormSection` loses required sibling separation.**
 
-The smallest high-value system slice is therefore the **form shell foundation only**: converge the page on already-proven shared V2 navigation/section/action/status grammar while leaving all purchase-domain internals and callbacks in place.
+I independently inspected the exact PR HEAD before comparing peer conclusions. The shell direction itself is correct:
 
-The current source proves four presentation gaps that are safe to correct together because they describe one outer-shell concern:
+- `PurchaseInvoiceDraftStepper` is a thin adapter over shared `Stepper` and preserves page-owned reachability, including no newly invented direct-forward access to review.
+- **بيانات الفاتورة** uses shared `FormSection + FormGrid columns={3}`, yielding the intended `3 Desktop / 2 Tablet / 1 Mobile` composition.
+- editable wizard navigation uses shared `FormActions + Button` with unchanged cancel/back/next/save callbacks and RTL-native previous/next cues.
+- workflow status now uses shared semantic `StatusBadge` with the already-integrated Purchase vocabulary.
+- supplier/product/warehouse identity, calculations, tax/discount/landed-cost/WAC, receive/bill/cancel workflow, permissions, services/query/cache, routes, `DocumentActions` and mobile item-entry truth remain outside presentation ownership.
 
-1. **Local stepper duplicates the shared system.**
-   - The new/draft flow renders a page-local step bar with inline colors/connectors/buttons.
-   - Shared `Stepper` already supports page-owned reachability, active/current semantics, accessible labels, Arabic wrapping and the mobile wrap treatment proven by Sales.
-   - Purchase reachability remains page-owned and must be projected exactly. In particular, preserve the current click rule rather than "improving" workflow behavior: a step is clickable only when the existing predicate allows it (`i < step`, step 0, step 1 after supplier+warehouse, step 2 after supplier+warehouse+valid item). Step 3 remains reached through `goNext` and backward navigation unless the existing page logic already makes it reachable. Do not invent direct-forward navigation.
+The remaining defect is real and PR-introduced:
 
-2. **Basic invoice section uses a local card/grid shell.**
-   - `sCard`, `grid2` and `SectionHead` recreate shared section/layout grammar with inline styling.
-   - Migrate only the always-used **بيانات الفاتورة** section to shared `FormSection + FormGrid` as the representative Procurement form section.
-   - Target density: `3 Desktop / 2 Tablet / 1 Mobile`; supplier and notes remain full-span; all conditional landed-cost/read-only/receive-mode rendering remains exactly as today.
-   - Do not migrate the products table/cards, financial preview, review summary, receive panel or mobile add-item sheet in this slice.
+1. The legacy basic-information wrapper used `sCard`, whose contract includes `marginBottom: 16`.
+2. Shared `FormSection` composes shared `Card` and intentionally owns **internal** section spacing only; it has no external sibling margin.
+3. `.page-container` owns padding but no vertical stack/gap contract.
+4. On exact PR HEAD, the migrated `FormSection` therefore sits immediately before:
+   - `FormActions` on editable step 0; and
+   - the following items card in `showReceivePanel`, `bill` and `readonly` modes.
 
-3. **Bottom step actions use a page-local action row and physical LTR glyphs.**
-   - Replace only the new/draft step-navigation surface with shared `FormActions + Button`.
-   - Preserve exact cancel/back/next/save callbacks and save-disable truth.
-   - Use RTL-native logical cues (`ChevronRight` for previous, `ChevronLeft` for next) rather than literal `‹ / ›` glyphs; touch targets must remain practical on Mobile and Arabic labels must not clip.
+That removes a deliberate visual boundary between major transactional groups. It conflicts with the North Star requirement for strong hierarchy, controlled spacing and deliberate device/state composition. This is not a reason to change shared `FormSection` globally; external flow spacing belongs to the Purchase Invoice composition boundary in this slice.
 
-4. **Header workflow status uses a local raw-color badge.**
-   - Remove the local raw-hex status treatment from the form shell and use shared semantic `StatusBadge`.
-   - Keep status truth page-owned and match the already-integrated Purchase list vocabulary exactly: `draft -> neutral`, `received -> info`, `billed -> warning`, `paid -> success`, `cancelled -> danger`, with the existing Arabic labels.
-   - This is presentation convergence only; no workflow/status transition may move into the badge layer.
+## Director synthesis of peer-state disagreement
 
-## Explicit implementation boundary
+After forming the judgment above, I compared peer states and PR review evidence:
 
-### In scope
+- **Design QA:** current exact-head P2 blocker is valid. QA correctly distinguishes internal `FormSection` spacing from external sibling rhythm and identifies the regression across editable and simultaneous multi-section modes.
+- **UI Production Engineer:** the statement that the bounded shell is otherwise complete is correct, but its `NONE` blocker disposition is stale/incomplete with respect to the exact-head spacing regression exposed by QA.
+- **Development Integrator:** its state is stale on an earlier PR HEAD and should remain `NO_MERGE`; the fresh QA blocker supersedes that older completeness-only view.
+- **Material contradiction:** resolved by this Director synthesis in favor of **BLOCKING until the local spacing regression is corrected**. No business/backend ambiguity exists.
 
-- shared `Stepper` for the existing new/draft wizard shell;
-- shared `FormSection + FormGrid` for **بيانات الفاتورة** only;
-- shared `FormActions + Button` for the existing step navigation/save surface;
-- shared semantic `StatusBadge` in the PageHeader for an existing invoice;
-- the minimum Procurement-specific presentation adapter/CSS needed to compose those shared primitives without domain ownership;
-- focused source/component/page tests that protect shared primitive usage, exact reachability projection, `3/2/1` responsive density, RTL action direction, save/cancel callback wiring, and semantic status mapping.
+## Required minimum correction
 
-### Explicitly out of scope
+Keep the same PR and the same shell scope. Restore one token-based logical block separation at the Purchase Invoice composition boundary so **بيانات الفاتورة** is separated from whichever sibling follows it.
 
-- supplier lookup / `InlineCombobox` redesign or global Combobox work;
-- `PurchaseProductComboCell`, product search, product selection, units or mobile add-item sheet redesign;
-- products table/card composition, receive-mode table, quantities or receive validation;
-- calculations: unit price, discount, tax, line totals, landed-cost math, WAC/cost behavior or financial summaries;
-- receive / bill / pay / cancel transitions and their predicates;
-- supplier/warehouse identity, permissions, query/cache/service/RPC/database/RLS/RBAC behavior;
-- `DocumentActions` behavior;
-- field-control semantic overhaul or broad `Field` migration in this slice; existing controls/values/errors remain authoritative;
-- later financial/review sections, generic upload/camera/offline work, global Pagination or broad Procurement rewrite;
-- `main`, Vercel preview, hosted CI or deployment activity.
+Acceptable implementation intent:
 
-## Device / state / accessibility acceptance
+- a narrow Purchase Invoice/Procurement shell wrapper or class around the migrated basic-information section;
+- use shared spacing tokens, preferably `var(--space-4)`, via logical block spacing / local composition ownership;
+- protect that local ownership in the focused source contract.
 
-- **Desktop:** predictable 3-column basic-information density where fields permit it; no loss of existing dense transactional review elsewhere.
-- **Tablet:** shared form grid caps at 2 columns; step labels remain readable; actions remain deliberate and touch-safe.
-- **Mobile:** basic-info fields become one column; shared Stepper uses a non-clipping Arabic-friendly mobile composition; action controls expose practical touch targets and do not rely on physical-direction glyphs.
-- **Modes:** `new`, `draft`, draft receive-panel, `bill` and `readonly` visibility/disabled behavior stays exactly page-owned. This slice changes shell presentation, not mode semantics.
-- **Accessibility:** shared Stepper owns current-step and disabled-step semantics; buttons remain native controls with visible focus; status meaning is textual + semantic tone, never color-only; action labels remain explicit Arabic text.
-- **Dark mode / semantic color:** no new raw status colors or page-local semantic palette; use shared tokens/primitives.
+Do **not**:
 
-## System-pattern intent
+- add global external margin to shared `FormSection` or `Card`;
+- create a Procurement-specific primitive;
+- change shared density rules;
+- alter Purchase Invoice mode/workflow/business behavior;
+- widen into Combobox, items table/cards, receive panel, mobile add-item sheet, accounting, calculations, validation semantics or broader Procurement cleanup.
 
-PROC002 is not "beautify the purchase form." It establishes Procurement on the same shared form grammar already proven in Sales: shared step navigation, shared section/grid hierarchy, shared action surface and shared semantic status language while the page retains every business rule. The later item-entry/Combobox/receive/accounting surfaces should be migrated only after this shell foundation is integrated and their recurring pattern gaps are separately bounded.
+## Device / state / accessibility acceptance after the correction
 
-## Peer-state comparison / freshness
-
-After forming the judgment above, peer memory was compared:
-
-- **Integration State / Team Memory:** fresh enough to establish that PROC001 is integrated and PROC002 is the single queued READY item.
-- **Design QA:** latest state is approval evidence for completed PROC001, not approval for PROC002; no contradiction.
-- **UI Production Engineer:** no active PROC002 PR exists yet; any prior implementation state is informational/stale for the new slice.
-- **Open PR scan:** no implementation PR currently targets `design-system-v2-development`, so creating one bounded PROC002 implementation does not compete with active work.
-- **Material disagreement:** none. No backend/business decision is required for this shell-only slice.
+- **Desktop:** retain 3-column basic-info density and dense downstream transaction review; major sections/actions must keep clear vertical separation.
+- **Tablet:** retain the shared 2-column cap and touch-safe controls; section rhythm must remain deliberate, not compressed Desktop.
+- **Mobile:** retain one-column basic-info, wrapped Arabic Stepper labels and touch-target actions; the basic-info card must not visually merge into the action bar.
+- **Receive / bill / readonly:** where multiple sections are visible together, the basic-info card must remain visually distinct from the items surface.
+- **Accessibility/RTL/status:** current shared Stepper/Button/StatusBadge direction and semantics are otherwise acceptable and should not be reopened by this fix.
 
 ## Preserve
 
-- exactly one implementation slice/PR at a time;
-- all current Purchase Invoice modes, state transitions, permissions and service calls;
-- exact supplier/warehouse/product selection truth;
-- exact line-item, tax, discount, landed-cost, receive and accounting calculations;
-- current `goNext`, cancel/back and save callbacks, including all existing validation/toast behavior;
-- current step reachability semantics, including no newly invented direct-forward access to review;
-- existing mobile item-add behavior and products Desktop/Mobile rendering;
-- `DocumentActions` and routes;
-- page/domain ownership of all business truth;
-- no GitHub Actions, hosted CI, Vercel preview, backend/business or `main` activity.
+- exactly one implementation PR/slice at a time;
+- exact current Purchase Invoice step reachability, `goNext`, cancel/back/save and disabled truth;
+- all supplier/warehouse/product selection behavior;
+- all quantities, pricing, discounts, taxes, totals, landed-cost/WAC/accounting/payment logic;
+- receive/bill/cancel transitions, permissions, services/query/cache and routes;
+- current mobile item-add flow, `ResponsiveModal` and `DocumentActions`;
+- semantic Purchase status vocabulary already integrated in the list;
+- no GitHub Actions/hosted CI, Vercel preview, backend/business, `main` or deployment activity.
 
 ## Remaining non-blocking WATCH
 
-- `InlineCombobox` and the portal product chooser are still local/mouse-heavy interaction debt and are strong candidates for a later separately bounded Combobox/accessibility slice; do not pull them into PROC002 shell work.
-- The products entry table/mobile cards and receive panel remain a separate dense operational composition problem.
-- Generic `Field` adoption should follow only when control IDs/help/error wiring can be preserved without broad control redesign.
-- Runtime/browser/build/test/lint evidence remains governed by the shared validation policy; no such PASS is claimed by this Director review.
+- `InlineCombobox` / product chooser keyboard-accessibility debt remains separately bounded future work.
+- products table/cards, receive panel and wider transaction-form composition remain later slices.
+- runtime visual/build/lint/test evidence remains unclaimed by policy and current execution availability.
+- full form-field convergence should not be pulled into this spacing repair.
 
 ## What changed since previous state
 
-PROC001 has been integrated and there is no active implementation PR. I independently inspected the live Purchase Invoice form against the current shared Stepper/FormSection/FormGrid/FormActions/StatusBadge grammar and converted the broad PROC002 placeholder into one implementation-safe shell foundation. No Team Memory or Decision Log change is needed because the overall system direction and durable rules are unchanged.
+The bounded PROC002 implementation is now live on PR #37, closing the prior completeness concern. Exact-head review exposed one new, narrow presentation regression: migration from legacy `sCard` to shared `FormSection` dropped the external section separation previously supplied by `marginBottom: 16`. I independently verified the source geometry and accept Design QA's P2 blocker. Overall system direction, Team Memory and durable decisions do not change.
 
 ### Cross-role handoff
 - **To:** UI Production Engineer, Design QA, Development Integrator
-- **What changed:** `DS2-PROC-002` is now bounded as the single READY Purchase Invoice **form shell foundation**: shared Stepper + only the basic invoice FormSection/FormGrid + shared FormActions + shared semantic header StatusBadge, with no purchase-domain logic migration.
-- **Preserve:** exact step reachability and `goNext` behavior; all create/draft/receive/bill/readonly semantics; all supplier/product/warehouse, calculations, accounting, permissions, services, routes, mobile item-entry and DocumentActions truth; one active PR only.
-- **Need from you:** UI Production Engineer should open/work exactly one PROC002 PR against current Development and implement only this boundary with focused tests. QA/Integrator should no-op until a stable PR HEAD exists, then review that exact HEAD under the normal gates.
-- **Blocker level:** `NONE`.
-- **Baseline:** Development `7f1afec73b6b2102c5fd0cc977ac1b56a9fc8d51`; no active PR HEAD.
+- **What changed:** Product Design Director independently confirms PR #37 exact HEAD `751d54278b120ad560981b9f019ec0a0135b3061` is architecturally sound except for one BLOCKING P2 inter-section spacing regression at the migrated **بيانات الفاتورة** boundary.
+- **Preserve:** the entire already-approved shell architecture and all Purchase/accounting/workflow/permission/service truth; fix only local external spacing ownership and focused protection.
+- **Need from you:** UI Production Engineer should correct the spacing on the same PR with a token-based local composition boundary and focused assertion; Design QA must review the moved exact HEAD; Integrator remains `NO_MERGE` until fresh `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` exists.
+- **Blocker level:** `BLOCKING`.
+- **Baseline:** Development `18f76d616be87e29d321822b601b1ec2f2687825`; PR #37 exact reviewed HEAD `751d54278b120ad560981b9f019ec0a0135b3061`.
