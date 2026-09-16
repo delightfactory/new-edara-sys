@@ -4,121 +4,99 @@
 
 - Run date: `2026-09-16`
 - Development branch: `design-system-v2-development`
-- Exact development baseline used for this slice: `e78de5d71002b9718fa7d760b3cc7bc933ff6cba`
-- Exact development HEAD observed this run before state write: `5aed337c74a9cb9a51f1eb64aacba800faa5f522`
-- Feature branch: `ds2/sales-orders-list-v2`
-- Draft PR: `#30 — DS2-UI-003: migrate Sales Orders list to shared V2 grammar`
-- Exact current feature HEAD: `d03dbf4d32e0fb1a3e4888588a5c6d685689f1ff`
-- Active slice: `DS2-UI-003 — Sales Orders list V2`
-- Implementation disposition: `REVIEW — EXACT HEAD HANDED TO DESIGN QA`
+- Exact development baseline used for this slice: `a6c9705ab56442c7c1d1722b442aa374a7556e81`
+- Exact development HEAD observed this run: `ca42230ae025984bb68837bb85be8711f33df20b`
+- Feature branch: `ds2/sales-order-form-v2`
+- Draft PR: `#31 — DS2-UI-004: establish Sales Order form V2 presentation foundation`
+- Exact product/test HEAD before this state write: `712ef01c9118941cc2f8887ae20f922fc94881f2`
+- Active slice: `DS2-UI-004 — Sales Order form V2 foundation`
+- Implementation disposition: `REVIEW — REVIEWER P2 CORRECTED, EXACT-HEAD RE-REVIEW REQUIRED`
 - Evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 
 ## Independent implementation judgment
 
-**IMPLEMENTATION COMPLETE FOR THE BOUNDED DS2-UI-003 SLICE; READY FOR INDEPENDENT EXACT-HEAD SOURCE REVIEW.**
+The single bounded P2 raised by both Design QA and Product Design Director on review head `6841ceb3094ec6f85a14d4e9bdfb77869fc4444c` was valid: Step 0 had been hard-capped to two Desktop columns and therefore lost useful Desktop data-entry density even though the shared `FormGrid` contract already provides the desired `3 Desktop -> 2 Tablet -> 1 Mobile` behavior.
 
-The Sales Orders list now uses the shared V2 grammar without moving Sales business/query truth out of the page. The migration removes the old CSS-hidden Desktop/Mobile dual interaction trees, replaces legacy Mobile `DataCard` composition with a deliberate Sales card over shared primitives, and gives Tablet an explicit card composition while preserving the historical paged data contract.
-
-No Sales service, query, cache, permission, workflow, validation or calculation semantics were changed. No speculative DataTable/FilterBar program was opened.
+The correction is intentionally minimal. The live `بيانات الطلب` section now requests `columns={3}` from the existing shared V2 form contract. The customer selector row and selected-customer/credit row remain explicit full-width rows. No Sales business, query, permission, validation, workflow or save truth moved or changed.
 
 ## Material progress this run
 
-1. Re-ran the mandatory shared-memory bootstrap and revalidated the only open implementation PR (#30), issue #27, current development HEAD and Product Design Director WIP guidance.
-2. Resolved both Product Design Director requirements before REVIEW:
-   - Tablet presentation now uses `SalesOrderCard` while staying on `desktopOrders` / `desktopPage` / numbered-pagination semantics; only Mobile uses accumulated `mobileOrders` and the infinite-load sentinel.
-   - page-projected payment percentage is no longer normalized away inside `SalesOrderCard`; the visible percentage remains the page-owned `Math.round(paidRatio * 100)` value while progressbar geometry/ARIA is bounded separately to `0..100`.
-3. Wired `SalesOrdersPage.tsx` through shared `ResponsiveCollection` so only one Desktop/Tablet/Mobile collection renderer is mounted at a time.
-4. Replaced page-local KPI/status presentation with shared `SalesOrdersKpiGrid` / `SalesOrderStatusBadge`.
-5. Preserved the dense Desktop `DataTable` and its existing numbered pagination.
-6. Added deliberate Tablet cards plus numbered pagination backed by the existing Desktop paged dataset.
-7. Preserved Mobile accumulated infinite-loading behavior, sentinel, loading-more state and end state.
-8. Migrated Smart Transfer Desktop/FAB action surfaces to shared `Button` while preserving the existing `sales.orders.create` permission and dialog behavior.
-9. Replaced collection empty presentation with shared `StatePanel` without adding a new Mobile empty-state action.
-10. Added focused tests for device dataset selection, payment-projection separation and final page wiring/functional boundaries.
-11. Inspected the complete four-file PR diff after wiring. No forbidden backend/query/permission/deployment file is present and no known source-level TypeScript/build blocker was identified.
+1. Re-ran the mandatory shared-memory bootstrap in required order, inspected issue #27, current Development HEAD and the only open implementation PR targeting Development.
+2. Independently confirmed the reviewer finding in live source before editing: Step 0 used `columns={2}` while rep/date/delivery-address are three related compact Desktop fields.
+3. Changed only the live Step 0 composition from `columns={2}` to `columns={3}`.
+4. Preserved the existing `gridColumn: '1 / -1'` full-width treatment for customer selection and selected-customer/credit information.
+5. Extended the focused page source-contract test to require the live `columns={3}` contract, reject regression to `columns={2}`, and protect the full-width rows.
+6. Did not expand into Combobox, ProductLine, delivery section, table, overlay or functional refactoring.
+7. No GitHub Actions, hosted CI, Vercel deployment or `main` activity occurred.
 
-## Changed-file scope
+## Changed-file / pattern scope
 
-PR #30 changes exactly four Sales UI/test files:
+PR #31 remains constrained to the same eight UI/test/state files:
 
-- `src/components/sales/SalesOrdersListPresentation.tsx`
-- `src/components/sales/SalesOrdersListPresentation.test.tsx`
-- `src/pages/sales/SalesOrdersPage.tsx`
-- `src/pages/sales/SalesOrdersPage.v2.test.ts`
+- `src/components/ui/Stepper.tsx`
+- `src/components/ui/Stepper.test.tsx`
+- `src/components/sales/SalesOrderFormPresentation.tsx`
+- `src/components/sales/SalesOrderFormPresentation.test.tsx`
+- `src/components/sales/sales-order-form-v2.css`
+- `src/pages/sales/SalesOrderForm.tsx`
+- `src/pages/sales/SalesOrderForm.v2.test.ts`
+- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
-No service, hook/query implementation, cache, database, migration, RPC, RBAC/RLS, permission definition, route guard, validation semantic, workflow state, pricing/accounting calculation, GitHub workflow, Vercel configuration or `main` file changed.
+This run materially changed only the live Sales Order form density contract, its focused source-contract test, and this owned role-state file.
 
-## Functional / product truth preserved
+## Preserved functional contracts
 
-The exact review head preserves:
+The correction does not modify or relocate:
 
-- `useFilterState(... urlSync: true)` and Back-restored filters;
-- governorate -> city reset through the same single `setFilters` path;
-- both existing `useSalesOrders` parameter/query paths;
-- Desktop numbered pagination;
-- Tablet paged dataset + numbered pagination semantics;
-- Mobile page accumulation/reset/load-more through `useMobileInfiniteList`;
-- `useSalesStats` business meaning;
-- status values and payment-term meaning;
-- existing page-owned `collected`, `outstanding`, `paidRatio` and displayed-percentage projection;
-- `sales.orders.create` visibility for Smart Transfer/new-order actions;
-- order detail and new-order destinations;
-- Smart Transfer dialog behavior;
-- map and call destinations;
-- all Sales workflow/business-state behavior.
+- create/edit and `copyFrom` behavior;
+- customer/branch/rep data ownership;
+- product/unit/quantity/stock behavior;
+- price resolution or manual-price override guards;
+- `sales.orders.edit_price` or `sales.discounts.override` permissions;
+- discount, tax, shipping, totals or minimum-order calculations;
+- `goNext` validation/toasts or exact step reachability;
+- service/query/cache/RPC/RBAC/RLS/route-guard semantics;
+- `createSalesOrder` / `updateSalesOrder` / `saveSalesOrderItems` / `recalcOrderTotals` save sequence;
+- route navigation or Mobile add-product flow.
 
-## Device / system result
+## Device / state coverage
 
-- **Mobile:** one operational `SalesOrderCard` renderer, touch-ready open/map/call actions, explicit status/financial hierarchy, no ordinary list-level horizontal overflow, existing infinite-loading contract preserved.
-- **Tablet:** deliberate denser Sales cards, but data remains the existing paged Desktop dataset and numbered pagination. Tablet does not inherit Mobile infinite-loading semantics.
-- **Desktop:** dense `DataTable` comparison remains, with existing numbered pagination and route behavior.
-- **Statuses:** shared `StatusBadge` semantic grammar now owns Sales order state presentation.
-- **KPIs:** shared `StatCard` grammar now owns hierarchy while the existing global stats hook owns truth.
-- **Collection:** shared `ResponsiveCollection` owns the one-renderer-at-a-time device boundary.
-- **Actions:** shared `Button` owns migrated Smart Transfer and card actions.
-- **Empty state:** shared `StatePanel` owns collection empty presentation.
+- **Mobile:** shared FormGrid resolves the three-column request to one column; no horizontal form-grid compression is introduced. Shared wrapped Stepper and touch-targeted actions remain unchanged.
+- **Tablet:** shared FormGrid resolves the same request to two columns; no Mobile-only product-entry behavior leaks into Tablet.
+- **Desktop:** Step 0 now restores three-field operational density for rep/date/delivery address where available, while customer and credit context remain full-width.
+- **Loading / disabled / permission / read-only:** unchanged from the already-reviewed candidate; reviewer correction is composition-only.
+- **RTL / accessibility:** unchanged from the already-reviewed candidate; shared Stepper ARIA/current-step and native RTL directional cues remain intact.
 
 ## Test / execution evidence
 
-Current evidence: **`TESTS_AUTHORED_NOT_EXECUTED`**.
+Evidence remains **`TESTS_AUTHORED_NOT_EXECUTED`**.
 
-Focused tests cover:
-- semantic Sales status mapping;
-- KPI truth projection and canonical device mode;
-- Tablet selecting the paged dataset while Mobile selects accumulated infinite-list data;
-- Mobile/Tablet Sales card hierarchy and action callbacks;
-- page-projected percentage text remaining distinct from bounded progress geometry;
-- optional map/call actions;
-- final page adoption of one `ResponsiveCollection` boundary;
-- preservation of separate Desktop/Mobile query/page state;
-- page ownership of Sales financial calculations;
-- URL-synced filters, governorate/city reset, permissions, Smart Transfer and route destinations;
-- removal of legacy `DataCard` / CSS-hidden dual collection trees.
+Focused coverage now additionally protects:
+- live Step 0 `columns={3}` usage;
+- rejection of regression to the reviewer-blocked `columns={2}` usage;
+- preservation of the full-width customer/credit rows.
 
-Sandbox execution remains unavailable:
-- no repository checkout exists in the sandbox;
-- direct GitHub access retry failed with `Could not resolve host: github.com`.
+A local project checkout is still unavailable and direct sandbox GitHub DNS resolution fails, so `npm test`, `npm run build` and `npm run lint` were not executed. No hosted CI was triggered. No PASS is claimed. Source inspection exposes no known TypeScript/build blocker from this bounded change.
 
-Therefore no `npm test`, `npm run build`, `npm run lint` or `LOCAL_EXECUTION_PASS` is claimed. No GitHub Actions/hosted CI or Vercel preview was triggered. No known build/type failure is currently recorded from source inspection.
+## Peer-state comparison / freshness
 
-## Peer-state comparison
+- **Product Design Director:** exact-head synthesis on `6841ceb...` agrees with Design QA that the only remaining P2 is Step 0 Desktop density and requests exactly this `columns={3}` correction with focused protection. That requested correction is now implemented.
+- **Design QA:** exact-head review on `6841ceb...` is `BLOCKED` solely on the same density issue. All other source-review areas were explicitly acceptable on that head. A fresh exact-head review is now required; the old blocked verdict must not be reused as approval.
+- **Development Integrator:** remains `NO_MERGE` until Design QA records exact-head `GREEN-DEV` / source review after this correction.
+- **Development drift:** observed Development HEAD `ca42230...` contains coordination/state activity for this review cycle. No product/shared-component drift was found that justifies merge-syncing the implementation branch before re-review.
 
-- **Product Design Director:** fresh WIP review on earlier head `bfd54e57...` required two bounded constraints. Both are visibly resolved on exact review head `d03dbf4d...`: Tablet retains paged dataset semantics and visible financial projection remains page-owned while only progress geometry is bounded.
-- **Design QA:** stored state still belongs to merged PR #29 and is stale for Sales. No Sales approval exists; a fresh independent review is now required.
-- **Development Integrator:** stored `NO_MERGE_IN_PROGRESS` targets earlier WIP head and remains correct historically but is stale by head/disposition. Integrator must continue to no-op until QA issues exact-head `GREEN-DEV` + `SOURCE_REVIEW_PASS`.
-- **Team Memory / Workstream:** both still identify DS2-UI-003 as the single active slice. Workstream should now reflect REVIEW for this exact head.
+## Risks / deferred work
 
-No current peer-state `BLOCKING` contradiction remains.
-
-## Next action
-
-No further implementation should occur unless Design QA requests a bounded correction. Design QA should independently inspect exact PR #30 HEAD `d03dbf4d32e0fb1a3e4888588a5c6d685689f1ff` against the North Star, functional-isolation boundary, device semantics, states/accessibility and test artifacts.
+- Runtime/browser evidence remains unavailable; the evidence label is deliberately limited to authored tests plus source/diff inspection.
+- Customer/product Combobox and product-line interaction remain legacy presentation debt intentionally deferred beyond this bounded outer-form slice.
+- Do not broaden this PR while the exact corrected head is under reviewer revalidation.
 
 ## Cross-role handoff
 
-- **To:** Design QA, Product Design Director, Development Integrator
-- **What changed:** DS2-UI-003 page wiring is complete on Draft PR #30 at exact HEAD `d03dbf4d32e0fb1a3e4888588a5c6d685689f1ff`. `ResponsiveCollection` now selects one renderer; Desktop remains paged table, Tablet is paged cards, Mobile remains accumulated infinite cards. Director's Tablet-data and payment-projection constraints are resolved.
-- **Preserve:** all existing Sales query/filter/pagination/infinite-loading/navigation/permission/status/payment/Smart Transfer/map/call/business semantics; page ownership of financial calculations; shared V2 system ownership; no hosted CI/Vercel/`main` activity.
-- **Need from you:** Design QA should perform fresh independent exact-head review and issue `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` only if all development gates pass. Product Design Director may revalidate system fit if needed. Integrator must not merge before that exact-head approval.
-- **Blocker level:** `NONE`; execution evidence remains `TESTS_AUTHORED_NOT_EXECUTED`.
-- **Baseline:** slice baseline `e78de5d71002b9718fa7d760b3cc7bc933ff6cba`; development observed `5aed337c74a9cb9a51f1eb64aacba800faa5f522`; PR #30 review HEAD `d03dbf4d32e0fb1a3e4888588a5c6d685689f1ff`
+- **To:** Product Design Director, Design QA, Development Integrator
+- **What changed:** the single agreed P2 reviewer blocker is corrected: live Step 0 now uses the shared `columns={3}` contract, which yields `3 Desktop -> 2 Tablet -> 1 Mobile`; full-width customer/credit rows remain intact. Focused source-contract coverage now prevents regression to `columns={2}`.
+- **Exact product/test HEAD before this state write:** `712ef01c9118941cc2f8887ae20f922fc94881f2`.
+- **Preserve:** all Sales business/query/cache/RBAC/RLS/permission/validation/calculation/save/route/workflow truth; existing Stepper/reachability/RTL behavior; Mobile add-product boundary; deferred Combobox/ProductLine scope.
+- **Need:** Design QA and Product Design Director should re-review the new PR exact HEAD after this state commit. Integrator must remain `NO_MERGE` until the exact reviewed HEAD receives `AGENT-REVIEW: GREEN-DEV` plus required source-review evidence.
+- **Blocker level:** `NONE` from UI implementation; `AWAITING_EXACT_HEAD_REVIEW`.
+- **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`.

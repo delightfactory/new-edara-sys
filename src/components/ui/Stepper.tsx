@@ -1,60 +1,87 @@
 import { type ReactNode } from 'react'
 import { Check } from 'lucide-react'
 
-interface Step {
+export interface StepperStep {
   label: string
   description?: string
+  icon?: ReactNode
+  /** Page/domain-owned reachability projected into the shared stepper. */
+  disabled?: boolean
 }
 
-interface StepperProps {
-  steps: Step[] | string[]
-  currentStep: number  // 0-indexed
-  /** Show step numbers inside the circles */
+export interface StepperProps {
+  steps: StepperStep[] | string[]
+  currentStep: number // 0-indexed
+  /** Show step numbers inside the circles when no step icon is supplied. */
   showNumbers?: boolean
   className?: string
+  /** Optional interaction callback. When omitted, the stepper remains a read-only indicator. */
+  onStepClick?: (index: number) => void
+  /** Accessible navigation label for the specific workflow. */
+  ariaLabel?: string
+  /** Preserve the historical scroll treatment or opt into a generic two-column mobile wrap. */
+  mobileLayout?: 'scroll' | 'wrap'
 }
 
 /**
- * Stepper — Visual step indicator for multi-step forms / wizards.
+ * Stepper — shared visual/interactive step indicator for multi-step forms and wizards.
  *
- * Usage:
- * ```tsx
- * <Stepper
- *   steps={['بيانات العميل', 'المنتجات', 'الدفع', 'المراجعة']}
- *   currentStep={1}
- * />
- * ```
- *
- * Or with descriptions:
- * ```tsx
- * <Stepper
- *   steps={[
- *     { label: 'العميل', description: 'بيانات العميل والفرع' },
- *     { label: 'المنتجات', description: 'اختر المنتجات والكميات' },
- *     { label: 'المراجعة', description: 'راجع الطلب قبل الإرسال' },
- *   ]}
- *   currentStep={0}
- * />
- * ```
+ * Domain/page code remains authoritative for reachability. Project that truth through
+ * `disabled` on each step; the Stepper only owns presentation and interaction semantics.
  */
-export default function Stepper({ steps, currentStep, showNumbers = true, className = '' }: StepperProps) {
-  const normalized: Step[] = steps.map(s =>
-    typeof s === 'string' ? { label: s } : s
+export default function Stepper({
+  steps,
+  currentStep,
+  showNumbers = true,
+  className = '',
+  onStepClick,
+  ariaLabel = 'خطوات النموذج',
+  mobileLayout = 'scroll',
+}: StepperProps) {
+  const normalized: StepperStep[] = steps.map(step =>
+    typeof step === 'string' ? { label: step } : step,
   )
 
   return (
     <nav
-      className={`stepper ${className}`}
-      aria-label="خطوات النموذج"
+      className={`stepper stepper--mobile-${mobileLayout} ${className}`.trim()}
+      aria-label={ariaLabel}
     >
       {normalized.map((step, index) => {
         const isDone = index < currentStep
         const isActive = index === currentStep
         const state = isDone ? 'done' : isActive ? 'active' : 'pending'
+        const stateLabel = isActive ? 'الخطوة الحالية: ' : isDone ? 'مكتملة: ' : 'قادمة: '
+        const accessibleLabel = `${stateLabel}${step.label}`
+
+        const indicator = (
+          <div
+            className="stepper-circle"
+            aria-current={!onStepClick && isActive ? 'step' : undefined}
+            aria-label={!onStepClick ? accessibleLabel : undefined}
+            aria-hidden={onStepClick ? 'true' : undefined}
+          >
+            {isDone ? (
+              <Check size={14} strokeWidth={3} />
+            ) : step.icon ? (
+              step.icon
+            ) : showNumbers ? (
+              <span className="stepper-number">{index + 1}</span>
+            ) : null}
+          </div>
+        )
+
+        const labels = (
+          <div className="stepper-labels" aria-hidden={onStepClick ? 'true' : undefined}>
+            <span className="stepper-label">{step.label}</span>
+            {step.description && (
+              <span className="stepper-desc">{step.description}</span>
+            )}
+          </div>
+        )
 
         return (
-          <div key={index} className={`stepper-step stepper-step--${state}`}>
-            {/* Connector line before (not for first step) */}
+          <div key={`${step.label}-${index}`} className={`stepper-step stepper-step--${state}`}>
             {index > 0 && (
               <div
                 className={`stepper-connector ${isDone ? 'stepper-connector--done' : ''}`}
@@ -62,26 +89,24 @@ export default function Stepper({ steps, currentStep, showNumbers = true, classN
               />
             )}
 
-            {/* Circle indicator */}
-            <div
-              className="stepper-circle"
-              aria-current={isActive ? 'step' : undefined}
-              aria-label={`${isActive ? 'الخطوة الحالية: ' : isDone ? 'مكتملة: ' : 'قادمة: '}${step.label}`}
-            >
-              {isDone ? (
-                <Check size={14} strokeWidth={3} />
-              ) : showNumbers ? (
-                <span className="stepper-number">{index + 1}</span>
-              ) : null}
-            </div>
-
-            {/* Labels */}
-            <div className="stepper-labels">
-              <span className="stepper-label">{step.label}</span>
-              {step.description && (
-                <span className="stepper-desc">{step.description}</span>
-              )}
-            </div>
+            {onStepClick ? (
+              <button
+                type="button"
+                className="stepper-trigger"
+                aria-current={isActive ? 'step' : undefined}
+                aria-label={accessibleLabel}
+                disabled={step.disabled}
+                onClick={() => onStepClick(index)}
+              >
+                {indicator}
+                {labels}
+              </button>
+            ) : (
+              <>
+                {indicator}
+                {labels}
+              </>
+            )}
           </div>
         )
       })}
@@ -98,7 +123,6 @@ export default function Stepper({ steps, currentStep, showNumbers = true, classN
         }
         .stepper::-webkit-scrollbar { display: none; }
 
-        /* ── Single Step ── */
         .stepper-step {
           display: flex;
           flex-direction: column;
@@ -108,7 +132,30 @@ export default function Stepper({ steps, currentStep, showNumbers = true, classN
           position: relative;
         }
 
-        /* ── Connector line ── */
+        .stepper-trigger {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          width: 100%;
+          min-width: 0;
+          margin: 0;
+          padding: 0;
+          border: 0;
+          border-radius: var(--radius-md);
+          background: transparent;
+          color: inherit;
+          font: inherit;
+          cursor: pointer;
+        }
+        .stepper-trigger:focus-visible {
+          outline: 2px solid var(--color-primary);
+          outline-offset: 4px;
+        }
+        .stepper-trigger:disabled {
+          cursor: not-allowed;
+          opacity: 0.62;
+        }
+
         .stepper-connector {
           position: absolute;
           top: 16px;
@@ -123,7 +170,6 @@ export default function Stepper({ steps, currentStep, showNumbers = true, classN
           background: var(--color-primary);
         }
 
-        /* ── Circle ── */
         .stepper-circle {
           width: 32px;
           height: 32px;
@@ -158,11 +204,8 @@ export default function Stepper({ steps, currentStep, showNumbers = true, classN
           box-shadow: 0 0 0 4px var(--color-primary-light);
         }
 
-        .stepper-number {
-          line-height: 1;
-        }
+        .stepper-number { line-height: 1; }
 
-        /* ── Labels ── */
         .stepper-labels {
           display: flex;
           flex-direction: column;
@@ -185,9 +228,7 @@ export default function Stepper({ steps, currentStep, showNumbers = true, classN
           font-weight: 700;
         }
 
-        .stepper-step--done .stepper-label {
-          color: var(--text-secondary);
-        }
+        .stepper-step--done .stepper-label { color: var(--text-secondary); }
 
         .stepper-desc {
           font-size: 0.65rem;
@@ -196,7 +237,22 @@ export default function Stepper({ steps, currentStep, showNumbers = true, classN
           display: none;
         }
 
-        /* Show description on desktop where there's space */
+        @media (max-width: 639px) {
+          .stepper--mobile-wrap {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: var(--space-3);
+            overflow-x: visible;
+            padding-block-end: var(--space-3);
+          }
+          .stepper--mobile-wrap .stepper-step,
+          .stepper--mobile-wrap .stepper-trigger {
+            width: 100%;
+          }
+          .stepper--mobile-wrap .stepper-connector { display: none; }
+          .stepper--mobile-wrap .stepper-label { white-space: normal; }
+        }
+
         @media (min-width: 640px) {
           .stepper-circle { width: 36px; height: 36px; }
           .stepper-connector { top: 18px; }
