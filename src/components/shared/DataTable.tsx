@@ -131,26 +131,35 @@ export default function DataTable<T extends Record<string, any>>({
 
       {/* Pagination */}
       {page && totalPages && totalPages > 1 && onPageChange && (
-        <div className="pagination" style={{ padding: 'var(--space-4)' }}>
+        <nav
+          className="pagination"
+          aria-label="ترقيم صفحات البيانات"
+          style={{ padding: 'var(--space-4)' }}
+        >
           <span className="pagination-info">
             صفحة {page} من {totalPages}
             {totalCount != null && ` (${totalCount})`}
           </span>
           <div className="pagination-buttons">
             <button
+              type="button"
               className="pagination-btn"
+              aria-label="الصفحة السابقة"
               disabled={page <= 1}
               onClick={() => onPageChange(page - 1)}
             >
-              ‹
+              السابق
             </button>
             {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
               const num = page <= 3 ? i + 1 : page + i - 2
               if (num < 1 || num > totalPages) return null
               return (
                 <button
+                  type="button"
                   key={num}
                   className={cn('pagination-btn', num === page && 'active')}
+                  aria-label={`الصفحة ${num}`}
+                  aria-current={num === page ? 'page' : undefined}
                   onClick={() => onPageChange(num)}
                 >
                   {num}
@@ -158,14 +167,16 @@ export default function DataTable<T extends Record<string, any>>({
               )
             })}
             <button
+              type="button"
               className="pagination-btn"
+              aria-label="الصفحة التالية"
               disabled={page >= totalPages}
               onClick={() => onPageChange(page + 1)}
             >
-              ›
+              التالي
             </button>
           </div>
-        </div>
+        </nav>
       )}
 
       <style>{`
