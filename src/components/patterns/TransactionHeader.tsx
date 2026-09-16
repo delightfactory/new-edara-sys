@@ -32,6 +32,9 @@ function HeaderAction({
   action: TransactionHeaderAction
   fallbackVariant: NonNullable<ButtonProps['variant']>
 }) {
+  const accessibleLabel = action.ariaLabel
+    ?? (typeof action.label === 'string' ? action.label : undefined)
+
   return (
     <Button
       type="button"
@@ -42,7 +45,7 @@ function HeaderAction({
       onClick={action.onClick}
       disabled={action.disabled}
       loading={action.loading}
-      aria-label={action.ariaLabel}
+      aria-label={accessibleLabel}
     >
       {action.label}
     </Button>
