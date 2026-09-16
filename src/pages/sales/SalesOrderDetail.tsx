@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
-  ArrowRight, Edit, CheckCircle, Truck, XCircle,
+  Edit, CheckCircle, Truck, XCircle,
   RotateCcw, FileText, Clock, User, CreditCard,
   Package, Building2, Banknote, Warehouse, AlertTriangle,
   TrendingUp, TrendingDown, Info, Copy, ChevronDown, Receipt,
@@ -11,6 +11,8 @@ import {
 import ProofUploadButton from '@/components/ui/ProofUploadButton'
 import { DocumentActions } from '@/features/output/components/DocumentActions'
 import { CustomerLink, PaymentReceiptLink, ProductLink, WarehouseLink } from '@/components/shared/EntityLink'
+import { SalesOrderDetailHeader } from '@/components/sales/SalesOrderDetailPresentation'
+import type { AppAction } from '@/components/patterns/ActionRegistry'
 import { useAuthStore } from '@/stores/auth-store'
 import { useWarehouses, useInvalidate } from '@/hooks/useQueryHooks'
 import { useQuery } from '@tanstack/react-query'
@@ -28,24 +30,10 @@ import {
 import { uploadPaymentProof } from '@/lib/services/payments'
 import type { CustomerCreditInfo, UserPaymentOptions } from '@/lib/services/sales'
 import { formatNumber } from '@/lib/utils/format'
-import type { SalesOrder, PaymentTerms, SalesOrderStatus } from '@/lib/types/master-data'
-import Badge from '@/components/ui/Badge'
-import Button from '@/components/ui/Button'
+import type { SalesOrder, PaymentTerms } from '@/lib/types/master-data'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
 
 // ── Labels ─────────────────────────────────────────────────────
-const statusLabels: Record<SalesOrderStatus, string> = {
-  draft: 'مسودة', confirmed: 'مؤكد', partially_delivered: 'مسلّم جزئياً',
-  delivered: 'مُسلّم', completed: 'مكتمل', cancelled: 'ملغي',
-}
-const statusColors: Record<SalesOrderStatus, { bg: string; color: string }> = {
-  draft:               { bg: 'var(--bg-secondary, #f3f4f6)', color: 'var(--text-muted, #6b7280)' },
-  confirmed:           { bg: 'var(--color-info-light, #eff6ff)', color: 'var(--color-info, #2563eb)' },
-  partially_delivered: { bg: 'var(--color-info-light, #f0f9ff)', color: 'var(--color-info, #0284c7)' },
-  delivered:           { bg: 'var(--color-success-light, #f0fdf4)', color: 'var(--color-success, #16a34a)' },
-  completed:           { bg: 'var(--color-success-light, #f0fdf4)', color: 'var(--color-success, #16a34a)' },
-  cancelled:           { bg: 'var(--color-danger-light, #fef2f2)', color: 'var(--color-danger, #dc2626)' },
-}
 const termLabels: Record<string, string> = { cash: 'نقدي', credit: 'آجل', mixed: 'مختلط' }
 
 // طرق الدفع الفورية (نقدي فعلي) مقابل المؤجلة (تنتظر تأكيد المحاسب)
@@ -410,7 +398,6 @@ export default function SalesOrderDetail() {
     <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>الطلب غير موجود</div>
   )
 
-  const sc = statusColors[order.status]
   const paidRatio = order.total_amount > 0 ? ((order.paid_amount || 0)) / order.total_amount : 0
   const itemCount = order.items?.length || 0
   const canAdjustDueDate = can('customers.credit.update')
@@ -418,6 +405,101 @@ export default function SalesOrderDetail() {
     && ['credit', 'mixed'].includes(order.payment_terms || '')
     && remaining > 0
     && !!order.delivered_at
+
+  const headerActions: AppAction[] = []
+
+  if (order.status === 'draft' && can('sales.orders.update')) {
+    headerActions.push({
+      id: 'edit',
+      label: 'تعديل',
+      icon: <Edit size={13} aria-hidden="true" />,
+      onSelect: () => navigate(`/sales/orders/${id}/edit`),
+      importance: 'secondary',
+      order: 10,
+    })
+  }
+
+  if (order.status === 'draft' && can('sales.orders.confirm')) {
+    headerActions.push({
+      id: 'confirm',
+      label: 'تأكيد',
+      icon: <CheckCircle size={13} aria-hidden="true" />,
+      onSelect: async () => {
+        // تعيين ذكي: من cache أو من الخادم مباشرة إن لم تكتمل بعد
+        let resolvedMyWh = myWarehouses as typeof myWarehouses
+        if (resolvedMyWh.length === 0) {
+          try { resolvedMyWh = await getMyWarehouses() } catch { resolvedMyWh = [] }
+        }
+        const defaultWh = resolvedMyWh.length > 0 ? resolvedMyWh[0].id : ''
+        setConfirmWarehouseId(defaultWh)
+        setShowConfirmModal(true)
+        if (defaultWh) checkStockAvailability(defaultWh)
+      },
+      importance: 'primary',
+      order: 20,
+      disabled: actionLoading,
+    })
+  }
+
+  if (order.status === 'confirmed' && can('sales.orders.deliver')) {
+    headerActions.push({
+      id: 'deliver',
+      label: 'تسليم',
+      icon: <Truck size={13} aria-hidden="true" />,
+      onSelect: openDeliverModal,
+      importance: 'primary',
+      order: 20,
+      disabled: actionLoading,
+    })
+  }
+
+  if (canAdjustDueDate) {
+    headerActions.push({
+      id: 'due-date',
+      label: 'تعديل الاستحقاق',
+      icon: <Clock size={13} aria-hidden="true" />,
+      onSelect: openDueDateModal,
+      importance: 'secondary',
+      order: 30,
+      disabled: actionLoading,
+    })
+  }
+
+  if ((order.status === 'delivered' || order.status === 'completed') && can('sales.returns.create')) {
+    headerActions.push({
+      id: 'return',
+      label: 'مرتجع',
+      icon: <RotateCcw size={13} aria-hidden="true" />,
+      onSelect: () => navigate(`/sales/returns/new?orderId=${order.id}`),
+      importance: 'secondary',
+      order: 40,
+    })
+  }
+
+  if (can('sales.orders.create')) {
+    headerActions.push({
+      id: 'copy',
+      label: 'نسخ',
+      icon: <Copy size={13} aria-hidden="true" />,
+      onSelect: () => navigate(`/sales/orders/new?copyFrom=${id}`),
+      importance: 'tertiary',
+      order: 50,
+    })
+  }
+
+  if ((order.status === 'draft' || order.status === 'confirmed') && can('sales.orders.cancel')) {
+    headerActions.push({
+      id: 'cancel',
+      label: 'إلغاء',
+      icon: <XCircle size={13} aria-hidden="true" />,
+      onSelect: () => setShowCancelModal(true),
+      importance: 'tertiary',
+      tone: 'danger',
+      order: 60,
+      disabled: actionLoading,
+    })
+  }
+
   const newDueDate = getNewDueDate()
   const newDueDateIsOverdue = !!newDueDate && newDueDate < new Date().toISOString().slice(0, 10)
 
@@ -427,80 +509,14 @@ export default function SalesOrderDetail() {
   return (
     <div style={{ maxWidth: 800, margin: '0 auto', padding: '0 0 80px' }}>
 
-      {/* ══ Hero Header ══════════════════════════════════════════ */}
-      <div style={{
-        background: `linear-gradient(135deg, ${sc.color}12, ${sc.color}06)`,
-        borderBottom: `3px solid ${sc.color}30`,
-        padding: '16px 16px 14px',
-        position: 'sticky', top: 0, zIndex: 10,
-        backdropFilter: 'blur(12px)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-          <button onClick={() => navigate('/sales/orders')}
-            style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-primary)', borderRadius: 10, padding: '7px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: 'var(--text-secondary)', flexShrink: 0 }}>
-            <ArrowRight size={14} /> رجوع
-          </button>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <h1 style={{ fontSize: 18, fontWeight: 800, margin: 0, whiteSpace: 'nowrap' }}>
-                طلب #{order.order_number}
-              </h1>
-              <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 99, background: sc.bg, color: sc.color }}>
-                {statusLabels[order.status]}
-              </span>
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-              <CustomerLink id={order.customer?.id} name={order.customer?.name} />
-            </div>
-          </div>
-        </div>
-
-        {/* Action Buttons — scrollable */}
-        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none' }}>
-          {order.status === 'draft' && can('sales.orders.update') && (
-            <ActionBtn icon={<Edit size={13} />} label="تعديل"
-              onClick={() => navigate(`/sales/orders/${id}/edit`)} />
-          )}
-          {order.status === 'draft' && can('sales.orders.confirm') && (
-            <ActionBtn icon={<CheckCircle size={13} />} label="تأكيد" primary
-              onClick={async () => {
-                // تعيين ذكي: من cache أو من الخادم مباشرة إن لم تكتمل بعد
-                let resolvedMyWh = myWarehouses as typeof myWarehouses
-                if (resolvedMyWh.length === 0) {
-                  try { resolvedMyWh = await getMyWarehouses() } catch { resolvedMyWh = [] }
-                }
-                const defaultWh = resolvedMyWh.length > 0 ? resolvedMyWh[0].id : ''
-                setConfirmWarehouseId(defaultWh)
-                setShowConfirmModal(true)
-                if (defaultWh) checkStockAvailability(defaultWh)
-              }}
-              disabled={actionLoading} />
-          )}
-          {order.status === 'confirmed' && can('sales.orders.deliver') && (
-            <ActionBtn icon={<Truck size={13} />} label="تسليم" primary
-              onClick={openDeliverModal} disabled={actionLoading} />
-          )}
-          {canAdjustDueDate && (
-            <ActionBtn icon={<Clock size={13} />} label="تعديل الاستحقاق"
-              onClick={openDueDateModal} disabled={actionLoading} />
-          )}
-          {(order.status === 'delivered' || order.status === 'completed') && can('sales.returns.create') && (
-            <ActionBtn icon={<RotateCcw size={13} />} label="مرتجع"
-              onClick={() => navigate(`/sales/returns/new?orderId=${order.id}`)} />
-          )}
-          {can('sales.orders.create') && (
-            <ActionBtn icon={<Copy size={13} />} label="نسخ"
-              onClick={() => navigate(`/sales/orders/new?copyFrom=${id}`)} />
-          )}
-          {(order.status === 'draft' || order.status === 'confirmed') && can('sales.orders.cancel') && (
-            <ActionBtn icon={<XCircle size={13} />} label="إلغاء" danger
-              onClick={() => setShowCancelModal(true)} disabled={actionLoading} />
-          )}
-
-          <div style={{ width: 1, background: 'var(--border-primary)', margin: '0 4px', flexShrink: 0 }} />
-          <DocumentActions kind="sales-order" entityId={id!} />
-        </div>
-      </div>
+      <SalesOrderDetailHeader
+        orderNumber={order.order_number}
+        customer={<CustomerLink id={order.customer?.id} name={order.customer?.name} />}
+        status={order.status}
+        onBack={() => navigate('/sales/orders')}
+        actions={headerActions}
+        tools={<DocumentActions kind="sales-order" entityId={id!} />}
+      />
 
       {/* ══ Financial Summary Bar ════════════════════════════════ */}
       <div style={{ display: 'flex', gap: 0, background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-primary)' }}>
@@ -1179,24 +1195,5 @@ function CreditTile({ label, value, color }: { label: string; value: string; col
       <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>{label}</div>
       <div style={{ fontSize: 12, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: color || 'inherit' }}>{value}</div>
     </div>
-  )
-}
-
-function ActionBtn({
-  icon, label, onClick, primary, danger, disabled
-}: { icon: React.ReactNode; label: string; onClick: () => void; primary?: boolean; danger?: boolean; disabled?: boolean }) {
-  return (
-    <button onClick={onClick} disabled={disabled}
-      style={{
-        display: 'inline-flex', alignItems: 'center', gap: 5,
-        padding: '7px 12px', borderRadius: 8, cursor: disabled ? 'not-allowed' : 'pointer',
-        fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0,
-        opacity: disabled ? 0.5 : 1, transition: 'all 0.15s',
-        border: primary ? '2px solid var(--color-primary)' : danger ? '2px solid var(--color-danger)' : '2px solid var(--border-primary)',
-        background: primary ? 'var(--color-primary)' : danger ? 'var(--color-danger-light)' : 'var(--bg-surface)',
-        color: primary ? '#fff' : danger ? 'var(--color-danger)' : 'var(--text-secondary)',
-      }}>
-      {icon} {label}
-    </button>
   )
 }
