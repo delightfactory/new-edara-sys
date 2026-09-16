@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
+import { Send } from 'lucide-react'
 import { describe, expect, it, vi } from 'vitest'
 import Button from '@/components/ui/Button'
 import { TransferCard } from './TransferListPresentation'
@@ -6,7 +7,7 @@ import { TransferCard } from './TransferListPresentation'
 const baseSummary = {
   number: 'TR-2026-0042',
   directionLabel: 'إرسال',
-  directionTone: 'info' as const,
+  directionIcon: <Send size={10} />,
   statusLabel: 'قيد الشحن',
   statusTone: 'info' as const,
   createdAt: '16/09/2026',
@@ -31,12 +32,13 @@ describe('TransferCard', () => {
     expect(screen.queryByText('16/09/2026')).not.toBeNull()
   })
 
-  it('keeps status and direction semantics supplied by the page', () => {
+  it('keeps direction neutral metadata while workflow status owns semantic status tone', () => {
     const { rerender } = render(
       <TransferCard summary={baseSummary} mode="tablet" />,
     )
 
-    expect(screen.getByText('إرسال').closest('[data-tone]')?.getAttribute('data-tone')).toBe('info')
+    expect(screen.getByText('إرسال').closest('.badge')?.classList.contains('badge-neutral')).toBe(true)
+    expect(screen.getByText('إرسال').closest('[data-tone]')).toBeNull()
     expect(screen.getByText('قيد الشحن').closest('[data-tone]')?.getAttribute('data-tone')).toBe('info')
 
     rerender(
@@ -45,14 +47,15 @@ describe('TransferCard', () => {
         summary={{
           ...baseSummary,
           directionLabel: 'طلب',
-          directionTone: 'neutral',
+          directionIcon: undefined,
           statusLabel: 'ملغي',
           statusTone: 'danger',
         }}
       />,
     )
 
-    expect(screen.getByText('طلب').closest('[data-tone]')?.getAttribute('data-tone')).toBe('neutral')
+    expect(screen.getByText('طلب').closest('.badge')?.classList.contains('badge-neutral')).toBe(true)
+    expect(screen.getByText('طلب').closest('[data-tone]')).toBeNull()
     expect(screen.getByText('ملغي').closest('[data-tone]')?.getAttribute('data-tone')).toBe('danger')
   })
 
