@@ -3,22 +3,23 @@
 ## Current truth
 
 - Authoritative integration branch: `design-system-v2-development`.
-- Product UI is integrated through `DS2-UI-004`.
-- Latest product integration commit: `d00faf8e36d40c9dde9df0b2de6dc89737419c5d` from PR #31.
-- Workstream synchronization commit: `028059587debbb19223e406784e5b3ff7aa54eb8`.
-- Integration-state synchronization commit: `c2e0112d6452b5bc0dd3cb2c794d5fd209774a66`.
+- Product UI is integrated through `DS2-UI-005`.
+- Latest product integration commit: `58b0f3f8f54f04636d3a35dd7d658edb7bcf5068` from PR #32.
+- Workstream synchronization commit: `e1554f35677c2bf343cdbac9438f98b0c8c9eee9`.
+- Integration-state synchronization commit: `aa86aaf186a2a7e6e3cb41ce4425a28c87e694d4`.
+- Current single READY slice: `DS2-INV-001 — Inventory list surfaces`.
 - `main` remains frozen until explicit owner approval.
 - Vercel preview is user-requested only.
 - GitHub Actions / hosted CI remain forbidden for normal Design System development.
 - Product target remains one deep, premium Arabic-first operational Design System across the entire EDARA interface.
-- Mobile is the primary daily operational surface; Tablet is deliberate; Desktop preserves management/data-entry density and speed.
-- Repository-native shared memory remains active: every scheduled DS2 role reads Team Memory and peer role states before acting.
+- Mobile is the primary daily operational surface; Tablet is deliberate; Desktop preserves management/review/data-entry density and speed.
+- Repository-native shared memory remains active: every DS2 role reads Team Memory and peer role states before acting.
 
 ## Current integrated system
 
-The development branch includes:
+The development branch now includes:
 - semantic foundations and V2 primitives/patterns;
-- responsive collection/action/form composition foundations;
+- responsive shell/navigation/form/collection/action composition foundations;
 - navigation registry and deliberate Tablet shell behavior;
 - Sidebar V2 isolated renderer behind feature flag;
 - Dashboard V2 migration;
@@ -30,63 +31,64 @@ The development branch includes:
 - Sales Order form V2 outer foundation (`DS2-UI-004`);
 - backward-compatible shared Stepper guarded interaction contract;
 - shared FormSection/FormGrid/FormActions/Button proof on a real stepped Sales form;
+- Sales transaction-detail header V2 (`DS2-UI-005`) using shared `TransactionHeader` and canonical `AppAction` device placement;
 - Design System North Star, test policy, role-state handoff protocol, Team Memory and durable Decision Log.
 
 ## Latest completed slice
 
-`DS2-UI-004 — Sales Order form V2 foundation`
+`DS2-UI-005 — Sales transaction detail V2`
 
 Result:
-- PR #31 exact reviewed head `198f146a3abde9efa6bfb3c98c20469f3815d3ff` received `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS`.
-- Test evidence remained honestly labeled `TESTS_AUTHORED_NOT_EXECUTED`.
-- The prior P2 Desktop-density blocker was closed at the presentation boundary: Step 0 now uses shared `columns={3}` => 3 Desktop / 2 Tablet / 1 Mobile, with full-width customer/credit rows preserved.
-- Shared `Stepper` was evolved backward-compatibly: read-only remains default; optional page-owned guarded interaction and wrapped Mobile layout are available when a real workflow requires them.
-- Sales workflow reachability and validation remain page-owned rather than moving into the visual primitive.
-- Shared `FormSection`, `FormGrid`, `FormActions` and `Button` now own the outer presentation grammar for the migrated form slice.
-- RTL previous/next cues are native and consistent.
-- Create/edit/copyFrom, customer/branch/rep, product/unit/stock, pricing/discount/tax/shipping/totals/minimum-order, permissions, validation/toasts, save sequence, routes and Mobile add-product modal behavior remain preserved.
-- Customer/product Combobox and ProductLine redesign remain deliberately deferred until a later live screen proves the recurring need.
-- No hosted CI, Vercel preview, backend/business behavior change or `main` change occurred.
+- PR #32 exact reviewed head `de7c99cb099ac4ccff941e1eb5f2dafacebd7ca6` received `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS`.
+- Evidence remained honestly labeled `TESTS_AUTHORED_NOT_EXECUTED`; no exact-head local build/test/runtime PASS is claimed.
+- The earlier incomplete-wiring and stale-baseline TypeScript blockers were both closed before final review.
+- Shared `TransactionHeader` consumes canonical `AppAction[] + useDeviceMode + resolveActionSet`; no parallel Sales/header action taxonomy remains.
+- Device placement is one visible workflow action on Mobile, up to two on Tablet, up to four on Desktop, with remaining eligible actions in overflow.
+- Live Sales edit / confirm / deliver / due-date / return / copy / cancel permission/status predicates and callbacks remain page-owned.
+- Confirm warehouse fallback, modal initialization, stock check and four `actionLoading` guards remain preserved.
+- `DocumentActions` capability remains preserved through the tools slot.
+- Shared Sales status semantics replace the local header status map; local sticky hero/horizontal action strip/`ActionBtn` presentation is removed only from the migrated region.
+- Financial summary, receipts, items, notes, modals, queries, services, calculations and workflow semantics were not moved or changed.
+- No hosted CI, Vercel preview, backend/business behavior or `main` change occurred.
 
 ## Current single READY slice
 
-`DS2-UI-005 — Sales transaction detail V2`
+`DS2-INV-001 — Inventory list surfaces`
 
 Intent:
-- continue the Sales golden flow through the real transaction-detail surface;
-- first select the smallest dependency-safe presentation-only sub-slice rather than broad detail-page rewrite;
-- reuse shared detail/header/status/financial/key-value/action/timeline/state grammar where already available;
-- strengthen only the smallest reusable detail contract proven necessary by the live screen;
-- preserve every displayed value, workflow action, permission, route, query and business transition;
-- Mobile must retain clear primary/secondary/destructive action priority;
-- Tablet must be deliberate rather than compressed Desktop;
-- Desktop must preserve dense review/management efficiency;
-- Arabic/RTL, long values, loading/error/permission states and destructive confirmations remain first-class.
+- begin the Inventory module after completing the Customer/Sales golden-flow tranche;
+- select the smallest representative dependency-safe Inventory list concern, not a broad module rewrite;
+- reuse `ResponsiveCollection`, shared status/badge/action/filter/state grammar and proven device-aware composition before inventing new patterns;
+- preserve inventory quantities, valuation, warehouse/product semantics, permissions, routes, queries, pagination/filter behavior and operational actions exactly;
+- Mobile remains task-oriented and touch-safe; Tablet is deliberate; Desktop preserves dense comparison/review efficiency;
+- strengthen only the smallest shared V2 gap proven by a real Inventory screen;
+- do not include transfer/adjustment business-flow redesign, backend/query changes, deployment or preview work.
 
 ## Latest role positions
 
 ### Product Design Director
-- Last material state targeted prior blocked PR #31 head `6841ceb...` and agreed the only remaining blocker was Step 0 Desktop density.
-- That exact blocker was corrected and independently closed by Design QA on later head `198f146a...`.
-- Its prior BLOCKING state is therefore stale/consumed and must not be applied to DS2-UI-005.
-- Next material action is to inspect the live Sales transaction-detail surface and bound the smallest shared detail/header/summary/action direction without speculative framework expansion.
+- Its prior BLOCKING state targeted stale PR #32 head `3f370e02...` and required synchronization of the already-integrated TypeScript hotfix.
+- That requirement was satisfied on final reviewed head `de7c99c...`; Design QA explicitly treated the old blocker as consumed.
+- The transaction/action architecture itself was already judged sound.
+- Next role action is to bound the smallest representative Inventory list concern without pre-designing a broad Inventory framework.
 
 ### UI Production Engineer
-- Corrected the bounded PR #31 P2 and handed exact head `198f146a...` for re-review.
-- That state is now consumed by the successful merge.
-- Next action is to bootstrap from the exact latest development HEAD and take only DS2-UI-005.
+- Synchronized PR #32 with Development without force-rewriting the slice, inherited the existing TypeScript hotfix, preserved the bounded Sales header implementation, and handed off exact head `de7c99c...`.
+- That implementation state is consumed by the successful merge.
+- Next implementation must start only from the latest Development HEAD and take `DS2-INV-001`.
 
 ### Design QA
-- Issued exact-head `GREEN-DEV` + `SOURCE_REVIEW_PASS` for PR #31 with honest `TESTS_AUTHORED_NOT_EXECUTED` evidence.
-- Confirmed the prior P2 density blocker closed and no still-current BLOCKING contradiction remained.
-- Runtime/preview/release evidence remains unclaimed and separate.
-- Its approval is consumed by the merge and must not be reused for DS2-UI-005.
+- Issued exact-head `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` on `de7c99c...` with `TESTS_AUTHORED_NOT_EXECUTED`.
+- Confirmed no known build/type failure, no current material peer contradiction, no forbidden backend/business/deployment scope and no unresolved review thread.
+- Left only a non-blocking runtime `WATCH` for `DocumentActions` Mobile sticky-header density/polish.
+- Its approval is consumed by the merge and must not be reused for the Inventory slice.
 
 ### Development Integrator
-- Revalidated exact head/base/scope/peer-state freshness and development drift.
-- Cleared Draft without moving the reviewed HEAD and squash-merged PR #31 as `d00faf8e36d40c9dde9df0b2de6dc89737419c5d`.
-- Integration state is `MERGED_GREEN_DEV` for DS2-UI-004.
-- Workstream now marks DS2-UI-004 DONE and DS2-UI-005 READY.
+- Revalidated current PR/base/head/review markers/threads/diff scope and Development drift.
+- Confirmed Development drift after the synchronized base was only Design QA state, so exact-head product review remained fresh.
+- Marked PR #32 Ready without moving HEAD and squash-merged it using expected-head protection as `58b0f3f8f54f04636d3a35dd7d658edb7bcf5068`.
+- Integration state is `MERGED_GREEN_DEV` for DS2-UI-005.
+- Workstream marks DS2-UI-005 DONE and exactly one next slice, DS2-INV-001, READY.
 
 ## Invariants to preserve
 
@@ -94,6 +96,8 @@ Intent:
 - Customer create/update/GPS/lookup/credit/default branch/default contact/Branch-Contact semantics must not drift.
 - Sales list query/filter/Desktop+Tablet pagination/Mobile infinite-loading/navigation/permission/status/payment/Smart Transfer/map/call/workflow semantics must not drift.
 - Sales Order form customer/product/pricing/discount/tax/total/validation/submit semantics remain page/domain-owned.
+- Sales transaction-detail permission/status/workflow/callback/query/service/calculation truth remains page/domain-owned.
+- Shared `TransactionHeader` owns presentation/device placement, not business eligibility or workflow truth.
 - Shared Stepper owns visual/interaction mechanics only; page/domain code owns workflow reachability and validation truth.
 - Complete shared Tabs keyboard/focus/ARIA/RTL semantics remain system-owned; do not reintroduce partial page-local ARIA.
 - Neutral metadata counts use neutral Badge semantics; semantic state uses StatusBadge.
@@ -109,32 +113,33 @@ Intent:
 
 ## Known evidence / risks
 
-- Development evidence through DS2-UI-004 remains source-level only: no executed test suite, preview build, runtime visual pass or release approval is claimed.
+- Development evidence through DS2-UI-005 remains source-level for the merged slice: no exact-head executed test suite, local build, runtime visual pass or release approval is claimed.
 - Hosted CI quota protection remains active; absence of GitHub Actions is expected.
 - Runtime visual acceptance remains milestone-based and owner-requested.
+- `DocumentActions` remains a legacy shared feature surface; capability parity is preserved, but Mobile sticky-header density/touch polish should be observed during future runtime review.
 - Permission-limited empty states should later converge toward neutral explanatory microcopy.
 - Dense-table overflow semantics and shared numbered Pagination remain future hardening areas.
-- Progress/accessibility hardening should later consider `aria-valuetext` for projected values above 100 while visual geometry stays bounded.
-- Combobox/ProductLine interaction debt remains real but intentionally deferred; open only when the next live slice proves a concrete reusable need.
-- DS2-UI-005 may expose a genuine TransactionHeader/FinancialSummary/action/timeline gap; strengthen only the smallest recurring contract proven by the live detail screen.
+- Combobox/ProductLine interaction debt remains real but intentionally deferred until a live screen proves a reusable need.
+- Inventory migration may expose genuine InventorySummary/filter/table/card/action gaps; strengthen only the smallest recurring contract proven by the selected live list surface.
 
 ## Reusable patterns learned
 
 - Device-aware composition is preferable to CSS hiding duplicate mounted interaction trees.
 - Shared navigation/action declarations should own placement decisions rather than pages inventing coordinates.
+- Canonical `AppAction + resolveActionSet` can drive shared transaction headers while domain pages retain eligibility/callback truth.
+- Shared `TransactionHeader` can expose Mobile/Tablet/Desktop action hierarchy without creating a new action taxonomy.
 - Form composition can be standardized independently from business field semantics.
 - Shared `PageHeader` + `FormSection` + `FormGrid` + `FormActions` has real Customer and Sales form proof points.
 - Shared Stepper can support optional guarded interaction without absorbing workflow truth or breaking read-only consumers.
 - Complete shared Tabs semantics can be reused through thin domain wrappers.
 - Shared `ResponsiveCollection` can preserve distinct page-owned device datasets while owning one presentation boundary.
-- Domain cards should compose shared primitives rather than becoming new cross-system primitives by default.
+- Domain adapters should stay thin: shared patterns own presentation, domain/page code owns business truth.
 - `Badge` metadata and `StatusBadge` semantic state remain distinct.
-- Feature flags remain appropriate for high-risk visual shell replacement before broad rollout.
 - Accessibility semantics should be introduced only at a complete reusable interaction boundary.
 - Agent communication remains: independent judgment -> peer-state comparison -> structured handoff -> synthesis/integration.
 
 ## Next handoff
 
-UI Production Engineer should bootstrap from the exact latest `design-system-v2-development` HEAD and take only `DS2-UI-005 — Sales transaction detail V2`, first identifying the smallest presentation-only detail sub-slice that can be completed and independently reviewed without touching Sales business truth.
+Product Design Director should inspect the live Inventory list surfaces and bound the smallest representative presentation-only concern for `DS2-INV-001`, reusing the current V2 list/action/state grammar and avoiding speculative framework expansion.
 
-Product Design Director should bound reusable transaction-header/financial-summary/action/timeline direction from the live screen rather than pre-design a broad detail framework. Design QA should independently review the next stable exact PR HEAD. Development Integrator should no-op until that exact head receives `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` and all normal gates pass.
+UI Production Engineer should bootstrap from the exact latest `design-system-v2-development` HEAD and take only `DS2-INV-001`. Design QA should independently review the next stable exact PR HEAD. Development Integrator should no-op until that exact head receives `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` and all normal gates pass.
