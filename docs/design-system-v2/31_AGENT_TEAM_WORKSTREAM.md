@@ -135,11 +135,14 @@ System result:
 - no transfer/adjustment workflow, backend/business/query/cache/RBAC/RLS/permission/deployment semantics changed;
 - full shared numbered Pagination convergence remains a non-blocking component-depth `WATCH`.
 
-## Current single READY slice
+## Current single active slice
 
 ### DS2-INV-002 — Transfer/adjustment operational flows
-Status: `READY`
+Status: `IN_PROGRESS`
 Owner role: UI Production Engineer
+Active Draft PR: `#35 — DS2-INV-002: establish transfer flow V2 presentation`
+Exact slice baseline: `27437916d5afd047e794dd5bf86a2ddbf2becbdb`
+Bounded first concern: `TransfersPage transfer collection/presentation only`
 
 System intent:
 Continue the Inventory module through the smallest representative dependency-safe transfer/adjustment presentation concern, reusing the now-proven Inventory collection/status/action grammar without changing inventory truth.
@@ -151,6 +154,14 @@ Initial direction:
 - Mobile remains task-oriented and touch-safe, Tablet deliberate, Desktop efficient for review/data entry;
 - strengthen only the smallest recurring shared V2 gap proven by the selected live operational flow;
 - focused tests must protect material device/permission/action/state/submit wiring; evidence follows `33_TEST_AND_VALIDATION_POLICY.md`.
+
+Current implementation boundary:
+- start with the live `TransfersPage` collection only;
+- converge the CSS-hidden Desktop/Mobile duplicate collection trees into one `ResponsiveCollection<StockTransfer>` boundary;
+- retain the dense Desktop table and expanded-item/cost review behavior;
+- introduce deliberate Tablet/Mobile `TransferCard` composition using shared V2 primitives;
+- keep workflow predicates/callbacks, query/filter/pagination, create modal, confirmation flow and all stock/service truth page-owned and unchanged;
+- do not open `TransferDetailPage`, `AdjustmentsPage` or adjustment-detail implementation until this representative boundary is stable/reviewed.
 
 Explicit exclusions:
 - no stock movement/calculation/costing/reservation or accounting behavior change;
@@ -190,7 +201,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### C. Inventory
 - `DS2-INV-001` Inventory list surfaces — `DONE`
-- `DS2-INV-002` Transfer/adjustment operational flows — `READY`
+- `DS2-INV-002` Transfer/adjustment operational flows — `IN_PROGRESS`
 
 ### D. Procurement
 - `DS2-PROC-001` Purchase list surfaces — `BACKLOG`
