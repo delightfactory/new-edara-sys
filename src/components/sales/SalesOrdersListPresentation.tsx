@@ -12,7 +12,7 @@ import {
 import type { ReactNode } from 'react'
 import type { SalesOrderStatus } from '@/lib/types/master-data'
 import { formatNumber } from '@/lib/utils/format'
-import { useDeviceMode } from '@/hooks/useDeviceMode'
+import { useDeviceMode, type DeviceMode } from '@/hooks/useDeviceMode'
 import Button from '@/components/ui/Button'
 import Card from '@/components/patterns/Card'
 import KeyValueList, { type KeyValueItem } from '@/components/patterns/KeyValueList'
@@ -53,7 +53,10 @@ export interface SalesOrderCardSummary {
   outstanding?: ReactNode
   paymentTerms?: ReactNode
   representative?: ReactNode
+  /** Page-owned displayed percentage. Never normalized by the presentation layer. */
   paidPercent?: number
+  /** Optional page-owned progress geometry. The visual component bounds only this value to 0..100. */
+  progressPercent?: number
 }
 
 export interface SalesOrderCardProps {
@@ -62,6 +65,49 @@ export interface SalesOrderCardProps {
   onOpen: () => void
   onMap?: () => void
   onCall?: () => void
+}
+
+export interface SalesOrdersCollectionSelection<T> {
+  items: T[]
+  loading: boolean
+  usesInfiniteLoading: boolean
+  usesNumberedPagination: boolean
+}
+
+/**
+ * Selects an already-existing page-owned dataset for the canonical device mode.
+ *
+ * Tablet deliberately uses the paged Desktop dataset: its presentation changes
+ * to operational cards without silently inheriting Mobile infinite-query semantics.
+ */
+export function selectSalesOrdersCollectionState<T>({
+  device,
+  desktopItems,
+  mobileItems,
+  desktopLoading,
+  mobileLoading,
+}: {
+  device: DeviceMode
+  desktopItems: T[]
+  mobileItems: T[]
+  desktopLoading: boolean
+  mobileLoading: boolean
+}): SalesOrdersCollectionSelection<T> {
+  if (device === 'mobile') {
+    return {
+      items: mobileItems,
+      loading: mobileLoading,
+      usesInfiniteLoading: true,
+      usesNumberedPagination: false,
+    }
+  }
+
+  return {
+    items: desktopItems,
+    loading: desktopLoading,
+    usesInfiniteLoading: false,
+    usesNumberedPagination: true,
+  }
 }
 
 export function SalesOrderStatusBadge({ status }: { status: SalesOrderStatus }) {
@@ -117,12 +163,14 @@ export function SalesOrdersKpiGrid({ stats }: { stats: SalesOrdersKpiSnapshot })
  *
  * Business/query/calculation truth stays with the page. This component receives
  * already-projected values and only owns responsive information hierarchy,
- * semantic status, touch-safe actions and payment-progress presentation.
+ * semantic status, touch-safe actions and bounded progress-bar geometry.
  */
 export function SalesOrderCard({ summary, mode, onOpen, onMap, onCall }: SalesOrderCardProps) {
-  const paidPercent = summary.paidPercent == null
+  const displayedPaidPercent = summary.paidPercent
+  const progressSource = summary.progressPercent ?? summary.paidPercent
+  const boundedProgressPercent = progressSource == null
     ? undefined
-    : Math.max(0, Math.min(100, Math.round(summary.paidPercent)))
+    : Math.max(0, Math.min(100, progressSource))
 
   const metadata: KeyValueItem[] = [
     { key: 'date', label: 'التاريخ', value: summary.orderDate },
@@ -186,18 +234,18 @@ export function SalesOrderCard({ summary, mode, onOpen, onMap, onCall }: SalesOr
         <KeyValueList items={metadata} columns={mode === 'tablet' ? 3 : 2} compact />
       </div>
 
-      {paidPercent != null && (
+      {displayedPaidPercent != null && boundedProgressPercent != null && (
         <div style={{ marginBlockStart: 'var(--space-3)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-2)', color: 'var(--text-muted)', fontSize: 'var(--text-xs)' }}>
             <span>نسبة السداد</span>
-            <span dir="ltr">{paidPercent}%</span>
+            <span dir="ltr">{displayedPaidPercent}%</span>
           </div>
           <div
             role="progressbar"
             aria-label="نسبة سداد أمر البيع"
             aria-valuemin={0}
             aria-valuemax={100}
-            aria-valuenow={paidPercent}
+            aria-valuenow={boundedProgressPercent}
             style={{
               height: 4,
               borderRadius: 9999,
@@ -208,13 +256,14 @@ export function SalesOrderCard({ summary, mode, onOpen, onMap, onCall }: SalesOr
           >
             <div
               aria-hidden="true"
+              data-progress-fill
               style={{
-                width: `${paidPercent}%`,
+                width: `${boundedProgressPercent}%`,
                 height: '100%',
                 borderRadius: 9999,
-                background: paidPercent >= 100
+                background: boundedProgressPercent >= 100
                   ? 'var(--color-success)'
-                  : paidPercent > 0
+                  : boundedProgressPercent > 0
                     ? 'var(--color-warning)'
                     : 'var(--border-subtle)',
               }}
