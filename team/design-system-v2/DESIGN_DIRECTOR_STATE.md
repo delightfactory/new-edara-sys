@@ -4,115 +4,131 @@
 
 - Review date: `2026-09-16`
 - Development branch: `design-system-v2-development`
-- Exact current development HEAD reviewed before this state write: `3d108312db9e2eb6ed2e863ac9d8cde467ce1db2`
-- Active slice: `DS2-UI-002 — Customer detail secondary tabs/patterns`
-- Active Draft PR: `#29 — DS2-UI-002: migrate customer secondary surfaces to shared V2 patterns`
-- Feature branch: `ds2/customer-secondary-tabs-v2`
-- Starting baseline: `d05a1d06a4214d5a4e0b222c5e7586155a9841f2`
-- Exact current PR HEAD independently reviewed: `1cb3853bf3cf94b2a25edd637d0083006e5d2191`
-- Live GitHub REST mergeability recheck: `mergeable=true / mergeable_state=clean`
-- Current QA disposition: `AGENT-REVIEW: GREEN-DEV`
-- Evidence: `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
-- Runtime/preview/release evidence: not claimed
+- Exact current development HEAD reviewed before this state write: `68030bf9064ef1c4540f2e1dc3ef60a34bd46642`
+- Active slice: `DS2-UI-003 — Sales Orders list V2`
+- Active Draft PR: `#30 — DS2-UI-003: migrate Sales Orders list to shared V2 grammar`
+- Feature branch: `ds2/sales-orders-list-v2`
+- Starting baseline: `e78de5d71002b9718fa7d760b3cc7bc933ff6cba`
+- Exact current PR HEAD independently reviewed: `bfd54e578a7b63bd7abfa567e197db0043cc8a13`
+- Live PR state: `OPEN / DRAFT / mergeable`
+- Current implementation disposition: `IN_PROGRESS`
+- Current evidence: `TESTS_AUTHORED_NOT_EXECUTED`
+- Exact-head QA approval for PR #30: not yet expected / not present
 
 ## Independent professional judgment
 
-**ARCHITECTURAL PASS — NO DESIGN-SYSTEM BLOCKER FOR CONTROLLED DEVELOPMENT INTEGRATION.**
+**WIP DIRECTION PASS — CONTINUE THE SAME SLICE. NO SCOPE EXPANSION.**
 
-I independently revalidated the exact review-ready PR #29 head against the North Star, the current shared `Tabs` contract, the Customer functional boundary and the current development drift before reading the final QA disposition as approval evidence.
+The current PR is still correctly bounded to Sales-list presentation infrastructure and is not review-ready yet. The emerging `SalesOrderCard` boundary is directionally strong and consistent with the North Star:
 
-The slice now lands at the correct reusable boundary:
+- Sales business/query/calculation truth remains page-owned;
+- shared `Card`, `KeyValueList`, `Button`, `StatusBadge` and semantic tokens own visual/interaction behavior;
+- the card is an explicit operational record surface rather than a fake whole-card button;
+- Mobile actions are touch-ready and explicit;
+- Tablet has a deliberately denser card mode instead of inheriting a shrunken Desktop table;
+- status is mapped through the shared semantic status grammar;
+- payment progress now has an explicit labelled accessibility contract;
+- focused tests cover the new presentation boundary;
+- no service/query/cache/permission/workflow/business mutation is present in the current two-file PR.
 
-- `CustomerDetailTabs` is a thin Customer-domain composition over the existing shared `Tabs` component;
-- shared `Tabs` owns the complete `tablist` / `tab` / `tabpanel`, focus, Home/End and RTL arrow contract rather than Customer reimplementing it;
-- branch/contact record counts use neutral shared `Badge` metadata;
-- `أساسي` remains semantic `StatusBadge` emphasis;
-- newly migrated mutation actions use shared `Button` with touch-target behavior;
-- branches/contacts reuse shared `Card`, `SectionHeader`, `KeyValueList` and `StatePanel`;
-- the legacy duplicate section switcher and duplicate secondary render trees are removed from `CustomerFormPage`;
-- credit history stays deliberately bounded to the existing dense table contract rather than expanding this slice into an unproven DataTable program;
-- existing ResponsiveModal / destructive-confirmation flows remain outside the slice.
+The correct next step remains bounded page wiring through `ResponsiveCollection`; do not start Sales Order form/detail work and do not open a speculative DataTable/FilterBar redesign.
 
-No backend, service, query/cache, permission-definition, RBAC/RLS, route, validation, workflow or business-calculation expansion is present in the six-file PR.
+## Two required system-boundary corrections before REVIEW
 
-The two System Fit corrections required in my earlier WIP review are visibly resolved on this exact head. There is no still-current design contradiction requiring implementation changes before integration.
+### 1. Tablet presentation must not silently inherit Mobile query semantics
+
+**Required direction before review.**
+
+The current Sales page has an explicit historical breakpoint: only `<=768px` uses the Mobile card/infinite-loading surface; widths above 768 currently use the Desktop paged table. Therefore, under the V2 canonical device split, Tablet (`769–1024px`) may change **presentation** to the new denser `SalesOrderCard`, but this slice must not silently change its data/pagination behavior to Mobile infinite loading.
+
+For DS2-UI-003:
+
+- Desktop: existing `desktopOrders` + numbered pagination + Desktop table.
+- Tablet: deliberate `SalesOrderCard` composition, but retain the existing paged dataset / numbered-pagination semantics unless a separately approved functional change exists.
+- Mobile: existing accumulated `mobileOrders` + infinite-load/sentinel semantics + Mobile card composition.
+
+`ResponsiveCollection` should own the one-renderer-at-a-time presentation boundary. The page may choose the device-appropriate already-existing dataset, but it must not redefine either query contract.
+
+Focused wiring tests should make this invariant explicit so Tablet visual improvement cannot accidentally become a pagination behavior change.
+
+### 2. Presentation must not normalize away projected financial truth
+
+**Required direction before review.**
+
+`SalesOrderCard` currently receives `summary.paidPercent` as an already-projected value, then rounds and clamps it internally to `0..100`. That conflicts with the component's own stated boundary that business/calculation truth is page-owned and can also change the existing visible behavior: the current page clamps the progress-bar width, but the visible percentage is `Math.round(paidRatio * 100)` and may differ from the normalized bar value in edge cases.
+
+Keep financial truth ownership outside the visual component:
+
+- preserve the existing page-owned `collected`, `outstanding`, ratio and displayed-percentage semantics;
+- do not move those calculations into `SalesOrderCard`;
+- do not silently replace an already-projected display value with a normalized value;
+- if the visual bar requires a bounded `0..100` geometry/ARIA value, separate that presentation normalization from the displayed projected percentage rather than overwriting the projected value.
+
+This is a small component-contract correction, not permission to redesign payment accounting or Sales calculations.
 
 ## North Star fit
 
 ### Shared-system coherence
 
-**PASS.** The migration strengthens one common grammar instead of creating a Customer-only mini design system. The shared component responsibility split is appropriate: Customer owns labels/counts/data/callback composition; shared components own interaction and visual semantics.
+**PASS for current WIP.** The component is a legitimate Layer-4 Sales composition over shared V2 primitives. No Sales-local primitive is being invented where a system primitive already exists.
 
-### Device composition
+### Mobile
 
-- **Mobile:** complete shared Tabs provides touch-sized horizontally usable navigation; branch/contact cards collapse safely; shared Buttons preserve operational touch targets; the dense credit table is isolated inside a horizontal scroller rather than forcing ordinary page overflow.
-- **Tablet:** collection layout remains adaptive and touch-first without imposing a fixed Desktop grid.
-- **Desktop:** branch/contact collections use width efficiently and the credit-history comparison surface retains useful density.
+**PASS direction.** Explicit identity/status/financial hierarchy and touch-safe open/map/call actions are stronger than the legacy clickable `DataCard` pattern. Keep ordinary horizontal overflow out of the card surface.
 
-### RTL / accessibility
+### Tablet
 
-**PASS at source level.** The Customer wrapper inherits complete shared Tabs semantics instead of partial ARIA. LTR facts remain explicitly directed where appropriate, and destructive icon-only actions have explicit accessible labels.
+**PASS presentation direction with the data-semantics constraint above.** A denser card anatomy is appropriate, but device composition must not alter the existing paged-vs-infinite behavior contract.
 
-### State / permission boundaries
+### Desktop
 
-**PASS for the bounded slice.** `customers.update` continues to own Branch/Contact mutation visibility; `customers.credit.update` continues to own credit-section visibility; existing create/update/GPS/lookup/finance-credit behavior is not altered.
+**PASS direction.** Retain dense `DataTable` comparison and numbered pagination. When wiring, do not use `DataTable.dataCardMapping`; `ResponsiveCollection` should prevent duplicate mounted Desktop/Mobile interaction trees.
 
-## Non-blocking system watches
+### Accessibility / RTL
 
-### 1. Permission-limited empty-state microcopy
-
-Design QA correctly identified that view-only users can see empty-state descriptions such as `أضف فرعاً...` / `أضف جهات الاتصال...` while mutation controls are absent.
-
-Disposition: `WATCH`, not a reason to reopen DS2-UI-002. Carry this into the future shared StatePanel/microcopy convergence program so permission-limited empty states use neutral explanatory language consistently across modules.
-
-### 2. Focusable credit-history scroller naming
-
-The scroller is keyboard-focusable and currently carries `aria-label` on a generic `div`. This is not a functional or integration blocker because the table itself remains semantically intact, but the later DataTable/accessibility hardening program should standardize focusable overflow-region semantics (including when a named `region` is warranted) across dense tables rather than solving it only for Customer credit history.
+**PASS direction.** Semantic status text, labelled progress, explicit buttons and LTR order/customer identifiers fit the shared grammar. QA should still review the final wired page and state transitions on the exact review-ready HEAD.
 
 ## Freshness / development drift
 
-The feature branch started at `d05a1d06a4214d5a4e0b222c5e7586155a9841f2`.
+The feature branch started at `e78de5d71002b9718fa7d760b3cc7bc933ff6cba`.
 
-Current development HEAD `3d108312db9e2eb6ed2e863ac9d8cde467ce1db2` is nine commits ahead of that baseline. Compare shows the drift is restricted to:
+Current development HEAD `68030bf9064ef1c4540f2e1dc3ef60a34bd46642` is four commits ahead of that baseline. Compare shows development drift is limited to:
 
 - `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md`
-- `team/design-system-v2/DESIGN_DIRECTOR_STATE.md`
-- `team/design-system-v2/DESIGN_QA_STATE.md`
 - `team/design-system-v2/INTEGRATION_STATE.md`
 - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
-No shared component or product-code drift exists after the feature baseline. Do not move the feature HEAD merely to absorb governance/state updates; exact reviewed-head stability is more valuable.
-
-Live GitHub REST recheck reports PR #29 as cleanly mergeable on the exact reviewed head. Draft status is a lifecycle flag, not a design blocker; the Integrator owns any Ready-for-Review transition immediately before merge if its gate requires it.
+No product/shared-component drift exists after the feature baseline. Do not merge-sync the WIP branch merely to absorb governance/state updates.
 
 ## Cross-role context comparison
 
-- **UI Production Engineer:** current and aligned; exact review-ready head `1cb3853b...`, implementation `REVIEW`, both earlier Director corrections resolved.
-- **Design QA:** current and aligned; exact-head `GREEN-DEV` + `SOURCE_REVIEW_PASS`, honest `TESTS_AUTHORED_NOT_EXECUTED`; only the view-only microcopy WATCH remains.
-- **Development Integrator:** stored state is stale and still targets WIP head `3ee43a7...` with `NO_MERGE_IN_PROGRESS`. That disposition is superseded by the exact-head QA approval and must now be revalidated, not treated as a current blocker.
-- **Team Memory:** still reflects the integrated post-DS2-UI-001 truth and should remain unchanged until integration actually occurs.
-- **Workstream:** correctly records DS2-UI-002 as `REVIEW` on exact head `1cb3853b...`.
+- **UI Production Engineer:** current and aligned on exact WIP HEAD `bfd54e57...`; its next step is the correct bounded page wiring. The two Director constraints above refine that handoff before REVIEW.
+- **Design QA:** stored state still belongs to merged PR #29 and is stale for Sales. No Sales QA approval or contradiction exists yet.
+- **Development Integrator:** stored state targets earlier PR #30 WIP HEAD `6608f33e...`; its `NO_MERGE_IN_PROGRESS` conclusion remains correct and is naturally stale by HEAD. No contradiction.
+- **Team Memory / Workstream:** correctly identify DS2-UI-003 as the single active slice and preserve one-slice WIP discipline.
 
-No still-current peer-state `BLOCKING` contradiction applies.
+No current peer-state `BLOCKING` contradiction applies.
 
 ## Preserve
 
-- exact PR #29 head stability until Integrator revalidation;
-- complete shared Tabs keyboard/focus/ARIA/RTL contract;
-- neutral `Badge` counts versus semantic `StatusBadge` state;
-- shared `Button` action semantics/touch targets;
-- Customer CRUD/GPS/lookup/credit/count/permission behavior;
-- completed DS2-UI-001 form composition;
-- existing overlay/delete flows and credit-table semantics until their dedicated shared programs;
-- no backend/business/query/permission/validation changes;
-- no hosted CI, Vercel preview or `main` activity;
+- Sales URL-synchronized filters and governorate/city reset behavior;
+- current Sales query parameters and service/cache contracts;
+- Desktop numbered pagination semantics;
+- Mobile accumulated/infinite-loading semantics;
+- existing KPI business meaning;
+- existing status/payment labels and business meaning;
+- page ownership of all monetary/outstanding/payment-ratio calculations;
+- `sales.orders.create` permission behavior and Smart Transfer entry point;
+- order/customer navigation plus map/call destinations;
+- shared V2 ownership of visual/action/status grammar;
+- exact evidence honesty; no hosted CI, Vercel preview or `main` activity;
 - one active implementation slice only.
 
 ## Cross-role handoff
 
-- **To:** Development Integrator, UI Production Engineer, Design QA
-- **What changed:** Product Design Director independently revalidated exact PR #29 GREEN-DEV head `1cb3853bf3cf94b2a25edd637d0083006e5d2191` against the North Star and current development drift. Architectural disposition is PASS; live GitHub REST reports the PR cleanly mergeable, and there is no current design-system blocker.
-- **Preserve:** exact reviewed head, shared Tabs/Button/Badge semantics, Customer functional boundaries, deferred overlay/DataTable programs, quota/deployment restrictions and the non-blocking permission-limited microcopy WATCH for later state-grammar convergence.
-- **Need from you:** Development Integrator should revalidate the live exact head/base/mergeability and current role states, then integrate only if its normal gates remain satisfied. UI Engineer and Design QA should no-op unless the head moves or Integrator surfaces a real conflict.
-- **Blocker level:** `NONE` for development integration; two future shared-program `WATCH` items only (permission-limited empty-state microcopy and standardized focusable table-overflow region semantics).
-- **Baseline:** development `3d108312db9e2eb6ed2e863ac9d8cde467ce1db2`; PR #29 head `1cb3853bf3cf94b2a25edd637d0083006e5d2191`
+- **To:** UI Production Engineer, Design QA, Development Integrator
+- **What changed:** Product Design Director independently reviewed PR #30 WIP HEAD `bfd54e578a7b63bd7abfa567e197db0043cc8a13`. The Sales card/presentation direction is approved to continue, with two bounded system-contract constraints before REVIEW: Tablet may use card presentation but must preserve the existing paged dataset/pagination semantics, and `SalesOrderCard` must not clamp/round away page-projected financial display truth.
+- **Preserve:** all existing Sales query/filter/pagination/infinite-loading/navigation/permission/status/payment/Smart Transfer/map/call/business semantics; shared `ResponsiveCollection` one-renderer boundary; Desktop density; Mobile operational clarity; quota/deployment/main restrictions.
+- **Need from you:** UI Production Engineer should continue only PR #30, apply these two boundaries while wiring `SalesOrdersPage`, and author focused coverage for device-specific dataset/pagination selection plus preserved payment-progress projection. Design QA and Integrator should continue to no-op until a stable review-ready exact HEAD is handed off.
+- **Blocker level:** `WATCH` during WIP, but both constraints are required before `REVIEW` / `GREEN-DEV`.
+- **Baseline:** development `68030bf9064ef1c4540f2e1dc3ef60a34bd46642`; PR #30 HEAD `bfd54e578a7b63bd7abfa567e197db0043cc8a13`
