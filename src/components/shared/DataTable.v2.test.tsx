@@ -49,8 +49,8 @@ describe('DataTable V2 pagination semantics', () => {
       />,
     )
 
-    expect(screen.getByRole('button', { name: 'الصفحة السابقة' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'الصفحة التالية' })).not.toBeDisabled()
+    expect((screen.getByRole('button', { name: 'الصفحة السابقة' }) as HTMLButtonElement).disabled).toBe(true)
+    expect((screen.getByRole('button', { name: 'الصفحة التالية' }) as HTMLButtonElement).disabled).toBe(false)
 
     rerender(
       <DataTable
@@ -62,7 +62,7 @@ describe('DataTable V2 pagination semantics', () => {
       />,
     )
 
-    expect(screen.getByRole('button', { name: 'الصفحة السابقة' })).not.toBeDisabled()
-    expect(screen.getByRole('button', { name: 'الصفحة التالية' })).toBeDisabled()
+    expect((screen.getByRole('button', { name: 'الصفحة السابقة' }) as HTMLButtonElement).disabled).toBe(false)
+    expect((screen.getByRole('button', { name: 'الصفحة التالية' }) as HTMLButtonElement).disabled).toBe(true)
   })
 })
