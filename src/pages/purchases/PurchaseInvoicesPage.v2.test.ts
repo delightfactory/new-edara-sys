@@ -59,11 +59,19 @@ describe('PurchaseInvoicesPage V2 composition contract', () => {
     expect(source).not.toContain("import Badge from '@/components/ui/Badge'")
   })
 
-  it('uses the shared empty-state family without removing the existing create capability', () => {
-    expect(source).toContain("import StatePanel from '@/components/patterns/StatePanel'")
-    expect(source).toContain('<StatePanel')
+  it('describes the existing search contract without promising supplier-name search', () => {
+    expect(source).toContain('placeholder="بحث برقم الفاتورة أو مرجع فاتورة المورد..."')
+    expect(source).not.toContain('placeholder="بحث بالرقم أو اسم المورد..."')
+  })
+
+  it('distinguishes filtered-empty guidance from the true initial-empty create state', () => {
+    expect(source).toContain("const hasActiveFilters = search.trim().length > 0 || statusFilter !== ''")
+    expect(source).toContain('const emptyState = hasActiveFilters ? (')
+    expect(source).toContain('title="لا توجد نتائج مطابقة"')
+    expect(source).toContain('description="غيّر البحث أو الحالة لعرض نتائج أخرى"')
     expect(source).toContain('title="لا توجد فواتير مشتريات"')
     expect(source).toContain('description="أنشئ أول فاتورة شراء من المورد"')
     expect(source).toContain('فاتورة جديدة')
+    expect(source).toContain('emptyState={emptyState}')
   })
 })
