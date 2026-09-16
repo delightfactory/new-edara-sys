@@ -39,12 +39,12 @@ Hosted GitHub Actions remain forbidden while quota protection is active. Agents 
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-UI-002`.
+Product UI is integrated through `DS2-UI-003`.
 
 Latest product integration:
-- PR: `#29 — DS2-UI-002: migrate customer secondary surfaces to shared V2 patterns`
-- Exact reviewed PR HEAD: `1cb3853bf3cf94b2a25edd637d0083006e5d2191`
-- Squash merge commit: `773085994502401a7368eded20926b1308b62e3f`
+- PR: `#30 — DS2-UI-003: migrate Sales Orders list to shared V2 grammar`
+- Exact reviewed PR HEAD: `d03dbf4d32e0fb1a3e4888588a5c6d685689f1ff`
+- Squash merge commit: `e42910fb2bb7c945e67262f610d9e0b630d960a6`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Runtime/preview/release evidence: not claimed
 
@@ -58,6 +58,7 @@ The development branch now includes:
 - Customer basic-info V2 form composition (`DS2-UI-001`)
 - Customer secondary Tabs/Branches/Contacts/Credit V2 composition (`DS2-UI-002`)
 - complete shared Tabs semantics reused by Customer detail surfaces
+- Sales Orders list V2 composition (`DS2-UI-003`) with shared responsive collection, KPI/status/card/action/state grammar
 - North Star, test policy, repository-native Team Memory/role-state communication and durable Decision Log
 
 ## Completed slices
@@ -92,66 +93,70 @@ System result:
 - non-blocking future WATCH: permission-limited empty-state microcopy should become neutral in the later shared state/microcopy convergence pass
 - non-blocking future WATCH: dense-table overflow-region semantics should be standardized in later DataTable/accessibility hardening
 
-## Current active slice
-
 ### DS2-UI-003 — Sales Orders list V2
-Status: `REVIEW`
-Owner role: UI Production Engineer -> Design QA handoff
-Draft PR: `#30 — DS2-UI-003: migrate Sales Orders list to shared V2 grammar`
-Feature branch: `ds2/sales-orders-list-v2`
-Starting baseline: `e78de5d71002b9718fa7d760b3cc7bc933ff6cba`
-Exact review HEAD: `d03dbf4d32e0fb1a3e4888588a5c6d685689f1ff`
-Evidence: `TESTS_AUTHORED_NOT_EXECUTED`
-QA disposition: pending exact-head independent review
+Status: `DONE`
+Merged PR: `#30`
+Reviewed exact PR HEAD: `d03dbf4d32e0fb1a3e4888588a5c6d685689f1ff`
+Squash merge commit: `e42910fb2bb7c945e67262f610d9e0b630d960a6`
+Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
+Runtime/preview/release evidence: not claimed
+
+System result:
+- shared `ResponsiveCollection` owns one mounted Desktop/Tablet/Mobile collection renderer
+- Desktop retains the existing dense paged `DataTable` and numbered pagination
+- Tablet uses deliberate Sales cards while preserving the paged Desktop dataset and numbered-pagination semantics
+- Mobile preserves accumulated `useMobileInfiniteList` data, sentinel, load-more and terminal-state behavior
+- Sales KPI truth projects through shared `StatCard` grammar; existing Sales stats/business truth remains page/hook-owned
+- Sales status projects through a thin domain adapter over shared semantic `StatusBadge`
+- `SalesOrderCard` composes shared `Card`, `KeyValueList`, `Button`, and `StatusBadge` rather than creating a Sales-only primitive system
+- Smart Transfer action surfaces and empty state use shared `Button` / `StatePanel`
+- legacy Mobile `DataCard` and CSS-hidden duplicate Desktop/Mobile collection trees were removed from this page
+- page-owned payment percentage truth remains separate from bounded progress geometry/ARIA
+- all existing Sales query/filter/pagination/infinite-loading/navigation/permission/status/payment/Smart Transfer/map/call/business semantics remain preserved
+- non-blocking future WATCH: converge Desktop/Tablet numbered pagination into one shared accessible Pagination/DataTable contract when the real hardening program opens
+- non-blocking future WATCH: consider `aria-valuetext` in later progress/accessibility hardening for projected percentages above 100 while geometry remains bounded
+
+## Current single READY slice
+
+### DS2-UI-004 — Sales Order form V2 foundation
+Status: `READY`
+Owner role: UI Production Engineer
 
 System intent:
-Move the next golden-flow collection screen into the shared V2 grammar while proving reusable list/filter/status/action patterns for later modules.
+Move the next Sales golden-flow form surface toward the shared V2 form/action grammar in small presentation-only sub-slices, while preserving every pricing, customer, product-line, validation, query and submit contract.
 
-Review-ready result:
-- thin Sales-domain semantic status adapter over shared `StatusBadge`
-- existing global Sales KPI truth projected through shared responsive `StatCard` composition
-- deliberate Mobile/Tablet `SalesOrderCard` over shared `Card`, `KeyValueList`, `Button`, and `StatusBadge`
-- shared `ResponsiveCollection` now owns the one-renderer-at-a-time collection boundary
-- Desktop preserves the existing paged `DataTable` and numbered pagination
-- Tablet uses the paged Desktop dataset plus numbered pagination but renders deliberate denser Sales cards
-- Mobile preserves the accumulated `useMobileInfiniteList` dataset, sentinel and load-more semantics
-- displayed payment percentage remains page-owned while only progressbar geometry/ARIA is bounded to `0..100`
-- Smart Transfer actions use shared `Button` while retaining existing permission/dialog behavior
-- focused presentation and page-composition tests protect the migrated contracts
-- legacy `DataCard` and CSS-hidden dual collection trees are removed from the Sales Orders page
-
-Scope direction:
-- Sales Orders list presentation only
-- responsive collection/table-card behavior using existing shared patterns before inventing new ones
-- filter/search/status/action hierarchy
-- loading/empty/error/permission states already present in the page contract
-- deliberate Mobile/Tablet/Desktop composition
-- Arabic/RTL and long-value tolerance
+Initial scope direction:
+- inspect the current Sales Order create/edit form and identify the smallest dependency-safe presentation slice
+- reuse existing shared Field/FormSection/FormGrid/FormActions/Button/Combobox patterns before inventing new primitives
+- strengthen only the smallest shared form/combobox/product-line presentation contract proven necessary by the real form
+- deliberate Mobile/Tablet/Desktop composition and long Arabic/value tolerance
+- preserve loading/error/disabled/read-only/permission states already present in the form contract
 
 Must preserve:
-- existing data retrieval/query semantics
-- Desktop/Tablet numbered pagination and Mobile infinite-loading behavior
-- route/navigation destinations
+- customer selection semantics
+- product-line add/edit/remove semantics
+- price resolution, discounts, taxes/totals and all monetary calculations
+- validation meaning and submit wiring
 - permission visibility
-- status values/mapping and business meaning
-- all sales/order calculations and workflow transitions
+- service/query/cache contracts
+- route/navigation behavior
+- all Sales workflow/business-state transitions
 
 Explicit exclusions:
+- no pricing/accounting/business-calculation migration into UI primitives
 - no service/query/cache changes
-- no sales business-state or pricing changes
-- no order-form work
+- no permission/RBAC/RLS/route-guard changes
 - no transaction-detail redesign
-- no speculative global DataTable/FilterBar rewrite unless the real Sales Orders list proves the smallest reusable shared contract needed for this slice
+- no speculative global form/combobox/stepper rewrite beyond the smallest recurring contract proven by the selected sub-slice
 - no overlay/deployment/workflow changes
 
 Acceptance direction:
-- solution uses or minimally strengthens shared V2 patterns rather than creating a Sales-only mini design system
-- Mobile exposes clear primary record/action hierarchy without ordinary horizontal overflow
-- Tablet is intentionally composed while retaining paged data semantics
-- Desktop preserves efficient comparison density
-- filters/status/action hierarchy is predictable and semantic
-- relevant focused tests are authored for behavior/composition at risk
-- no backend/business/query/permission semantics change
+- one bounded form-composition concern per implementation PR
+- shared V2 grammar owns presentation while page/domain code retains business truth
+- Mobile has clear task/action priority without ordinary horizontal overflow
+- Tablet is deliberate rather than compressed Desktop
+- Desktop retains efficient data-entry density
+- focused tests are authored for the specific composition/behavior risk of each sub-slice
 - evidence follows `33_TEST_AND_VALIDATION_POLICY.md`
 
 ## Product migration roadmap
@@ -161,17 +166,17 @@ The Product Design Director may further decompose a roadmap item, but only one d
 ### A. Golden flows
 
 #### DS2-UI-003 — Sales Orders list V2
-`REVIEW`
-- Draft PR #30
-- exact review HEAD `d03dbf4d32e0fb1a3e4888588a5c6d685689f1ff`
-- responsive collection complete
-- filters/status/action hierarchy preserved/migrated
-- awaiting Design QA exact-head review
+`DONE`
+- merged PR #30
+- exact reviewed HEAD `d03dbf4d32e0fb1a3e4888588a5c6d685689f1ff`
+- squash merge `e42910fb2bb7c945e67262f610d9e0b630d960a6`
+- `GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 
 #### DS2-UI-004 — Sales Order form V2 foundation
-`BACKLOG`
-- presentation decomposition into shared Field/Combobox/FormSection/Stepper/ProductLine patterns
-- small sub-slices; no pricing/customer/product business-logic migration
+`READY`
+- presentation decomposition into shared Field/Combobox/FormSection/FormGrid/FormActions/ProductLine patterns
+- implement only the smallest safe sub-slice selected from the live form
+- no pricing/customer/product business-logic migration
 
 #### DS2-UI-005 — Sales transaction detail V2
 `BACKLOG`
@@ -182,6 +187,7 @@ The Product Design Director may further decompose a roadmap item, but only one d
 Open only when a real migrated screen proves the recurring gap:
 - FilterBar decomposition and Mobile filter-sheet contract
 - DataTable V2 hardening and table action/accessibility/overflow-region contract
+- shared Pagination convergence for Desktop/Tablet list surfaces
 - MobileDataCard semantic migration from legacy DataCard
 - Modal/ResponsiveSheet/ConfirmDialog V2 convergence
 - Combobox/AsyncCombobox keyboard/focus hardening
@@ -190,6 +196,7 @@ Open only when a real migrated screen proves the recurring gap:
 - Timeline / ActivityFeed / AuditTimeline
 - FinancialSummary / InventorySummary / ApprovalPanel
 - BulkActionBar / CommandBar
+- progress/accessibility contract including projected-value `aria-valuetext` where needed
 - file/proof upload, camera and GPS interaction grammar
 - toast/alert/inline-validation convergence
 - Skeleton/Loading/Empty/Error/Permission/Offline/Sync state grammar, including neutral permission-limited microcopy
