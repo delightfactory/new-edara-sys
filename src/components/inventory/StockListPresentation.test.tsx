@@ -31,22 +31,29 @@ describe('StockBalanceCard', () => {
     expect(screen.queryByText('مخزن طنطا')).not.toBeNull()
   })
 
-  it('keeps cost visibility page-controlled', () => {
+  it('keeps cost and valuation visibility page-controlled', () => {
     const { rerender } = render(
       <StockBalanceCard summary={baseSummary} mode="tablet" />,
     )
 
     expect(screen.queryByText('التكلفة المرجحة')).toBeNull()
+    expect(screen.queryByText('القيمة')).toBeNull()
 
     rerender(
       <StockBalanceCard
-        summary={{ ...baseSummary, weightedCost: '42.50 ج.م' }}
+        summary={{
+          ...baseSummary,
+          weightedCost: '42.50 ج.م',
+          stockValue: '5,100.00 ج.م',
+        }}
         mode="tablet"
       />,
     )
 
     expect(screen.queryByText('التكلفة المرجحة')).not.toBeNull()
     expect(screen.queryByText('42.50 ج.م')).not.toBeNull()
+    expect(screen.queryByText('القيمة')).not.toBeNull()
+    expect(screen.queryByText('5,100.00 ج.م')).not.toBeNull()
   })
 
   it('preserves local review mode as a controlled accessible presentation boundary', () => {
