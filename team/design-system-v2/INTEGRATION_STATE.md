@@ -4,77 +4,66 @@
 
 - Review date: `2026-09-16`
 - Development branch: `design-system-v2-development`
-- Exact development HEAD immediately after product merge: `773085994502401a7368eded20926b1308b62e3f`
-- Exact development HEAD after Workstream synchronization and before this state write: `7fecda88bac77129ed930f398a27464d200e1311`
-- Completed slice: `DS2-UI-002 — Customer detail secondary tabs/patterns`
-- Merged PR: `#29 — DS2-UI-002: migrate customer secondary surfaces to shared V2 patterns`
-- Exact reviewed PR HEAD: `1cb3853bf3cf94b2a25edd637d0083006e5d2191`
-- Squash merge commit: `773085994502401a7368eded20926b1308b62e3f`
-- Integration disposition: `MERGED_GREEN_DEV`
-- Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
-- Runtime/preview/release evidence: not claimed
+- Exact current development HEAD before this state write: `d0491fd46f29cef69f04fb1ccf041fce6b7bb590`
+- Active slice: `DS2-UI-003 — Sales Orders list V2`
+- Active PR: `#30 — DS2-UI-003: migrate Sales Orders list to shared V2 grammar`
+- PR base: `design-system-v2-development`
+- PR starting baseline: `e78de5d71002b9718fa7d760b3cc7bc933ff6cba`
+- Exact current PR HEAD: `6608f33ed60be06f0c9165dee9a5104e8c5c5b4b`
+- PR state: `OPEN / DRAFT / mergeable`
+- Changed-file scope: exactly 2 files
+  - `src/components/sales/SalesOrdersListPresentation.tsx`
+  - `src/components/sales/SalesOrdersListPresentation.test.tsx`
+- Integration disposition: `NO_MERGE_IN_PROGRESS`
+- Current evidence: `TESTS_AUTHORED_NOT_EXECUTED`
+- Exact-head `AGENT-REVIEW: GREEN-DEV`: absent
+- Exact-head `SOURCE_REVIEW_PASS`: absent
 
 ## Integrator decision
 
-**MERGED.**
+**NO MERGE.**
 
-All controlled development-integration gates passed for exact PR #29 HEAD `1cb3853bf3cf94b2a25edd637d0083006e5d2191`.
+PR #30 is correctly targeting `design-system-v2-development`, but it is explicitly still a Draft WIP and its own body states that page wiring / responsive collection migration remains incomplete and that the PR must not be reviewed GREEN or merged yet.
 
-Before merge the Integrator revalidated:
-- base was exactly `design-system-v2-development`;
-- exact-head Design QA marker was `AGENT-REVIEW: GREEN-DEV`;
-- QA evidence was `SOURCE_REVIEW_PASS` with honest `TESTS_AUTHORED_NOT_EXECUTED` labeling;
-- no known build/type failure was recorded;
-- no unresolved material review thread existed;
-- no current role state carried a `BLOCKING` contradiction for the slice;
-- changed files were exactly six Customer presentation/test files;
-- no DB/migration/RPC/service/query-cache/RBAC/RLS/permission-definition/route/validation/workflow/business-calculation/workflow-config/Vercel change existed;
-- development drift since the feature baseline affected governance/state files only and did not overlap product/shared-component code;
-- after transitioning the reviewed Draft PR to Ready for Review without moving its HEAD, GitHub reported it mergeable.
+The exact current PR HEAD `6608f33ed60be06f0c9165dee9a5104e8c5c5b4b` has no PR review/comment carrying `AGENT-REVIEW: GREEN-DEV` or `SOURCE_REVIEW_PASS`. Therefore the controlled development integration gate is not satisfied.
 
-PR #29 was then squash-merged with expected-head protection. GitHub returned merge commit `773085994502401a7368eded20926b1308b62e3f`.
+This is normal implementation progress, not a blocker requiring escalation.
 
-No GitHub Actions, hosted CI, Vercel preview, preview branch, `main` change, or release action occurred.
+## Freshness / development drift
 
-## Integrated system result
+The feature branch started from `e78de5d71002b9718fa7d760b3cc7bc933ff6cba`.
 
-`DS2-UI-002` now contributes:
-- Customer edit sections using the existing complete shared `Tabs` contract;
-- thin Customer-owned tab labels/counts/credit visibility over shared semantics;
-- Branch/Contact surfaces using shared `Card`, `SectionHeader`, `KeyValueList`, `StatePanel`, `Button`, neutral `Badge`, and semantic `StatusBadge`;
-- removal of duplicate legacy Customer section switcher and duplicate secondary render trees;
-- preserved Customer create/update/GPS/lookup/credit/count/permission behavior;
-- preserved existing ResponsiveModal/delete flows and bounded credit-history table behavior for later dedicated shared programs.
+Current development HEAD `d0491fd46f29cef69f04fb1ccf041fce6b7bb590` is two commits ahead. Compare shows this drift is limited to:
 
-Non-blocking watches carried forward:
-1. permission-limited empty-state microcopy should become neutral in the future shared state/microcopy convergence pass;
-2. focusable dense-table overflow-region semantics should be standardized in the later DataTable/accessibility hardening program.
+- `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md`
+- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
-## Queue advancement
+No product/shared-component drift exists on development after the feature baseline, so the current WIP branch is not invalidated by development drift.
 
-Workstream synchronization is complete:
-- `DS2-UI-002` -> `DONE`
-- `DS2-UI-003 — Sales Orders list V2` -> the single `READY` implementation slice
+## Scope / functional-isolation observation
 
-The long-horizon North Star roadmap remains preserved; no ad-hoc page-polish queue was introduced.
+Current PR #30 changes only a Sales presentation component and its focused test. No DB, migration, RPC, service/query/cache, RBAC/RLS, permission definition, route guard, validation semantic, workflow state, business calculation, GitHub workflow, Vercel configuration or `main` change appears in the current two-file scope.
+
+The current UI Implementation State correctly records the slice as `IN_PROGRESS` and explicitly hands QA/Integrator a no-op until page-level wiring is complete and a review-ready exact HEAD exists.
+
+Stored Design Director and Design QA states still describe the completed Customer slice and are stale for current Sales approval. They do not constitute approval or a current BLOCKING contradiction for PR #30.
 
 ## Preserve
 
-- complete shared Tabs keyboard/focus/ARIA/RTL contract;
-- shared Button/Badge/StatusBadge semantic distinctions;
-- all Customer CRUD/GPS/lookup/credit/count/permission behavior;
-- completed Customer golden-flow migrations;
+- one active implementation slice only;
+- existing Sales query/filter/pagination/infinite-loading/navigation/permission/status/payment/Smart Transfer/map/call/business semantics;
 - UI-only functional-isolation boundary;
+- canonical Mobile/Tablet/Desktop strategy;
+- shared V2 ownership rather than a Sales-only mini design system;
 - GitHub Actions quota freeze and honest evidence labeling;
 - user-requested-only Vercel preview policy;
-- `main` freeze;
-- one active implementation slice at a time.
+- `main` freeze.
 
 ## Cross-role handoff
 
 - **To:** UI Production Engineer, Product Design Director, Design QA
-- **What changed:** PR #29 exact reviewed HEAD `1cb3853bf3cf94b2a25edd637d0083006e5d2191` passed all integration gates and was squash-merged as `773085994502401a7368eded20926b1308b62e3f`; Workstream now marks `DS2-UI-002` DONE and `DS2-UI-003 — Sales Orders list V2` as the single READY slice.
-- **Preserve:** Customer functional boundaries, complete shared Tabs semantics, Customer-learned shared component grammar, quota/deployment/main restrictions, and the two non-blocking future shared-program watches.
-- **Need from you:** UI Production Engineer should bootstrap from the latest development HEAD and start only `DS2-UI-003` within its documented list-only scope. Product Design Director should keep Sales list work aligned with the shared collection/filter/status/action grammar. Design QA should independently review the next exact PR HEAD when handed off.
-- **Blocker level:** `NONE`.
-- **Baseline:** product integration commit `773085994502401a7368eded20926b1308b62e3f`; governance baseline before this state write `7fecda88bac77129ed930f398a27464d200e1311`
+- **What changed:** Integrator revalidated live PR #30 at exact HEAD `6608f33ed60be06f0c9165dee9a5104e8c5c5b4b`; it remains Draft/WIP with only the initial Sales presentation/test boundary committed, and no GREEN-DEV/source-review approval exists.
+- **Preserve:** Sales functional semantics, shared-system/device direction, exact evidence honesty, quota/deployment/main restrictions, and one-slice WIP discipline.
+- **Need from you:** UI Production Engineer should continue only PR #30 until page wiring and the bounded responsive Sales-list migration are complete, then hand a stable exact HEAD to Design QA. Product Design Director may review material system-fit direction. Design QA should review only after a review-ready handoff.
+- **Blocker level:** `NONE`; normal implementation progress.
+- **Baseline:** development `d0491fd46f29cef69f04fb1ccf041fce6b7bb590`; PR #30 HEAD `6608f33ed60be06f0c9165dee9a5104e8c5c5b4b`
