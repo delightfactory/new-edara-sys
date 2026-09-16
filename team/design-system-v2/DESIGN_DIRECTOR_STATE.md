@@ -4,96 +4,95 @@
 
 - Review date: `2026-09-16`
 - Development branch: `design-system-v2-development`
-- Exact development HEAD independently inspected before this state write: `267d6a894d06f8cae12add7e7dc86f94f96a9477`
-- Active slice: `DS2-UI-005 — Sales transaction detail V2`
-- Active Draft PR: `#32 — DS2-UI-005: establish Sales transaction detail V2 header pattern`
-- Feature branch: `ds2/sales-order-detail-v2`
-- Slice baseline / merge-base with current Development: `8a0c34751344ca466754d06980093c501b536cd9`
-- Exact current PR HEAD independently reviewed: `3f370e02d60bbf6dfa5978c1dadc2f9454210f08`
+- Exact Development HEAD independently inspected before this state write: `81876ad036c7c03d8c7fab36c381790b9d690da1`
+- Active slice: `DS2-INV-001 — Inventory list surfaces`
+- Active Draft PR: `#34 — DS2-INV-001: establish Inventory stock list V2 presentation`
+- Feature branch: `ds2/inventory-stock-list-v2`
+- Exact PR base SHA: `61c2fcac8152550d72f4b94be5e85fd9979dd94d`
+- Exact current PR HEAD independently reviewed: `9f3a2c4237b233bad468fa766971558caa09a5d6`
 - Live PR state: `OPEN / DRAFT / mergeable`
-- Current disposition: `BLOCKED — exact PR HEAD still contains the preview-proven TypeScript failures already fixed on Development`
-- Current evidence: `TESTS_AUTHORED_NOT_EXECUTED`; no `SOURCE_REVIEW_PASS` may be carried onto this exact head while the known type failure remains.
+- Current disposition: `BLOCKED — one bounded P2 Tablet pagination touch/accessibility/RTL correction`
+- Current evidence: `TESTS_AUTHORED_NOT_EXECUTED`; no exact-head runtime/build PASS is claimed and `SOURCE_REVIEW_PASS` remains withheld by Design QA on this head.
 
 ## Independent professional judgment
 
-**THE DESIGN / ACTION ARCHITECTURE IS NOW SOUND. DO NOT REDESIGN THE SLICE AGAIN. THE ONLY CURRENT BLOCKER IS BASELINE FRESHNESS AGAINST A REAL BUILD FIX.**
+**THE INVENTORY LIST DIRECTION IS SYSTEM-FIT. DO NOT REDESIGN OR EXPAND THE SLICE. FIX THE TABLET PAGINATION INTERACTION BOUNDARY, THEN RE-REVIEW THE SAME PR.**
 
-I independently re-reviewed the current PR rather than carrying forward the prior Director blocker.
+I independently reviewed the live PR source against the North Star, device strategy and component decision matrix.
 
-The earlier architecture objection is resolved. `TransactionHeader` now consumes the canonical shared `AppAction[]` contract, resolves placement through `useDeviceMode()` + `resolveActionSet()`, and renders the established one-visible Mobile / two-visible Tablet / four-visible Desktop action hierarchy with overflow. The live Sales page owns action eligibility/callback truth and the shared header owns presentation. That is exactly the system direction required by the Component Decision Matrix and North Star.
+The main migration direction is correct and advances the system rather than creating another Inventory island:
 
-The live `SalesOrderDetail.tsx` wiring also remains correctly bounded. Existing edit / confirm / deliver / due-date / return / copy / cancel predicates stay page-owned; `DocumentActions` is preserved as a separate tools capability; only the legacy local hero/status/action presentation was replaced. Financial summary, receipts, items, notes, modals, queries, services and calculations remain outside this slice.
+- one `ResponsiveCollection<Stock>` now owns the Desktop/Tablet/Mobile collection boundary instead of mounting separate CSS-hidden device trees;
+- Desktop retains the dense paged `DataTable` comparison/review surface;
+- Tablet receives a deliberate two-column stock-card composition rather than inheriting cramped Desktop;
+- Mobile receives a one-column operational card composition;
+- `StockBalanceCard` remains a thin Inventory-domain composition over shared `Card + KeyValueList + StatusBadge` rather than a new primitive family;
+- stock health, quantities, valuation, cost permission, review calculations, filters, query semantics and page transitions remain page/domain-owned.
 
-The current candidate is nevertheless not integratable because its branch still carries source that the owner-requested manual preview proved cannot pass `tsc -b`. This is not a speculative QA concern:
+The candidate is not yet GREEN because the newly introduced Tablet pagination path reuses legacy raw `.pagination-btn` controls. Current shared legacy CSS fixes those buttons at `32px × 32px`, which conflicts with the documented 44px practical touch target for touch-first Tablet operation. The selected page is visual-only through `.active`, and previous/next are symbol-only without explicit accessible names.
 
-- PR HEAD still uses unsupported jest-dom matcher typings (`toBeInTheDocument`, `toHaveAttribute`, `toBeDisabled`) in the Sales Order form / Stepper tests while the package does not include the corresponding jest-dom typing extension;
-- PR HEAD still has the pre-fix Customer detail conditional-tab inference that widened `value` beyond `CustomerDetailTab`;
-- current Development contains the already-reviewed three-file hotfix for those exact failures;
-- Git comparison from PR HEAD to current Development shows only those three code fixes plus specialist-state documentation on the Development side.
+There is one additional RTL requirement that should be resolved in the same bounded correction: the visible `‹` / `›` cues are physical LTR-style arrows. In an Arabic-first RTL product, previous/next direction must not be visually ambiguous or reversed. The correction should use clear Arabic text labels or direction-aware logical icons while preserving exactly the same page movement semantics.
 
-Therefore the correct next move is a narrow branch synchronization, not another design iteration.
+This does **not** justify opening a broad Pagination framework now. The codebase clearly has shared Pagination debt, but a global convergence task would require auditing DataTable and other existing consumers and would unnecessarily widen this Inventory slice. The right move here is a local composition correction using existing shared Button/touch semantics, with full shared Pagination convergence remaining a dedicated component-depth slice.
 
 ## Current architecture / product-system fit
 
-- **TransactionHeader as first Sales-detail pattern:** PASS.
-- **Canonical ActionRegistry reuse:** PASS. No parallel action taxonomy remains.
-- **Mobile progressive disclosure:** PASS at source level — one visible workflow action plus overflow.
-- **Tablet action density:** PASS at source level — up to two visible actions plus overflow.
-- **Desktop review density:** PASS at source level — up to four visible actions before overflow.
-- **Shared Button / semantic status reuse:** PASS.
-- **RTL / Arabic wrapping / logical spacing:** PASS at source level.
-- **Action accessibility boundary:** PASS directionally — labelled action group plus native disclosure; no incomplete menu ARIA is invented.
-- **Live Sales functional isolation:** PASS at source level. Permission/status/workflow/query/service/calculation/modal truth remains page/domain-owned.
-- **DocumentActions preservation:** PASS; keep it outside this bounded pattern migration.
-- **Exact-head build/type gate:** BLOCKING until PR #32 inherits the already-integrated Development hotfix and receives fresh exact-head review.
+- **Representative Inventory list choice:** PASS.
+- **ResponsiveCollection single device boundary:** PASS.
+- **Desktop density / review efficiency:** PASS.
+- **Tablet card composition / valuation parity:** PASS except pagination interaction treatment.
+- **Mobile operational card composition:** PASS at source level.
+- **Shared Card / KeyValueList / StatusBadge reuse:** PASS.
+- **Functional isolation:** PASS at source level; no backend/query/permission/calculation/workflow meaning moved.
+- **Arabic wrapping / logical spacing:** PASS at source level for the new stock cards.
+- **Tablet pagination touch target:** BLOCKING P2 on current head.
+- **Tablet pagination accessible naming/current-page semantics:** BLOCKING P2 on current head.
+- **Tablet pagination RTL directional cue:** BLOCKING within the same bounded correction.
+- **Global shared Pagination convergence:** WATCH / future component-depth work, not required to clear PR #34.
 
-## Required next correction
+## Required correction before REVIEW can become GREEN-DEV
 
-### P1 — synchronize the already-integrated TypeScript hotfix into PR #32
+### P2 — harden only the Tablet numbered pagination boundary
 
-**BLOCKING for GREEN-DEV / integration; not a new product-design task.**
+Preserve all current query/page/direct-jump behavior and make the minimum presentation correction:
 
-Minimum acceptable direction:
-- merge/sync current `design-system-v2-development` into `ds2/sales-order-detail-v2` without force-rewriting the reviewed slice;
-- inherit the existing fixes in:
-  - `src/components/sales/SalesOrderFormPresentation.test.tsx`;
-  - `src/components/ui/Stepper.test.tsx`;
-  - `src/pages/customers/CustomerDetailTabs.tsx`;
-- do not reimplement those fixes differently inside PR #32;
-- do not broaden Sales detail scope;
-- preserve the current `TransactionHeader` / `AppAction` / live page wiring exactly unless the sync creates a real merge conflict requiring evidence-based reconciliation;
-- hand off one new stable exact HEAD for fresh Design QA review.
+1. every Tablet pagination control has a practical minimum `44px × 44px` hit target; use the existing shared `Button`/touch contract where practical and guarantee minimum inline size for numeric controls;
+2. previous/next controls expose explicit accessible names;
+3. the selected numeric page exposes `aria-current="page"` or an equivalent complete current-page semantic;
+4. previous/next visual direction is RTL-native and unambiguous — Arabic text labels or direction-aware logical icons are acceptable; do not leave physical LTR-only arrows as the sole cue;
+5. focused tests protect the corrected Tablet touch/accessibility/RTL contract rather than asserting legacy `.pagination-btn` markup;
+6. do not change the pagination algorithm, query shape, page size, direct-jump capability, Desktop DataTable behavior or Mobile paging semantics.
 
-No new Vercel preview or hosted CI is required merely to clear this source-level blocker. The known failing code simply must not remain on the exact candidate HEAD.
+Do not widen this correction into stock filters, summary cards, transfer/adjustment flows, global DataTable/Pagination replacement or any functional change.
 
 ## Peer-state comparison / freshness
 
-After forming the independent current-source judgment above, peer positions were compared:
+After forming the current-source judgment above, peer positions were compared:
 
-- **Design QA:** current state on exact head `3f370e02...` matches this judgment. It independently passes the bounded Sales header/action migration at source level and blocks only on the stale baseline's real preview-proven TypeScript failure.
-- **UI Production Engineer:** its PR-branch state correctly records the completed live wiring and shared action architecture, but its earlier claim that Development drift was role-state-only became stale after hotfix merge `1f6c184...`. The Development drift now materially includes the three TypeScript-fix files.
-- **Development Integrator:** its stored state targets older unwired head `9e9871f...` and is stale on completeness. Its `NO_MERGE` result remains correct, now for the stronger exact-head type-failure reason.
-- **Previous Product Design Director state:** the prior ActionRegistry architecture blocker targeted old head `97b3da7c...` and is fully consumed. It must not be treated as a current contradiction.
-
-There is no current Design System architecture disagreement. There is one objective integration blocker: exact candidate build/type cleanliness.
+- **Design QA:** fresh exact-head state on `9f3a2c4...` reaches the same P2 BLOCKED conclusion for Tablet touch/accessibility. I agree with QA and add only the RTL directional-cue requirement to the same correction boundary.
+- **UI Production Engineer:** feature-branch state is fresh for PR #34 and correctly preserves information/query parity, but its assumption that reusing legacy numbered pagination markup is sufficient is not acceptable for the new touch-first Tablet V2 renderer. This is a material but tightly bounded contradiction.
+- **Development Integrator:** Development-side state is still the consumed DS2-UI-005 merge state. Its merge policy remains authoritative: PR #34 must stay `NO_MERGE` until a corrected exact HEAD receives fresh `GREEN-DEV + SOURCE_REVIEW_PASS` and no blocking role-state contradiction remains.
+- **Team Memory / Workstream:** Development-side shared memory still labels DS2-INV-001 READY while the active feature branch is already in REVIEW/BLOCKED. That lag is expected during an active slice; no second slice should start.
 
 ## Preserve
 
-- every existing Sales detail permission/status/workflow decision and callback;
-- all queries, services, calculations, modal state, invalidation, routes and business transitions;
-- existing `DocumentActions` capability behavior;
-- existing Sales status semantic mapping;
-- canonical `AppAction` / `resolveActionSet` device-placement contract;
-- Mobile-primary / deliberate Tablet / dense Desktop strategy;
-- bounded header-only scope for this PR;
 - one active implementation slice only;
+- all existing stock query/filter/page/page-size semantics;
+- warehouse/product navigation;
+- `finance.view_costs` gating and valuation truth;
+- stock-health/minimum-stock calculations;
+- local review mode and no-save/no-adjustment meaning;
+- Desktop dense table and direct navigation;
+- Tablet two-column cards, valuation parity and direct page jumps;
+- Mobile one-column cards and compact paging;
+- shared `ResponsiveCollection`, `Card`, `KeyValueList`, `StatusBadge`, `Button` grammar;
 - no GitHub Actions, hosted CI, Vercel preview, backend/business or `main` activity.
 
 ## Cross-role handoff
 
 - **To:** UI Production Engineer, Design QA, Development Integrator
-- **What changed:** Product Design Director re-reviewed PR #32 exact HEAD `3f370e02d60bbf6dfa5978c1dadc2f9454210f08`. The earlier action-architecture blocker is closed and the bounded Sales transaction-header migration is system-fit PASS at source level. The only current blocker is that this exact PR HEAD predates the three-file TypeScript hotfix already integrated on Development and therefore still contains the preview-proven build failures.
-- **Preserve:** canonical `AppAction` / `resolveActionSet` architecture; current live Sales action predicates/callbacks/loading truth; `DocumentActions`; bounded header-only scope; no CI/Vercel/main or business/backend drift.
-- **Need from you:** UI Production Engineer should sync current `design-system-v2-development` into the existing PR #32 branch without broadening scope, then hand off one new stable exact HEAD. Design QA should re-review that exact synced head and may issue `GREEN-DEV` / `SOURCE_REVIEW_PASS` only if no known build/type blocker remains. Integrator stays `NO_MERGE` until that fresh evidence exists.
-- **Blocker level:** `BLOCKING` — exact-head known TypeScript/build failure from stale baseline; architecture/design direction itself is unblocked.
-- **Baseline:** development `267d6a894d06f8cae12add7e7dc86f94f96a9477`; PR #32 HEAD `3f370e02d60bbf6dfa5978c1dadc2f9454210f08`
+- **What changed:** Product Design Director independently reviewed PR #34 exact HEAD `9f3a2c4237b233bad468fa766971558caa09a5d6` and confirms the Inventory collection/card architecture is sound. The slice remains BLOCKED only on the Tablet numbered-pagination interaction boundary: 32px legacy targets, missing explicit previous/next names, missing current-page semantic, plus an RTL directional-cue requirement for the symbol-only arrows.
+- **Preserve:** all stock/query/filter/page/valuation/permission/review/link truth; Desktop density; Tablet direct page jumps and valuation; Mobile paging; current shared collection/card/status architecture; bounded Inventory-list scope.
+- **Need from you:** UI Production Engineer should correct only the Tablet pagination presentation using touch-safe shared action semantics, complete accessibility/current-page semantics and RTL-native directional cues, update the focused test, and hand off one new stable exact HEAD. Design QA should re-review that exact head. Integrator remains `NO_MERGE` until the corrected head has `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` and the blocking contradiction is closed.
+- **Blocker level:** `BLOCKING` — P2 Tablet touch/accessibility/RTL pagination treatment only.
+- **Baseline:** Development `81876ad036c7c03d8c7fab36c381790b9d690da1`; PR #34 HEAD `9f3a2c4237b233bad468fa766971558caa09a5d6`
