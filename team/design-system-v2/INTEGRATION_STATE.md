@@ -4,72 +4,81 @@
 
 - Review date: `2026-09-16`
 - Development branch: `design-system-v2-development`
-- Development HEAD before merge: `0264a054a2dc176a5c8c4dbc4a9d50c41f5ddfa9`
-- Completed slice: `DS2-UI-004 — Sales Order form V2 foundation`
-- Merged PR: `#31 — DS2-UI-004: establish Sales Order form V2 presentation foundation`
+- Exact development HEAD reviewed before this write: `39f0840fd941acb3fb194fc32e9d2c81c200da46`
+- Active slice: `DS2-UI-005 — Sales transaction detail V2`
+- Active PR: `#32 — DS2-UI-005: establish Sales transaction detail V2 header pattern`
 - PR base: `design-system-v2-development`
-- Exact reviewed PR HEAD: `198f146a3abde9efa6bfb3c98c20469f3815d3ff`
-- Squash merge commit: `d00faf8e36d40c9dde9df0b2de6dc89737419c5d`
-- Integration disposition: `MERGED_GREEN_DEV`
-- Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
-- Runtime/preview/release evidence: not claimed
+- Slice merge-base with current Development: `8a0c34751344ca466754d06980093c501b536cd9`
+- Exact current PR HEAD: `3f370e02d60bbf6dfa5978c1dadc2f9454210f08`
+- PR state: `OPEN / DRAFT / mergeable clean`
+- Integration disposition: `NO_MERGE_BLOCKED_KNOWN_TYPE_FAILURE_STALE_BASELINE`
+- Current evidence: `TESTS_AUTHORED_NOT_EXECUTED`; Design QA explicitly withheld `SOURCE_REVIEW_PASS` and issued exact-head `AGENT-REVIEW: BLOCKED`
+- Runtime/release evidence for this PR HEAD: not claimed
 
 ## Integrator decision
 
-**MERGED — all development integration gates passed for exact PR HEAD `198f146a3abde9efa6bfb3c98c20469f3815d3ff`.**
+**NO MERGE.** PR #32 does not satisfy the development integration gate.
 
-Revalidation before merge confirmed:
-- PR base remained exactly `design-system-v2-development`;
-- exact current HEAD still matched the QA-approved SHA;
-- Design QA recorded `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` on that exact HEAD;
-- evidence remained honestly `TESTS_AUTHORED_NOT_EXECUTED`;
-- no known build/type failure was outstanding;
-- no unresolved review thread existed;
-- prior Design Director / Integrator `BLOCKING` states referenced superseded HEAD `6841ceb...` and were stale by the corrected exact HEAD;
-- the corrected head closed the only P2 Desktop-density blocker using the existing shared FormGrid contract;
-- changed-file scope remained 8 UI/test/state files only;
-- no DB/migration/RPC/service/query-cache/RBAC/RLS/permission-definition/route-guard/business-calculation/workflow/validation/deployment/main change was present;
-- development drift since the slice baseline was limited to role-state/coordination files, so no product/shared-component conflict was introduced;
-- no GitHub Actions, hosted CI or Vercel evidence was triggered or relied upon.
+Current gate result:
+- base is correctly `design-system-v2-development`;
+- exact current PR HEAD is `3f370e02d60bbf6dfa5978c1dadc2f9454210f08` and has not moved since QA / Design Director review;
+- PR remains Draft and GitHub currently reports it mergeable/clean;
+- exact-head Design QA marker is `AGENT-REVIEW: BLOCKED`, not `GREEN-DEV`;
+- `SOURCE_REVIEW_PASS` is intentionally withheld for this exact head because a known TypeScript/build failure remains present;
+- Product Design Director independently agrees the earlier action-architecture blocker is closed and the only current blocker is baseline freshness against the already-integrated TypeScript hotfix;
+- no unresolved inline review thread exists;
+- PR changed-file scope is 10 presentation/test/workstream/UI-state files only; there is no DB, migration, RPC, service/query/cache, RBAC/RLS, permission, workflow-semantic, business-calculation, validation, GitHub workflow, deployment, preview or `main` file in the diff;
+- no GitHub Actions, hosted CI or scheduled Vercel evidence was triggered or relied upon.
 
-PR #31 was moved from Draft to Ready without moving the reviewed HEAD, then squash-merged with `expected_head_sha` protection.
+## Current blocker
 
-## Integrated system result
+The DS2-UI-005 bounded implementation itself now passes the architecture/completeness source review: the live `SalesOrderDetail.tsx` hero/action region is wired through the shared `SalesOrderDetailHeader` / `TransactionHeader` contract; canonical `AppAction[] + useDeviceMode + resolveActionSet` owns device placement; existing edit / confirm / deliver / due-date / return / copy / cancel permission/status gates and callbacks remain page-owned; confirm warehouse fallback, four `actionLoading` guards and `DocumentActions` behavior are preserved.
 
-The development baseline now includes:
-- backward-compatible shared `Stepper` optional page-owned guarded interaction;
-- thin Sales step-navigation adapter over the shared Stepper;
-- exact legacy Sales step reachability kept page-owned;
-- shared `FormSection` + `FormGrid` on Step 0 with `3 Desktop / 2 Tablet / 1 Mobile` density;
-- full-width customer/credit context rows preserved;
-- shared `FormActions` + `Button` action hierarchy with RTL-native previous/next cues;
-- focused authored source/component tests protecting shared Stepper behavior, reachability, density, action semantics and Sales business-boundary invariants.
+Integration is blocked because exact PR HEAD `3f370e02...` still carries source from the pre-hotfix slice baseline that a real owner-requested preview proved fails `tsc -b`.
 
-Preserved functional truth includes create/edit/copyFrom, customer/branch/rep, product/unit/quantity/stock, pricing/discount/tax/shipping/totals/minimum-order, permissions, validation/toasts, save sequence, routes, and Mobile add-product modal behavior.
+Current Development already contains the reviewed fixes for exactly these files:
+- `src/components/sales/SalesOrderFormPresentation.test.tsx` — remove unsupported jest-dom matcher typing usage;
+- `src/components/ui/Stepper.test.tsx` — same matcher-typing correction;
+- `src/pages/customers/CustomerDetailTabs.tsx` — keep conditional tab values typed as `CustomerDetailTab`.
 
-## Queue advancement
+Compare from PR HEAD to current Development confirms those three hotfix files plus specialist-state drift are on the Development side. Per the test policy, execution evidence from the corrected Development/preview baseline cannot be transferred onto this stale exact PR HEAD.
 
-`DS2-UI-004` is now `DONE`.
+Required before integration:
+- UI Production Engineer should sync current `design-system-v2-development` into `ds2/sales-order-detail-v2` without force-rewriting the reviewed slice;
+- inherit the already-integrated three-file TypeScript hotfix rather than reimplementing it;
+- preserve the current bounded TransactionHeader / live Sales action wiring and avoid unrelated scope expansion;
+- hand off one stable new exact HEAD;
+- Design QA must perform fresh exact-head review and may issue `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` only when no known build/type blocker remains.
 
-Exactly one next dependency-safe slice is `READY`:
-- `DS2-UI-005 — Sales transaction detail V2`
+No new preview or hosted CI is required merely to clear this source-level blocker.
 
-No second implementation slice is authorized.
+## Current scope judgment
+
+The current PR remains bounded to a presentation-only Sales transaction-header concern:
+- shared `TransactionHeader` pattern and focused tests;
+- thin Sales header/status adapter and focused tests;
+- live `SalesOrderDetail.tsx` hero/action wiring and parity coverage;
+- transaction-specific V2 styling/main stylesheet import;
+- workstream/UI implementation coordination state.
+
+No forbidden backend/business/deployment enabling change is present in the PR diff. The candidate is blocked by stale-baseline build/type truth, not by DS2 scope drift.
 
 ## Preserve
 
-- UI-only functional isolation;
-- page/domain ownership of Sales business truth;
-- shared Stepper/FormSection/FormGrid/FormActions/Button ownership;
-- Mobile-primary / deliberate Tablet / dense Desktop principles;
+- all Sales detail query/service/cache/permission/status/workflow/calculation/modal/route truth;
+- canonical shared `AppAction` / `resolveActionSet` action orchestration;
+- Mobile one-visible-action + overflow, Tablet two-visible, Desktop up-to-four placement contract;
+- existing `DocumentActions` capability behavior;
+- bounded header-only slice scope;
+- exact-head review freshness and evidence honesty;
 - no hosted CI, Vercel preview or `main` activity;
 - exactly one active implementation slice.
 
 ## Cross-role handoff
 
-- **To:** UI Production Engineer, Product Design Director, Design QA
-- **What changed:** PR #31 exact reviewed HEAD `198f146a3abde9efa6bfb3c98c20469f3815d3ff` passed all development gates and was squash-merged as `d00faf8e36d40c9dde9df0b2de6dc89737419c5d`. `DS2-UI-004` is DONE and `DS2-UI-005 — Sales transaction detail V2` is the only READY slice.
-- **Preserve:** all Sales business/query/permission/validation/calculation/save/route/workflow truth; shared V2 ownership; no CI/Vercel/main activity; runtime/release evidence remains separate.
-- **Need from you:** UI Production Engineer should bootstrap from the exact latest development HEAD and take only DS2-UI-005, first selecting the smallest presentation-only transaction-detail sub-slice. Product Design Director should bound reusable detail/header/summary/action direction from the live screen. Design QA should independently review the next stable exact PR HEAD.
-- **Blocker level:** `NONE` for development integration.
-- **Baseline:** merged product commit `d00faf8e36d40c9dde9df0b2de6dc89737419c5d`; workstream synchronization commit `028059587debbb19223e406784e5b3ff7aa54eb8`
+- **To:** UI Production Engineer, Design QA, Product Design Director
+- **What changed:** Integrator revalidated PR #32 exact HEAD `3f370e02d60bbf6dfa5978c1dadc2f9454210f08` against current Development `39f0840fd941acb3fb194fc32e9d2c81c200da46`. The earlier incomplete-live-wiring blocker is closed and the action architecture is system-fit; integration is now blocked only because the exact PR HEAD predates the three-file TypeScript hotfix already integrated on Development and therefore still contains a known real build/type failure.
+- **Preserve:** current `TransactionHeader` / `AppAction` architecture; exact Sales permission/status/workflow/callback/loading truth; `DocumentActions`; bounded header scope; no CI/Vercel/main or backend/business drift.
+- **Need from you:** UI Production Engineer should sync current Development into PR #32 and hand off one stable exact HEAD. Design QA must re-review that synced head and issue `GREEN-DEV` / `SOURCE_REVIEW_PASS` only if the known type blocker is gone. Product Design Director only needs to intervene if the sync exposes a new system-design contradiction.
+- **Blocker level:** `BLOCKING` — known exact-head TypeScript/build failure inherited from stale baseline.
+- **Baseline:** Development `39f0840fd941acb3fb194fc32e9d2c81c200da46`; PR #32 HEAD `3f370e02d60bbf6dfa5978c1dadc2f9454210f08`.
