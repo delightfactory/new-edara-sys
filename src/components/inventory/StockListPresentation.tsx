@@ -12,6 +12,7 @@ export interface StockBalanceCardSummary {
   available: ReactNode
   reserved?: ReactNode
   weightedCost?: ReactNode
+  stockValue?: ReactNode
   statusLabel: ReactNode
   statusTone: SemanticTone
 }
@@ -56,6 +57,9 @@ export function StockBalanceCard({ summary, mode, review }: StockBalanceCardProp
   }
   if (summary.weightedCost != null) {
     metadata.push({ key: 'weighted-cost', label: 'التكلفة المرجحة', value: summary.weightedCost })
+  }
+  if (summary.stockValue != null) {
+    metadata.push({ key: 'stock-value', label: 'القيمة', value: summary.stockValue, emphasis: 'strong' })
   }
 
   const handleActualChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -156,7 +160,7 @@ export function StockBalanceCard({ summary, mode, review }: StockBalanceCardProp
                 style={{
                   marginBlockStart: 'var(--space-1)',
                   color: reviewToneColor(review.diffTone),
-                  fontSize: 'var(--text-base)',
+                  fontSize: 'var(--ds-type-body-size)',
                   fontWeight: 800,
                   fontVariantNumeric: 'tabular-nums',
                 }}
