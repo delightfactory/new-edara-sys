@@ -32,7 +32,7 @@ Before material action every role reads Team Memory, all four role states, the D
 
 ## GitHub Actions / preview policy
 
-Hosted GitHub Actions remain forbidden while quota protection is active. Focused tests are still authored. Normal development evidence is exact-head `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + an honest execution label. A known real build/type failure blocks integration.
+Hosted GitHub Actions remain forbidden while quota protection is active. Focused tests are still authored. Normal isolated development evidence is exact-head `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + an honest execution label. A known real build/type failure blocks integration.
 
 Vercel preview remains owner-requested only. Scheduled agents never merge to `main`.
 
@@ -78,7 +78,7 @@ System result:
 - Tablet uses deliberate paged cards.
 - Mobile preserves accumulated infinite loading.
 - Sales KPI/status/card/action/state presentation composes shared V2 grammar.
-- Sales query/filter/pagination/navigation/permission/payment/Smart Transfer/map/call/business semantics remain preserved.
+- Sales query/filter/pagination/navigation/permission/status/payment/Smart Transfer/map/call/business semantics remain preserved.
 
 ### DS2-UI-004 — Sales Order form V2 foundation
 Status: `DONE`
@@ -98,10 +98,10 @@ System result:
 - create/edit/copyFrom, customer/branch/rep, product/unit/stock, pricing/discount/tax/total/minimum-order, permissions, validation, save sequence, routes, and Mobile add-product flow remain unchanged;
 - Combobox/ProductLine redesign remains deferred until separately proven by a live slice.
 
-## Current single READY slice
+## Current single active slice
 
 ### DS2-UI-005 — Sales transaction detail V2
-Status: `READY`
+Status: `IN_PROGRESS`
 Owner role: UI Production Engineer
 
 System intent:
@@ -113,6 +113,11 @@ Initial direction:
 - preserve every displayed business value, permission, workflow action, route, query and state transition;
 - deliberately compose Mobile/Tablet/Desktop rather than shrinking Desktop;
 - keep Arabic/RTL, long values, loading/error/permission states and destructive-action hierarchy explicit.
+
+Current bounded implementation concern:
+- establish the smallest reusable `TransactionHeader` contract proven by the live Sales Order detail header;
+- keep all permission/status/workflow decisions page-owned while shared V2 owns responsive header/action mechanics;
+- do not expand this first concern into financial summary, receipt, item, modal or business-flow redesign.
 
 Explicit exclusions:
 - no service/query/cache/RPC changes;
@@ -139,7 +144,7 @@ The Product Design Director may decompose an item further, but exactly one depen
 - `DS2-UI-002` Customer detail secondary tabs/patterns — `DONE`
 - `DS2-UI-003` Sales Orders list V2 — `DONE`
 - `DS2-UI-004` Sales Order form V2 foundation — `DONE`
-- `DS2-UI-005` Sales transaction detail V2 — `READY`
+- `DS2-UI-005` Sales transaction detail V2 — `IN_PROGRESS`
 
 ### B. Shared component-depth program
 Open only when a real migrated screen proves the recurring gap:
