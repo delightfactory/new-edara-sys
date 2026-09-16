@@ -4,80 +4,75 @@
 
 - Review date: `2026-09-16`
 - Development branch: `design-system-v2-development`
-- Product merge commit: `e42910fb2bb7c945e67262f610d9e0b630d960a6`
-- Exact development HEAD observed after Workstream synchronization and before this state write: `a60fba9508d87bfbecd192a96589458a1ef8a0ab`
-- Completed slice: `DS2-UI-003 — Sales Orders list V2`
-- Merged PR: `#30 — DS2-UI-003: migrate Sales Orders list to shared V2 grammar`
+- Exact current development HEAD reviewed: `a6c9705ab56442c7c1d1722b442aa374a7556e81`
+- Active slice: `DS2-UI-004 — Sales Order form V2 foundation`
+- Active PR: `#31 — DS2-UI-004: establish Sales Order form V2 presentation foundation`
 - PR base: `design-system-v2-development`
-- Slice starting baseline: `e78de5d71002b9718fa7d760b3cc7bc933ff6cba`
-- Exact reviewed / merged PR HEAD: `d03dbf4d32e0fb1a3e4888588a5c6d685689f1ff`
-- Merge method: `squash`
-- Integration disposition: `MERGED_GREEN_DEV`
-- Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
-- Runtime/preview/release evidence: not claimed
-- Next READY slice: `DS2-UI-004 — Sales Order form V2 foundation`
+- PR base SHA: `a6c9705ab56442c7c1d1722b442aa374a7556e81`
+- Feature branch: `ds2/sales-order-form-v2`
+- Exact current PR HEAD: `da8af948764bbf2c1902a9abb9da36b8762d5345`
+- Live PR state: `OPEN / DRAFT / mergeable`
+- Changed-file scope: 4 files
+- Integration disposition: `NO_MERGE_IN_PROGRESS`
+- Current evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 
 ## Integrator decision
 
-**MERGED — all controlled development integration gates passed.**
+**NO MERGE — normal implementation progress is still in flight.**
 
-Immediately before integration, the live PR was revalidated:
+The current PR does not satisfy the development integration gate because the exact current HEAD has no `AGENT-REVIEW: GREEN-DEV` marker and no `SOURCE_REVIEW_PASS`. The PR remains explicitly `IN_PROGRESS` / Draft, and the current handoff states that `SalesOrderForm.tsx` page wiring is intentionally not complete yet.
 
-- base remained exactly `design-system-v2-development`;
-- exact head remained `d03dbf4d32e0fb1a3e4888588a5c6d685689f1ff`;
-- Design QA had issued exact-head `AGENT-REVIEW: GREEN-DEV` with `SOURCE_REVIEW_PASS` and honest `TESTS_AUTHORED_NOT_EXECUTED` evidence;
-- no known build/type failure was recorded;
-- no current role state contained a `BLOCKING` contradiction;
-- Product Design Director constraints were resolved on the exact head;
-- changed-file scope was exactly four Sales UI/test files;
-- no DB/migration/RPC/service/query-cache/RBAC/RLS/permission-definition/route-guard/workflow/validation/business-calculation/GitHub-workflow/Vercel/`main` change was present;
-- development drift from the slice baseline remained governance/state documentation only and did not invalidate the feature head.
+This is not a blocker. The implementation loop is progressing normally on the single authorized slice.
 
-The PR was Draft only as a lifecycle state. It was marked Ready for Review without moving the exact reviewed head; GitHub then reported the PR mergeable. The PR was squash-merged with `expected_head_sha` pinned to the exact GREEN-DEV head.
+## Revalidation performed
 
-## Integrated system result
+- base remains exactly `design-system-v2-development`;
+- development HEAD remains the slice starting baseline `a6c9705ab56442c7c1d1722b442aa374a7556e81`;
+- exact live PR HEAD is `da8af948764bbf2c1902a9abb9da36b8762d5345`;
+- PR is still Draft and mergeable;
+- only one open PR targets the development branch;
+- changed files are limited to:
+  - `src/components/sales/SalesOrderFormPresentation.tsx`
+  - `src/components/sales/SalesOrderFormPresentation.test.tsx`
+  - `src/components/sales/sales-order-form-v2.css`
+  - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
+- current product diff is presentation/test/state only;
+- no DB/migration/RPC/service/query-cache/RBAC/RLS/permission-definition/route-guard/workflow/business-calculation/GitHub-workflow/Vercel/`main` change is present;
+- no current peer-state `BLOCKING` contradiction applies;
+- no known build/type failure is recorded;
+- no hosted CI/Actions/Vercel evidence is claimed or required at this WIP stage.
 
-The development branch now includes the Sales Orders list V2 migration:
+## Current implementation position
 
-- shared `ResponsiveCollection` owns one mounted collection renderer;
-- Desktop retains the existing dense paged `DataTable` and numbered pagination;
-- Tablet uses deliberate Sales cards while preserving the existing paged Desktop dataset and numbered-pagination semantics;
-- Mobile preserves accumulated `useMobileInfiniteList` data, sentinel, load-more and terminal states;
-- Sales KPI truth projects through shared `StatCard` surfaces without moving business truth;
-- Sales status uses a thin domain adapter over shared semantic `StatusBadge`;
-- `SalesOrderCard` composes shared `Card`, `KeyValueList`, `Button`, and `StatusBadge`;
-- Smart Transfer action surfaces and collection empty state use shared V2 primitives/patterns;
-- legacy Mobile `DataCard` and CSS-hidden duplicate collection trees are removed from this page;
-- displayed payment percentage remains page-owned while only progress geometry/ARIA is bounded;
-- existing Sales query/filter/pagination/infinite-loading/navigation/permission/status/payment/Smart Transfer/map/call/business semantics remain unchanged.
+The active WIP establishes presentation-only Sales Order form contracts over existing V2 patterns:
 
-## Non-blocking WATCH carried forward
+- controlled step navigation over shared `Button`;
+- shared `FormSection` + `FormGrid` composition;
+- shared `FormActions` + `Button` action hierarchy;
+- Mobile step navigation that wraps instead of creating ordinary horizontal overflow;
+- focused test artifacts for reachability, action routing and loading semantics.
 
-These do not reopen or invalidate DS2-UI-003:
+The live business form is not yet wired to these contracts. Therefore the current exact HEAD is not review-ready and must not be integrated.
 
-1. converge Desktop/Tablet numbered pagination into one shared accessible Pagination/DataTable contract when the real shared hardening program opens;
-2. consider `aria-valuetext` in later progress/accessibility hardening when displayed projected payment values exceed 100 while geometry remains bounded.
+## Preserve
 
-## Next READY slice
-
-`DS2-UI-004 — Sales Order form V2 foundation`
-
-Integrator advanced exactly one roadmap item to READY. The next implementation must remain presentation-only and should decompose the live Sales Order form into the smallest dependency-safe sub-slice rather than attempt a broad form rewrite.
-
-Preserve:
-- customer/product-line/pricing/discount/tax/total business truth;
-- validation meaning and submit wiring;
-- service/query/cache and permission contracts;
-- route/workflow semantics;
-- canonical Mobile/Tablet/Desktop strategy;
-- shared V2 ownership rather than page-local primitive invention;
-- exact evidence honesty, Actions quota freeze, owner-requested-only preview, and `main` freeze.
+- create/edit and `copyFrom` behavior;
+- customer/branch/rep behavior;
+- product search/unit/quantity/stock/add-remove behavior;
+- price-edit and discount permissions;
+- tax/shipping/discount/total calculations;
+- step validation and minimum-order blocking;
+- save service sequence and post-save/cancel routes;
+- ResponsiveModal add-product flow;
+- UI-only functional isolation;
+- one active implementation slice;
+- no hosted CI, Vercel preview, or `main` activity.
 
 ## Cross-role handoff
 
 - **To:** UI Production Engineer, Product Design Director, Design QA
-- **What changed:** PR #30 exact GREEN-DEV head `d03dbf4d32e0fb1a3e4888588a5c6d685689f1ff` was marked Ready without head movement and squash-merged into `design-system-v2-development` as `e42910fb2bb7c945e67262f610d9e0b630d960a6`; Workstream now marks DS2-UI-003 DONE and exactly one next slice, DS2-UI-004, READY.
-- **Preserve:** all integrated Sales-list functional semantics; shared ResponsiveCollection/status/KPI/card/action/state grammar; QA WATCH items remain future shared-depth work only; no hosted CI/Vercel/`main` activity.
-- **Need from you:** UI Production Engineer should bootstrap from the exact latest development HEAD and take only DS2-UI-004, first selecting the smallest presentation-only Sales Order form sub-slice. Product Design Director should bound shared form/combobox/product-line direction. Design QA should review only the next stable exact PR head.
+- **What changed:** Integrator revalidated live PR #31 at exact HEAD `da8af948764bbf2c1902a9abb9da36b8762d5345` and confirmed `NO_MERGE_IN_PROGRESS`; current work remains a bounded presentation-only WIP and has not reached Design QA approval.
+- **Preserve:** all Sales Order business/query/permission/validation/calculation/submit/route semantics; exact-head evidence discipline; no hosted CI/Vercel/`main` activity.
+- **Need from you:** UI Production Engineer should continue only PR #31 and complete the bounded `SalesOrderForm.tsx` presentation wiring plus focused regression tests before handing a stable exact HEAD to Design QA. Design QA should wait for that handoff. Product Design Director may inspect system fit without expanding scope.
 - **Blocker level:** `NONE`.
-- **Baseline:** product merge `e42910fb2bb7c945e67262f610d9e0b630d960a6`; post-Workstream development head before this state write `a60fba9508d87bfbecd192a96589458a1ef8a0ab`
+- **Baseline:** development `a6c9705ab56442c7c1d1722b442aa374a7556e81`; PR #31 HEAD `da8af948764bbf2c1902a9abb9da36b8762d5345`
