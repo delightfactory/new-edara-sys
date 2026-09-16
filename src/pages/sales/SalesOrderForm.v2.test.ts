@@ -16,6 +16,12 @@ describe('SalesOrderForm V2 outer composition contract', () => {
     expect(source).not.toContain("transform: 'rotate(180deg)'")
   })
 
+  it('preserves the shared 3 Desktop -> 2 Tablet -> 1 Mobile density contract for order data', () => {
+    expect(source).toContain('<SalesOrderFormSection title="بيانات الطلب" icon={<User size={16} />} columns={3}>')
+    expect(source).not.toContain('<SalesOrderFormSection title="بيانات الطلب" icon={<User size={16} />} columns={2}>')
+    expect(source.match(/gridColumn: '1 \/ -1'/g)?.length ?? 0).toBeGreaterThanOrEqual(2)
+  })
+
   it('keeps direct step activation page-owned and prevents free access to review', () => {
     expect(source).toContain('const canActivateStep = (index: number) => {')
     expect(source).toContain('if (index === step || index < step) return true')
