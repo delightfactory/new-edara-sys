@@ -3,12 +3,13 @@ import { ArrowLeftRight } from 'lucide-react'
 import Card from '@/components/patterns/Card'
 import KeyValueList, { type KeyValueItem } from '@/components/patterns/KeyValueList'
 import StatusBadge, { type SemanticTone } from '@/components/patterns/StatusBadge'
+import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 
 export interface TransferCardSummary {
   number: ReactNode
   directionLabel: ReactNode
-  directionTone: SemanticTone
+  directionIcon?: ReactNode
   statusLabel: ReactNode
   statusTone: SemanticTone
   createdAt: ReactNode
@@ -28,6 +29,7 @@ export interface TransferCardProps {
  * TransferCard — Inventory-domain composition over the shared V2 card/status/detail grammar.
  *
  * Workflow predicates, permissions, status mapping and action callbacks remain page-owned.
+ * Transfer direction is categorical metadata, while workflow status owns semantic status tone.
  * This component only owns the responsive identity/detail hierarchy and touch-safe detail entry.
  */
 export function TransferCard({
@@ -91,7 +93,12 @@ export function TransferCard({
             </div>
 
             <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-              <StatusBadge label={summary.directionLabel} tone={summary.directionTone} />
+              <Badge variant="neutral">
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' }}>
+                  {summary.directionIcon && <span aria-hidden="true">{summary.directionIcon}</span>}
+                  <span>{summary.directionLabel}</span>
+                </span>
+              </Badge>
               <StatusBadge label={summary.statusLabel} tone={summary.statusTone} />
             </div>
           </div>
