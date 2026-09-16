@@ -3,9 +3,9 @@ import { createPortal } from 'react-dom'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
-  ArrowRight, Plus, Trash2, Save, ChevronDown, X,
+  ArrowRight, Plus, Trash2, ChevronDown, X,
   User, MapPin, Package, Truck, AlertTriangle, Search,
-  Calculator, CheckCircle, ChevronLeft,
+  Calculator, CheckCircle,
 } from 'lucide-react'
 import {
   useWarehouses, useShippingCompanies, useProfiles, useSalesSettings,
@@ -28,13 +28,18 @@ import Button from '@/components/ui/Button'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
 import PermissionGuard from '@/components/shared/PermissionGuard'
 import CustomerCreditChip from '@/components/shared/CustomerCreditChip'
+import {
+  SalesOrderFormActions,
+  SalesOrderFormSection,
+  SalesOrderStepNavigator,
+} from '@/components/sales/SalesOrderFormPresentation'
 
 // ── Step definitions ──────────────────────────────────────────────
 const STEPS = [
-  { label: 'بيانات الطلب',  icon: <User size={14} /> },
-  { label: 'المنتجات',      icon: <Package size={14} /> },
-  { label: 'التوصيل',       icon: <Truck size={14} /> },
-  { label: 'المراجعة',      icon: <CheckCircle size={14} /> },
+  { id: 'order', label: 'بيانات الطلب', icon: <User size={14} /> },
+  { id: 'items', label: 'المنتجات', icon: <Package size={14} /> },
+  { id: 'delivery', label: 'التوصيل', icon: <Truck size={14} /> },
+  { id: 'review', label: 'المراجعة', icon: <CheckCircle size={14} /> },
 ]
 
 // ─────────────────────────────────────────────
@@ -835,6 +840,14 @@ export default function SalesOrderForm() {
     setStep(s => Math.min(s + 1, STEPS.length - 1))
   }
 
+  const canActivateStep = (index: number) => {
+    if (index === step || index < step) return true
+    if (index === 0) return true
+    if (index === 1) return canProceedStep0
+    if (index === 2) return canProceedStep0 && canProceedStep1
+    return false
+  }
+
   if (formLoading) return (
     <div className="page-container animate-enter">
       <div className="edara-card" style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>
@@ -858,40 +871,16 @@ export default function SalesOrderForm() {
         }
       />
 
-      {/* ══════ STEPPER BAR ══════ */}
-      <div className="stepper-bar edara-card" style={{ padding: 'var(--space-3) var(--space-4)', marginBottom: 'var(--space-4)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-          {STEPS.map((s, i) => (
-            <React.Fragment key={i}>
-              <button
-                onClick={() => { if (i < step || (i === 0) || (i === 1 && canProceedStep0) || (i === 2 && canProceedStep0 && canProceedStep1)) setStep(i) }}
-                style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                  padding: '6px 12px', borderRadius: 'var(--radius-md)',
-                  border: 'none', cursor: 'pointer',
-                  background: i === step ? 'var(--color-primary)' : i < step ? 'var(--bg-accent)' : 'transparent',
-                  color: i === step ? '#fff' : i < step ? 'var(--color-primary)' : 'var(--text-muted)',
-                  transition: 'all 0.2s', flex: 1, minWidth: 0,
-                }}
-              >
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontWeight: i === step ? 700 : 500, fontSize: 'var(--text-xs)', whiteSpace: 'nowrap' }}>
-                  {i < step ? <CheckCircle size={13} /> : s.icon}
-                  <span className="stepper-label">{s.label}</span>
-                </span>
-              </button>
-              {i < STEPS.length - 1 && (
-                <div style={{ flex: '0 0 20px', height: 2, background: i < step ? 'var(--color-primary)' : 'var(--border-color)', transition: 'background 0.3s' }} />
-              )}
-            </React.Fragment>
-          ))}
-        </div>
-      </div>
+      <SalesOrderStepNavigator
+        steps={STEPS}
+        activeIndex={step}
+        canActivate={canActivateStep}
+        onChange={setStep}
+      />
 
       {/* ══════ STEP 0: Customer & Header ══════ */}
-      {step === 0 && <section style={sCard}>
-        <SectionHead icon={<User size={16} />} title="بيانات الطلب" />
-
-        <div style={grid2}>
+      {step === 0 && (
+        <SalesOrderFormSection title="بيانات الطلب" icon={<User size={16} />} columns={2}>
           {/* Customer */}
           <div style={{ gridColumn: '1 / -1' }}>
             <FieldLabel required>العميل</FieldLabel>
@@ -995,8 +984,8 @@ export default function SalesOrderForm() {
               })()}
             </div>
           )}
-        </div>
-      </section>}
+        </SalesOrderFormSection>
+      )}
 
       {/* ══════ STEP 2 (Delivery) moved below items ══════ */}
       {step === 2 && <section style={sCard}>
@@ -1403,26 +1392,17 @@ export default function SalesOrderForm() {
         )}
       </section>}
 
-      {/* ══════ Step Navigation Bar ══════ */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginTop: 8, paddingBottom: 'var(--space-6)' }}>
-        <Button variant="ghost" onClick={step === 0 ? () => navigate(-1) : () => setStep(s => s - 1)}>
-          {step === 0 ? 'إلغاء' : <><ChevronLeft size={16} /> السابق</>}
-        </Button>
-        {step < STEPS.length - 1 ? (
-          <Button onClick={goNext} style={{ minWidth: 140 }}>
-            التالي <ChevronLeft size={16} style={{ transform: 'rotate(180deg)' }} />
-          </Button>
-        ) : (
-          <Button
-            icon={<Save size={15} />}
-            onClick={handleSave}
-            disabled={saving || !form.customer_id || validLines.length === 0 || isUnderMin}
-            style={{ minWidth: 160 }}
-          >
-            {saving ? 'جاري الحفظ...' : isEdit ? 'حفظ التعديلات' : 'حفظ المسودة'}
-          </Button>
-        )}
-      </div>
+      <SalesOrderFormActions
+        activeIndex={step}
+        lastIndex={STEPS.length - 1}
+        saving={saving}
+        submitDisabled={saving || !form.customer_id || validLines.length === 0 || isUnderMin}
+        isEdit={isEdit}
+        onCancel={() => navigate(-1)}
+        onPrevious={() => setStep(s => Math.max(0, s - 1))}
+        onNext={goNext}
+        onSubmit={handleSave}
+      />
 
       {/* ══════ MOBILE: Add-Item Bottom Sheet ══════ */}
       <ResponsiveModal
@@ -1573,7 +1553,7 @@ export default function SalesOrderForm() {
                </div>
                <div className="form-group">
                  <label className="form-label">السعر (ج.م)</label>
-                 <input type="number" inputMode="decimal" enterKeyHint="next" className="form-input" min={0} step={0.01}
+                 <input type="number" inputMode="decimal" enterKeyHint="next" className="form-input" min={0} step="0.01"
                    disabled={!canEditPrice}
                    value={sheetLine.unit_price}
                    onChange={e => setSheetLine(calcLine({ ...sheetLine, unit_price: Number(e.target.value), priceOverridden: true }))} />
@@ -1604,7 +1584,6 @@ export default function SalesOrderForm() {
         @media (max-width: 768px) {
           .desktop-only-btn { display: none !important; }
           .mobile-only-btn  { display: inline-flex !important; }
-          .stepper-label    { display: none; }
         }
         @media (min-width: 769px) {
           .mobile-only-btn  { display: none !important; }
@@ -1624,12 +1603,6 @@ const sCard: React.CSSProperties = {
   borderRadius: 12,
   padding: 20,
   marginBottom: 16,
-}
-
-const grid2: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-  gap: 16,
 }
 
 const grid3: React.CSSProperties = {
