@@ -4,131 +4,154 @@
 
 - Review date: `2026-09-16`
 - Development branch: `design-system-v2-development`
-- Exact current development HEAD reviewed before this state write: `68030bf9064ef1c4540f2e1dc3ef60a34bd46642`
-- Active slice: `DS2-UI-003 — Sales Orders list V2`
-- Active Draft PR: `#30 — DS2-UI-003: migrate Sales Orders list to shared V2 grammar`
-- Feature branch: `ds2/sales-orders-list-v2`
-- Starting baseline: `e78de5d71002b9718fa7d760b3cc7bc933ff6cba`
-- Exact current PR HEAD independently reviewed: `bfd54e578a7b63bd7abfa567e197db0043cc8a13`
+- Exact development HEAD reviewed before this state write: `a6c9705ab56442c7c1d1722b442aa374a7556e81`
+- Active slice: `DS2-UI-004 — Sales Order form V2 foundation`
+- Active Draft PR: `#31 — DS2-UI-004: establish Sales Order form V2 presentation foundation`
+- Feature branch: `ds2/sales-order-form-v2`
+- Starting baseline: `a6c9705ab56442c7c1d1722b442aa374a7556e81`
+- Exact current PR HEAD independently reviewed: `da8af948764bbf2c1902a9abb9da36b8762d5345`
 - Live PR state: `OPEN / DRAFT / mergeable`
 - Current implementation disposition: `IN_PROGRESS`
 - Current evidence: `TESTS_AUTHORED_NOT_EXECUTED`
-- Exact-head QA approval for PR #30: not yet expected / not present
+- Exact-head QA approval for PR #31: not expected / not present while WIP remains incomplete
 
 ## Independent professional judgment
 
-**WIP DIRECTION PASS — CONTINUE THE SAME SLICE. NO SCOPE EXPANSION.**
+**WIP ARCHITECTURE NEEDS ONE BOUNDED CORRECTION BEFORE PAGE WIRING. CONTINUE THE SAME PR; DO NOT EXPAND SCOPE.**
 
-The current PR is still correctly bounded to Sales-list presentation infrastructure and is not review-ready yet. The emerging `SalesOrderCard` boundary is directionally strong and consistent with the North Star:
+The selected slice is correct: the Sales Order form is a high-value golden-flow surface and the safe first boundary is presentation composition, not customer/product/pricing/discount/tax/validation/save logic. The new `SalesOrderFormSection` and `SalesOrderFormActions` are directionally sound thin compositions over the existing shared `FormSection` / `FormGrid` / `FormActions` / `Button` contracts.
 
-- Sales business/query/calculation truth remains page-owned;
-- shared `Card`, `KeyValueList`, `Button`, `StatusBadge` and semantic tokens own visual/interaction behavior;
-- the card is an explicit operational record surface rather than a fake whole-card button;
-- Mobile actions are touch-ready and explicit;
-- Tablet has a deliberately denser card mode instead of inheriting a shrunken Desktop table;
-- status is mapped through the shared semantic status grammar;
-- payment progress now has an explicit labelled accessibility contract;
-- focused tests cover the new presentation boundary;
-- no service/query/cache/permission/workflow/business mutation is present in the current two-file PR.
+However, the current WIP introduces a Sales-local `SalesOrderStepNavigator` even though the repository already contains the approved shared `src/components/ui/Stepper.tsx`, and the control contract explicitly says the current shared Stepper is retained/evolved. Wiring the local navigator into the page would create a second stepper language and violate the shared-system-before-page-local rule.
 
-The correct next step remains bounded page wiring through `ResponsiveCollection`; do not start Sales Order form/detail work and do not open a speculative DataTable/FilterBar redesign.
+This is a **bounded Design System architecture blocker**, not a reason to stop DS2-UI-004 or redesign the whole form.
 
-## Two required system-boundary corrections before REVIEW
+## Required correction before continuing page wiring
 
-### 1. Tablet presentation must not silently inherit Mobile query semantics
+### 1. Evolve/reuse the existing shared Stepper; do not create a Sales-local replacement
 
-**Required direction before review.**
+**BLOCKING at the current presentation boundary.**
 
-The current Sales page has an explicit historical breakpoint: only `<=768px` uses the Mobile card/infinite-loading surface; widths above 768 currently use the Desktop paged table. Therefore, under the V2 canonical device split, Tablet (`769–1024px`) may change **presentation** to the new denser `SalesOrderCard`, but this slice must not silently change its data/pagination behavior to Mobile infinite loading.
+Use the existing shared `Stepper` as the system-owned visual/semantic component. If the live Sales form proves that guarded clickable step navigation is missing from its API, extend the shared Stepper by the smallest backward-compatible interaction contract needed by this real form.
 
-For DS2-UI-003:
+Guardrails:
+- preserve the existing visual-only/default Stepper API for current consumers;
+- optional interaction may accept page-owned reachability/activation callbacks, but must not contain Sales validation/business rules;
+- current/completed/upcoming semantics remain system-owned;
+- page code remains authoritative for whether a step is reachable;
+- do not create a generic workflow engine or broad wizard abstraction;
+- focused tests must protect both legacy/default Stepper behavior and the new optional guarded-navigation contract if the shared component changes.
 
-- Desktop: existing `desktopOrders` + numbered pagination + Desktop table.
-- Tablet: deliberate `SalesOrderCard` composition, but retain the existing paged dataset / numbered-pagination semantics unless a separately approved functional change exists.
-- Mobile: existing accumulated `mobileOrders` + infinite-load/sentinel semantics + Mobile card composition.
+The current Sales-local `SalesOrderStepNavigator` should not survive as a parallel primitive once the shared contract can express the live need.
 
-`ResponsiveCollection` should own the one-renderer-at-a-time presentation boundary. The page may choose the device-appropriate already-existing dataset, but it must not redefine either query contract.
+### 2. Preserve the exact current Sales step-reachability semantics
 
-Focused wiring tests should make this invariant explicit so Tablet visual improvement cannot accidentally become a pagination behavior change.
+**Required before REVIEW.**
 
-### 2. Presentation must not normalize away projected financial truth
+The existing page does not treat all future steps as directly clickable. Its current stepper allows:
+- step 0 directly;
+- step 1 only once customer validity allows it;
+- step 2 only once customer + valid-line conditions allow it;
+- earlier steps when moving backward;
+- review step 3 is reached through the page's existing forward progression, not made freely direct-clickable by the stepper.
 
-**Required direction before review.**
+The V2 wiring must preserve this behavior exactly unless a separate functional decision changes it. A generic `index <= activeIndex` or `all completed/future valid steps are clickable` rule would silently change workflow interaction semantics.
 
-`SalesOrderCard` currently receives `summary.paidPercent` as an already-projected value, then rounds and clamps it internally to `0..100`. That conflicts with the component's own stated boundary that business/calculation truth is page-owned and can also change the existing visible behavior: the current page clamps the progress-bar width, but the visible percentage is `Math.round(paidRatio * 100)` and may differ from the normalized bar value in edge cases.
+Add focused page-wiring coverage for the exact reachability mapping and keep `goNext` validation/toast behavior page-owned.
 
-Keep financial truth ownership outside the visual component:
+### 3. Make directional actions RTL-native, not inherited LTR arrows
 
-- preserve the existing page-owned `collected`, `outstanding`, ratio and displayed-percentage semantics;
-- do not move those calculations into `SalesOrderCard`;
-- do not silently replace an already-projected display value with a normalized value;
-- if the visual bar requires a bounded `0..100` geometry/ARIA value, separate that presentation normalization from the displayed projected percentage rather than overwriting the projected value.
+**Required before REVIEW; presentation-only.**
 
-This is a small component-contract correction, not permission to redesign payment accounting or Sales calculations.
+The current WIP renders `السابق` with a left-pointing chevron and `التالي` with that icon rotated to point right. In an Arabic RTL progression this communicates the opposite logical direction.
+
+Use logical/RTL-aware directional treatment so:
+- forward/`التالي` communicates movement in the RTL-forward direction;
+- backward/`السابق` communicates the reverse;
+- the implementation does not rely on a hard-coded transform that becomes wrong if direction changes.
+
+This corrects visual interaction semantics only; it must not alter callbacks or workflow progression.
+
+### 4. Four-step Mobile progress must stay understandable with real Arabic labels
+
+**Required acceptance condition; do not over-design.**
+
+The current WIP avoids horizontal overflow with a 2-column Mobile grid, which is directionally better than the legacy squeezed row. But its labels are forced to a single line with ellipsis. The shared Stepper contract says 4+ steps should prioritize current-step/progress clarity over squeezing labels.
+
+For the final bounded solution:
+- no ordinary horizontal stepper scrolling on the Sales form;
+- current step label must remain fully understandable on phone width;
+- long Arabic labels must not silently reduce critical meaning through aggressive ellipsis;
+- status must remain more than color alone;
+- do not add a broad new wizard layout system beyond what this four-step form proves.
+
+## Approved parts of the current WIP
+
+### Form section composition
+
+**PASS.** `SalesOrderFormSection` is a thin domain composition over shared `FormSection` + `FormGrid`, with no domain state or validation inside it.
+
+### Action hierarchy
+
+**PASS direction, subject to RTL icon correction.** `SalesOrderFormActions` correctly delegates cancel/previous/next/submit/loading/disabled truth to the page and uses shared `FormActions` + `Button`. Sticky Mobile actions remain appropriate only if page wiring proves they do not cover active fields/validation or conflict with BottomNav safe areas.
+
+### Functional isolation
+
+**PASS for current WIP.** The current PR changes presentation/test/state files only. No service, query/cache, DB/RPC, permission/RBAC/RLS, validation meaning, pricing/discount/tax/total calculation, workflow state, route or deployment contract changed.
+
+### Combobox / product-line scope
+
+**DEFER in this sub-slice.** The live form still contains page-local customer/product combobox and line-item interaction debt, and a shared `AsyncCombobox` exists. That is real future Design System work, but it should not be pulled into this first outer-form composition PR unless page wiring exposes a concrete blocker. Prove the outer form/step/action composition first, then open the smallest dedicated shared lookup/product-line slice if needed.
 
 ## North Star fit
 
-### Shared-system coherence
-
-**PASS for current WIP.** The component is a legitimate Layer-4 Sales composition over shared V2 primitives. No Sales-local primitive is being invented where a system primitive already exists.
-
 ### Mobile
 
-**PASS direction.** Explicit identity/status/financial hierarchy and touch-safe open/map/call actions are stronger than the legacy clickable `DataCard` pattern. Keep ordinary horizontal overflow out of the card surface.
+The intended touch-safe shared actions and removal of ordinary stepper overflow fit the Mobile-primary North Star. Final wiring must preserve single-column task clarity, long Arabic labels, validation visibility, sticky-action safe-area behavior, and existing Mobile add-item sheet behavior.
 
 ### Tablet
 
-**PASS presentation direction with the data-semantics constraint above.** A denser card anatomy is appropriate, but device composition must not alter the existing paged-vs-infinite behavior contract.
+The form may use the shared two-column cap where grouping remains clear. Tablet must remain touch-first and must not simply inherit a compressed Desktop density.
 
 ### Desktop
 
-**PASS direction.** Retain dense `DataTable` comparison and numbered pagination. When wiring, do not use `DataTable.dataCardMapping`; `ResponsiveCollection` should prevent duplicate mounted Desktop/Mobile interaction trees.
+Preserve efficient data-entry density. Moving outer grouping/actions to V2 patterns must not turn the order form into a low-density card wall.
 
 ### Accessibility / RTL
 
-**PASS direction.** Semantic status text, labelled progress, explicit buttons and LTR order/customer identifiers fit the shared grammar. QA should still review the final wired page and state transitions on the exact review-ready HEAD.
+Use the shared Stepper as the reusable accessibility boundary. Page-owned reachability must map to real disabled/interactive semantics. Directional action icons must be RTL-logical. Do not introduce partial ARIA semantics detached from actual interaction behavior.
 
-## Freshness / development drift
+## Freshness / coordination
 
-The feature branch started at `e78de5d71002b9718fa7d760b3cc7bc933ff6cba`.
+- Current development HEAD `a6c9705...` is the exact baseline from which PR #31 started.
+- Current PR HEAD is `da8af948764bbf2c1902a9abb9da36b8762d5345`; its latest commit updates implementation-state documentation after the initial presentation code.
+- Only PR #31 currently targets `design-system-v2-development`.
+- Development-side Design QA and Integration states correctly describe the completed PR #30 and are stale/consumed for this new slice; they contain no current blocker for DS2-UI-004.
+- The feature-branch UI Implementation State is fresh in intent and correctly keeps all Sales truth page-owned, but its WIP architecture must adopt the existing shared Stepper before page wiring.
+- Workstream/Team Memory still describe DS2-UI-004 as READY even though PR #31 has now started. Treat that lifecycle wording as stale coordination metadata, not permission to open a second slice. PR #31 is the single active implementation slice.
 
-Current development HEAD `68030bf9064ef1c4540f2e1dc3ef60a34bd46642` is four commits ahead of that baseline. Compare shows development drift is limited to:
-
-- `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md`
-- `team/design-system-v2/INTEGRATION_STATE.md`
-- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
-
-No product/shared-component drift exists after the feature baseline. Do not merge-sync the WIP branch merely to absorb governance/state updates.
-
-## Cross-role context comparison
-
-- **UI Production Engineer:** current and aligned on exact WIP HEAD `bfd54e57...`; its next step is the correct bounded page wiring. The two Director constraints above refine that handoff before REVIEW.
-- **Design QA:** stored state still belongs to merged PR #29 and is stale for Sales. No Sales QA approval or contradiction exists yet.
-- **Development Integrator:** stored state targets earlier PR #30 WIP HEAD `6608f33e...`; its `NO_MERGE_IN_PROGRESS` conclusion remains correct and is naturally stale by HEAD. No contradiction.
-- **Team Memory / Workstream:** correctly identify DS2-UI-003 as the single active slice and preserve one-slice WIP discipline.
-
-No current peer-state `BLOCKING` contradiction applies.
+Do not merge-sync the feature branch merely to absorb this Design Director state commit; state-only development drift must not create unnecessary PR-head churn.
 
 ## Preserve
 
-- Sales URL-synchronized filters and governorate/city reset behavior;
-- current Sales query parameters and service/cache contracts;
-- Desktop numbered pagination semantics;
-- Mobile accumulated/infinite-loading semantics;
-- existing KPI business meaning;
-- existing status/payment labels and business meaning;
-- page ownership of all monetary/outstanding/payment-ratio calculations;
-- `sales.orders.create` permission behavior and Smart Transfer entry point;
-- order/customer navigation plus map/call destinations;
-- shared V2 ownership of visual/action/status grammar;
+- create vs edit mode and `copyFrom` behavior;
+- customer selection/clear, branch loading, credit presentation and rep assignment/read-only behavior;
+- product search/unit/quantity/stock warning/add-remove behavior;
+- price-edit permission and discount-override limits;
+- tax, discount, shipping and total calculations;
+- current step validation and progression semantics;
+- minimum-order blocking;
+- `createSalesOrder` / `updateSalesOrder` / `saveSalesOrderItems` / `recalcOrderTotals` submit sequence;
+- route navigation after save and cancel/back behavior;
+- existing ResponsiveModal/mobile add-product flow;
+- shared V2 ownership of Stepper/form/action grammar;
 - exact evidence honesty; no hosted CI, Vercel preview or `main` activity;
 - one active implementation slice only.
 
 ## Cross-role handoff
 
 - **To:** UI Production Engineer, Design QA, Development Integrator
-- **What changed:** Product Design Director independently reviewed PR #30 WIP HEAD `bfd54e578a7b63bd7abfa567e197db0043cc8a13`. The Sales card/presentation direction is approved to continue, with two bounded system-contract constraints before REVIEW: Tablet may use card presentation but must preserve the existing paged dataset/pagination semantics, and `SalesOrderCard` must not clamp/round away page-projected financial display truth.
-- **Preserve:** all existing Sales query/filter/pagination/infinite-loading/navigation/permission/status/payment/Smart Transfer/map/call/business semantics; shared `ResponsiveCollection` one-renderer boundary; Desktop density; Mobile operational clarity; quota/deployment/main restrictions.
-- **Need from you:** UI Production Engineer should continue only PR #30, apply these two boundaries while wiring `SalesOrdersPage`, and author focused coverage for device-specific dataset/pagination selection plus preserved payment-progress projection. Design QA and Integrator should continue to no-op until a stable review-ready exact HEAD is handed off.
-- **Blocker level:** `WATCH` during WIP, but both constraints are required before `REVIEW` / `GREEN-DEV`.
-- **Baseline:** development `68030bf9064ef1c4540f2e1dc3ef60a34bd46642`; PR #30 HEAD `bfd54e578a7b63bd7abfa567e197db0043cc8a13`
+- **What changed:** Product Design Director independently reviewed Draft PR #31 HEAD `da8af948764bbf2c1902a9abb9da36b8762d5345`. The bounded Sales Order form slice is correct, but the WIP currently duplicates the approved shared `Stepper` with a Sales-local navigator. Before wiring the live page, reuse/evolve the shared Stepper with the smallest optional page-owned guarded-navigation contract. Preserve exact Sales step reachability, correct RTL forward/back directional cues, and keep four-step Mobile progress understandable without ordinary overflow/aggressive meaning loss.
+- **Preserve:** all Sales Order customer/product/pricing/discount/tax/validation/permission/service/query/save/route/workflow semantics; shared FormSection/FormGrid/FormActions/Button contracts; existing Mobile add-item/modal behavior; no broad Combobox/ProductLine rewrite in this first sub-slice; no hosted CI/Vercel/`main` activity.
+- **Need from you:** UI Production Engineer should continue only PR #31, replace the parallel Sales-local stepper primitive with the smallest backward-compatible shared Stepper evolution, then wire the page while preserving exact reachability and add focused page-wiring/RTL/mobile-label tests. Design QA and Integrator should no-op until a stable review-ready exact HEAD is handed off.
+- **Blocker level:** `BLOCKING` for page wiring/review while the duplicate Stepper boundary remains; no functional/business blocker exists.
+- **Baseline:** development `a6c9705ab56442c7c1d1722b442aa374a7556e81`; PR #31 HEAD `da8af948764bbf2c1902a9abb9da36b8762d5345`
