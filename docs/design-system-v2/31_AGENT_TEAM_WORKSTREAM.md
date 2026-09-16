@@ -38,16 +38,16 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-INV-002`.
+Product UI is integrated through `DS2-PROC-001`.
 
 Latest product integration:
-- PR: `#35 — DS2-INV-002: establish transfer flow V2 presentation`
-- Exact reviewed PR HEAD: `d39d39281549650ef4bbd18767b20728a01117af`
-- Squash merge commit: `9328464542b1ca429fd1ec134667f45244215b67`
+- PR: `#36 — DS2-PROC-001: establish purchase invoice list V2 presentation`
+- Exact reviewed PR HEAD: `df3da0e6a5b00e85c8ba35f1b99481e8f0b396be`
+- Squash merge commit: `936129c69a51237ceeefc7880d9735aa5f584879`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Runtime/preview/release evidence: not claimed
 
-The development branch now includes shared semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory stock-list V2, and the first Inventory transfer collection migration with deliberate Desktop/Tablet/Mobile composition and source-level accessibility hardening.
+The development branch now includes shared semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, and the first Procurement purchase-list migration with deliberate Desktop/Tablet/Mobile composition plus bounded shared `DataTable` pagination hardening.
 
 ## Completed slices
 
@@ -141,38 +141,46 @@ System result:
 - query `pageSize: 25`, filter/page behavior, create modal, confirmation flow, stock availability/reservation/validation, services, routes and invalidation remain unchanged;
 - Transfer Detail, Adjustments, create-flow/Combobox redesign and global Pagination convergence remain outside this completed representative slice.
 
-## Current single active slice
-
 ### DS2-PROC-001 — Purchase list surfaces
-Status: `REVIEW`
-Owner role: UI Production Engineer -> Product Design Director / Design QA
+Status: `DONE`
+Merged PR: `#36`
+Reviewed HEAD: `df3da0e6a5b00e85c8ba35f1b99481e8f0b396be`
+Squash merge: `936129c69a51237ceeefc7880d9735aa5f584879`
+Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
+Runtime/preview/release evidence: not claimed
 
-Bounded representative concern:
-- live surface is `PurchaseInvoicesPage` collection/presentation only;
-- replace CSS-hidden duplicate Desktop/Mobile collection trees with one `ResponsiveCollection<PurchaseInvoice>` boundary;
-- keep Desktop as dense `DataTable` comparison/review with its existing numbered pagination capability;
-- use deliberate two-column Tablet `PurchaseInvoiceCard` composition with numbered direct jumps and one-column Mobile operational cards with previous/next paging;
-- compose the thin Procurement card from shared `Card + KeyValueList + StatusBadge + Button`, with page-owned supplier/warehouse/financial/status/navigation truth;
-- use shared loading/empty-state and semantic-status grammar without moving procurement/accounting behavior into presentation.
+System result:
+- live `PurchaseInvoicesPage` now uses one `ResponsiveCollection<PurchaseInvoice>` boundary instead of CSS-hidden duplicate device trees;
+- Desktop preserves dense `DataTable` comparison/review and numbered direct jumps;
+- Tablet uses deliberate two-column `PurchaseInvoiceCard` composition with numbered direct jumps; Mobile uses one-column operational cards with touch-safe previous/next paging;
+- `PurchaseInvoiceCard` remains a thin Procurement-domain composition over shared `Card + KeyValueList + StatusBadge + Button`;
+- true initial-empty and filtered-empty states are distinct, and search copy matches the unchanged service search truth (`number` + `supplier_invoice_ref`);
+- shared `DataTable` pagination now exposes a labeled navigation boundary, logical Arabic previous/next controls, accessible names, numeric `aria-current="page"`, and a bounded width-safe nav-button modifier while numeric page controls remain compact;
+- purchase query/page/filter/reset, supplier/warehouse/document identity, total/paid values, status/workflow/accounting/permission/service and create/detail route truth remain page/domain/service-owned and unchanged;
+- broad/global Pagination convergence, generic clickable-row hardening, Purchase Returns and Purchase Invoice form decomposition remain outside this completed representative slice.
+
+## Current single READY slice
+
+### DS2-PROC-002 — Purchase Invoice form decomposition
+Status: `READY`
+Owner role: Product Design Director -> UI Production Engineer after the concern is bounded
 
 System intent:
-Continue the North-Star roadmap into Procurement using the smallest representative purchase-list presentation concern, reusing the proven responsive collection, status, action and state grammar without changing procurement/accounting truth.
+Continue Procurement with the smallest representative Purchase Invoice form presentation concern, reusing the proven V2 form grammar without moving purchase/accounting/business truth into presentation.
 
-Preserve exactly:
-- `getPurchaseInvoices` query/filter/page behavior and `PAGE_SIZE = 20`;
-- search/status reset to page 1;
-- supplier/warehouse/document identity and detail/create routes;
-- total/paid values and currency presentation inputs;
-- purchase workflow status values/mapping ownership;
-- existing Desktop numbered pagination, Tablet direct-jump capability, and Mobile previous/next capability;
-- all service/accounting/approval/permission semantics outside this presentation concern.
+Initial direction:
+- Product Design Director must inspect the live Purchase Invoice create/edit form on the exact latest Development baseline and bound one dependency-safe presentation-only concern before implementation expands;
+- preserve supplier/warehouse/product/document identity, pricing, quantities, discounts, taxes, totals, paid/due values, currency, accounting, approval/status/workflow, validation, permission, submit/save, query/cache, service and route semantics exactly;
+- prefer shared `PageHeader`, `FormSection`, `FormGrid`, `FormActions`, `Button` and existing form-field grammar where the live surface proves fit;
+- strengthen an existing shared form/combobox contract only when the selected live form proves a recurring need and the correction stays presentation/interaction-only;
+- Mobile must remain task-oriented and touch-safe, Tablet deliberate, and Desktop efficient for dense data entry/review;
+- author focused tests for material composition/action/state wiring; evidence follows `33_TEST_AND_VALIDATION_POLICY.md`.
 
 Explicit exclusions:
-- `PurchaseReturnsPage` and Purchase Return flows remain outside this representative concern;
-- Purchase Invoice form decomposition remains `DS2-PROC-002`;
-- no purchase/accounting calculations or workflow changes;
-- no DB/migration/RPC/service/query/cache/RBAC/RLS/permission/route-guard/validation semantic changes;
-- no speculative broad Procurement redesign or global Pagination rewrite;
+- no purchase/accounting calculations, workflow transitions or validation-meaning changes;
+- no DB/migration/RPC/service/query/cache/RBAC/RLS/permission/route-guard changes;
+- no Purchase Returns migration in this slice;
+- no speculative broad Procurement rewrite, global Combobox redesign or global Pagination convergence;
 - no deployment/preview/main changes.
 
 ## Product migration roadmap
@@ -210,8 +218,8 @@ Open only when a real migrated screen proves the recurring gap:
 - `DS2-INV-002` Transfer/adjustment operational flows — `DONE`
 
 ### D. Procurement
-- `DS2-PROC-001` Purchase list surfaces — `REVIEW`
-- `DS2-PROC-002` Purchase Invoice form decomposition — `BACKLOG`
+- `DS2-PROC-001` Purchase list surfaces — `DONE`
+- `DS2-PROC-002` Purchase Invoice form decomposition — `READY`
 
 ### E. Finance
 - `DS2-FIN-001` Finance lists and summaries — `BACKLOG`
