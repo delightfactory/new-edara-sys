@@ -159,20 +159,24 @@ System result:
 - purchase query/page/filter/reset, supplier/warehouse/document identity, total/paid values, status/workflow/accounting/permission/service and create/detail route truth remain page/domain/service-owned and unchanged;
 - broad/global Pagination convergence, generic clickable-row hardening, Purchase Returns and Purchase Invoice form decomposition remain outside this completed representative slice.
 
-## Current single READY slice
+## Current single active slice
 
 ### DS2-PROC-002 — Purchase Invoice form decomposition
-Status: `READY`
-Owner role: Product Design Director -> UI Production Engineer after the concern is bounded
+Status: `IN_PROGRESS`
+Owner role: UI Production Engineer
+Draft PR: `#37`
+Exact baseline: `e4866c9350c507bce260beb07d880fbce55718f3`
 
 System intent:
 Continue Procurement with the smallest representative Purchase Invoice form presentation concern, reusing the proven V2 form grammar without moving purchase/accounting/business truth into presentation.
 
-Initial direction:
-- Product Design Director must inspect the live Purchase Invoice create/edit form on the exact latest Development baseline and bound one dependency-safe presentation-only concern before implementation expands;
+Bounded implementation direction:
+- use the shared V2 `Stepper` for new/editable-draft Purchase Invoice flow only, with Purchase Invoice validation/reachability remaining domain/page-owned;
+- replace duplicate wrappers in the basic-information section only with shared `FormSection` / `FormGrid`;
+- compose existing form actions through shared `FormActions` without changing action eligibility or callbacks;
+- use shared `StatusBadge` for posted/read-only workflow status presentation where applicable;
+- do not overlay editable Stepper UX over posted/finalized/read-only invoices;
 - preserve supplier/warehouse/product/document identity, pricing, quantities, discounts, taxes, totals, paid/due values, currency, accounting, approval/status/workflow, validation, permission, submit/save, query/cache, service and route semantics exactly;
-- prefer shared `PageHeader`, `FormSection`, `FormGrid`, `FormActions`, `Button` and existing form-field grammar where the live surface proves fit;
-- strengthen an existing shared form/combobox contract only when the selected live form proves a recurring need and the correction stays presentation/interaction-only;
 - Mobile must remain task-oriented and touch-safe, Tablet deliberate, and Desktop efficient for dense data entry/review;
 - author focused tests for material composition/action/state wiring; evidence follows `33_TEST_AND_VALIDATION_POLICY.md`.
 
@@ -219,7 +223,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### D. Procurement
 - `DS2-PROC-001` Purchase list surfaces — `DONE`
-- `DS2-PROC-002` Purchase Invoice form decomposition — `READY`
+- `DS2-PROC-002` Purchase Invoice form decomposition — `IN_PROGRESS`
 
 ### E. Finance
 - `DS2-FIN-001` Finance lists and summaries — `BACKLOG`
