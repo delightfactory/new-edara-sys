@@ -38,6 +38,7 @@ describe('TransactionHeader', () => {
     expect(screen.getByText('شركة النور')).not.toBeNull()
     expect(screen.getByText('مؤكد')).not.toBeNull()
     expect(screen.getByRole('banner', { name: 'تفاصيل أمر البيع' })).not.toBeNull()
+    expect(screen.getByRole('group', { name: 'إجراءات المستند' })).not.toBeNull()
 
     const confirm = screen.getByRole('button', { name: 'تأكيد' })
     const edit = screen.getByRole('button', { name: 'تعديل' })

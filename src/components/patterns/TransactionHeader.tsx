@@ -82,7 +82,11 @@ export default function TransactionHeader({
       </div>
 
       {hasActions && (
-        <div className="ds-transaction-header__actions" aria-label="إجراءات المستند">
+        <div
+          className="ds-transaction-header__actions"
+          role="group"
+          aria-label="إجراءات المستند"
+        >
           {resolvedActions.visible.length > 0 && (
             <div className="ds-transaction-header__visible-actions">
               {resolvedActions.visible.map(action => (
