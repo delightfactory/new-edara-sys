@@ -52,6 +52,7 @@ export default function PurchaseInvoicesPage() {
   const invoices   = data?.data || []
   const totalPages = data?.totalPages || 1
   const totalCount = data?.count || invoices.length
+  const hasActiveFilters = search.trim().length > 0 || statusFilter !== ''
 
   function renderCardPagination(mode: 'mobile' | 'tablet') {
     if (totalPages <= 1) return null
@@ -195,6 +196,27 @@ export default function PurchaseInvoicesPage() {
     )
   }
 
+  const emptyState = hasActiveFilters ? (
+    <StatePanel
+      kind="empty"
+      icon={<FileText size={40} />}
+      title="لا توجد نتائج مطابقة"
+      description="غيّر البحث أو الحالة لعرض نتائج أخرى"
+    />
+  ) : (
+    <StatePanel
+      kind="empty"
+      icon={<FileText size={40} />}
+      title="لا توجد فواتير مشتريات"
+      description="أنشئ أول فاتورة شراء من المورد"
+      action={
+        <Button icon={<Plus size={16} />} onClick={() => navigate('/purchases/invoices/new')}>
+          فاتورة جديدة
+        </Button>
+      }
+    />
+  )
+
   return (
     <div className="page-container animate-enter">
       <PageHeader
@@ -218,7 +240,7 @@ export default function PurchaseInvoicesPage() {
             <SearchInput
               value={search}
               onChange={val => { setSearch(val); setPage(1) }}
-              placeholder="بحث بالرقم أو اسم المورد..."
+              placeholder="بحث برقم الفاتورة أو مرجع فاتورة المورد..."
             />
           </div>
           <select
@@ -324,19 +346,7 @@ export default function PurchaseInvoicesPage() {
         )}
         renderTablet={items => renderCardCollection(items, 'tablet')}
         renderMobile={items => renderCardCollection(items, 'mobile')}
-        emptyState={
-          <StatePanel
-            kind="empty"
-            icon={<FileText size={40} />}
-            title="لا توجد فواتير مشتريات"
-            description="أنشئ أول فاتورة شراء من المورد"
-            action={
-              <Button icon={<Plus size={16} />} onClick={() => navigate('/purchases/invoices/new')}>
-                فاتورة جديدة
-              </Button>
-            }
-          />
-        }
+        emptyState={emptyState}
       />
 
       <style>{`
