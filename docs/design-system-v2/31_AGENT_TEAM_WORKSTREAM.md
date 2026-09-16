@@ -95,22 +95,30 @@ System result:
 ## Current active slice
 
 ### DS2-UI-003 — Sales Orders list V2
-Status: `IN_PROGRESS`
-Owner role: UI Production Engineer
+Status: `REVIEW`
+Owner role: UI Production Engineer -> Design QA handoff
 Draft PR: `#30 — DS2-UI-003: migrate Sales Orders list to shared V2 grammar`
 Feature branch: `ds2/sales-orders-list-v2`
 Starting baseline: `e78de5d71002b9718fa7d760b3cc7bc933ff6cba`
-Current WIP HEAD at activation: `6608f33ed60be06f0c9165dee9a5104e8c5c5b4b`
+Exact review HEAD: `d03dbf4d32e0fb1a3e4888588a5c6d685689f1ff`
 Evidence: `TESTS_AUTHORED_NOT_EXECUTED`
+QA disposition: pending exact-head independent review
 
 System intent:
 Move the next golden-flow collection screen into the shared V2 grammar while proving reusable list/filter/status/action patterns for later modules.
 
-Current WIP direction:
+Review-ready result:
 - thin Sales-domain semantic status adapter over shared `StatusBadge`
-- existing Sales KPI truth projected through shared responsive `StatCard` composition
-- focused tests for semantic status mapping and canonical Mobile/Tablet device composition
-- page wiring and responsive collection migration remain incomplete; PR #30 must stay Draft / non-reviewable until the page-level slice is complete
+- existing global Sales KPI truth projected through shared responsive `StatCard` composition
+- deliberate Mobile/Tablet `SalesOrderCard` over shared `Card`, `KeyValueList`, `Button`, and `StatusBadge`
+- shared `ResponsiveCollection` now owns the one-renderer-at-a-time collection boundary
+- Desktop preserves the existing paged `DataTable` and numbered pagination
+- Tablet uses the paged Desktop dataset plus numbered pagination but renders deliberate denser Sales cards
+- Mobile preserves the accumulated `useMobileInfiniteList` dataset, sentinel and load-more semantics
+- displayed payment percentage remains page-owned while only progressbar geometry/ARIA is bounded to `0..100`
+- Smart Transfer actions use shared `Button` while retaining existing permission/dialog behavior
+- focused presentation and page-composition tests protect the migrated contracts
+- legacy `DataCard` and CSS-hidden dual collection trees are removed from the Sales Orders page
 
 Scope direction:
 - Sales Orders list presentation only
@@ -122,7 +130,7 @@ Scope direction:
 
 Must preserve:
 - existing data retrieval/query semantics
-- pagination/infinite-loading behavior already owned by the page/service contract
+- Desktop/Tablet numbered pagination and Mobile infinite-loading behavior
 - route/navigation destinations
 - permission visibility
 - status values/mapping and business meaning
@@ -139,7 +147,7 @@ Explicit exclusions:
 Acceptance direction:
 - solution uses or minimally strengthens shared V2 patterns rather than creating a Sales-only mini design system
 - Mobile exposes clear primary record/action hierarchy without ordinary horizontal overflow
-- Tablet is intentionally composed, not compressed Desktop
+- Tablet is intentionally composed while retaining paged data semantics
 - Desktop preserves efficient comparison density
 - filters/status/action hierarchy is predictable and semantic
 - relevant focused tests are authored for behavior/composition at risk
@@ -153,11 +161,12 @@ The Product Design Director may further decompose a roadmap item, but only one d
 ### A. Golden flows
 
 #### DS2-UI-003 — Sales Orders list V2
-`IN_PROGRESS`
+`REVIEW`
 - Draft PR #30
-- responsive collection
-- filters/status/action hierarchy
-- preserve data/navigation/permissions
+- exact review HEAD `d03dbf4d32e0fb1a3e4888588a5c6d685689f1ff`
+- responsive collection complete
+- filters/status/action hierarchy preserved/migrated
+- awaiting Design QA exact-head review
 
 #### DS2-UI-004 — Sales Order form V2 foundation
 `BACKLOG`
