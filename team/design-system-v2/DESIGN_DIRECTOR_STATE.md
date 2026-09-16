@@ -4,82 +4,86 @@
 
 - Review date: `2026-09-16`
 - Development branch: `design-system-v2-development`
-- Exact development HEAD reviewed before this state write: `7783d25b9a0fa4da919b3d4b0973553863561d87`
-- Active slice: `DS2-UI-004 — Sales Order form V2 foundation`
-- Active Draft PR: `#31 — DS2-UI-004: establish Sales Order form V2 presentation foundation`
-- Feature branch: `ds2/sales-order-form-v2`
-- Slice starting baseline: `a6c9705ab56442c7c1d1722b442aa374a7556e81`
-- Exact current PR HEAD independently reviewed: `6841ceb3094ec6f85a14d4e9bdfb77869fc4444c`
+- Exact development HEAD independently inspected before this state write: `8a0c34751344ca466754d06980093c501b536cd9`
+- Active slice: `DS2-UI-005 — Sales transaction detail V2`
+- Active Draft PR: `#32 — DS2-UI-005: establish Sales transaction detail V2 header pattern`
+- Feature branch: `ds2/sales-order-detail-v2`
+- Slice baseline: `8a0c34751344ca466754d06980093c501b536cd9`
+- Exact current PR HEAD reviewed: `97b3da7c84f567a85ab7d55d1c7fdd9196332c73`
 - Live PR state: `OPEN / DRAFT / mergeable`
-- Current disposition: `BLOCKED — one bounded presentation-density correction`
+- Current disposition: `BLOCKED — shared action-orchestration contract must be reused before live page wiring`
 - Current evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 
 ## Independent professional judgment
 
-**ALIGN WITH DESIGN QA: KEEP THE SLICE, FIX ONE P2 DESKTOP DENSITY REGRESSION, THEN RE-REVIEW THE NEW EXACT HEAD.**
+**KEEP THE TRANSACTION-HEADER SLICE, BUT DO NOT WIRE IT INTO THE LIVE SALES PAGE YET. FIX THE SHARED ACTION ARCHITECTURE FIRST.**
 
-The earlier Design Director blocker is resolved on current source. PR #31 now reuses/evolves the shared `Stepper` rather than creating a parallel Sales primitive; page-owned step reachability is preserved; the review step is not made freely future-clickable; RTL next/previous cues are corrected; Mobile can use the shared wrapped Stepper mode without hiding the Arabic labels. Functional isolation remains intact.
+Selecting the Sales transaction identity/status/action header as the first bounded concern is correct. The live `SalesOrderDetail.tsx` header is a clear recurring-system gap: local sticky hero, local status styling, raw back/action controls, horizontally scrolling actions and mixed workflow/document actions. Creating a shared `TransactionHeader` pattern is therefore justified and aligned with the North Star.
 
-The new QA blocker is valid and consistent with the North Star rather than a competing opinion. The migrated Step 0 section currently uses `columns={2}`. The baseline used `repeat(auto-fill, minmax(220px, 1fr))`, so after the two full-width customer/credit rows the representative, order date and delivery branch could share one Desktop row when width allowed. The V2 change therefore imposes a lower two-column ceiling and creates an avoidable extra row on a dense management/data-entry surface.
+The current PR foundation, however, introduces a second action model inside that shared pattern: `TransactionHeaderAction` plus separate `primaryAction`, `secondaryActions` and `destructiveActions`. That conflicts with the already-established V2 `ActionRegistry` / `AppAction` contract and bypasses its device-aware placement algorithm.
 
-The existing shared `FormGrid` already expresses the correct device contract: requested 3 columns on Desktop, automatically capped to 2 on Tablet, and collapsed to 1 on Mobile. This is exactly the North Star requirement: dense-but-legible Desktop, deliberate Tablet, task-clear Mobile. No new component or CSS contract is needed.
+This is not theoretical duplication. The existing `ActionRegistry` already defines the system rule that a page declares action meaning/importance and the presentation layer resolves placement by device: one visible action on Mobile, two on Tablet and four on Desktop, with the remainder moved to overflow. The V2 page-pattern and device blueprints explicitly require Mobile secondary actions to move into overflow/action-sheet treatment instead of crowding the header.
 
-## Required correction
+Current `TransactionHeader` CSS does the opposite on Mobile: it renders the primary full-width but then keeps all secondary and destructive actions visibly mounted in 2-column/1-column grids. On the real Sales detail screen the authorized action set can include edit, confirm/deliver, due-date adjustment, return, copy, cancel plus `DocumentActions`. In a sticky Mobile header this can consume a large portion of the viewport and recreates action-placement logic parallel to `ActionRegistry`.
 
-### P2 — restore device-appropriate Step 0 density
+The shared header should become the renderer of the existing action system, not a second registry.
 
-**BLOCKING for GREEN-DEV / integration, bounded to presentation.**
+## Required correction before live page wiring
 
-Minimum change:
-- change the live Step 0 `SalesOrderFormSection` from `columns={2}` to `columns={3}`;
-- update focused composition/source-contract coverage so the 3→2→1 intent is protected at source level;
-- preserve the two intentionally full-width customer/credit rows through their existing `gridColumn: '1 / -1'` behavior;
-- do not change field order, values, validation, permissions, customer/branch/rep behavior, or any Sales business truth.
+### P1 — reuse the existing ActionRegistry contract
 
-Do not use this blocker to expand into Combobox/ProductLine/DataTable/overlay redesign. Those remain deferred until separately proven by the live form.
+**BLOCKING for live `SalesOrderDetail.tsx` wiring and later GREEN-DEV. Presentation/system architecture only.**
+
+Minimum acceptable direction:
+- remove or stop exporting the parallel `TransactionHeaderAction` action model;
+- consume the existing `AppAction` contract (or an exact `ResolvedActionSet` derived from it) rather than inventing another action descriptor;
+- keep permission/status/workflow availability page-owned exactly as it is today; the page should only declare actions after its existing conditions resolve;
+- use the existing device-aware `resolveActionSet` rule so Mobile exposes one visible workflow action, Tablet at most two, Desktop at most four, with remaining actions moved to an overflow surface;
+- if an overflow renderer does not yet exist, add only the smallest shared accessible overflow/action surface proven necessary by this live screen; do not create a Sales-only menu;
+- keep destructive tone semantic through the existing action tone/importance fields; danger does not mean it must remain permanently visible on Mobile;
+- preserve `DocumentActions` behavior. It may remain a utility slot for this bounded slice, preferably using its compact form where appropriate, rather than being reimplemented;
+- ensure the action region has complete accessible grouping semantics if it carries an accessible label; do not rely on `aria-label` on an otherwise generic container without a grouping/region role.
+
+Do not expand this correction into FinancialSummary, receipts, line items, modals, output-system redesign or Sales business logic.
 
 ## Current architecture/system fit
 
-- **Shared Stepper:** PASS on current head; previous duplicate-primitive contradiction is resolved.
-- **Exact Sales reachability:** PASS; remains page-owned and matches legacy behavior.
-- **RTL directional actions:** PASS at source level.
-- **Mobile Stepper labels/overflow:** PASS at source level for the bounded contract; runtime visual acceptance remains a later milestone gate.
-- **FormSection/FormGrid ownership:** PASS; only the selected Desktop column count is wrong.
-- **FormActions/Button ownership:** PASS.
-- **Functional isolation:** PASS; no DB/RPC/service/query-cache/RBAC/RLS/permission/business calculation/workflow/validation/deployment drift found.
-- **Evidence honesty:** PASS; tests are authored but not executed, and no CI/Vercel/local PASS is claimed.
+- **Choosing TransactionHeader as the first detail pattern:** PASS.
+- **Identity/title/customer/status adapter:** PASS directionally; reuse of existing Sales status semantics is correct.
+- **Shared Button/touch/loading mechanics:** PASS directionally.
+- **Long Arabic / RTL logical spacing:** PASS directionally at source level.
+- **Sticky capability:** KEEP as optional; final Mobile stickiness must not create a permanently oversized header after action resolution.
+- **Action ownership:** BLOCKING until `ActionRegistry` becomes the single shared action declaration/placement truth.
+- **Mobile progressive disclosure:** BLOCKING in current form because all secondary/destructive actions remain visible instead of using the established one-visible-action + overflow contract.
+- **Functional isolation:** PASS on current PR; the live Sales page has not yet been changed and no backend/query/permission/workflow/calculation semantics moved.
+- **Evidence honesty:** PASS; authored tests are not claimed as executed.
 
-## Coordination / freshness
+## Peer-state comparison / freshness
 
-- PR #31 is the only open PR targeting `design-system-v2-development`.
-- Current exact PR HEAD is `6841ceb3094ec6f85a14d4e9bdfb77869fc4444c`; it is Draft and mergeable but must not merge while QA/Director blocker is current.
-- Design QA state on the same exact head is fresh and `BLOCKING`; this Director synthesis agrees with it.
-- UI Implementation State stored on the development branch is stale for this slice; the feature-branch implementation state is materially newer but predates the QA density disposition.
-- Integration State is stale by PR HEAD but its `NO_MERGE` disposition remains correct.
-- Team Memory / Workstream still call DS2-UI-004 READY; the live PR and current states make it the single active blocked/review slice. This is coordination metadata drift, not permission to open another slice.
-- Do not merge-sync the feature branch merely to absorb governance/state-only development commits.
+After forming the source/blueprint judgment above, peer states were compared:
+- UI Production Engineer correctly identified the header as the smallest bounded concern and correctly kept the live page untouched so far. Its `NONE` blocker disposition is superseded by this architecture finding before the next edit.
+- Design QA state belongs to completed PR #31 and is stale for DS2-UI-005; it provides no approval or blocker for PR #32.
+- Integration State correctly shows DS2-UI-004 merged and has no authority to integrate the new Draft slice yet.
+- Team Memory correctly asks the Design Director to bound reusable transaction-header/action direction from the live screen; this state now supplies that boundary.
+
+No competing implementation slice is authorized.
 
 ## Preserve
 
-- create/edit and `copyFrom` behavior;
-- customer selection/clear, branch loading, credit presentation and rep assignment/read-only behavior;
-- product search/unit/quantity/stock warning/add-remove behavior;
-- price-edit permission and discount-override limits;
-- tax, discount, shipping and total calculations;
-- minimum-order blocking;
-- exact step reachability, `goNext` validation/toasts and progression;
-- `createSalesOrder` / `updateSalesOrder` / `saveSalesOrderItems` / `recalcOrderTotals` save sequence;
-- save/cancel routes;
-- existing Mobile add-product `ResponsiveModal` flow;
-- shared Stepper/FormSection/FormGrid/FormActions/Button ownership;
+- every existing Sales detail permission/status/workflow decision and callback;
+- all queries, services, calculations, modal state, invalidation, routes and business transitions;
+- existing `DocumentActions` capability behavior;
+- existing Sales status semantic mapping;
+- Mobile-primary / deliberate Tablet / dense Desktop strategy;
+- one shared V2 action orchestration model, not page/pattern-specific registries;
 - one active implementation slice only;
-- no hosted CI, Vercel preview, backend/business or `main` activity.
+- no GitHub Actions, hosted CI, Vercel preview, backend/business or `main` activity.
 
 ## Cross-role handoff
 
 - **To:** UI Production Engineer, Design QA, Development Integrator
-- **What changed:** Product Design Director independently revalidated PR #31 exact HEAD `6841ceb3094ec6f85a14d4e9bdfb77869fc4444c`. The previous Stepper/RTL/reachability blocker is resolved. I agree with QA's new single P2 blocker: Step 0 uses `columns={2}` and unnecessarily reduces Desktop data-entry density versus the baseline, while shared FormGrid already supports the correct `3 Desktop / 2 Tablet / 1 Mobile` contract.
-- **Preserve:** all Sales Order business/query/permission/validation/calculation/save/route/workflow truth; shared Stepper and form/action contracts; full-width customer/credit rows; deferred Combobox/ProductLine scope; no hosted CI/Vercel/`main` activity.
-- **Need from you:** UI Production Engineer should make only the minimum `columns={3}` correction plus focused density-contract coverage and hand off a new exact HEAD. Design QA must re-review that new exact HEAD. Integrator must remain NO_MERGE until exact-head `GREEN-DEV` + `SOURCE_REVIEW_PASS` and no current BLOCKING state remain.
-- **Blocker level:** `BLOCKING` for integration; bounded presentation-only fix.
-- **Baseline:** development `7783d25b9a0fa4da919b3d4b0973553863561d87`; PR #31 HEAD `6841ceb3094ec6f85a14d4e9bdfb77869fc4444c`
+- **What changed:** Product Design Director independently reviewed PR #32 exact HEAD `97b3da7c84f567a85ab7d55d1c7fdd9196332c73`. The TransactionHeader slice is correct, but its new `TransactionHeaderAction` model and always-visible Mobile secondary/destructive grids duplicate and bypass the existing shared `ActionRegistry` device-placement contract.
+- **Preserve:** live Sales business/query/permission/workflow/calculation/modal/output truth; shared Button/status semantics; bounded header-only scope; no CI/Vercel/main activity.
+- **Need from you:** UI Production Engineer should correct the shared header to consume the existing `AppAction`/`resolveActionSet` contract and provide the smallest shared overflow treatment needed by the live screen before wiring `SalesOrderDetail.tsx`. Design QA should wait for a stable wired exact head and verify ActionRegistry reuse, Mobile one-primary-plus-overflow behavior, accessible action grouping, RTL/touch/long-content behavior and exact functional parity. Integrator remains NO_MERGE until exact-head GREEN-DEV.
+- **Blocker level:** `BLOCKING` before live page wiring / integration; bounded Design System architecture correction.
+- **Baseline:** development `8a0c34751344ca466754d06980093c501b536cd9`; PR #32 HEAD `97b3da7c84f567a85ab7d55d1c7fdd9196332c73`
