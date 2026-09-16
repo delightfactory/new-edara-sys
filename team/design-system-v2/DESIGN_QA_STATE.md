@@ -4,136 +4,127 @@
 
 - Review date: `2026-09-16`
 - Development branch: `design-system-v2-development`
-- Exact Development HEAD independently inspected before this review/state write: `37757610d1e41abdd08840c720e1f8e977507401`
-- Active slice: `DS2-INV-002 — Transfer/adjustment operational flows`
-- Active implementation PR: `#35 — DS2-INV-002: establish transfer flow V2 presentation`
+- Exact Development HEAD inspected for this review: `20e47f4dc2d0a5efaf7a13fca13fa95ff1692df9`
+- Active slice: `DS2-PROC-001 — Purchase list surfaces`
+- Active implementation PR: `#36 — DS2-PROC-001: establish purchase invoice list V2 presentation`
 - PR base: `design-system-v2-development`
-- Exact PR base SHA: `27437916d5afd047e794dd5bf86a2ddbf2becbdb`
-- Exact PR HEAD independently reviewed and revalidated immediately before disposition: `d39d39281549650ef4bbd18767b20728a01117af`
+- Exact PR base SHA: `20e47f4dc2d0a5efaf7a13fca13fa95ff1692df9`
+- Exact PR HEAD independently reviewed and revalidated before disposition: `740f52be5e7d31ee04a5c2dc9db4c1489c08cbbc`
 - Live PR state at review: `OPEN / DRAFT / mergeable`
-- Changed-file scope: 6 files (transfer presentation + component test + live TransfersPage + focused live-page test + workstream/UI implementation state)
-- Current disposition: `AGENT-REVIEW: GREEN-DEV`
-- Source evidence: `SOURCE_REVIEW_PASS`
+- Changed-file scope: 6 files (Procurement card + component test + live PurchaseInvoicesPage + focused live-page test + workstream/UI implementation state)
+- Current disposition: `AGENT-REVIEW: BLOCKED`
+- Source evidence: `SOURCE_REVIEW_PASS` **not granted while blockers remain**.
 - Test evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 - Exact-head local build/test/lint evidence: not claimed.
 - Runtime/preview/release evidence: not claimed.
 
 ## Independent QA disposition
 
-**GREEN-DEV on exact HEAD `d39d39281549650ef4bbd18767b20728a01117af`.**
+**BLOCKED on exact HEAD `740f52be5e7d31ee04a5c2dc9db4c1489c08cbbc`.**
 
-The previous P2 Desktop accessibility blocker on `9bc1fbc...` is closed without widening the slice:
+The representative Procurement migration is directionally sound and functionally isolated, but two bounded P2 quality gates remain open on the live migrated surface.
 
-1. Desktop expand/collapse remains the shared `Button`, now with transfer-specific accessible naming and `aria-expanded`, while preserving the exact `expandedId` toggle behavior.
-2. Desktop transfer-number detail entry is now a semantic React Router `Link`, preserving the exact `/inventory/transfers/${t.id}` route and dense monospace/LTR identity treatment.
-3. Desktop previous/next pagination preserves the exact callbacks and disabled conditions but now uses shared compact `Button` controls with explicit Arabic logical labels and accessible names instead of unlabeled physical arrows.
-4. `TransfersPage.v2.test.ts` now protects those three corrected interaction semantics in addition to the existing device/workflow/query/create/service contracts.
+### P2 — Desktop pagination RTL/accessibility semantics
 
-No material source-level blocker remains in the assigned transfer collection/presentation slice.
+`PurchaseInvoicesPage` preserves Desktop density by continuing to use shared `DataTable`, but that shared pagination currently renders physical `‹ / ›` controls without accessible previous/next names, represents the active numeric page only through visual `.active` styling, and exposes no current-page `aria-current` semantic.
+
+That is below the V2 Arabic-first/accessibility bar and would leave this newly migrated Procurement Desktop surface inconsistent with interaction quality already established in recent Inventory migrations.
+
+Minimum required fix:
+- preserve the exact numbered pagination algorithm, current page behavior, Desktop density and `onPageChange` contract;
+- narrowly harden the existing shared DataTable pagination contract, or an equally shared existing layer, with logical Arabic previous/next controls, explicit accessible names, `aria-current="page"` on the active page and an appropriate pagination navigation label/semantic boundary;
+- do not open a speculative global Pagination redesign;
+- add focused test coverage for the corrected semantics.
+
+### P2 — Initial-empty and filtered-empty are conflated
+
+The live `ResponsiveCollection` always receives the same empty `StatePanel`: `لا توجد فواتير مشتريات` / `أنشئ أول فاتورة شراء من المورد` plus the create action. When a non-empty search or status filter returns zero rows, that message incorrectly implies there are no purchase invoices at all and presents first-time creation guidance.
+
+The North Star explicitly treats initial empty and filtered empty as distinct relevant states.
+
+Minimum required fix:
+- when no filters are active, retain the existing initial-empty/create-invoice state;
+- when `search` or `statusFilter` is active and the result is empty, show neutral no-matching-results guidance instead of first-invoice messaging;
+- preserve the exact query/filter/reset semantics and do not change service behavior;
+- add a focused assertion protecting the distinction.
 
 ## Scope / functional isolation — PASS
 
-Current PR scope remains bounded to:
+The PR remains bounded to:
 
-- `src/components/inventory/TransferListPresentation.tsx`
-- `src/components/inventory/TransferListPresentation.test.tsx`
-- `src/pages/inventory/TransfersPage.tsx`
-- `src/pages/inventory/TransfersPage.v2.test.ts`
+- `src/components/purchases/PurchaseInvoiceListPresentation.tsx`
+- `src/components/purchases/PurchaseInvoiceListPresentation.test.tsx`
+- `src/pages/purchases/PurchaseInvoicesPage.tsx`
+- `src/pages/purchases/PurchaseInvoicesPage.v2.test.ts`
 - `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md`
 - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
-No DB, migration, RPC, service, query/cache, RBAC/RLS, permission definition, route guard, stock movement, reservation, approval, validation, workflow, deployment, preview or `main` file is changed.
+No DB, migration, RPC, service, query/cache, RBAC/RLS, permission, route-guard, accounting calculation, approval, validation, workflow, deployment, preview or `main` file is changed.
 
-Source review confirms business/service truth remains page/domain-owned.
+Source inspection confirms preservation of:
+- `getPurchaseInvoices` and `queryKey: ['purchase-invoices', search, statusFilter, page]`;
+- `PAGE_SIZE = 20`;
+- search/status changes resetting page to 1;
+- supplier, warehouse and document identity;
+- total/paid source values and their existing visual condition;
+- Purchase Invoice workflow status values and service/accounting behavior;
+- detail route `/purchases/invoices/${inv.id}` and create route `/purchases/invoices/new`.
 
-## System fit / design quality — PASS
+## System fit / device judgment
 
-- One `ResponsiveCollection<StockTransfer>` owns device selection, eliminating the legacy CSS-hidden duplicate collection trees.
-- Desktop retains the dense table, row expansion, item review, notes/timestamps and `finance.view_costs` gating.
-- Tablet uses a deliberate two-column `TransferCard` collection rather than inheriting compressed Desktop or oversized Mobile composition.
-- Mobile uses a one-column operational card composition with explicit touch-safe workflow/detail actions.
-- `TransferCard` remains a thin Inventory-domain composition over shared `Card + KeyValueList + Badge + StatusBadge + Button`; it does not create a page-local primitive family.
-- Direction (`إرسال` / `طلب`) is neutral categorical `Badge` metadata; workflow status alone owns semantic `StatusBadge` tone.
-- Card transfer identity remains LTR and long-value tolerant through `overflowWrap: anywhere`.
-- Card actions wrap and use the shared touch-target contract; detail navigation is explicit rather than turning the entire neutral Card into an interactive control.
-- Tablet/Mobile pagination uses Arabic logical previous/next labels and touch-safe shared Buttons.
-- Desktop interaction semantics are now keyboard/screen-reader complete within the migrated collection boundary.
-
-## Functional parity / state review — PASS
-
-Source review confirms preservation of:
-
-- `useTransfers` status/page query behavior and `pageSize: 25`;
-- status-filter reset to page 1;
-- previous/next paging capability only; no StockPage numbered direct-jump behavior was imported;
-- `inventory.read_all`, `inventory.transfers.create`, `finance.view_costs` and warehouse ownership truth;
-- pending push + source manager -> ship;
-- pending pull + source manager -> approve-and-ship;
-- in-transit + destination manager + `approved_by !== userId` -> receive;
-- pending + creator -> cancel;
-- in-transit + source manager -> cancel;
-- the same confirmation callbacks and inventory service functions;
-- create-transfer modal, stock availability/reservation/validation behavior, route identity and invalidation;
-- Desktop expanded item/cost/notes/shipped/received review capability;
-- shared collection loading/empty behavior;
-- disabled pagination states and destructive confirmation flow.
-
-No known build/type failure is recorded for this exact HEAD.
-
-## Device / accessibility judgment
-
-- **Desktop:** PASS at source level — dense review remains intact; expand state is named/exposed, detail navigation is semantic/keyboard-focusable, and paging controls use explicit RTL-safe logical labels.
-- **Tablet:** PASS at source level — deliberate two-column cards, three-column metadata, wrapped touch-safe actions and touch-safe previous/next paging.
-- **Mobile:** PASS at source level — one-column operational cards, touch-safe workflow/detail actions, create FAB capability and no duplicate mounted Desktop interaction tree.
-- **RTL/Arabic:** PASS at source level for the migrated boundary; physical-arrow ambiguity is removed from Desktop pagination and logical Arabic labels are used across devices.
-- **Long values:** card transfer identity explicitly tolerates long values; current shared metadata/action layouts wrap.
-- **Loading/empty/disabled/permission/destructive:** relevant states/capabilities remain present and source-preserved.
+- **Shared collection boundary:** PASS — one `ResponsiveCollection<PurchaseInvoice>` replaces CSS-hidden duplicate Desktop/Mobile trees and mounts only the active device renderer.
+- **Desktop density:** PASS except for the pagination accessibility/RTL blocker; dense `DataTable` comparison/review is retained.
+- **Tablet:** PASS — deliberate two-column Procurement cards with touch-safe controls and numbered direct jumps.
+- **Mobile:** PASS — one-column operational cards with full-width touch-safe detail action and logical previous/next paging.
+- **Domain card architecture:** PASS — `PurchaseInvoiceCard` is a thin Procurement composition over shared `Card + KeyValueList + StatusBadge + Button`, with business/status/navigation truth page-owned.
+- **Semantic status:** PASS — workflow states use shared `StatusBadge` tones while domain mapping remains page-owned.
+- **Arabic/RTL and long values:** PASS for the new card/Tablet/Mobile boundary; invoice number is explicit LTR monospace with wrapping tolerance. Desktop paginator remains blocked as noted above.
+- **Detail action accessibility:** PASS — Desktop icon action has an invoice-specific accessible name; card action is explicit and touch-safe; the neutral card is not a pseudo-button.
+- **Loading:** PASS at source level through one shared responsive collection loading boundary.
+- **Empty state:** BLOCKED only for filtered-vs-initial state semantics.
 
 ## Test / execution evidence
 
 Evidence is **`TESTS_AUTHORED_NOT_EXECUTED`**.
 
-Focused artifacts protect:
-
-- component-level transfer identity/context/action/detail behavior;
-- neutral direction metadata vs semantic workflow status;
+Focused artifacts currently protect:
+- Procurement card identity/financial/warehouse composition;
+- page-supplied semantic workflow status tone;
+- neutral non-interactive card anatomy and touch-safe detail callback;
 - one live responsive renderer boundary;
-- exact workflow predicates/callbacks;
-- query/page-size/filter-reset/previous-next semantics;
-- Desktop expanded-cost parity;
-- Desktop expand accessible name + `aria-expanded`;
-- semantic React Router `Link` detail navigation and removal of the mouse-only Desktop detail entry;
-- explicit Arabic/RTL-safe Desktop previous/next controls and accessible names;
-- create/stock/confirmation/service/route boundaries;
-- removal of CSS-hidden duplicate collection trees.
+- exact purchase query key, filter reset and `PAGE_SIZE = 20` contract;
+- Tablet numbered direct jumps and Mobile previous/next capability;
+- supplier/warehouse/money/status/navigation ownership;
+- shared empty-state use and preserved create capability;
+- removal of legacy `DataCard` / CSS-hidden duplicate collection trees.
 
-No approved local runtime executed `npm test`, `npm run build` or `npm run lint`; no GitHub Actions/hosted CI or Vercel was used. No executed PASS is claimed.
+The two blocker corrections need additional assertions for Desktop paginator semantics and filtered-empty distinction. No approved local runtime executed `npm test`, `npm run build` or `npm run lint`; no GitHub Actions/hosted CI or Vercel was used. No executed PASS is claimed. No known build/type failure is currently recorded for this exact HEAD.
 
 ## Peer-state comparison / contradiction handling
 
-The exact-head source judgment above was formed from the current PR diff, live page contracts, shared V2 patterns and review history, then checked against peer state.
+The source judgment above was formed independently from the exact PR diff, current live page/service contracts and shared V2 patterns, then compared against peer state.
 
-- **UI Production Engineer:** feature-branch state on the corrected candidate is fresh and aligned; it records the same three bounded Desktop fixes and `TESTS_AUTHORED_NOT_EXECUTED`.
-- **Product Design Director:** Development-side state still targets old HEAD `69a18c6...`. Its two blocking conditions — live `ResponsiveCollection` wiring and neutral direction metadata — are source-resolved on the current candidate. The state is stale for this HEAD, not a current blocking contradiction.
-- **Development Integrator:** Development-side state targets blocked HEAD `9bc1fbc...` and correctly required the same three Desktop accessibility corrections. Those conditions are source-resolved on `d39d392...`; Integrator must still independently revalidate the exact GREEN head before merge.
-- **Previous Design QA state:** targeted `9bc1fbc...`; its P2 blocker is fully corrected on this moved HEAD and is superseded by this state.
-- **Development drift:** Development advanced from the slice base only through DS2 governance/state commits; no product/shared-component drift was found that invalidates the candidate.
-- **Review threads:** none are open.
+- **UI Production Engineer:** feature-branch state is fresh and aligned on scope/functional isolation and already flags the inherited Desktop `DataTable` pagination debt for QA judgment. It does not contradict this blocker; filtered-empty completeness was not previously called out.
+- **Product Design Director:** Development-side state still records the completed INV002 candidate and is stale for Procurement. Its pending instruction was to bound the smallest representative purchase-list concern. There is no fresh Procurement approval or conflicting current judgment yet, so this is not a BLOCKING peer contradiction by itself.
+- **Development Integrator / Team Memory:** aligned that PROC001 is the sole next Procurement slice and that accounting/query/permission/workflow truth must remain unchanged.
+- **Previous Design QA state:** consumed INV002 GREEN evidence and is superseded by this PROC001 review.
+- **Review threads:** none were open before this review.
 
-There is **no current BLOCKING peer contradiction** on the reviewed candidate. Stale old-head BLOCKING states are consumed conditions, not reusable merge blockers or approvals.
+There is no separate material peer contradiction beyond the two QA blockers above. Integrator must remain `NO_MERGE` until a moved exact HEAD closes them and receives fresh review.
 
 ## Remaining WATCH / release boundary
 
-- Full shared Pagination convergence remains future component-depth work and is not required for this bounded previous/next flow.
-- ProductSearchCombo/create-flow modernization, Transfer Detail and Adjustments remain out of scope.
+- The pre-existing search placeholder says supplier name while the service query searches invoice number / supplier invoice reference. Query semantics must not be changed inside this UI PR; treat the mismatch as separate product/functional follow-up unless the Design Director bounds a presentation-only copy correction.
+- Error/offline state convergence remains broader shared state-system debt; it is not a reason to widen this bounded collection migration now.
 - Exact-head runtime/browser/build/test evidence remains unclaimed.
-- `GREEN-DEV` authorizes only controlled integration into `design-system-v2-development`; it is not release approval and does not authorize preview, deployment or `main` activity.
+- Purchase Returns, Purchase Invoice form decomposition and a global Pagination abstraction remain out of scope.
 
 ## Cross-role handoff
 
-- **To:** Development Integrator, Product Design Director, UI Production Engineer
-- **What changed:** Design QA independently reviewed PR #35 exact HEAD `d39d39281549650ef4bbd18767b20728a01117af`. The prior Desktop keyboard/accessibility P2 is closed; all development source-review gates pass and the exact head now has `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` with honest `TESTS_AUTHORED_NOT_EXECUTED` evidence.
-- **Preserve:** all transfer query/page-size/permission/ownership/action/create/confirm/stock/reservation/service/validation/cost/route truth; dense Desktop expansion; current Tablet/Mobile card composition; neutral direction metadata; semantic workflow status; bounded collection-only scope.
-- **Need from you:** Development Integrator should revalidate PR #35 is still on exact HEAD `d39d39281549650ef4bbd18767b20728a01117af`, confirm no new review thread/blocking contradiction/build failure appeared, then may integrate into `design-system-v2-development` under the normal gate. No preview or `main` action.
-- **Blocker level:** `NONE`; future shared Pagination convergence remains `WATCH` only.
-- **Baseline:** Development `37757610d1e41abdd08840c720e1f8e977507401`; PR #35 HEAD `d39d39281549650ef4bbd18767b20728a01117af`.
+- **To:** UI Production Engineer, Product Design Director, Development Integrator
+- **What changed:** Design QA independently reviewed PR #36 exact HEAD `740f52be5e7d31ee04a5c2dc9db4c1489c08cbbc` and found two bounded P2 blockers: inherited Desktop DataTable pagination lacks complete RTL/accessibility semantics, and the live empty state does not distinguish filtered-empty from true initial-empty.
+- **Preserve:** exact `getPurchaseInvoices` query/filter/page behavior, `PAGE_SIZE = 20`, supplier/warehouse/document identity, total/paid values, status/workflow truth, create/detail routes, service/accounting behavior, dense Desktop review, two-column Tablet cards, one-column Mobile cards and thin shared-pattern Procurement card ownership.
+- **Need from you:** UI Production Engineer should make only the narrow pagination-semantic and filtered-empty corrections plus focused assertions, then hand off a new stable exact HEAD. Product Design Director may synthesize the Procurement direction independently. Development Integrator remains `NO_MERGE` until fresh exact-head QA grants `GREEN-DEV`.
+- **Blocker level:** `BLOCKING`.
+- **Baseline:** Development `20e47f4dc2d0a5efaf7a13fca13fa95ff1692df9`; PR #36 HEAD `740f52be5e7d31ee04a5c2dc9db4c1489c08cbbc`.
+- **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`.
