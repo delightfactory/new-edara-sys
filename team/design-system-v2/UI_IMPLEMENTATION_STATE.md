@@ -7,96 +7,108 @@
 - Exact Development / slice baseline: `61c2fcac8152550d72f4b94be5e85fd9979dd94d`
 - Feature branch: `ds2/inventory-stock-list-v2`
 - Draft PR: `#34 — DS2-INV-001: establish Inventory stock list V2 presentation`
-- Latest implementation/test HEAD before this state write: `871a228bae0641b1d761ea394396ca86bc9a815b`
+- Exact implementation/test candidate HEAD before review-governance commits: `20d37fd542867a6d8be51f37fed3bbab489f0164`
+- Workstream REVIEW handoff commit before this state write: `35ca6a4a62ba00040e40a4baacc650b68b46d813`
 - Active slice: `DS2-INV-001 — Inventory list surfaces`
-- Current bounded concern: `StockPage balance collection + responsive stock card presentation`
-- Implementation disposition: `IN_PROGRESS`
+- Bounded concern: `StockPage balance collection + responsive stock card presentation`
+- Implementation disposition: `REVIEW — FRESH EXACT-HEAD DESIGN/QA REVIEW REQUIRED`
 - Evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 
 ## Independent implementation judgment
 
-With DS2-UI-005 integrated and no implementation PR open against Development, `DS2-INV-001` is actionable. I independently inspected the live Inventory list surfaces before comparing peer states and selected `StockPage` as the smallest representative Inventory list concern.
+`StockPage` was selected as the first representative Inventory list surface because it exposes a concrete Design System gap without requiring any business-layer change: the live page mounted separate Desktop table and Mobile card trees and hid one with CSS, leaving Tablet as an accidental Desktop layout. Its Mobile stock cards also carried a page-local information hierarchy.
 
-`StockPage` is the correct first proof because it already carries a stable paged stock query and real operational states, but its presentation still mounts separate Desktop table and Mobile card interaction trees and hides one with CSS. Tablet has no deliberate composition. The Mobile stock cards also implement an Inventory-local visual grammar with substantial inline styling. That is a presentation-system problem that can be corrected without touching stock calculations, valuation, filters, permissions, pagination or review-mode semantics.
+The review candidate now uses one shared `ResponsiveCollection` boundary and a thin Inventory-domain `StockBalanceCard` over shared `Card + KeyValueList + StatusBadge`. All stock classification, quantity, valuation, cost permission and review-count calculations remain page-owned.
 
-The first implementation step therefore establishes a thin Inventory-domain `StockBalanceCard` over shared V2 `Card + KeyValueList + StatusBadge`. It deliberately receives already-projected quantities, semantic status, permission-filtered cost content, review-count value/difference and callbacks from the page. It does not calculate stock health, minimum-stock state, review differences or financial values.
+Before handoff I independently checked information parity and corrected two presentation regressions that would otherwise have been easy to introduce: Tablet retains authorized weighted-cost **and total stock-value** visibility from the former table, and Tablet retains numbered direct page-jump capability rather than being reduced to Mobile-only previous/next navigation.
 
-## Material progress this run
+## Material implementation result
 
-1. Completed the mandatory shared-memory bootstrap in the required order and inspected issue #27, current Development HEAD and all open PRs targeting Development.
-2. Confirmed current Development HEAD `61c2fcac8152550d72f4b94be5e85fd9979dd94d` and confirmed there were no open PRs targeting `design-system-v2-development` before taking the slice.
-3. Inspected the live Inventory list family and selected `src/pages/inventory/StockPage.tsx` as the first bounded representative concern rather than redesigning Transfers/Adjustments or the whole Inventory module.
-4. Created `ds2/inventory-stock-list-v2` from the exact Development HEAD.
-5. Added `src/components/inventory/StockListPresentation.tsx` with `StockBalanceCard`, composed only from shared V2 surfaces and controlled page-owned values/callbacks.
-6. Added focused Testing Library coverage in `src/components/inventory/StockListPresentation.test.tsx` for Mobile hierarchy/status, permission-owned weighted-cost visibility, and accessible controlled review-count behavior.
-7. Opened Draft PR #34 targeting only `design-system-v2-development`.
-8. Did not trigger GitHub Actions/hosted CI, did not deploy Vercel and did not touch `main`.
+1. Created `ds2/inventory-stock-list-v2` from exact Development HEAD `61c2fcac8152550d72f4b94be5e85fd9979dd94d` after confirming there was no active implementation PR.
+2. Added `src/components/inventory/StockListPresentation.tsx` with `StockBalanceCard` composed from shared V2 surface primitives.
+3. Added `src/components/inventory/StockListPresentation.test.tsx` covering identity/status hierarchy, page-controlled valuation visibility and controlled accessible review input behavior.
+4. Rewired `src/pages/inventory/StockPage.tsx` through one `ResponsiveCollection<Stock>` boundary:
+   - Desktop: existing dense paged `DataTable`;
+   - Tablet: deliberate two-column stock cards with numbered direct page jumps;
+   - Mobile: one-column stock cards with touch-safe previous/next pagination.
+5. Replaced list-status `Badge` rendering with shared semantic `StatusBadge` while preserving the existing page-owned stock-status mapping.
+6. Removed the old `.stock-table-view` / `.stock-card-view` CSS device toggle and Mobile row mini-system for the migrated collection.
+7. Added `src/pages/inventory/StockPage.v2.test.ts` protecting responsive composition, query/filter/pagination truth, valuation permission, local review math, links and shared presentation wiring.
+8. Updated the workstream to `REVIEW` for this bounded concern.
+9. No GitHub Actions/hosted CI was triggered, no Vercel deployment occurred and `main` was untouched.
 
-## Current changed-file / pattern scope
+## Changed-file / pattern scope
 
-Implementation/test scope before this state write:
+Relative to the exact baseline, the candidate is bounded to six files:
 
 - `src/components/inventory/StockListPresentation.tsx`
 - `src/components/inventory/StockListPresentation.test.tsx`
+- `src/pages/inventory/StockPage.tsx`
+- `src/pages/inventory/StockPage.v2.test.ts`
+- `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md`
+- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
-This state file is the only governance file owned by this role being updated in the same feature branch.
+No DB/migration/RPC/service/query/cache/RBAC/RLS/permission/route-guard/business-calculation/workflow file is in scope.
 
-No live Inventory page has been rewired yet. `StockPage.tsx` remains unchanged at this checkpoint by design.
+## Preserved functional contracts
 
-## Functional contracts that must remain page/domain-owned
+The candidate preserves:
 
-The next wiring step must preserve exactly:
+- `useStock` query shape, `pageSize: 25`, page reset and current numbered-page data semantics;
+- search suppression while `lowStockOnly` is active and the existing explanatory warning;
+- warehouse, stock-status and low-stock filter behavior;
+- `finance.view_costs` gate;
+- existing stock-health/minimum-stock classification logic;
+- Desktop authorized `wac` and `total_cost_value` visibility;
+- former Tablet information parity for authorized cost/value review;
+- former Mobile behavior of showing weighted cost only when authorized and `wac > 0`, without adding total stock value to Mobile;
+- local-only review mode, `actualCounts`, `getActual`, `getDiff`, reset behavior and explicit no-save/no-adjustment meaning;
+- Product/Warehouse link destinations;
+- warehouse page-summary values and its current-page disclaimer.
 
-- `useStock` query parameters, `pageSize: 25`, page reset behavior and numbered pagination semantics;
-- text search suppression while `lowStockOnly` is active and the existing explanatory warning;
-- warehouse, stock-status and low-stock filter semantics;
-- `finance.view_costs` visibility gate for weighted cost / stock value;
-- existing stock-health classification logic and minimum-stock comparison;
-- local-only review mode, `actualCounts`, `getActual`, `getDiff`, and its explicit no-save/no-adjustment behavior;
-- warehouse context/page-summary values and the current-page disclaimer;
-- Product/Warehouse link destinations and all Inventory quantities/valuation semantics.
+## Device / state coverage
 
-No transfer/adjustment workflow or backend/query/cache/RBAC/RLS/permission/route-guard/calculation/validation change belongs in this slice.
-
-## Intended device / state composition
-
-- **Desktop:** retain the existing dense paged `DataTable` for comparison/review efficiency.
-- **Tablet:** introduce a deliberate paged card grid using the same current-page dataset; do not inherit an accidental Desktop table or invent new query semantics.
-- **Mobile:** use one-column operational stock cards while preserving the existing numbered previous/next page semantics.
-- **Loading / empty:** converge the collection boundary onto shared `ResponsiveCollection` / `StatePanel` behavior without changing data truth.
-- **Permission / review mode:** cost visibility and actual-count review controls stay page-owned and equivalent on every rendered device surface.
-- **RTL / accessibility:** shared logical layout, textual status, long Arabic wrapping and an explicitly labelled touch-safe numeric review input are first-class.
+- **Desktop:** dense table remains the review/comparison surface; table pagination, review columns and cost/value columns remain intact.
+- **Tablet:** two-column cards are deliberate rather than inherited Desktop table layout; numbered pagination still allows direct page jumps; authorized weighted cost and total value remain visible.
+- **Mobile:** one-column operational cards; touch-safe shared Buttons for previous/next paging; same paged query semantics as before.
+- **Loading / empty:** shared `ResponsiveCollection` provides one mutually-exclusive state boundary instead of duplicate device trees.
+- **Permission:** card valuation fields are supplied only after the existing page-owned `finance.view_costs` gate.
+- **Review mode:** actual count remains a controlled page-owned value; card input is explicitly labelled and 44px minimum height.
+- **RTL / semantics:** shared logical spacing and textual `StatusBadge` semantics; Product/Warehouse entities retain their existing link behavior.
 
 ## Test / execution evidence
 
 Evidence is **`TESTS_AUTHORED_NOT_EXECUTED`**.
 
-Focused tests are authored for the new card presentation. No approved local checkout/runtime has executed `npm test`, `npm run build` or `npm run lint` on this branch, so no `LOCAL_EXECUTION_PASS` or build PASS is claimed. No hosted GitHub Actions/CI was triggered.
+Focused tests were authored but not executed. The available sandbox was inspected and contains no project checkout under the available workspace/data roots, so `npm test`, `npm run build` and `npm run lint` were not run. No local/build PASS is claimed and no hosted CI was used.
+
+No known TypeScript/build error was discovered by source review in this run. Runtime/browser evidence remains unclaimed.
 
 ## Peer-state comparison / freshness
 
-After forming the implementation judgment above, peer states were compared:
+The implementation judgment was formed before peer comparison, then checked against current shared state:
 
-- **Team Memory / Development Integrator:** fresh current truth marks DS2-UI-005 DONE and `DS2-INV-001` as the single READY slice. This implementation follows that queue position exactly.
-- **Product Design Director:** its stored state still targets the pre-merge DS2-UI-005 blocker and is stale for the Inventory slice. Its durable direction to choose the smallest representative Inventory list concern and avoid speculative framework expansion is preserved through Team Memory/Workstream.
-- **Design QA:** its GREEN state belongs only to merged PR #32 and cannot be reused. No Inventory approval exists yet.
-- **No competing implementation PR** targeted Development when this slice was taken.
-
-There is no current cross-role contradiction blocking this bounded Inventory start.
+- **Team Memory / Integration State:** fresh truth had DS2-UI-005 integrated and DS2-INV-001 as the single READY slice; this branch follows that queue exactly.
+- **Product Design Director:** its stored role state still refers to the already-resolved DS2-UI-005 candidate and is stale for PR #34. No current Inventory-specific blocking instruction exists yet.
+- **Design QA:** its GREEN applies only to merged PR #32 and is not reused. PR #34 requires a fresh exact-head source review.
+- **Development drift:** Development remains exactly `61c2fcac8152550d72f4b94be5e85fd9979dd94d`; the feature branch is not behind baseline.
+- **PR review traffic:** no review/comment correction was present on PR #34 at handoff time.
 
 ## Risks / deferred work
 
-- The live `StockPage` still has CSS-hidden duplicate Desktop/Mobile collection trees until the next commit on this same PR; the new card is foundation only at this checkpoint.
-- Filters, health-summary cards and warehouse-context presentation remain legacy/page-local and are intentionally not expanded into this first sub-slice until the collection migration proves the next smallest shared need.
-- Runtime visual evidence remains unclaimed.
-- Shared Pagination/FilterBar hardening remains a broader component-depth concern and should not be pulled into this PR unless the live StockPage proves a blocking reusable gap.
+- Stock health-summary cards, warehouse context and filter presentation remain legacy/page-local; they are intentionally outside this bounded collection concern until a reviewer proves they must be included now.
+- Shared Pagination convergence remains a known component-depth opportunity. Tablet card pagination currently reuses the existing DataTable pagination class/algorithm locally to preserve exact direct-jump behavior without changing DataTable globally inside this slice.
+- Transfer/adjustment flows and the remaining Inventory list family are not implicitly redesigned by this PR.
+- Runtime visual density/dark-mode stress still needs a separately authorized runtime review; no preview evidence is claimed.
 
 ## Cross-role handoff
 
 - **To:** Product Design Director, Design QA, Development Integrator
-- **What changed:** DS2-INV-001 is now active on Draft PR #34 from exact Development baseline `61c2fcac8152550d72f4b94be5e85fd9979dd94d`. The first bounded Inventory-domain `StockBalanceCard` and focused tests are authored; live `StockPage` wiring is intentionally next on the same PR.
-- **Preserve:** all stock/query/filter/pagination/cost-permission/review-mode/valuation truth; Mobile-primary / deliberate Tablet / dense Desktop strategy; shared V2 surfaces before page-local invention; no CI/Vercel/main/backend drift.
-- **Need from you:** Product Design Director may challenge the bounded concern only if a stronger current system-level contradiction exists. Design QA should wait for one stable live-wired exact HEAD before slice-level GREEN review. Integrator stays `NO_MERGE` while the slice is `IN_PROGRESS`.
-- **Blocker level:** `NONE`.
-- **Baseline:** Development `61c2fcac8152550d72f4b94be5e85fd9979dd94d`; implementation/test HEAD before state write `871a228bae0641b1d761ea394396ca86bc9a815b`; PR #34.
+- **What changed:** PR #34 now has a live-wired StockPage review candidate: one ResponsiveCollection, deliberate Desktop/Tablet/Mobile composition, shared stock-card/status grammar, preserved Tablet valuation/page-jump parity, and focused source/component tests.
+- **Preserve:** all query/filter/pagination/stock-health/valuation/permission/review-mode/link truth; Desktop density; Tablet direct page jumps and valuation; Mobile compact paging; no backend/business/deployment drift.
+- **Need from you:** Product Design Director and Design QA should review the **current exact PR HEAD after this state commit**. QA may issue `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` only for that exact head if no blocker remains. Integrator stays `NO_MERGE` until then.
+- **Blocker level:** `NONE` from UI implementation; `AWAITING_EXACT_HEAD_REVIEW`.
+- **Baseline:** `61c2fcac8152550d72f4b94be5e85fd9979dd94d`.
+- **Implementation/test candidate before governance:** `20d37fd542867a6d8be51f37fed3bbab489f0164`.
+- **Workstream REVIEW handoff before state write:** `35ca6a4a62ba00040e40a4baacc650b68b46d813`.
 - **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`.
