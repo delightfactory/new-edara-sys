@@ -26,11 +26,11 @@ describe('SalesOrderFormPresentation', () => {
       />,
     )
 
-    expect(screen.getByRole('navigation', { name: 'مراحل أمر البيع' })).toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: 'مراحل أمر البيع' })).toBeTruthy()
     expect(container.querySelector('.stepper--mobile-wrap')).toBeTruthy()
     expect(container.querySelector('.sales-order-stepper-v2__list')).toBeNull()
-    expect(screen.getByRole('button', { name: 'الخطوة الحالية: المنتجات' })).toHaveAttribute('aria-current', 'step')
-    expect(screen.getByRole('button', { name: 'قادمة: التوصيل' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'الخطوة الحالية: المنتجات' }).getAttribute('aria-current')).toBe('step')
+    expect((screen.getByRole('button', { name: 'قادمة: التوصيل' }) as HTMLButtonElement).disabled).toBe(true)
 
     fireEvent.click(screen.getByRole('button', { name: 'مكتملة: بيانات الطلب' }))
     expect(onChange).toHaveBeenCalledWith(0)
@@ -44,7 +44,7 @@ describe('SalesOrderFormPresentation', () => {
       </SalesOrderFormSection>,
     )
 
-    expect(screen.getByText('بيانات الطلب')).toBeInTheDocument()
+    expect(screen.getByText('بيانات الطلب')).toBeTruthy()
     expect(container.querySelector('.ds-form-section')).toBeTruthy()
     expect(container.querySelector('.ds-form-grid--cols-3')).toBeTruthy()
   })
@@ -94,7 +94,7 @@ describe('SalesOrderFormPresentation', () => {
     expect(previousButton.querySelector('.lucide-chevron-right')).toBeTruthy()
     fireEvent.click(previousButton)
     expect(onPrevious).toHaveBeenCalledTimes(1)
-    expect(screen.getByRole('button', { name: /حفظ التعديلات/ })).toBeDisabled()
+    expect((screen.getByRole('button', { name: /حفظ التعديلات/ }) as HTMLButtonElement).disabled).toBe(true)
   })
 
   it('uses shared Button loading semantics without changing submit truth', () => {
@@ -112,8 +112,8 @@ describe('SalesOrderFormPresentation', () => {
       />,
     )
 
-    const saveButton = screen.getByRole('button', { name: 'حفظ المسودة' })
-    expect(saveButton).toBeDisabled()
-    expect(saveButton).toHaveAttribute('aria-busy', 'true')
+    const saveButton = screen.getByRole('button', { name: 'حفظ المسودة' }) as HTMLButtonElement
+    expect(saveButton.disabled).toBe(true)
+    expect(saveButton.getAttribute('aria-busy')).toBe('true')
   })
 })

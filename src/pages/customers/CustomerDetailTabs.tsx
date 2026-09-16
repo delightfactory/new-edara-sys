@@ -5,6 +5,14 @@ import Badge from '@/components/ui/Badge'
 
 export type CustomerDetailTab = 'info' | 'branches' | 'contacts' | 'credit'
 
+type CustomerDetailTabItem = {
+  value: CustomerDetailTab
+  label: ReactNode
+  icon: ReactNode
+  badge?: ReactNode
+  panel: ReactNode
+}
+
 export interface CustomerDetailTabsProps {
   value: CustomerDetailTab
   onValueChange: (value: CustomerDetailTab) => void
@@ -45,7 +53,7 @@ export default function CustomerDetailTabs({
   contactsPanel,
   creditPanel,
 }: CustomerDetailTabsProps) {
-  const items = [
+  const items: CustomerDetailTabItem[] = [
     {
       value: 'info',
       label: 'البيانات الأساسية',
@@ -67,19 +75,13 @@ export default function CustomerDetailTabs({
       panel: contactsPanel,
     },
     ...(canViewCredit ? [{
-      value: 'credit',
+      value: 'credit' as const,
       label: 'سجل الائتمان',
       icon: <History size={16} />,
       badge: countBadge(counts.credit, 'عدد تغييرات الائتمان'),
       panel: creditPanel,
     }] : []),
-  ] satisfies Array<{
-    value: CustomerDetailTab
-    label: ReactNode
-    icon: ReactNode
-    badge?: ReactNode
-    panel: ReactNode
-  }>
+  ]
 
   return (
     <Tabs
