@@ -38,16 +38,16 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-INV-001`.
+Product UI is integrated through `DS2-INV-002`.
 
 Latest product integration:
-- PR: `#34 — DS2-INV-001: establish Inventory stock list V2 presentation`
-- Exact reviewed PR HEAD: `819832d23cb9aafc895f56dc4b9f5ba2d21530b3`
-- Squash merge commit: `805995a5c0d9a118c415d647ed34e63dee326527`
+- PR: `#35 — DS2-INV-002: establish transfer flow V2 presentation`
+- Exact reviewed PR HEAD: `d39d39281549650ef4bbd18767b20728a01117af`
+- Squash merge commit: `9328464542b1ca429fd1ec134667f45244215b67`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Runtime/preview/release evidence: not claimed
 
-The development branch now includes the shared semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales Orders list V2, Sales Order form V2 foundation, Sales transaction-detail header V2, and the first Inventory list/card migration with deliberate Desktop/Tablet/Mobile composition.
+The development branch now includes shared semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory stock-list V2, and the first Inventory transfer collection migration with deliberate Desktop/Tablet/Mobile composition and source-level accessibility hardening.
 
 ## Completed slices
 
@@ -77,7 +77,6 @@ System result:
 - Desktop retains dense paged DataTable semantics.
 - Tablet uses deliberate paged cards.
 - Mobile preserves accumulated infinite loading.
-- Sales KPI/status/card/action/state presentation composes shared V2 grammar.
 - Sales query/filter/pagination/navigation/permission/payment/Smart Transfer/map/call/workflow semantics remain preserved.
 
 ### DS2-UI-004 — Sales Order form V2 foundation
@@ -90,13 +89,9 @@ Runtime/preview/release evidence: not claimed
 
 System result:
 - shared `Stepper` supports optional page-owned guarded interaction while preserving legacy read-only behavior by default;
-- Sales step navigation is a thin adapter over shared Stepper, not a parallel primitive;
-- exact legacy step reachability and `goNext` validation remain page-owned;
 - Step 0 composes shared `FormSection` + `FormGrid` with `3 Desktop / 2 Tablet / 1 Mobile` density;
-- customer and credit-context rows remain intentionally full-width;
 - bottom actions compose shared `FormActions` + `Button` with RTL-native cues;
-- Sales create/edit/copyFrom, pricing, permission, validation, save, route and Mobile add-product semantics remain unchanged;
-- Combobox/ProductLine redesign remains deferred until separately proven by a live slice.
+- Sales create/edit/copy/pricing/permission/validation/save/route truth remains page/domain-owned.
 
 ### DS2-UI-005 — Sales transaction detail V2
 Status: `DONE`
@@ -107,14 +102,9 @@ Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT
 Runtime/preview/release evidence: not claimed
 
 System result:
-- shared `TransactionHeader` now consumes canonical `AppAction[] + useDeviceMode + resolveActionSet` rather than a parallel action taxonomy;
-- device placement is one visible workflow action on Mobile, up to two on Tablet, up to four on Desktop, with remaining eligible actions in overflow;
-- live `SalesOrderDetail.tsx` maps existing edit / confirm / deliver / due-date / return / copy / cancel permission/status predicates and callbacks into the shared contract;
-- confirm warehouse fallback, modal initialization, stock check, four `actionLoading` guards and `DocumentActions` capability behavior remain page/domain-owned and preserved;
-- legacy local status/hero/horizontal action-strip/`ActionBtn` presentation is removed only from the migrated header region;
-- financial summary, receipts, items, notes, modals, queries, services, calculations and workflow semantics remain outside the slice;
-- the stale-baseline TypeScript blocker was closed by inheriting the already-integrated Development hotfix before exact-head review;
-- `DocumentActions` Mobile sticky-header density remains a non-blocking runtime `WATCH` for a future owner-requested visual review.
+- shared `TransactionHeader` consumes canonical `AppAction[] + useDeviceMode + resolveActionSet`;
+- live Sales detail maps existing eligibility/callback truth into shared presentation without moving workflow ownership;
+- Mobile/Tablet/Desktop action placement is system-owned while business truth remains page/domain-owned.
 
 ### DS2-INV-001 — Inventory list surfaces
 Status: `DONE`
@@ -125,41 +115,53 @@ Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT
 Runtime/preview/release evidence: not claimed
 
 System result:
-- `StockPage` now uses one `ResponsiveCollection<Stock>` boundary rather than CSS-hidden duplicate device collection trees;
-- Desktop retains dense paged `DataTable` comparison/review behavior and authorized cost/value columns;
-- Tablet uses deliberate two-column `StockBalanceCard` composition with authorized weighted-cost + total-value parity and numbered direct page jumps;
-- Mobile uses one-column operational stock cards and preserves compact previous/next paged-query semantics;
-- `StockBalanceCard` remains a thin Inventory-domain composition over shared `Card + KeyValueList + StatusBadge`;
-- Tablet pagination now reuses shared `Button + touchTarget`, explicit accessible names, `aria-current="page"`, semantic 44px minimum numeric hit width and Arabic RTL-native `السابق` / `التالي` cues;
-- stock health, quantities, valuation, warehouse/product links, `finance.view_costs`, review math, routes, queries, filters, page size and pagination behavior remain page/domain-owned;
-- no transfer/adjustment workflow, backend/business/query/cache/RBAC/RLS/permission/deployment semantics changed;
-- full shared numbered Pagination convergence remains a non-blocking component-depth `WATCH`.
-
-## Current single active slice
+- `StockPage` uses one `ResponsiveCollection<Stock>` boundary;
+- Desktop keeps dense paged table review and authorized cost/value columns;
+- Tablet uses deliberate two-column cards with numbered direct jumps;
+- Mobile uses one-column operational cards with previous/next paging;
+- `StockBalanceCard` remains a thin Inventory-domain composition over shared patterns;
+- stock/query/filter/page/valuation/permission/review/link truth remains page/domain-owned.
 
 ### DS2-INV-002 — Transfer/adjustment operational flows
-Status: `REVIEW`
-Owner role: UI Production Engineer
-Active Draft PR: `#35 — DS2-INV-002: establish transfer flow V2 presentation`
-Exact slice baseline: `27437916d5afd047e794dd5bf86a2ddbf2becbdb`
-Bounded first concern: `TransfersPage transfer collection/presentation only`
+Status: `DONE`
+Merged PR: `#35`
+Reviewed HEAD: `d39d39281549650ef4bbd18767b20728a01117af`
+Squash merge: `9328464542b1ca429fd1ec134667f45244215b67`
+Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
+Runtime/preview/release evidence: not claimed
+
+System result:
+- the representative live `TransfersPage` collection now uses one `ResponsiveCollection<StockTransfer>` boundary instead of CSS-hidden duplicate device trees;
+- Desktop preserves dense table review, row expansion, notes/timestamps and authorized `finance.view_costs` visibility;
+- Tablet uses deliberate two-column `TransferCard` composition and Mobile uses one-column operational cards with touch-safe workflow/detail actions;
+- `TransferCard` stays a thin Inventory-domain composition over shared `Card + KeyValueList + Badge + StatusBadge + Button`;
+- transfer direction (`إرسال` / `طلب`) is neutral categorical metadata while actual workflow status owns semantic tone;
+- exact ship / approve-and-ship / receive / cancel predicates and callbacks remain page-owned, including warehouse ownership, creator ownership and `approved_by !== userId` guards;
+- Desktop expand/collapse has accessible naming + `aria-expanded`, transfer detail is a semantic `Link`, and previous/next paging uses explicit Arabic RTL-safe labels;
+- query `pageSize: 25`, filter/page behavior, create modal, confirmation flow, stock availability/reservation/validation, services, routes and invalidation remain unchanged;
+- Transfer Detail, Adjustments, create-flow/Combobox redesign and global Pagination convergence remain outside this completed representative slice.
+
+## Current single READY slice
+
+### DS2-PROC-001 — Purchase list surfaces
+Status: `READY`
+Owner role: Product Design Director -> UI Production Engineer after the concern is bounded
 
 System intent:
-Continue the Inventory module through the smallest representative dependency-safe transfer/adjustment presentation concern, reusing the now-proven Inventory collection/status/action grammar without changing inventory truth.
+Continue the North-Star roadmap into Procurement using the smallest representative purchase-list presentation concern, reusing the proven responsive collection, status, action and state grammar without changing procurement/accounting truth.
 
-Review boundary:
-- the live `TransfersPage` collection now uses one `ResponsiveCollection<StockTransfer>` boundary instead of CSS-hidden duplicate device collection trees;
-- dense Desktop table, expanded-item review and authorized cost visibility remain intact;
-- Tablet/Mobile use deliberate `TransferCard` composition over shared V2 primitives with touch-safe actions and previous/next paging only;
-- transfer direction (`إرسال` / `طلب`) is neutral categorical `Badge` metadata; only workflow status uses semantic `StatusBadge` tone;
-- the exact page-owned ship / approve-and-ship / receive / cancel predicates and callbacks are centralized once for presentation reuse without changing truth;
-- query `pageSize: 25`, filter/page behavior, create modal, confirmation flow, routes, services, stock availability/reservation/validation and permission ownership remain unchanged;
-- `TransferDetailPage`, `AdjustmentsPage` and create-flow redesign remain unopened and outside this bounded concern.
+Initial direction:
+- Product Design Director must inspect the live purchase-list surfaces and bound one representative dependency-safe concern before implementation expands;
+- preserve purchase query/filter/pagination, supplier/warehouse/document identity, totals/taxes/currency, permission, status, approval, navigation and service semantics exactly;
+- prefer one device-aware collection boundary, deliberate Tablet composition, touch-safe Mobile actions and dense Desktop comparison/review;
+- reuse shared `ResponsiveCollection`, `Card`, `KeyValueList`, `Badge`/`StatusBadge`, `Button`, PageHeader/action/state grammar where they fit;
+- strengthen only the smallest recurring shared gap proven by the selected live Procurement surface;
+- author focused tests for material device/action/permission/state wiring; evidence follows `33_TEST_AND_VALIDATION_POLICY.md`.
 
 Explicit exclusions:
-- no stock movement/calculation/costing/reservation or accounting behavior change;
-- no DB/migration/RPC/service/query/cache/RBAC/RLS/permission/route-guard/validation/workflow semantic change;
-- no speculative broad Inventory redesign or global Pagination convergence inside this slice;
+- no purchase/accounting calculations or workflow changes;
+- no DB/migration/RPC/service/query/cache/RBAC/RLS/permission/route-guard/validation semantic changes;
+- no speculative broad Procurement redesign, Purchase Invoice form rewrite, or unrelated shared-component rewrite;
 - no deployment/preview/main changes.
 
 ## Product migration roadmap
@@ -194,10 +196,10 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### C. Inventory
 - `DS2-INV-001` Inventory list surfaces — `DONE`
-- `DS2-INV-002` Transfer/adjustment operational flows — `REVIEW`
+- `DS2-INV-002` Transfer/adjustment operational flows — `DONE`
 
 ### D. Procurement
-- `DS2-PROC-001` Purchase list surfaces — `BACKLOG`
+- `DS2-PROC-001` Purchase list surfaces — `READY`
 - `DS2-PROC-002` Purchase Invoice form decomposition — `BACKLOG`
 
 ### E. Finance
