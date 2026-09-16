@@ -5,6 +5,7 @@ import {
   SalesOrderCard,
   SalesOrderStatusBadge,
   SalesOrdersKpiGrid,
+  selectSalesOrdersCollectionState,
 } from './SalesOrdersListPresentation'
 
 describe('SalesOrdersListPresentation', () => {
@@ -58,6 +59,35 @@ describe('SalesOrdersListPresentation', () => {
     expect(screen.getByRole('region', { name: 'ملخص أوامر البيع' }).getAttribute('data-device')).toBe('tablet')
   })
 
+  it('keeps Tablet on the paged dataset while Mobile alone uses accumulated infinite-list data', () => {
+    const desktopItems = [{ id: 'desktop-page-row' }]
+    const mobileItems = [{ id: 'mobile-accumulated-row' }]
+
+    const tablet = selectSalesOrdersCollectionState({
+      device: 'tablet',
+      desktopItems,
+      mobileItems,
+      desktopLoading: false,
+      mobileLoading: true,
+    })
+    expect(tablet.items).toBe(desktopItems)
+    expect(tablet.loading).toBe(false)
+    expect(tablet.usesNumberedPagination).toBe(true)
+    expect(tablet.usesInfiniteLoading).toBe(false)
+
+    const mobile = selectSalesOrdersCollectionState({
+      device: 'mobile',
+      desktopItems,
+      mobileItems,
+      desktopLoading: true,
+      mobileLoading: false,
+    })
+    expect(mobile.items).toBe(mobileItems)
+    expect(mobile.loading).toBe(false)
+    expect(mobile.usesNumberedPagination).toBe(false)
+    expect(mobile.usesInfiniteLoading).toBe(true)
+  })
+
   it('renders a touch-ready mobile Sales card with semantic status and explicit actions', () => {
     const onOpen = vi.fn()
     const onMap = vi.fn()
@@ -78,6 +108,7 @@ describe('SalesOrdersListPresentation', () => {
           paymentTerms: 'آجل',
           representative: 'أحمد علي',
           paidPercent: 40,
+          progressPercent: 40,
         }}
         onOpen={onOpen}
         onMap={onMap}
@@ -99,6 +130,29 @@ describe('SalesOrdersListPresentation', () => {
     expect(onCall).toHaveBeenCalledTimes(1)
   })
 
+  it('preserves the page-projected percentage text while bounding only progress geometry', () => {
+    render(
+      <SalesOrderCard
+        mode="mobile"
+        summary={{
+          customerName: 'عميل مرتجع',
+          orderNumber: 'SO-OVERPAID',
+          orderDate: '16/09/2026',
+          status: 'completed',
+          total: '1,000 ج.م',
+          paid: '1,250 ج.م',
+          paidPercent: 125,
+          progressPercent: 125,
+        }}
+        onOpen={() => undefined}
+      />,
+    )
+
+    expect(screen.getByText('125%')).not.toBeNull()
+    expect(screen.getByRole('progressbar', { name: 'نسبة سداد أمر البيع' }).getAttribute('aria-valuenow')).toBe('100')
+    expect(document.querySelector('[data-progress-fill]')?.getAttribute('style')).toContain('width: 100%')
+  })
+
   it('keeps tablet composition denser without inventing actions that were not supplied', () => {
     render(
       <SalesOrderCard
@@ -111,6 +165,7 @@ describe('SalesOrdersListPresentation', () => {
           total: '3,200 ج.م',
           paid: '3,200 ج.م',
           paidPercent: 100,
+          progressPercent: 100,
         }}
         onOpen={() => undefined}
       />,
