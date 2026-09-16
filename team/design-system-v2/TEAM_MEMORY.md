@@ -3,9 +3,9 @@
 ## Current truth
 
 - Authoritative integration branch: `design-system-v2-development`.
-- Product UI is integrated through `DS2-UI-002`.
-- Latest product integration commit: `773085994502401a7368eded20926b1308b62e3f` from PR #29.
-- Last synchronized development baseline before this Team Memory write: `3cab291fbec18adbbb83720e93b78186d20d91e7`.
+- Product UI is integrated through `DS2-UI-003`.
+- Latest product integration commit: `e42910fb2bb7c945e67262f610d9e0b630d960a6` from PR #30.
+- Last synchronized development baseline before this Team Memory write: `8bde8046822c1900b88ff41b38275fc68349177f`.
 - `main` remains frozen until explicit owner approval.
 - Vercel preview is user-requested only.
 - GitHub Actions / hosted CI remain forbidden for normal Design System development.
@@ -24,71 +24,76 @@ The development branch includes:
 - Customers List V2 migration;
 - Customer basic-info V2 composition (`DS2-UI-001`);
 - Customer secondary Tabs/Branches/Contacts/Credit V2 composition (`DS2-UI-002`);
+- Sales Orders list V2 composition (`DS2-UI-003`);
 - complete shared Tabs semantics reused by the Customer flow;
+- shared ResponsiveCollection proof on a real Sales list with distinct Desktop/Tablet/Mobile data/presentation contracts;
 - Design System North Star, test policy, role-state handoff protocol, Team Memory and durable Decision Log.
 
 ## Latest completed slice
 
-`DS2-UI-002 — Customer detail secondary tabs/patterns`
+`DS2-UI-003 — Sales Orders list V2`
 
 Result:
-- PR #29 exact reviewed head `1cb3853bf3cf94b2a25edd637d0083006e5d2191` received `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS`.
+- PR #30 exact reviewed head `d03dbf4d32e0fb1a3e4888588a5c6d685689f1ff` received `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS`.
 - Test evidence remained honestly labeled `TESTS_AUTHORED_NOT_EXECUTED`.
 - The Draft lifecycle flag was cleared without moving the reviewed HEAD; GitHub then reported the PR mergeable.
-- PR #29 was squash-merged as `773085994502401a7368eded20926b1308b62e3f`.
-- Customer edit sections now use the existing complete shared `Tabs` contract instead of legacy/local section switching.
-- Branch/Contact presentation uses shared `Card`, `SectionHeader`, `KeyValueList`, `StatePanel`, `Button`, neutral `Badge`, and semantic `StatusBadge`.
-- Duplicate legacy Customer secondary render trees were removed.
-- Existing Customer create/update/GPS/lookup/credit/count/permission behavior remains preserved.
-- Existing ResponsiveModal/delete flows and the dense credit-history table remain intentionally deferred from broader shared overlay/DataTable redesign.
+- PR #30 was squash-merged as `e42910fb2bb7c945e67262f610d9e0b630d960a6`.
+- `ResponsiveCollection` now owns the one-renderer-at-a-time boundary on Sales Orders.
+- Desktop retains the existing paged dense `DataTable`; Tablet uses deliberate cards over the same paged dataset; Mobile keeps accumulated infinite loading.
+- Sales KPI/status/card/action/empty-state presentation now composes shared V2 grammar without moving business/query truth out of the page.
+- Existing Sales filter/query/pagination/navigation/permission/payment/Smart Transfer/map/call/workflow semantics remain preserved.
+- Displayed payment percentage remains page-owned; only progress geometry/ARIA is bounded.
+- Legacy Mobile `DataCard` and CSS-hidden duplicate collection trees are removed from this page.
 - No hosted CI, Vercel preview, backend/business behavior change, or `main` change occurred.
 
 ## Current single READY slice
 
-`DS2-UI-003 — Sales Orders list V2`
+`DS2-UI-004 — Sales Order form V2 foundation`
 
 Intent:
-- move the next golden-flow collection screen into shared V2 grammar;
-- preserve existing data/query/navigation/permission/status/business behavior;
-- prove or minimally strengthen reusable responsive collection, filter/search, status, action and state patterns using the real Sales Orders list;
-- Mobile must prioritize record/action clarity without ordinary horizontal overflow;
+- continue the Sales golden flow through the real create/edit form;
+- select the smallest dependency-safe presentation sub-slice first rather than broad form rewrite;
+- reuse shared Field/FormSection/FormGrid/FormActions/Button/Combobox patterns before inventing new primitives;
+- preserve all customer/product/pricing/discount/tax/total/validation/submit/query/permission/workflow truth;
+- Mobile must retain clear task/action priority without ordinary horizontal overflow;
 - Tablet must be deliberate rather than compressed Desktop;
-- Desktop must retain useful comparison density;
-- no Sales-only mini design system and no speculative global DataTable/FilterBar program unless the real slice proves the smallest reusable shared contract required now.
+- Desktop must preserve efficient data-entry density;
+- any shared Combobox/ProductLine/stepper hardening must be the smallest recurring contract proven by the live form, not speculative abstraction.
 
 ## Latest role positions
 
 ### Product Design Director
-- Independently revalidated the exact PR #29 GREEN-DEV head before integration.
-- Architectural disposition for DS2-UI-002 was PASS with no integration blocker.
-- Two future shared-program WATCH items remain: permission-limited empty-state microcopy and standardized focusable dense-table overflow semantics.
-- Its stored role state now describes the merged slice and becomes stale for implementation decisions once DS2-UI-003 starts; it should refresh against the Sales list baseline on its next material run.
+- Its last material state reviewed PR #30 during WIP and set two required boundaries: Tablet presentation must preserve paged data semantics and visual progress normalization must not replace page-projected financial truth.
+- Both constraints were resolved on the exact GREEN-DEV/merged head.
+- Its PR #30 state is now consumed/stale for new implementation decisions; it should refresh against the Sales Order form before opening any broader shared-form direction.
 
 ### UI Production Engineer
-- Completed DS2-UI-002 implementation and handed exact head `1cb3853b...` to QA.
-- Its stored role state now describes the merged Customer slice and is stale for new implementation work.
-- Next material action is to bootstrap from the latest development HEAD and take only `DS2-UI-003`.
+- Completed DS2-UI-003 and handed exact head `d03dbf4d...` to QA.
+- Its stored role state now describes the merged Sales-list slice and is stale for new implementation work.
+- Next material action is to bootstrap from the latest development HEAD and take only DS2-UI-004.
 
 ### Design QA
-- Issued exact-head `GREEN-DEV` + `SOURCE_REVIEW_PASS` for PR #29 with honest `TESTS_AUTHORED_NOT_EXECUTED` evidence.
+- Issued exact-head `GREEN-DEV` + `SOURCE_REVIEW_PASS` for PR #30 with honest `TESTS_AUTHORED_NOT_EXECUTED` evidence.
 - Runtime/preview/release evidence remains unclaimed and separate.
-- Its current approval is consumed by the merge and must not be reused for the next Sales slice.
+- Its current approval is consumed by the merge and must not be reused for the Sales Order form.
 
 ### Development Integrator
-- Revalidated exact head/base/scope/role states, cleared Draft state without moving the reviewed head, confirmed mergeability, and squash-merged PR #29.
-- Integration state is `MERGED_GREEN_DEV` for DS2-UI-002.
-- Workstream now marks DS2-UI-002 DONE and DS2-UI-003 READY.
+- Revalidated exact head/base/scope/role states, cleared Draft without head movement, confirmed mergeability, and squash-merged PR #30.
+- Integration state is `MERGED_GREEN_DEV` for DS2-UI-003.
+- Workstream now marks DS2-UI-003 DONE and DS2-UI-004 READY.
 
 ## Invariants to preserve
 
 - UI work must not alter business behavior or backend contracts.
 - Customer create/update/GPS/lookup/credit/default branch/default contact/Branch-Contact mutation semantics must not drift during later work.
+- Sales list query/filter/Desktop+Tablet pagination/Mobile infinite-loading/navigation/permission/status/payment/Smart Transfer/map/call/workflow semantics must not drift during later work.
+- Sales Order form customer/product/pricing/discount/tax/total/validation/submit semantics remain page/domain-owned during DS2-UI-004.
 - Complete shared Tabs keyboard/focus/ARIA/RTL semantics are system-owned; do not reintroduce partial page-local ARIA.
 - Neutral metadata counts use neutral Badge semantics; semantic state uses StatusBadge.
 - Shared Button/action hierarchy should own touch/action behavior for newly migrated actions.
 - Mobile operational actions remain clear and touch-ready.
 - Tablet must not collapse into oversized Mobile or cramped Desktop.
-- Desktop must remain efficient for dense management/review work.
+- Desktop must remain efficient for dense management/review/data-entry work.
 - Arabic/RTL and long real-world values are first-class acceptance conditions.
 - Semantic actions/statuses are system-owned, not page-color inventions.
 - Hidden duplicate device interaction trees should be avoided where device-aware composition exists.
@@ -98,12 +103,14 @@ Intent:
 
 ## Known evidence / risks
 
-- Development evidence for DS2-UI-002 is source-level only: no executed test suite, preview build, runtime visual pass or release approval was claimed.
+- Development evidence for DS2-UI-003 is source-level only: no executed test suite, preview build, runtime visual pass or release approval was claimed.
 - Hosted CI quota protection remains active; absence of GitHub Actions is expected.
 - Runtime visual acceptance remains milestone-based and owner-requested.
 - Permission-limited empty states should converge toward neutral explanatory microcopy in the future shared StatePanel/microcopy program.
 - Focusable horizontal overflow semantics for dense tables should be standardized in later DataTable/accessibility hardening rather than solved ad hoc per page.
-- Sales Orders list may expose real FilterBar/ResponsiveCollection/DataTable gaps; strengthen only the smallest shared contract proven by that screen.
+- Desktop/Tablet numbered pagination should later converge into one shared accessible Pagination/DataTable contract when that real shared-depth program opens.
+- Progress/accessibility hardening should consider `aria-valuetext` for projected values above 100 while visual geometry remains bounded.
+- DS2-UI-004 may expose real Combobox/ProductLine/long-form composition gaps; strengthen only the smallest shared contract proven by the selected form sub-slice.
 
 ## Reusable patterns learned so far
 
@@ -112,6 +119,9 @@ Intent:
 - Form composition can be standardized independently from business field semantics.
 - Shared `PageHeader` + `FormSection` + `FormGrid` + `FormActions` has a real Customer-form proof point.
 - Complete shared Tabs semantics can be reused through a thin domain wrapper for labels/counts/visibility without duplicating interaction logic.
+- Shared `ResponsiveCollection` can preserve distinct page-owned device datasets while owning a single presentation boundary.
+- Domain cards should compose shared primitives rather than becoming new cross-system primitives by default.
+- Page-projected business values may remain distinct from bounded visual geometry/ARIA constraints.
 - `Badge` metadata and `StatusBadge` semantic state should remain distinct.
 - Feature flags remain appropriate for high-risk visual shell replacement before broad rollout.
 - Accessibility semantics should be introduced only at a complete reusable interaction boundary.
@@ -119,6 +129,6 @@ Intent:
 
 ## Next handoff
 
-UI Production Engineer should bootstrap from the exact latest `design-system-v2-development` HEAD and start only `DS2-UI-003 — Sales Orders list V2` within the Workstream scope.
+UI Production Engineer should bootstrap from the exact latest `design-system-v2-development` HEAD and take only `DS2-UI-004 — Sales Order form V2 foundation`, first identifying the smallest presentation-only form sub-slice that can be completed and independently reviewed without touching Sales business truth.
 
-Product Design Director should guide the Sales list toward reusable responsive collection/filter/status/action grammar without speculative abstraction. Design QA should independently review the next exact PR HEAD. Development Integrator should no-op until that exact Sales-list head receives `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` and all normal gates pass.
+Product Design Director should bound shared form/combobox/product-line direction from the live form rather than pre-design a broad form framework. Design QA should independently review the next stable exact PR HEAD. Development Integrator should no-op until that exact head receives `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` and all normal gates pass.
