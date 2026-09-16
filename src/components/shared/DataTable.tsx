@@ -131,26 +131,35 @@ export default function DataTable<T extends Record<string, any>>({
 
       {/* Pagination */}
       {page && totalPages && totalPages > 1 && onPageChange && (
-        <div className="pagination" style={{ padding: 'var(--space-4)' }}>
+        <nav
+          className="pagination"
+          aria-label="ترقيم صفحات البيانات"
+          style={{ padding: 'var(--space-4)' }}
+        >
           <span className="pagination-info">
             صفحة {page} من {totalPages}
             {totalCount != null && ` (${totalCount})`}
           </span>
           <div className="pagination-buttons">
             <button
-              className="pagination-btn"
+              type="button"
+              className="pagination-btn pagination-btn-nav"
+              aria-label="الصفحة السابقة"
               disabled={page <= 1}
               onClick={() => onPageChange(page - 1)}
             >
-              ‹
+              السابق
             </button>
             {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
               const num = page <= 3 ? i + 1 : page + i - 2
               if (num < 1 || num > totalPages) return null
               return (
                 <button
+                  type="button"
                   key={num}
                   className={cn('pagination-btn', num === page && 'active')}
+                  aria-label={`الصفحة ${num}`}
+                  aria-current={num === page ? 'page' : undefined}
                   onClick={() => onPageChange(num)}
                 >
                   {num}
@@ -158,19 +167,27 @@ export default function DataTable<T extends Record<string, any>>({
               )
             })}
             <button
-              className="pagination-btn"
+              type="button"
+              className="pagination-btn pagination-btn-nav"
+              aria-label="الصفحة التالية"
               disabled={page >= totalPages}
               onClick={() => onPageChange(page + 1)}
             >
-              ›
+              التالي
             </button>
           </div>
-        </div>
+        </nav>
       )}
 
       <style>{`
         .system-desktop-table { display: block; }
         .system-mobile-cards  { display: none !important; }
+        .pagination-btn.pagination-btn-nav {
+          width: auto;
+          min-width: 64px;
+          padding-inline: var(--space-3);
+          white-space: nowrap;
+        }
         @media (max-width: 768px) {
           .system-desktop-table { display: none; }
           .system-mobile-cards  { display: flex !important; }

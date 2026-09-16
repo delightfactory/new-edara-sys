@@ -141,27 +141,38 @@ System result:
 - query `pageSize: 25`, filter/page behavior, create modal, confirmation flow, stock availability/reservation/validation, services, routes and invalidation remain unchanged;
 - Transfer Detail, Adjustments, create-flow/Combobox redesign and global Pagination convergence remain outside this completed representative slice.
 
-## Current single READY slice
+## Current single active slice
 
 ### DS2-PROC-001 — Purchase list surfaces
-Status: `READY`
-Owner role: Product Design Director -> UI Production Engineer after the concern is bounded
+Status: `REVIEW`
+Owner role: UI Production Engineer -> Product Design Director / Design QA
+
+Bounded representative concern:
+- live surface is `PurchaseInvoicesPage` collection/presentation only;
+- replace CSS-hidden duplicate Desktop/Mobile collection trees with one `ResponsiveCollection<PurchaseInvoice>` boundary;
+- keep Desktop as dense `DataTable` comparison/review with its existing numbered pagination capability;
+- use deliberate two-column Tablet `PurchaseInvoiceCard` composition with numbered direct jumps and one-column Mobile operational cards with previous/next paging;
+- compose the thin Procurement card from shared `Card + KeyValueList + StatusBadge + Button`, with page-owned supplier/warehouse/financial/status/navigation truth;
+- use shared loading/empty-state and semantic-status grammar without moving procurement/accounting behavior into presentation.
 
 System intent:
 Continue the North-Star roadmap into Procurement using the smallest representative purchase-list presentation concern, reusing the proven responsive collection, status, action and state grammar without changing procurement/accounting truth.
 
-Initial direction:
-- Product Design Director must inspect the live purchase-list surfaces and bound one representative dependency-safe concern before implementation expands;
-- preserve purchase query/filter/pagination, supplier/warehouse/document identity, totals/taxes/currency, permission, status, approval, navigation and service semantics exactly;
-- prefer one device-aware collection boundary, deliberate Tablet composition, touch-safe Mobile actions and dense Desktop comparison/review;
-- reuse shared `ResponsiveCollection`, `Card`, `KeyValueList`, `Badge`/`StatusBadge`, `Button`, PageHeader/action/state grammar where they fit;
-- strengthen only the smallest recurring shared gap proven by the selected live Procurement surface;
-- author focused tests for material device/action/permission/state wiring; evidence follows `33_TEST_AND_VALIDATION_POLICY.md`.
+Preserve exactly:
+- `getPurchaseInvoices` query/filter/page behavior and `PAGE_SIZE = 20`;
+- search/status reset to page 1;
+- supplier/warehouse/document identity and detail/create routes;
+- total/paid values and currency presentation inputs;
+- purchase workflow status values/mapping ownership;
+- existing Desktop numbered pagination, Tablet direct-jump capability, and Mobile previous/next capability;
+- all service/accounting/approval/permission semantics outside this presentation concern.
 
 Explicit exclusions:
+- `PurchaseReturnsPage` and Purchase Return flows remain outside this representative concern;
+- Purchase Invoice form decomposition remains `DS2-PROC-002`;
 - no purchase/accounting calculations or workflow changes;
 - no DB/migration/RPC/service/query/cache/RBAC/RLS/permission/route-guard/validation semantic changes;
-- no speculative broad Procurement redesign, Purchase Invoice form rewrite, or unrelated shared-component rewrite;
+- no speculative broad Procurement redesign or global Pagination rewrite;
 - no deployment/preview/main changes.
 
 ## Product migration roadmap
@@ -199,7 +210,7 @@ Open only when a real migrated screen proves the recurring gap:
 - `DS2-INV-002` Transfer/adjustment operational flows — `DONE`
 
 ### D. Procurement
-- `DS2-PROC-001` Purchase list surfaces — `READY`
+- `DS2-PROC-001` Purchase list surfaces — `REVIEW`
 - `DS2-PROC-002` Purchase Invoice form decomposition — `BACKLOG`
 
 ### E. Finance
