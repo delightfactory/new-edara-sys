@@ -1,0 +1,199 @@
+/* Delight Design System V2 — transaction/detail composition patterns. */
+
+.ds-transaction-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--ds-page-gutter-desktop);
+  border-bottom: 1px solid var(--ds-border-default);
+  background: color-mix(in srgb, var(--ds-surface-default) 96%, transparent);
+  color: var(--ds-text-primary);
+}
+
+.ds-transaction-header--sticky {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: blur(12px);
+}
+
+.ds-transaction-header__top {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.ds-transaction-header__back {
+  flex: 0 0 auto;
+}
+
+.ds-transaction-header__identity {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-block: 0.125rem;
+}
+
+.ds-transaction-header__heading-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.ds-transaction-header__title {
+  min-width: 0;
+  margin: 0;
+  color: var(--ds-text-primary);
+  font-size: var(--ds-type-page-title-size);
+  font-weight: var(--ds-type-page-title-weight);
+  line-height: var(--ds-type-page-title-line);
+  overflow-wrap: anywhere;
+}
+
+.ds-transaction-header__status {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.ds-transaction-header__subtitle {
+  min-width: 0;
+  margin-top: var(--space-1);
+  color: var(--ds-text-secondary);
+  font-size: var(--ds-type-body-size);
+  line-height: var(--ds-type-body-line);
+  overflow-wrap: anywhere;
+}
+
+.ds-transaction-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-inline-action-gap);
+  min-width: 0;
+  flex-wrap: wrap;
+  padding-inline-start: calc(var(--ds-icon-hit-target) + var(--space-3));
+}
+
+.ds-transaction-header__visible-actions,
+.ds-transaction-header__tools {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-inline-action-gap);
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.ds-transaction-header__tools {
+  margin-inline-start: auto;
+}
+
+.ds-transaction-header__overflow {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.ds-transaction-header__overflow-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--ds-icon-hit-target);
+  padding-inline: var(--space-3);
+  border: 1px solid var(--ds-border-default);
+  border-radius: var(--radius-md);
+  background: var(--ds-surface-default);
+  color: var(--ds-text-primary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.ds-transaction-header__overflow-trigger::-webkit-details-marker {
+  display: none;
+}
+
+.ds-transaction-header__overflow-trigger:focus-visible {
+  outline: 2px solid var(--ds-focus-ring);
+  outline-offset: 2px;
+}
+
+.ds-transaction-header__overflow-actions {
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-1));
+  inset-inline-end: 0;
+  z-index: 20;
+  display: grid;
+  gap: var(--space-1);
+  min-width: 12rem;
+  padding: var(--space-2);
+  border: 1px solid var(--ds-border-default);
+  border-radius: var(--radius-md);
+  background: var(--ds-surface-default);
+}
+
+.ds-transaction-header__overflow-actions > .btn {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .ds-transaction-header {
+    padding-inline: var(--ds-page-gutter-tablet);
+  }
+
+  .ds-transaction-header__actions {
+    padding-inline-start: 0;
+  }
+
+  .ds-transaction-header__tools {
+    width: 100%;
+    margin-inline-start: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .ds-transaction-header {
+    gap: var(--space-3);
+    padding: var(--space-3) var(--ds-page-gutter-mobile);
+  }
+
+  .ds-transaction-header__top {
+    gap: var(--space-2);
+  }
+
+  .ds-transaction-header__title {
+    font-size: var(--ds-type-section-title-size);
+  }
+
+  .ds-transaction-header__actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2);
+    padding-inline-start: 0;
+  }
+
+  .ds-transaction-header__visible-actions,
+  .ds-transaction-header__visible-actions > .btn,
+  .ds-transaction-header__overflow,
+  .ds-transaction-header__overflow-trigger {
+    width: 100%;
+  }
+
+  .ds-transaction-header__visible-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ds-transaction-header__overflow-actions {
+    position: static;
+    margin-top: var(--space-1);
+    min-width: 0;
+  }
+
+  .ds-transaction-header__tools {
+    width: 100%;
+    margin-inline-start: 0;
+  }
+}

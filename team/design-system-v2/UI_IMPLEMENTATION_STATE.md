@@ -4,99 +4,109 @@
 
 - Run date: `2026-09-16`
 - Development branch: `design-system-v2-development`
-- Exact development baseline used for this slice: `a6c9705ab56442c7c1d1722b442aa374a7556e81`
-- Exact development HEAD observed this run: `ca42230ae025984bb68837bb85be8711f33df20b`
-- Feature branch: `ds2/sales-order-form-v2`
-- Draft PR: `#31 — DS2-UI-004: establish Sales Order form V2 presentation foundation`
-- Exact product/test HEAD before this state write: `712ef01c9118941cc2f8887ae20f922fc94881f2`
-- Active slice: `DS2-UI-004 — Sales Order form V2 foundation`
-- Implementation disposition: `REVIEW — REVIEWER P2 CORRECTED, EXACT-HEAD RE-REVIEW REQUIRED`
+- Exact slice baseline: `8a0c34751344ca466754d06980093c501b536cd9`
+- Exact Development HEAD synchronized this run: `7f0b1f6c7bcd1b3920565b260248018147cd18fd`
+- Feature branch: `ds2/sales-order-detail-v2`
+- Draft PR: `#32 — DS2-UI-005: establish Sales transaction detail V2 header pattern`
+- Previously blocked PR HEAD: `3f370e02d60bbf6dfa5978c1dadc2f9454210f08`
+- Development-sync merge commit before this state write: `540a080fc5c92d635caea7023ade8a44753871b7`
+- Active slice: `DS2-UI-005 — Sales transaction detail V2`
+- Implementation disposition: `REVIEW — DEVELOPMENT HOTFIX SYNCED; FRESH EXACT-HEAD QA REQUIRED`
 - Evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 
 ## Independent implementation judgment
 
-The single bounded P2 raised by both Design QA and Product Design Director on review head `6841ceb3094ec6f85a14d4e9bdfb77869fc4444c` was valid: Step 0 had been hard-capped to two Desktop columns and therefore lost useful Desktop data-entry density even though the shared `FormGrid` contract already provides the desired `3 Desktop -> 2 Tablet -> 1 Mobile` behavior.
+The current Design QA / Product Design Director blocker was objective and narrow: PR #32 exact HEAD `3f370e02...` still contained the pre-preview-fix versions of three files that a real owner-requested preview had already proven fail TypeScript compilation. The Sales transaction-header architecture and live action wiring themselves were accepted at source level; the correct implementation action was therefore a baseline synchronization, not a redesign or local reimplementation of the hotfix.
 
-The correction is intentionally minimal. The live `بيانات الطلب` section now requests `columns={3}` from the existing shared V2 form contract. The customer selector row and selected-customer/credit row remain explicit full-width rows. No Sales business, query, permission, validation, workflow or save truth moved or changed.
+This run synchronized current `design-system-v2-development` into the existing feature branch with a non-force two-parent merge commit. The merge result inherits the already-reviewed Development hotfix unchanged while preserving the DS2-UI-005 product/test blobs exactly. No Sales-detail architecture, business logic, permission gate, callback, query, service, workflow or calculation was changed.
 
 ## Material progress this run
 
-1. Re-ran the mandatory shared-memory bootstrap in required order, inspected issue #27, current Development HEAD and the only open implementation PR targeting Development.
-2. Independently confirmed the reviewer finding in live source before editing: Step 0 used `columns={2}` while rep/date/delivery-address are three related compact Desktop fields.
-3. Changed only the live Step 0 composition from `columns={2}` to `columns={3}`.
-4. Preserved the existing `gridColumn: '1 / -1'` full-width treatment for customer selection and selected-customer/credit information.
-5. Extended the focused page source-contract test to require the live `columns={3}` contract, reject regression to `columns={2}`, and protect the full-width rows.
-6. Did not expand into Combobox, ProductLine, delivery section, table, overlay or functional refactoring.
-7. No GitHub Actions, hosted CI, Vercel deployment or `main` activity occurred.
+1. Re-ran the mandatory shared-memory bootstrap in the required order and inspected issue #27, current Development HEAD and all open PRs targeting Development.
+2. Independently verified the peer blocker against Git history before changing the branch: Development diverged from the slice baseline in exactly three TypeScript-fix files plus peer role-state files.
+3. Confirmed there was no overlap between those Development product hotfix files and the ten DS2-UI-005 PR files.
+4. Synchronized Development HEAD `7f0b1f6c7bcd1b3920565b260248018147cd18fd` into `ds2/sales-order-detail-v2` using merge commit `540a080fc5c92d635caea7023ade8a44753871b7`; no force update was used.
+5. Inherited the already-integrated fixes unchanged in:
+   - `src/components/sales/SalesOrderFormPresentation.test.tsx`;
+   - `src/components/ui/Stepper.test.tsx`;
+   - `src/pages/customers/CustomerDetailTabs.tsx`.
+6. Preserved the existing DS2-UI-005 implementation blobs unchanged for `TransactionHeader`, the thin Sales adapter, live `SalesOrderDetail.tsx` wiring, focused tests and transaction CSS.
+7. Did not trigger GitHub Actions, hosted CI or Vercel and did not touch `main`.
 
 ## Changed-file / pattern scope
 
-PR #31 remains constrained to the same eight UI/test/state files:
+Relative to the synchronized Development baseline, PR #32 remains bounded to the same ten UI/test/workstream/owned-state files:
 
-- `src/components/ui/Stepper.tsx`
-- `src/components/ui/Stepper.test.tsx`
-- `src/components/sales/SalesOrderFormPresentation.tsx`
-- `src/components/sales/SalesOrderFormPresentation.test.tsx`
-- `src/components/sales/sales-order-form-v2.css`
-- `src/pages/sales/SalesOrderForm.tsx`
-- `src/pages/sales/SalesOrderForm.v2.test.ts`
+- `src/components/patterns/TransactionHeader.tsx`
+- `src/components/patterns/TransactionHeader.test.tsx`
+- `src/components/sales/SalesOrderDetailPresentation.tsx`
+- `src/components/sales/SalesOrderDetailPresentation.test.tsx`
+- `src/styles/design-system-v2-transaction.css`
+- `src/styles/main.css`
+- `src/pages/sales/SalesOrderDetail.tsx`
+- `src/pages/sales/SalesOrderDetail.v2.test.ts`
+- `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md`
 - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
-This run materially changed only the live Sales Order form density contract, its focused source-contract test, and this owned role-state file.
+The Development-side TypeScript hotfix is inherited baseline truth, not new PR scope.
 
 ## Preserved functional contracts
 
-The correction does not modify or relocate:
+The synchronization does not modify or relocate:
 
-- create/edit and `copyFrom` behavior;
-- customer/branch/rep data ownership;
-- product/unit/quantity/stock behavior;
-- price resolution or manual-price override guards;
-- `sales.orders.edit_price` or `sales.discounts.override` permissions;
-- discount, tax, shipping, totals or minimum-order calculations;
-- `goNext` validation/toasts or exact step reachability;
-- service/query/cache/RPC/RBAC/RLS/route-guard semantics;
-- `createSalesOrder` / `updateSalesOrder` / `saveSalesOrderItems` / `recalcOrderTotals` save sequence;
-- route navigation or Mobile add-product flow.
+- Sales detail queries, services, cache semantics or RPC behavior;
+- edit / confirm / deliver / due-date / return / copy / cancel permission/status predicates;
+- confirm warehouse fallback, modal initialization or stock check;
+- `actionLoading` guards;
+- routes, invalidations, toasts or modal workflows;
+- financial calculations, receipts, items, notes or summary semantics;
+- `DocumentActions` capability behavior;
+- RBAC/RLS, permission definitions, validation semantics or workflow transitions.
 
 ## Device / state coverage
 
-- **Mobile:** shared FormGrid resolves the three-column request to one column; no horizontal form-grid compression is introduced. Shared wrapped Stepper and touch-targeted actions remain unchanged.
-- **Tablet:** shared FormGrid resolves the same request to two columns; no Mobile-only product-entry behavior leaks into Tablet.
-- **Desktop:** Step 0 now restores three-field operational density for rep/date/delivery address where available, while customer and credit context remain full-width.
-- **Loading / disabled / permission / read-only:** unchanged from the already-reviewed candidate; reviewer correction is composition-only.
-- **RTL / accessibility:** unchanged from the already-reviewed candidate; shared Stepper ARIA/current-step and native RTL directional cues remain intact.
+The previously reviewed DS2-UI-005 composition remains unchanged by this sync:
+
+- **Mobile:** one visible workflow action plus shared overflow; no horizontal action strip.
+- **Tablet:** two visible workflow actions plus overflow with deliberate wrapped tools composition.
+- **Desktop:** up to four visible workflow actions before overflow for dense review.
+- **Permission/status/loading/destructive states:** remain page-owned and unchanged.
+- **RTL/accessibility:** shared logical spacing, labelled action group, native overflow disclosure, touch targets and existing Sales status semantics remain intact.
 
 ## Test / execution evidence
 
 Evidence remains **`TESTS_AUTHORED_NOT_EXECUTED`**.
 
-Focused coverage now additionally protects:
-- live Step 0 `columns={3}` usage;
-- rejection of regression to the reviewer-blocked `columns={2}` usage;
-- preservation of the full-width customer/credit rows.
+The known stale-baseline TypeScript blocker has been removed from the candidate by inheriting the exact already-integrated Development hotfix. This run did not execute `npm test`, `npm run build` or `npm run lint`, so no local/build PASS is claimed. No hosted CI was triggered.
 
-A local project checkout is still unavailable and direct sandbox GitHub DNS resolution fails, so `npm test`, `npm run build` and `npm run lint` were not executed. No hosted CI was triggered. No PASS is claimed. Source inspection exposes no known TypeScript/build blocker from this bounded change.
+Focused DS2-UI-005 tests remain authored for:
+- canonical `AppAction` device resolution and overflow behavior;
+- Sales status/header adapter behavior;
+- live page shared-header wiring;
+- exact permission/status action gates and callbacks/routes;
+- confirm warehouse fallback and existing loading guards;
+- preservation of query/service/financial/modal boundaries.
 
 ## Peer-state comparison / freshness
 
-- **Product Design Director:** exact-head synthesis on `6841ceb...` agrees with Design QA that the only remaining P2 is Step 0 Desktop density and requests exactly this `columns={3}` correction with focused protection. That requested correction is now implemented.
-- **Design QA:** exact-head review on `6841ceb...` is `BLOCKED` solely on the same density issue. All other source-review areas were explicitly acceptable on that head. A fresh exact-head review is now required; the old blocked verdict must not be reused as approval.
-- **Development Integrator:** remains `NO_MERGE` until Design QA records exact-head `GREEN-DEV` / source review after this correction.
-- **Development drift:** observed Development HEAD `ca42230...` contains coordination/state activity for this review cycle. No product/shared-component drift was found that justifies merge-syncing the implementation branch before re-review.
+- **Product Design Director:** current exact-head judgment on `3f370e02...` explicitly says the design/action architecture is sound and requests only synchronization of the already-integrated TypeScript hotfix. This run implements exactly that request.
+- **Design QA:** current exact-head blocker on `3f370e02...` is likewise only the stale baseline's known TypeScript failure. The failing pre-hotfix source is no longer present after this synchronization; fresh exact-head QA is now required.
+- **Development Integrator:** `NO_MERGE` remains correct until Design QA reviews the new synced HEAD and records `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS`.
+- **Team Memory / Workstream:** DS2-UI-005 remains the only active implementation slice; no second slice was started.
 
 ## Risks / deferred work
 
-- Runtime/browser evidence remains unavailable; the evidence label is deliberately limited to authored tests plus source/diff inspection.
-- Customer/product Combobox and product-line interaction remain legacy presentation debt intentionally deferred beyond this bounded outer-form slice.
-- Do not broaden this PR while the exact corrected head is under reviewer revalidation.
+- Runtime/browser evidence remains separate and unclaimed.
+- `DocumentActions` Mobile density/touch polish remains a WATCH item for a future owner-requested runtime visual review, not scope for this PR.
+- FinancialSummary, receipts, line items, notes and modal redesign remain explicitly outside this bounded concern.
+- Do not broaden the PR while fresh exact-head review is pending.
 
 ## Cross-role handoff
 
 - **To:** Product Design Director, Design QA, Development Integrator
-- **What changed:** the single agreed P2 reviewer blocker is corrected: live Step 0 now uses the shared `columns={3}` contract, which yields `3 Desktop -> 2 Tablet -> 1 Mobile`; full-width customer/credit rows remain intact. Focused source-contract coverage now prevents regression to `columns={2}`.
-- **Exact product/test HEAD before this state write:** `712ef01c9118941cc2f8887ae20f922fc94881f2`.
-- **Preserve:** all Sales business/query/cache/RBAC/RLS/permission/validation/calculation/save/route/workflow truth; existing Stepper/reachability/RTL behavior; Mobile add-product boundary; deferred Combobox/ProductLine scope.
-- **Need:** Design QA and Product Design Director should re-review the new PR exact HEAD after this state commit. Integrator must remain `NO_MERGE` until the exact reviewed HEAD receives `AGENT-REVIEW: GREEN-DEV` plus required source-review evidence.
+- **What changed:** PR #32 feature branch now contains current Development through merge commit `540a080fc5c92d635caea7023ade8a44753871b7`, including the exact three-file TypeScript hotfix that previously blocked the stale candidate. DS2-UI-005 product/test implementation was preserved unchanged.
+- **Preserve:** canonical `AppAction` / `resolveActionSet` architecture; exact Sales action predicates/callbacks/loading truth; `DocumentActions`; bounded header-only scope; no CI/Vercel/main or backend/business drift.
+- **Need from you:** Design QA should perform a fresh source review of the new exact PR HEAD after this state commit and may issue `GREEN-DEV` / `SOURCE_REVIEW_PASS` only if no known blocker remains. Integrator stays `NO_MERGE` until that exact-head evidence exists.
 - **Blocker level:** `NONE` from UI implementation; `AWAITING_EXACT_HEAD_REVIEW`.
+- **Baseline:** slice `8a0c34751344ca466754d06980093c501b536cd9`; synchronized Development `7f0b1f6c7bcd1b3920565b260248018147cd18fd`; merge commit before state write `540a080fc5c92d635caea7023ade8a44753871b7`.
 - **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`.
