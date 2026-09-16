@@ -4,130 +4,118 @@
 
 - Review date: `2026-09-16`
 - Development branch: `design-system-v2-development`
-- Exact Development HEAD independently inspected after concurrent peer-state refresh: `564908a27e80128fdd55549a38b3d03152786e84`
+- Exact Development HEAD independently inspected: `f55b9c1f27083f2a9c6418d1accf3adcd79f3120`
 - Active slice: `DS2-PROC-001 — Purchase list surfaces`
 - Active Draft PR: `#36 — DS2-PROC-001: establish purchase invoice list V2 presentation`
 - Feature branch: `ds2/proc-purchase-list-v2`
-- Exact PR base SHA: `20e47f4dc2d0a5efaf7a13fca13fa95ff1692df9`
-- Exact current PR HEAD independently reviewed and revalidated: `740f52be5e7d31ee04a5c2dc9db4c1489c08cbbc`
-- Current PR scope: six files; Procurement card + component test + live `PurchaseInvoicesPage` + focused live-page test + workstream/UI implementation state.
-- Current Product Design disposition: `BLOCKED — THREE BOUNDED P2 PRESENTATION/SEMANTIC CORRECTIONS; ARCHITECTURE OTHERWISE FITS`
-- Design QA on the same exact HEAD: `AGENT-REVIEW: BLOCKED` with two bounded P2 findings.
-- Development Integrator on the same exact HEAD: `NO_MERGE_BLOCKED_P2_PAGINATION_AND_FILTERED_EMPTY`.
-- Test evidence remains `TESTS_AUTHORED_NOT_EXECUTED`; no exact-head local build/test/runtime PASS is claimed.
+- Exact PR base SHA reported by GitHub: `20e47f4dc2d0a5efaf7a13fca13fa95ff1692df9`
+- Exact current PR HEAD independently reviewed: `df3da0e6a5b00e85c8ba35f1b99481e8f0b396be`
+- Live PR metadata at review: `OPEN / DRAFT / mergeable=true`; no inline review threads are open.
+- Current PR scope: eight files — Procurement card + component test + shared `DataTable` + focused DataTable test + live `PurchaseInvoicesPage` + focused live-page test + workstream/UI implementation state.
+- Product Design disposition: `PASS — NO CURRENT DESIGN-SYSTEM BLOCKER ON EXACT HEAD`.
+- Design QA on the same exact HEAD: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS`.
+- Test evidence: `TESTS_AUTHORED_NOT_EXECUTED`; no exact-head local build/test/lint/runtime/preview PASS is claimed.
 
 ## Independent professional judgment
 
-**THE REPRESENTATIVE PROCUREMENT DIRECTION IS CORRECT. KEEP PR #36 AND FIX THREE NARROW PRODUCT-QUALITY GAPS; DO NOT REDESIGN THE SLICE.**
+**PR #36 now fits the approved Procurement representative-slice architecture and the North Star on exact HEAD `df3da0e6...`. Do not reopen or widen the slice.**
 
-I independently inspected the exact PR HEAD, the live pre-migration page, current `getPurchaseInvoices` service semantics, shared `DataTable`, `ResponsiveCollection`, the component decision matrix, device/page grammar and the relevant Procurement diff before comparing peer states.
+I independently re-inspected the exact current PR source, the pre-migration Purchase Invoice list, the unchanged `getPurchaseInvoices` service contract, shared `DataTable`, `ResponsiveCollection`, the component decision matrix, page/device grammar and current PR review state before synthesizing peer positions.
 
-The architectural direction is strong and should be preserved:
+The final result is coherent with the V2 system direction:
 
-- one `ResponsiveCollection<PurchaseInvoice>` boundary replaces CSS-hidden duplicate Desktop/Mobile collection trees;
-- Desktop preserves dense `DataTable` comparison/review;
-- Tablet is deliberately two-column and touch-first rather than compressed Desktop;
-- Mobile is one-column, operational and touch-safe;
-- `PurchaseInvoiceCard` is a thin Procurement-domain composition over shared `Card + KeyValueList + StatusBadge + Button`;
-- supplier/warehouse/document identity, money values, workflow status mapping, query/pagination and navigation remain page/domain/service-owned;
-- no Procurement/accounting workflow or backend behavior has moved into shared presentation.
+- one `ResponsiveCollection<PurchaseInvoice>` boundary replaces the duplicate mounted Desktop/Mobile collection trees;
+- Desktop preserves dense `DataTable` comparison/review and numbered direct jumps;
+- Tablet is deliberately two-column, touch-first and retains numbered direct jumps;
+- Mobile is one-column, operational and touch-safe with previous/next paging;
+- `PurchaseInvoiceCard` remains a thin domain composition over shared `Card + KeyValueList + StatusBadge + Button` rather than a Procurement mini-system;
+- supplier, warehouse, document identity, financial values, status mapping, navigation and query truth remain page/domain-owned;
+- Purchase accounting/workflow/service semantics remain untouched.
 
-Three bounded P2 corrections are required before this candidate can enter GREEN review.
+The three earlier Product Design corrections are closed, and the later QA-discovered paginator fit defect is also closed:
 
-### P2 — Shared DataTable pagination must meet the V2 RTL/accessibility contract
+1. **Shared DataTable pagination semantics / RTL / accessibility — PASS.**
+   - pagination has a labeled `nav` boundary;
+   - visible logical Arabic `السابق` / `التالي` controls expose explicit accessible names;
+   - active numeric page exposes `aria-current="page"`;
+   - existing page-window algorithm, callbacks and disabled boundaries remain unchanged.
 
-The Desktop renderer correctly retains shared `DataTable`, but that shared component still emits raw physical `‹ / ›` buttons, has no accessible previous/next names, exposes the active page only through `.active` styling and provides no `aria-current="page"` or labeled pagination navigation boundary.
+2. **Arabic previous/next visual fit — PASS at source level.**
+   - only previous/next gain shared `pagination-btn-nav`;
+   - it uses `width: auto`, `min-width: 64px`, logical `padding-inline` and `white-space: nowrap`;
+   - compact numeric page buttons remain on the existing contract;
+   - focused tests protect modifier ownership without falsely claiming measured runtime geometry.
 
-This is now a proven recurring shared-component gap on a live migrated screen. Per the V2 component decision matrix and shared-system-before-page-local rule, **fix the existing shared `DataTable` pagination contract in place rather than adding a Procurement-only Desktop paginator**.
+3. **Initial-empty vs filtered-empty — PASS.**
+   - true initial empty preserves first-invoice guidance and create capability;
+   - active search/status with zero matches uses neutral no-results guidance;
+   - query/filter/reset behavior is unchanged.
 
-Minimum acceptance:
-- retain the exact current numbered-page algorithm, page window, total display, disabled conditions and `onPageChange` contract;
-- use logical Arabic previous/next controls (`السابق` / `التالي`) or equally unambiguous RTL-aware controls with explicit accessible names;
-- expose `aria-current="page"` on the active numeric page;
-- provide an appropriate labeled pagination navigation boundary;
-- preserve Desktop density and do not open a global Pagination redesign;
-- add focused shared-component/source coverage for the corrected semantics.
-
-### P2 — Initial-empty and filtered-empty must be distinct
-
-The current `ResponsiveCollection` always receives the same `StatePanel`: `لا توجد فواتير مشتريات` / `أنشئ أول فاتورة شراء من المورد`, even when `search` or `statusFilter` is active and the query simply returned zero matches.
-
-That is semantically wrong and directly conflicts with the North Star state-completeness requirement.
-
-Minimum acceptance:
-- no active search/status filter: keep the true initial-empty state and existing create-invoice capability;
-- active `search` or `statusFilter` with zero results: show neutral no-matching-results copy such as `لا توجد نتائج مطابقة` with guidance to adjust the search/filter;
-- do not alter query/filter/reset/service semantics;
-- add focused coverage proving the two empty states remain distinct.
-
-### P2 — Search hint must describe the actual search contract
-
-The live placeholder currently says `بحث بالرقم أو اسم المورد...`, but `getPurchaseInvoices` actually searches only `number` and `supplier_invoice_ref`. The UI therefore promises supplier-name search that does not exist.
-
-This does **not** require a backend/query change. The safe Design-System correction is presentation copy only:
-- change the hint to match the existing service truth, e.g. `بحث برقم الفاتورة أو مرجع فاتورة المورد...`;
-- do not add supplier-name search inside this UI slice;
-- add a focused assertion so future UI work does not reintroduce a false search affordance.
-
-A knowingly false search hint is a product-quality defect, so I am promoting the Implementer/Integrator WATCH into the current bounded correction rather than deferring it as a functional task.
+4. **Search affordance accuracy — PASS.**
+   - placeholder now describes the actual service search contract: invoice `number` or `supplier_invoice_ref`;
+   - no supplier-name query behavior was invented.
 
 ## Architecture / product-system fit
 
 - **Representative Procurement surface:** PASS.
 - **Shared ResponsiveCollection boundary:** PASS.
 - **Thin Procurement-domain card over shared grammar:** PASS.
-- **Desktop density / financial comparison parity:** PASS apart from paginator semantics.
-- **Tablet deliberate composition:** PASS at source level.
-- **Mobile operational/touch composition:** PASS at source level.
-- **Semantic workflow status:** PASS; `StatusBadge` is used for actual workflow state.
-- **Supplier/warehouse/document identity and financial values page-owned:** PASS.
+- **Desktop density / financial comparison parity:** PASS at source level.
+- **Tablet deliberate composition / touch ergonomics:** PASS at source level.
+- **Mobile operational composition / touch ergonomics:** PASS at source level.
+- **Semantic workflow status:** PASS; actual workflow state uses `StatusBadge` tone supplied by the page.
+- **Arabic/RTL / long invoice identifiers:** PASS at source level; identifiers are LTR/monospace with wrapping tolerance and paginator controls use logical Arabic labels.
+- **State completeness for this bounded slice:** PASS for loading + initial empty + filtered empty.
 - **Query/page/filter/service/accounting/workflow isolation:** PASS.
-- **Initial vs filtered empty semantics:** BLOCKING P2.
-- **Desktop pagination RTL/accessibility:** BLOCKING P2.
-- **Search affordance accuracy:** BLOCKING P2 presentation-copy defect.
-- **Evidence honesty:** PASS — source review only; runtime/build execution remains unclaimed.
-- **Purchase Returns, Invoice form decomposition, broad Pagination framework redesign:** correctly OUT OF SCOPE.
+- **Focused test intent:** PASS; execution remains unclaimed.
+- **Purchase Returns, Purchase Invoice form decomposition, broad/global Pagination convergence, generic DataTable row-keyboard refactor:** correctly OUT OF SCOPE.
 
 ## Peer-state comparison / freshness
 
-After forming the source judgment above, peer positions were compared and then revalidated after the Integrator refreshed concurrently:
+After the independent source judgment above, peer positions were compared:
 
-- **Design QA:** fresh and aligned on exact HEAD `740f52be...` for the Desktop pagination and filtered-empty blockers. I agree with both and narrow the pagination correction further: evolve shared `DataTable` in place, not a page-local workaround.
-- **UI Production Engineer:** feature-branch state is fresh on the implemented architecture and correctly identifies the inherited DataTable pagination debt plus the search-placeholder/service mismatch. Its classification of the search mismatch as a separate follow-up is superseded by this Product Design synthesis: copy-only correction is safe and belongs in the current slice; query behavior must remain unchanged.
-- **Development Integrator:** fresh and aligned on exact HEAD `740f52be...`; it independently records `NO_MERGE` for the same pagination + filtered-empty blockers. Its remaining WATCH explicitly defers the search-placeholder decision to Product Design, which this state now resolves as a third bounded P2 copy correction. This is sequencing, not contradiction.
-- **Team Memory:** still reflects the post-INV002 integrated baseline and PROC001 READY handoff; it is stale for the active PR but remains correct on durable system invariants. Integrator should update it only after eventual successful merge.
-- **Development drift:** current Development HEAD `564908a...` contains governance/state coordination only since the PR base; no product/shared-component drift was found that invalidates the candidate.
-- **Open implementation PRs:** PR #36 remains the only open implementation PR targeting `design-system-v2-development` and its HEAD remains `740f52be...`.
+- **Design QA:** fresh and aligned on exact HEAD `df3da0e6...`; grants `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` with `TESTS_AUTHORED_NOT_EXECUTED`.
+- **UI Production Engineer:** the Development-side state file is stale from INV002, but the PR-head owned state is fresh for PROC001 and aligned with the narrow shared paginator correction and functional-isolation boundary.
+- **Development Integrator:** Development-side state is stale on blocked HEAD `31e1dd05...`. Its blocker is independently verified closed on the current exact HEAD, so it is stale rather than contradictory.
+- **Team Memory / Development workstream:** still reflect the post-INV002 integrated truth and should remain unchanged until successful integration; the PR-head workstream correctly marks PROC001 in REVIEW.
+- **Development drift:** current Development advancement since PR base is governance/role-state coordination; no product/shared-component drift was found that invalidates the candidate.
+- **Open implementation PRs:** PR #36 remains the only open implementation PR targeting `design-system-v2-development`.
 
-There is no unresolved peer disagreement after this synthesis. The current shared disposition is BLOCKED until the three bounded corrections land on a moved exact PR HEAD and receive fresh QA.
+There is no current material peer contradiction and no Product Design reason to block integration.
 
 ## Preserve
 
 - exactly one active implementation PR;
-- `queryKey: ['purchase-invoices', search, statusFilter, page]`, `getPurchaseInvoices`, `PAGE_SIZE = 20`, and search/status reset-to-page-1 behavior;
-- actual search service semantics: invoice `number` + `supplier_invoice_ref`; no supplier-name query expansion;
+- `getPurchaseInvoices`, `queryKey: ['purchase-invoices', search, statusFilter, page]`, `PAGE_SIZE = 20`, and search/status reset-to-page-1 behavior;
+- actual search service semantics: invoice `number` + `supplier_invoice_ref` only;
 - supplier/warehouse/document identity and links;
 - `total_amount`, `paid_amount`, their existing visual condition and all accounting truth;
 - exact Purchase Invoice status/workflow/service behavior;
 - detail route `/purchases/invoices/${inv.id}` and create route `/purchases/invoices/new`;
 - Desktop numbered direct-jump capability, Tablet numbered direct jumps and Mobile previous/next capability;
 - dense Desktop review, deliberate two-column Tablet cards and one-column Mobile cards;
+- corrected initial/filtered empty semantics and accurate search hint;
 - shared `ResponsiveCollection`, `Card`, `KeyValueList`, `StatusBadge`, `Button` ownership boundaries;
+- current shared DataTable paginator semantics and width-safe previous/next modifier without widening into a Pagination framework;
 - no GitHub Actions, hosted CI, Vercel preview, backend/business or `main` activity.
 
 ## Remaining non-blocking WATCH
 
-- Exact runtime/browser/build/test evidence remains a later controlled milestone; none is claimed here.
-- Generic `DataTable` clickable-row keyboard semantics remain broader DataTable V2 hardening debt; the current page still provides an explicit keyboard-accessible detail Button, so it does not block this bounded slice.
-- Mobile create-action orchestration / page-local FAB convergence remains broader action-system debt and should not widen PROC001.
-- Error/offline state convergence remains shared state-system work.
+- Exact runtime/browser/build/test/lint evidence remains a later controlled milestone; none is claimed here.
+- Generic `DataTable` clickable-row keyboard semantics remain broader shared debt; this page retains an explicit semantic detail Button, so it does not block PROC001.
+- Shared `SearchInput` clear-affordance accessibility remains pre-existing shared debt.
+- Error/offline-state convergence remains broader shared state-system work.
+- Mobile create-action orchestration / page-local FAB convergence remains broader action-system debt.
 - Purchase Returns and Purchase Invoice form decomposition remain separate Procurement slices.
 
-## Cross-role handoff
+## What changed since previous state
 
-- **To:** UI Production Engineer, Design QA, Development Integrator
-- **What changed:** Product Design Director independently reviewed PR #36 exact HEAD `740f52be5e7d31ee04a5c2dc9db4c1489c08cbbc` and revalidated the concurrent Integrator block. The responsive Procurement architecture is approved directionally, but the slice remains BLOCKED on three narrow P2 corrections: evolve shared `DataTable` pagination semantics for RTL/accessibility, distinguish true initial-empty from filtered-empty, and correct the search placeholder to the existing invoice-number/supplier-reference service truth without changing the query.
-- **Preserve:** all purchase query/page-size/filter-reset/supplier/warehouse/document/money/status/workflow/service/accounting/route truth; current device composition and pagination capabilities; thin shared-pattern card ownership; no global Pagination redesign or second slice.
-- **Need from you:** UI Production Engineer should make only those three bounded corrections plus focused assertions on the same PR. Design QA should independently review the moved exact HEAD and grant `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` only if all three are closed. Development Integrator remains `NO_MERGE` until then.
-- **Blocker level:** `BLOCKING`.
-- **Baseline:** Development `564908a27e80128fdd55549a38b3d03152786e84`; PR #36 HEAD `740f52be5e7d31ee04a5c2dc9db4c1489c08cbbc`.
+The prior Product Design state was BLOCKED on the initial PROC001 correction set at HEAD `740f52be...`. The slice has since moved through QA correction cycles to exact HEAD `df3da0e6...`: all earlier semantic/state/search findings are closed, the later shared Arabic paginator width-fit defect is closed, and Design QA is GREEN-DEV on the same exact HEAD. Product Design therefore clears its blocker and hands the unchanged candidate to Integration.
+
+### Cross-role handoff
+- **To:** Development Integrator, Design QA, UI Production Engineer
+- **What changed:** Product Design Director independently re-reviewed PR #36 exact HEAD `df3da0e6a5b00e85c8ba35f1b99481e8f0b396be` and clears all current Design-System blockers. The representative Procurement architecture, empty/search semantics and shared DataTable Arabic paginator contract now fit the North Star; Design QA is GREEN-DEV on the same HEAD.
+- **Preserve:** all purchase query/page/filter/service/accounting/workflow/permission/route truth; current Desktop/Tablet/Mobile composition; all corrected empty/search/pagination semantics; thin shared-pattern ownership; no global Pagination redesign or second slice.
+- **Need from you:** Development Integrator should revalidate the same unchanged PR HEAD, base, mergeability, review state/threads, diff scope and known build-risk state, then integrate only into `design-system-v2-development` if all normal gates remain satisfied. Any moved PR HEAD requires fresh exact-head QA/Product Design consideration as applicable.
+- **Blocker level:** `NONE`.
+- **Baseline:** Development `f55b9c1f27083f2a9c6418d1accf3adcd79f3120`; PR #36 HEAD `df3da0e6a5b00e85c8ba35f1b99481e8f0b396be`.
