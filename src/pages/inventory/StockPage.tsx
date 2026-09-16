@@ -8,7 +8,10 @@ import PageHeader from '@/components/shared/PageHeader'
 import SearchInput from '@/components/shared/SearchInput'
 import DataTable from '@/components/shared/DataTable'
 import { ProductLink, WarehouseLink } from '@/components/shared/EntityLink'
-import Badge from '@/components/ui/Badge'
+import Button from '@/components/ui/Button'
+import ResponsiveCollection from '@/components/patterns/ResponsiveCollection'
+import StatusBadge from '@/components/patterns/StatusBadge'
+import { StockBalanceCard } from '@/components/inventory/StockListPresentation'
 
 // ── Status helpers ────────────────────────────────────────────
 function stockStatus(s: Stock): { variant: 'danger' | 'warning' | 'success'; label: string; color: string } {
@@ -94,6 +97,89 @@ export default function StockPage() {
     const a = getActual(s.id)
     if (a === null) return null
     return a - s.available_quantity
+  }
+
+  function renderCardPagination() {
+    if (totalPages <= 1) return null
+
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-4)', paddingBlock: 'var(--space-4)' }}>
+        <Button
+          variant="ghost"
+          size="sm"
+          touchTarget
+          disabled={page <= 1}
+          onClick={() => setPage(p => p - 1)}
+        >
+          السابق
+        </Button>
+        <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>{page} / {totalPages}</span>
+        <Button
+          variant="ghost"
+          size="sm"
+          touchTarget
+          disabled={page >= totalPages}
+          onClick={() => setPage(p => p + 1)}
+        >
+          التالي
+        </Button>
+      </div>
+    )
+  }
+
+  function renderStockCard(s: Stock, mode: 'mobile' | 'tablet') {
+    const st = stockStatus(s)
+    const diff = getDiff(s)
+
+    return (
+      <StockBalanceCard
+        key={s.id}
+        mode={mode}
+        summary={{
+          productName: (
+            <ProductLink
+              id={s.product?.id}
+              name={s.product?.name}
+              code={s.product?.sku}
+              style={{ fontSize: 'var(--text-sm)' }}
+            />
+          ),
+          warehouse: <WarehouseLink name={s.warehouse?.name} />,
+          quantity: formatNumber(s.quantity),
+          available: <span style={{ color: st.color }}>{formatNumber(s.available_quantity)}</span>,
+          reserved: s.reserved_quantity > 0 ? formatNumber(s.reserved_quantity) : undefined,
+          weightedCost: canViewCosts && s.wac > 0 ? formatCurrency(s.wac) : undefined,
+          statusLabel: st.label,
+          statusTone: st.variant,
+        }}
+        review={reviewMode ? {
+          actualValue: actualCounts[s.id] ?? '',
+          onActualValueChange: value => setActualCounts(prev => ({ ...prev, [s.id]: value })),
+          diff: diff === null ? undefined : (
+            <span style={{ color: diffColor(diff) }}>
+              {diff > 0 ? '+' : ''}{formatNumber(diff)}
+            </span>
+          ),
+        } : undefined}
+      />
+    )
+  }
+
+  function renderCardCollection(items: Stock[], mode: 'mobile' | 'tablet') {
+    return (
+      <div>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: mode === 'tablet' ? 'repeat(2, minmax(0, 1fr))' : 'minmax(0, 1fr)',
+            gap: 'var(--space-3)',
+          }}
+        >
+          {items.map(item => renderStockCard(item, mode))}
+        </div>
+        {renderCardPagination()}
+      </div>
+    )
   }
 
   return (
@@ -222,174 +308,91 @@ export default function StockPage() {
         </div>
       </div>
 
-      {/* ── DESKTOP: DataTable ─────────────────────────────────── */}
-      <div className="stock-table-view edara-card" style={{ overflow: 'auto' }}>
-        <DataTable<Stock>
-          columns={[
-            {
-              key: 'product', label: 'المنتج',
-              render: s => (
-                <ProductLink id={s.product?.id} name={s.product?.name} code={s.product?.sku} />
-              ),
-            },
-            { key: 'warehouse', label: 'المخزن', render: s => <WarehouseLink name={s.warehouse?.name} /> },
-            { key: 'quantity', label: 'الكمية', render: s => <span style={{ fontWeight: 600 }}>{formatNumber(s.quantity)}</span> },
-            { key: 'reserved', label: 'المحجوز', hideOnMobile: true, render: s => formatNumber(s.reserved_quantity) },
-            {
-              key: 'available', label: 'المتاح',
-              render: s => {
-                const st = stockStatus(s)
-                return <span style={{ fontWeight: 700, color: st.color }}>{formatNumber(s.available_quantity)}</span>
-              },
-            },
-            ...(canViewCosts ? [
-              { key: 'wac' as const, label: 'التكلفة المرجحة', hideOnMobile: true, render: (s: Stock) => formatCurrency(s.wac) },
-              { key: 'value' as const, label: 'القيمة', hideOnMobile: true, render: (s: Stock) => <span style={{ fontWeight: 600 }}>{formatCurrency(s.total_cost_value)}</span> },
-            ] : []),
-            // أعمدة وضع المراجعة
-            ...(reviewMode ? [
-              {
-                key: 'actual' as const,
-                label: 'العدد الفعلي',
-                render: (s: Stock) => (
-                  <input
-                    type="number"
-                    min={0}
-                    step="any"
-                    className="review-input"
-                    value={actualCounts[s.id] ?? ''}
-                    placeholder="—"
-                    onChange={e => setActualCounts(prev => ({ ...prev, [s.id]: e.target.value }))}
-                  />
-                ),
-              },
-              {
-                key: 'diff' as const,
-                label: 'الفرق',
-                render: (s: Stock) => {
-                  const diff = getDiff(s)
-                  if (diff === null) return <span style={{ color: 'var(--text-muted)' }}>—</span>
-                  const sign = diff > 0 ? '+' : ''
-                  return <span style={{ fontWeight: 700, color: diffColor(diff) }}>{sign}{formatNumber(diff)}</span>
+      <ResponsiveCollection<Stock>
+        items={stock}
+        loading={loading}
+        emptyTitle="لا يوجد أرصدة"
+        emptyDescription="لم يتم العثور على أرصدة مطابقة للفلاتر الحالية"
+        renderDesktop={items => (
+          <div className="edara-card" style={{ overflow: 'auto' }}>
+            <DataTable<Stock>
+              columns={[
+                {
+                  key: 'product', label: 'المنتج',
+                  render: s => (
+                    <ProductLink id={s.product?.id} name={s.product?.name} code={s.product?.sku} />
+                  ),
                 },
-              },
-            ] : []),
-            {
-              key: 'status', label: 'الحالة',
-              render: s => {
-                const st = stockStatus(s)
-                return (
-                  <Badge variant={st.variant}>
-                    {st.variant !== 'success' && <AlertTriangle size={10} />}
-                    {st.label}
-                  </Badge>
-                )
-              },
-            },
-          ]}
-          data={stock}
-          loading={loading}
-          emptyIcon={<PackageSearch size={48} />}
-          emptyTitle="لا يوجد أرصدة"
-          emptyText="لم يتم العثور على أرصدة مطابقة"
-          page={page}
-          totalPages={totalPages}
-          totalCount={totalCount}
-          onPageChange={setPage}
-        />
-      </div>
-
-      {/* ── MOBILE: Cards ─────────────────────────────────────── */}
-      <div className="stock-card-view">
-        {loading ? (
-          <div className="mobile-card-list">
-            {[1, 2, 3].map(i => <div key={i} className="edara-card" style={{ height: 110 }}><div className="skeleton" style={{ height: '100%' }} /></div>)}
-          </div>
-        ) : stock.length === 0 ? (
-          <div className="edara-card" style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)' }}>
-            <PackageSearch size={40} style={{ margin: '0 auto 12px', display: 'block', opacity: 0.3 }} />
-            <p>لا يوجد أرصدة</p>
-          </div>
-        ) : (
-          <div className="mobile-card-list">
-            {stock.map((s: Stock) => {
-              const st = stockStatus(s)
-              const diff = getDiff(s)
-              return (
-                <div key={s.id} className={`edara-card stock-health-row ${st.variant === 'danger' ? 'shc-row-danger' : st.variant === 'warning' ? 'shc-row-warning' : ''}`}>
-                  <div className={`stock-row-stripe ${st.variant}`} />
-                  <div style={{ flex: 1, minWidth: 0, padding: 'var(--space-4)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-                      <div>
-                        <ProductLink id={s.product?.id} name={s.product?.name} code={s.product?.sku} style={{ fontSize: 'var(--text-sm)' }} />
-                      </div>
-                      <Badge variant={st.variant}>{st.variant !== 'success' && <AlertTriangle size={9} />} {st.label}</Badge>
-                    </div>
-                    <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
-                      <div>
-                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>المتاح</div>
-                        <div style={{ fontWeight: 800, fontSize: '1.1rem', color: st.color, fontVariantNumeric: 'tabular-nums' }}>{formatNumber(s.available_quantity)}</div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>الإجمالي</div>
-                        <div style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{formatNumber(s.quantity)}</div>
-                      </div>
-                      {s.reserved_quantity > 0 && <div>
-                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>محجوز</div>
-                        <div style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: 'var(--color-warning)' }}>{formatNumber(s.reserved_quantity)}</div>
-                      </div>}
-                      <div>
-                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>المخزن</div>
-                        <div style={{ fontSize: 'var(--text-sm)', fontWeight: 500 }}>
-                          <WarehouseLink name={s.warehouse?.name} />
-                        </div>
-                      </div>
-                      {/* التكلفة تظهر للمخولين فقط */}
-                      {canViewCosts && s.wac > 0 && <div>
-                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>التكلفة المرجحة</div>
-                        <div style={{ fontSize: 'var(--text-sm)', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(s.wac)}</div>
-                      </div>}
-                    </div>
-                    {/* وضع المراجعة: العدد الفعلي والفرق داخل الكارد */}
-                    {reviewMode && (
-                      <div style={{ marginTop: 8, display: 'flex', gap: 'var(--space-3)', alignItems: 'center', paddingTop: 8, borderTop: '1px dashed var(--border-primary)' }}>
-                        <div>
-                          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 2 }}>العدد الفعلي</div>
-                          <input
-                            type="number"
-                            min={0}
-                            step="any"
-                            className="review-input"
-                            value={actualCounts[s.id] ?? ''}
-                            placeholder="أدخل العدد"
-                            onChange={e => setActualCounts(prev => ({ ...prev, [s.id]: e.target.value }))}
-                          />
-                        </div>
-                        {diff !== null && (
-                          <div>
-                            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 2 }}>الفرق</div>
-                            <div style={{ fontWeight: 800, fontSize: '1rem', color: diffColor(diff), fontVariantNumeric: 'tabular-nums' }}>
-                              {diff > 0 ? '+' : ''}{formatNumber(diff)}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
+                { key: 'warehouse', label: 'المخزن', render: s => <WarehouseLink name={s.warehouse?.name} /> },
+                { key: 'quantity', label: 'الكمية', render: s => <span style={{ fontWeight: 600 }}>{formatNumber(s.quantity)}</span> },
+                { key: 'reserved', label: 'المحجوز', hideOnMobile: true, render: s => formatNumber(s.reserved_quantity) },
+                {
+                  key: 'available', label: 'المتاح',
+                  render: s => {
+                    const st = stockStatus(s)
+                    return <span style={{ fontWeight: 700, color: st.color }}>{formatNumber(s.available_quantity)}</span>
+                  },
+                },
+                ...(canViewCosts ? [
+                  { key: 'wac' as const, label: 'التكلفة المرجحة', hideOnMobile: true, render: (s: Stock) => formatCurrency(s.wac) },
+                  { key: 'value' as const, label: 'القيمة', hideOnMobile: true, render: (s: Stock) => <span style={{ fontWeight: 600 }}>{formatCurrency(s.total_cost_value)}</span> },
+                ] : []),
+                ...(reviewMode ? [
+                  {
+                    key: 'actual' as const,
+                    label: 'العدد الفعلي',
+                    render: (s: Stock) => (
+                      <input
+                        type="number"
+                        min={0}
+                        step="any"
+                        className="review-input"
+                        value={actualCounts[s.id] ?? ''}
+                        placeholder="—"
+                        onChange={e => setActualCounts(prev => ({ ...prev, [s.id]: e.target.value }))}
+                      />
+                    ),
+                  },
+                  {
+                    key: 'diff' as const,
+                    label: 'الفرق',
+                    render: (s: Stock) => {
+                      const diff = getDiff(s)
+                      if (diff === null) return <span style={{ color: 'var(--text-muted)' }}>—</span>
+                      const sign = diff > 0 ? '+' : ''
+                      return <span style={{ fontWeight: 700, color: diffColor(diff) }}>{sign}{formatNumber(diff)}</span>
+                    },
+                  },
+                ] : []),
+                {
+                  key: 'status', label: 'الحالة',
+                  render: s => {
+                    const st = stockStatus(s)
+                    return (
+                      <StatusBadge
+                        tone={st.variant}
+                        label={st.label}
+                        icon={st.variant !== 'success' ? <AlertTriangle size={10} /> : undefined}
+                      />
+                    )
+                  },
+                },
+              ]}
+              data={items}
+              loading={false}
+              emptyIcon={<PackageSearch size={48} />}
+              emptyTitle="لا يوجد أرصدة"
+              emptyText="لم يتم العثور على أرصدة مطابقة"
+              page={page}
+              totalPages={totalPages}
+              totalCount={totalCount}
+              onPageChange={setPage}
+            />
           </div>
         )}
-
-        {totalPages > 1 && (
-          <div className="mobile-pagination">
-            <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="btn btn-ghost btn-sm">السابق</button>
-            <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>{page} / {totalPages}</span>
-            <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="btn btn-ghost btn-sm">التالي</button>
-          </div>
-        )}
-      </div>
+        renderTablet={items => renderCardCollection(items, 'tablet')}
+        renderMobile={items => renderCardCollection(items, 'mobile')}
+      />
 
       <style>{`
         /* Health summary grid */
@@ -435,27 +438,10 @@ export default function StockPage() {
         .wcc-stat-label { font-size: var(--text-xs); color: var(--text-muted); }
         .wcc-disclaimer { font-size: var(--text-xs); color: var(--text-muted); padding: var(--space-2) var(--space-3); background: var(--bg-secondary); border-radius: 6px; }
 
-        /* Table/Card toggle */
-        .stock-table-view { display: block; }
-        .stock-card-view  { display: none; }
-
-        /* Mobile row */
-        .stock-health-row { display: flex; align-items: stretch; gap: 0; padding: 0; overflow: hidden; }
-        .stock-row-stripe { width: 4px; flex-shrink: 0; }
-        .stock-row-stripe.danger  { background: var(--color-danger); }
-        .stock-row-stripe.warning { background: var(--color-warning); }
-        .stock-row-stripe.success { background: var(--color-success); }
-        .shc-row-danger  { border-right: none; }
-        .shc-row-warning { border-right: none; }
-        .mobile-card-list { display: flex; flex-direction: column; gap: var(--space-3); }
-        .mobile-pagination { display: flex; align-items: center; justify-content: center; gap: var(--space-4); padding: var(--space-4) 0; }
-
         @media (max-width: 768px) {
           .stock-health-grid { grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
           .stock-health-card { padding: var(--space-3); }
           .shc-value { font-size: 1.2rem; }
-          .stock-table-view { display: none; }
-          .stock-card-view  { display: block; }
           .wcc-stats { gap: var(--space-4); }
           .review-input { width: 80px; }
         }
