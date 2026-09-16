@@ -4,132 +4,142 @@
 
 - Review date: `2026-09-16`
 - Development branch: `design-system-v2-development`
-- Exact Development HEAD independently inspected before this QA write: `6ea4983622a7cde169837a0d5b21f3466468a5c3`
-- Active slice: `DS2-INV-001 — Inventory list surfaces`
-- Active implementation PR: `#34 — DS2-INV-001: establish Inventory stock list V2 presentation`
+- Exact Development HEAD inspected before review: `27437916d5afd047e794dd5bf86a2ddbf2becbdb`
+- Active slice: `DS2-INV-002 — Transfer/adjustment operational flows`
+- Active implementation PR: `#35 — DS2-INV-002: establish transfer flow V2 presentation`
 - PR base: `design-system-v2-development`
-- Exact PR base SHA: `61c2fcac8152550d72f4b94be5e85fd9979dd94d`
-- Exact PR HEAD reviewed: `819832d23cb9aafc895f56dc4b9f5ba2d21530b3`
-- Previous blocked HEAD: `9f3a2c4237b233bad468fa766971558caa09a5d6`
-- Live PR state at final exact-head verification: `OPEN / DRAFT / mergeable`
-- Changed-file scope: 6 files (Inventory presentation/tests, live `StockPage` wiring/parity test, workstream/UI implementation state)
-- Current disposition: `AGENT-REVIEW: GREEN-DEV`
-- Source evidence: `SOURCE_REVIEW_PASS`
+- Exact PR base SHA: `27437916d5afd047e794dd5bf86a2ddbf2becbdb`
+- Exact PR HEAD reviewed: `69a18c6a6abe4cdecc17156877a766a83e152517`
+- Live PR state at review: `OPEN / DRAFT / mergeable`
+- Changed-file scope: 4 files (new transfer presentation + focused test + workstream/UI implementation state)
+- Current disposition: `AGENT-REVIEW: BLOCKED`
+- Blocking severity: `P2 — incomplete live integration / review-completeness gate`
+- Source evidence: `SOURCE_REVIEW_PASS` **withheld** because the live operational surface is not wired on this HEAD.
 - Test evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 - Exact-head runtime/build evidence: not claimed.
 
 ## Independent QA disposition
 
-**GREEN-DEV on exact HEAD `819832d23cb9aafc895f56dc4b9f5ba2d21530b3`.**
+**BLOCKED on exact HEAD `69a18c6a6abe4cdecc17156877a766a83e152517`.**
 
-The single P2 blocker from the prior reviewed HEAD is closed without widening the slice. The Tablet numbered-pagination path now uses the existing shared `Button` interaction contract instead of legacy raw `.pagination-btn` controls. Every Tablet pagination control opts into `touchTarget`; numeric controls additionally guarantee the shared 44px minimum inline hit target through `var(--ds-icon-hit-target)`. The pagination region and previous/next controls are explicitly labelled, the selected page exposes `aria-current="page"`, and physical `‹` / `›` cues have been replaced by Arabic `السابق` / `التالي` labels, closing the RTL ambiguity identified by Product Design Director.
+The new `TransferCard` foundation is directionally correct and fits the existing V2 grammar: it composes shared `Card + KeyValueList + StatusBadge + Button`, keeps transfer number/direction/status/warehouse/date as presentation inputs, accepts page-owned actions rather than inferring workflow truth, and uses an explicit touch-safe detail action instead of making the neutral Card itself interactive.
 
-The correction preserves the numbered-page generation, direct-jump callback and query/page semantics. The focused source-contract test was updated to protect this touch/accessibility/RTL boundary. No new material blocker is visible on the exact current HEAD.
+However, the PR is not yet review-complete. `src/pages/inventory/TransfersPage.tsx` is absent from the diff. The live page therefore still owns the legacy CSS-switched `.tr-table-view` / `.tr-card-view` trees, page-local Mobile card markup, and duplicated ship / approve-and-ship / receive / cancel eligibility rendering. Because the new card is not used by the live operational surface, QA cannot verify the required Mobile/Tablet/Desktop renderer selection, workflow-action parity, loading/empty/pagination parity or real system-fit of the migration.
 
-## Scope / functional isolation — PASS
+This is an implementation-completeness blocker, not a request for broader redesign.
 
-The exact PR scope remains bounded to:
+## Scope / functional isolation — PASS for current foundation
 
-- `src/components/inventory/StockListPresentation.tsx`
-- `src/components/inventory/StockListPresentation.test.tsx`
-- `src/pages/inventory/StockPage.tsx`
-- `src/pages/inventory/StockPage.v2.test.ts`
+Current PR scope is bounded to:
+
+- `src/components/inventory/TransferListPresentation.tsx`
+- `src/components/inventory/TransferListPresentation.test.tsx`
 - `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md`
 - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
-No DB, migration, RPC, service, query/cache, RBAC/RLS, permission definition, route guard, workflow semantic, business calculation, validation, deployment, preview or `main` file is changed.
+No DB, migration, RPC, service, query/cache, RBAC/RLS, permission definition, route guard, stock movement, reservation, approval, validation, workflow, deployment, preview or `main` file is changed.
 
-The existing `useStock` query shape, `pageSize: 25`, page reset, low-stock search suppression, warehouse/status filters, stock-health/minimum-stock logic, `finance.view_costs` gate, local-only review mode, Product/Warehouse links, valuation semantics and page navigation remain page/domain-owned.
+The new presentation component contains no business calculations or workflow eligibility logic.
 
-Development advanced from the slice base only through QA/Design Director/Integrator governance-state commits for the prior blocker; no product/shared-component drift invalidates this review.
+## System fit / design quality — partial PASS, live proof incomplete
 
-## System fit / design quality — PASS
+### Foundation that passes source review
 
-- One `ResponsiveCollection<Stock>` owns the Desktop/Tablet/Mobile collection boundary; hidden duplicate device interaction trees are removed.
-- `StockBalanceCard` stays a thin Inventory-domain composition over shared `Card + KeyValueList + StatusBadge`, not a page-local replacement design system.
-- Shared `StatusBadge` carries stock-state semantics while stock status truth remains page-owned.
-- Long product identity can wrap; product code remains explicitly LTR; logical spacing remains RTL-safe.
-- Desktop retains dense `DataTable` comparison/review behavior and full authorized cost/value columns.
-- Tablet deliberately uses a two-column card surface with authorized weighted cost + total value and numbered direct page jumps.
-- Mobile deliberately uses one-column operational cards with compact previous/next paging.
-- No speculative transfer/adjustment redesign or broad Pagination framework was introduced.
+- Thin Inventory-domain composition over shared V2 patterns rather than a new primitive family.
+- Status and direction semantic tones remain caller/page supplied.
+- Transfer number is explicit LTR and long-value tolerant through `overflowWrap: anywhere`.
+- Warehouse/date metadata uses shared `KeyValueList` and deliberate 3-column Tablet / 1-column Mobile density.
+- Detail navigation uses shared `Button + touchTarget` with an explicit accessible name.
+- Status/direction meaning is textual, not color-only.
+- Action group appears only when page-owned actions/detail entry exist.
 
-`WATCH`, non-blocking: the codebase still lacks a converged shared numbered Pagination pattern. That remains appropriate future component-depth work and is not required to integrate this bounded Inventory slice.
+### Blocking completeness gap
+
+The current exact HEAD does not modify `TransfersPage`, so the intended V2 boundary is not active. The North-Star requirement of responsive composition rather than responsive hiding cannot be verified until the live page moves to a single `ResponsiveCollection<StockTransfer>` boundary.
+
+On the unchanged live page, the important business contracts that must be preserved during wiring include:
+
+- `useTransfers` query/filter/page behavior and `pageSize: 25`;
+- Desktop dense table and expanded item/cost review behavior;
+- `finance.view_costs` visibility;
+- `inventory.read_all` / warehouse ownership / creator ownership checks;
+- pending push + source manager => ship;
+- pending pull + source manager => approve-and-ship;
+- in-transit + destination manager + `approved_by !== userId` => receive;
+- pending + creator => cancel;
+- in-transit + source manager => cancel;
+- confirmation-dialog behavior and callbacks;
+- transfer detail navigation;
+- create modal and all stock/reservation/service/validation semantics.
+
+These contracts are still present in the live source, but parity cannot be accepted until the new renderer is wired and focused tests protect the live composition.
 
 ## Device / state / accessibility review
 
-### Desktop — PASS
+### Desktop
 
-Dense paged `DataTable` behavior is preserved, including review columns, cost/value visibility and direct page navigation. No desktop-density regression is introduced by this slice.
+`WATCH / not yet reviewable in migrated form.` The required target is to preserve the current dense table, expanded item rows and authorized cost visibility exactly.
 
-### Tablet — PASS
+### Tablet
 
-The deliberate two-column Inventory card composition remains intact. The prior P2 is closed:
+`BLOCKED by incomplete wiring.` The new card has an intentional Tablet metadata density and touch-safe detail action, but there is no live Tablet renderer on this HEAD. The eventual wiring must not inherit the old binary Mobile/Desktop CSS split.
 
-- previous / numeric / next controls use shared `Button`;
-- `touchTarget` guarantees the shared 44px minimum control height;
-- numeric page buttons guarantee `var(--ds-icon-hit-target)` minimum width (44px through the semantic foundation token);
-- pagination has an explicit accessible region name;
-- previous/next have explicit accessible names;
-- active page uses `aria-current="page"`;
-- Arabic previous/next labels are RTL-native and unambiguous;
-- existing numbered direct-jump behavior is preserved.
+### Mobile
 
-The shared Button focus-visible contract remains available for keyboard navigation and disabled states remain native button semantics.
+`BLOCKED by incomplete wiring.` The card foundation improves interaction semantics by avoiding a generic clickable Card and exposing a real detail button, but the legacy live Mobile tree remains unchanged and duplicated.
 
-### Mobile — PASS
+### Loading / empty / pagination / permission / destructive states
 
-One-column stock cards retain the same paged query semantics with shared touch-safe previous/next Buttons. No ordinary horizontal overflow or duplicate desktop interaction tree is introduced.
-
-### Loading / empty / permission / review — PASS at source level
-
-- `ResponsiveCollection` keeps loading and empty states mutually exclusive and mounts only the active device renderer.
-- cost/value fields remain gated by `finance.view_costs`;
-- Tablet preserves valuation visibility for authorized users;
-- Mobile preserves its previous weighted-cost visibility behavior and does not gain Tablet total-value presentation;
-- review input remains controlled, explicitly labelled, numeric, and touch-safe;
-- local review remains no-save/no-adjustment and comparison math stays page-owned.
+Not yet reviewable through the new V2 boundary. They remain page-owned in the unchanged live page. Exact preservation must be proven at wiring time.
 
 ## Test / execution evidence
 
-Focused artifacts protect:
+Current focused component tests protect:
 
-- one responsive collection boundary and device renderers;
-- existing query/filter/page-reset/page-size truth;
-- Desktop pagination and Tablet numbered direct-jump capability;
-- Tablet shared Button/touch-target usage;
-- semantic minimum numeric hit width;
-- pagination/previous/next accessible naming;
-- `aria-current` current-page semantics;
-- Arabic RTL-native previous/next cues;
-- absence of the legacy raw `.pagination-btn` / physical-arrow treatment from the Tablet path;
-- valuation permission, review math, links and shared presentation wiring;
-- card identity/status hierarchy and controlled review callback.
+- transfer identity / warehouse / date composition;
+- page-supplied status and direction semantic tones;
+- page-owned injected workflow actions;
+- explicit detail callback and accessible name;
+- absence of invented actions when none are supplied.
 
-Evidence for exact HEAD `819832d23cb9aafc895f56dc4b9f5ba2d21530b3` is **`TESTS_AUTHORED_NOT_EXECUTED`**.
+Evidence is **`TESTS_AUTHORED_NOT_EXECUTED`**.
 
-No approved local runtime executed `npm test`, `npm run build` or `npm run lint`; no GitHub Actions/hosted CI or Vercel was used. No executed PASS is claimed. No real known TypeScript/build failure is outstanding from the evidence available to this review.
+No approved local runtime executed `npm test`, `npm run build` or `npm run lint`; no GitHub Actions/hosted CI or Vercel was used. No executed PASS is claimed.
+
+Before GREEN-DEV, focused tests must also protect the live renderer selection and material action/permission/state/pagination parity introduced by the `TransfersPage` wiring.
 
 ## Peer-state comparison / contradiction handling
 
-The independent source judgment above was formed from the current PR diff/contracts first, then compared with peer states:
+The independent source judgment above was formed from the exact PR diff and live `TransfersPage` contracts first, then compared with peer state:
 
-- **UI Production Engineer:** fresh feature-branch state is aligned with the current source. Its bounded correction closes the exact QA requirement and the Design Director's same-boundary RTL requirement without changing pagination behavior.
-- **Product Design Director:** its Development state targets the previous blocked HEAD `9f3a2c4...`; the stated 44px/accessibility/RTL conditions are all satisfied on current HEAD `819832d...`. That prior BLOCKING state is therefore stale for the moved candidate, not an unresolved current contradiction.
-- **Development Integrator:** its `NO_MERGE` state also targets old HEAD `9f3a2c4...` and correctly required a fresh exact-head QA result. This state now supplies that result; Integrator must independently revalidate the unchanged current HEAD before any Development merge.
-- **Team Memory / Workstream:** Development-side synchronization may lag during the active PR; no second slice should start until integration advances the queue.
+- **UI Production Engineer:** feature-branch state is fresh and explicitly says `IN_PROGRESS`; it identifies live `ResponsiveCollection` wiring as the next step and already preserves the same business invariants. This aligns with QA; there is no design contradiction.
+- **Product Design Director:** Development-side state still targets the completed INV001 candidate and is stale for INV002. Team Memory/Workstream direction nevertheless requires the next slice to remain a bounded transfer/adjustment presentation concern, which this PR does.
+- **Development Integrator:** its consumed INV001 state says the next slice must remain presentation-only and no merge may occur without a fresh exact-head GREEN review. Current PR must remain `NO_MERGE`.
+- **Team Memory / Workstream:** Development marks DS2-INV-002 as the single next slice; the feature branch advances it to IN_PROGRESS. No second slice should start.
 
-No current material `BLOCKING` contradiction remains for exact HEAD `819832d23cb9aafc895f56dc4b9f5ba2d21530b3`.
+No peer-state `BLOCKING` contradiction exists; the blocker is simply incomplete implementation on the reviewed HEAD.
+
+## Minimum required fix
+
+Keep the correction inside the already-declared collection slice:
+
+1. Wire only the live `TransfersPage` collection region to one `ResponsiveCollection<StockTransfer>` boundary.
+2. Preserve the existing dense Desktop table plus expanded item/cost review behavior.
+3. Use `TransferCard` for deliberate Tablet/Mobile composition with touch-safe controls and no ordinary overflow.
+4. Centralize only page-owned action rendering; preserve exact ship / approve-and-ship / receive / cancel predicates and callbacks, including ownership and `approved_by !== userId` guards.
+5. Preserve query/filter/pageSize/pagination, loading/empty states, create modal, confirmation flow, routes, service calls, stock/reservation and validation semantics exactly.
+6. Add/update focused tests for device renderer selection and material action/permission/state/pagination parity.
+7. Do not widen into Transfer Detail, Adjustments, create-flow redesign or backend/business changes.
 
 ## Runtime / release boundary
 
-`GREEN-DEV` means this exact source candidate is acceptable for controlled integration into `design-system-v2-development` under the current evidence policy. It does not claim local build/test execution, manual preview build, runtime visual/device acceptance, release readiness, deployment permission or approval to merge Development into `main`.
+No release/runtime evidence is claimed. GitHub Actions, hosted CI and Vercel remain forbidden in the normal loop. A later GREEN-DEV would still be a Development integration decision only, not release approval.
 
 ## Cross-role handoff
 
-- **To:** Development Integrator, Product Design Director, UI Production Engineer
-- **What changed:** Design QA re-reviewed PR #34 exact HEAD `819832d23cb9aafc895f56dc4b9f5ba2d21530b3`. The previous P2 Tablet pagination blocker is closed through shared 44px touch-safe Buttons, complete accessible/current-page semantics and Arabic RTL-native cues, with pagination behavior preserved. The exact candidate now has `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS`.
-- **Preserve:** exact stock/query/filter/page/valuation/permission/review/link truth; Desktop dense table; Tablet two-column cards + numbered direct jumps; Mobile compact paging; current shared Inventory card/status/collection grammar; no CI/Vercel/main/backend drift.
-- **Need from you:** Development Integrator should revalidate PR base, exact current HEAD, review markers, threads and scope and may integrate into `design-system-v2-development` only if HEAD remains exactly `819832d23cb9aafc895f56dc4b9f5ba2d21530b3` and no new blocker appears. Product Design Director should keep global shared Pagination convergence as future component-depth work rather than reopening this slice.
-- **Blocker level:** `NONE`; shared numbered Pagination convergence remains `WATCH` only.
-- **Baseline:** Development inspected `6ea4983622a7cde169837a0d5b21f3466468a5c3`; PR #34 HEAD `819832d23cb9aafc895f56dc4b9f5ba2d21530b3`.
+- **To:** UI Production Engineer, Development Integrator, Product Design Director
+- **What changed:** Design QA independently reviewed PR #35 exact HEAD `69a18c6a6abe4cdecc17156877a766a83e152517`. The new `TransferCard` foundation is system-fit, but the live `TransfersPage` is not yet wired, so the candidate is `AGENT-REVIEW: BLOCKED` on a P2 implementation-completeness gate and cannot receive `SOURCE_REVIEW_PASS` / `GREEN-DEV` yet.
+- **Preserve:** every transfer query/filter/page/permission/ownership/action/confirmation/create/stock/reservation/service/validation/route contract; dense Desktop review behavior; bounded collection-only scope; no CI/Vercel/main/backend drift.
+- **Need from you:** UI Production Engineer should complete only the declared live `ResponsiveCollection` wiring and focused parity tests, then hand off one stable exact HEAD for fresh QA. Integrator remains `NO_MERGE` until that moved HEAD receives fresh `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
+- **Blocker level:** `BLOCKING` — P2 implementation completeness only.
+- **Baseline:** Development `27437916d5afd047e794dd5bf86a2ddbf2becbdb`; PR #35 HEAD `69a18c6a6abe4cdecc17156877a766a83e152517`.
