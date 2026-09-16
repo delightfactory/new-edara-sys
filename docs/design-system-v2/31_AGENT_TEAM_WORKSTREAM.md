@@ -101,7 +101,7 @@ System result:
 ## Current single active slice
 
 ### DS2-UI-005 — Sales transaction detail V2
-Status: `IN_PROGRESS`
+Status: `REVIEW`
 Owner role: UI Production Engineer
 
 System intent:
@@ -118,6 +118,14 @@ Current bounded implementation concern:
 - establish the smallest reusable `TransactionHeader` contract proven by the live Sales Order detail header;
 - keep all permission/status/workflow decisions page-owned while shared V2 owns responsive header/action mechanics;
 - do not expand this first concern into financial summary, receipt, item, modal or business-flow redesign.
+
+Current candidate result:
+- shared `TransactionHeader` consumes the canonical `AppAction[] + useDeviceMode + resolveActionSet` contract, including 1 Mobile / 2 Tablet / 4 Desktop visible-action limits plus overflow;
+- live `SalesOrderDetail.tsx` now maps the exact existing edit / confirm / deliver / due-date / return / copy / cancel permission/status predicates and callbacks into that shared action contract;
+- local legacy status presentation, sticky hero, horizontal action strip and `ActionBtn` are removed only from the header region;
+- `DocumentActions` remains capability-equivalent through the tools slot;
+- financial summary, receipts, items, notes, modals, queries, services, calculations and workflow semantics remain outside this bounded concern;
+- focused shared/adaptor/page parity tests are authored; execution evidence remains `TESTS_AUTHORED_NOT_EXECUTED`.
 
 Explicit exclusions:
 - no service/query/cache/RPC changes;
@@ -144,7 +152,7 @@ The Product Design Director may decompose an item further, but exactly one depen
 - `DS2-UI-002` Customer detail secondary tabs/patterns — `DONE`
 - `DS2-UI-003` Sales Orders list V2 — `DONE`
 - `DS2-UI-004` Sales Order form V2 foundation — `DONE`
-- `DS2-UI-005` Sales transaction detail V2 — `IN_PROGRESS`
+- `DS2-UI-005` Sales transaction detail V2 — `REVIEW`
 
 ### B. Shared component-depth program
 Open only when a real migrated screen proves the recurring gap:
