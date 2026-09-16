@@ -16,7 +16,7 @@ describe('StockPage V2 composition contract', () => {
     expect(source).not.toContain('stock-card-view')
   })
 
-  it('preserves the existing paged stock query and filter semantics', () => {
+  it('preserves the existing paged stock query and device-specific pagination capability', () => {
     expect(source).toContain('search: lowStockOnly ? undefined : search')
     expect(source).toContain('warehouseId: whFilter')
     expect(source).toContain('lowStockOnly,')
@@ -27,16 +27,20 @@ describe('StockPage V2 composition contract', () => {
     expect(source).toContain('page={page}')
     expect(source).toContain('totalPages={totalPages}')
     expect(source).toContain('onPageChange={setPage}')
+    expect(source).toContain("if (mode === 'tablet')")
+    expect(source).toContain('Array.from({ length: Math.min(totalPages, 5) }')
+    expect(source).toContain("className={`pagination-btn${num === page ? ' active' : ''}`}")
     expect(source).toContain('disabled={page <= 1}')
     expect(source).toContain('disabled={page >= totalPages}')
   })
 
-  it('keeps stock health, cost permission and local review calculations page-owned', () => {
+  it('keeps stock health, valuation permission and local review calculations page-owned', () => {
     expect(source).toContain("const canViewCosts = can('finance.view_costs')")
     expect(source).toContain('const outOfStock = stock.filter(s => s.available_quantity <= 0).length')
     expect(source).toContain('const lowStock   = stock.filter(s => s.available_quantity > 0 && s.product && s.quantity <= (s.product as any).min_stock_level).length')
     expect(source).toContain('return a - s.available_quantity')
-    expect(source).toContain('weightedCost: canViewCosts && s.wac > 0 ? formatCurrency(s.wac) : undefined')
+    expect(source).toContain("weightedCost: canViewCosts && (mode === 'tablet' || s.wac > 0) ? formatCurrency(s.wac) : undefined")
+    expect(source).toContain("stockValue: mode === 'tablet' && canViewCosts ? formatCurrency(s.total_cost_value) : undefined")
     expect(source).toContain("actualValue: actualCounts[s.id] ?? ''")
     expect(source).toContain('onActualValueChange: value => setActualCounts')
     expect(source).toContain('هذه مراجعة محلية لا تنشئ تسوية ولا تحفظ العد الفعلي')
