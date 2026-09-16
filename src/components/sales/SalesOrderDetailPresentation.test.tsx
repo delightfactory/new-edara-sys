@@ -1,9 +1,19 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { SalesOrderDetailHeader } from './SalesOrderDetailPresentation'
 
+function setViewport(width: number) {
+  Object.defineProperty(window, 'innerWidth', {
+    configurable: true,
+    writable: true,
+    value: width,
+  })
+}
+
 describe('SalesOrderDetailHeader', () => {
-  it('reuses shared Sales status semantics and keeps action ownership external', () => {
+  beforeEach(() => setViewport(1280))
+
+  it('reuses shared Sales status semantics and shared AppAction identity', () => {
     const onBack = vi.fn()
     const onDeliver = vi.fn()
     const onCopy = vi.fn()
@@ -15,10 +25,12 @@ describe('SalesOrderDetailHeader', () => {
         customer={<a href="/customers/c-1">شركة النور</a>}
         status="confirmed"
         onBack={onBack}
-        primaryAction={{ key: 'deliver', label: 'تسليم', onClick: onDeliver }}
-        secondaryActions={[{ key: 'copy', label: 'نسخ', onClick: onCopy }]}
-        destructiveActions={[{ key: 'cancel', label: 'إلغاء', onClick: onCancel }]}
-        utilityActions={<button type="button">طباعة</button>}
+        actions={[
+          { id: 'deliver', label: 'تسليم', onSelect: onDeliver, importance: 'primary', tone: 'success' },
+          { id: 'copy', label: 'نسخ', onSelect: onCopy },
+          { id: 'cancel', label: 'إلغاء', onSelect: onCancel, importance: 'tertiary', tone: 'danger' },
+        ]}
+        tools={<button type="button">طباعة</button>}
       />,
     )
 

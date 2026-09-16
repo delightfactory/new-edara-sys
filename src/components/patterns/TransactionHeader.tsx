@@ -1,51 +1,37 @@
 import type { HTMLAttributes, ReactNode } from 'react'
 import Button, { type ButtonProps } from '@/components/ui/Button'
+import { useDeviceMode } from '@/hooks/useDeviceMode'
 import { cn } from '@/lib/utils/helpers'
-
-export interface TransactionHeaderAction {
-  key: string
-  label: ReactNode
-  icon?: ReactNode
-  onClick: () => void
-  variant?: ButtonProps['variant']
-  disabled?: boolean
-  loading?: boolean
-  ariaLabel?: string
-}
+import { resolveActionSet, type AppAction } from './ActionRegistry'
 
 export interface TransactionHeaderProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> {
   title: ReactNode
   subtitle?: ReactNode
   status?: ReactNode
   backAction?: ReactNode
-  primaryAction?: TransactionHeaderAction
-  secondaryActions?: TransactionHeaderAction[]
-  destructiveActions?: TransactionHeaderAction[]
-  utilityActions?: ReactNode
+  actions?: AppAction[]
+  tools?: ReactNode
   sticky?: boolean
 }
 
-function HeaderAction({
-  action,
-  fallbackVariant,
-}: {
-  action: TransactionHeaderAction
-  fallbackVariant: NonNullable<ButtonProps['variant']>
-}) {
-  const accessibleLabel = action.ariaLabel
-    ?? (typeof action.label === 'string' ? action.label : undefined)
+function getActionVariant(action: AppAction): NonNullable<ButtonProps['variant']> {
+  if (action.tone) return action.tone
+  return action.importance === 'primary' ? 'primary' : 'secondary'
+}
 
+function HeaderAction({ action }: { action: AppAction }) {
   return (
     <Button
       type="button"
-      variant={action.variant ?? fallbackVariant}
+      variant={getActionVariant(action)}
       size="sm"
       touchTarget
       icon={action.icon}
-      onClick={action.onClick}
+      onClick={action.onSelect}
       disabled={action.disabled}
       loading={action.loading}
-      aria-label={accessibleLabel}
+      aria-label={action.ariaLabel ?? action.label}
+      data-action-id={action.id}
     >
       {action.label}
     </Button>
@@ -55,31 +41,32 @@ function HeaderAction({
 /**
  * TransactionHeader — shared V2 page header for operational transaction detail screens.
  *
- * The domain/page owns action availability, permissions, workflow meaning and status mapping.
- * This pattern owns only hierarchy, responsive action placement and shared Button mechanics.
+ * Domain pages declare actions through the shared ActionRegistry contract. The registry owns
+ * device-aware priority/placement; this pattern only renders the resolved header surface.
+ * Permissions, workflow meaning, callbacks and status mapping remain page/domain-owned.
  */
 export default function TransactionHeader({
   title,
   subtitle,
   status,
   backAction,
-  primaryAction,
-  secondaryActions = [],
-  destructiveActions = [],
-  utilityActions,
+  actions = [],
+  tools,
   sticky = false,
   className,
   ...props
 }: TransactionHeaderProps) {
-  const hasActions = !!primaryAction
-    || secondaryActions.length > 0
-    || destructiveActions.length > 0
-    || !!utilityActions
+  const device = useDeviceMode()
+  const resolvedActions = resolveActionSet(actions, device)
+  const hasActions = resolvedActions.visible.length > 0
+    || resolvedActions.overflow.length > 0
+    || !!tools
 
   return (
     <header
       className={cn('ds-transaction-header', sticky && 'ds-transaction-header--sticky', className)}
       data-sticky={sticky ? 'true' : undefined}
+      data-device={device}
       {...props}
     >
       <div className="ds-transaction-header__top">
@@ -96,31 +83,28 @@ export default function TransactionHeader({
 
       {hasActions && (
         <div className="ds-transaction-header__actions" aria-label="إجراءات المستند">
-          {primaryAction && (
-            <div className="ds-transaction-header__primary">
-              <HeaderAction action={primaryAction} fallbackVariant="primary" />
-            </div>
-          )}
-
-          {secondaryActions.length > 0 && (
-            <div className="ds-transaction-header__secondary">
-              {secondaryActions.map(action => (
-                <HeaderAction key={action.key} action={action} fallbackVariant="secondary" />
+          {resolvedActions.visible.length > 0 && (
+            <div className="ds-transaction-header__visible-actions">
+              {resolvedActions.visible.map(action => (
+                <HeaderAction key={action.id} action={action} />
               ))}
             </div>
           )}
 
-          {destructiveActions.length > 0 && (
-            <div className="ds-transaction-header__destructive">
-              {destructiveActions.map(action => (
-                <HeaderAction key={action.key} action={action} fallbackVariant="danger" />
-              ))}
-            </div>
+          {resolvedActions.overflow.length > 0 && (
+            <details className="ds-transaction-header__overflow">
+              <summary className="ds-transaction-header__overflow-trigger">
+                المزيد
+              </summary>
+              <div className="ds-transaction-header__overflow-actions">
+                {resolvedActions.overflow.map(action => (
+                  <HeaderAction key={action.id} action={action} />
+                ))}
+              </div>
+            </details>
           )}
 
-          {utilityActions && (
-            <div className="ds-transaction-header__utility">{utilityActions}</div>
-          )}
+          {tools && <div className="ds-transaction-header__tools">{tools}</div>}
         </div>
       )}
     </header>

@@ -2,9 +2,8 @@ import type { ReactNode } from 'react'
 import { ArrowRight } from 'lucide-react'
 import type { SalesOrderStatus } from '@/lib/types/master-data'
 import Button from '@/components/ui/Button'
-import TransactionHeader, {
-  type TransactionHeaderAction,
-} from '@/components/patterns/TransactionHeader'
+import type { AppAction } from '@/components/patterns/ActionRegistry'
+import TransactionHeader from '@/components/patterns/TransactionHeader'
 import { SalesOrderStatusBadge } from './SalesOrdersListPresentation'
 
 export interface SalesOrderDetailHeaderProps {
@@ -12,16 +11,14 @@ export interface SalesOrderDetailHeaderProps {
   customer: ReactNode
   status: SalesOrderStatus
   onBack: () => void
-  primaryAction?: TransactionHeaderAction
-  secondaryActions?: TransactionHeaderAction[]
-  destructiveActions?: TransactionHeaderAction[]
-  utilityActions?: ReactNode
+  actions?: AppAction[]
+  tools?: ReactNode
 }
 
 /**
  * Thin Sales-domain adapter over the shared TransactionHeader.
  *
- * The page decides which actions exist from its existing permissions/status/workflow truth.
+ * The page decides which AppActions exist from its existing permissions/status/workflow truth.
  * This adapter only maps Sales identity/status into the shared V2 transaction grammar.
  */
 export function SalesOrderDetailHeader({
@@ -29,10 +26,8 @@ export function SalesOrderDetailHeader({
   customer,
   status,
   onBack,
-  primaryAction,
-  secondaryActions,
-  destructiveActions,
-  utilityActions,
+  actions,
+  tools,
 }: SalesOrderDetailHeaderProps) {
   return (
     <TransactionHeader
@@ -57,10 +52,8 @@ export function SalesOrderDetailHeader({
           رجوع
         </Button>
       )}
-      primaryAction={primaryAction}
-      secondaryActions={secondaryActions}
-      destructiveActions={destructiveActions}
-      utilityActions={utilityActions}
+      actions={actions}
+      tools={tools}
     />
   )
 }
