@@ -4,154 +4,82 @@
 
 - Review date: `2026-09-16`
 - Development branch: `design-system-v2-development`
-- Exact development HEAD reviewed before this state write: `a6c9705ab56442c7c1d1722b442aa374a7556e81`
+- Exact development HEAD reviewed before this state write: `7783d25b9a0fa4da919b3d4b0973553863561d87`
 - Active slice: `DS2-UI-004 — Sales Order form V2 foundation`
 - Active Draft PR: `#31 — DS2-UI-004: establish Sales Order form V2 presentation foundation`
 - Feature branch: `ds2/sales-order-form-v2`
-- Starting baseline: `a6c9705ab56442c7c1d1722b442aa374a7556e81`
-- Exact current PR HEAD independently reviewed: `da8af948764bbf2c1902a9abb9da36b8762d5345`
+- Slice starting baseline: `a6c9705ab56442c7c1d1722b442aa374a7556e81`
+- Exact current PR HEAD independently reviewed: `6841ceb3094ec6f85a14d4e9bdfb77869fc4444c`
 - Live PR state: `OPEN / DRAFT / mergeable`
-- Current implementation disposition: `IN_PROGRESS`
+- Current disposition: `BLOCKED — one bounded presentation-density correction`
 - Current evidence: `TESTS_AUTHORED_NOT_EXECUTED`
-- Exact-head QA approval for PR #31: not expected / not present while WIP remains incomplete
 
 ## Independent professional judgment
 
-**WIP ARCHITECTURE NEEDS ONE BOUNDED CORRECTION BEFORE PAGE WIRING. CONTINUE THE SAME PR; DO NOT EXPAND SCOPE.**
+**ALIGN WITH DESIGN QA: KEEP THE SLICE, FIX ONE P2 DESKTOP DENSITY REGRESSION, THEN RE-REVIEW THE NEW EXACT HEAD.**
 
-The selected slice is correct: the Sales Order form is a high-value golden-flow surface and the safe first boundary is presentation composition, not customer/product/pricing/discount/tax/validation/save logic. The new `SalesOrderFormSection` and `SalesOrderFormActions` are directionally sound thin compositions over the existing shared `FormSection` / `FormGrid` / `FormActions` / `Button` contracts.
+The earlier Design Director blocker is resolved on current source. PR #31 now reuses/evolves the shared `Stepper` rather than creating a parallel Sales primitive; page-owned step reachability is preserved; the review step is not made freely future-clickable; RTL next/previous cues are corrected; Mobile can use the shared wrapped Stepper mode without hiding the Arabic labels. Functional isolation remains intact.
 
-However, the current WIP introduces a Sales-local `SalesOrderStepNavigator` even though the repository already contains the approved shared `src/components/ui/Stepper.tsx`, and the control contract explicitly says the current shared Stepper is retained/evolved. Wiring the local navigator into the page would create a second stepper language and violate the shared-system-before-page-local rule.
+The new QA blocker is valid and consistent with the North Star rather than a competing opinion. The migrated Step 0 section currently uses `columns={2}`. The baseline used `repeat(auto-fill, minmax(220px, 1fr))`, so after the two full-width customer/credit rows the representative, order date and delivery branch could share one Desktop row when width allowed. The V2 change therefore imposes a lower two-column ceiling and creates an avoidable extra row on a dense management/data-entry surface.
 
-This is a **bounded Design System architecture blocker**, not a reason to stop DS2-UI-004 or redesign the whole form.
+The existing shared `FormGrid` already expresses the correct device contract: requested 3 columns on Desktop, automatically capped to 2 on Tablet, and collapsed to 1 on Mobile. This is exactly the North Star requirement: dense-but-legible Desktop, deliberate Tablet, task-clear Mobile. No new component or CSS contract is needed.
 
-## Required correction before continuing page wiring
+## Required correction
 
-### 1. Evolve/reuse the existing shared Stepper; do not create a Sales-local replacement
+### P2 — restore device-appropriate Step 0 density
 
-**BLOCKING at the current presentation boundary.**
+**BLOCKING for GREEN-DEV / integration, bounded to presentation.**
 
-Use the existing shared `Stepper` as the system-owned visual/semantic component. If the live Sales form proves that guarded clickable step navigation is missing from its API, extend the shared Stepper by the smallest backward-compatible interaction contract needed by this real form.
+Minimum change:
+- change the live Step 0 `SalesOrderFormSection` from `columns={2}` to `columns={3}`;
+- update focused composition/source-contract coverage so the 3→2→1 intent is protected at source level;
+- preserve the two intentionally full-width customer/credit rows through their existing `gridColumn: '1 / -1'` behavior;
+- do not change field order, values, validation, permissions, customer/branch/rep behavior, or any Sales business truth.
 
-Guardrails:
-- preserve the existing visual-only/default Stepper API for current consumers;
-- optional interaction may accept page-owned reachability/activation callbacks, but must not contain Sales validation/business rules;
-- current/completed/upcoming semantics remain system-owned;
-- page code remains authoritative for whether a step is reachable;
-- do not create a generic workflow engine or broad wizard abstraction;
-- focused tests must protect both legacy/default Stepper behavior and the new optional guarded-navigation contract if the shared component changes.
+Do not use this blocker to expand into Combobox/ProductLine/DataTable/overlay redesign. Those remain deferred until separately proven by the live form.
 
-The current Sales-local `SalesOrderStepNavigator` should not survive as a parallel primitive once the shared contract can express the live need.
+## Current architecture/system fit
 
-### 2. Preserve the exact current Sales step-reachability semantics
+- **Shared Stepper:** PASS on current head; previous duplicate-primitive contradiction is resolved.
+- **Exact Sales reachability:** PASS; remains page-owned and matches legacy behavior.
+- **RTL directional actions:** PASS at source level.
+- **Mobile Stepper labels/overflow:** PASS at source level for the bounded contract; runtime visual acceptance remains a later milestone gate.
+- **FormSection/FormGrid ownership:** PASS; only the selected Desktop column count is wrong.
+- **FormActions/Button ownership:** PASS.
+- **Functional isolation:** PASS; no DB/RPC/service/query-cache/RBAC/RLS/permission/business calculation/workflow/validation/deployment drift found.
+- **Evidence honesty:** PASS; tests are authored but not executed, and no CI/Vercel/local PASS is claimed.
 
-**Required before REVIEW.**
+## Coordination / freshness
 
-The existing page does not treat all future steps as directly clickable. Its current stepper allows:
-- step 0 directly;
-- step 1 only once customer validity allows it;
-- step 2 only once customer + valid-line conditions allow it;
-- earlier steps when moving backward;
-- review step 3 is reached through the page's existing forward progression, not made freely direct-clickable by the stepper.
-
-The V2 wiring must preserve this behavior exactly unless a separate functional decision changes it. A generic `index <= activeIndex` or `all completed/future valid steps are clickable` rule would silently change workflow interaction semantics.
-
-Add focused page-wiring coverage for the exact reachability mapping and keep `goNext` validation/toast behavior page-owned.
-
-### 3. Make directional actions RTL-native, not inherited LTR arrows
-
-**Required before REVIEW; presentation-only.**
-
-The current WIP renders `السابق` with a left-pointing chevron and `التالي` with that icon rotated to point right. In an Arabic RTL progression this communicates the opposite logical direction.
-
-Use logical/RTL-aware directional treatment so:
-- forward/`التالي` communicates movement in the RTL-forward direction;
-- backward/`السابق` communicates the reverse;
-- the implementation does not rely on a hard-coded transform that becomes wrong if direction changes.
-
-This corrects visual interaction semantics only; it must not alter callbacks or workflow progression.
-
-### 4. Four-step Mobile progress must stay understandable with real Arabic labels
-
-**Required acceptance condition; do not over-design.**
-
-The current WIP avoids horizontal overflow with a 2-column Mobile grid, which is directionally better than the legacy squeezed row. But its labels are forced to a single line with ellipsis. The shared Stepper contract says 4+ steps should prioritize current-step/progress clarity over squeezing labels.
-
-For the final bounded solution:
-- no ordinary horizontal stepper scrolling on the Sales form;
-- current step label must remain fully understandable on phone width;
-- long Arabic labels must not silently reduce critical meaning through aggressive ellipsis;
-- status must remain more than color alone;
-- do not add a broad new wizard layout system beyond what this four-step form proves.
-
-## Approved parts of the current WIP
-
-### Form section composition
-
-**PASS.** `SalesOrderFormSection` is a thin domain composition over shared `FormSection` + `FormGrid`, with no domain state or validation inside it.
-
-### Action hierarchy
-
-**PASS direction, subject to RTL icon correction.** `SalesOrderFormActions` correctly delegates cancel/previous/next/submit/loading/disabled truth to the page and uses shared `FormActions` + `Button`. Sticky Mobile actions remain appropriate only if page wiring proves they do not cover active fields/validation or conflict with BottomNav safe areas.
-
-### Functional isolation
-
-**PASS for current WIP.** The current PR changes presentation/test/state files only. No service, query/cache, DB/RPC, permission/RBAC/RLS, validation meaning, pricing/discount/tax/total calculation, workflow state, route or deployment contract changed.
-
-### Combobox / product-line scope
-
-**DEFER in this sub-slice.** The live form still contains page-local customer/product combobox and line-item interaction debt, and a shared `AsyncCombobox` exists. That is real future Design System work, but it should not be pulled into this first outer-form composition PR unless page wiring exposes a concrete blocker. Prove the outer form/step/action composition first, then open the smallest dedicated shared lookup/product-line slice if needed.
-
-## North Star fit
-
-### Mobile
-
-The intended touch-safe shared actions and removal of ordinary stepper overflow fit the Mobile-primary North Star. Final wiring must preserve single-column task clarity, long Arabic labels, validation visibility, sticky-action safe-area behavior, and existing Mobile add-item sheet behavior.
-
-### Tablet
-
-The form may use the shared two-column cap where grouping remains clear. Tablet must remain touch-first and must not simply inherit a compressed Desktop density.
-
-### Desktop
-
-Preserve efficient data-entry density. Moving outer grouping/actions to V2 patterns must not turn the order form into a low-density card wall.
-
-### Accessibility / RTL
-
-Use the shared Stepper as the reusable accessibility boundary. Page-owned reachability must map to real disabled/interactive semantics. Directional action icons must be RTL-logical. Do not introduce partial ARIA semantics detached from actual interaction behavior.
-
-## Freshness / coordination
-
-- Current development HEAD `a6c9705...` is the exact baseline from which PR #31 started.
-- Current PR HEAD is `da8af948764bbf2c1902a9abb9da36b8762d5345`; its latest commit updates implementation-state documentation after the initial presentation code.
-- Only PR #31 currently targets `design-system-v2-development`.
-- Development-side Design QA and Integration states correctly describe the completed PR #30 and are stale/consumed for this new slice; they contain no current blocker for DS2-UI-004.
-- The feature-branch UI Implementation State is fresh in intent and correctly keeps all Sales truth page-owned, but its WIP architecture must adopt the existing shared Stepper before page wiring.
-- Workstream/Team Memory still describe DS2-UI-004 as READY even though PR #31 has now started. Treat that lifecycle wording as stale coordination metadata, not permission to open a second slice. PR #31 is the single active implementation slice.
-
-Do not merge-sync the feature branch merely to absorb this Design Director state commit; state-only development drift must not create unnecessary PR-head churn.
+- PR #31 is the only open PR targeting `design-system-v2-development`.
+- Current exact PR HEAD is `6841ceb3094ec6f85a14d4e9bdfb77869fc4444c`; it is Draft and mergeable but must not merge while QA/Director blocker is current.
+- Design QA state on the same exact head is fresh and `BLOCKING`; this Director synthesis agrees with it.
+- UI Implementation State stored on the development branch is stale for this slice; the feature-branch implementation state is materially newer but predates the QA density disposition.
+- Integration State is stale by PR HEAD but its `NO_MERGE` disposition remains correct.
+- Team Memory / Workstream still call DS2-UI-004 READY; the live PR and current states make it the single active blocked/review slice. This is coordination metadata drift, not permission to open another slice.
+- Do not merge-sync the feature branch merely to absorb governance/state-only development commits.
 
 ## Preserve
 
-- create vs edit mode and `copyFrom` behavior;
+- create/edit and `copyFrom` behavior;
 - customer selection/clear, branch loading, credit presentation and rep assignment/read-only behavior;
 - product search/unit/quantity/stock warning/add-remove behavior;
 - price-edit permission and discount-override limits;
 - tax, discount, shipping and total calculations;
-- current step validation and progression semantics;
 - minimum-order blocking;
-- `createSalesOrder` / `updateSalesOrder` / `saveSalesOrderItems` / `recalcOrderTotals` submit sequence;
-- route navigation after save and cancel/back behavior;
-- existing ResponsiveModal/mobile add-product flow;
-- shared V2 ownership of Stepper/form/action grammar;
-- exact evidence honesty; no hosted CI, Vercel preview or `main` activity;
-- one active implementation slice only.
+- exact step reachability, `goNext` validation/toasts and progression;
+- `createSalesOrder` / `updateSalesOrder` / `saveSalesOrderItems` / `recalcOrderTotals` save sequence;
+- save/cancel routes;
+- existing Mobile add-product `ResponsiveModal` flow;
+- shared Stepper/FormSection/FormGrid/FormActions/Button ownership;
+- one active implementation slice only;
+- no hosted CI, Vercel preview, backend/business or `main` activity.
 
 ## Cross-role handoff
 
 - **To:** UI Production Engineer, Design QA, Development Integrator
-- **What changed:** Product Design Director independently reviewed Draft PR #31 HEAD `da8af948764bbf2c1902a9abb9da36b8762d5345`. The bounded Sales Order form slice is correct, but the WIP currently duplicates the approved shared `Stepper` with a Sales-local navigator. Before wiring the live page, reuse/evolve the shared Stepper with the smallest optional page-owned guarded-navigation contract. Preserve exact Sales step reachability, correct RTL forward/back directional cues, and keep four-step Mobile progress understandable without ordinary overflow/aggressive meaning loss.
-- **Preserve:** all Sales Order customer/product/pricing/discount/tax/validation/permission/service/query/save/route/workflow semantics; shared FormSection/FormGrid/FormActions/Button contracts; existing Mobile add-item/modal behavior; no broad Combobox/ProductLine rewrite in this first sub-slice; no hosted CI/Vercel/`main` activity.
-- **Need from you:** UI Production Engineer should continue only PR #31, replace the parallel Sales-local stepper primitive with the smallest backward-compatible shared Stepper evolution, then wire the page while preserving exact reachability and add focused page-wiring/RTL/mobile-label tests. Design QA and Integrator should no-op until a stable review-ready exact HEAD is handed off.
-- **Blocker level:** `BLOCKING` for page wiring/review while the duplicate Stepper boundary remains; no functional/business blocker exists.
-- **Baseline:** development `a6c9705ab56442c7c1d1722b442aa374a7556e81`; PR #31 HEAD `da8af948764bbf2c1902a9abb9da36b8762d5345`
+- **What changed:** Product Design Director independently revalidated PR #31 exact HEAD `6841ceb3094ec6f85a14d4e9bdfb77869fc4444c`. The previous Stepper/RTL/reachability blocker is resolved. I agree with QA's new single P2 blocker: Step 0 uses `columns={2}` and unnecessarily reduces Desktop data-entry density versus the baseline, while shared FormGrid already supports the correct `3 Desktop / 2 Tablet / 1 Mobile` contract.
+- **Preserve:** all Sales Order business/query/permission/validation/calculation/save/route/workflow truth; shared Stepper and form/action contracts; full-width customer/credit rows; deferred Combobox/ProductLine scope; no hosted CI/Vercel/`main` activity.
+- **Need from you:** UI Production Engineer should make only the minimum `columns={3}` correction plus focused density-contract coverage and hand off a new exact HEAD. Design QA must re-review that new exact HEAD. Integrator must remain NO_MERGE until exact-head `GREEN-DEV` + `SOURCE_REVIEW_PASS` and no current BLOCKING state remain.
+- **Blocker level:** `BLOCKING` for integration; bounded presentation-only fix.
+- **Baseline:** development `7783d25b9a0fa4da919b3d4b0973553863561d87`; PR #31 HEAD `6841ceb3094ec6f85a14d4e9bdfb77869fc4444c`
