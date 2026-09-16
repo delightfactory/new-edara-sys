@@ -8,114 +8,116 @@
 - Exact development HEAD observed this run: `a8e4533073f5ed5e217f76189109240b58c7b1a2`
 - Feature branch: `ds2/sales-order-form-v2`
 - Draft PR: `#31 — DS2-UI-004: establish Sales Order form V2 presentation foundation`
-- Exact current feature HEAD before this state write: `f02ffb31a2ab08a009d8cb274fb80d2c4a952662`
+- Exact source HEAD before this state write: `02ae4b656ae95c8f14d2cbd5b0c0e88186d4c39e`
 - Active slice: `DS2-UI-004 — Sales Order form V2 foundation`
-- Implementation disposition: `IN_PROGRESS`
+- Implementation disposition: `REVIEW`
 - Evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 
 ## Independent implementation judgment
 
-**CONTINUE THE SAME BOUNDED SLICE. THE SHARED-STEPPER ARCHITECTURE BLOCKER IS RESOLVED IN SOURCE; PAGE WIRING REMAINS.**
+**THE BOUNDED OUTER-FORM COMPOSITION SLICE IS IMPLEMENTED AND READY FOR DESIGN DIRECTOR / DESIGN QA REVIEW.**
 
-The Product Design Director correctly identified that the first WIP had introduced a Sales-local stepper language beside the existing shared `src/components/ui/Stepper.tsx`. That duplication has now been removed before any live-page wiring.
+This PR now proves the shared V2 wizard/form/action grammar on the live Sales Order create/edit surface without migrating Sales business truth into presentation components. The earlier duplicate-Stepper blocker is resolved through a backward-compatible shared `Stepper` evolution, and the live page now delegates step presentation, the first form section, and bottom actions to shared V2 composition while retaining all existing customer/product/pricing/discount/tax/validation/save behavior in `SalesOrderForm.tsx`.
 
-The shared Stepper was evolved only by the smallest proven generic contract needed by this form: optional page-owned guarded interaction, optional workflow-specific accessible label, optional icons, and an opt-in wrapped Mobile layout. Its historical read-only/default contract remains the default. Sales now provides only a thin adapter that projects page-owned reachability into the shared component.
-
-The Director's RTL-direction concern was also corrected at presentation level: Arabic forward/`التالي` now uses the logical leftward cue and backward/`السابق` uses the logical rightward cue, with no hard-coded transform.
+The deferred customer/product lookup and line-item redesign remains intentionally outside this first sub-slice.
 
 ## Material progress this run
 
-1. Re-ran the mandatory shared-memory bootstrap and independently revalidated PR #31, issue #27, current development HEAD and the fresh Product Design Director blocker.
-2. Rejected the parallel Sales-local stepper architecture before page wiring.
-3. Extended shared `Stepper` backward-compatibly:
-   - current read-only use remains unchanged by default;
-   - optional `onStepClick` enables real button semantics only when interaction is requested;
-   - per-step `disabled` projects page-owned reachability without importing workflow truth into the component;
-   - `ariaLabel` allows a workflow-specific navigation label;
-   - optional step icons are supported without changing numbered default behavior;
-   - `mobileLayout="wrap"` provides a generic two-column phone composition with full wrapping labels and no ordinary horizontal overflow for workflows that need it.
-4. Added focused `Stepper.test.tsx` coverage for legacy read-only behavior, guarded interaction and the generic wrapped Mobile mode.
-5. Refactored `SalesOrderStepNavigator` into a thin adapter over shared `Stepper`; the prior bespoke list/button/connector primitive no longer exists.
-6. Removed Sales-local stepper layout rules; Sales CSS now owns only outer surface spacing while the shared Stepper owns step semantics/layout.
-7. Corrected Arabic RTL action direction: `التالي` uses `ChevronLeft`; `السابق` uses `ChevronRight`; the prior rotate transform was removed.
-8. Updated focused Sales presentation tests to protect shared-Stepper delegation, guarded reachability projection, shared form composition, RTL direction cues and action/loading semantics.
-9. No live `SalesOrderForm.tsx` wiring occurred yet, so no customer/product/pricing/discount/tax/validation/save/query/service behavior changed.
+1. Re-ran the mandatory shared-memory bootstrap, inspected issue #27, current development HEAD, PR #31, and peer role states before modification.
+2. Wired `SalesOrderStepNavigator` into the live page; it remains only a thin projection over shared `Stepper`.
+3. Preserved exact direct-step reachability in page code:
+   - current/earlier steps remain reachable;
+   - step 0 remains directly reachable;
+   - step 1 requires customer validity;
+   - step 2 requires customer validity + at least one valid line;
+   - review step 3 remains unavailable by direct future-step click and is reached through existing `goNext` progression.
+4. Preserved existing `goNext` validation/toasts and page-owned submit validation.
+5. Migrated the step-0 outer grouping to `SalesOrderFormSection` (`FormSection` + responsive `FormGrid`) without moving any field state, customer behavior or permission truth.
+6. Replaced the legacy page-local bottom navigation with `SalesOrderFormActions`, preserving cancel/back/next/save callbacks and the existing submit-disabled condition.
+7. Removed the legacy squeezed page stepper markup, legacy `.stepper-label` mobile hiding, hard-coded rotated directional cue and obsolete local `grid2` layout constant.
+8. Added focused page source-contract coverage in `SalesOrderForm.v2.test.ts` for shared wiring, exact reachability, forward validation, submit sequence, pricing/permission truth, copy/edit behavior and the existing Mobile add-product modal boundary.
+9. Independently inspected the resulting commit diff: the live-page commit changes presentation wiring only (`+41/-68`) and does not alter service/query/cache/RBAC/RLS/validation/business calculations/workflow state.
 10. No GitHub Actions, hosted CI, Vercel or `main` activity occurred.
 
 ## Changed-file scope
 
-Current PR #31 now includes the bounded shared primitive evolution plus Sales presentation/test/state files:
+Current PR #31 contains eight files:
 
 - `src/components/ui/Stepper.tsx`
 - `src/components/ui/Stepper.test.tsx`
 - `src/components/sales/SalesOrderFormPresentation.tsx`
 - `src/components/sales/SalesOrderFormPresentation.test.tsx`
 - `src/components/sales/sales-order-form-v2.css`
+- `src/pages/sales/SalesOrderForm.tsx`
+- `src/pages/sales/SalesOrderForm.v2.test.ts`
 - this role-state file
 
 No Sales service, query/cache implementation, database/migration/RPC, RBAC/RLS, permission definition, route guard, validation meaning, workflow transition, pricing/discount/tax/total calculation or deployment configuration is changed.
 
-## Functional truth to preserve during page wiring
+## Preserved functional contracts
 
-The next implementation pass must preserve exactly:
+Source review confirms the page still owns and preserves:
 
 - create vs edit mode and `copyFrom` behavior;
-- customer selection/clear, branch loading and credit presentation;
-- sales-rep assignment/read-only behavior;
-- product search, unit selection, quantity, stock warning and add/remove behavior;
-- price-edit permission and discount-override limits;
-- tax, discount, shipping and total calculations;
-- the current guarded step mapping: step 0 direct; step 1 only when customer validity allows it; step 2 only when customer + valid-line conditions allow it; earlier steps backward; review step 3 reached through existing forward progression rather than freely direct-clickable;
-- `goNext` validation/toast behavior;
+- customer selection/clear, branch loading, credit presentation and rep read-only/assignment behavior;
+- product search, unit selection, quantity, stock warning and line add/remove behavior;
+- customer-aware price resolution and manual-price override guards;
+- `sales.orders.edit_price` and `sales.discounts.override` permission checks;
+- discount limits, taxes, shipping and total calculations;
 - minimum-order blocking;
+- `goNext` validation/toasts and exact step progression truth;
 - `createSalesOrder` / `updateSalesOrder` / `saveSalesOrderItems` / `recalcOrderTotals` submit sequence;
 - route navigation after save and cancel/back behavior;
-- ResponsiveModal add-product flow.
+- existing ResponsiveModal Mobile add-product flow.
 
-The product-line editor and async lookup behavior remain outside this first outer-form composition slice unless a concrete wiring blocker proves otherwise.
+## Device / state coverage
 
-## Device / system result
-
-- **Mobile:** shared Stepper can now opt into a two-column wrapped composition with full Arabic label wrapping and no ordinary horizontal overflow; status remains expressed through shape/icon/text state, not color alone. Shared form actions remain touch-safe/sticky-ready for later page wiring.
-- **Tablet:** shared Stepper remains linear; form grids remain capped by existing V2 Tablet contracts.
-- **Desktop:** shared Stepper remains linear and compact; outer form migration must preserve efficient data-entry density.
-- **RTL / accessibility:** interactive steps are native buttons only when a page provides `onStepClick`; unreachable steps are natively disabled; current step uses `aria-current="step"`; the default read-only indicator remains non-interactive; forward/back arrows now match Arabic RTL progression.
+- **Mobile:** shared Stepper uses its opt-in two-column wrapped composition with full Arabic labels and no ordinary horizontal stepper overflow; form step 0 is one-column through shared FormGrid; shared actions are touch-targeted and sticky-mobile capable; existing add-product bottom-sheet/modal flow is preserved.
+- **Tablet:** shared Stepper remains linear; FormGrid caps the migrated section at two columns; actions remain touch-safe without inheriting Mobile-only item-entry behavior.
+- **Desktop:** linear compact stepper and two-column step-0 form grouping preserve efficient data-entry density; existing Desktop product table remains unchanged in this bounded sub-slice.
+- **Loading:** existing page loading surface is unchanged; save loading delegates to shared Button semantics through `SalesOrderFormActions`.
+- **Disabled / permission:** unreachable steps are native disabled buttons; save disabled truth remains page-owned; price/discount permissions are unchanged.
+- **RTL / accessibility:** current step uses `aria-current="step"`; the workflow nav has an Arabic accessible label; forward `التالي` uses the RTL-forward leftward cue and backward `السابق` uses the rightward cue; no hard-coded rotation remains.
 
 ## Test / execution evidence
 
 Current evidence: **`TESTS_AUTHORED_NOT_EXECUTED`**.
 
-Focused authored tests now cover:
+Focused authored tests cover:
 - legacy/default shared Stepper read-only behavior;
-- optional guarded Stepper interaction and disabled-step semantics;
+- guarded Stepper interaction and disabled-step semantics;
 - shared wrapped Mobile Stepper mode;
-- Sales adapter delegation to the shared Stepper;
-- Sales reachability projection without workflow ownership inside the component;
+- Sales adapter delegation to shared Stepper;
 - shared FormSection/FormGrid composition;
-- page-owned action callbacks;
-- RTL-native previous/next cues;
-- shared Button loading/disabled semantics.
+- RTL-native action cues and shared Button loading semantics;
+- live-page shared V2 wiring;
+- exact direct-step reachability including no direct review-step access;
+- existing forward validation/toasts;
+- page-owned submit sequence and disabled truth;
+- pricing/discount permission ownership;
+- copy/edit and Mobile add-product boundaries.
 
-No local checkout became available in this run and no hosted CI was used. Therefore no `npm test`, `npm run build`, `npm run lint`, `LOCAL_EXECUTION_PASS` or build PASS is claimed. No known source-level TypeScript/build failure was identified by source inspection.
+No approved local checkout/runtime was available: direct sandbox access to GitHub remains unavailable, so `npm test`, `npm run build` and `npm run lint` were not executed. No hosted CI was used. No PASS is claimed. Source inspection found no known TypeScript/build blocker.
 
-## Peer-state comparison
+## Peer-state comparison / freshness
 
-- **Product Design Director:** fresh state on development reviewed old PR head `da8af948...` and recorded a BLOCKING duplicate-Stepper boundary plus required RTL/Mobile/reachability conditions. The duplicate primitive, RTL cue and Mobile label/overflow concerns are now addressed in source on feature head `f02ffb31...`; exact reachability must still be preserved during live-page wiring. Director revalidation is appropriate after the next stable WIP/review head.
-- **Design QA:** no approval is expected while PR #31 remains IN_PROGRESS; QA should continue to no-op.
-- **Development Integrator:** must continue to no-op; no exact-head GREEN-DEV exists.
-- **Workstream/Team Memory:** lifecycle wording may lag because development-side coordination files moved after the feature baseline. That state-only drift is not a reason to merge-sync this feature branch.
+- **Product Design Director:** development-side state reviewed old PR head `da8af948...` and required shared Stepper reuse, exact reachability, RTL-native arrows and understandable Mobile labels. Those four requirements are now represented in source and live-page wiring on this review candidate; Director exact-head revalidation is requested.
+- **Design QA:** prior state belongs to the completed PR #30; no exact-head approval exists for PR #31 yet. QA should review only the new exact review head after this state write.
+- **Development Integrator:** must remain `NO_MERGE` until exact-head `GREEN-DEV` and source review are recorded.
+- **Development drift:** current development HEAD `a8e4533...` differs from the slice baseline only through coordination/state work observed during this run; no product/shared-component merge-sync was required before this handoff.
 
-No unresolved product/business contradiction exists. The only remaining Director requirement that depends on implementation is exact live-page step reachability plus bounded page wiring.
+## Risks / deferred work
 
-## Next action
-
-Continue only PR #31. Wire the shared Stepper/section/action presentation into `SalesOrderForm.tsx` with the exact existing step-reachability mapping and `goNext` validation preserved, then add focused page-wiring tests. Do not move customer/product/price/discount/tax/validation/save truth into presentation components and do not expand into the deferred combobox/product-line redesign.
+- Runtime visual/build/test evidence is unavailable in this environment; evidence is intentionally limited to authored tests + source/diff inspection.
+- The customer combobox, product lookup/line-item interaction and remaining local Sales form surfaces still contain legacy presentation debt. They are deliberately deferred to later dependency-safe sub-slices and must not be pulled into this PR without a concrete reviewer blocker.
+- Sticky Mobile actions should be visually revalidated when a real local/browser runtime becomes available; no functional callback or safe-area contract was changed here.
 
 ## Cross-role handoff
 
 - **To:** Product Design Director, Design QA, Development Integrator
-- **What changed:** On PR #31, the Sales-local stepper primitive was removed in favor of a minimal backward-compatible evolution of shared `Stepper`; focused shared tests were added; Mobile wrap/full-label behavior is system-owned; Sales only projects reachability; RTL previous/next cues were corrected. Exact source head before this state write: `f02ffb31a2ab08a009d8cb274fb80d2c4a952662`.
-- **Preserve:** all Sales Order customer/product/pricing/discount/tax/validation/permission/service/query/save/route semantics; exact guarded step reachability during page wiring; shared V2 ownership; one active slice; no hosted CI/Vercel/`main` activity.
-- **Need from you:** no QA/integration action yet. Product Design Director may revalidate that the prior architecture/RTL/Mobile blocker is correctly bounded; UI Production Engineer will continue the same PR to live-page wiring before REVIEW.
-- **Blocker level:** `NONE` for continuing implementation; `NO_REVIEW_YET` until exact page reachability and wiring are complete. Evidence remains `TESTS_AUTHORED_NOT_EXECUTED`.
-- **Baseline:** development baseline `a6c9705ab56442c7c1d1722b442aa374a7556e81`; development observed `a8e4533073f5ed5e217f76189109240b58c7b1a2`; PR #31 source head before state write `f02ffb31a2ab08a009d8cb274fb80d2c4a952662`
+- **What changed:** PR #31 now wires the shared Stepper/form-section/action contracts into live `SalesOrderForm.tsx` while retaining page-owned Sales truth. Exact source HEAD before this state write: `02ae4b656ae95c8f14d2cbd5b0c0e88186d4c39e`.
+- **Preserve:** all customer/product/pricing/discount/tax/validation/permission/query/service/save/route/workflow semantics; exact reachability; existing Mobile add-product flow; deferred lookup/product-line scope; no hosted CI/Vercel/`main` activity.
+- **Need from you:** Product Design Director should revalidate architecture/RTL/Mobile intent on the exact review candidate; Design QA should perform source/contract review and issue `GREEN-DEV` only for the exact reviewed HEAD if acceptable. Integrator must no-op until those gates are satisfied.
+- **Blocker level:** `NONE` from implementation; `AWAITING_REVIEW`.
+- **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`.
+- **Baseline:** development baseline `a6c9705ab56442c7c1d1722b442aa374a7556e81`; development observed `a8e4533073f5ed5e217f76189109240b58c7b1a2`; source HEAD before state write `02ae4b656ae95c8f14d2cbd5b0c0e88186d4c39e`.
