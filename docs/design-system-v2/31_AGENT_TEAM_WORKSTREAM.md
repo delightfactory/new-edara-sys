@@ -28,7 +28,7 @@ Only one implementation slice may be active. A role with nothing actionable must
 
 ## Repository-native communication
 
-Before material action every role reads Team Memory, all four role states, the Decision Log, this workstream, issue #27, and the active PR. Each role owns only its own state file. Integrator updates Team Memory after successful merge. Issue #27 is a concise event stream.
+Before material action every role reads Team Memory, all four role states, the Decision Log, this workstream, issue #27, and the active PR. Each role owns only its own state file. Integrator updates Team Memory after successful merge. Issue #27 is the concise event stream.
 
 ## GitHub Actions / preview policy
 
@@ -38,16 +38,16 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-UI-004`.
+Product UI is integrated through `DS2-UI-005`.
 
 Latest product integration:
-- PR: `#31 — DS2-UI-004: establish Sales Order form V2 presentation foundation`
-- Exact reviewed PR HEAD: `198f146a3abde9efa6bfb3c98c20469f3815d3ff`
-- Squash merge commit: `d00faf8e36d40c9dde9df0b2de6dc89737419c5d`
+- PR: `#32 — DS2-UI-005: establish Sales transaction detail V2 header pattern`
+- Exact reviewed PR HEAD: `de7c99cb099ac4ccff941e1eb5f2dafacebd7ca6`
+- Squash merge commit: `58b0f3f8f54f04636d3a35dd7d658edb7bcf5068`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Runtime/preview/release evidence: not claimed
 
-The development branch now includes the shared semantic foundations, responsive shell/navigation/form/collection patterns, Dashboard V2, Customers migrations, Sales Orders list V2, and the first Sales Order form V2 foundation.
+The development branch now includes the shared semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales Orders list V2, Sales Order form V2 foundation, and the first live shared `TransactionHeader` proof on Sales transaction detail.
 
 ## Completed slices
 
@@ -78,7 +78,7 @@ System result:
 - Tablet uses deliberate paged cards.
 - Mobile preserves accumulated infinite loading.
 - Sales KPI/status/card/action/state presentation composes shared V2 grammar.
-- Sales query/filter/pagination/navigation/permission/payment/Smart Transfer/map/call/business semantics remain preserved.
+- Sales query/filter/pagination/navigation/permission/payment/Smart Transfer/map/call/workflow semantics remain preserved.
 
 ### DS2-UI-004 — Sales Order form V2 foundation
 Status: `DONE`
@@ -89,59 +89,55 @@ Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT
 Runtime/preview/release evidence: not claimed
 
 System result:
-- shared `Stepper` now supports optional page-owned guarded interaction while preserving legacy read-only behavior by default;
+- shared `Stepper` supports optional page-owned guarded interaction while preserving legacy read-only behavior by default;
 - Sales step navigation is a thin adapter over shared Stepper, not a parallel primitive;
 - exact legacy step reachability and `goNext` validation remain page-owned;
-- Step 0 composes shared `FormSection` + `FormGrid` with the corrected `3 Desktop / 2 Tablet / 1 Mobile` density contract;
+- Step 0 composes shared `FormSection` + `FormGrid` with `3 Desktop / 2 Tablet / 1 Mobile` density;
 - customer and credit-context rows remain intentionally full-width;
 - bottom actions compose shared `FormActions` + `Button` with RTL-native cues;
-- create/edit/copyFrom, customer/branch/rep, product/unit/stock, pricing/discount/tax/total/minimum-order, permissions, validation, save sequence, routes, and Mobile add-product flow remain unchanged;
+- Sales create/edit/copyFrom, pricing, permission, validation, save, route and Mobile add-product semantics remain unchanged;
 - Combobox/ProductLine redesign remains deferred until separately proven by a live slice.
 
-## Current single active slice
-
 ### DS2-UI-005 — Sales transaction detail V2
-Status: `REVIEW`
+Status: `DONE`
+Merged PR: `#32`
+Reviewed HEAD: `de7c99cb099ac4ccff941e1eb5f2dafacebd7ca6`
+Squash merge: `58b0f3f8f54f04636d3a35dd7d658edb7bcf5068`
+Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
+Runtime/preview/release evidence: not claimed
+
+System result:
+- shared `TransactionHeader` now consumes canonical `AppAction[] + useDeviceMode + resolveActionSet` rather than a parallel action taxonomy;
+- device placement is one visible workflow action on Mobile, up to two on Tablet, up to four on Desktop, with remaining eligible actions in overflow;
+- live `SalesOrderDetail.tsx` maps existing edit / confirm / deliver / due-date / return / copy / cancel permission/status predicates and callbacks into the shared contract;
+- confirm warehouse fallback, modal initialization, stock check, four `actionLoading` guards and `DocumentActions` capability behavior remain page/domain-owned and preserved;
+- legacy local status/hero/horizontal action-strip/`ActionBtn` presentation is removed only from the migrated header region;
+- financial summary, receipts, items, notes, modals, queries, services, calculations and workflow semantics remain outside the slice;
+- the stale-baseline TypeScript blocker was closed by inheriting the already-integrated Development hotfix before exact-head review;
+- `DocumentActions` Mobile sticky-header density remains a non-blocking runtime `WATCH` for a future owner-requested visual review.
+
+## Current single READY slice
+
+### DS2-INV-001 — Inventory list surfaces
+Status: `READY`
 Owner role: UI Production Engineer
 
 System intent:
-Migrate the Sales transaction-detail surface toward the shared V2 detail grammar while preserving all Sales business truth.
+Begin the Inventory module using the proven shared list/action grammar, without turning the queue into isolated page polishing.
 
 Initial direction:
-- inspect the current detail screen and select the smallest dependency-safe presentation-only sub-slice;
-- prefer shared `TransactionHeader`, status, `FinancialSummary`, `KeyValueList`, action hierarchy, timeline/state patterns when already available or when the live screen proves the smallest reusable gap;
-- preserve every displayed business value, permission, workflow action, route, query and state transition;
-- deliberately compose Mobile/Tablet/Desktop rather than shrinking Desktop;
-- keep Arabic/RTL, long values, loading/error/permission states and destructive-action hierarchy explicit.
-
-Current bounded implementation concern:
-- establish the smallest reusable `TransactionHeader` contract proven by the live Sales Order detail header;
-- keep all permission/status/workflow decisions page-owned while shared V2 owns responsive header/action mechanics;
-- do not expand this first concern into financial summary, receipt, item, modal or business-flow redesign.
-
-Current candidate result:
-- shared `TransactionHeader` consumes the canonical `AppAction[] + useDeviceMode + resolveActionSet` contract, including 1 Mobile / 2 Tablet / 4 Desktop visible-action limits plus overflow;
-- live `SalesOrderDetail.tsx` now maps the exact existing edit / confirm / deliver / due-date / return / copy / cancel permission/status predicates and callbacks into that shared action contract;
-- local legacy status presentation, sticky hero, horizontal action strip and `ActionBtn` are removed only from the header region;
-- `DocumentActions` remains capability-equivalent through the tools slot;
-- financial summary, receipts, items, notes, modals, queries, services, calculations and workflow semantics remain outside this bounded concern;
-- focused shared/adaptor/page parity tests are authored; execution evidence remains `TESTS_AUTHORED_NOT_EXECUTED`.
+- inspect current Inventory list surfaces and choose the smallest representative dependency-safe presentation-only concern;
+- reuse `ResponsiveCollection`, shared status/badge/action/filter/state grammar and existing device-aware patterns before inventing anything new;
+- preserve inventory quantities, valuation, warehouse/product semantics, permissions, routes, queries, pagination/filter behavior and operational actions exactly;
+- Mobile remains task-oriented and touch-safe; Tablet is deliberate; Desktop preserves dense comparison/review efficiency;
+- if a recurring Inventory-specific gap is proven, strengthen the smallest shared V2 contract first rather than create a page-local mini design system;
+- focused tests must protect material device/permission/action/state behavior; evidence follows `33_TEST_AND_VALIDATION_POLICY.md`.
 
 Explicit exclusions:
-- no service/query/cache/RPC changes;
-- no RBAC/RLS/permission or workflow semantic changes;
-- no pricing/accounting calculation migration into visual primitives;
-- no speculative shared-detail framework beyond the smallest recurring contract proven by the live screen;
+- no inventory calculation, stock movement, costing, reservation or warehouse business changes;
+- no DB/RPC/service/query/cache/RBAC/RLS/permission/route-guard changes;
+- no speculative redesign of transfer/adjustment flows inside this list slice;
 - no deployment/preview/main changes.
-
-Acceptance direction:
-- one bounded detail-composition concern per implementation PR;
-- shared V2 grammar owns presentation while page/domain code retains business truth;
-- Mobile has clear primary/secondary/destructive action priority;
-- Tablet is deliberate;
-- Desktop preserves management/review density;
-- focused tests are authored for material composition/behavior risk;
-- evidence follows `33_TEST_AND_VALIDATION_POLICY.md`.
 
 ## Product migration roadmap
 
@@ -152,7 +148,7 @@ The Product Design Director may decompose an item further, but exactly one depen
 - `DS2-UI-002` Customer detail secondary tabs/patterns — `DONE`
 - `DS2-UI-003` Sales Orders list V2 — `DONE`
 - `DS2-UI-004` Sales Order form V2 foundation — `DONE`
-- `DS2-UI-005` Sales transaction detail V2 — `REVIEW`
+- `DS2-UI-005` Sales transaction detail V2 — `DONE`
 
 ### B. Shared component-depth program
 Open only when a real migrated screen proves the recurring gap:
@@ -174,7 +170,7 @@ Open only when a real migrated screen proves the recurring gap:
 - chart/report legend/metric grammar
 
 ### C. Inventory
-- `DS2-INV-001` Inventory list surfaces — `BACKLOG`
+- `DS2-INV-001` Inventory list surfaces — `READY`
 - `DS2-INV-002` Transfer/adjustment operational flows — `BACKLOG`
 
 ### D. Procurement
