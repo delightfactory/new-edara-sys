@@ -26,6 +26,9 @@ describe('DataTable V2 pagination semantics', () => {
 
     expect(previous.textContent).toBe('السابق')
     expect(next.textContent).toBe('التالي')
+    expect(previous.classList.contains('pagination-btn-nav')).toBe(true)
+    expect(next.classList.contains('pagination-btn-nav')).toBe(true)
+    expect(current.classList.contains('pagination-btn-nav')).toBe(false)
     expect(current.getAttribute('aria-current')).toBe('page')
     expect(screen.getByRole('button', { name: 'الصفحة 1' }).getAttribute('aria-current')).toBeNull()
 
