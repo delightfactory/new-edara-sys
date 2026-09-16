@@ -116,22 +116,26 @@ System result:
 - the stale-baseline TypeScript blocker was closed by inheriting the already-integrated Development hotfix before exact-head review;
 - `DocumentActions` Mobile sticky-header density remains a non-blocking runtime `WATCH` for a future owner-requested visual review.
 
-## Current single READY slice
+## Current single active slice
 
 ### DS2-INV-001 — Inventory list surfaces
-Status: `READY`
+Status: `IN_PROGRESS`
 Owner role: UI Production Engineer
+Feature branch: `ds2/inventory-stock-list-v2`
+Draft PR: `#34`
+Exact implementation baseline: `61c2fcac8152550d72f4b94be5e85fd9979dd94d`
+Current bounded concern: `StockPage balance collection + responsive stock card presentation`
 
 System intent:
 Begin the Inventory module using the proven shared list/action grammar, without turning the queue into isolated page polishing.
 
-Initial direction:
-- inspect current Inventory list surfaces and choose the smallest representative dependency-safe presentation-only concern;
-- reuse `ResponsiveCollection`, shared status/badge/action/filter/state grammar and existing device-aware patterns before inventing anything new;
-- preserve inventory quantities, valuation, warehouse/product semantics, permissions, routes, queries, pagination/filter behavior and operational actions exactly;
-- Mobile remains task-oriented and touch-safe; Tablet is deliberate; Desktop preserves dense comparison/review efficiency;
-- if a recurring Inventory-specific gap is proven, strengthen the smallest shared V2 contract first rather than create a page-local mini design system;
-- focused tests must protect material device/permission/action/state behavior; evidence follows `33_TEST_AND_VALIDATION_POLICY.md`.
+Current implementation direction:
+- `StockPage` is the first representative dependency-safe list concern;
+- migrate its mutually-exclusive device presentation through `ResponsiveCollection` rather than CSS-hidden duplicate trees;
+- keep Desktop as the dense paged DataTable, make Tablet a deliberate paged card grid, and keep Mobile task-oriented cards with the existing numbered page semantics;
+- compose Inventory cards from shared `Card`, `KeyValueList`, `StatusBadge` and shared `Button` behavior rather than a page-local card system;
+- preserve stock health, quantities, valuation, warehouse/product semantics, cost permission, local review-mode math, routes, queries, pagination and filter behavior exactly;
+- focused tests protect material device/permission/review/state behavior; evidence follows `33_TEST_AND_VALIDATION_POLICY.md`.
 
 Explicit exclusions:
 - no inventory calculation, stock movement, costing, reservation or warehouse business changes;
@@ -170,7 +174,7 @@ Open only when a real migrated screen proves the recurring gap:
 - chart/report legend/metric grammar
 
 ### C. Inventory
-- `DS2-INV-001` Inventory list surfaces — `READY`
+- `DS2-INV-001` Inventory list surfaces — `IN_PROGRESS`
 - `DS2-INV-002` Transfer/adjustment operational flows — `BACKLOG`
 
 ### D. Procurement
