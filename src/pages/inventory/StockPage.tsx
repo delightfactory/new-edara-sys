@@ -104,40 +104,55 @@ export default function StockPage() {
 
     if (mode === 'tablet') {
       return (
-        <div className="pagination" style={{ padding: 'var(--space-4)' }}>
+        <nav
+          className="pagination"
+          aria-label="ترقيم صفحات أرصدة المخزون"
+          style={{ padding: 'var(--space-4)' }}
+        >
           <span className="pagination-info">
             صفحة {page} من {totalPages} ({totalCount})
           </span>
           <div className="pagination-buttons">
-            <button
-              className="pagination-btn"
+            <Button
+              variant="ghost"
+              size="sm"
+              touchTarget
+              aria-label="الصفحة السابقة"
               disabled={page <= 1}
               onClick={() => setPage(page - 1)}
             >
-              ‹
-            </button>
+              السابق
+            </Button>
             {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
               const num = page <= 3 ? i + 1 : page + i - 2
               if (num < 1 || num > totalPages) return null
               return (
-                <button
+                <Button
                   key={num}
-                  className={`pagination-btn${num === page ? ' active' : ''}`}
+                  variant={num === page ? 'primary' : 'secondary'}
+                  size="sm"
+                  touchTarget
+                  aria-label={`الصفحة ${num}`}
+                  aria-current={num === page ? 'page' : undefined}
+                  style={{ minWidth: 'var(--ds-icon-hit-target)' }}
                   onClick={() => setPage(num)}
                 >
                   {num}
-                </button>
+                </Button>
               )
             })}
-            <button
-              className="pagination-btn"
+            <Button
+              variant="ghost"
+              size="sm"
+              touchTarget
+              aria-label="الصفحة التالية"
               disabled={page >= totalPages}
               onClick={() => setPage(page + 1)}
             >
-              ›
-            </button>
+              التالي
+            </Button>
           </div>
-        </div>
+        </nav>
       )
     }
 
