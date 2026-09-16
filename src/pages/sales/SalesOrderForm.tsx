@@ -880,7 +880,7 @@ export default function SalesOrderForm() {
 
       {/* ══════ STEP 0: Customer & Header ══════ */}
       {step === 0 && (
-        <SalesOrderFormSection title="بيانات الطلب" icon={<User size={16} />} columns={2}>
+        <SalesOrderFormSection title="بيانات الطلب" icon={<User size={16} />} columns={3}>
           {/* Customer */}
           <div style={{ gridColumn: '1 / -1' }}>
             <FieldLabel required>العميل</FieldLabel>
