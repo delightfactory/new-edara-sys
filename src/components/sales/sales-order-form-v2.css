@@ -6,10 +6,6 @@
   background: var(--bg-surface);
 }
 
-.sales-order-form-actions-v2__next-icon {
-  transform: rotate(180deg);
-}
-
 @media (max-width: 639px) {
   .sales-order-stepper-v2 {
     padding: var(--space-2);

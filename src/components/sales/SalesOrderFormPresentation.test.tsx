@@ -49,7 +49,7 @@ describe('SalesOrderFormPresentation', () => {
     expect(container.querySelector('.ds-form-grid--cols-3')).toBeTruthy()
   })
 
-  it('preserves page-owned previous/next/save decisions in the shared action hierarchy', () => {
+  it('preserves page-owned actions and uses RTL-native directional cues', () => {
     const onCancel = vi.fn()
     const onPrevious = vi.fn()
     const onNext = vi.fn()
@@ -69,7 +69,9 @@ describe('SalesOrderFormPresentation', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'إلغاء' }))
-    fireEvent.click(screen.getByRole('button', { name: /التالي/ }))
+    const nextButton = screen.getByRole('button', { name: /التالي/ })
+    expect(nextButton.querySelector('.lucide-chevron-left')).toBeTruthy()
+    fireEvent.click(nextButton)
     expect(onCancel).toHaveBeenCalledTimes(1)
     expect(onNext).toHaveBeenCalledTimes(1)
     expect(onPrevious).not.toHaveBeenCalled()
@@ -88,7 +90,9 @@ describe('SalesOrderFormPresentation', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /السابق/ }))
+    const previousButton = screen.getByRole('button', { name: /السابق/ })
+    expect(previousButton.querySelector('.lucide-chevron-right')).toBeTruthy()
+    fireEvent.click(previousButton)
     expect(onPrevious).toHaveBeenCalledTimes(1)
     expect(screen.getByRole('button', { name: /حفظ التعديلات/ })).toBeDisabled()
   })

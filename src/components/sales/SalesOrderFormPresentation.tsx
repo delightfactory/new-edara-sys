@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { ChevronLeft, Save } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Save } from 'lucide-react'
 import FormActions from '@/components/patterns/FormActions'
 import FormGrid, { type FormGridColumns } from '@/components/patterns/FormGrid'
 import FormSection, { type FormSectionProps } from '@/components/patterns/FormSection'
@@ -115,7 +115,11 @@ export function SalesOrderFormActions({
       >
         {isFirst ? 'إلغاء' : (
           <>
-            <ChevronLeft size={16} aria-hidden="true" />
+            <ChevronRight
+              size={16}
+              aria-hidden="true"
+              className="sales-order-form-actions-v2__previous-icon"
+            />
             السابق
           </>
         )}
