@@ -99,8 +99,47 @@ export default function StockPage() {
     return a - s.available_quantity
   }
 
-  function renderCardPagination() {
+  function renderCardPagination(mode: 'mobile' | 'tablet') {
     if (totalPages <= 1) return null
+
+    if (mode === 'tablet') {
+      return (
+        <div className="pagination" style={{ padding: 'var(--space-4)' }}>
+          <span className="pagination-info">
+            صفحة {page} من {totalPages} ({totalCount})
+          </span>
+          <div className="pagination-buttons">
+            <button
+              className="pagination-btn"
+              disabled={page <= 1}
+              onClick={() => setPage(page - 1)}
+            >
+              ‹
+            </button>
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+              const num = page <= 3 ? i + 1 : page + i - 2
+              if (num < 1 || num > totalPages) return null
+              return (
+                <button
+                  key={num}
+                  className={`pagination-btn${num === page ? ' active' : ''}`}
+                  onClick={() => setPage(num)}
+                >
+                  {num}
+                </button>
+              )
+            })}
+            <button
+              className="pagination-btn"
+              disabled={page >= totalPages}
+              onClick={() => setPage(page + 1)}
+            >
+              ›
+            </button>
+          </div>
+        </div>
+      )
+    }
 
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-4)', paddingBlock: 'var(--space-4)' }}>
@@ -148,7 +187,8 @@ export default function StockPage() {
           quantity: formatNumber(s.quantity),
           available: <span style={{ color: st.color }}>{formatNumber(s.available_quantity)}</span>,
           reserved: s.reserved_quantity > 0 ? formatNumber(s.reserved_quantity) : undefined,
-          weightedCost: canViewCosts && s.wac > 0 ? formatCurrency(s.wac) : undefined,
+          weightedCost: canViewCosts && (mode === 'tablet' || s.wac > 0) ? formatCurrency(s.wac) : undefined,
+          stockValue: mode === 'tablet' && canViewCosts ? formatCurrency(s.total_cost_value) : undefined,
           statusLabel: st.label,
           statusTone: st.variant,
         }}
@@ -177,7 +217,7 @@ export default function StockPage() {
         >
           {items.map(item => renderStockCard(item, mode))}
         </div>
-        {renderCardPagination()}
+        {renderCardPagination(mode)}
       </div>
     )
   }
