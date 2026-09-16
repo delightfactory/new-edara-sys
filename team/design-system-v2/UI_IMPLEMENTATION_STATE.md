@@ -5,120 +5,120 @@
 - Run date: `2026-09-16`
 - Development branch: `design-system-v2-development`
 - Exact development baseline used for this slice: `e78de5d71002b9718fa7d760b3cc7bc933ff6cba`
-- Exact development HEAD observed this run before state write: `8dbc13992f91c293d02b3e57fb5191e40b6efe6f`
+- Exact development HEAD observed this run before state write: `5aed337c74a9cb9a51f1eb64aacba800faa5f522`
 - Feature branch: `ds2/sales-orders-list-v2`
 - Draft PR: `#30 — DS2-UI-003: migrate Sales Orders list to shared V2 grammar`
-- Exact current feature HEAD: `bfd54e578a7b63bd7abfa567e197db0043cc8a13`
+- Exact current feature HEAD: `d03dbf4d32e0fb1a3e4888588a5c6d685689f1ff`
 - Active slice: `DS2-UI-003 — Sales Orders list V2`
-- Implementation disposition: `IN_PROGRESS`
+- Implementation disposition: `REVIEW — EXACT HEAD HANDED TO DESIGN QA`
+- Evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 
 ## Independent implementation judgment
 
-The existing Sales Orders list already contains valuable behavior that must remain untouched: URL-synchronized filters, separate Desktop numbered pagination and Mobile infinite loading, global sales KPIs, status/payment mappings, customer map/call actions, Smart Transfer entry points, permissions, and order navigation.
+**IMPLEMENTATION COMPLETE FOR THE BOUNDED DS2-UI-003 SLICE; READY FOR INDEPENDENT EXACT-HEAD SOURCE REVIEW.**
 
-The page still has concentrated presentation debt: page-local KPI cards/styles, semantic statuses rendered through generic `Badge`, a CSS-hidden Desktop/Mobile dual render tree, legacy `DataCard`, raw custom Smart Transfer controls, and a large page-local style block.
+The Sales Orders list now uses the shared V2 grammar without moving Sales business/query truth out of the page. The migration removes the old CSS-hidden Desktop/Mobile dual interaction trees, replaces legacy Mobile `DataCard` composition with a deliberate Sales card over shared primitives, and gives Tablet an explicit card composition while preserving the historical paged data contract.
 
-The safest migration remains incremental. Shared-system boundaries should be prepared before page wiring so the final page diff mostly replaces legacy composition rather than mixing redesign and data behavior changes in one step. I am not starting a speculative DataTable or FilterBar rewrite.
+No Sales service, query, cache, permission, workflow, validation or calculation semantics were changed. No speculative DataTable/FilterBar program was opened.
 
 ## Material progress this run
 
-1. Re-ran the mandatory shared-memory bootstrap and revalidated issue #27, live development HEAD and the only open implementation PR (#30).
-2. Re-read `SalesOrdersPage.tsx` and the existing shared `ResponsiveCollection`, `DataTable`, `Button`, `Card` and `KeyValueList` contracts.
-3. Confirmed a concrete reusable gap for the current Sales screen: Mobile/Tablet need one deliberate operational card composition that does not reuse the legacy clickable `DataCard` pattern or duplicate hidden interaction trees.
-4. Extended `src/components/sales/SalesOrdersListPresentation.tsx` with `SalesOrderCard`:
-   - domain-specific composition only; business/query/calculation truth remains page-owned and is passed as already-projected values;
-   - shared `Card`, `KeyValueList`, `Button`, `StatusBadge` and semantic token contracts own visual/interaction behavior;
-   - explicit Mobile versus Tablet density via `mode`;
-   - touch-safe `عرض الطلب` / map / call actions;
-   - semantic payment progress uses a real labelled `progressbar` contract;
-   - Arabic hierarchy keeps order/customer codes LTR without making the card itself a fake button.
-5. Extended focused tests for mobile action callbacks, semantic status, progress accessibility, tablet density and optional-action absence.
-6. Retried repository-local GitHub access from the sandbox; DNS still fails with `Could not resolve host: github.com`, therefore no local test/build execution is claimed.
+1. Re-ran the mandatory shared-memory bootstrap and revalidated the only open implementation PR (#30), issue #27, current development HEAD and Product Design Director WIP guidance.
+2. Resolved both Product Design Director requirements before REVIEW:
+   - Tablet presentation now uses `SalesOrderCard` while staying on `desktopOrders` / `desktopPage` / numbered-pagination semantics; only Mobile uses accumulated `mobileOrders` and the infinite-load sentinel.
+   - page-projected payment percentage is no longer normalized away inside `SalesOrderCard`; the visible percentage remains the page-owned `Math.round(paidRatio * 100)` value while progressbar geometry/ARIA is bounded separately to `0..100`.
+3. Wired `SalesOrdersPage.tsx` through shared `ResponsiveCollection` so only one Desktop/Tablet/Mobile collection renderer is mounted at a time.
+4. Replaced page-local KPI/status presentation with shared `SalesOrdersKpiGrid` / `SalesOrderStatusBadge`.
+5. Preserved the dense Desktop `DataTable` and its existing numbered pagination.
+6. Added deliberate Tablet cards plus numbered pagination backed by the existing Desktop paged dataset.
+7. Preserved Mobile accumulated infinite-loading behavior, sentinel, loading-more state and end state.
+8. Migrated Smart Transfer Desktop/FAB action surfaces to shared `Button` while preserving the existing `sales.orders.create` permission and dialog behavior.
+9. Replaced collection empty presentation with shared `StatePanel` without adding a new Mobile empty-state action.
+10. Added focused tests for device dataset selection, payment-projection separation and final page wiring/functional boundaries.
+11. Inspected the complete four-file PR diff after wiring. No forbidden backend/query/permission/deployment file is present and no known source-level TypeScript/build blocker was identified.
 
 ## Changed-file scope
 
-Current PR #30 still changes only two Sales presentation/test files:
+PR #30 changes exactly four Sales UI/test files:
 
 - `src/components/sales/SalesOrdersListPresentation.tsx`
 - `src/components/sales/SalesOrdersListPresentation.test.tsx`
+- `src/pages/sales/SalesOrdersPage.tsx`
+- `src/pages/sales/SalesOrdersPage.v2.test.ts`
 
-No service, hook/query, cache, database, RPC, RBAC/RLS, permission definition, route guard, validation semantic, workflow state, pricing/calculation, GitHub workflow, Vercel config or `main` file changed.
+No service, hook/query implementation, cache, database, migration, RPC, RBAC/RLS, permission definition, route guard, validation semantic, workflow state, pricing/accounting calculation, GitHub workflow, Vercel configuration or `main` file changed.
 
-## Functional boundary to preserve
+## Functional / product truth preserved
 
-Upcoming page wiring must preserve exactly:
+The exact review head preserves:
 
-- existing `useFilterState(..., urlSync: true)` behavior;
-- governorate -> city reset behavior;
-- current `useSalesOrders` filter parameters and query calls;
-- Desktop numbered pagination semantics;
-- Mobile infinite-list accumulation/reset/load-more semantics;
-- `useSalesStats` values and business meaning;
-- current status values/labels and payment-term meaning;
-- all order/customer monetary calculations currently owned by `SalesOrdersPage`;
-- `sales.orders.create` visibility for Smart Transfer and new-order actions;
-- order detail route destinations;
+- `useFilterState(... urlSync: true)` and Back-restored filters;
+- governorate -> city reset through the same single `setFilters` path;
+- both existing `useSalesOrders` parameter/query paths;
+- Desktop numbered pagination;
+- Tablet paged dataset + numbered pagination semantics;
+- Mobile page accumulation/reset/load-more through `useMobileInfiniteList`;
+- `useSalesStats` business meaning;
+- status values and payment-term meaning;
+- existing page-owned `collected`, `outstanding`, `paidRatio` and displayed-percentage projection;
+- `sales.orders.create` visibility for Smart Transfer/new-order actions;
+- order detail and new-order destinations;
 - Smart Transfer dialog behavior;
-- map/call destinations;
-- all Sales business-state transitions and backend behavior.
+- map and call destinations;
+- all Sales workflow/business-state behavior.
 
-`SalesOrderCard` intentionally accepts already-projected totals/outstanding/paid-percent values so moving the UI does not move or reinterpret Sales business calculations.
+## Device / system result
 
-## Device / system direction
-
-- **Mobile:** one operational Sales card renderer should be mounted through `ResponsiveCollection`; explicit customer/order/status/financial hierarchy and touch-safe actions; no ordinary horizontal overflow.
-- **Tablet:** use the same shared-domain card anatomy at a denser information layout, not the old `>768px = Desktop table` assumption.
-- **Desktop:** retain dense `DataTable` comparison and numbered pagination.
-- **Statuses:** semantic state belongs to shared `StatusBadge`.
-- **KPIs:** shared `StatCard` owns hierarchy; page supplies existing KPI truth.
-- **Filters:** keep the current FilterBar state/data contract unless the real wiring proves a minimal shared gap.
-- **Collection:** existing `ResponsiveCollection` is the intended one-renderer-at-a-time boundary. Page wiring must choose current Desktop page data versus existing accumulated Mobile data without changing their query contracts.
+- **Mobile:** one operational `SalesOrderCard` renderer, touch-ready open/map/call actions, explicit status/financial hierarchy, no ordinary list-level horizontal overflow, existing infinite-loading contract preserved.
+- **Tablet:** deliberate denser Sales cards, but data remains the existing paged Desktop dataset and numbered pagination. Tablet does not inherit Mobile infinite-loading semantics.
+- **Desktop:** dense `DataTable` comparison remains, with existing numbered pagination and route behavior.
+- **Statuses:** shared `StatusBadge` semantic grammar now owns Sales order state presentation.
+- **KPIs:** shared `StatCard` grammar now owns hierarchy while the existing global stats hook owns truth.
+- **Collection:** shared `ResponsiveCollection` owns the one-renderer-at-a-time device boundary.
+- **Actions:** shared `Button` owns migrated Smart Transfer and card actions.
+- **Empty state:** shared `StatePanel` owns collection empty presentation.
 
 ## Test / execution evidence
 
-Current evidence: `TESTS_AUTHORED_NOT_EXECUTED`.
+Current evidence: **`TESTS_AUTHORED_NOT_EXECUTED`**.
 
-Focused tests now cover:
-- semantic status mapping;
-- KPI truth projection;
-- canonical Mobile/Tablet KPI composition;
-- mobile Sales card hierarchy and map/call/open callbacks;
-- labelled payment progress semantics;
-- denser Tablet card composition;
-- absence of optional actions when callbacks are not supplied.
+Focused tests cover:
+- semantic Sales status mapping;
+- KPI truth projection and canonical device mode;
+- Tablet selecting the paged dataset while Mobile selects accumulated infinite-list data;
+- Mobile/Tablet Sales card hierarchy and action callbacks;
+- page-projected percentage text remaining distinct from bounded progress geometry;
+- optional map/call actions;
+- final page adoption of one `ResponsiveCollection` boundary;
+- preservation of separate Desktop/Mobile query/page state;
+- page ownership of Sales financial calculations;
+- URL-synced filters, governorate/city reset, permissions, Smart Transfer and route destinations;
+- removal of legacy `DataCard` / CSS-hidden dual collection trees.
 
-Actual sandbox retry this run:
-- command: `git ls-remote https://github.com/delightfactory/new-edara-sys.git HEAD`
-- result: failed before repository access with `Could not resolve host: github.com`.
+Sandbox execution remains unavailable:
+- no repository checkout exists in the sandbox;
+- direct GitHub access retry failed with `Could not resolve host: github.com`.
 
-Therefore no `npm test`, `npm run build`, `npm run lint` or `LOCAL_EXECUTION_PASS` is claimed. No GitHub Actions/hosted CI or Vercel preview were triggered. No known TypeScript/build failure is currently recorded from source review.
+Therefore no `npm test`, `npm run build`, `npm run lint` or `LOCAL_EXECUTION_PASS` is claimed. No GitHub Actions/hosted CI or Vercel preview was triggered. No known build/type failure is currently recorded from source inspection.
 
 ## Peer-state comparison
 
-- **Product Design Director:** stored state still targets completed DS2-UI-002 and is stale for current Sales implementation. Durable direction remains aligned: strengthen shared grammar only where proven, preserve device intent and density, avoid speculative abstraction.
-- **Design QA:** stored `GREEN-DEV` applies only to merged PR #29 and is stale for PR #30; no Sales approval exists.
-- **Development Integrator:** current state is fresh enough to confirm normal `NO_MERGE_IN_PROGRESS` at earlier PR #30 HEAD `6608f33e...`; that exact-head observation is now stale because implementation advanced to `bfd54e57...`, but its no-merge conclusion remains aligned until a review-ready handoff exists.
-- **Team Memory / Workstream:** both correctly identify DS2-UI-003 as the single active slice.
+- **Product Design Director:** fresh WIP review on earlier head `bfd54e57...` required two bounded constraints. Both are visibly resolved on exact review head `d03dbf4d...`: Tablet retains paged dataset semantics and visible financial projection remains page-owned while only progress geometry is bounded.
+- **Design QA:** stored state still belongs to merged PR #29 and is stale for Sales. No Sales approval exists; a fresh independent review is now required.
+- **Development Integrator:** stored `NO_MERGE_IN_PROGRESS` targets earlier WIP head and remains correct historically but is stale by head/disposition. Integrator must continue to no-op until QA issues exact-head `GREEN-DEV` + `SOURCE_REVIEW_PASS`.
+- **Team Memory / Workstream:** both still identify DS2-UI-003 as the single active slice. Workstream should now reflect REVIEW for this exact head.
 
-No current peer-state `BLOCKING` contradiction applies.
+No current peer-state `BLOCKING` contradiction remains.
 
-## Next implementation action
+## Next action
 
-Continue only PR #30. Wire the already-prepared presentation layer into `SalesOrdersPage.tsx` in bounded steps:
-
-1. replace page-local KPI/status presentation with `SalesOrdersKpiGrid` / `SalesOrderStatusBadge`;
-2. adopt `ResponsiveCollection` so only one Desktop/Tablet/Mobile interaction tree is mounted;
-3. feed existing Desktop paged data to the Desktop table, existing Mobile accumulated data to Mobile cards, and a deliberate Tablet card composition without changing query semantics;
-4. migrate raw Smart Transfer action controls to shared `Button` while preserving permission/dialog behavior;
-5. remove only the legacy style/dead presentation code proven unused after wiring.
-
-Do not start Sales Order form/detail work.
+No further implementation should occur unless Design QA requests a bounded correction. Design QA should independently inspect exact PR #30 HEAD `d03dbf4d32e0fb1a3e4888588a5c6d685689f1ff` against the North Star, functional-isolation boundary, device semantics, states/accessibility and test artifacts.
 
 ## Cross-role handoff
 
-- **To:** Product Design Director, Design QA, Development Integrator
-- **What changed:** DS2-UI-003 advanced on Draft PR #30 from initial KPI/status adapters to a reusable Mobile/Tablet `SalesOrderCard` composition over shared V2 primitives. Exact feature HEAD is `bfd54e578a7b63bd7abfa567e197db0043cc8a13`; PR remains intentionally WIP because `SalesOrdersPage` wiring is not yet complete.
-- **Preserve:** all Sales query/filter/pagination/infinite-loading/navigation/permission/status/payment/Smart Transfer/map/call/business semantics; page ownership of monetary calculations; canonical device boundaries; shared V2 ownership; quota/deployment/main restrictions.
-- **Need from you:** Product Design Director may review the WIP component boundary for system-fit. Design QA and Integrator should no-op until the page is wired and a stable review-ready exact HEAD is handed off.
+- **To:** Design QA, Product Design Director, Development Integrator
+- **What changed:** DS2-UI-003 page wiring is complete on Draft PR #30 at exact HEAD `d03dbf4d32e0fb1a3e4888588a5c6d685689f1ff`. `ResponsiveCollection` now selects one renderer; Desktop remains paged table, Tablet is paged cards, Mobile remains accumulated infinite cards. Director's Tablet-data and payment-projection constraints are resolved.
+- **Preserve:** all existing Sales query/filter/pagination/infinite-loading/navigation/permission/status/payment/Smart Transfer/map/call/business semantics; page ownership of financial calculations; shared V2 system ownership; no hosted CI/Vercel/`main` activity.
+- **Need from you:** Design QA should perform fresh independent exact-head review and issue `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` only if all development gates pass. Product Design Director may revalidate system fit if needed. Integrator must not merge before that exact-head approval.
 - **Blocker level:** `NONE`; execution evidence remains `TESTS_AUTHORED_NOT_EXECUTED`.
-- **Baseline:** development baseline `e78de5d71002b9718fa7d760b3cc7bc933ff6cba`; development observed `8dbc13992f91c293d02b3e57fb5191e40b6efe6f`; PR #30 current HEAD `bfd54e578a7b63bd7abfa567e197db0043cc8a13`
+- **Baseline:** slice baseline `e78de5d71002b9718fa7d760b3cc7bc933ff6cba`; development observed `5aed337c74a9cb9a51f1eb64aacba800faa5f522`; PR #30 review HEAD `d03dbf4d32e0fb1a3e4888588a5c6d685689f1ff`
