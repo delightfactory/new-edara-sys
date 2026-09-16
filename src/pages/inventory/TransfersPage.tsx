@@ -1,5 +1,5 @@
 import { useState, Fragment, useMemo, useRef, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   ArrowLeftRight, Plus, ChevronDown, ChevronUp,
@@ -547,18 +547,25 @@ export default function TransfersPage() {
                   <Fragment key={t.id}>
                     <tr>
                       <td>
-                        <Button variant="ghost" size="sm" onClick={() => setExpandedId(expandedId === t.id ? null : t.id)}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          aria-label={`${expandedId === t.id ? 'طي' : 'عرض'} بنود التحويل ${t.number}`}
+                          aria-expanded={expandedId === t.id}
+                          onClick={() => setExpandedId(expandedId === t.id ? null : t.id)}
+                        >
                           {expandedId === t.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                         </Button>
                       </td>
                       <td>
-                        <span
+                        <Link
+                          to={`/inventory/transfers/${t.id}`}
                           dir="ltr"
-                          style={{ fontFamily: 'monospace', fontSize: 'var(--text-xs)', color: 'var(--color-primary)', cursor: 'pointer', textDecoration: 'underline' }}
-                          onClick={() => navigate(`/inventory/transfers/${t.id}`)}
+                          aria-label={`عرض تفاصيل التحويل ${t.number}`}
+                          style={{ fontFamily: 'monospace', fontSize: 'var(--text-xs)', color: 'var(--color-primary)', textDecoration: 'underline' }}
                         >
                           {t.number}
-                        </span>
+                        </Link>
                       </td>
                       <td>
                         <Badge variant="neutral">
@@ -612,8 +619,24 @@ export default function TransfersPage() {
               <div className="pagination" style={{ padding: 'var(--space-4)' }}>
                 <span className="pagination-info">صفحة {page} من {totalPages}</span>
                 <div className="pagination-buttons">
-                  <button className="pagination-btn" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>‹</button>
-                  <button className="pagination-btn" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>›</button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label="الصفحة السابقة"
+                    disabled={page <= 1}
+                    onClick={() => setPage(p => p - 1)}
+                  >
+                    السابق
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label="الصفحة التالية"
+                    disabled={page >= totalPages}
+                    onClick={() => setPage(p => p + 1)}
+                  >
+                    التالي
+                  </Button>
                 </div>
               </div>
             )}
