@@ -15,9 +15,9 @@ const steps: SalesOrderFormStep[] = [
 ]
 
 describe('SalesOrderFormPresentation', () => {
-  it('keeps step reachability owned by the page callback', () => {
+  it('projects page-owned reachability through the shared Stepper contract', () => {
     const onChange = vi.fn()
-    render(
+    const { container } = render(
       <SalesOrderStepNavigator
         steps={steps}
         activeIndex={1}
@@ -27,10 +27,12 @@ describe('SalesOrderFormPresentation', () => {
     )
 
     expect(screen.getByRole('navigation', { name: 'مراحل أمر البيع' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /المنتجات/ })).toHaveAttribute('aria-current', 'step')
-    expect(screen.getByRole('button', { name: /التوصيل/ })).toBeDisabled()
+    expect(container.querySelector('.stepper--mobile-wrap')).toBeTruthy()
+    expect(container.querySelector('.sales-order-stepper-v2__list')).toBeNull()
+    expect(screen.getByRole('button', { name: 'الخطوة الحالية: المنتجات' })).toHaveAttribute('aria-current', 'step')
+    expect(screen.getByRole('button', { name: 'قادمة: التوصيل' })).toBeDisabled()
 
-    fireEvent.click(screen.getByRole('button', { name: /بيانات الطلب/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'مكتملة: بيانات الطلب' }))
     expect(onChange).toHaveBeenCalledWith(0)
   })
 

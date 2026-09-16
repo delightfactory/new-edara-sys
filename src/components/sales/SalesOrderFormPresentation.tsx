@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react'
-import { CheckCircle, ChevronLeft, Save } from 'lucide-react'
+import { ChevronLeft, Save } from 'lucide-react'
 import FormActions from '@/components/patterns/FormActions'
 import FormGrid, { type FormGridColumns } from '@/components/patterns/FormGrid'
 import FormSection, { type FormSectionProps } from '@/components/patterns/FormSection'
 import Button from '@/components/ui/Button'
+import Stepper, { type StepperStep } from '@/components/ui/Stepper'
 import './sales-order-form-v2.css'
 
 export interface SalesOrderFormStep {
@@ -20,7 +21,7 @@ export interface SalesOrderStepNavigatorProps {
 }
 
 /**
- * Presentation-only step navigation for the Sales Order form.
+ * Thin Sales adapter over the shared Stepper.
  * The page owns all reachability/validation truth through `canActivate`.
  */
 export function SalesOrderStepNavigator({
@@ -29,43 +30,22 @@ export function SalesOrderStepNavigator({
   canActivate,
   onChange,
 }: SalesOrderStepNavigatorProps) {
-  return (
-    <nav className="sales-order-stepper-v2" aria-label="مراحل أمر البيع">
-      <ol className="sales-order-stepper-v2__list">
-        {steps.map((step, index) => {
-          const isActive = index === activeIndex
-          const isComplete = index < activeIndex
-          const enabled = canActivate(index)
+  const projectedSteps: StepperStep[] = steps.map((step, index) => ({
+    label: step.label,
+    icon: step.icon,
+    disabled: !canActivate(index),
+  }))
 
-          return (
-            <li className="sales-order-stepper-v2__item" key={step.id}>
-              <Button
-                type="button"
-                variant={isActive ? 'primary' : 'ghost'}
-                size="sm"
-                touchTarget
-                className="sales-order-stepper-v2__button"
-                aria-current={isActive ? 'step' : undefined}
-                disabled={!enabled}
-                onClick={() => onChange(index)}
-              >
-                <span className="sales-order-stepper-v2__icon" aria-hidden="true">
-                  {isComplete ? <CheckCircle size={14} /> : step.icon}
-                </span>
-                <span className="sales-order-stepper-v2__label">{step.label}</span>
-              </Button>
-              {index < steps.length - 1 && (
-                <span
-                  className="sales-order-stepper-v2__connector"
-                  data-complete={isComplete ? 'true' : undefined}
-                  aria-hidden="true"
-                />
-              )}
-            </li>
-          )
-        })}
-      </ol>
-    </nav>
+  return (
+    <Stepper
+      steps={projectedSteps}
+      currentStep={activeIndex}
+      showNumbers={false}
+      onStepClick={onChange}
+      ariaLabel="مراحل أمر البيع"
+      mobileLayout="wrap"
+      className="sales-order-stepper-v2"
+    />
   )
 }
 
