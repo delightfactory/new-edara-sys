@@ -58,25 +58,22 @@
 @media (max-width: 768px) {
   .sales-order-stepper-v2 {
     padding: var(--space-2);
-    overflow-x: auto;
-    overscroll-behavior-inline: contain;
-    scrollbar-width: thin;
   }
 
   .sales-order-stepper-v2__list {
-    min-width: max-content;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2);
   }
 
-  .sales-order-stepper-v2__item {
-    flex: 0 0 auto;
-  }
-
+  .sales-order-stepper-v2__item,
   .sales-order-stepper-v2__button {
-    min-width: 7.75rem;
+    width: 100%;
+    min-width: 0;
   }
 
   .sales-order-stepper-v2__connector {
-    flex-basis: var(--space-3);
+    display: none;
   }
 }
 
