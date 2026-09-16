@@ -112,10 +112,6 @@
     padding: var(--space-3) var(--ds-page-gutter-mobile);
   }
 
-  .ds-transaction-header--sticky {
-    top: var(--ds-safe-area-top);
-  }
-
   .ds-transaction-header__top {
     gap: var(--space-2);
   }
@@ -158,11 +154,5 @@
   .ds-transaction-header__secondary,
   .ds-transaction-header__destructive {
     grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ds-transaction-header--sticky {
-    backdrop-filter: none;
   }
 }
