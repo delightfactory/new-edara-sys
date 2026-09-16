@@ -4,6 +4,10 @@ import { describe, expect, it } from 'vitest'
 
 const sourcePath = fileURLToPath(new URL('./PurchaseInvoiceForm.tsx', import.meta.url))
 const source = readFileSync(sourcePath, 'utf8')
+const shellStylesPath = fileURLToPath(new URL('../../styles/purchase-invoice-v2.css', import.meta.url))
+const shellStyles = readFileSync(shellStylesPath, 'utf8')
+const mainStylesPath = fileURLToPath(new URL('../../styles/main.css', import.meta.url))
+const mainStyles = readFileSync(mainStylesPath, 'utf8')
 
 describe('PurchaseInvoiceForm V2 shell contract', () => {
   it('wires the shared purchase stepper only into the editable new/draft wizard', () => {
@@ -26,6 +30,14 @@ describe('PurchaseInvoiceForm V2 shell contract', () => {
     expect(source.match(/gridColumn: '1 \/ -1'/g)?.length ?? 0).toBeGreaterThanOrEqual(2)
     expect(source).toContain("disabled={readOnly || mode === 'bill' || (mode === 'draft' && showReceivePanel)}")
     expect(source).toContain("disabled={mode !== 'draft'}")
+  })
+
+  it('owns the migrated basic-section separation at the Purchase Invoice shell boundary', () => {
+    expect(source).toContain('className="purch-action-bar"')
+    expect(mainStyles).toContain("@import './purchase-invoice-v2.css';")
+    expect(shellStyles).toContain('.page-container:has(> .purch-action-bar) > .ds-form-section {')
+    expect(shellStyles).toContain('margin-block-end: var(--space-4);')
+    expect(shellStyles).not.toMatch(/^\s*\.ds-form-section\s*\{/m)
   })
 
   it('keeps forward validation and save truth page-owned while using shared FormActions', () => {

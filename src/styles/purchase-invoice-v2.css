@@ -1,0 +1,7 @@
+/* Purchase Invoice V2 — consumer-owned external section rhythm.
+ * Shared FormSection/Card intentionally remain marginless; this selector is scoped
+ * to the Purchase Invoice shell through its existing action-bar boundary.
+ */
+.page-container:has(> .purch-action-bar) > .ds-form-section {
+  margin-block-end: var(--space-4);
+}
