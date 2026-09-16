@@ -162,7 +162,7 @@ System result:
 ## Current single active slice
 
 ### DS2-PROC-002 — Purchase Invoice form decomposition
-Status: `IN_PROGRESS`
+Status: `REVIEW`
 Owner role: UI Production Engineer
 Draft PR: `#37`
 Exact baseline: `e4866c9350c507bce260beb07d880fbce55718f3`
@@ -223,7 +223,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### D. Procurement
 - `DS2-PROC-001` Purchase list surfaces — `DONE`
-- `DS2-PROC-002` Purchase Invoice form decomposition — `IN_PROGRESS`
+- `DS2-PROC-002` Purchase Invoice form decomposition — `REVIEW`
 
 ### E. Finance
 - `DS2-FIN-001` Finance lists and summaries — `BACKLOG`
