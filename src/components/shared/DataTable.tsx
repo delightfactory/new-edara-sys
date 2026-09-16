@@ -143,7 +143,7 @@ export default function DataTable<T extends Record<string, any>>({
           <div className="pagination-buttons">
             <button
               type="button"
-              className="pagination-btn"
+              className="pagination-btn pagination-btn-nav"
               aria-label="الصفحة السابقة"
               disabled={page <= 1}
               onClick={() => onPageChange(page - 1)}
@@ -168,7 +168,7 @@ export default function DataTable<T extends Record<string, any>>({
             })}
             <button
               type="button"
-              className="pagination-btn"
+              className="pagination-btn pagination-btn-nav"
               aria-label="الصفحة التالية"
               disabled={page >= totalPages}
               onClick={() => onPageChange(page + 1)}
@@ -182,6 +182,12 @@ export default function DataTable<T extends Record<string, any>>({
       <style>{`
         .system-desktop-table { display: block; }
         .system-mobile-cards  { display: none !important; }
+        .pagination-btn.pagination-btn-nav {
+          width: auto;
+          min-width: 64px;
+          padding-inline: var(--space-3);
+          white-space: nowrap;
+        }
         @media (max-width: 768px) {
           .system-desktop-table { display: none; }
           .system-mobile-cards  { display: flex !important; }
