@@ -6,9 +6,9 @@ describe('Stepper', () => {
   it('preserves the read-only indicator contract by default', () => {
     render(<Stepper steps={['بيانات الطلب', 'المنتجات']} currentStep={1} />)
 
-    expect(screen.getByRole('navigation', { name: 'خطوات النموذج' })).toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: 'خطوات النموذج' })).toBeTruthy()
     expect(screen.queryAllByRole('button')).toHaveLength(0)
-    expect(screen.getByLabelText('الخطوة الحالية: المنتجات')).toHaveAttribute('aria-current', 'step')
+    expect(screen.getByLabelText('الخطوة الحالية: المنتجات').getAttribute('aria-current')).toBe('step')
   })
 
   it('supports page-owned reachability without owning workflow truth', () => {
@@ -26,8 +26,8 @@ describe('Stepper', () => {
       />,
     )
 
-    expect(screen.getByRole('button', { name: 'الخطوة الحالية: المنتجات' })).toHaveAttribute('aria-current', 'step')
-    expect(screen.getByRole('button', { name: 'قادمة: التوصيل' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'الخطوة الحالية: المنتجات' }).getAttribute('aria-current')).toBe('step')
+    expect((screen.getByRole('button', { name: 'قادمة: التوصيل' }) as HTMLButtonElement).disabled).toBe(true)
 
     fireEvent.click(screen.getByRole('button', { name: 'مكتملة: بيانات الطلب' }))
     expect(onStepClick).toHaveBeenCalledWith(0)
