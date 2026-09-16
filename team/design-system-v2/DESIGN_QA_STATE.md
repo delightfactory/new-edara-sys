@@ -2,114 +2,111 @@
 
 ## Reviewed baseline
 
-- Review date: `2026-09-16`
+- Review date: `2026-09-17`
 - Development branch: `design-system-v2-development`
-- Exact Development HEAD inspected for this review: `195f46b612059e8e9e62806df730ef849b7d6895`
-- Active slice: `DS2-PROC-001 — Purchase list surfaces`
-- Active implementation PR: `#36 — DS2-PROC-001: establish purchase invoice list V2 presentation`
+- Exact Development HEAD inspected before this review: `e4866c9350c507bce260beb07d880fbce55718f3`
+- Active slice: `DS2-PROC-002 — Purchase Invoice form decomposition`
+- Active implementation PR: `#37 — DS2-PROC-002: establish purchase invoice form V2 shell`
 - PR base: `design-system-v2-development`
-- PR base SHA reported by GitHub at exact-head revalidation: `20e47f4dc2d0a5efaf7a13fca13fa95ff1692df9`
-- Exact PR HEAD independently reviewed and revalidated before disposition: `df3da0e6a5b00e85c8ba35f1b99481e8f0b396be`
+- PR base SHA: `e4866c9350c507bce260beb07d880fbce55718f3`
+- Exact PR HEAD reviewed: `1e825c5016e40718ffa271403de86adbae070dfc`
 - Live PR state at disposition: `OPEN / DRAFT / mergeable`
-- Changed-file scope: 8 files (Procurement card + component test + shared DataTable + focused DataTable test + live PurchaseInvoicesPage + focused live-page test + workstream/UI implementation state)
-- Current disposition: `AGENT-REVIEW: GREEN-DEV`
-- Source evidence: `SOURCE_REVIEW_PASS`
-- Test evidence: `TESTS_AUTHORED_NOT_EXECUTED`
-- Exact-head local build/test/lint evidence: not claimed.
-- Runtime/preview/release evidence: not claimed.
+- Changed-file scope at reviewed HEAD: 4 files — Stepper adapter, focused adapter test, Workstream state, UI Implementation state.
+- Current disposition: `AGENT-REVIEW: BLOCKED`
+- Blocking severity: `P2 — implementation completeness / live-system fit`
+- Source evidence: `SOURCE_REVIEW_PASS` withheld.
+- Test evidence: `TESTS_AUTHORED_NOT_EXECUTED`.
+- Exact-head build/test/lint/runtime/preview evidence: not claimed.
 
 ## Independent QA disposition
 
-**GREEN-DEV on exact HEAD `df3da0e6a5b00e85c8ba35f1b99481e8f0b396be`.**
+**BLOCKED on exact HEAD `1e825c5016e40718ffa271403de86adbae070dfc`.**
 
-The remaining PROC001 P2 shared-paginator fit blocker is closed without widening the slice. Exact-head source review finds no current material blocker in scope isolation, business-contract preservation, shared-system fit, device composition, relevant state handling, accessibility/RTL behavior or focused test intent.
+The first PROC002 implementation concern is directionally correct but the assigned bounded slice is not yet live in `PurchaseInvoiceForm.tsx`. The PR itself and UI Implementation State both declare the work `IN_PROGRESS`; exact changed filenames confirm the live form is absent from the diff.
 
-### Previously blocking paginator fit — CLOSED
+### Implemented Stepper adapter — preliminary PASS
 
-Shared `DataTable` keeps the accepted semantic hardening:
-- labeled pagination `nav`;
-- logical Arabic `السابق` / `التالي` controls with explicit accessible names;
-- numeric page accessible names and `aria-current="page"`;
-- unchanged page-window algorithm, disabled boundaries and callback targets.
+`PurchaseInvoiceDraftStepper` is a thin Procurement presentation adapter over the shared V2 `Stepper` and does not absorb purchase-domain truth.
 
-The exact current HEAD adds the bounded shared modifier `pagination-btn-nav` only to previous/next controls and defines it with `width: auto`, `min-width: 64px`, logical `padding-inline` and `white-space: nowrap`. This higher-specificity contract overrides the legacy fixed `32px` pagination width for the Arabic word controls while numeric page buttons remain compact on the existing fixed-width rule. This resolves the ordinary clipping/overflow risk identified on the previous HEAD without introducing a new Pagination framework or Procurement-only workaround.
+Source comparison against the live form confirms its direct-step projection matches the existing page-owned rule:
+- previous steps remain reachable;
+- step 0 remains reachable;
+- step 1 unlocks only after supplier + warehouse eligibility (`canProceedStep0`);
+- step 2 unlocks only after basic eligibility + at least one valid item (`canProceedStep0 && canProceedStep1`);
+- step 3 is not newly unlocked by direct navigation and remains reached through existing progression/backward behavior.
 
-Focused `DataTable.v2.test.tsx` coverage now protects ownership of the width-safe modifier by previous/next controls while ensuring numeric buttons do not inherit it, in addition to the semantic/callback/boundary assertions. CSS geometry is not claimed as runtime-measured evidence.
+The adapter uses the shared `mobileLayout="wrap"`, Arabic current/completed/future semantics and native disabled-button behavior. Focused Testing Library artifacts protect this adapter contract.
 
-## Scope / functional isolation — PASS
+No forbidden backend/business/service/query/RBAC/RLS/permission/route/accounting/workflow/validation change is present in the reviewed four-file diff.
 
-The PR remains presentation/test/governance bounded. Source inspection found no DB, migration, RPC, service, query-cache, RBAC/RLS, permission, route-guard, accounting calculation, approval, validation, workflow, deployment, preview or `main` change.
+## Blocking finding — live shell is incomplete
 
-Preserved contracts include:
-- `getPurchaseInvoices` unchanged;
-- `queryKey: ['purchase-invoices', search, statusFilter, page]` unchanged;
-- `PAGE_SIZE = 20` unchanged;
-- search/status changes still reset page to 1;
-- service search truth remains invoice `number` or `supplier_invoice_ref` only;
-- supplier, warehouse and document identity remain page/domain-owned;
-- total/paid source values and their existing visual condition remain unchanged;
-- Purchase Invoice workflow status values, service calls and accounting behavior remain untouched;
-- detail route `/purchases/invoices/${inv.id}` and create route `/purchases/invoices/new` remain unchanged.
+The Product Design Director bounded PROC002 as one Purchase Invoice **form shell foundation** consisting of four linked presentation concerns. At the reviewed HEAD only the first concern exists as an unconsumed adapter.
 
-Current Development has advanced from the feature-branch base through role/governance coordination commits only; no product/shared-component drift was found that invalidates this review target.
+`src/pages/purchases/PurchaseInvoiceForm.tsx` is not changed, so the live product still contains:
+- the page-local `STEPS.map(...)` wizard and inline reachability handler;
+- the page-local mobile `.stepper-label { display: none; }` rule that would conflict with the shared Stepper label contract once mounted;
+- local basic-information `sCard` / grid / section composition rather than the bounded `FormSection + FormGrid` migration;
+- local step action composition rather than bounded `FormActions + Button`;
+- local raw-color Purchase Invoice status badge rather than shared semantic `StatusBadge`.
 
-## System fit / device judgment
+This fails the implementation-completeness/System Fit/Test Artifact portions of the Development gate. The component is not enough to claim the assigned slice is integrated into the live product, and current tests do not yet protect the material live mode/action/status/form-wiring risks.
 
-- **Shared collection boundary:** PASS — one `ResponsiveCollection<PurchaseInvoice>` replaces CSS-hidden duplicate Desktop/Mobile collection trees and mounts one device renderer.
-- **Domain card architecture:** PASS — `PurchaseInvoiceCard` remains a thin Procurement-domain composition over shared `Card + KeyValueList + StatusBadge + Button`; business/status/navigation truth stays page-owned.
-- **Desktop:** PASS at source level — dense `DataTable` comparison/review is preserved, numbered direct jumps remain available, explicit detail action remains keyboard-accessible, and shared Arabic previous/next controls are now width-safe.
-- **Tablet:** PASS at source level — deliberate two-column cards, touch-safe controls, numbered direct jumps and current-page semantics are preserved.
-- **Mobile:** PASS at source level — one-column operational cards, full-width touch-safe detail action and logical previous/next paging are preserved; no ordinary collection overflow is introduced.
-- **Semantic status:** PASS — page-owned Purchase Invoice status mapping uses shared semantic `StatusBadge` tones rather than page-local color semantics.
-- **Arabic/RTL / long values:** PASS at source level — invoice identifiers remain explicit LTR monospace with wrapping tolerance; paginator uses logical Arabic labels/padding and no-wrap width-safe controls.
-- **Loading:** PASS at source level through one shared `ResponsiveCollection` loading boundary.
-- **Empty states:** PASS — true initial empty with create capability is distinct from filtered empty with neutral no-match guidance.
-- **Search affordance:** PASS — placeholder matches the unchanged service search contract and no supplier-name query behavior was invented.
-- **Accessibility:** PASS for changed controls at source level — native semantic buttons/nav, accessible labels/current-page state, explicit detail action, and touch targets on Tablet/Mobile.
+## Minimum required fix
+
+Complete only the already-bounded shell work on the same PR:
+
+1. Wire `PurchaseInvoiceDraftStepper` into new/editable-draft mode only while preserving exact `canProceedStep0`, `canProceedStep1`, `goNext`, backward navigation and no-direct-review behavior; remove the local mobile Stepper-label collision when the shared Stepper is used.
+2. Migrate only **بيانات الفاتورة** to shared `FormSection + FormGrid` with `3 Desktop / 2 Tablet / 1 Mobile` composition, preserving all current values, spans and conditional rendering.
+3. Compose only the existing step cancel/back/next/save surface through shared `FormActions + Button`, using RTL-native cues and preserving callbacks, disabled truth, validation and toast behavior.
+4. Replace only the local header workflow-status presentation with shared semantic `StatusBadge`, preserving existing Arabic labels/status truth and all transitions page-owned.
+5. Add focused live-page/source tests for exact reachability projection, editable-vs-readonly visibility, responsive basic-section density, action callback/disabled wiring, RTL direction and status mapping.
+
+Do not pull in supplier/product Combobox work, item tables/cards, mobile add-item sheet, receive panel, calculations/tax/discount/landed cost/WAC, receive/bill/pay/cancel workflow, validation meaning, permissions, services/query/cache, routes, database/RPC/RBAC/RLS, `DocumentActions`, Purchase Returns or deployment/main work.
+
+## Device / state / accessibility judgment
+
+- **Desktop:** adapter direction is compatible with the shared Stepper, but live 3-column basic-info and shared action composition are not yet implemented; slice gate remains incomplete.
+- **Tablet:** shared Stepper direction is deliberate, but live 2-column basic-info/action composition is not yet reviewable.
+- **Mobile:** adapter uses the shared wrap contract, but the live form still has the old local stepper and `.stepper-label` hiding rule; final mobile shell is not yet reviewable.
+- **Modes:** current source still owns `new`, `draft`, receive-panel, `bill` and `readonly` behavior. The PR has not yet demonstrated the bounded editable-only wiring in the live form.
+- **Accessibility:** adapter semantics are sound at source level; live form integration, focus/action semantics and status presentation remain pending.
+- **Semantic color/dark mode:** no new raw-color system is introduced by the adapter, but the existing local raw-color Purchase status badge remains in the live form until the bounded migration is completed.
 
 ## Test / execution evidence
 
 Evidence is **`TESTS_AUTHORED_NOT_EXECUTED`**.
 
-Focused artifacts protect:
-- Procurement card identity/financial/warehouse composition;
-- page-supplied semantic workflow status tone;
-- neutral non-interactive card anatomy and touch-safe detail callback;
-- one live responsive renderer boundary;
-- exact purchase query key, filter reset and `PAGE_SIZE = 20` contract;
-- Tablet numbered direct jumps and Mobile previous/next capability;
-- supplier/warehouse/money/status/navigation ownership;
-- initial-empty vs filtered-empty distinction;
-- corrected search placeholder matching service truth;
-- shared DataTable pagination nav/labels/`aria-current`, callback targets and disabled limits;
-- width-safe `pagination-btn-nav` ownership on previous/next only, with numeric buttons remaining compact.
+Current focused tests protect only the new Stepper adapter:
+- initial future-step locking;
+- completed-step navigation;
+- exact step-2 unlock behavior;
+- current-step `aria-current="step"` semantics;
+- shared mobile-wrap composition.
 
-No approved local runtime executed `npm test`, `npm run build` or `npm run lint`; no GitHub Actions/hosted CI or Vercel was used. No executed PASS is claimed. No real known build/type failure is currently recorded for this exact HEAD.
+No approved environment executed `npm test`, `npm run build` or `npm run lint`; no GitHub Actions/hosted CI or Vercel was used. No executed PASS is claimed. No known real build/type failure is recorded for this exact HEAD, but that does not close the implementation-completeness blocker.
 
 ## Peer-state comparison / contradiction handling
 
-The disposition above was formed independently from the exact moved-head diff/source, the unchanged Purchase service contract, existing shared V2 patterns and global pagination CSS before comparing peer state.
+The disposition above was formed from the exact PR diff, shared Stepper contract and current live `PurchaseInvoiceForm` before peer comparison.
 
-- Development-side **Design Director** is pinned to older HEAD `740f52be...`; its three material PROC001 concerns are independently verified closed on the current HEAD. Its responsive-architecture direction remains aligned.
-- Development-side **Integrator** and previous **Design QA** are pinned to `31e1dd05...`; their sole current blocker was the fixed-width Arabic paginator fit defect. The exact current HEAD closes that defect as described above, so those states are stale rather than contradictory.
-- Feature-branch **UI Production Engineer** state is fresh for the current correction and aligned: narrow shared width-safe modifier, focused coverage, no global Pagination redesign, evidence `TESTS_AUTHORED_NOT_EXECUTED`.
-- No current peer state establishes a separate material contradiction. **Blocker level: NONE.**
+- **Product Design Director:** aligned on the same narrow shell boundary and explicitly requires Stepper + basic-info FormSection/FormGrid + FormActions + shared StatusBadge while preserving all purchase-domain truth. Its earlier `no active PR` observation is stale after PR #37 opened, not contradictory.
+- **UI Production Engineer:** fresh and aligned; it explicitly marks PR #37 `IN_PROGRESS`, states `PurchaseInvoiceForm.tsx` has not yet been modified, and requests no review/merge decision yet.
+- **Development Integrator / Team Memory:** still reflect the completed PROC001 integration and next PROC002 handoff; stale for the newly opened PR but contain no conflicting product rule.
+- **Material disagreement:** none. Current blocker is implementation completeness, not cross-role contradiction.
+- **Blocker level:** `BLOCKING` for GREEN-DEV until a new stable HEAD contains the complete bounded live wiring.
 
 ## Remaining WATCH / release boundary
 
-- Generic clickable-row keyboard hardening remains broader existing `DataTable` debt; this slice retains an explicit semantic detail action, so it does not need to widen into that refactor.
-- Shared `SearchInput` clear-affordance accessibility remains pre-existing shared debt and is not introduced by PROC001.
-- Error/offline state convergence remains broader shared state-system work.
-- Full shared Pagination convergence remains future component-depth work; this PR correctly performs only the proven narrow hardening.
-- Purchase Returns and Purchase Invoice form decomposition remain separate Procurement slices.
-- Exact-head runtime/browser/build/test/lint evidence remains unclaimed and belongs to later controlled validation gates.
+- `InlineCombobox` / product chooser accessibility remains real shared debt but is explicitly out of this slice.
+- Item-entry table/cards and receive panel remain separate Procurement composition work.
+- Runtime/browser/build/test/lint evidence remains unclaimed and belongs to later controlled validation gates.
 
-## Cross-role handoff
-
-- **To:** Development Integrator, Product Design Director, UI Production Engineer
-- **What changed:** Design QA independently reviewed PR #36 exact HEAD `df3da0e6a5b00e85c8ba35f1b99481e8f0b396be` and grants `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS`. The prior shared DataTable Arabic pagination width-fit blocker is closed by the bounded `pagination-btn-nav` contract with focused source protection.
-- **Preserve:** exact purchase query/page/filter behavior, `PAGE_SIZE = 20`, service search truth (`number` + `supplier_invoice_ref`), supplier/warehouse/document/money/status/workflow/accounting/route truth, dense Desktop review, deliberate Tablet composition, Mobile operational/touch behavior, all corrected empty/search/pagination semantics, and no global Pagination redesign.
-- **Need from you:** Development Integrator should revalidate the same unchanged PR HEAD, base, mergeability, review threads, diff scope and known build-risk state, then integrate only into `design-system-v2-development` if all normal gates remain satisfied. Any moved PR HEAD requires fresh Design QA.
-- **Blocker level:** `NONE`.
-- **Baseline:** Development inspected at `195f46b612059e8e9e62806df730ef849b7d6895`; PR #36 HEAD `df3da0e6a5b00e85c8ba35f1b99481e8f0b396be`.
-- **Evidence:** `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`; runtime/release gates remain separate.
+### Cross-role handoff
+- **To:** UI Production Engineer, Development Integrator, Product Design Director
+- **What changed:** Design QA reviewed PR #37 exact HEAD `1e825c5016e40718ffa271403de86adbae070dfc`. The new Stepper adapter is directionally acceptable, but GREEN-DEV is blocked because the live Purchase Invoice shell remains unwired and three other bounded shell concerns plus live-contract tests are still absent.
+- **Preserve:** exact purchase step reachability/progression, all supplier/warehouse/product identity, pricing/tax/discount/landed-cost/WAC/accounting/payment/workflow/validation/permission/query/service/route truth, posted/read-only stability, and the Director-bounded shell-only scope.
+- **Need from you:** UI Production Engineer should complete only the bounded live shell wiring on the same PR and hand off a new stable exact HEAD with focused live tests. Integrator remains `NO_MERGE`. Any moved HEAD requires fresh QA.
+- **Blocker level:** `BLOCKING`.
+- **Baseline:** Development `e4866c9350c507bce260beb07d880fbce55718f3`; PR #37 reviewed HEAD `1e825c5016e40718ffa271403de86adbae070dfc`.
+- **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`; `SOURCE_REVIEW_PASS` withheld; runtime/release gates remain separate.
