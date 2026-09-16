@@ -29,9 +29,23 @@ describe('StockPage V2 composition contract', () => {
     expect(source).toContain('onPageChange={setPage}')
     expect(source).toContain("if (mode === 'tablet')")
     expect(source).toContain('Array.from({ length: Math.min(totalPages, 5) }')
-    expect(source).toContain("className={`pagination-btn${num === page ? ' active' : ''}`}")
+    expect(source).toContain('onClick={() => setPage(num)}')
     expect(source).toContain('disabled={page <= 1}')
     expect(source).toContain('disabled={page >= totalPages}')
+  })
+
+  it('keeps Tablet numbered pagination touch-safe, accessible and RTL-native', () => {
+    expect(source).toContain('aria-label="ترقيم صفحات أرصدة المخزون"')
+    expect(source).toContain('aria-label="الصفحة السابقة"')
+    expect(source).toContain('aria-label="الصفحة التالية"')
+    expect(source).toContain("aria-current={num === page ? 'page' : undefined}")
+    expect(source).toContain("style={{ minWidth: 'var(--ds-icon-hit-target)' }}")
+    expect(source).toContain('touchTarget')
+    expect(source).toContain('السابق')
+    expect(source).toContain('التالي')
+    expect(source).not.toContain('className="pagination-btn"')
+    expect(source).not.toContain('‹')
+    expect(source).not.toContain('›')
   })
 
   it('keeps stock health, valuation permission and local review calculations page-owned', () => {
