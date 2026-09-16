@@ -4,8 +4,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   ArrowRight, Plus, Trash2, Save, Package, Search, X,
-  CheckCircle, DollarSign, AlertTriangle, Loader2, Building2,
-  FileText, Eye, Banknote, XCircle,
+  CheckCircle, DollarSign, AlertTriangle, Loader2,
+  FileText, Eye, Banknote, XCircle, ChevronLeft, ChevronRight,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import { supabase } from '@/lib/supabase/client'
@@ -36,15 +36,30 @@ import type {
 import PageHeader from '@/components/shared/PageHeader'
 import Button from '@/components/ui/Button'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
+import FormActions from '@/components/patterns/FormActions'
+import FormGrid from '@/components/patterns/FormGrid'
+import FormSection from '@/components/patterns/FormSection'
+import StatusBadge, { type SemanticTone } from '@/components/patterns/StatusBadge'
+import PurchaseInvoiceDraftStepper from '@/components/purchases/PurchaseInvoiceDraftStepper'
 import { DocumentActions } from '@/features/output/components/DocumentActions'
 
-// ── Step definitions (new/draft mode only) ─────────────────────────
-const STEPS = [
-  { label: 'المورد واللوجستيات', icon: <Building2 size={14} /> },
-  { label: 'المنتجات المستلمة',  icon: <Package size={14} /> },
-  { label: 'التكاليف والضرائب', icon: <DollarSign size={14} /> },
-  { label: 'مراجعة وحفظ',    icon: <CheckCircle size={14} /> },
-]
+const PURCHASE_INVOICE_STEP_COUNT = 4
+
+const STATUS_LABELS: Record<PurchaseInvoiceStatus, string> = {
+  draft:     'مسودة',
+  received:  'مستلمة',
+  billed:    'معتمدة',
+  paid:      'مدفوعة',
+  cancelled: 'ملغاة',
+}
+
+const STATUS_TONES: Record<PurchaseInvoiceStatus, SemanticTone> = {
+  draft:     'neutral',
+  received:  'info',
+  billed:    'warning',
+  paid:      'success',
+  cancelled: 'danger',
+}
 
 // ─────────────────────────────────────────────
 // Small UI helpers
@@ -83,23 +98,6 @@ function SectionHead({ icon, title }: { icon: React.ReactNode; title: string }) 
       <span style={{ color: 'var(--color-primary)' }}>{icon}</span>
       {title}
     </div>
-  )
-}
-
-function StatusBadge({ status }: { status: PurchaseInvoiceStatus }) {
-  const map: Record<PurchaseInvoiceStatus, { label: string; color: string; bg: string }> = {
-    draft:     { label: 'مسودة',    color: '#92400e', bg: '#fef3c7' },
-    received:  { label: 'مستلمة',   color: '#1e40af', bg: '#dbeafe' },
-    billed:    { label: 'معتمدة',   color: '#6b21a8', bg: '#f3e8ff' },
-    paid:      { label: 'مدفوعة',   color: '#166534', bg: '#dcfce7' },
-    cancelled: { label: 'ملغاة',    color: '#991b1b', bg: '#fee2e2' },
-  }
-  const { label, color, bg } = map[status] ?? map.draft
-  return (
-    <span style={{
-      padding: '3px 12px', borderRadius: 99, fontWeight: 700,
-      fontSize: '0.78rem', color, background: bg, whiteSpace: 'nowrap',
-    }}>{label}</span>
   )
 }
 
@@ -845,7 +843,7 @@ export default function PurchaseInvoiceForm() {
   const goNext = () => {
     if (step === 0 && !canProceedStep0) { toast.error('يرجى اختيار المورد والمخزن أولاً'); return }
     if (step === 1 && !canProceedStep1) { toast.error('يرجى إضافة منتج واحد على الأقل'); return }
-    setStep(s => Math.min(s + 1, STEPS.length - 1))
+    setStep(s => Math.min(s + 1, PURCHASE_INVOICE_STEP_COUNT - 1))
   }
 
   // ─── Loading ────────────────────────────────────────────────────────
@@ -882,7 +880,7 @@ export default function PurchaseInvoiceForm() {
         }
         actions={
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            {invoice && <StatusBadge status={invoice.status} />}
+            {invoice && <StatusBadge label={STATUS_LABELS[invoice.status]} tone={STATUS_TONES[invoice.status]} />}
             {invoice && <DocumentActions kind="purchase-invoice" entityId={invoice.id} />}
             <Button variant="ghost" onClick={() => navigate('/purchases/invoices')}>
               <ArrowRight size={16} /> رجوع
@@ -893,122 +891,102 @@ export default function PurchaseInvoiceForm() {
 
       {/* ══════ STEPPER BAR (only in new/draft mode) ══════ */}
       {(mode === 'new' || (mode === 'draft' && !showReceivePanel)) && (
-        <div className="edara-card" style={{ padding: 'var(--space-3) var(--space-4)', marginBottom: 'var(--space-4)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-            {STEPS.map((s, i) => (
-              <React.Fragment key={i}>
-                <button
-                  onClick={() => { if (i < step || i === 0 || (i === 1 && canProceedStep0) || (i === 2 && canProceedStep0 && canProceedStep1)) setStep(i) }}
-                  style={{
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                    padding: '6px 12px', borderRadius: 'var(--radius-md)',
-                    border: 'none', cursor: 'pointer', flex: 1, minWidth: 0,
-                    background: i === step ? 'var(--color-primary)' : i < step ? 'var(--bg-accent)' : 'transparent',
-                    color: i === step ? '#fff' : i < step ? 'var(--color-primary)' : 'var(--text-muted)',
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontWeight: i === step ? 700 : 500, fontSize: 'var(--text-xs)', whiteSpace: 'nowrap' }}>
-                    {i < step ? <CheckCircle size={13} /> : s.icon}
-                    <span className="stepper-label">{s.label}</span>
-                  </span>
-                </button>
-                {i < STEPS.length - 1 && (
-                  <div style={{ flex: '0 0 16px', height: 2, background: i < step ? 'var(--color-primary)' : 'var(--border-color)', transition: 'background 0.3s' }} />
-                )}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
+        <PurchaseInvoiceDraftStepper
+          currentStep={step}
+          canProceedFromBasics={canProceedStep0}
+          canProceedFromItems={canProceedStep1}
+          onStepChange={setStep}
+        />
       )}
 
       {/* ══════ STEP 0 / always-visible: Supplier & Header ══════ */}
-      {(mode === 'bill' || mode === 'readonly' || step === 0 || showReceivePanel) && <section style={sCard}>
-        <SectionHead icon={<FileText size={16} />} title="بيانات الفاتورة" />
-        <div style={grid2}>
-          {/* Supplier */}
-          <div style={{ gridColumn: '1 / -1' }}>
-            <FieldLabel required>المورد</FieldLabel>
-            <InlineCombobox
-              placeholder="ابحث بالاسم أو الكود..."
-              items={supplierResults.map(s => ({ id: s.id, primary: s.name, secondary: s.code || undefined }))}
-              onSearch={searchSuppliers}
-              onSelect={item => {
-                const s = supplierResults.find(s => s.id === item.id)
-                if (s) { setSelectedSupplier(s); setSupplierId(s.id) }
-              }}
-              onClear={() => { setSelectedSupplier(null); setSupplierId('') }}
-              selected={!!selectedSupplier}
-              selectedLabel={selectedSupplier?.name}
-              disabled={readOnly || mode === 'bill'}
-            />
-          </div>
-
-          {/* Warehouse */}
-          <div>
-            <FieldLabel required>المخزن</FieldLabel>
-            <select
-              className="form-select"
-              value={warehouseId}
-              onChange={e => setWarehouseId(e.target.value)}
-              disabled={readOnly || mode === 'bill' || (mode === 'draft' && showReceivePanel)}
-            >
-              <option value="">— اختر المخزن —</option>
-              {(isAdmin ? warehouses : (myWarehouses.length > 0 ? myWarehouses : warehouses)).map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-            </select>
-          </div>
-
-          {/* Date */}
-          <div>
-            <FieldLabel>تاريخ الفاتورة</FieldLabel>
-            <input
-              className="form-input" type="date"
-              value={invoiceDate}
-              onChange={e => setInvoiceDate(e.target.value)}
-              disabled={readOnly || mode === 'bill'}
-            />
-          </div>
-
-          {/* Supplier ref */}
-          <div>
-            <FieldLabel>رقم فاتورة المورد</FieldLabel>
-            <input
-              className="form-input"
-              placeholder="اختياري — رقم فاتورة المورد الأصلية"
-              value={supplierRef}
-              onChange={e => setSupplierRef(e.target.value)}
-              disabled={readOnly || mode === 'bill'}
-            />
-          </div>
-
-          {/* Landed costs (shown in receive mode only) */}
-          {(showReceivePanel || mode === 'bill' || readOnly) && (
-            <div>
-              <FieldLabel>مصاريف الشحن / الجمارك (ج.م)</FieldLabel>
-              <input
-                className="form-input" type="number" min={0} step="0.01" inputMode="decimal"
-                value={landedCosts}
-                onChange={e => setLandedCosts(Number(e.target.value))}
-                disabled={mode !== 'draft'}
+      {(mode === 'bill' || mode === 'readonly' || step === 0 || showReceivePanel) && (
+        <FormSection title="بيانات الفاتورة" icon={<FileText size={16} />}>
+          <FormGrid columns={3}>
+            {/* Supplier */}
+            <div style={{ gridColumn: '1 / -1' }}>
+              <FieldLabel required>المورد</FieldLabel>
+              <InlineCombobox
+                placeholder="ابحث بالاسم أو الكود..."
+                items={supplierResults.map(s => ({ id: s.id, primary: s.name, secondary: s.code || undefined }))}
+                onSearch={searchSuppliers}
+                onSelect={item => {
+                  const s = supplierResults.find(s => s.id === item.id)
+                  if (s) { setSelectedSupplier(s); setSupplierId(s.id) }
+                }}
+                onClear={() => { setSelectedSupplier(null); setSupplierId('') }}
+                selected={!!selectedSupplier}
+                selectedLabel={selectedSupplier?.name}
+                disabled={readOnly || mode === 'bill'}
               />
             </div>
-          )}
 
-          {/* Notes */}
-          <div style={{ gridColumn: '1 / -1' }}>
-            <FieldLabel>ملاحظات</FieldLabel>
-            <textarea
-              className="form-input"
-              rows={2}
-              placeholder="ملاحظات اختيارية..."
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              disabled={readOnly || mode === 'bill'}
-              style={{ resize: 'vertical' }}
-            />
-          </div>
-        </div>
-      </section>}
+            {/* Warehouse */}
+            <div>
+              <FieldLabel required>المخزن</FieldLabel>
+              <select
+                className="form-select"
+                value={warehouseId}
+                onChange={e => setWarehouseId(e.target.value)}
+                disabled={readOnly || mode === 'bill' || (mode === 'draft' && showReceivePanel)}
+              >
+                <option value="">— اختر المخزن —</option>
+                {(isAdmin ? warehouses : (myWarehouses.length > 0 ? myWarehouses : warehouses)).map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+              </select>
+            </div>
+
+            {/* Date */}
+            <div>
+              <FieldLabel>تاريخ الفاتورة</FieldLabel>
+              <input
+                className="form-input" type="date"
+                value={invoiceDate}
+                onChange={e => setInvoiceDate(e.target.value)}
+                disabled={readOnly || mode === 'bill'}
+              />
+            </div>
+
+            {/* Supplier ref */}
+            <div>
+              <FieldLabel>رقم فاتورة المورد</FieldLabel>
+              <input
+                className="form-input"
+                placeholder="اختياري — رقم فاتورة المورد الأصلية"
+                value={supplierRef}
+                onChange={e => setSupplierRef(e.target.value)}
+                disabled={readOnly || mode === 'bill'}
+              />
+            </div>
+
+            {/* Landed costs (shown in receive mode only) */}
+            {(showReceivePanel || mode === 'bill' || readOnly) && (
+              <div>
+                <FieldLabel>مصاريف الشحن / الجمارك (ج.م)</FieldLabel>
+                <input
+                  className="form-input" type="number" min={0} step="0.01" inputMode="decimal"
+                  value={landedCosts}
+                  onChange={e => setLandedCosts(Number(e.target.value))}
+                  disabled={mode !== 'draft'}
+                />
+              </div>
+            )}
+
+            {/* Notes */}
+            <div style={{ gridColumn: '1 / -1' }}>
+              <FieldLabel>ملاحظات</FieldLabel>
+              <textarea
+                className="form-input"
+                rows={2}
+                placeholder="ملاحظات اختيارية..."
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                disabled={readOnly || mode === 'bill'}
+                style={{ resize: 'vertical' }}
+              />
+            </div>
+          </FormGrid>
+        </FormSection>
+      )}
 
       {/* ══════ STEP 1: Items ══════ */}
       {(mode === 'bill' || mode === 'readonly' || step === 1 || showReceivePanel) && <section style={{ ...sCard, padding: 0, overflow: 'hidden' }}>
@@ -1615,20 +1593,37 @@ export default function PurchaseInvoiceForm() {
 
       {/* ══════ Step Navigation Bar (new/draft only) ══════ */}
       {(mode === 'new' || (mode === 'draft' && !showReceivePanel)) && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 'var(--space-4)' }}>
-          <Button variant="ghost" onClick={step === 0 ? () => navigate('/purchases/invoices') : () => setStep(s => s - 1)}>
-            {step === 0 ? 'إلغاء' : <>‹ السابق</>}
+        <FormActions align="between">
+          <Button
+            type="button"
+            variant="ghost"
+            touchTarget
+            onClick={step === 0 ? () => navigate('/purchases/invoices') : () => setStep(s => s - 1)}
+          >
+            {step === 0 ? 'إلغاء' : (
+              <>
+                <ChevronRight size={16} aria-hidden="true" />
+                السابق
+              </>
+            )}
           </Button>
-          {step < STEPS.length - 1 ? (
-            <Button onClick={goNext} style={{ minWidth: 140 }}>{'التالي ›'}</Button>
+          {step < PURCHASE_INVOICE_STEP_COUNT - 1 ? (
+            <Button type="button" touchTarget onClick={goNext}>
+              التالي
+              <ChevronLeft size={16} aria-hidden="true" />
+            </Button>
           ) : (
-            <Button icon={<Save size={15} />} onClick={handleSaveDraft}
+            <Button
+              type="button"
+              icon={<Save size={15} aria-hidden="true" />}
+              touchTarget
+              onClick={handleSaveDraft}
               disabled={saving || !supplierId || !warehouseId || validDraftLines.length === 0}
-              style={{ minWidth: 160 }}>
+            >
               {saving ? 'جاري الحفظ...' : isNew ? 'حفظ المسودة' : 'تحديث المسودة'}
             </Button>
           )}
-        </div>
+        </FormActions>
       )}
 
       {/* ══════ MOBILE: Add-Item Bottom Sheet ══════ */}
@@ -1732,7 +1727,6 @@ export default function PurchaseInvoiceForm() {
         @media (max-width: 768px) {
           .desktop-only-btn { display: none !important; }
           .mobile-only-btn  { display: inline-flex !important; }
-          .stepper-label    { display: none; }
         }
         @media (min-width: 769px) {
           .mobile-only-btn  { display: none !important; }
