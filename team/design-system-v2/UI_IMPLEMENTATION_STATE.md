@@ -5,44 +5,37 @@
 - Run date: `2026-09-16`
 - Development branch: `design-system-v2-development`
 - Exact slice baseline: `8a0c34751344ca466754d06980093c501b536cd9`
-- Exact Development HEAD observed this run: `fc547af68356aaef15a8339723c3066658cbdb4a`
+- Exact Development HEAD synchronized this run: `7f0b1f6c7bcd1b3920565b260248018147cd18fd`
 - Feature branch: `ds2/sales-order-detail-v2`
 - Draft PR: `#32 — DS2-UI-005: establish Sales transaction detail V2 header pattern`
-- Exact product/test HEAD before this state write: `a3cef97879d76c6417298311ca058afc9be80fae`
+- Previously blocked PR HEAD: `3f370e02d60bbf6dfa5978c1dadc2f9454210f08`
+- Development-sync merge commit before this state write: `540a080fc5c92d635caea7023ade8a44753871b7`
 - Active slice: `DS2-UI-005 — Sales transaction detail V2`
-- Implementation disposition: `REVIEW — LIVE HERO/ACTION REGION WIRED; EXACT-HEAD QA REQUIRED`
+- Implementation disposition: `REVIEW — DEVELOPMENT HOTFIX SYNCED; FRESH EXACT-HEAD QA REQUIRED`
 - Evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 
 ## Independent implementation judgment
 
-The Design QA completeness blocker on exact old HEAD `9e9871fe03d32db45ac2e2daa71d82c749364761` was valid and narrowly actionable. The corrected shared `TransactionHeader` architecture already passed QA at source level; the remaining work was to connect the real Sales permission/status/callback truth to that surface without redesigning any other part of the transaction detail page.
+The current Design QA / Product Design Director blocker was objective and narrow: PR #32 exact HEAD `3f370e02...` still contained the pre-preview-fix versions of three files that a real owner-requested preview had already proven fail TypeScript compilation. The Sales transaction-header architecture and live action wiring themselves were accepted at source level; the correct implementation action was therefore a baseline synchronization, not a redesign or local reimplementation of the hotfix.
 
-The live hero/action region is now wired. `SalesOrderDetail.tsx` remains the sole owner of action eligibility and callbacks; it builds `AppAction[]` only after the existing page-owned permission/status predicates resolve. Shared `ActionRegistry` remains the sole placement truth, so primary workflow actions win the single Mobile visible slot, Tablet exposes at most two actions, Desktop up to four, and the rest remain available through shared overflow. The legacy local status map, sticky hero, horizontal action strip and `ActionBtn` presentation have been removed only from this region.
+This run synchronized current `design-system-v2-development` into the existing feature branch with a non-force two-parent merge commit. The merge result inherits the already-reviewed Development hotfix unchanged while preserving the DS2-UI-005 product/test blobs exactly. No Sales-detail architecture, business logic, permission gate, callback, query, service, workflow or calculation was changed.
 
 ## Material progress this run
 
-1. Re-ran the mandatory shared-memory bootstrap in the required order and inspected issue #27, Development HEAD, all open PRs targeting Development, PR #32, reviewer feedback and the exact live page source.
-2. Independently confirmed the current blocker was implementation completeness rather than a new shared-architecture defect. Design QA and Integrator states agreed: wire only the live hero/action region, preserve exact behavior, then hand off a stable head.
-3. Wired `SalesOrderDetail.tsx` to the thin `SalesOrderDetailHeader` adapter and existing shared `AppAction` contract.
-4. Preserved all seven existing action gates exactly:
-   - edit: draft + `sales.orders.update`;
-   - confirm: draft + `sales.orders.confirm`;
-   - deliver: confirmed + `sales.orders.deliver`;
-   - due-date adjustment: unchanged `customers.credit.update` + delivered/partially-delivered + credit/mixed + remaining balance + delivered-at predicate;
-   - return: delivered/completed + `sales.returns.create`;
-   - copy: `sales.orders.create`;
-   - cancel: draft/confirmed + `sales.orders.cancel`.
-5. Preserved the exact existing callbacks and routes, including the confirm action's cached/server warehouse fallback, confirm modal initialization and stock check.
-6. Preserved the legacy `actionLoading` disabled truth for confirm, deliver, due-date adjustment and cancel; edit, return and copy remain available exactly as before.
-7. Kept `DocumentActions kind="sales-order" entityId={id!}` capability behavior intact through the shared `tools` slot; output logic was not reimplemented or changed.
-8. Removed only superseded hero presentation: local `statusLabels`/`statusColors`, raw back button, horizontal action strip and local `ActionBtn` helper. Financial summary, receipts, items, notes and all modals remain untouched.
-9. Added `SalesOrderDetail.v2.test.ts` source-contract coverage for shared wiring, exact permission/status gates, callback/routes/warehouse fallback, loading guards, action hierarchy/tone and untouched business/service surfaces.
-10. Compared slice baseline to current Development: Development drift is limited to the three peer role-state files; there is no product/shared-component drift requiring merge-sync or exact-head churn.
-11. Direct sandbox GitHub access was rechecked and still fails DNS (`Could not resolve host: github.com`), so no local npm command was possible. No GitHub Actions/hosted CI or Vercel was triggered.
+1. Re-ran the mandatory shared-memory bootstrap in the required order and inspected issue #27, current Development HEAD and all open PRs targeting Development.
+2. Independently verified the peer blocker against Git history before changing the branch: Development diverged from the slice baseline in exactly three TypeScript-fix files plus peer role-state files.
+3. Confirmed there was no overlap between those Development product hotfix files and the ten DS2-UI-005 PR files.
+4. Synchronized Development HEAD `7f0b1f6c7bcd1b3920565b260248018147cd18fd` into `ds2/sales-order-detail-v2` using merge commit `540a080fc5c92d635caea7023ade8a44753871b7`; no force update was used.
+5. Inherited the already-integrated fixes unchanged in:
+   - `src/components/sales/SalesOrderFormPresentation.test.tsx`;
+   - `src/components/ui/Stepper.test.tsx`;
+   - `src/pages/customers/CustomerDetailTabs.tsx`.
+6. Preserved the existing DS2-UI-005 implementation blobs unchanged for `TransactionHeader`, the thin Sales adapter, live `SalesOrderDetail.tsx` wiring, focused tests and transaction CSS.
+7. Did not trigger GitHub Actions, hosted CI or Vercel and did not touch `main`.
 
 ## Changed-file / pattern scope
 
-PR #32 is now bounded to ten UI/test/workstream/owned-state files:
+Relative to the synchronized Development baseline, PR #32 remains bounded to the same ten UI/test/workstream/owned-state files:
 
 - `src/components/patterns/TransactionHeader.tsx`
 - `src/components/patterns/TransactionHeader.test.tsx`
@@ -55,70 +48,65 @@ PR #32 is now bounded to ten UI/test/workstream/owned-state files:
 - `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md`
 - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
-No DB, migration, RPC, service, query/cache, RBAC/RLS, route guard, business calculation, validation, workflow or deployment file is changed.
+The Development-side TypeScript hotfix is inherited baseline truth, not new PR scope.
 
 ## Preserved functional contracts
 
-The completed header wiring does not modify or relocate:
+The synchronization does not modify or relocate:
 
-- `getSalesOrder` or payment-receipt query semantics;
-- warehouse lookup, stock availability, confirmation or delivery service behavior;
-- customer-credit checks, payment-option selection, proof upload or delivery RPC arguments;
-- cancellation or due-date update service behavior;
-- remaining balance, paid ratio, credit amount, minimum-cash or any other financial calculation;
-- any permission definition or permission meaning;
-- modal workflows, toasts, invalidation keys or navigation destinations;
-- `DocumentActions` output capabilities;
-- Financial Summary, Payment Receipts, Items, Notes or any modal presentation/logic below the header.
+- Sales detail queries, services, cache semantics or RPC behavior;
+- edit / confirm / deliver / due-date / return / copy / cancel permission/status predicates;
+- confirm warehouse fallback, modal initialization or stock check;
+- `actionLoading` guards;
+- routes, invalidations, toasts or modal workflows;
+- financial calculations, receipts, items, notes or summary semantics;
+- `DocumentActions` capability behavior;
+- RBAC/RLS, permission definitions, validation semantics or workflow transitions.
 
 ## Device / state coverage
 
-- **Mobile:** the real Sales action set now flows through the shared one-visible-action contract. Confirm/Deliver are declared primary, so when eligible they occupy the visible workflow position; other eligible actions remain reachable in shared overflow. No horizontal action strip remains.
-- **Tablet:** the same real action set resolves through the canonical two-visible-action limit, with deliberate wrapped header/tools composition.
-- **Desktop:** up to four eligible workflow actions remain visible for dense review; remaining actions move to overflow rather than disappearing.
-- **Permission/status states:** all seven legacy action gates remain page-owned and are protected by focused source-contract tests.
-- **Loading/disabled:** confirm, deliver, due-date and cancel preserve `actionLoading` disablement; shared Button owns touch/focus rendering.
-- **Destructive:** cancel retains danger tone while placement remains registry-owned.
-- **RTL/accessibility:** shared logical spacing, labelled action group, native disclosure, touch targets and existing Sales status semantics are used. Customer identity remains a `CustomerLink`.
-- **Loading/not-found page states:** unchanged by this slice.
+The previously reviewed DS2-UI-005 composition remains unchanged by this sync:
+
+- **Mobile:** one visible workflow action plus shared overflow; no horizontal action strip.
+- **Tablet:** two visible workflow actions plus overflow with deliberate wrapped tools composition.
+- **Desktop:** up to four visible workflow actions before overflow for dense review.
+- **Permission/status/loading/destructive states:** remain page-owned and unchanged.
+- **RTL/accessibility:** shared logical spacing, labelled action group, native overflow disclosure, touch targets and existing Sales status semantics remain intact.
 
 ## Test / execution evidence
 
-Evidence is **`TESTS_AUTHORED_NOT_EXECUTED`**.
+Evidence remains **`TESTS_AUTHORED_NOT_EXECUTED`**.
 
-Focused authored coverage now spans:
-- shared TransactionHeader / ActionRegistry device resolution and overflow behavior;
-- thin Sales status/header adapter behavior;
-- live page use of `SalesOrderDetailHeader` and absence of the legacy hero/action presentation;
-- exact permission/status action gates;
-- exact edit/confirm/deliver/due-date/return/copy/cancel callbacks and routes;
-- confirm warehouse fallback behavior;
-- four existing `actionLoading` guards;
-- primary/destructive action semantics;
+The known stale-baseline TypeScript blocker has been removed from the candidate by inheriting the exact already-integrated Development hotfix. This run did not execute `npm test`, `npm run build` or `npm run lint`, so no local/build PASS is claimed. No hosted CI was triggered.
+
+Focused DS2-UI-005 tests remain authored for:
+- canonical `AppAction` device resolution and overflow behavior;
+- Sales status/header adapter behavior;
+- live page shared-header wiring;
+- exact permission/status action gates and callbacks/routes;
+- confirm warehouse fallback and existing loading guards;
 - preservation of query/service/financial/modal boundaries.
-
-No local checkout exists in the sandbox, and `git ls-remote https://github.com/delightfactory/new-edara-sys.git HEAD` failed this run with `Could not resolve host: github.com`. Therefore `npm test`, `npm run build` and `npm run lint` were not executed. No hosted CI was triggered and no PASS is claimed. Source/diff inspection exposes no known TypeScript/build blocker.
 
 ## Peer-state comparison / freshness
 
-- **Product Design Director:** its blocking state targets superseded head `97b3da7c...` and the parallel action taxonomy. That architecture defect was already corrected on `9e9871f...`; Design QA independently confirmed the correction. No new Director blocker exists on the wired candidate yet.
-- **Design QA:** exact-head review of `9e9871f...` explicitly passes the corrected shared architecture and blocks only because the live page was unwired. This run implements precisely that required completion step. A fresh exact-head review is now required; the old BLOCKED verdict must not be reused as approval.
-- **Development Integrator:** remains correctly `NO_MERGE` until fresh Design QA records `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` for the completed exact head.
-- **Development drift:** `8a0c347... -> fc547af...` changes only `DESIGN_DIRECTOR_STATE.md`, `DESIGN_QA_STATE.md` and `INTEGRATION_STATE.md`; no product/shared-component merge-sync is justified.
+- **Product Design Director:** current exact-head judgment on `3f370e02...` explicitly says the design/action architecture is sound and requests only synchronization of the already-integrated TypeScript hotfix. This run implements exactly that request.
+- **Design QA:** current exact-head blocker on `3f370e02...` is likewise only the stale baseline's known TypeScript failure. The failing pre-hotfix source is no longer present after this synchronization; fresh exact-head QA is now required.
+- **Development Integrator:** `NO_MERGE` remains correct until Design QA reviews the new synced HEAD and records `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS`.
+- **Team Memory / Workstream:** DS2-UI-005 remains the only active implementation slice; no second slice was started.
 
 ## Risks / deferred work
 
-- Runtime/browser evidence is still unavailable; final Mobile sticky density with real `DocumentActions` must be judged from source until an owner-requested runtime preview exists.
-- FinancialSummary, receipt, line-item, note and modal redesign remain explicitly outside this bounded concern and must not be pulled into PR #32 during review.
-- `DocumentActions` retains its current capability/output implementation rather than being redesigned as part of this slice.
-- Do not broaden or merge-sync this branch solely for governance-state drift while exact-head review is pending.
+- Runtime/browser evidence remains separate and unclaimed.
+- `DocumentActions` Mobile density/touch polish remains a WATCH item for a future owner-requested runtime visual review, not scope for this PR.
+- FinancialSummary, receipts, line items, notes and modal redesign remain explicitly outside this bounded concern.
+- Do not broaden the PR while fresh exact-head review is pending.
 
 ## Cross-role handoff
 
 - **To:** Product Design Director, Design QA, Development Integrator
-- **What changed:** PR #32 now contains the previously missing live `SalesOrderDetail.tsx` wiring. The page builds shared `AppAction[]` from the exact legacy permission/status predicates and callbacks, passes them through `SalesOrderDetailHeader` / `TransactionHeader`, preserves `actionLoading` and `DocumentActions`, and removes only the superseded local hero/status/action presentation. Focused page-level parity coverage was added.
-- **Exact product/test HEAD before this state write:** `a3cef97879d76c6417298311ca058afc9be80fae`.
-- **Preserve:** all Sales query/service/RBAC/RLS/permission/workflow/calculation/modal/output truth; corrected shared ActionRegistry architecture; bounded header-only scope.
-- **Need:** Design QA should perform a fresh exact-head source review of the completed candidate, including real action ordering/visibility across Mobile/Tablet/Desktop and exact permission/callback parity. Product Design Director should intervene only if a system-level design contradiction is found. Integrator remains `NO_MERGE` until exact-head `GREEN-DEV` + `SOURCE_REVIEW_PASS`.
+- **What changed:** PR #32 feature branch now contains current Development through merge commit `540a080fc5c92d635caea7023ade8a44753871b7`, including the exact three-file TypeScript hotfix that previously blocked the stale candidate. DS2-UI-005 product/test implementation was preserved unchanged.
+- **Preserve:** canonical `AppAction` / `resolveActionSet` architecture; exact Sales action predicates/callbacks/loading truth; `DocumentActions`; bounded header-only scope; no CI/Vercel/main or backend/business drift.
+- **Need from you:** Design QA should perform a fresh source review of the new exact PR HEAD after this state commit and may issue `GREEN-DEV` / `SOURCE_REVIEW_PASS` only if no known blocker remains. Integrator stays `NO_MERGE` until that exact-head evidence exists.
 - **Blocker level:** `NONE` from UI implementation; `AWAITING_EXACT_HEAD_REVIEW`.
+- **Baseline:** slice `8a0c34751344ca466754d06980093c501b536cd9`; synchronized Development `7f0b1f6c7bcd1b3920565b260248018147cd18fd`; merge commit before state write `540a080fc5c92d635caea7023ade8a44753871b7`.
 - **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`.
