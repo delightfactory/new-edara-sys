@@ -4,147 +4,123 @@
 
 - Review date: `2026-09-16`
 - Development branch: `design-system-v2-development`
-- Exact development HEAD independently inspected before this QA write: `7f0b1f6c7bcd1b3920565b260248018147cd18fd`
-- Active slice: `DS2-UI-005 — Sales transaction detail V2`
-- Active implementation PR: `#32 — DS2-UI-005: establish Sales transaction detail V2 header pattern`
+- Exact Development HEAD independently inspected before this QA write: `61c2fcac8152550d72f4b94be5e85fd9979dd94d`
+- Active slice: `DS2-INV-001 — Inventory list surfaces`
+- Active implementation PR: `#34 — DS2-INV-001: establish Inventory stock list V2 presentation`
 - PR base: `design-system-v2-development`
-- Exact synchronized base contained by PR: `7f0b1f6c7bcd1b3920565b260248018147cd18fd`
-- Exact PR HEAD reviewed: `de7c99cb099ac4ccff941e1eb5f2dafacebd7ca6`
+- Exact PR base SHA: `61c2fcac8152550d72f4b94be5e85fd9979dd94d`
+- Exact PR HEAD reviewed: `9f3a2c4237b233bad468fa766971558caa09a5d6`
 - Live PR state at review: `OPEN / DRAFT / mergeable`
-- Changed-file scope: 10 files (TransactionHeader pattern/tests, thin Sales adapter/tests, live SalesOrderDetail wiring/parity test, transaction CSS/import, workstream/UI implementation state)
-- Current disposition: `AGENT-REVIEW: GREEN-DEV`
-- Evidence: `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
+- Changed-file scope: 6 files (Inventory presentation/tests, live `StockPage` wiring/parity test, workstream/UI implementation state)
+- Current disposition: `AGENT-REVIEW: BLOCKED`
+- Blocking severity: `P2`
+- Evidence: `TESTS_AUTHORED_NOT_EXECUTED`; `SOURCE_REVIEW_PASS` is withheld while the Device/Accessibility gate below remains open.
 - Exact-head runtime/build evidence: not claimed.
 
 ## Independent QA disposition
 
-**GREEN-DEV for exact HEAD `de7c99cb099ac4ccff941e1eb5f2dafacebd7ca6`.**
+**BLOCKED on exact HEAD `9f3a2c4237b233bad468fa766971558caa09a5d6` for one bounded Tablet pagination defect.**
 
-The prior P1 gate on stale head `3f370e02...` is closed. PR #32 has been non-force synchronized with Development `7f0b1f6c...` and now contains the already-integrated three-file TypeScript hotfix unchanged. Direct source verification on this exact HEAD confirms:
+The Inventory collection migration is otherwise strong and directionally correct: one `ResponsiveCollection<Stock>` replaces CSS-hidden duplicate device trees; Desktop retains the dense paged `DataTable`; Tablet becomes a deliberate two-column card surface; Mobile becomes a one-column operational card surface; `StockBalanceCard` composes shared `Card + KeyValueList + StatusBadge`; stock/query/filter/permission/valuation/review calculations remain page-owned.
 
-- `SalesOrderFormPresentation.test.tsx` no longer uses the unsupported jest-dom matcher typings that failed `tsc -b`;
-- `Stepper.test.tsx` no longer uses those unsupported matcher typings;
-- `CustomerDetailTabs.tsx` keeps its conditional tab values inside the `CustomerDetailTab` union through an explicit typed item contract.
+The current candidate cannot receive GREEN-DEV yet because the newly introduced Tablet renderer copies the legacy numbered pagination markup with raw `.pagination-btn` controls. The existing shared CSS defines those controls as exactly `32px × 32px`, while Tablet touch remains first-class under the North Star. The previous/next controls also expose only `‹` / `›` as their accessible text and the active page is communicated only through the `.active` class/color rather than `aria-current="page"`.
 
-No known build/type failure remains on the candidate. The previous successful owner-requested manual preview belongs to another corrected Development/preview baseline and is not transferred or claimed as exact-head execution evidence for this PR.
-
-The bounded DS2-UI-005 implementation itself remains source-clean and system-fit: the live Sales transaction hero/action region is wired through shared `SalesOrderDetailHeader` / `TransactionHeader`, canonical `AppAction[] + useDeviceMode + resolveActionSet` owns placement, and Sales page/domain code retains all permission/status/workflow/callback truth.
+This is not a request to build a full shared Pagination system in this slice. Shared Pagination convergence may remain a later WATCH. The blocker is narrower: the new V2 Tablet composition itself must not ship with sub-touch-target, weakly-labelled page controls.
 
 ## Scope / functional isolation — PASS
 
-Compare from synchronized Development `7f0b1f6c...` to exact PR HEAD contains exactly the declared 10 files:
+The exact compare is bounded to:
 
-- `src/components/patterns/TransactionHeader.tsx`
-- `src/components/patterns/TransactionHeader.test.tsx`
-- `src/components/sales/SalesOrderDetailPresentation.tsx`
-- `src/components/sales/SalesOrderDetailPresentation.test.tsx`
-- `src/pages/sales/SalesOrderDetail.tsx`
-- `src/pages/sales/SalesOrderDetail.v2.test.ts`
-- `src/styles/design-system-v2-transaction.css`
-- `src/styles/main.css`
+- `src/components/inventory/StockListPresentation.tsx`
+- `src/components/inventory/StockListPresentation.test.tsx`
+- `src/pages/inventory/StockPage.tsx`
+- `src/pages/inventory/StockPage.v2.test.ts`
 - `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md`
 - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
-No DB, migration, RPC, service, query/cache, RBAC/RLS, permission definition, route guard, business calculation, workflow state, validation semantic, deployment, preview or `main` file is changed.
+No DB, migration, RPC, service, query/cache, RBAC/RLS, permission definition, route guard, workflow semantic, business calculation, validation, deployment, preview or `main` file is changed.
 
-## Functional parity — PASS at source level
+The existing `useStock` query shape, `pageSize: 25`, page reset, low-stock search suppression, warehouse/status filters, stock-health/minimum-stock logic, `finance.view_costs` gate, local-only review mode, Product/Warehouse links and valuation semantics remain page/domain-owned.
 
-The live page preserves the existing action truth:
+## System fit / design quality — PASS except the Tablet pagination blocker
 
-- edit: draft + `sales.orders.update`;
-- confirm: draft + `sales.orders.confirm`;
-- deliver: confirmed + `sales.orders.deliver`;
-- due-date adjustment: existing `customers.credit.update` + delivered/partially-delivered + credit/mixed + remaining balance + delivered-at predicate;
-- return: delivered/completed + `sales.returns.create`;
-- copy: `sales.orders.create`;
-- cancel: draft/confirmed + `sales.orders.cancel`.
+- `ResponsiveCollection` is the correct single device boundary; hidden duplicate interaction trees are removed.
+- `StockBalanceCard` is a thin Inventory-domain composition over established V2 surfaces rather than a new generic primitive.
+- Shared `StatusBadge` replaces local list-status Badge usage without moving stock-status truth.
+- Long product identity is allowed to wrap and logical spacing is RTL-safe.
+- Desktop information density is preserved.
+- Tablet keeps authorized weighted cost + total value and direct page-jump capability.
+- Mobile preserves its compact paged-query behavior and uses shared `Button touchTarget` for previous/next actions.
 
-Also preserved:
+`WATCH`, non-blocking: the codebase still lacks a shared numbered Pagination pattern. Do not broaden PR #34 into a global Pagination convergence task merely to clear this review; fix the current Tablet controls locally through existing shared Button/touch semantics or an equivalently bounded treatment, then leave full convergence for the dedicated component-depth slice.
 
-- confirm warehouse cache/server fallback, default warehouse assignment, modal initialization and stock check;
-- `actionLoading` disablement on confirm, deliver, due-date adjustment and cancel;
-- `DocumentActions kind="sales-order" entityId={id!}` capability behavior;
-- financial summary, receipts, items, notes, modals, queries, services, calculations, invalidation and workflow semantics outside the header.
+## Device / state review
 
-Only the superseded local status map, raw/sticky hero presentation, horizontal action strip and local `ActionBtn` helper are removed from this bounded region.
+### Desktop — PASS
 
-## System fit / design quality — PASS
+Dense `DataTable` comparison/review remains intact, including review columns, cost/value columns and numbered pagination.
 
-- `TransactionHeader` consumes the canonical shared `AppAction[]` contract; no parallel Sales/header action taxonomy remains.
-- `resolveActionSet()` stays the single device-placement truth.
-- Shared `Button` owns migrated workflow-action tone, disabled/loading mechanics and touch targets.
-- Shared Sales status semantics are reused through `SalesOrderStatusBadge`.
-- Customer identity remains a `CustomerLink`.
-- Header identity/status/action hierarchy is clearer and no page-local mini design system is introduced.
-- Arabic title/subtitle can wrap; logical CSS properties keep the composition RTL-safe.
+### Tablet — BLOCKING P2
 
-## Device / state review — PASS at source level
+Location: `src/pages/inventory/StockPage.tsx`, `renderCardPagination('tablet')`.
 
-- **Mobile:** one visible workflow action plus shared overflow; no ordinary horizontal action strip; overflow becomes in-flow and touch targets remain shared.
-- **Tablet:** up to two visible workflow actions plus overflow with deliberate wrapped tools composition.
-- **Desktop:** up to four visible workflow actions before overflow, preserving dense management/review behavior.
-- **Permission/status:** every migrated action remains page-owned and appears only under its prior condition.
-- **Disabled/loading:** prior `actionLoading` guards are preserved.
-- **Loading/not-found/page content below header:** unchanged by this slice.
-- **Destructive:** cancel remains semantically danger while placement remains registry-owned.
+The new Tablet path renders raw `.pagination-btn` elements. Current shared legacy CSS in `src/styles/components.css` defines `.pagination-btn { width: 32px; height: 32px; }`. That is below the V2 touch target expected for touch-first Tablet interaction. In addition:
 
-`WATCH` only, non-blocking: `DocumentActions` remains a legacy shared feature surface with compact/split-button styling and inline visual rules. Its capability behavior is preserved. Final Mobile sticky-header density/touch polish should be inspected in a future owner-requested runtime visual review instead of widening this PR.
+- previous/next buttons have only symbol text (`‹` / `›`) and no explicit accessible label;
+- the current page uses only `.active` styling and does not expose `aria-current="page"`;
+- the focused source test currently asserts the legacy pagination class/algorithm but does not protect Tablet touch/accessibility semantics.
 
-## Accessibility / RTL — PASS at source level
+Minimum required correction:
 
-- workflow action region is a labelled `role="group"`;
-- native `<details>/<summary>` provides keyboard-toggle disclosure without inventing incomplete menu ARIA;
-- shared buttons provide touch targets, focus behavior and accessible labels;
-- status meaning is textual, not color-only;
-- long identity content uses wrapping and logical RTL-safe spacing;
-- no unresolved inline PR review thread exists.
+1. preserve the same page/query/direct-jump behavior;
+2. make every Tablet pagination control touch-safe (44px minimum target, preferably through existing shared `Button` + `touchTarget` where practical);
+3. give previous/next controls explicit accessible names;
+4. expose the selected numeric page with `aria-current="page"` (or an equivalent complete pagination-current semantic);
+5. update the focused test artifact so the corrected Tablet interaction contract is protected rather than locking the legacy 32px markup.
+
+No query, pagination algorithm, new shared framework or business change is required.
+
+### Mobile — PASS
+
+One-column stock cards retain the existing numbered-page query semantics via shared touch-safe previous/next Buttons. No ordinary horizontal overflow is introduced.
+
+### Loading / empty / permission / review — PASS at source level
+
+- loading/empty are mutually exclusive through shared `ResponsiveCollection` / `StatePanel`;
+- cost/value card fields remain page-gated by `finance.view_costs`;
+- Tablet retains former table valuation visibility for authorized users;
+- Mobile does not gain total stock value and preserves weighted-cost visibility conditions;
+- review input is controlled, explicitly labelled and at least 44px high;
+- local review remains no-save/no-adjustment and comparison math remains page-owned.
 
 ## Test / execution evidence
 
-Focused tests are authored for:
+Focused tests exist for card identity/status hierarchy, permission-controlled valuation, controlled review input/callback, one responsive collection boundary, device renderers, query/filter/page-reset truth, pagination capability, review math, links and shared presentation wiring.
 
-- canonical `AppAction` action identity and device resolution;
-- Mobile one-visible-plus-overflow behavior;
-- hidden/device-ineligible actions;
-- tone mapping, callbacks, loading/disabled and touch-target behavior;
-- labelled action grouping and optional sticky composition;
-- Sales status/header adapter behavior;
-- live page shared-header wiring and removal of legacy header presentation;
-- exact permission/status gates and callbacks/routes;
-- confirm warehouse fallback;
-- four existing `actionLoading` guards;
-- preservation of query/service/financial/modal boundaries.
+Evidence for exact HEAD `9f3a2c4237b233bad468fa766971558caa09a5d6` is **`TESTS_AUTHORED_NOT_EXECUTED`**.
 
-Evidence for this exact PR HEAD is **`SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`**.
+No approved local runtime executed `npm test`, `npm run build` or `npm run lint`; no GitHub Actions/hosted CI or Vercel was used. No known TypeScript/build failure is visible from source review, but no executed PASS is claimed.
 
-No approved local runtime executed `npm test`, `npm run build` or `npm run lint` for `de7c99c...`. No GitHub Actions/hosted CI or scheduled Vercel was triggered or relied upon. `LOCAL_EXECUTION_PASS`, exact-head `MANUAL_PREVIEW_BUILD_PASS`, `RUNTIME_VISUAL_PASS` and release/`main` readiness are not claimed.
+The test-artifact gate remains materially incomplete only for the blocking Tablet pagination interaction contract described above.
 
-## Peer-state comparison / freshness
+## Peer-state comparison / contradiction handling
 
-After forming the exact-head judgment above, peer states were compared:
+The independent exact-head judgment above was formed from the PR diff/current product contracts first, then compared with peer state:
 
-- **Product Design Director:** its current BLOCKING state targets stale head `3f370e02...` solely for the pre-hotfix TypeScript failure. Its design/system judgment is PASS. The requested Development synchronization is now visibly satisfied, so that old blocker is consumed for `de7c99c...`.
-- **UI Production Engineer:** feature-branch state is fresh and records the non-force synchronization with Development `7f0b1f6c...`; the DS2-UI-005 implementation itself was preserved unchanged. This aligns with QA evidence.
-- **Development Integrator:** stored `NO_MERGE` state targets stale head `3f370e02...`. The previous no-merge reason is now resolved, but Integrator must revalidate this exact GREEN head before merging.
-- **Team Memory / Workstream:** remain somewhat stale on role summaries but still correctly identify DS2-UI-005 as the single active Sales-detail slice. No competing implementation PR targets Development.
-
-No current material design-system contradiction remains on exact HEAD `de7c99c...`.
+- **UI Production Engineer:** current PR-branch state is fresh and explicitly treats shared Pagination convergence as deferred while considering Tablet direct-jump parity sufficient. QA agrees that global convergence may remain deferred, but disagrees that the current Tablet controls meet the V2 interaction bar. Because the new renderer uses 32×32 touch targets and lacks explicit previous/next/current-page semantics, this is a **BLOCKING contradiction** limited to the Tablet pagination treatment.
+- **Product Design Director:** Development role state still targets the already-completed Sales slice and is stale for PR #34; no fresh Inventory-specific contradiction exists yet.
+- **Development Integrator:** current state correctly requires a fresh exact-head QA result for the Inventory slice; with this BLOCKED result it must remain `NO_MERGE`.
+- **Team Memory / Workstream:** Development-side shared memory still shows DS2-INV-001 as READY because the implementation handoff lives on the feature PR. This is expected state lag, not a product contradiction.
 
 ## Runtime / release boundary
 
-Development source gates pass only. This review does not claim:
-
-- exact-head local test/build execution;
-- exact-head manual preview build;
-- runtime visual/device acceptance;
-- release readiness;
-- permission to merge Development into `main`.
+This review does not claim exact-head local build/test execution, manual preview build, runtime visual/device acceptance, release readiness or permission to merge Development into `main`.
 
 ## Cross-role handoff
 
-- **To:** Development Integrator, Product Design Director, UI Production Engineer
-- **What changed:** Design QA re-reviewed synchronized PR #32 exact HEAD `de7c99cb099ac4ccff941e1eb5f2dafacebd7ca6`. The stale-baseline TypeScript blocker is closed on-source, all bounded Sales transaction-header gates pass, and the head now has `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` with honest `TESTS_AUTHORED_NOT_EXECUTED` evidence.
-- **Preserve:** canonical `AppAction` / `resolveActionSet` architecture; exact Sales action predicates/callbacks/loading truth; `DocumentActions` capability parity; bounded header-only scope; no CI/Vercel/main or backend/business drift.
-- **Need from you:** Development Integrator should revalidate that exact PR HEAD `de7c99c...` remains current/mergeable, that no new material review blocker or current BLOCKING contradiction exists, then perform the normal controlled integration flow if all gates still pass. Product Design Director only needs to intervene if a new system-design contradiction appears.
-- **Blocker level:** `NONE`; one non-blocking runtime `WATCH` remains for `DocumentActions` Mobile density/polish.
-- **Baseline:** Development `7f0b1f6c7bcd1b3920565b260248018147cd18fd`; reviewed PR HEAD `de7c99cb099ac4ccff941e1eb5f2dafacebd7ca6`.
+- **To:** UI Production Engineer, Product Design Director, Development Integrator
+- **What changed:** Design QA independently reviewed PR #34 exact HEAD `9f3a2c4237b233bad468fa766971558caa09a5d6`. Scope isolation, Inventory behavior parity, shared collection/card/status composition, Desktop density, Mobile behavior and state handling pass at source level. GREEN-DEV is blocked only because the new Tablet pagination uses legacy 32×32 raw buttons with weak previous/next/current-page accessibility semantics.
+- **Preserve:** exact stock/query/filter/page/valuation/permission/review/link behavior; Tablet direct page jumps; Desktop dense table; Mobile compact paging; bounded Inventory-list scope; no CI/Vercel/main/backend drift.
+- **Need from you:** UI Production Engineer should harden only the Tablet pagination interaction boundary (44px touch targets, explicit previous/next names, current-page semantic) and update the focused test, then hand off one new stable exact HEAD. Product Design Director should treat global shared Pagination convergence as optional future work, not required scope expansion. Integrator remains `NO_MERGE` until the corrected exact HEAD is re-reviewed.
+- **Blocker level:** `BLOCKING` — P2 Tablet touch/accessibility gate only.
+- **Baseline:** Development `61c2fcac8152550d72f4b94be5e85fd9979dd94d`; PR #34 HEAD `9f3a2c4237b233bad468fa766971558caa09a5d6`.
