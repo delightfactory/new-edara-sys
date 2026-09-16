@@ -4,37 +4,36 @@
 
 - Review date: `2026-09-16`
 - Development branch: `design-system-v2-development`
-- Exact Development HEAD independently inspected before review: `c2032f60d43771f65db2ff0f61dce0c056389c33`
+- Exact Development HEAD independently inspected before this review/state write: `37757610d1e41abdd08840c720e1f8e977507401`
 - Active slice: `DS2-INV-002 — Transfer/adjustment operational flows`
 - Active implementation PR: `#35 — DS2-INV-002: establish transfer flow V2 presentation`
 - PR base: `design-system-v2-development`
 - Exact PR base SHA: `27437916d5afd047e794dd5bf86a2ddbf2becbdb`
-- Exact PR HEAD reviewed and revalidated immediately before disposition: `9bc1fbc08cce438c8def27a99dde3d66a9007465`
+- Exact PR HEAD independently reviewed and revalidated immediately before disposition: `d39d39281549650ef4bbd18767b20728a01117af`
 - Live PR state at review: `OPEN / DRAFT / mergeable`
 - Changed-file scope: 6 files (transfer presentation + component test + live TransfersPage + focused live-page test + workstream/UI implementation state)
-- Current disposition: `AGENT-REVIEW: BLOCKED`
-- Blocking severity: `P2 — Desktop keyboard/accessibility completeness inside the migrated collection boundary`
-- Source evidence: `SOURCE_REVIEW_PASS` **withheld** until the Desktop collection interaction boundary is made keyboard/screen-reader complete.
+- Current disposition: `AGENT-REVIEW: GREEN-DEV`
+- Source evidence: `SOURCE_REVIEW_PASS`
 - Test evidence: `TESTS_AUTHORED_NOT_EXECUTED`
-- Exact-head runtime/build evidence: not claimed.
+- Exact-head local build/test/lint evidence: not claimed.
+- Runtime/preview/release evidence: not claimed.
 
 ## Independent QA disposition
 
-**BLOCKED on exact HEAD `9bc1fbc08cce438c8def27a99dde3d66a9007465`.**
+**GREEN-DEV on exact HEAD `d39d39281549650ef4bbd18767b20728a01117af`.**
 
-The previous implementation-completeness blocker is closed on this moved HEAD: the live `TransfersPage` now uses one `ResponsiveCollection<StockTransfer>`, the legacy CSS-switched duplicate collection trees are removed, Desktop expansion/cost review is preserved, Tablet/Mobile use the thin shared-pattern `TransferCard`, the exact page-owned workflow predicates remain centralized without changing business truth, and transfer direction is now neutral categorical metadata while workflow status owns `StatusBadge` semantics.
+The previous P2 Desktop accessibility blocker on `9bc1fbc...` is closed without widening the slice:
 
-The candidate still cannot receive GREEN-DEV because the newly migrated Desktop collection retains three keyboard/accessibility failures inside the exact region this PR now owns:
+1. Desktop expand/collapse remains the shared `Button`, now with transfer-specific accessible naming and `aria-expanded`, while preserving the exact `expandedId` toggle behavior.
+2. Desktop transfer-number detail entry is now a semantic React Router `Link`, preserving the exact `/inventory/transfers/${t.id}` route and dense monospace/LTR identity treatment.
+3. Desktop previous/next pagination preserves the exact callbacks and disabled conditions but now uses shared compact `Button` controls with explicit Arabic logical labels and accessible names instead of unlabeled physical arrows.
+4. `TransfersPage.v2.test.ts` now protects those three corrected interaction semantics in addition to the existing device/workflow/query/create/service contracts.
 
-1. The Desktop expand/collapse control is an icon-only shared `Button` with no accessible name and no `aria-expanded` state.
-2. The transfer-number detail entry is a clickable `<span onClick>` with no semantic interactive role, keyboard focus or keyboard activation path.
-3. Desktop previous/next pagination still uses raw symbol-only `.pagination-btn` buttons (`‹` / `›`) with no accessible names; the physical-arrow cues are also directionally ambiguous in an Arabic RTL product.
-
-These are not a request for speculative redesign. They are bounded interaction-quality defects in the live Desktop collection being migrated by this slice and conflict with the North Star accessibility/RTL requirements.
+No material source-level blocker remains in the assigned transfer collection/presentation slice.
 
 ## Scope / functional isolation — PASS
 
-Current PR scope is bounded to:
+Current PR scope remains bounded to:
 
 - `src/components/inventory/TransferListPresentation.tsx`
 - `src/components/inventory/TransferListPresentation.test.tsx`
@@ -45,34 +44,22 @@ Current PR scope is bounded to:
 
 No DB, migration, RPC, service, query/cache, RBAC/RLS, permission definition, route guard, stock movement, reservation, approval, validation, workflow, deployment, preview or `main` file is changed.
 
-Business/service calls remain page-owned and unchanged in meaning.
+Source review confirms business/service truth remains page/domain-owned.
 
-## System fit / design quality
+## System fit / design quality — PASS
 
-### PASS
-
-- One `ResponsiveCollection<StockTransfer>` owns device selection, so only one collection renderer is mounted.
+- One `ResponsiveCollection<StockTransfer>` owns device selection, eliminating the legacy CSS-hidden duplicate collection trees.
 - Desktop retains the dense table, row expansion, item review, notes/timestamps and `finance.view_costs` gating.
-- Tablet uses a deliberate two-column card composition rather than compressed Desktop or oversized Mobile.
+- Tablet uses a deliberate two-column `TransferCard` collection rather than inheriting compressed Desktop or oversized Mobile composition.
 - Mobile uses a one-column operational card composition with explicit touch-safe workflow/detail actions.
 - `TransferCard` remains a thin Inventory-domain composition over shared `Card + KeyValueList + Badge + StatusBadge + Button`; it does not create a page-local primitive family.
-- Direction (`إرسال` / `طلب`) is neutral generic Badge metadata; actual workflow status alone uses semantic `StatusBadge` tones.
-- Long transfer numbers are LTR and `overflowWrap: anywhere` tolerant.
-- Card actions wrap and use `touchTarget`; detail navigation is an explicit labelled Button rather than an interactive Card.
-- Arabic previous/next labels on Tablet/Mobile are RTL-native and touch-safe.
-- Shared loading/empty collection states are single-boundary rather than duplicated by device.
+- Direction (`إرسال` / `طلب`) is neutral categorical `Badge` metadata; workflow status alone owns semantic `StatusBadge` tone.
+- Card transfer identity remains LTR and long-value tolerant through `overflowWrap: anywhere`.
+- Card actions wrap and use the shared touch-target contract; detail navigation is explicit rather than turning the entire neutral Card into an interactive control.
+- Tablet/Mobile pagination uses Arabic logical previous/next labels and touch-safe shared Buttons.
+- Desktop interaction semantics are now keyboard/screen-reader complete within the migrated collection boundary.
 
-### BLOCKING P2 — Desktop interaction semantics
-
-Inside `src/pages/inventory/TransfersPage.tsx` Desktop renderer:
-
-- expand/collapse Button: icon-only without an accessible label or expanded-state semantics;
-- transfer number: clickable non-interactive `<span>` without keyboard equivalence;
-- Desktop paginator: raw symbol-only buttons without accessible names and with RTL-ambiguous physical arrows.
-
-A migrated Desktop data surface must remain dense **and** keyboard/screen-reader operable. Preserving a legacy inaccessible interaction is not sufficient once the collection itself is being rebuilt through V2.
-
-## Functional parity / state review — PASS subject to the accessibility blocker
+## Functional parity / state review — PASS
 
 Source review confirms preservation of:
 
@@ -85,27 +72,28 @@ Source review confirms preservation of:
 - in-transit + destination manager + `approved_by !== userId` -> receive;
 - pending + creator -> cancel;
 - in-transit + source manager -> cancel;
-- the same confirmation callbacks and service functions;
-- create-transfer modal, stock availability/reservation/validation behavior, route navigation and invalidation;
+- the same confirmation callbacks and inventory service functions;
+- create-transfer modal, stock availability/reservation/validation behavior, route identity and invalidation;
 - Desktop expanded item/cost/notes/shipped/received review capability;
-- loading, empty and permission-limited rendering boundaries relevant to this slice.
+- shared collection loading/empty behavior;
+- disabled pagination states and destructive confirmation flow.
 
 No known build/type failure is recorded for this exact HEAD.
 
 ## Device / accessibility judgment
 
-- **Desktop:** visual density and operational parity PASS; keyboard/accessibility BLOCKED by the three controls above.
-- **Tablet:** PASS at source level — deliberate two-column cards, three-column metadata, wrapped touch-safe actions and touch-safe Arabic previous/next pagination.
-- **Mobile:** PASS at source level — one-column operational cards, touch-safe workflow/detail actions, preserved create FAB capability and no ordinary collection overflow visible from source.
-- **RTL/Arabic:** card modes PASS; Desktop symbol paginator remains the blocking RTL ambiguity.
-- **Long values:** transfer identity explicitly tolerates long values; card metadata/actions wrap through shared/current layout contracts.
-- **Loading/empty/disabled/permission/destructive:** relevant collection/loading/empty capability and confirmation flow remain present; disabled pagination states are preserved.
+- **Desktop:** PASS at source level — dense review remains intact; expand state is named/exposed, detail navigation is semantic/keyboard-focusable, and paging controls use explicit RTL-safe logical labels.
+- **Tablet:** PASS at source level — deliberate two-column cards, three-column metadata, wrapped touch-safe actions and touch-safe previous/next paging.
+- **Mobile:** PASS at source level — one-column operational cards, touch-safe workflow/detail actions, create FAB capability and no duplicate mounted Desktop interaction tree.
+- **RTL/Arabic:** PASS at source level for the migrated boundary; physical-arrow ambiguity is removed from Desktop pagination and logical Arabic labels are used across devices.
+- **Long values:** card transfer identity explicitly tolerates long values; current shared metadata/action layouts wrap.
+- **Loading/empty/disabled/permission/destructive:** relevant states/capabilities remain present and source-preserved.
 
 ## Test / execution evidence
 
 Evidence is **`TESTS_AUTHORED_NOT_EXECUTED`**.
 
-Focused artifacts now exist for:
+Focused artifacts protect:
 
 - component-level transfer identity/context/action/detail behavior;
 - neutral direction metadata vs semantic workflow status;
@@ -113,44 +101,39 @@ Focused artifacts now exist for:
 - exact workflow predicates/callbacks;
 - query/page-size/filter-reset/previous-next semantics;
 - Desktop expanded-cost parity;
+- Desktop expand accessible name + `aria-expanded`;
+- semantic React Router `Link` detail navigation and removal of the mouse-only Desktop detail entry;
+- explicit Arabic/RTL-safe Desktop previous/next controls and accessible names;
 - create/stock/confirmation/service/route boundaries;
 - removal of CSS-hidden duplicate collection trees.
-
-Before GREEN-DEV, update the focused live-page contract test so it also protects the corrected Desktop interaction semantics (expand accessible state/name, semantic keyboard-accessible detail entry, and accessible RTL-safe previous/next controls).
 
 No approved local runtime executed `npm test`, `npm run build` or `npm run lint`; no GitHub Actions/hosted CI or Vercel was used. No executed PASS is claimed.
 
 ## Peer-state comparison / contradiction handling
 
-The independent judgment above was formed from the exact current PR diff/live product contracts first, then compared with peer state:
+The exact-head source judgment above was formed from the current PR diff, live page contracts, shared V2 patterns and review history, then checked against peer state.
 
-- **UI Production Engineer:** current feature-branch state is fresh and correctly records the previous live-wiring + semantic-direction blockers as closed. Its `NONE FROM UI IMPLEMENTATION` handoff is superseded for merge disposition by this independent QA finding; this is not a business-contract disagreement.
-- **Product Design Director:** Development-side state targets old HEAD `69a18c6...` and is stale after the moved implementation. Its two blocking conditions (live wiring and neutral direction metadata) are source-resolved on `9bc1fbc...`; fresh Director synthesis may still review this new Desktop accessibility finding.
-- **Development Integrator:** Development-side `NO_MERGE` state targets old HEAD `69a18c6...` but its gate remains authoritative. This moved HEAD has no GREEN marker and therefore stays `NO_MERGE`.
-- **Development drift:** Development advanced from the slice base only through specialist governance/state commits; no product/shared-component drift was found that invalidates this source review.
+- **UI Production Engineer:** feature-branch state on the corrected candidate is fresh and aligned; it records the same three bounded Desktop fixes and `TESTS_AUTHORED_NOT_EXECUTED`.
+- **Product Design Director:** Development-side state still targets old HEAD `69a18c6...`. Its two blocking conditions — live `ResponsiveCollection` wiring and neutral direction metadata — are source-resolved on the current candidate. The state is stale for this HEAD, not a current blocking contradiction.
+- **Development Integrator:** Development-side state targets blocked HEAD `9bc1fbc...` and correctly required the same three Desktop accessibility corrections. Those conditions are source-resolved on `d39d392...`; Integrator must still independently revalidate the exact GREEN head before merge.
+- **Previous Design QA state:** targeted `9bc1fbc...`; its P2 blocker is fully corrected on this moved HEAD and is superseded by this state.
+- **Development drift:** Development advanced from the slice base only through DS2 governance/state commits; no product/shared-component drift was found that invalidates the candidate.
 - **Review threads:** none are open.
 
-No separate current peer `BLOCKING` contradiction needs resolution beyond the QA blocker recorded here; stale old-head blockers are treated as consumed conditions, not reusable approval/block evidence for the moved HEAD.
+There is **no current BLOCKING peer contradiction** on the reviewed candidate. Stale old-head BLOCKING states are consumed conditions, not reusable merge blockers or approvals.
 
-## Minimum required fix
+## Remaining WATCH / release boundary
 
-Keep the correction entirely inside the existing Desktop collection/accessibility boundary:
-
-1. Give the expand/collapse Button a transfer-specific accessible name and expose `aria-expanded` (plus `aria-controls` only if a stable controlled-region id is introduced cleanly).
-2. Replace the clickable transfer-number `<span>` with a semantic keyboard-accessible navigation control (`Link` or equivalent existing shared semantic control) while preserving the exact detail route and dense table appearance.
-3. Keep Desktop previous/next paging behavior exactly the same, but use accessible RTL-safe controls with explicit names/text instead of unlabeled physical arrows; shared `Button` is preferred if it fits without changing density.
-4. Extend the focused `TransfersPage.v2.test.ts` contract to protect these three semantics.
-5. Do not widen into Transfer Detail, Adjustments, create-flow redesign, global Pagination convergence or any backend/business change.
-
-## Runtime / release boundary
-
-No release/runtime evidence is claimed. GitHub Actions, hosted CI and Vercel remain forbidden in the normal loop. A later GREEN-DEV would still be Development integration evidence only, not release approval.
+- Full shared Pagination convergence remains future component-depth work and is not required for this bounded previous/next flow.
+- ProductSearchCombo/create-flow modernization, Transfer Detail and Adjustments remain out of scope.
+- Exact-head runtime/browser/build/test evidence remains unclaimed.
+- `GREEN-DEV` authorizes only controlled integration into `design-system-v2-development`; it is not release approval and does not authorize preview, deployment or `main` activity.
 
 ## Cross-role handoff
 
-- **To:** UI Production Engineer, Product Design Director, Development Integrator
-- **What changed:** Design QA independently reviewed PR #35 exact HEAD `9bc1fbc08cce438c8def27a99dde3d66a9007465`. The previous live-wiring and direction/status semantic blockers are closed, but the migrated Desktop collection exposes a bounded P2 accessibility blocker: unlabeled expand/collapse state, a mouse-only clickable transfer-number span, and unlabeled RTL-ambiguous Desktop pagination arrows.
-- **Preserve:** all transfer query/page-size/permission/ownership/action/create/confirm/stock/reservation/service/validation/route truth; dense Desktop expansion/cost review; current Tablet/Mobile card composition; neutral direction metadata; workflow-status semantics; no scope expansion.
-- **Need from you:** UI Production Engineer should make only the three bounded Desktop accessibility corrections and extend the focused test, then hand off one stable moved HEAD. Product Design Director may synthesize the interaction-quality finding. Integrator remains `NO_MERGE` until the moved exact HEAD receives fresh `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` and no current BLOCKING contradiction remains.
-- **Blocker level:** `BLOCKING` — P2 Desktop keyboard/accessibility completeness.
-- **Baseline:** Development `c2032f60d43771f65db2ff0f61dce0c056389c33`; PR #35 HEAD `9bc1fbc08cce438c8def27a99dde3d66a9007465`.
+- **To:** Development Integrator, Product Design Director, UI Production Engineer
+- **What changed:** Design QA independently reviewed PR #35 exact HEAD `d39d39281549650ef4bbd18767b20728a01117af`. The prior Desktop keyboard/accessibility P2 is closed; all development source-review gates pass and the exact head now has `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` with honest `TESTS_AUTHORED_NOT_EXECUTED` evidence.
+- **Preserve:** all transfer query/page-size/permission/ownership/action/create/confirm/stock/reservation/service/validation/cost/route truth; dense Desktop expansion; current Tablet/Mobile card composition; neutral direction metadata; semantic workflow status; bounded collection-only scope.
+- **Need from you:** Development Integrator should revalidate PR #35 is still on exact HEAD `d39d39281549650ef4bbd18767b20728a01117af`, confirm no new review thread/blocking contradiction/build failure appeared, then may integrate into `design-system-v2-development` under the normal gate. No preview or `main` action.
+- **Blocker level:** `NONE`; future shared Pagination convergence remains `WATCH` only.
+- **Baseline:** Development `37757610d1e41abdd08840c720e1f8e977507401`; PR #35 HEAD `d39d39281549650ef4bbd18767b20728a01117af`.
