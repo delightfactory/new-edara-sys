@@ -4,82 +4,74 @@
 
 - Review date: `2026-09-16`
 - Development branch: `design-system-v2-development`
-- Exact Development HEAD independently re-inspected before this state write: `ebec484d3bba579258125be91b5218a176ee97eb`
-- Active slice: `DS2-PROC-001 — Purchase list surfaces`
-- Active Draft PR: `#36 — DS2-PROC-001: establish purchase invoice list V2 presentation`
+- Exact Development HEAD immediately before the integration decision: `cf8a6b7415f684f3d95f34e09f04131d39b8703d`
+- Exact Development HEAD inspected before this state write: `c2d94b8af03a9032aa3e406f7802583dcd5afcec`
+- Completed slice: `DS2-PROC-001 — Purchase list surfaces`
+- Merged PR: `#36 — DS2-PROC-001: establish purchase invoice list V2 presentation`
 - PR base: `design-system-v2-development`
-- Exact PR base SHA reported by GitHub: `20e47f4dc2d0a5efaf7a13fca13fa95ff1692df9`
-- Exact current PR HEAD independently revalidated: `31e1dd05c8fd0217ec9e0cb621d0bab3d5b9f91c`
-- Current PR metadata: `OPEN / DRAFT`; latest mergeability snapshot reports `mergeable=false`.
-- Changed-file scope: eight files — Procurement presentation + component test + shared `DataTable` + focused `DataTable` test + live `PurchaseInvoicesPage` + focused live-page test + workstream/UI-owned state.
-- Integration disposition: `NO_MERGE_BLOCKED_P2_DATATABLE_PAGINATION_VISUAL_FIT`
-- Design QA marker on exact current HEAD: `AGENT-REVIEW: BLOCKED`.
-- Source evidence: `SOURCE_REVIEW_PASS` withheld.
+- Exact reviewed PR HEAD: `df3da0e6a5b00e85c8ba35f1b99481e8f0b396be`
+- Squash merge commit: `936129c69a51237ceeefc7880d9735aa5f584879`
+- Integration disposition: `MERGED_GREEN_DEV`
+- Design QA marker on exact reviewed HEAD: `AGENT-REVIEW: GREEN-DEV`.
+- Source evidence: `SOURCE_REVIEW_PASS`.
 - Test evidence: `TESTS_AUTHORED_NOT_EXECUTED`.
 - Runtime/preview/release evidence: not claimed.
+- Next single READY slice: `DS2-PROC-002 — Purchase Invoice form decomposition`.
 
 ## Integrator decision
 
-**NO MERGE.** PR #36 does not satisfy the Development integration gate on exact HEAD `31e1dd05c8fd0217ec9e0cb621d0bab3d5b9f91c`.
+**MERGED.** PR #36 satisfied the Development integration gate on unchanged exact HEAD `df3da0e6a5b00e85c8ba35f1b99481e8f0b396be` and was squash-merged into `design-system-v2-development` as `936129c69a51237ceeefc7880d9735aa5f584879` with expected-head protection.
 
-Gate revalidation:
-- base is exactly `design-system-v2-development`;
-- exact current PR HEAD is `31e1dd05c8fd0217ec9e0cb621d0bab3d5b9f91c`;
-- exact-head Design QA records `AGENT-REVIEW: BLOCKED`, not `AGENT-REVIEW: GREEN-DEV`;
-- `SOURCE_REVIEW_PASS` is explicitly withheld while the current P2 blocker remains;
-- evidence is honestly labeled `TESTS_AUTHORED_NOT_EXECUTED`;
-- no known build/type failure is currently recorded for this exact HEAD;
-- no inline review thread is open;
-- changed-file scope is UI/test/governance only and contains no DB/migration/RPC/service/query-cache/RBAC/RLS/permission/route-guard/accounting/workflow/deployment enabling change;
-- the three previous Product Design/QA corrections on HEAD `740f52be...` are materially closed on the current HEAD: pagination semantics/RTL naming + `aria-current`, initial-vs-filtered empty-state distinction, and search copy matching the unchanged service truth;
-- Development-side Product Design and older Integrator records pinned to `740f52be...` are stale for the moved candidate and are not reused as approval evidence;
-- the current exact-head QA blocker independently prevents integration regardless of mergeability state.
+Gate revalidation immediately before merge:
+- base was exactly `design-system-v2-development`;
+- exact current PR HEAD was unchanged at `df3da0e6a5b00e85c8ba35f1b99481e8f0b396be`;
+- exact-head Design QA recorded `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS`;
+- evidence was honestly labeled `TESTS_AUTHORED_NOT_EXECUTED`; no build/test/lint/runtime/preview execution was claimed;
+- no known build/type failure was outstanding for the reviewed candidate;
+- no inline review thread was open;
+- Product Design Director independently cleared the same exact HEAD with no current Design-System blocker;
+- the previous Integrator `BLOCKING` record on `31e1dd05...` was stale because its sole paginator-fit blocker was independently verified closed on `df3da0e6...`;
+- Development drift from the PR base to the pre-merge Development HEAD was governance-only (`DESIGN_DIRECTOR_STATE.md`, `DESIGN_QA_STATE.md`, `INTEGRATION_STATE.md`) and did not invalidate product/shared-component review;
+- changed-file scope was eight presentation/test/workstream/UI-state files only, with no DB/migration/RPC/service/query-cache/RBAC/RLS/permission/route-guard/accounting/workflow/deployment enabling change;
+- the PR introduced no workflow/deployment configuration change and did not touch `main`.
 
-## Current blocker
+## Integrated system result
 
-### P2 — Shared DataTable previous/next labels do not fit the existing fixed-width pagination contract
-
-The current `DataTable.tsx` correctly replaces physical arrows with visible Arabic `السابق` / `التالي`, adds explicit accessible names, a labeled pagination `nav`, numeric page labels and `aria-current="page"` while preserving the existing page-window algorithm and callbacks.
-
-However, those previous/next buttons still use the legacy shared `.pagination-btn` class, while `src/styles/components.css` fixes that class at `width: 32px; height: 32px`. The visible Arabic words therefore have ordinary overflow/clipping risk, and because this is the shared `DataTable` contract the defect can propagate to every consumer.
-
-Required correction is narrow:
-- preserve the exact page-window algorithm, callback targets, disabled boundaries, pagination `nav` label, accessible names and `aria-current` semantics;
-- keep numeric page buttons compact;
-- make only previous/next controls width-safe through the existing shared pagination contract, for example with a bounded navigation-button modifier using auto/suitable minimum width and inline padding;
-- add focused source/style protection where practical, or record an explicit narrow testability rationale if CSS geometry cannot be measured in the available test environment;
-- do not open a global Pagination redesign;
-- do not change Procurement query/service/RBAC/RLS/route/accounting/workflow/validation behavior.
-
-## Scope / system-fit position
-
-Everything outside the current paginator-fit blocker is source-level acceptable for the declared representative slice:
-- one `ResponsiveCollection<PurchaseInvoice>` boundary replaces duplicate mounted device trees;
-- Desktop preserves dense `DataTable` comparison/review;
-- Tablet uses deliberate two-column touch-safe cards with numbered direct jumps;
-- Mobile uses one-column operational cards with logical previous/next paging;
-- `PurchaseInvoiceCard` stays a thin Procurement-domain composition over shared `Card + KeyValueList + StatusBadge + Button`;
+`DS2-PROC-001` now establishes the first representative Procurement collection migration:
+- `PurchaseInvoicesPage` uses one `ResponsiveCollection<PurchaseInvoice>` boundary instead of duplicate mounted Desktop/Mobile trees;
+- Desktop preserves dense `DataTable` comparison/review and numbered direct jumps;
+- Tablet uses deliberate two-column `PurchaseInvoiceCard` composition with numbered direct jumps;
+- Mobile uses one-column operational cards with touch-safe logical previous/next paging;
+- `PurchaseInvoiceCard` remains a thin Procurement composition over shared `Card + KeyValueList + StatusBadge + Button`;
 - true initial-empty and filtered-empty states are distinct;
-- search copy matches the unchanged service truth (`number` + `supplier_invoice_ref`);
-- supplier, warehouse, document, financial, workflow-status, route and service/accounting truth remain page/domain-owned;
-- no forbidden backend/business/deployment scope is present.
+- search presentation now matches the unchanged service search truth (`number` + `supplier_invoice_ref`);
+- shared `DataTable` pagination has a labeled navigation boundary, logical Arabic previous/next controls, accessible names, numeric `aria-current="page"`, and a bounded width-safe previous/next modifier while numeric controls remain compact;
+- purchase query/page/filter/reset, supplier/warehouse/document identity, total/paid values, status/workflow/accounting/permission/service and route truth remain page/domain/service-owned and unchanged.
 
-This partial pass is not merge approval and must not be promoted to `SOURCE_REVIEW_PASS` until a moved exact HEAD closes the shared paginator-fit defect and receives fresh independent QA.
+The narrow `DataTable` correction is a reusable pattern hardening proven by a live surface; it is **not** a declaration that global Pagination convergence is complete.
 
 ## Remaining WATCH
 
-- Generic `DataTable` clickable-row keyboard semantics remain broader existing DataTable debt; this page retains an explicit semantic detail action, so that debt does not widen PROC001 now.
-- Shared `SearchInput` clear-affordance accessibility and error/offline-state convergence remain broader system debt and should not widen this slice.
-- Exact-head runtime/browser/build/test/lint evidence remains unclaimed.
-- Purchase Returns, Purchase Invoice form decomposition and a broad/global Pagination abstraction remain out of scope.
-- Hosted CI absence is expected under quota protection and is not itself a blocker.
+- Exact-head runtime/browser/build/test/lint evidence remains unclaimed and belongs to later controlled validation gates.
+- Generic `DataTable` clickable-row keyboard semantics remain broader shared debt; PROC001 retained an explicit semantic detail action.
+- Shared `SearchInput` clear-affordance accessibility remains pre-existing debt.
+- Error/offline state convergence and full shared Pagination convergence remain future component-depth work.
+- Purchase Returns remain a separate Procurement concern.
+- `DS2-PROC-002` is a higher-risk functional-isolation boundary: pricing, quantity, discounts, taxes, totals, payments, accounting, validation and workflow truth must remain untouched by presentation decomposition.
+- Hosted CI absence is expected under quota protection and is not a blocker.
 
-## Cross-role handoff
+## Queue disposition
 
-- **To:** UI Production Engineer, Design QA, Product Design Director
-- **What changed:** PR #36 moved to exact HEAD `31e1dd05c8fd0217ec9e0cb621d0bab3d5b9f91c`; the prior three PROC001 corrections are closed in source, but exact-head QA found one new bounded P2 shared-system defect: Arabic `السابق / التالي` labels are rendered inside the legacy fixed `32px × 32px` `.pagination-btn` contract. Integration remains `NO_MERGE`.
-- **Preserve:** all corrected pagination semantics, exact page-window/query/filter behavior, `PAGE_SIZE = 20`, actual search service semantics (`number` + `supplier_invoice_ref`), supplier/warehouse/document identity, total/paid values, workflow/status/accounting/service truth, create/detail routes, Desktop density, Tablet/Mobile composition, one active slice only, and no CI/Vercel/main activity.
-- **Need from you:** UI Production Engineer should make only the bounded width-safe shared previous/next pagination correction plus focused protection/rationale on PR #36, then hand off one stable moved exact HEAD. Design QA must independently re-review that moved HEAD and grant `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` only if the blocker is closed. Development Integrator should then revalidate exact head/base/mergeability/threads/diff/build risk again.
-- **Blocker level:** `BLOCKING` / P2.
-- **Baseline:** Development `ebec484d3bba579258125be91b5218a176ee97eb`; PR #36 HEAD `31e1dd05c8fd0217ec9e0cb621d0bab3d5b9f91c`.
-- **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`; `SOURCE_REVIEW_PASS` withheld.
+- `DS2-PROC-001 — Purchase list surfaces`: `DONE`.
+- Exactly one next dependency-safe slice is `READY`: `DS2-PROC-002 — Purchase Invoice form decomposition`.
+- All later roadmap slices remain `BACKLOG`.
+- `DECISION_LOG.md` is unchanged because this integration did not create or supersede a durable rule.
+
+### Cross-role handoff
+- **To:** Product Design Director, UI Production Engineer, Design QA
+- **What changed:** PR #36 exact reviewed HEAD `df3da0e6a5b00e85c8ba35f1b99481e8f0b396be` was squash-merged as `936129c69a51237ceeefc7880d9735aa5f584879`; PROC001 is DONE and PROC002 is now the single READY slice.
+- **Preserve:** all Procurement query/service/accounting/workflow/permission/validation/route truth; the integrated ResponsiveCollection/card/state grammar; the narrow shared DataTable Arabic/ARIA/width-safe paginator contract; one active slice only; no Actions/Vercel/main activity.
+- **Need from you:** Product Design Director should inspect the live Purchase Invoice form from the exact latest Development baseline and bound the smallest dependency-safe presentation-only concern for PROC002. UI Production Engineer should take only that bounded concern. Design QA should independently review the next stable exact PR HEAD. Integrator should no-op until a future candidate receives fresh `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` and all normal gates pass.
+- **Blocker level:** `NONE`.
+- **Baseline:** integrated product merge `936129c69a51237ceeefc7880d9735aa5f584879`; Development inspected before this state write `c2d94b8af03a9032aa3e406f7802583dcd5afcec`.
+- **Evidence:** `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`; runtime/release gates remain separate.
