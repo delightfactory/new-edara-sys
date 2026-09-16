@@ -8,7 +8,7 @@
 - Exact development HEAD observed before branch creation: `8a0c34751344ca466754d06980093c501b536cd9`
 - Feature branch: `ds2/sales-order-detail-v2`
 - Draft PR: `#32 — DS2-UI-005: establish Sales transaction detail V2 header pattern`
-- Exact PR HEAD before this state write: `1a1a6314ced4da19adaf91627dde42f12424e41e`
+- Exact implementation/workstream HEAD before this state write: `ea747b60eb21d33eb75a225b09b73845d07772a7`
 - Active slice: `DS2-UI-005 — Sales transaction detail V2`
 - Implementation disposition: `IN_PROGRESS — TRANSACTION HEADER FOUNDATION BUILT, LIVE PAGE WIRING NEXT`
 - Evidence: `TESTS_AUTHORED_NOT_EXECUTED`
@@ -25,12 +25,13 @@ The first implementation therefore strengthens the shared V2 layer before touchi
 2. Confirmed PR #31 / DS2-UI-004 was already integrated and that no implementation PR was open; took only the single READY `DS2-UI-005` slice from exact Development HEAD `8a0c347...`.
 3. Inspected the live Sales Order detail source and isolated the header/action region as the first bounded presentation concern; financial summary, receipts, items and modals remain outside this concern.
 4. Added shared `TransactionHeader` with semantic identity/status slots plus page-owned primary, secondary, destructive and utility action descriptors rendered through shared `Button`.
-5. Added responsive V2 transaction CSS: dense Desktop composition, deliberate Tablet wrapping, Mobile-first one-column primary action plus bounded secondary/destructive grids, RTL-safe logical spacing, long-text wrapping and optional sticky behavior.
+5. Added responsive V2 transaction CSS: dense Desktop composition, deliberate Tablet wrapping, Mobile-first one-column primary action plus bounded secondary/destructive grids, RTL-safe logical spacing, long-text wrapping and optional sticky behavior aligned with the live detail header's `top: 0` contract.
 6. Preserved accessible action names while shared Button is in loading state; all header actions opt into the V2 touch target.
 7. Added thin `SalesOrderDetailHeader` adapter that maps Sales identity and reuses the existing `SalesOrderStatusBadge` semantics without taking ownership of action availability.
 8. Authored focused Testing Library/Vitest coverage for heading/status identity, callbacks, primary/secondary/danger variants, touch targets, disabled/loading behavior, sticky composition, Sales status tone reuse and no-action behavior.
 9. Marked DS2-UI-005 `IN_PROGRESS` in the workstream and opened Draft PR #32 targeting only `design-system-v2-development`.
-10. No GitHub Actions, hosted CI, Vercel deployment or `main` activity occurred.
+10. Re-checked the PR diff and removed two accidental pre-existing workstream wording drifts so the coordination diff remains scoped to DS2-UI-005 only.
+11. No GitHub Actions, hosted CI, Vercel deployment or `main` activity occurred.
 
 ## Changed-file / pattern scope
 
@@ -103,7 +104,7 @@ The sandbox has no project checkout and direct GitHub DNS resolution fails (`Cou
 
 - **To:** Product Design Director, Design QA, Development Integrator
 - **What changed:** DS2-UI-005 is now active on Draft PR #32. A shared `TransactionHeader` and thin Sales detail adapter establish the first reusable transaction-detail grammar with semantic action hierarchy and deliberate Mobile/Tablet/Desktop behavior; live Sales Order detail wiring is intentionally the next step on the same PR.
-- **Baseline:** exact Development SHA `8a0c34751344ca466754d06980093c501b536cd9`; PR HEAD before this state write `1a1a6314ced4da19adaf91627dde42f12424e41e`.
+- **Baseline:** exact Development SHA `8a0c34751344ca466754d06980093c501b536cd9`; implementation/workstream HEAD before this state write `ea747b60eb21d33eb75a225b09b73845d07772a7`.
 - **Preserve:** every Sales business/query/cache/RBAC/RLS/permission/calculation/validation/route/workflow/modal/service truth and existing `DocumentActions` behavior.
 - **Need:** no review verdict yet. UI Production Engineer should next wire only the existing live hero/action region to the new pattern. Product Design Director may assess the shared header direction without expanding scope; Design QA should wait for a stable exact head after live wiring before GREEN-DEV review.
 - **Blocker level:** `NONE` from UI implementation; slice remains `IN_PROGRESS`.
