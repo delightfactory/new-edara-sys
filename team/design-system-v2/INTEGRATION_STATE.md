@@ -2,76 +2,71 @@
 
 ## Reviewed baseline
 
-- Review date: `2026-09-16`
+- Review date: `2026-09-17`
 - Development branch: `design-system-v2-development`
-- Exact Development HEAD immediately before the integration decision: `cf8a6b7415f684f3d95f34e09f04131d39b8703d`
-- Exact Development HEAD inspected before this state write: `c2d94b8af03a9032aa3e406f7802583dcd5afcec`
-- Completed slice: `DS2-PROC-001 — Purchase list surfaces`
-- Merged PR: `#36 — DS2-PROC-001: establish purchase invoice list V2 presentation`
+- Exact Development HEAD immediately before this integration decision: `abaa18e72982fc6ef19b095881ddccafd90041c1`
+- Active slice: `DS2-PROC-002 — Purchase Invoice form decomposition`
+- Active PR: `#37 — DS2-PROC-002: establish purchase invoice form V2 shell`
 - PR base: `design-system-v2-development`
-- Exact reviewed PR HEAD: `df3da0e6a5b00e85c8ba35f1b99481e8f0b396be`
-- Squash merge commit: `936129c69a51237ceeefc7880d9735aa5f584879`
-- Integration disposition: `MERGED_GREEN_DEV`
-- Design QA marker on exact reviewed HEAD: `AGENT-REVIEW: GREEN-DEV`.
-- Source evidence: `SOURCE_REVIEW_PASS`.
+- PR base SHA: `e4866c9350c507bce260beb07d880fbce55718f3`
+- Exact current PR HEAD inspected: `1e825c5016e40718ffa271403de86adbae070dfc`
+- PR state at decision: `OPEN / DRAFT / mergeable`
+- Current changed-file scope: 4 files — Stepper adapter, focused adapter test, Workstream state, UI Implementation state.
+- Integration disposition: `NO_MERGE_BLOCKED_PROC002_INCOMPLETE_LIVE_SHELL`
+- Design QA marker on exact current HEAD: `AGENT-REVIEW: BLOCKED`.
+- Source evidence: `SOURCE_REVIEW_PASS` withheld.
 - Test evidence: `TESTS_AUTHORED_NOT_EXECUTED`.
 - Runtime/preview/release evidence: not claimed.
-- Next single READY slice: `DS2-PROC-002 — Purchase Invoice form decomposition`.
 
 ## Integrator decision
 
-**MERGED.** PR #36 satisfied the Development integration gate on unchanged exact HEAD `df3da0e6a5b00e85c8ba35f1b99481e8f0b396be` and was squash-merged into `design-system-v2-development` as `936129c69a51237ceeefc7880d9735aa5f584879` with expected-head protection.
+**NO MERGE.** PR #37 does not satisfy the Development integration gate on exact current HEAD `1e825c5016e40718ffa271403de86adbae070dfc`.
 
-Gate revalidation immediately before merge:
-- base was exactly `design-system-v2-development`;
-- exact current PR HEAD was unchanged at `df3da0e6a5b00e85c8ba35f1b99481e8f0b396be`;
-- exact-head Design QA recorded `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS`;
-- evidence was honestly labeled `TESTS_AUTHORED_NOT_EXECUTED`; no build/test/lint/runtime/preview execution was claimed;
-- no known build/type failure was outstanding for the reviewed candidate;
-- no inline review thread was open;
-- Product Design Director independently cleared the same exact HEAD with no current Design-System blocker;
-- the previous Integrator `BLOCKING` record on `31e1dd05...` was stale because its sole paginator-fit blocker was independently verified closed on `df3da0e6...`;
-- Development drift from the PR base to the pre-merge Development HEAD was governance-only (`DESIGN_DIRECTOR_STATE.md`, `DESIGN_QA_STATE.md`, `INTEGRATION_STATE.md`) and did not invalidate product/shared-component review;
-- changed-file scope was eight presentation/test/workstream/UI-state files only, with no DB/migration/RPC/service/query-cache/RBAC/RLS/permission/route-guard/accounting/workflow/deployment enabling change;
-- the PR introduced no workflow/deployment configuration change and did not touch `main`.
+The decisive blocker is implementation completeness / live-system fit, not forbidden functional scope. The exact current PR still contains only:
+- `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md`
+- `src/components/purchases/PurchaseInvoiceDraftStepper.test.tsx`
+- `src/components/purchases/PurchaseInvoiceDraftStepper.tsx`
+- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
-## Integrated system result
+`src/pages/purchases/PurchaseInvoiceForm.tsx` is not in the diff, so the new adapter is not yet wired into the live Purchase Invoice surface and the other Product Design Director-bounded shell concerns are not implemented there yet.
 
-`DS2-PROC-001` now establishes the first representative Procurement collection migration:
-- `PurchaseInvoicesPage` uses one `ResponsiveCollection<PurchaseInvoice>` boundary instead of duplicate mounted Desktop/Mobile trees;
-- Desktop preserves dense `DataTable` comparison/review and numbered direct jumps;
-- Tablet uses deliberate two-column `PurchaseInvoiceCard` composition with numbered direct jumps;
-- Mobile uses one-column operational cards with touch-safe logical previous/next paging;
-- `PurchaseInvoiceCard` remains a thin Procurement composition over shared `Card + KeyValueList + StatusBadge + Button`;
-- true initial-empty and filtered-empty states are distinct;
-- search presentation now matches the unchanged service search truth (`number` + `supplier_invoice_ref`);
-- shared `DataTable` pagination has a labeled navigation boundary, logical Arabic previous/next controls, accessible names, numeric `aria-current="page"`, and a bounded width-safe previous/next modifier while numeric controls remain compact;
-- purchase query/page/filter/reset, supplier/warehouse/document identity, total/paid values, status/workflow/accounting/permission/service and route truth remain page/domain/service-owned and unchanged.
+## Gate revalidation
 
-The narrow `DataTable` correction is a reusable pattern hardening proven by a live surface; it is **not** a declaration that global Pagination convergence is complete.
+- **Base gate:** PASS — base is exactly `design-system-v2-development`.
+- **Exact-head gate:** FAIL — exact current HEAD has `AGENT-REVIEW: BLOCKED`, not `AGENT-REVIEW: GREEN-DEV`.
+- **Source-review gate:** FAIL — `SOURCE_REVIEW_PASS` is explicitly withheld on this HEAD.
+- **Test-evidence honesty:** PASS — evidence is correctly labeled `TESTS_AUTHORED_NOT_EXECUTED`; no execution PASS is claimed.
+- **Known build/type failure gate:** no known real build/type failure is recorded for this HEAD, but this cannot override the active QA blocker.
+- **Review-thread gate:** PASS — no inline review thread is open.
+- **Cross-role contradiction gate:** BLOCKED — Design QA records a current `BLOCKING` handoff for this exact HEAD. Product Design Director and UI Production Engineer are directionally aligned on the same bounded shell scope; there is no design disagreement to synthesize.
+- **Functional isolation gate:** PASS for the current diff — no DB/migration/RPC/service/query/cache/RBAC/RLS/permission/accounting/workflow/validation/route/deployment file is present.
+- **Deployment/workflow gate:** PASS — no workflow/deployment enabling change is present; no Actions/Vercel activity is required or permitted.
 
-## Remaining WATCH
+## Current blocker
 
-- Exact-head runtime/browser/build/test/lint evidence remains unclaimed and belongs to later controlled validation gates.
-- Generic `DataTable` clickable-row keyboard semantics remain broader shared debt; PROC001 retained an explicit semantic detail action.
-- Shared `SearchInput` clear-affordance accessibility remains pre-existing debt.
-- Error/offline state convergence and full shared Pagination convergence remain future component-depth work.
-- Purchase Returns remain a separate Procurement concern.
-- `DS2-PROC-002` is a higher-risk functional-isolation boundary: pricing, quantity, discounts, taxes, totals, payments, accounting, validation and workflow truth must remain untouched by presentation decomposition.
-- Hosted CI absence is expected under quota protection and is not a blocker.
+The already-bounded PROC002 shell must be completed on the same PR before integration review can proceed:
 
-## Queue disposition
+1. Wire `PurchaseInvoiceDraftStepper` into the live new/editable-draft Purchase Invoice surface while preserving exact page-owned reachability/progression and no-direct-review behavior.
+2. Migrate only **بيانات الفاتورة** to shared `FormSection + FormGrid` with the approved `3 Desktop / 2 Tablet / 1 Mobile` density while preserving current values/spans/conditional rendering.
+3. Compose only the existing cancel/back/next/save surface through shared `FormActions + Button`, preserving callbacks, validation and disabled truth with RTL-native direction cues.
+4. Replace only the local workflow-status presentation with shared semantic `StatusBadge`, preserving status truth and all transitions page-owned.
+5. Add focused live-page/source tests for reachability, editable-vs-readonly visibility, responsive section density, action wiring/disabled behavior, RTL direction and status mapping.
 
-- `DS2-PROC-001 — Purchase list surfaces`: `DONE`.
-- Exactly one next dependency-safe slice is `READY`: `DS2-PROC-002 — Purchase Invoice form decomposition`.
-- All later roadmap slices remain `BACKLOG`.
-- `DECISION_LOG.md` is unchanged because this integration did not create or supersede a durable rule.
+Do not widen into supplier/product Combobox work, item tables/cards, mobile add-item sheet, receive panel, calculations/tax/discount/landed-cost/WAC, receive/bill/pay/cancel workflow, validation meaning, permissions, services/query/cache, routes, DB/RPC/RBAC/RLS, `DocumentActions`, Purchase Returns, deployment or `main`.
+
+## Queue / coordination disposition
+
+- `DS2-PROC-001 — Purchase list surfaces`: remains `DONE`.
+- `DS2-PROC-002 — Purchase Invoice form decomposition`: remains the single active `IN_PROGRESS` slice on PR #37.
+- No later roadmap slice may advance while this blocker is active.
+- No issue #27 comment is added by Integrator this run because Design QA already recorded the same material blocker there and UI implementation is progressing normally.
+- `TEAM_MEMORY.md` and `DECISION_LOG.md` are unchanged because there was no successful merge and no durable rule changed.
 
 ### Cross-role handoff
-- **To:** Product Design Director, UI Production Engineer, Design QA
-- **What changed:** PR #36 exact reviewed HEAD `df3da0e6a5b00e85c8ba35f1b99481e8f0b396be` was squash-merged as `936129c69a51237ceeefc7880d9735aa5f584879`; PROC001 is DONE and PROC002 is now the single READY slice.
-- **Preserve:** all Procurement query/service/accounting/workflow/permission/validation/route truth; the integrated ResponsiveCollection/card/state grammar; the narrow shared DataTable Arabic/ARIA/width-safe paginator contract; one active slice only; no Actions/Vercel/main activity.
-- **Need from you:** Product Design Director should inspect the live Purchase Invoice form from the exact latest Development baseline and bound the smallest dependency-safe presentation-only concern for PROC002. UI Production Engineer should take only that bounded concern. Design QA should independently review the next stable exact PR HEAD. Integrator should no-op until a future candidate receives fresh `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` and all normal gates pass.
-- **Blocker level:** `NONE`.
-- **Baseline:** integrated product merge `936129c69a51237ceeefc7880d9735aa5f584879`; Development inspected before this state write `c2d94b8af03a9032aa3e406f7802583dcd5afcec`.
-- **Evidence:** `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`; runtime/release gates remain separate.
+- **To:** UI Production Engineer, Design QA, Product Design Director
+- **What changed:** Integration disposition is now explicitly `NO_MERGE_BLOCKED_PROC002_INCOMPLETE_LIVE_SHELL` for PR #37 exact HEAD `1e825c5016e40718ffa271403de86adbae070dfc`; current adapter direction is acceptable, but the bounded live form shell is incomplete and `SOURCE_REVIEW_PASS` remains withheld.
+- **Preserve:** exact Purchase Invoice step progression/reachability, all supplier/warehouse/product identity, pricing/tax/discount/landed-cost/WAC/accounting/payment/workflow/validation/permission/query/service/route truth, posted/read-only stability, Director-bounded shell-only scope, one active PR, and no Actions/Vercel/main activity.
+- **Need from you:** UI Production Engineer should complete only the already-bounded live shell wiring and tests on the same PR, then hand off a new stable exact HEAD. Design QA must independently review that moved HEAD and issue fresh `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` before Integrator can reconsider merge.
+- **Blocker level:** `BLOCKING`.
+- **Baseline:** Development `abaa18e72982fc6ef19b095881ddccafd90041c1`; PR #37 exact current HEAD `1e825c5016e40718ffa271403de86adbae070dfc`.
+- **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`; `SOURCE_REVIEW_PASS` withheld; runtime/release gates remain separate.
