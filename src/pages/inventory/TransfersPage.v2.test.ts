@@ -57,6 +57,20 @@ describe('TransfersPage V2 composition contract', () => {
     expect(source).toContain('تاريخ الاستلام: {formatDateShort(t.received_at)}')
   })
 
+  it('makes the migrated Desktop collection keyboard, screen-reader and RTL complete', () => {
+    expect(source).toContain("import { Link, useNavigate } from 'react-router-dom'")
+    expect(source).toContain("aria-label={`${expandedId === t.id ? 'طي' : 'عرض'} بنود التحويل ${t.number}`}")
+    expect(source).toContain('aria-expanded={expandedId === t.id}')
+    expect(source).toContain('to={`/inventory/transfers/${t.id}`}')
+    expect(source).toContain('aria-label={`عرض تفاصيل التحويل ${t.number}`}')
+    expect(source).not.toContain("onClick={() => navigate(`/inventory/transfers/${t.id}`)}")
+    expect(source).toContain('aria-label="الصفحة السابقة"')
+    expect(source).toContain('aria-label="الصفحة التالية"')
+    expect(source).not.toContain('className="pagination-btn"')
+    expect(source).not.toContain('>‹</button>')
+    expect(source).not.toContain('>›</button>')
+  })
+
   it('treats direction as categorical metadata and status as semantic workflow state', () => {
     expect(source).toContain('<Badge variant="neutral">')
     expect(source).toContain("directionLabel: directionLabel(t.direction)")
