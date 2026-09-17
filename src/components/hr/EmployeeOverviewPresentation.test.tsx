@@ -12,7 +12,6 @@ const summary = {
   phone: <span dir="ltr">01000000000</span>,
   salary: '8,000 ج.م',
   fieldLabel: 'ميداني',
-  isFieldEmployee: true,
   statusLabel: 'نشط',
   statusTone: 'success' as const,
 }
