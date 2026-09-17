@@ -38,16 +38,17 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-FIELD-001`.
+Product UI is integrated through `DS2-FIELD-002`.
 
 Latest product integration:
-- PR: `#42 — DS2-FIELD-001: Activities list V2 foundation`
-- Exact reviewed PR HEAD: `6b7569f3b98f7d8cd9a7588b3ae624e606f82f6b`
-- Squash merge commit: `cac61006d5c6ac402a509c2f15fb09ce51bafd50`
+- PR: `#43 — DS2-FIELD-002: Activity form V2 composition foundation`
+- Exact reviewed PR HEAD: `a31addc60e5b0eaf8ee89a0fea11bded2a6e4c4a`
+- Squash merge commit: `2492fa475e7bc5beb9148124f31a4b4837057c19`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
+- Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact HEAD
 - Runtime/preview/release evidence: not claimed
 
-The development branch now includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, and a Field Activities list proof with one live responsive collection, semantic outcome state, neutral category metadata, canonical action placement and deliberate per-device persistent-create ownership.
+The development branch now includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list proof, and the first Field create/edit form composition proof using the common V2 form grammar.
 
 ## Completed slices
 
@@ -59,141 +60,46 @@ The development branch now includes semantic foundations, responsive shell/navig
 - `DS2-INV-001 — Inventory list surfaces` — `DONE` — PR #34 — merge `805995a5c0d9a118c415d647ed34e63dee326527` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
 - `DS2-INV-002 — Transfer/adjustment operational flows` — `DONE` — PR #35 — merge `9328464542b1ca429fd1ec134667f45244215b67` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
 - `DS2-PROC-001 — Purchase list surfaces` — `DONE` — PR #36 — merge `936129c69a51237ceeefc7880d9735aa5f584879` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
-
-### DS2-PROC-002 — Purchase Invoice form decomposition
-Status: `DONE`
-Merged PR: `#37`
-Reviewed HEAD: `4fa613edad180de140b9c7a1c41ceeb9b7e55ee3`
-Squash merge: `5b10b9fb578c91798d28526d8de407f63ffcc417`
-Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
-Runtime/preview/release evidence: not claimed
-
-System result:
-- new/editable-draft Purchase Invoice flow uses a thin `PurchaseInvoiceDraftStepper` over shared V2 `Stepper`, preserving page-owned reachability/validation;
-- invoice data uses shared `FormSection + FormGrid`; editable wizard actions use shared `FormActions + Button`; status uses semantic `StatusBadge`;
-- consumer-owned logical spacing restores inter-section hierarchy without changing shared primitive external margins;
-- supplier/product/warehouse, quantity/pricing/tax/totals/landed-cost/accounting/payment/workflow/permissions/services/query/cache/validation truth remains page/domain-owned.
-
-### DS2-FIN-001 — Finance lists and summaries
-Status: `DONE`
-Merged PR: `#38`
-Reviewed HEAD: `b2450e22f9cf58d06780b608dbe6a7b871b53639`
-Squash merge: `7a70beccaf961b248f0df045f6bf610df4dfdc84`
-Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
-Runtime/preview/release evidence: not claimed
-
-System result:
-- `VaultsPage` uses shared `MetricGrid + StatCard` and one live `ResponsiveCollection<Vault>` with deliberate Desktop/Tablet/Mobile composition;
-- vault type remains neutral categorical metadata and active/inactive remains semantic status;
-- page-owned `AppAction` eligibility/order feeds shared `resolveActionSet` placement;
-- Finance calculations, balances, posting, permissions, services, query/cache, validation and modal/workflow truth remain page/domain-owned.
-
-### DS2-FIN-002 — Payment Receipt transaction-detail header/action foundation
-Status: `DONE`
-Merged PR: `#39`
-Reviewed HEAD: `0389bb0748a4eb84d40b57707b4b1da47000b369`
-Squash merge: `1a9509d598b9b462397838db7adc261c4746c52f`
-Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
-Runtime/preview/release evidence: not claimed
-
-System result:
-- live `PaymentReceiptDetail` consumes a thin Finance adapter over shared `TransactionHeader` with semantic `StatusBadge`;
-- existing Finance predicates/callbacks remain page-owned and are declared as `AppAction[]` only for shared device placement;
-- `DocumentActions` remains separate output tooling;
-- Finance services, custody/vault/destination, validation, invalidation, amount/proof/review-modal and workflow truth remain unchanged.
-
-### DS2-HR-001 — Attendance Check-in operational task controls
-Status: `DONE`
-Merged PR: `#40`
-Reviewed HEAD: `c2a1c0298eaed3b7e1bc38c591d4ca55c91e0f13`
-Squash merge: `e9a37c6ade6661bdaf6260f9c93c72dabba60768`
-Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
-Runtime/preview/release evidence: not claimed
-
-System result:
-- live `AttendanceCheckin` now consumes shared `ProcessProgress`, shared `PrimaryTaskAction` over the canonical `Button`, and existing semantic `AlertPanel` feedback;
-- `ProcessProgress` receives caller-owned `completed/current/pending` truth, exposes readable non-color state and `aria-current="step"`, and contains no Attendance/GPS/workflow inference;
-- `PrimaryTaskAction` remains one in-flow context-dependent operational action, not an `AppAction/resolveActionSet` registry and not a business-eligibility layer;
-- `بدء الدوام` / `إنهاء الدوام`, `btn-check-in` / `btn-check-out`, `handleAction(primaryActionType)`, offline/GPS suppression, permission flow, services/RPC/query/cache/tracking/timing/result mapping and `SUCCESS_RESET_MS = 2500` remain page/domain-owned and unchanged;
-- only the superseded local action/progress/feedback mini-system and dead visual CSS were retired; broader Attendance/HR surfaces remain outside the slice;
-- focused shared-control and live source-contract tests were authored; no executed test/build/lint/runtime/preview PASS is claimed.
-
-### DS2-HR-002 — HR admin lists/forms — Employees administration list
-Status: `DONE`
-Merged PR: `#41`
-Reviewed HEAD: `984750b5d933e26fea62995d3bf782f89a85b509`
-Squash merge: `b1c9ae6dd78b57f9708e3e5d40fe0b2baac6adbc`
-Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
-Runtime/preview/release evidence: not claimed
-
-System result:
-- live `EmployeesPage` now uses one `ResponsiveCollection<HREmployee>` with dense Desktop `DataTable`, deliberate Tablet two-column cards and Mobile one-column cards;
-- employee summary/card presentation reuses shared `MetricGrid + StatCard + Card + KeyValueList + StatusBadge + Badge + Button`, with semantic workflow status and neutral field/office categorical metadata;
-- card action eligibility/callback truth remains page-owned and feeds canonical `AppAction + resolveActionSet`; salary/create/edit/view permissions and the profile route remain unchanged;
-- shared `Pagination` was extracted from `DataTable` as presentation only, preserving the established five-page window, callbacks, disabled boundaries, Arabic labels and `aria-current="page"` while applying canonical touch targets through Tablet;
-- initial-empty and filtered-empty presentation are distinct; employee search/department/status/page/pageSize, page resets, stats behavior including the pre-existing current-page field metric, and `EmployeeForm` remain unchanged;
-- the local Employees filter/search row remains page composition only, not a reusable HR filter grammar; shared filter convergence stays in the component-depth roadmap.
-
-### DS2-FIELD-001 — Activities/visit/call/target lists — Activities list
-Status: `DONE`
-Merged PR: `#42`
-Reviewed HEAD: `6b7569f3b98f7d8cd9a7588b3ae624e606f82f6b`
-Squash merge: `cac61006d5c6ac402a509c2f15fb09ce51bafd50`
-Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
-Runtime/preview/release evidence: not claimed
-
-System result:
-- live `ActivitiesPage` now uses one `ResponsiveCollection<ActivityRow>` with dense Desktop `DataTable`, deliberate Tablet two-column cards and Mobile one-column operational cards;
-- `ActivityCard` is a thin Field projection over shared `Card + KeyValueList + Badge + StatusBadge + Button + AppAction/resolveActionSet`, while the page owns action eligibility and callbacks;
-- Tablet preserves optional `start_time` through the same page-owned formatter used by Desktop; Mobile intentionally retains its prior information density;
-- activity outcome is semantic `StatusBadge`; category is represented once as neutral `Badge`; `gps_verified === false` remains neutral read-only metadata (`—`);
-- Mobile persistent creation remains owned by the existing shell `new-activity` FAB; Tablet/Desktop retain the PageHeader create action under the unchanged permission and `/activities/new` route;
-- initial-empty and filtered-empty presentation remain distinct, and the pre-existing Mobile empty-state CTA + shell FAB coexistence remains a later non-blocking action-convergence/runtime watch;
-- activity query/search/filter/paging, team/create/delete permissions, delete mutation/backend authority, routes/customer deep-link, GPS/device/workflow/service/query-cache/validation truth remain page/domain-owned and unchanged.
-
-## Current single active slice
+- `DS2-PROC-002 — Purchase Invoice form decomposition` — `DONE` — PR #37 — merge `5b10b9fb578c91798d28526d8de407f63ffcc417` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
+- `DS2-FIN-001 — Finance lists and summaries` — `DONE` — PR #38 — merge `7a70beccaf961b248f0df045f6bf610df4dfdc84` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
+- `DS2-FIN-002 — Payment Receipt transaction-detail header/action foundation` — `DONE` — PR #39 — merge `1a9509d598b9b462397838db7adc261c4746c52f` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
+- `DS2-HR-001 — Attendance Check-in operational task controls` — `DONE` — PR #40 — merge `e9a37c6ade6661bdaf6260f9c93c72dabba60768` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
+- `DS2-HR-002 — HR admin lists/forms — Employees administration list` — `DONE` — PR #41 — merge `b1c9ae6dd78b57f9708e3e5d40fe0b2baac6adbc` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
+- `DS2-FIELD-001 — Activities/visit/call/target lists — Activities list` — `DONE` — PR #42 — merge `cac61006d5c6ac402a509c2f15fb09ce51bafd50` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
 
 ### DS2-FIELD-002 — Activity create/edit form composition foundation
-Status: `REVIEW`
-Owner role: UI Production Engineer
-Representative surface: live `src/pages/activities/ActivityForm.tsx` normal create/edit path only.
+Status: `DONE`
+Merged PR: `#43`
+Reviewed HEAD: `a31addc60e5b0eaf8ee89a0fea11bded2a6e4c4a`
+Squash merge: `2492fa475e7bc5beb9148124f31a4b4837057c19`
+Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
+Runtime/preview/release evidence: not claimed
 
-System-pattern intent:
-- extend the already-proven shared create/edit grammar into a mobile-sensitive Field workflow using existing `FormSection + FormGrid + FormActions + Button`, rather than introducing another Field-local form shell;
-- preserve the current operational sequence and all conditional business meaning; this is composition/accessibility work, not a rewrite of activity semantics;
-- keep shared components presentation-only: ActivityForm remains owner of required/disabled truth, GPS blocking, selected type/category, customer requirement, outcome/reason visibility, dates/times, payload creation, mutations and navigation.
+System result:
+- live normal `ActivityForm` create/edit path now composes through shared `FormSection + FormGrid + FormActions + Button` instead of the page-local outer form/timing/action mini-system;
+- task order remains activity data -> outcome/link/call conditional content -> timing/notes; conditional business meaning was not reordered;
+- timing composition is one column on Mobile, capped at two on Tablet and three on Desktop inside the retained 640px form bound;
+- cancel/submit remain non-sticky and touch-safe, with exact callbacks, save labels/loading state, `saving` disabled truth and `gpsBlocking` submit suppression page-owned;
+- composition-touched native controls have explicit Arabic label associations while required/disabled semantics remain unchanged;
+- visit-plan routing, GPS acquisition/verification/distance, target/history queries, order/collection linking, call-detail behavior, validation, payload construction, mutations, navigation and all backend/business/workflow truth remain page/domain-owned.
 
-In scope:
-1. Replace the normal create/edit form's local outer `edara-card act-form` composition with shared V2 form-section composition. Use multiple `FormSection` boundaries only where they follow the existing task sequence; do not reorder functional steps around target/history/link/call conditional surfaces.
-2. Use `FormGrid` for safe field groups so Mobile is one column, Tablet is deliberately capped at two columns, and Desktop may use the requested density without horizontal overflow. The date/start/end group is the clearest canonical proof; GPS and complex conditional content remain full-width when needed.
-3. Replace the local `act-form-actions` presentation with shared `FormActions + Button`. Preserve exact cancel/submit callbacks, labels, save loading text, `saving` disabled state and `gpsBlocking` submit suppression. Do **not** opt into sticky Mobile actions in this slice.
-4. Preserve current control semantics and values. Do not opportunistically migrate native/raw `input/select/textarea` controls, customer selection or call-direction controls to new primitives in this slice. For fields whose composition is touched, ensure visible Arabic labels remain programmatically associated with their controls and required/disabled meaning remains exposed.
-5. Remove only page-local CSS made dead by the adopted shared form composition. Consumer-owned tokenized logical spacing may separate shared sections; do not add global external margins to `FormSection`.
-6. Add/update focused authored tests/source contracts for shared form-pattern adoption plus the protected ActivityForm functional boundaries below. Evidence remains honestly labeled per policy.
+## Current single READY slice
 
-Explicit exclusions:
-- the visit-plan guard/blocker screen and its routing behavior;
-- `GPSStatusIndicator` internals, geolocation acquisition/verification/distance meaning and any GPS permission/workflow changes;
-- target gamification alert and customer recent-history content/queries;
-- order/collection linking sections and their navigation;
-- call-detail fields, call-direction segmented buttons, callback/recording behavior and `useSaveCallDetail` semantics;
-- toast/validation-message convergence, validation rules, payload construction, Supabase queries, services/mutations/query-cache behavior;
-- customer selector/AsyncCombobox work, primitive Input/Select migration, sticky action behavior;
-- `ActivityDetail`, visit/call plan forms/details, targets, checklists and broader Field framework redesign;
-- DB/migration/RPC/RBAC/RLS/permissions/business/workflow/route/deployment/preview/`main` changes.
+### DS2-WORK-001 — Reconcile Work UI island with V2
+Status: `READY`
+Owner role: Product Design Director -> UI Production Engineer
 
-Acceptance:
-- **Mobile (`<=768px`):** single-column task flow; no ordinary horizontal overflow; shared actions remain touch-safe and stretch cleanly; BottomNav/FAB space is not newly occupied because sticky actions are excluded; long Arabic labels/customer values wrap without obscuring controls.
-- **Tablet (`769–1024px`):** safe field groups use deliberate two-column composition while GPS/conditional complex surfaces can remain full-width; touch remains first-class; no compressed-Desktop three-column layout.
-- **Desktop (`>=1025px`):** preserve the current efficient bounded form width and field capability; safe grouped fields may use denser shared-grid composition without losing readability or changing order.
-- **States:** create/edit labels, loading customer fallback, outcome disabled-before-type, conditional customer/outcome/reason/call/link sections, GPS-required warning, save loading/disabled state and normal cancel/navigation behavior remain semantically unchanged.
-- **Accessibility/RTL:** Arabic-first logical layout; visible labels associated with touched controls; native required/disabled semantics preserved; shared Buttons retain keyboard/focus behavior; no color-only meaning is introduced.
-- **Functional isolation:** exact activity query/service/route/GPS/validation/payload/mutation/workflow semantics remain unchanged.
+Intent:
+- continue the North-Star module roadmap into Work Management rather than reopen completed Field slices for ad-hoc polishing;
+- Product Design Director must inspect the exact latest Development baseline and bound one smallest dependency-safe representative Work Management concern before implementation;
+- prefer established V2 shell, collection, form, action, status, feedback and device patterns; add/strengthen shared grammar only when a real recurring gap is proven;
+- preserve all Work Management business/query/permission/ownership/workflow/validation/service truth exactly;
+- Mobile remains operational-first, Tablet deliberate and touch-first, Desktop efficient for planning/review/management.
 
 Stop condition:
-If shared form composition cannot be adopted without changing ActivityForm routing, GPS, validation, query/service or payload semantics, mark the slice `BLOCKED` and isolate the functional issue rather than absorbing it into Design System scope.
+If the first Work concern requires backend/business/workflow/query/permission/validation-semantic change, mark it `BLOCKED` and isolate the functional issue rather than absorbing it into Design System scope.
 
-Remaining Field create/detail surfaces stay outside this implementation slice and must be re-evaluated as a later dependency-safe Field follow-up before the module is considered fully converged.
+Remaining Field create/detail surfaces remain roadmap debt for a later explicitly bounded Field follow-up; FIELD002 completion does not declare the entire Field module converged.
 
 ## Product migration roadmap
 
@@ -243,10 +149,11 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### G. Field Activities / Targets
 - `DS2-FIELD-001` Activities/visit/call/target lists — `DONE`
-- `DS2-FIELD-002` Activity create/edit form composition foundation — `REVIEW`
+- `DS2-FIELD-002` Activity create/edit form composition foundation — `DONE`
+- additional Field create/detail convergence — `BACKLOG` / must be explicitly bounded before activation
 
 ### H. Work Management
-- `DS2-WORK-001` Reconcile Work UI island with V2 — `BACKLOG`
+- `DS2-WORK-001` Reconcile Work UI island with V2 — `READY`
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` Report shell/navigation/filter grammar — `BACKLOG`
