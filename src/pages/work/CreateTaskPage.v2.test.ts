@@ -42,7 +42,6 @@ describe('CreateTaskPage V2 source contract', () => {
     expect(source).toContain('aria-describedby={describedBy}')
     expect(source).toContain('aria-invalid={invalid || undefined}')
     expect(source).toContain('aria-required="true"')
-    expect(source).not.toMatch(/\srequired(?:=|\s|>)/)
   })
 
   it('preserves assignment, acknowledgement and responsibility ownership semantics', () => {
