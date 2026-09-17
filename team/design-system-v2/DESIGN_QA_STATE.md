@@ -4,118 +4,128 @@
 
 - Review date: `2026-09-17`
 - Development branch: `design-system-v2-development`
-- Exact Development HEAD inspected before this review/state write: `3cb51c0eacc4fe0a35497734e1786a2c96114c32`
-- Active slice: `DS2-FIN-002 — Payment Receipt transaction-detail header/action foundation`
-- Active implementation PR: `#39 — DS2-FIN-002: Payment Receipt transaction-detail header`
+- Exact Development HEAD inspected before this review/state write: `1f6ee3226c1364b72ea2a2defc7879a3325fa505`
+- Active slice: `DS2-HR-001 — Attendance Check-in operational task controls`
+- Active implementation PR: `#40 — DS2-HR-001: Attendance operational task controls`
 - PR base: `design-system-v2-development`
-- PR base SHA: `3cb51c0eacc4fe0a35497734e1786a2c96114c32`
-- Exact PR HEAD reviewed: `0389bb0748a4eb84d40b57707b4b1da47000b369`
+- PR base SHA: `1f6ee3226c1364b72ea2a2defc7879a3325fa505`
+- Exact PR HEAD reviewed: `37197361cb351a53b461f8d8ebaf62b1aff7a6d2`
 - Live PR state at disposition: `OPEN / DRAFT / mergeable=true`
-- Changed-file scope at reviewed HEAD: 8 files — Finance Payment Receipt presentation adapter + focused test, live `PaymentReceiptDetail` + focused source-contract test, shared TransactionHeader CSS + style contract test, Workstream state, and UI Implementation state.
-- Current disposition: `AGENT-REVIEW: GREEN-DEV`
-- Source evidence: `SOURCE_REVIEW_PASS`
-- Test evidence: `TESTS_AUTHORED_NOT_EXECUTED`
+- Changed-file scope at reviewed HEAD: 5 files — shared `ProcessProgress`, shared `PrimaryTaskAction`, shared operational-task CSS, focused shared-pattern tests, and UI Implementation owned state.
+- Current disposition: `AGENT-REVIEW: BLOCKED`
+- Severity: `P2 — implementation completeness / live-slice proof missing`
+- Source evidence: `SOURCE_REVIEW_PASS` **not granted**.
+- Test evidence: `TESTS_AUTHORED_NOT_EXECUTED`.
 - Exact-head build/test/lint/runtime/preview evidence: not claimed.
 
 ## Independent QA disposition
 
-**GREEN-DEV on exact HEAD `0389bb0748a4eb84d40b57707b4b1da47000b369`.**
+**BLOCKED on exact HEAD `37197361cb351a53b461f8d8ebaf62b1aff7a6d2`.**
 
-I formed this judgment from the exact PR diff, live Finance page and current shared V2 contracts before comparing peer states. The bounded slice replaces the Payment Receipt page-local header/action mini-system with the already-proven shared transaction grammar while preserving Finance eligibility, services, accounting/workflow truth and output capabilities page/domain-owned.
+I formed this judgment from the exact PR diff, the unchanged live `AttendanceCheckin` contract, shared `Button` / `AlertPanel` behavior and the HR001 Workstream boundary before comparing peer states.
 
-No known real build/type failure is recorded for this exact head. No GitHub Actions/hosted CI, Vercel preview, deployment, preview branch or `main` activity was used.
+The new shared presentation direction is sound: `ProcessProgress` is caller-driven and domain-agnostic, exposes readable completed/current/pending text plus `aria-current="step"`, and `PrimaryTaskAction` is a thin composition over the existing shared `Button` rather than a parallel action registry or workflow engine. The current diff is presentation/test/owned-state only and introduces no visible DB/RPC/service/query/cache/RBAC/RLS/route/business/workflow change.
+
+However, the actual live slice is still incomplete. `src/pages/hr/attendance/AttendanceCheckin.tsx` is absent from the changed-file set. The live screen therefore still renders its page-local `SmartActionButton`, local `ProgressSteps`, and local success/error feedback cards. The PR body explicitly records live wiring as the next concern.
+
+Because the migrated surface itself is not yet wired, Design QA cannot verify the required end-to-end presentation parity for the HR001 slice and cannot grant `SOURCE_REVIEW_PASS`.
 
 ## Exact-head findings
 
-### Scope / functional isolation — PASS
+### Scope / functional isolation — PASS for the current partial diff
 
-The 8-file diff is UI/Test/Governance-only. No DB/migration/RPC/service/query/cache/RBAC/RLS/permission/route/accounting/posting/workflow/validation/deployment contract file is changed.
+The changed files are confined to shared presentation, focused tests and the Implementer-owned state file. No backend/business contract file is changed.
 
-Source inspection confirms preservation of:
+The new shared components do not import or infer Attendance `FlowState`, GPS permissions, RPC result codes, services, query/cache, tracking, timing or eligibility rules. This is aligned with the hard functional-isolation boundary.
 
-- `getPaymentReceipt(id!)` query and existing query key/stale-time behavior;
-- direct custody lookup and `isSelfCashCustody` pending/cash/custody matching truth;
-- `isAdmin` exactly as pending + `finance.payments.confirm` and `canConfirm = isAdmin || isSelfCashCustody`;
-- vault filtering, cheque/custody destination handling and `openConfirm` destination initialization;
-- `confirmPaymentReceipt` / `rejectPaymentReceipt` calls, validation, toasts, invalidation and refetch behavior;
-- both existing confirm/reject modal workflows;
-- amount hero, proof/file presentation and the remaining receipt body composition.
+### Shared-system fit — PASS provisionally
 
-The new standalone `if (isAdmin)` reject declaration is source-equivalent to the prior nested `canConfirm && isAdmin` rendering because `isAdmin` is a constituent of `canConfirm`; no authorized or unauthorized workflow action changes.
+- `PrimaryTaskAction` composes shared `Button` with `variant="primary"`, large/touch-safe sizing, loading/disabled handling and caller-owned callback/label.
+- It does not route the single operational task through `AppAction/resolveActionSet`, matching the Director's action-hierarchy decision.
+- It does not treat `إنهاء الدوام` as destructive.
+- `ProcessProgress` accepts explicit caller-owned step state and exposes non-color textual state plus current-step semantics.
+- CSS uses logical sizing/spacing and avoids HR/Attendance-specific selectors or domain rules.
 
-### Shared transaction grammar / hierarchy — PASS
+These shared artifacts can support the intended North-Star operational-task grammar, but system fit is not complete until the real Attendance surface consumes them without behavior drift.
 
-`PaymentReceiptDetailHeader` is a thin Finance adapter over shared `TransactionHeader` rather than a Finance-specific parallel action/header system.
+### Live implementation completeness — BLOCKING P2
 
-- receipt number remains the transaction identity and is explicitly LTR inside the Arabic header;
-- current customer link + created-at context is preserved;
-- `pending / confirmed / rejected` maps to shared text-backed `StatusBadge` warning/success/danger tones with the existing Arabic labels;
-- back navigation uses shared touch-safe `Button` and still targets `/finance/payments`;
-- Finance page code declares only existing review eligibility/callback truth as `AppAction[]`;
-- shared `resolveActionSet` owns device placement;
-- `DocumentActions kind="payment-receipt" entityId={receipt.id}` remains a separate tools capability and is not duplicated into workflow actions.
+Specific location: `src/pages/hr/attendance/AttendanceCheckin.tsx` is not changed on this HEAD.
 
-This is aligned with the proven Sales transaction-detail adapter and advances one cross-module product language.
+The live page still owns:
+- custom `SmartActionButton` / `ci-action-*` ring/pulse presentation;
+- local `ProgressSteps` / `ci-progress` / `ci-step*` presentation;
+- local success/error feedback-card presentation.
 
-### Review-action parity — PASS
+Required HR001 migration work therefore remains unapplied to the production screen.
 
-- Confirm exists only under existing `canConfirm`, retains the self-cash label distinction and calls existing `openConfirm`.
-- Reject exists only for existing `isAdmin`, retains destructive tone, clears the current rejection reason and opens the existing reject modal.
-- Confirm remains primary; reject remains lower-priority destructive review action.
-- No output capability is treated as Finance review eligibility.
+This blocks the HR001 Review Gate and North-Star page-migration requirement that a real migrated surface replace page-local mini-system behavior with shared V2 grammar while preserving business truth.
 
-### Shared overflow hardening — PASS
+### Device / state / accessibility evidence — INCOMPLETE for the live slice
 
-The shared TransactionHeader overflow panel now defaults to `display: none` and becomes `display: grid` only for `.ds-transaction-header__overflow[open] > ...`. This is a narrow accessibility/presentation hardening of the existing native `details/summary` contract and does not alter action eligibility or business behavior.
+The shared components are source-reasonable for RTL, long Arabic labels, touch sizing and current-step accessibility. But without live wiring this HEAD does not yet prove:
 
-## Device / state / accessibility judgment
+- Mobile one obvious eligible task action in the current Attendance composition;
+- Tablet constrained touch-first placement;
+- Desktop capability equivalence;
+- exact `idle -> locating -> submitting -> success/error` visual parity;
+- no ordinary overflow in the real Attendance column;
+- preservation of the terminal day-done no-action state;
+- dynamic success/error announcement through `AlertPanel`;
+- safe retention of current GPS/offline suppression and callbacks.
 
-- **Desktop:** PASS — both eligible review actions remain directly available under the shared Desktop action limit, with output tools visually separate; the existing `maxWidth: 640` body-density debt is intentionally outside FIN002.
-- **Tablet:** PASS — shared registry exposes at most two direct review actions; header/actions wrap deliberately, and tools occupy the secondary row without taking workflow priority.
-- **Mobile:** PASS at source level — maximum one direct workflow action; the remaining authorized action stays in native RTL overflow; back and review actions use the shared touch-target contract; single-column header action composition avoids ordinary horizontal overflow.
-- **Arabic/RTL:** PASS — RTL-native logical CSS, LTR receipt identity, Arabic status/action labels and logical overflow anchoring are present.
-- **Long content:** PASS at source level for ordinary overflow prevention — shared header identity/title/subtitle use `min-width: 0`, wrapping/overflow protection; the existing `CustomerLink/EntityLink` ellipsis behavior remains a non-blocking runtime WATCH rather than new FIN002 behavior.
-- **Loading / not found:** PASS — both existing early-return states remain unchanged and no transaction header mounts before a receipt exists.
-- **Permission / read-only workflow:** PASS — confirmed/rejected or otherwise ineligible receipts declare no review actions; unauthorized actions are omitted rather than visually disabled as a permission substitute.
-- **Focus / keyboard / touch:** PASS at source level — native buttons, meaningful labels, decorative icons, native `details/summary`, focus-visible overflow styling and touch targets are present.
-- **Status semantics:** PASS — status meaning is text + semantic tone, never color-only.
-- **Error/offline:** unchanged broader Finance/system debt and not introduced by this bounded header/action slice.
+No runtime visual evidence is claimed.
 
 ## Test / execution evidence
 
 Evidence is **`TESTS_AUTHORED_NOT_EXECUTED`**.
 
-Focused artifacts exist for material risks:
+Current focused tests protect the shared primitives only:
+- `ProcessProgress` caller-owned states, Arabic labels, non-color state text, accuracy metadata and `aria-current="step"`;
+- `PrimaryTaskAction` shared Button classes, callback, loading/busy and disabled behavior.
 
-- `PaymentReceiptDetailPresentation.test.tsx`: semantic Finance status mapping, labeled banner/title, touch-safe back action, preserved tools, Mobile one-direct/overflow placement and Tablet two-direct placement/callbacks;
-- `PaymentReceiptDetail.v2.test.ts`: live shared-header wiring, identity/context/back/tools preservation, exact Finance predicates, AppAction callbacks, loading/not-found and service/invalidation boundaries;
-- `TransactionHeader.styles.test.ts`: closed/open shared overflow CSS contract.
+The Test Artifact Gate remains incomplete for the material live-slice risks. The next exact HEAD must add focused live-page/source-contract protection for at least:
+- existing check-in/check-out eligibility and no-action completed-day truth;
+- current IDs/labels/disabled/loading parity where relied upon;
+- existing `handleAction` callback path and offline/GPS suppression;
+- `AlertPanel` success/error copy, optional location and polite/assertive announcement;
+- preservation of `SUCCESS_RESET_MS = 2500` lifecycle;
+- preservation of attendance/GPS service/query/tracking/RPC boundaries.
 
-No approved environment executed `npm test`, `npm run build` or `npm run lint`; no executed PASS is claimed. No runtime/browser/preview evidence is inferred from source review.
+No approved environment executed `npm test`, `npm run build` or `npm run lint`; no executed PASS is claimed. No GitHub Actions or Vercel preview/deploy was used. No known real build/type failure was found by source inspection, which is not a build PASS claim.
+
+## Minimum required fix
+
+Without broadening the slice:
+
+1. Wire the existing two Attendance steps into `ProcessProgress` with page-owned explicit state mapping only.
+2. Replace only the eligible in-flow local ring action with `PrimaryTaskAction`, preserving exactly `بدء الدوام` / `إنهاء الدوام`, existing disabled/loading truth, current IDs where relied upon and the existing `handleAction` path.
+3. Reuse existing `AlertPanel` for the same transient success/error content and the same 2500ms reset lifecycle; success polite, error assertive.
+4. Remove only local visual CSS/classes proven dead after wiring.
+5. Add focused live-page/source-contract protection for the material behavior/state boundaries above.
+
+Do not add confirmation, sticky/fixed behavior, destructive semantics, `AppAction`, new eligibility, or any GPS/RPC/query/cache/tracking/device/business logic to shared presentation.
 
 ## Peer-state comparison / contradiction handling
 
 The independent disposition above was formed first, then compared with current repository states.
 
-- **Product Design Director:** current FIN002 boundary is aligned with this implementation and records blocker `NONE`. Its pre-implementation statement that no PR was open is lifecycle-stale after PR #39 opened, but its design/functional boundary remains current. Contradiction: none.
-- **UI Production Engineer:** the Development copy still describes consumed FIN001, while PR #39 contains the owned FIN002 state update matching the exact candidate and `TESTS_AUTHORED_NOT_EXECUTED`. This is a state-freshness WATCH, not a product/design contradiction.
-- **Development Integrator:** current state records FIN001 merged and FIN002 READY/waiting for a stable reviewed head. It is lifecycle-stale after PR #39 reached REVIEW but contains no contradictory merge/design judgment.
-- **Team Memory:** still reflects FIN002 as the next READY slice until integration; no durable invariant conflicts with this candidate.
-- **Review threads/comments:** no prior PR #39 review/comment or unresolved inline thread existed before this QA review.
+- **Product Design Director:** current HR001 boundary is fresh and aligned; it explicitly requires the live Attendance action/progress/feedback migration and records blocker `NONE` at the start boundary. No design contradiction.
+- **UI Production Engineer:** the PR-owned state/body explicitly marks this HEAD `IN_PROGRESS`, shared-pattern-first, with live Attendance integration still next. This aligns with QA's completeness blocker rather than contradicting it.
+- **Development Integrator / Team Memory:** both still reflect the pre-implementation HR001 handoff and are lifecycle-stale now that PR #40 exists, but neither grants merge approval or contradicts the HR001 boundary. Freshness: `WATCH`, not a blocking disagreement.
+- **Review threads/comments:** no prior inline review thread existed on PR #40 before this QA review.
 
-No current material `BLOCKING` cross-role contradiction exists.
+No separate current cross-role `BLOCKING` contradiction exists. The blocker is the candidate's incomplete implementation itself.
 
-## Remaining WATCH / release boundary
+## System-fit judgment
 
-- Very long customer names remain subject to the pre-existing `CustomerLink/EntityLink` ellipsis contract. Source prevents ordinary overflow, but readability should be stress-checked during the controlled runtime/long-Arabic milestone pass.
-- Real-browser sticky-header height, `DocumentActions` wrapping/dropdown geometry, dark mode and overflow interaction remain runtime evidence, not source-review claims.
-- Receipt body cards, amount summary, proof rendering, review modal composition and broader Finance detail/list/report convergence remain intentionally outside FIN002.
+The shared operational-task primitives are a good direction and do not fragment the Design System. Design QA is blocking only because the representative live proof and its focused protection are not present yet. The fix should remain exactly within the already-approved HR001 boundary.
 
 ### Cross-role handoff
-- **To:** Product Design Director, Development Integrator, UI Production Engineer
-- **What changed:** Design QA independently reviewed PR #39 exact HEAD `0389bb0748a4eb84d40b57707b4b1da47000b369` and records `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` with `TESTS_AUTHORED_NOT_EXECUTED`.
-- **Preserve:** all Payment Receipt query/service/custody/vault/destination/permission/validation/invalidation/modal/output/accounting/posting/workflow truth; keep FIN002 bounded to the transaction header/status/review-action foundation.
-- **Need from you:** Development Integrator should revalidate the exact unchanged PR HEAD, base/diff/threads and normal integration gates before merge. Any moved PR HEAD requires fresh QA. Product Design Director may refresh lifecycle state if needed but no design correction is requested by QA.
-- **Blocker level:** `NONE` from Design QA on the exact reviewed head; state-freshness items above are `WATCH` only.
-- **Baseline:** Development / PR base `3cb51c0eacc4fe0a35497734e1786a2c96114c32`; exact reviewed PR HEAD `0389bb0748a4eb84d40b57707b4b1da47000b369`.
-- **Evidence:** `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; release/runtime gates remain separate.
+- **To:** UI Production Engineer, Product Design Director, Development Integrator
+- **What changed:** Design QA reviewed PR #40 exact HEAD `37197361cb351a53b461f8d8ebaf62b1aff7a6d2`; shared patterns are directionally sound, but HR001 is `AGENT-REVIEW: BLOCKED` P2 because live `AttendanceCheckin` wiring and live-slice test protection are not yet present.
+- **Preserve:** every attendance/time/GPS permission/RPC/query/cache/tracking/timing/error-code/service/device-capability/workflow rule; keep the action in-flow, primary/non-destructive, no confirmation, no `AppAction`, no sticky behavior.
+- **Need from you:** UI Production Engineer should finish only the bounded live action/progress/AlertPanel wiring + dead-visual cleanup + focused live contract tests on the same PR. Any new HEAD requires fresh QA. Integrator remains `NO_MERGE` until exact-head `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` exists.
+- **Blocker level:** `BLOCKING` for integration until the incomplete live slice is finished and re-reviewed.
+- **Baseline:** Development / PR base `1f6ee3226c1364b72ea2a2defc7879a3325fa505`; exact reviewed PR HEAD `37197361cb351a53b461f8d8ebaf62b1aff7a6d2`.
+- **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`; no source/build/test/lint/runtime/preview PASS beyond the partial source findings above.
