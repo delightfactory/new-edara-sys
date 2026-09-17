@@ -7,7 +7,7 @@
 - Exact slice baseline: `3cb51c0eacc4fe0a35497734e1786a2c96114c32`
 - Feature branch: `ds2/payment-receipt-detail-header-v2`
 - Draft PR: `#39 — DS2-FIN-002: Payment Receipt transaction-detail header`
-- Product/test HEAD before this owned-state write: `f8ea9a3d71e05c7935ab68077a9e1f1a2eedaa25`
+- Product/test/workstream HEAD before this owned-state write: `a2688dd490fa1e3988c67a59a4ee76c237626720`
 - Active slice: `DS2-FIN-002 — Payment Receipt transaction-detail header/action foundation`
 - Disposition: `REVIEW`
 - Evidence: `TESTS_AUTHORED_NOT_EXECUTED`
@@ -29,17 +29,19 @@ The page continues to own every eligibility predicate and workflow callback. Sha
 - Kept `DocumentActions kind="payment-receipt"` as header tools; output actions were not duplicated into workflow actions.
 - Hardened shared `TransactionHeader` overflow CSS so author styles cannot expose overflow actions while native `<details>` is closed.
 - Added focused Testing Library/source-contract tests for status mapping, back/tools, Mobile/Tablet action placement, predicates/callbacks, service boundaries and collapsed overflow presentation.
+- Updated the workstream slice to `REVIEW` and PR #39.
 - Did not touch peer role-state files, Team Memory or Decision Log.
 
 ## Changed-file / pattern scope
 
-PR #39 is UI/Test/owned-state only:
+PR #39 is UI/Test/Governance-owned only:
 - `src/components/finance/PaymentReceiptDetailPresentation.tsx`
 - `src/components/finance/PaymentReceiptDetailPresentation.test.tsx`
 - `src/pages/finance/PaymentReceiptDetail.tsx`
 - `src/pages/finance/PaymentReceiptDetail.v2.test.ts`
 - `src/styles/design-system-v2-transaction.css`
 - `src/components/patterns/TransactionHeader.styles.test.ts`
+- `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md`
 - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md` (owned state only)
 
 No DB/migration/RPC/service/query/cache/RBAC/RLS/route-guard/accounting/posting/workflow/validation/deployment file is in the implementation scope.
@@ -79,7 +81,7 @@ No known TypeScript/build error was discovered by source inspection. This is not
 - **To:** Product Design Director, Design QA, Development Integrator
 - **What changed:** Payment Receipt detail now consumes the canonical V2 transaction header/status/action grammar while keeping Finance eligibility and callbacks page-owned. The shared overflow was also corrected so closed native details cannot leak action content.
 - **Preserve:** every Finance query/service, permission, self-custody predicate, validation, invalidation, modal workflow, output tool and route truth listed above.
-- **Need from you:** review the exact PR #39 HEAD after this owned-state commit for design hierarchy, source boundary and accessibility/device behavior.
+- **Need from you:** review the exact PR #39 HEAD produced by this owned-state commit for design hierarchy, source boundary and accessibility/device behavior.
 - **Integrator:** `NO_MERGE` until fresh `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`; do not infer runtime evidence.
-- **Baseline:** `3cb51c0eacc4fe0a35497734e1786a2c96114c32`.
+- **Baseline:** `3cb51c0eacc4fe0a35497734e1786a2c96114c32`; product/test/workstream HEAD before state write `a2688dd490fa1e3988c67a59a4ee76c237626720`.
 - **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`.
