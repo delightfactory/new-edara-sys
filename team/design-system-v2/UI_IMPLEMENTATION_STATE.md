@@ -4,91 +4,91 @@
 
 - Run date: `2026-09-17`
 - Development branch: `design-system-v2-development`
-- Exact slice baseline: `988d7651cda4ecb828bf1dc54a9617fec8ae3edc`
-- Current Development HEAD inspected this run: `7fbd6d1346eb98d06ec3a66e9b0dd0b46b6334cd` (coordination-only drift from the slice baseline; no overlapping product/shared implementation change found)
-- Feature branch: `ds2/hr-employees-list-v2`
-- Draft PR: `#41 — DS2-HR-002: Employees admin list V2`
-- Previous QA-blocked HEAD: `1c0ad8b220ac81630d122242b9d4917343ae08cc`
-- Product/test HEAD after the bounded reviewer fix and before this owned-state write: `284eb608f909394a6056a1e6d11ac5664b15dc45`
-- Active slice: `DS2-HR-002 — HR admin lists/forms` — representative concern: Employees administration list only
-- Disposition: `REVIEW — QA P2 FIX APPLIED / FRESH EXACT-HEAD REVIEW REQUIRED`
+- Exact slice baseline: `def098978efbe796306f882014e69652f014efa6`
+- Feature branch: `ds2/field-activities-list-v2`
+- Draft PR: `#42 — DS2-FIELD-001: Activities list V2 foundation`
+- Product/test HEAD before this owned-state write: `3c1013ab0e5988f16317f20d8c4015cb628414d8`
+- Active slice: `DS2-FIELD-001 — Activities/visit/call/target lists`
+- Active representative concern: `ActivitiesPage` list presentation only
+- Disposition: `IN_PROGRESS`
 - Evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 
 ## Independent implementation judgment
 
-The QA P2 blocker on Tablet touch ergonomics is resolved within the existing Employees-list concern without changing Desktop density or any employee/pagination/business semantics. The fix extends the already-established canonical `var(--ds-icon-hit-target)` contract through Tablet (`<=1024px`) only for the two newly active touch surfaces identified by QA: shared Pagination controls and the Employee identity/open control.
+`ActivitiesPage` is the smallest dependency-safe representative Field list on the current Development baseline. It exposes the recurring V2 gaps directly — a legacy dual table/card render path through `DataTable.dataCardMapping`, local outcome color badges, direct page-owned device action placement, and local list styling — while its query, permission, delete-RPC, customer deep-link and routing truth can remain untouched.
 
-The rest of the HR002 implementation remains unchanged: `EmployeesPage` uses one responsive collection capability, shared semantic summary/status/action patterns, deliberate device composition and shared Pagination, while employee query inputs, stats queries, route navigation, salary visibility, create/edit/view permissions, `EmployeeForm`, services, validation and workflow truth remain caller/domain-owned.
+The implementation therefore migrates only the Activities list capability. It does not broaden into call plans, visit plans, targets, activity create/detail flows, GPS acquisition, field workflow or backend semantics.
 
 ## Material implementation progress
 
-- Addressed Design QA P2 finding on exact blocked HEAD `1c0ad8b...`.
-- Shared `design-system-v2-pagination.css` now applies the canonical hit target to Pagination buttons through Tablet (`@media (max-width: 1024px)`), including previous/next controls, while Desktop keeps its compact legacy density.
-- `hr-admin-v2.css` now gives `.ds-employee-card__identity` the canonical minimum touch height through Tablet; Mobile-only `width: 100%` remains scoped to `<=768px`.
-- Added focused authored protection in `Pagination.test.tsx` that verifies the Tablet touch contract lives in the `<=1024px` band before the Mobile-only composition band.
-- Added focused authored protection in `EmployeesPage.v2.test.ts` that verifies the Employee identity/open control gets the Tablet minimum while full-width treatment remains Mobile-only.
-- No pagination page-window/callback/disabled/ARIA/query behavior changed.
-- No Employee action eligibility, permission predicate, route, query, stats, form or business behavior changed.
-- Existing broader HR002 implementation remains: one `ResponsiveCollection<HREmployee>`, dense Desktop DataTable, Tablet two-column cards, Mobile one-column cards, semantic employee status, neutral field/office metadata, shared Pagination extraction and initial-vs-filtered empty distinction.
+- Created `ActivityOverviewPresentation` as a thin Field-domain adapter over shared `Card + KeyValueList + StatusBadge + Badge + Button + AppAction/resolveActionSet`.
+- Replaced legacy outcome color badges on this list with readable semantic V2 outcome tones while preserving the existing Arabic outcome labels.
+- `ActivitiesPage` now mounts exactly one `ResponsiveCollection<Activity>` renderer at a time: dense Desktop `DataTable`, deliberate two-column Tablet cards, and one-column Mobile cards.
+- Removed `DataTable.dataCardMapping` from this live page so Desktop/Mobile interactive descendants are not duplicated in the DOM.
+- Page-owned action declarations preserve view/delete eligibility and callbacks; shared action grammar owns only Mobile/Tablet placement (one direct Mobile action, two direct Tablet actions when eligible).
+- Shared `Pagination` is now outside device renderers and retains caller-owned `page`, `totalPages`, `totalCount` and `setPage` truth.
+- Preserved the existing client-side text-search behavior and all server query inputs exactly; no debounce or query timing change was introduced.
+- Preserved the existing delete permission predicates and `useSoftDeleteActivity` mutation boundary; the backend-enforced deletion time window remains backend truth and is not duplicated in presentation code.
+- Added initial-empty vs filtered-empty copy without changing create eligibility.
+- Added a dedicated Field stylesheet for list/card/filter layout and Tablet touch sizing; removed the page-local `<style>` mini-system.
+- Authored focused Testing Library coverage for status semantics, neutral category metadata, device action placement and callback delegation, plus source-contract tests for query/permission/mutation/collection/pagination boundaries.
 - Did not mutate peer role-state files, Team Memory or Decision Log.
 
 ## Changed-file / pattern scope
 
-Current branch product/test/governance scope remains:
+Current branch scope:
 - `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md`
-- `src/components/hr/EmployeeOverviewPresentation.tsx`
-- `src/components/hr/EmployeeOverviewPresentation.test.tsx`
-- `src/components/patterns/Pagination.tsx`
-- `src/components/patterns/Pagination.test.tsx`
-- `src/components/shared/DataTable.tsx`
-- `src/pages/hr/employees/EmployeesPage.tsx`
-- `src/pages/hr/employees/EmployeesPage.v2.test.ts`
-- `src/styles/design-system-v2-pagination.css`
-- `src/styles/hr-admin-v2.css`
+- `src/components/activities/ActivityOverviewPresentation.tsx`
+- `src/components/activities/ActivityOverviewPresentation.test.tsx`
+- `src/pages/activities/ActivitiesPage.tsx`
+- `src/pages/activities/ActivitiesPage.v2.test.ts`
+- `src/styles/field-activities-v2.css`
 - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md` (owned state only)
 
-Reviewer-requested fix delta is limited to the two CSS files, the two focused test files, and this owned state. No DB/migration/RPC/service/query-cache/RBAC/RLS/route-guard/payroll/attendance/leave/workflow/validation/deployment file is in scope.
+No DB/migration/RPC/service/query-cache/RBAC/RLS/route-guard/GPS acquisition/business/workflow/validation/deployment file is in scope.
 
 ## Preserve / verified boundaries
 
-- Employee query remains `search`, `departmentId`, `status`, `page`, `pageSize: 25` through the existing `useHREmployees(queryParams)` path.
-- Search/department/status changes still reset `page` to 1 exactly as before; no debounce/query timing change was introduced.
-- Existing active/on-leave stats queries remain unchanged. The pre-existing field-employee metric still reflects the current page because no field-employee API filter exists; this slice does not change that business/data behavior.
-- `hr.payroll.read`, `hr.employees.create` and `hr.employees.edit` predicates remain the visibility/eligibility source of truth.
-- Employee profile navigation remains `/hr/employees/${employee.id}`.
-- `EmployeeForm` remains the existing create/edit boundary; no form/service/validation semantics were moved into V2 presentation components.
-- Shared `Pagination` owns presentation only; the caller still owns page/query truth.
-- The touch correction does not alter Pagination page-window, previous/next targets, disabled boundaries or `aria-current="page"` semantics.
+- `useActivities(queryParams)` still receives `typeCategory`, `outcomeType`, `dateFrom`, `dateTo`, `employeeId`, `customerId`, `page`, `pageSize: 25` exactly from page-owned state.
+- Existing client-side search still matches customer name, activity type name and outcome notes on the current server page.
+- Search and every filter still reset `page` to 1; no debounce was introduced.
+- Team-employee visibility remains gated by `ACTIVITIES_READ_TEAM || ACTIVITIES_READ_ALL`.
+- Create remains gated by `ACTIVITIES_CREATE`.
+- Delete action eligibility remains `ACTIVITIES_UPDATE_OWN || ACTIVITIES_READ_TEAM || ACTIVITIES_READ_ALL`; deletion still delegates to `useSoftDeleteActivity().mutate`.
+- Activity detail navigation remains `/activities/${activity.id}` and creation remains `/activities/new`.
+- Customer deep-link filtering remains initialized from the `customerId` URL search parameter and can still be cleared.
+- Outcome status mapping is presentation-only; no outcome value or workflow transition is changed.
+- GPS is read-only list metadata here; no GPS/device acquisition or verification behavior moved into V2 presentation.
 
 ## Device / state coverage
 
-- **Desktop (`>=1025px`):** dense DataTable and compact paginator density remain unchanged; Employee cards are not the active Desktop collection surface.
-- **Tablet (`769–1024px`):** two-column employee cards retain identity/metadata/actions and now both the identity/open button and shared paginator controls meet the canonical `--ds-icon-hit-target` minimum.
-- **Mobile (`<=768px`):** one-column cards retain full-width identity/action treatment; Pagination remains touch-safe and can wrap without horizontal overflow.
-- **RTL/accessibility:** logical CSS, explicit Arabic aria labels, semantic status text, neutral categorical badges, focus-visible identity control and `aria-current="page"` pagination semantics remain intact.
-- **States:** loading remains owned by `ResponsiveCollection`; initial-empty and filtered-empty stay distinct; salary metadata is omitted when unauthorized; pagination disappears for one page and disables boundary navigation correctly.
+- **Desktop (`>=1025px`):** dense DataTable remains the active management surface with customer link, date/time, semantic outcome, notes, GPS and existing view/delete capability.
+- **Tablet (`768–1024px`):** two-column Activity cards with type/customer/outcome/date/notes/GPS and up to two direct eligible actions; identity/open control uses the canonical touch target.
+- **Mobile (`<=767px`):** one-column Activity cards; one primary direct action with secondary delete in canonical overflow when eligible; touch-safe identity/actions.
+- **RTL/accessibility:** logical CSS, Arabic labels, explicit filter/action aria labels, readable semantic status text and focus-visible identity control.
+- **States:** loading remains shared `ResponsiveCollection` presentation; initial-empty and filtered-empty are distinct; create action appears only when already eligible; delete remains omitted when unauthorized.
 
 ## Test / execution evidence
 
-Evidence remains **`TESTS_AUTHORED_NOT_EXECUTED`**.
+Evidence: **`TESTS_AUTHORED_NOT_EXECUTED`**.
 
-Focused Vitest/Testing Library and source-contract tests were authored/updated for the QA-identified Tablet touch risks, but no approved executable repository checkout / `package.json` is available in this run, so `npm test`, `npm run build` and `npm run lint` were not executed. No PASS is claimed. No GitHub Actions/hosted CI was triggered and no Vercel preview/deploy was used.
+Focused Vitest/Testing Library and source-contract tests were authored, but the automation sandbox contains no executable repository checkout / `package.json`, so `npm test`, `npm run build` and `npm run lint` were not executed. No PASS is claimed. No GitHub Actions/hosted CI was triggered and no Vercel preview/deploy was used.
 
-No known TypeScript/build error was found during source inspection. This is not a runtime/build PASS claim.
+No known TypeScript/build error was identified during source-level inspection. This is not an executed build/type PASS claim.
 
-## Risks / review boundary
+## Risks / next implementation boundary
 
-- Fresh exact-head QA is mandatory because the PR HEAD moved after the blocked review.
-- Runtime/build evidence remains unavailable in this execution environment; exact-head source/test-artifact review is the current development evidence path.
-- `fieldEmpCount` intentionally retains the existing current-page calculation; correcting its data scope would require a service/query capability change and remains outside this UI slice.
-- Shared Pagination remains a presentation primitive only; do not expand this fix into query/paging semantics or global pagination redesign.
-- `EmployeeForm` internals and all other HR administration surfaces remain outside this representative concern.
+- Draft PR #42 is still `IN_PROGRESS`; exact-head Design Director/QA review is not requested yet.
+- Runtime/build evidence remains unavailable in this environment.
+- The existing `FilterBar` shared component introduces its own debounced search behavior and a large embedded style block; adopting it here would alter current Activities search timing and expand component-depth scope, so this concern deliberately keeps existing immediate SearchInput/select/date behavior while moving layout CSS out of the page.
+- Legacy `ActivityStatusBadge` remains used by other plan/target surfaces; this concern does not refactor it globally.
+- Next action on this same PR is source-review the exact branch diff for type/composition risks and decide whether the bounded Activities-list concern is complete enough for `REVIEW`; do not start another Field surface while #42 remains active.
 
 ### Cross-role handoff
-- **To:** Design QA + Product Design Director for fresh exact-head review; Development Integrator only after required gates.
-- **What changed:** the exact QA P2 Tablet touch blocker is fixed: shared Pagination and Employee identity/open controls now honor the canonical touch target through `<=1024px`, with focused authored regression protection.
-- **Preserve:** Desktop density; employee queries/stats/page reset; salary/create/edit/view permissions; profile route; `EmployeeForm`; Pagination page-window/callback/disabled/ARIA behavior; all service/payroll/attendance/leave/workflow/validation truth.
-- **Need from you:** review the exact PR HEAD produced by this owned-state write and issue fresh `SOURCE_REVIEW_PASS + AGENT-REVIEW: GREEN-DEV` only if the Tablet touch blocker is fully closed.
-- **Blocker level:** `NONE` from implementation on the bounded fix; PR remains `NO_MERGE` until fresh exact-head QA/Director gates.
-- **Baseline:** slice `988d7651cda4ecb828bf1dc54a9617fec8ae3edc`; Development inspected `7fbd6d1346eb98d06ec3a66e9b0dd0b46b6334cd`; product/test fix HEAD before state write `284eb608f909394a6056a1e6d11ac5664b15dc45`.
+- **To:** future Product Design Director + Design QA after implementation marks this PR `REVIEW`; Development Integrator only after required gates.
+- **What changed:** Activities list now has one responsive collection capability, semantic outcome state, canonical page-owned action declarations/shared placement, shared Pagination, deliberate Tablet/Mobile cards and focused authored regression protection.
+- **Preserve:** all activity query inputs/search timing; team/create/delete permissions; delete mutation/RPC authority; activity/customer routes; customer URL filter; GPS/device truth; all workflow/validation/service/query-cache semantics.
+- **Need from reviewers:** when requested, inspect exact PR HEAD for Arabic/RTL hierarchy, semantic outcome mapping, Mobile/Tablet action placement, Desktop density and functional isolation.
+- **Blocker level:** `NONE` known at source level; implementation remains active.
+- **Baseline:** `def098978efbe796306f882014e69652f014efa6`.
 - **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`.
