@@ -4,127 +4,127 @@
 
 - Review date: `2026-09-17`
 - Development branch: `design-system-v2-development`
-- Exact Development HEAD inspected before this review/state write: `dcee85d8b23488bcf3339a0db4818e95b78ba148`
+- Exact Development HEAD inspected before this review/state write: `c59f821e2e212c17396bb79456d5f84aa2a68b67`
 - Active slice: `DS2-FIN-001 — Finance lists and summaries`
 - Active implementation PR: `#38 — DS2-FIN-001: establish vault overview V2 presentation`
 - PR base: `design-system-v2-development`
 - PR base SHA: `dcee85d8b23488bcf3339a0db4818e95b78ba148`
-- Exact PR HEAD reviewed: `96cc3c4f76b4f8ab506b40b7623759a50c8f0816`
-- Live PR state at disposition: `OPEN / DRAFT`
-- Changed-file scope at reviewed HEAD: 7 files — shared `MetricGrid` + test, V2 surfaces CSS, Finance `VaultOverviewPresentation` + test, Workstream state, and UI Implementation state.
-- Current disposition: `AGENT-REVIEW: BLOCKED`
+- Exact PR HEAD reviewed: `b2450e22f9cf58d06780b608dbe6a7b871b53639`
+- Live PR state at disposition: `OPEN / DRAFT / mergeable=true`
+- Changed-file scope at reviewed HEAD: 9 files — shared `MetricGrid` + test, Finance `VaultOverviewPresentation` + test, live `VaultsPage` + focused V2 source-contract test, V2 surfaces CSS, Workstream state, and UI Implementation state.
+- Current disposition: `AGENT-REVIEW: GREEN-DEV`
+- Source evidence: `SOURCE_REVIEW_PASS`
 - Test evidence: `TESTS_AUTHORED_NOT_EXECUTED`
-- `SOURCE_REVIEW_PASS`: withheld while P2 blockers remain.
 - Exact-head build/test/lint/runtime/preview evidence: not claimed.
 
 ## Independent QA disposition
 
-**BLOCKED on exact HEAD `96cc3c4f76b4f8ab506b40b7623759a50c8f0816`.**
+**GREEN-DEV on exact HEAD `b2450e22f9cf58d06780b608dbe6a7b871b53639`.**
 
-I formed this judgment from the exact PR diff, the unchanged live `VaultsPage`, the new Finance adapters, shared `ResponsiveCollection`, `StatCard`, `Badge`, `StatusBadge`, `Button`, and the already-integrated Inventory card grammar before comparing peer states.
+I formed this judgment from the exact current PR diff and current product/shared contracts before comparing peer states. The moved head closes the prior Finance blockers while keeping financial truth page/domain-owned. The slice now advances EDARA toward one coherent V2 language rather than a Finance-local parallel system.
 
-The direction is broadly correct and functionally isolated, but the current head is not review-complete and also introduces one semantic-color contradiction that would fragment the V2 language if wired as authored.
+No known real build/type failure is recorded for this exact head. No GitHub Actions/hosted CI, Vercel preview, deployment, preview branch or `main` activity was used.
 
 ## Exact-head findings
 
-### P2 — implementation completeness / live responsive composition — BLOCKING
+### Functional isolation / scope — PASS
 
-`src/pages/finance/VaultsPage.tsx` is not part of the PR diff. The live Finance surface therefore still uses:
+The 9-file diff is UI/Test/Governance-only. No DB/migration/RPC/service/query/cache/RBAC/RLS/permission/route/accounting/posting/workflow-transition/validation/deployment contract file is changed.
 
-- legacy `edara-stats-row` / `stat-card` summary presentation;
-- a Desktop `DataTable` tree and a separate Mobile card tree mounted together then toggled by CSS;
-- no deliberate Tablet collection composition;
-- no single `ResponsiveCollection<Vault>` boundary;
-- legacy Mobile card/actions rather than the new `VaultCard` adapter.
+Source inspection confirms preservation of:
 
-The PR body and UI Implementation state both explicitly say live wiring remains pending on this same PR. This fails the slice-completeness, Device and State gates and does not yet prove FIN001 on a live product surface.
+- `totalBalance`, `activeCount` and per-vault balance calculations;
+- `finance.vaults.create`, `finance.vaults.transact`, `finance.vaults.update` predicates;
+- opening-balance eligibility exactly `current_balance === 0`;
+- statement initial/paged calls at `pageSize: 25`;
+- `createVault`, `updateVault`, `postManualVaultAdjustment`, `transferBetweenVaults` calls;
+- query hooks, invalidation, validation/toasts, routes and modal workflows.
 
-**Minimum required fix:** on the same PR, wire the live `VaultsPage` to `VaultSummary` and one `ResponsiveCollection<Vault>` while preserving:
+### Prior P2 — live responsive composition — CLOSED
 
-- dense Desktop `DataTable` information/actions;
-- deliberate Tablet card composition, expected to be two-column/touch-first where the live layout supports it;
-- one-column Mobile operational cards;
-- existing loading, empty and create-action behavior;
-- exact `finance.vaults.create`, `finance.vaults.transact`, `finance.vaults.update` permission predicates;
-- opening-balance eligibility `current_balance === 0`;
-- statement/deposit/withdrawal/edit callbacks and all current modal workflows;
-- total/balance calculations, services/query/cache/invalidation/validation/routes unchanged.
+`VaultsPage` now uses one `ResponsiveCollection<Vault>` capability boundary rather than separate CSS-hidden Desktop/Mobile interaction trees.
 
-Focused live-page tests/source contracts must protect renderer selection, permission/action parity and state composition.
+- Desktop preserves the dense `DataTable`, information columns and direct row actions.
+- Tablet intentionally renders a two-column touch-oriented Vault card grid.
+- Mobile intentionally renders a one-column compact operational card grid.
+- loading and true-empty state are owned once at the collection boundary.
+- legacy `vault-table-view`, `vault-card-view`, `vault-mobile-card` and `mobile-card-list` dual-tree selectors are removed from the live composition.
 
-### P2 — categorical type is using semantic color — BLOCKING
+This satisfies the Device/State gate at source level and preserves business capability across device modes.
 
-`src/components/finance/VaultOverviewPresentation.tsx` exposes `typeVariant` with `success | info | primary | neutral`, and the focused test explicitly locks `cash -> badge-success` while describing vault type as categorical metadata.
+### Prior P2 — semantic tone ownership — CLOSED
 
-This conflicts with the current V2 system invariant already proven in Inventory: categorical direction/type metadata stays visually neutral; semantic success/info/warning/danger belongs to actual operational/workflow state. `active/inactive` correctly uses `StatusBadge`; vault kind should not visually impersonate success/info state.
+Vault kind (`cash`, `bank`, `mobile_wallet`) is categorical metadata and now uses neutral `Badge` treatment. Active/inactive remains semantic `StatusBadge`. The factual active-count metric no longer receives a hardcoded adapter-owned success tone. Total-balance sign emphasis remains caller/page-owned, preserving the existing Finance meaning.
 
-**Minimum required fix:** keep vault type as neutral categorical `Badge` treatment and keep active/inactive on `StatusBadge`; remove or constrain the semantic `typeVariant` API and update focused coverage accordingly. Do not infer business state from vault type.
+No Finance-specific color vocabulary was introduced.
 
-### Shared MetricGrid — source-level PASS
+### Director P2 — Mobile/Tablet action hierarchy — CLOSED
 
-The new shared `MetricGrid` is appropriately presentation-only:
+Card action eligibility/order remains page-owned through canonical `AppAction` declarations. Shared `resolveActionSet` now owns device placement:
 
-- requested dense Desktop columns;
-- 3/4-column grids cap to 2 on Tablet `769–1024px`;
-- 2/3/4-column grids collapse to 1 on Mobile `<=768px`;
-- no business meaning/calculation is owned by the pattern;
-- CSS uses `minmax(0, 1fr)` and shared spacing tokens.
+- Mobile: maximum 1 direct action;
+- Tablet: maximum 2 direct actions;
+- all remaining authorized actions remain available in native RTL `<details>/<summary>` overflow;
+- Desktop keeps the existing dense direct row-action model.
 
-The authored test protects the requested class/data contract, although no execution evidence exists.
+The overflow action panel is explicitly `display: none` until the parent `<details>` is `[open]`, avoiding an author-CSS leak of collapsed actions. Touch actions opt into the V2 44px minimum target contract. All card and Desktop icon-only actions carry meaningful accessible names.
 
-### Functional isolation / scope — PASS on current diff
+### Shared MetricGrid / system fit — PASS
 
-No DB/migration/RPC/service/query/cache/RBAC/RLS/permission/route/accounting calculation/posting/workflow-transition/validation/deployment file is changed. Current PR work is UI/Test/Governance-only.
+`MetricGrid` is presentation-only and owns no Finance calculation or status inference. It uses V2 spacing and `minmax(0, 1fr)`:
 
-No GitHub Actions/hosted CI, Vercel preview, `main` or deployment activity was used.
+- Desktop requested 3-column Finance summary;
+- Tablet 2 columns at `769–1024px`;
+- Mobile 1 column at `<=768px`.
+
+The new Vault card composition uses shared `Card`, `KeyValueList`, `Badge`, `StatusBadge`, `Button`, `AppAction` and `ResponsiveCollection` layers rather than inventing business-aware visual primitives.
 
 ## Device / state / accessibility judgment
 
-- **Desktop:** proposed summary density is sound, but live table parity has not yet been migrated/proven.
-- **Tablet:** shared metric grid is deliberate; live Vault collection remains unimplemented and therefore not accepted.
-- **Mobile:** proposed `VaultCard` uses touch-target Buttons and long-value wrapping, but live page still uses legacy cards and CSS-hidden dual trees.
-- **RTL/Arabic:** new primitives use logical/shared layout and Arabic labels; no source-level bidi blocker found in the new adapters.
-- **Status semantics:** active/inactive treatment is correct; vault type semantic coloring is not.
-- **Loading/empty/permission:** existing live behavior remains unchanged for now, but parity must be proven when `ResponsiveCollection` wiring lands.
-- **Accessibility:** native Buttons and group labels are acceptable in the adapter. Exact live renderer/focus behavior remains pending because the page is not wired.
-- **Action hierarchy WATCH:** `VaultCard` can display up to five simultaneous actions (`statement/opening/deposit/withdrawal/edit`). Once real page predicates are injected, re-check Mobile/Tablet visual priority and overflow; do not let success/danger/secondary/ghost controls compete equally.
+- **Desktop:** PASS — dense comparison table remains; summary hierarchy improves without losing fields/actions; row icon controls now have accessible names.
+- **Tablet:** PASS — explicit two-column cards, 2-column metric grid, maximum two direct actions and touch-safe overflow create a deliberate hybrid composition.
+- **Mobile:** PASS — one-column summary/cards, one direct record action plus overflow, 44px action targets, wrapping names/metadata/balances, and no ordinary horizontal collection overflow by source contract.
+- **Arabic/RTL:** PASS — Arabic labels, logical `inset-inline-end`, `text-align: end`, wrapping and native RTL overflow semantics are source-sound.
+- **Long values/content:** PASS at source level — `min-width: 0`, `minmax(0, 1fr)`, `overflow-wrap: anywhere`, wrapped badge/action rows and tabular numerics protect long names and large balances.
+- **Loading:** PASS — a single collection loading state replaces duplicate device trees.
+- **Initial empty / permission-limited:** PASS — shared `StatePanel` is used and create action remains guarded by `finance.vaults.create`; unauthorized card actions are omitted at declaration time.
+- **Disabled/loading actions:** PASS — `VaultAction` forwards shared Button disabled/loading semantics.
+- **Focus/keyboard:** PASS at source level — native buttons and native `details/summary`, shared focus-visible Button styling and explicit overflow-trigger focus ring are present.
+- **Error/offline:** unchanged broader Finance/system debt; not introduced by this slice and not required to expand FIN001 into a global state rewrite.
 
 ## Test / execution evidence
 
 Evidence is **`TESTS_AUTHORED_NOT_EXECUTED`**.
 
-Focused artifacts currently cover:
+Focused artifacts exist for the material risks:
 
-- shared MetricGrid class/column contract;
-- Finance summary projection without calculation ownership;
-- callback execution and omission for injected actions;
-- touch-target class on rendered card actions;
-- active/inactive `StatusBadge` tone.
+- `MetricGrid.test.tsx`: shared summary grid contract;
+- `VaultOverviewPresentation.test.tsx`: caller-owned summary semantics, neutral categorical type, semantic active state, Mobile 1-direct / Tablet 2-direct action resolution, authorized callback execution, unauthorized-action omission, touch-target class and overflow closed-state CSS;
+- `VaultsPage.v2.test.ts`: single `ResponsiveCollection`, device renderers, page-owned totals, permissions, `current_balance === 0`, action callback parity, neutral type/status mapping, empty/create behavior, statement paging and Finance mutation-service isolation.
 
-However, current coverage also encodes the incorrect semantic coloring of categorical vault type and no live `VaultsPage` wiring tests exist yet.
-
-No approved environment executed `npm test`, `npm run build` or `npm run lint`; no executed PASS is claimed. No known real build/type failure is recorded for this exact head.
+No approved environment executed `npm test`, `npm run build` or `npm run lint`; no executed PASS is claimed. No runtime/browser/preview evidence is inferred from source review.
 
 ## Peer-state comparison / contradiction handling
 
 The independent disposition above was formed first, then compared with peer states.
 
-- **UI Production Engineer:** its feature-head state correctly identifies the PR as `IN_PROGRESS` and says the live `VaultsPage` wiring is still pending, so QA's completeness blocker aligns with the implementer's own handoff. However, that state also describes vault type as neutral/categorical while the exact code/test lock semantic `success/info/primary` badge variants. This is a **BLOCKING implementation-state/code contradiction** until the exact source and test are aligned with the V2 invariant.
-- **Product Design Director:** Development state is stale on completed PROC002 and has not yet published a Finance-specific judgment. This is a `WATCH`, not approval evidence and not a reason to expand scope.
-- **Development Integrator:** current state correctly marks FIN001 as the next slice and provides no merge approval for PR #38. Integrator remains `NO_MERGE` while this QA blocker is current.
-- **Team Memory / Decision Log:** functional isolation, device strategy and semantic consistency rules support the blocker; no durable decision update is required.
+- **UI Production Engineer:** the exact PR diff contains the current owned state describing the same three reviewer fixes and `TESTS_AUTHORED_NOT_EXECUTED`; source inspection independently confirms those claims. Alignment: PASS.
+- **Product Design Director:** Development state still records `BLOCKING` on obsolete PR HEAD `96cc3c4f...` for live wiring, semantic tone ownership and action hierarchy. All three stated correction conditions are source-closed on exact HEAD `b2450e22...`. This is therefore a **stale WATCH**, not a current BLOCKING contradiction. Director should refresh its state against the moved head; QA does not overwrite it.
+- **Development Integrator:** Development state also blocks obsolete `96cc3c4f...`. Its listed three integration corrections are source-closed on the current head. This is stale coordination state; Integrator must revalidate the exact unchanged candidate before merge.
+- **Team Memory / Workstream:** Development coordination files may lag the moved feature head until integration; no durable rule changed and QA does not mutate them.
 
 ## Remaining WATCH / release boundary
 
-- Mobile/Tablet action priority after real permission predicates are injected.
-- Runtime visual geometry, long currency stress, dark mode and actual browser overflow remain milestone/release evidence and are not inferred from source review.
-- Broader Finance forms, statements, transaction/transfer modals, posting/accounting flows and other Finance pages remain outside this bounded concern.
+- **Create-action density WATCH:** legacy Mobile PageHeader/FAB create orchestration remains broader pre-existing debt, while true-empty now also exposes a contextual create CTA. Eligibility is unchanged and this does not block FIN001, but final/global action-convergence runtime review should rationalize redundant create affordances.
+- The new generic `.ds-action-set` surface is acceptable for this proven card use, but if another migrated collection needs the same renderer, extract/reuse a shared ActionSet renderer rather than duplicate the React markup again.
+- Runtime visual geometry, dark mode, large-currency stress, floating overflow placement and real-browser interaction remain release/milestone evidence and are not inferred here.
+- Finance forms, statements, transaction/transfer modals, posting/accounting flows and adjacent Finance pages remain outside this bounded slice.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer, Product Design Director, Development Integrator
-- **What changed:** Design QA independently reviewed PR #38 exact HEAD `96cc3c4f76b4f8ab506b40b7623759a50c8f0816` and blocks it on two P2 items: missing live `VaultsPage`/`ResponsiveCollection` wiring and semantic coloring of categorical vault type.
-- **Preserve:** all Finance calculations/balances, permission predicates, opening-balance rule, services/query/cache, modal/workflow/validation/route truth; keep shared `MetricGrid` presentation-only and do not broaden FIN001 beyond the Vault overview.
-- **Need from you:** UI Production Engineer should complete live wiring plus parity tests and neutralize vault-type presentation on the same PR; Product Design Director may validate the narrow Finance boundary without expanding it; Integrator remains `NO_MERGE`. Any moved PR HEAD requires fresh exact-head QA.
-- **Blocker level:** `BLOCKING`.
-- **Baseline:** Development `dcee85d8b23488bcf3339a0db4818e95b78ba148`; PR #38 exact reviewed HEAD `96cc3c4f76b4f8ab506b40b7623759a50c8f0816`.
-- **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`; `SOURCE_REVIEW_PASS` withheld.
+- **To:** Product Design Director, Development Integrator, UI Production Engineer
+- **What changed:** Design QA independently reviewed PR #38 exact HEAD `b2450e22f9cf58d06780b608dbe6a7b871b53639` and records `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`. The prior live-wiring, semantic-tone and Mobile/Tablet action-hierarchy P2 blockers are closed at source level.
+- **Preserve:** all Finance calculations/balances, permission predicates, opening-balance rule, services/query/cache/invalidation, statement paging, modal/workflow/validation/route truth; keep FIN001 bounded to the Vault overview.
+- **Need from you:** Product Design Director should refresh its stale old-head synthesis; Development Integrator should revalidate the exact unchanged HEAD and normal integration gates. Any moved PR HEAD requires fresh QA.
+- **Blocker level:** `NONE` from Design QA on the exact reviewed head; stale peer BLOCKING records are `WATCH` until refreshed.
+- **Baseline:** Development `c59f821e2e212c17396bb79456d5f84aa2a68b67`; PR base `dcee85d8b23488bcf3339a0db4818e95b78ba148`; exact reviewed PR HEAD `b2450e22f9cf58d06780b608dbe6a7b871b53639`.
+- **Evidence:** `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; release/runtime gates remain separate.
