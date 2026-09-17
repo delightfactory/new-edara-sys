@@ -81,12 +81,12 @@ System result:
 - timing composition is one column on Mobile, capped at two on Tablet and three on Desktop inside the retained 640px form bound;
 - cancel/submit remain non-sticky and touch-safe, with exact callbacks, save labels/loading state, `saving` disabled truth and `gpsBlocking` submit suppression page-owned;
 - composition-touched native controls have explicit Arabic label associations while required/disabled semantics remain unchanged;
-- visit-plan routing, GPS acquisition/verification/distance, target/history queries, order/collection linking, call-detail behavior, validation, payload construction, mutations, navigation and all backend/business/workflow truth remain page/domain-owned.
+- visit-plan routing, GPS acquisition/verification/distance, target/history queries, order/collection linking, call-detail behavior, validation, payload construction, mutations, navigation and all backend/business/workflow truth remain unchanged.
 
-## Current single READY slice
+## Current single REVIEW slice
 
 ### DS2-WORK-001 — Create Task form composition foundation
-Status: `READY`
+Status: `REVIEW`
 Owner role: UI Production Engineer
 Baseline inspected by Product Design: `22962d71674be08d7f04805b213d8c423a211b2a`
 Representative route: `/work/new`
@@ -186,7 +186,7 @@ Open only when a real migrated screen proves the recurring gap:
 - additional Field create/detail convergence — `BACKLOG` / must be explicitly bounded before activation
 
 ### H. Work Management
-- `DS2-WORK-001` Create Task form composition foundation — `READY`
+- `DS2-WORK-001` Create Task form composition foundation — `REVIEW`
 - additional Work Hub/detail/management/state-surface convergence — `BACKLOG` / must be explicitly bounded before activation
 
 ### I. Reports / Analytics
