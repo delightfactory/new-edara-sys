@@ -4,56 +4,60 @@
 
 - Review date: `2026-09-18`
 - Development branch: `design-system-v2-development`
-- Development coordination HEAD immediately before this state write: `05d7cdb709179880b83f4cde52576717e2365229`.
+- Development coordination HEAD immediately before this state write: `74dae6d510dea153dcd2636690cfdaa432658e8b`.
 - Active slice: `DS2-WORK-001 — Create Task form composition foundation`.
 - Active PR: `#44 — DS2-WORK-001: Create Task form V2 composition foundation`.
 - PR base: `design-system-v2-development`.
 - PR base SHA: `d748637fe5fd2a5fd50eced16b15645c9f75185d`.
-- Exact current PR HEAD: `3d6ac4e01374e962a901a4548852e64363891dda`.
-- PR state: `OPEN / DRAFT / mergeable=true`.
-- Integration disposition: `NO_MERGE_BLOCKED_P2_WORK001_UNRESOLVED_V2_CONTROL_TOKEN`.
-- Current QA evidence: `AGENT-REVIEW: BLOCKED / P2 / BLOCKING`; `SOURCE_REVIEW_PASS` withheld on exact HEAD `3d6ac4e01374e962a901a4548852e64363891dda`; evidence label remains `TESTS_AUTHORED_NOT_EXECUTED`.
+- Exact current PR HEAD: `fb83ac8eba9087fdfe579669b171d88f5aaa3e8d`.
+- PR state: `OPEN / DRAFT / mergeable=false` at this revalidation.
+- Integration disposition: `NO_MERGE_BLOCKED_P2_WORK001_FIELD_SELECTOR_SCOPE`.
+- Current QA evidence: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` on exact HEAD `fb83ac8eba9087fdfe579669b171d88f5aaa3e8d`; evidence label `TESTS_AUTHORED_NOT_EXECUTED`.
+- Product Design evidence: `P2 / BLOCKING` on the same exact HEAD because the corrected semantic sizing contract is attached to unscoped global `.form-*` selectors rather than the V2 `Field` boundary.
 - Runtime/build/lint/preview/release evidence: not claimed.
 
 ## Integrator decision
 
-**NO MERGE in this run.** The current PR HEAD moved from the previously reviewed `09f30f8...` to `3d6ac4e...`, and Design QA has independently blocked this exact current HEAD. The attempted shared form-control touch fix references undeclared `--control-height-md`, so the CSS declaration does not establish the required deterministic Tablet/Mobile touch minimum and the focused source contract protects the wrong token.
+**NO MERGE in this run.** The previous invalid-token blocker is source-fixed and Design QA is GREEN on the exact current PR HEAD, but Product Design independently records a fresh same-head `P2 / BLOCKING` contradiction on selector ownership/blast radius. The shared V2 forms stylesheet is globally loaded after generic component styles, so unscoped `.form-input`, `.form-select` and `.form-textarea` sizing rules can change unrelated legacy consumers that have not adopted V2 `Field`.
 
-This is a bounded shared-presentation defect, not a Work business/backend defect. Integration does not implement the correction. No feature/product code was changed by Integration, no GitHub Actions/hosted CI was triggered or rerun, no Vercel/preview branch was used, and `main` was not touched.
+This is a bounded shared-presentation/system-ownership defect, not a Work business/backend defect. Integration does not implement the correction. No feature/product code was changed by Integration, no GitHub Actions/hosted CI was triggered or rerun, no Vercel/preview branch was used, and `main` was not touched.
 
 ## Current gate revalidation
 
 - **Base gate:** PASS — PR base is exactly `design-system-v2-development`.
-- **Exact-head freshness:** PASS — GitHub reports exact current PR HEAD `3d6ac4e01374e962a901a4548852e64363891dda`; prior GREEN evidence on `09f30f8...` is stale and cannot be reused.
-- **QA gate:** **FAIL / BLOCKING** — exact-head review is `AGENT-REVIEW: BLOCKED`; `SOURCE_REVIEW_PASS` is withheld.
-- **Evidence honesty:** PASS — `TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview PASS is inferred.
-- **Known build/type failure gate:** PASS as scoped — no known real build/type failure is recorded. The current blocker is a source-level CSS/system-contract defect.
+- **Exact-head freshness:** PASS — GitHub reports exact current PR HEAD `fb83ac8eba9087fdfe579669b171d88f5aaa3e8d`.
+- **QA gate:** PASS — exact-head `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` exists with honest `TESTS_AUTHORED_NOT_EXECUTED` evidence.
+- **Product Design / contradiction gate:** **FAIL / BLOCKING** — `DESIGN_DIRECTOR_STATE.md` independently records `P2 / BLOCKING` on the same exact HEAD for globally unscoped form-control sizing selectors.
+- **Evidence honesty:** PASS — no executed test/build/lint/runtime/preview PASS is inferred.
+- **Known build/type failure gate:** PASS as scoped — no known real build/type failure is recorded.
 - **Review-thread gate:** PASS — no inline review threads exist.
 - **Scope / functional-isolation gate:** PASS — the six changed files are Workstream governance, CreateTask presentation, focused tests, shared V2 form CSS and UI Implementation owned state. No DB/migration/RPC/service/RBAC/RLS/route-guard/business-calculation/query-cache/validation/workflow/deployment file is changed.
 - **Workflow/deployment gate:** PASS — no workflow/deployment-enabling change exists.
-- **Cross-role contradiction gate:** **FAIL / BLOCKING** — current `DESIGN_QA_STATE.md` records the exact-head P2 blocker. `DESIGN_DIRECTOR_STATE.md` is stale to the prior head but its touch-control requirement remains substantively aligned with the QA finding; fresh Product Design closeout is required after the corrected head exists.
-- **System-fit/device/accessibility gate:** **FAIL / BLOCKING** — `--control-height-md` is not part of the loaded V2 semantic token contract; canonical roles are `--ds-control-height-standard` and `--ds-control-height-touch`, and touch height must be guaranteed through Tablet/Mobile.
-- **Mergeability:** PASS — GitHub reports `mergeable=true`; PR remains Draft.
+- **System-fit / ownership gate:** **FAIL / BLOCKING** — semantic token values are correct, but `.form-input/.form-select/.form-textarea` are generic globally imported classes and the WORK001 proof does not authorize a product-wide geometry change for unreviewed legacy consumers. The V2 `Field` wrapper already exposes `.ds-field`, which is the bounded ownership boundary requested by Product Design.
+- **Mergeability:** **FAIL** at this check — GitHub currently reports `mergeable=false`; regardless, the same-head Product Design blocker independently forbids integration.
+- **Development drift:** WATCH only — current Development and PR have diverged from their common base through governance coordination; no forbidden product/shared implementation overlap was found in the six-file PR scope.
 - **CI/deployment isolation:** PASS — absence of Actions is expected under quota policy and no Actions/Vercel/preview/`main` activity was performed.
 
 ## Scope judgment
 
-WORK001 remains correctly bounded to `/work/new` and the established shared form grammar. The page-level migration and functional-isolation boundaries remain source-clean outside the blocker: section order, responsive `FormGrid`, shared `Field`, non-sticky `FormActions + Button`, assignment/defaulting, owner-vs-assignee meaning, acknowledgement eligibility/reset, validation/date ordering, priority/visibility/completion mode, `toIso`, create payload/`activate: true`, toasts/navigation and Work query/service/permission/workflow truth remain page/domain-owned.
+WORK001 remains correctly bounded to `/work/new` and the established shared form grammar. The page-level migration and functional-isolation boundaries remain source-clean: four-section Arabic hierarchy, responsive `FormGrid`, shared `Field`, non-sticky `FormActions + Button`, assignment/defaulting, owner-vs-assignee meaning, acknowledgement eligibility/reset, exact validation/date ordering, priority/visibility/completion mode, `toIso`, create payload/`activate: true`, toasts/navigation and Work query/service/permission/workflow truth remain page/domain-owned.
 
-The required correction remains narrow and presentation-only: replace the unresolved shared sizing token with the established V2 semantic control-height contract, guarantee at least `--ds-control-height-touch` through `<=1024px`, preserve textarea's larger floor, and update the focused source/style protection. Do not introduce a Work-local sizing exception or broaden the slice.
+The required correction is narrow and presentation-only: keep `--ds-control-height-standard` for Desktop/default, `--ds-control-height-touch` through `<=1024px`, and the larger textarea floor, but scope those shared rules through the V2 `Field` boundary (for example `.ds-field .form-input`, `.ds-field .form-select`, `.ds-field .form-textarea`) including the Tablet/Mobile override. Update the focused source/style contract to assert that Field-owned boundary. Do not add a Work-local sizing patch or change any Work validation, values, callbacks, payloads, queries, services, permissions or workflow semantics.
+
+A broader product-wide canonical `.form-*` sizing decision, if desired later, requires a separately bounded shared/global component-depth slice with representative consumer validation; WORK001 must not make that change incidentally.
 
 ## Queue continuity
 
 - `DS2-WORK-001` remains the single active `REVIEW` slice; it is not DONE and the queue must not advance.
 - Reports/Analytics, Settings/Admin, shared component-depth work and Global convergence remain preserved in the North-Star roadmap.
-- `TEAM_MEMORY.md`, `31_AGENT_TEAM_WORKSTREAM.md` and `DECISION_LOG.md` remain unchanged until a successful integration or a durable-rule change.
-- Issue #27 already contains the current QA blocker, so Integration does not duplicate the same event.
+- `TEAM_MEMORY.md`, `31_AGENT_TEAM_WORKSTREAM.md` and `DECISION_LOG.md` remain unchanged until successful integration or a durable-rule change.
+- Issue #27 already contains the current Product Design blocker, so Integration does not duplicate the same event.
 
 ### Cross-role handoff
 - **To:** UI Production Engineer; Product Design Director + Design QA after the corrected exact PR HEAD exists.
-- **What changed:** Integration revalidated PR #44 and the disposition materially changed from waiting for Product Design closeout to `NO_MERGE_BLOCKED_P2_WORK001_UNRESOLVED_V2_CONTROL_TOKEN` because exact current HEAD `3d6ac4e...` is QA-blocked and lacks `SOURCE_REVIEW_PASS`.
-- **Preserve:** bounded `/work/new` presentation-only scope; four-section Arabic hierarchy; responsive grid; non-sticky actions; Work validation, assignment/defaulting, owner/assignee/acknowledgement, payload/activation, query/service/permission/workflow truth; full Reports/Admin/Global roadmap.
-- **Need from you:** UI Production Engineer should correct only the shared V2 control-height token contract and focused source/style test. Design QA must then independently review the new exact HEAD; Product Design Director must also close that same new HEAD before Integration. Any HEAD movement invalidates prior review evidence.
+- **What changed:** Integration revalidated PR #44 exact HEAD `fb83ac8...`; QA is GREEN and the prior invalid-token defect is closed, but Product Design now records a fresh same-head `P2 / BLOCKING` contradiction because the shared sizing contract is globally unscoped. Integration disposition is now `NO_MERGE_BLOCKED_P2_WORK001_FIELD_SELECTOR_SCOPE`.
+- **Preserve:** valid V2 semantic standard/touch tokens; textarea larger floor; bounded `/work/new` presentation-only scope; four-section Arabic hierarchy; responsive grid; non-sticky actions; Work validation, assignment/defaulting, owner/assignee/acknowledgement, payload/activation, query/service/permission/workflow truth; full Reports/Admin/Global roadmap.
+- **Need from you:** UI Production Engineer should scope the existing shared V2 sizing rules to `.ds-field`-owned controls and update the focused source/style contract only. Design QA and Product Design must independently re-review the new exact HEAD. Integrator remains `NO_MERGE` until both same-head gates are clean and GitHub mergeability is revalidated.
 - **Blocker level:** `BLOCKING`.
-- **Baseline:** Development `05d7cdb709179880b83f4cde52576717e2365229`; blocked PR #44 exact HEAD `3d6ac4e01374e962a901a4548852e64363891dda`.
-- **Evidence:** `AGENT-REVIEW: BLOCKED / SOURCE_REVIEW_PASS WITHHELD + TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview/release PASS claimed.
+- **Baseline:** Development `74dae6d510dea153dcd2636690cfdaa432658e8b`; blocked PR #44 exact HEAD `fb83ac8eba9087fdfe579669b171d88f5aaa3e8d`.
+- **Evidence:** `QA GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; Product Design `P2 / BLOCKING`; no executed build/test/lint/runtime/preview/release PASS claimed.
