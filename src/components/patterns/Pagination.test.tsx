@@ -1,6 +1,11 @@
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import Pagination from './Pagination'
+
+const stylesheetPath = fileURLToPath(new URL('../../styles/design-system-v2-pagination.css', import.meta.url))
+const stylesheet = readFileSync(stylesheetPath, 'utf8')
 
 describe('Pagination', () => {
   it('exposes current-page semantics and preserves the established five-page window', () => {
@@ -66,5 +71,19 @@ describe('Pagination', () => {
       />,
     )
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument()
+  })
+
+  it('keeps pagination controls on the canonical touch target through Tablet without changing Desktop density', () => {
+    const tabletMediaStart = stylesheet.indexOf('@media (max-width: 1024px)')
+    const mobileMediaStart = stylesheet.indexOf('@media (max-width: 768px)')
+
+    expect(tabletMediaStart).toBeGreaterThan(-1)
+    expect(mobileMediaStart).toBeGreaterThan(tabletMediaStart)
+
+    const tabletContract = stylesheet.slice(tabletMediaStart, mobileMediaStart)
+    expect(tabletContract).toContain('.ds-pagination .pagination-btn')
+    expect(tabletContract).toContain('min-width: var(--ds-icon-hit-target)')
+    expect(tabletContract).toContain('height: var(--ds-icon-hit-target)')
+    expect(tabletContract).toContain('.pagination-btn.pagination-btn-nav')
   })
 })
