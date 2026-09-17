@@ -1,5 +1,15 @@
 /* Delight Design System V2 — form composition patterns. */
 
+/* Canonical touch-safe native form controls for V2 surfaces. */
+.form-input,
+.form-select {
+  min-height: var(--control-height-md);
+}
+
+.form-textarea {
+  min-height: max(80px, var(--control-height-md));
+}
+
 .ds-form-section {
   display: grid;
   gap: var(--ds-form-section-gap);
