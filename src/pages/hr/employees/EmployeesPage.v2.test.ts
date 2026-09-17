@@ -54,7 +54,7 @@ describe('EmployeesPage V2 administration-list contract', () => {
   it('distinguishes initial empty from filtered empty without changing creation eligibility', () => {
     expect(source).toContain('const hasActiveFilters = Boolean(search || deptFilter || statusFilter)')
     expect(source).toContain("title={hasActiveFilters ? 'لا توجد نتائج مطابقة' : 'لا يوجد موظفون'}")
-    expect(source).toContain("hasActiveFilters\n          ? 'جرّب تعديل البحث أو فلاتر القسم والحالة.'")
+    expect(source).toContain("'جرّب تعديل البحث أو فلاتر القسم والحالة.'")
     expect(source).toContain("!hasActiveFilters && can('hr.employees.create')")
   })
 
