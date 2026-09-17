@@ -47,10 +47,10 @@ describe('EmployeeOverviewPresentation', () => {
       />,
     )
 
-    expect(screen.getByText('نشط').closest('[data-tone]')).toHaveAttribute('data-tone', 'success')
-    expect(screen.getByText('في إجازة').closest('[data-tone]')).toHaveAttribute('data-tone', 'info')
-    expect(screen.getByText('ميداني').closest('[data-tone]')).toHaveAttribute('data-tone', 'neutral')
-    expect(screen.getByText('الإجمالي').closest('[data-tone]')).toHaveAttribute('data-tone', 'neutral')
+    expect(screen.getByText('نشط').closest('[data-tone]')?.getAttribute('data-tone')).toBe('success')
+    expect(screen.getByText('في إجازة').closest('[data-tone]')?.getAttribute('data-tone')).toBe('info')
+    expect(screen.getByText('ميداني').closest('[data-tone]')?.getAttribute('data-tone')).toBe('neutral')
+    expect(screen.getByText('الإجمالي').closest('[data-tone]')?.getAttribute('data-tone')).toBe('neutral')
   })
 
   it('renders semantic status, neutral employee type and permission-projected metadata', () => {
@@ -63,10 +63,10 @@ describe('EmployeeOverviewPresentation', () => {
       />,
     )
 
-    expect(screen.getByText('نشط').closest('[data-tone]')).toHaveAttribute('data-tone', 'success')
-    expect(screen.getByText('ميداني')).toHaveClass('badge-neutral')
-    expect(screen.getByText('الراتب الأساسي')).toBeInTheDocument()
-    expect(screen.getByText('8,000 ج.م')).toBeInTheDocument()
+    expect(screen.getByText('نشط').closest('[data-tone]')?.getAttribute('data-tone')).toBe('success')
+    expect(screen.getByText('ميداني').classList.contains('badge-neutral')).toBe(true)
+    expect(screen.getByText('الراتب الأساسي')).toBeTruthy()
+    expect(screen.getByText('8,000 ج.م')).toBeTruthy()
   })
 
   it('keeps mobile to the existing view action while tablet also exposes edit', () => {
@@ -84,8 +84,8 @@ describe('EmployeeOverviewPresentation', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'عرض ملف أحمد علي' }))
     expect(onView).toHaveBeenCalledTimes(1)
-    expect(screen.queryByRole('button', { name: 'تعديل أحمد علي' })).not.toBeInTheDocument()
-    expect(screen.queryByText('الراتب الأساسي')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'تعديل أحمد علي' })).toBeNull()
+    expect(screen.queryByText('الراتب الأساسي')).toBeNull()
 
     rerender(
       <EmployeeCard
@@ -114,6 +114,6 @@ describe('EmployeeOverviewPresentation', () => {
     const openButton = screen.getByRole('button', { name: 'فتح ملف أحمد علي' })
     fireEvent.click(openButton)
     expect(onOpen).toHaveBeenCalledTimes(1)
-    expect(openButton.closest('[data-employee-card]')).toHaveAttribute('data-mode', 'mobile')
+    expect(openButton.closest('[data-employee-card]')?.getAttribute('data-mode')).toBe('mobile')
   })
 })
