@@ -76,25 +76,27 @@ describe('Vault overview presentation', () => {
     const { container } = render(<VaultCard summary={baseSummary} mode="mobile" actions={actionSet(callbacks)} />)
 
     const direct = container.querySelector('.ds-action-set__visible')
+    const overflow = container.querySelector('.ds-action-set__overflow-actions')
     expect(direct?.textContent).toContain('كشف حساب')
     expect(direct?.textContent).not.toContain('افتتاحي')
     expect(direct?.textContent).not.toContain('إيداع')
+    expect(overflow?.textContent).toContain('افتتاحي')
+    expect(overflow?.textContent).toContain('إيداع')
+    expect(overflow?.textContent).toContain('سحب')
+    expect(overflow?.textContent).toContain('تعديل')
 
     fireEvent.click(screen.getByRole('button', { name: 'كشف حساب' }))
+    fireEvent.click(overflow?.querySelector('[data-action-id="deposit"]')!)
+    fireEvent.click(overflow?.querySelector('[data-action-id="withdrawal"]')!)
+    fireEvent.click(overflow?.querySelector('[data-action-id="edit"]')!)
+
     expect(callbacks.statement).toHaveBeenCalledTimes(1)
-
-    const overflowTrigger = container.querySelector('.ds-action-set__overflow-trigger')
-    expect(overflowTrigger?.getAttribute('aria-label')).toBe('المزيد من إجراءات الخزنة')
-    fireEvent.click(overflowTrigger!)
-    fireEvent.click(screen.getByRole('button', { name: 'إيداع' }))
-    fireEvent.click(screen.getByRole('button', { name: 'سحب' }))
-    fireEvent.click(screen.getByRole('button', { name: 'تعديل' }))
-
     expect(callbacks.deposit).toHaveBeenCalledTimes(1)
     expect(callbacks.withdrawal).toHaveBeenCalledTimes(1)
     expect(callbacks.edit).toHaveBeenCalledTimes(1)
-    expect(screen.getByRole('button', { name: 'إيداع' }).className).toContain('btn-success')
-    expect(screen.getByRole('button', { name: 'سحب' }).className).toContain('btn-danger')
+    expect(overflow?.querySelector('[data-action-id="deposit"]')?.className).toContain('btn-success')
+    expect(overflow?.querySelector('[data-action-id="withdrawal"]')?.className).toContain('btn-danger')
+    expect(container.querySelector('.ds-action-set__overflow-trigger')?.getAttribute('aria-label')).toBe('المزيد من إجراءات الخزنة')
   })
 
   it('keeps Tablet at two direct actions and preserves omission of unauthorized actions', () => {
