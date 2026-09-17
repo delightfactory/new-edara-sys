@@ -136,7 +136,7 @@
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   .ds-field-activities__filters {
     grid-template-columns: minmax(0, 1fr);
   }
