@@ -73,7 +73,7 @@
   block-size: 2rem;
   flex: 0 0 auto;
   border-radius: var(--radius-md);
-  background: var(--bg-muted);
+  background: var(--bg-surface-2);
   color: var(--text-secondary);
 }
 
