@@ -80,18 +80,21 @@ System result:
 ## Current single active slice
 
 ### DS2-FIN-001 — Finance lists and summaries
-Status: `IN_PROGRESS`
+Status: `REVIEW`
 Owner role: UI Production Engineer
 
 System intent:
 Continue the roadmap into Finance using one representative, dependency-safe list/summary presentation concern that proves shared collection, summary, state and action grammar without moving financial truth into presentation.
 
-Current bounded implementation concern:
-- representative live surface: `VaultsPage` overview only (summary metrics + vault collection presentation);
-- first implementation establishes a shared responsive `MetricGrid` and thin Finance-domain vault summary/card adapters before live-page wiring;
-- all total/balance calculations, permission predicates, opening-balance eligibility, transaction callbacks, statement loading, vault services/query/cache and modal workflows remain page/domain-owned;
-- live `VaultsPage` wiring, one `ResponsiveCollection<Vault>` boundary, Desktop dense table parity and deliberate Tablet/Mobile cards remain the next step on the same PR;
-- forms, statement/transaction/transfer modals, posting/accounting semantics and other Finance pages remain outside this bounded concern.
+Current bounded candidate result:
+- representative live surface remains `VaultsPage` overview only (summary metrics + vault collection presentation);
+- summary values remain page-owned and now project through shared `MetricGrid + StatCard`; total-balance semantic tone is caller-owned and factual active-count receives no inferred success tone;
+- one live `ResponsiveCollection<Vault>` replaces the CSS-hidden Desktop/Mobile dual trees, preserving dense Desktop `DataTable`, adding deliberate two-column Tablet cards and one-column Mobile cards, and keeping loading/empty/create behavior in one mounted collection boundary;
+- vault type is neutral categorical `Badge` metadata while active/inactive uses semantic `StatusBadge`;
+- Mobile/Tablet card actions consume canonical `AppAction + resolveActionSet` semantics with the existing page-owned action order and eligibility: maximum 1 direct action on Mobile, 2 on Tablet, remaining actions in accessible RTL overflow; Desktop retains dense direct table actions;
+- `finance.vaults.create/transact/update`, `current_balance === 0`, create/update/manual-adjustment/transfer services, totals/balances, statement `pageSize: 25`, query/cache/invalidation, modal workflows and validations remain page/domain-owned and unchanged;
+- forms, statement/transaction/transfer modal redesign, posting/accounting semantics and other Finance pages remain outside this bounded concern;
+- focused component and live-page source-contract tests are authored; evidence remains `TESTS_AUTHORED_NOT_EXECUTED`.
 
 Initial direction:
 - preserve ledger/account/balance/payment/receipt/treasury/credit/debit/aging/calculation/posting/approval/permission/query/cache/service/route semantics exactly;
@@ -144,7 +147,7 @@ Open only when a real migrated screen proves the recurring gap:
 - `DS2-PROC-002` Purchase Invoice form decomposition — `DONE`
 
 ### E. Finance
-- `DS2-FIN-001` Finance lists and summaries — `IN_PROGRESS`
+- `DS2-FIN-001` Finance lists and summaries — `REVIEW`
 - `DS2-FIN-002` Financial transaction/detail/action patterns — `BACKLOG`
 
 ### F. HR / People
