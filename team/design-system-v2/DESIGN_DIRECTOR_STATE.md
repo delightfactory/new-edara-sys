@@ -2,94 +2,103 @@
 
 ## Reviewed baseline
 
-- Review date: `2026-09-17`
-- Development branch: `design-system-v2-development`
-- Exact Development HEAD independently inspected before this state write: `f3369687cf3b52bac311fa3cadc87bb6714b31de`.
-- Latest integrated product slice: `DS2-FIELD-001`, squash `cac61006d5c6ac402a509c2f15fb09ce51bafd50`.
-- Active implementation PR: `#43 — DS2-FIELD-002: Activity form V2 composition foundation`.
-- PR base: `design-system-v2-development` from `0e90c94cd02c09f94cfb16d954bf6f9e7cc2556d`.
-- Exact implementation HEAD independently reviewed: `a31addc60e5b0eaf8ee89a0fea11bded2a6e4c4a`.
-- PR state at review: `OPEN / DRAFT`; only open implementation PR targeting Development.
-- Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER` on exact HEAD `a31addc60e5b0eaf8ee89a0fea11bded2a6e4c4a`.
-- Design QA on the same exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` with `TESTS_AUTHORED_NOT_EXECUTED`.
-- Blocker: `NONE` from Product Design. Integration may proceed only after the Integrator revalidates unchanged HEAD/base/drift/threads/mergeability.
+- Review date: `2026-09-17`.
+- Development branch: `design-system-v2-development`.
+- Exact product Development HEAD independently inspected before coordination writes: `22962d71674be08d7f04805b213d8c423a211b2a`.
+- Latest integrated product slice: `DS2-FIELD-002`, squash `2492fa475e7bc5beb9148124f31a4b4837057c19`.
+- Open implementation PRs targeting Development at review: `NONE`.
+- Product Design disposition: `DS2-WORK-001 READY — Create Task form composition foundation`.
+- Workstream boundary commit: `2b3326a5f445a3461893d1fd3397cf5619c4616b`.
+- Blocker: `NONE`.
 
 ## Independent professional judgment
 
-**PR #43 implements the intended FIELD002 architecture cleanly enough to integrate into the isolated Design System development branch.**
+**The smallest dependency-safe Work Management entry point is `/work/new` (`CreateTaskPage`) and specifically its local form grammar, not the Work Hub or stateful Work detail.**
 
-I formed this judgment from the exact implementation source and shared form contracts before relying on peer approval. The live normal Activity create/edit path now uses the established `FormSection + FormGrid + FormActions + Button` grammar rather than a page-local outer form/timing/action mini-system. More importantly, the implementation keeps the actual Field workflow truth in `ActivityForm`: GPS acquisition/blocking, validation, customer/type/outcome requirements, target/history data, sales/collection links, call detail, payload construction, mutations and navigation remain page/domain-owned.
+I formed this judgment from the latest Work source and the established V2 form contracts before relying on peer lifecycle states. Work Management is already one of the repository's strongest responsive modules, but it still carries a broad CSS island and local form primitives. `CreateTaskPage` duplicates `work-form-card`, `work-form-grid`, `work-form-actions` and `work-field` even though V2 now has proven `FormSection`, `FormGrid`, `FormActions`, `Field` and shared `Button` contracts. At the same time, the page's actual task semantics remain clearly page/domain-owned, making this a high-value presentation migration without entering Work's critical state machine.
 
-This is the right North-Star tradeoff for the slice: improve hierarchy, responsive composition, touch behavior and label association without broadening into a functional rewrite or inventing a Field-specific form framework.
+The Work Hub is intentionally not the first slice. Its clickable summary metrics, multi-permission action surface, local search/mode controls and operational queue states expose several separate pattern questions; bundling those into the first Work PR would violate the one-concern rule. Work detail is even less appropriate because its transition/ownership/approval semantics are state-machine critical.
 
-## Exact-head Product Design findings
+## WORK001 architecture boundary
 
-### System coherence / hierarchy — PASS
+### In scope
 
-- The normal create/edit form is now visibly structured as `بيانات النشاط` -> `النتيجة والربط` -> `التوقيت والملاحظات`, matching the existing operational sequence rather than reorganizing business steps.
-- Shared sections own visual grouping; the page owns domain conditions. No new local replacement for an existing V2 form primitive/pattern was introduced.
-- The bounded `640px` form width remains appropriate for focused data entry on Desktop while shared sections establish consistent internal hierarchy and tokenized inter-section spacing.
-- The action area now uses the same V2 form-action grammar proven elsewhere; primary submit and secondary cancel no longer depend on page-local action CSS.
+- Route/surface: `/work/new` only.
+- Source: `src/pages/work/CreateTaskPage.tsx` plus only directly necessary presentation tests/styles.
+- Replace the four existing visual section shells with shared `FormSection`, preserving exact order, titles and content.
+- Replace safe paired field layouts with `FormGrid columns={2}`; full-width fields remain intentionally full-width.
+- Move standard text/select/textarea field anatomy touched by the slice to shared `Field`, preserving labels, hints, errors, native control types, values, callbacks and current max-length/disabled behavior.
+- Replace local cancel/submit row composition with non-sticky `FormActions + Button` while preserving secondary cancel, primary submit, loading state and callbacks.
+- Keep the existing `PageHeader` unchanged.
+- Remove only CreateTask-specific local form-shell CSS that becomes unused because of this migration; no broad Work CSS cleanup.
 
-### Device composition — PASS at source level
+### Explicitly out of scope
 
-- **Mobile (`<=768px`):** the canonical timing grid collapses to one column and shared actions stretch with touch targets; no sticky surface was introduced, so BottomNav/FAB space is not newly contested.
-- **Tablet (`769–1024px`):** the three-field timing group is deliberately capped at two columns rather than inheriting a compressed Desktop grid; touch remains first-class.
-- **Desktop (`>=1025px`):** date/start/end may use three columns inside the retained bounded form width, preserving efficient data-entry density.
-- The form-shell migration removes the local responsive timing rule rather than creating another page-specific breakpoint grammar.
+- `validate()` semantics, message wording and the `nextActionAt > dueAt` rule.
+- `useAssignmentCandidates`, default candidate selection, owner/accountability meaning, assignee/current-ball meaning, acknowledgement eligibility/reset, completion mode, priority or visibility semantics.
+- `useCreateTask`, `toIso`, payload shape, `activate: true`, toast outcomes and post-create navigation.
+- The acknowledgement checkbox grammar and selected owner/assignee summary cells.
+- Work Hub, Submit Request, Supervisor, management, Work detail, sticky task actions, badges and operational flags.
+- Select/Combobox convergence, ActionRegistry expansion, new Work-specific shared primitives, or any backend/database/RPC/query/permission/RBAC/RLS/service/workflow change.
 
-### RTL / Arabic / accessibility — PASS for touched scope
+If preserving any of those truths requires functional modification, WORK001 becomes `BLOCKED`; the implementation must not absorb the functional issue.
 
-- Composition-touched native fields now have explicit Arabic label/control associations (`htmlFor` / `id`) for activity type, customer, outcome, refusal/closed reason, date, start/end time and notes.
-- Existing required/disabled truth remains native and page-owned; outcome remains disabled before activity type selection.
-- Shared Buttons preserve canonical focus/keyboard behavior and opt into touch-safe targets.
-- No new color-only status meaning or LTR-first layout assumption was introduced.
+## Product-quality acceptance
 
-### Functional isolation — PASS
+### System coherence / hierarchy
 
-The exact reviewed source preserves:
-- visit-plan guard and execution routing;
-- `GPSStatusIndicator`, GPS acquisition/verification/distance, `gpsBlocking`, GPS validation and payload coordinates;
-- `useActivityTypes`, `useActivity`, `useCustomer`, `useCustomers`, `useActivities`, `useTargetStatus` and sales-order query inputs;
-- type/customer/outcome/reason/call-result conditions and validation meaning;
-- target gamification and recent-history behavior;
-- order/collection linking and navigation;
-- call-direction/result/attempt/phone/callback/recording state and `useSaveCallDetail` behavior;
-- payload fields, create/update mutations, toast outcomes and navigation;
-- cancel `navigate(-1)`, save labels, `saving` disabled truth and `saving || gpsBlocking` submit suppression.
+- The task-entry narrative remains exactly: what is required -> responsibility/current ball holder -> next action/timing -> priority/privacy/completion behavior.
+- Shared patterns own spacing, section hierarchy, field anatomy and action composition; Work owns task meaning and business state.
+- No page-local replacement is introduced for a V2 primitive already capable of the presentation requirement.
+- No attempt is made to flatten Work's useful operational terminology into generic component vocabulary.
 
-No DB/migration/RPC/service/RBAC/RLS/route-guard/business-calculation/query-cache/workflow/deployment change is part of the PR.
+### Device contract
 
-### Test/evidence judgment — PASS under current policy
+- **Mobile (`<=768px`)**: migrated grids collapse to one column; controls/actions remain touch-safe; actions stay non-sticky and do not compete with BottomNav/FAB space.
+- **Tablet (`769–1024px`)**: safe paired fields may use two columns; long Arabic labels/hints and validation remain readable without compressed control geometry.
+- **Desktop (`>=1025px`)**: preserve the current efficient two-column task-entry density; do not invent denser three/four-column business grouping.
 
-Focused authored tests protect shared-form adoption, responsive timing/action intent, touched label associations and critical page-owned functional boundaries. Evidence remains honestly labeled `TESTS_AUTHORED_NOT_EXECUTED`; no local build/test/lint/runtime/preview PASS is claimed and no hosted CI or Vercel action is required for this development-stage gate.
+### RTL / Arabic / accessibility / states
 
-## Non-blocking WATCH
+- Every migrated labeled native control remains programmatically associated with its Arabic label.
+- Shared `Field` should own hint/error relationships through ids/`aria-describedby`; error meaning must not be color-only.
+- Existing `required`, `disabled`, loading and validation truth remains unchanged.
+- Focus/keyboard behavior remains native/shared, and no nested interactive pattern is introduced.
+- Dark-mode/RTL styling comes from shared tokens/patterns; no new hard-coded colors or LTR assumptions.
 
-The excluded legacy call/link sub-controls remain a local mini-system inside the broader form, including the pre-existing `act-call-grid` breakpoint behavior and local direction/link button grammar. That debt was present before FIELD002 and the PR relocates its styling mechanically rather than redefining it. It is **not** a FIELD002 blocker, but it must not be copied as the canonical Field form answer; later component-depth/runtime convergence should revisit those controls explicitly.
+### Evidence
+
+Focused authored tests should protect shared-pattern adoption, section ordering, responsive grid/action intent, label/hint/error association and explicit preservation of the functional boundaries above. Evidence remains subject to `33_TEST_AND_VALIDATION_POLICY.md`; no hosted CI, Vercel preview or deployment action is permitted.
+
+## Current Work-island observations for later slices
+
+These are roadmap observations, not WORK001 scope:
+
+- `WorkHubPage` still carries a local hero, clickable KPI summary cards, local segmented mode control, local search surface, local section headers/action cards/empty state and a mobile create treatment.
+- `work.css` contains a mature 1024/768 responsive system; this should be mined selectively rather than deleted wholesale.
+- `WorkItemCard` already composes the shared `DataCard` and feature-level Work badges, so future collection migration must preserve that good ownership boundary instead of replacing domain presentation indiscriminately.
+- Existing V2 `SegmentedControl`, `MetricGrid/StatCard`, `SectionHeader`, `StatePanel`, `ResponsiveCollection` and action patterns are candidates for later Work slices only after exact interaction parity is proven.
 
 ## Peer-state comparison / contradiction synthesis
 
-I formed the Product Design judgment above before comparing peer conclusions.
+I formed the Product Design judgment above from current source before comparing the peer role files.
 
-- **Design QA:** aligned on the same exact HEAD `a31addc60...` with `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`; its only WATCH is the same excluded legacy call/link debt. No contradiction.
-- **Development Integrator:** current state is fresh and intentionally `NO_MERGE_WAITING_FRESH_PRODUCT_DESIGN_CLOSEOUT`; this state supplies the missing same-head Product Design gate. Its integration blocker is therefore resolved from the Design Director side, subject to the Integrator's final unchanged-head revalidation.
-- **UI Production Engineer:** the Development-side file is lifecycle-stale from FIELD001, while the PR-owned UI state on `a31addc60...` is current and aligned with the reviewed implementation. No competing slice exists.
-- **Team Memory:** remains directionally correct: FIELD002 is the active Field create/detail concern and all Field business/GPS/query/validation truth stays page/domain-owned.
-- **Review threads:** none are open on PR #43 at this review.
+- **Development Integrator:** fresh direction is aligned: FIELD002 is integrated and WORK001 is the next single READY roadmap concern.
+- **UI Production Engineer:** Development-side state is lifecycle-stale from the completed FIELD002 implementation; it does not conflict with the new WORK001 boundary.
+- **Design QA:** Development-side state is lifecycle-stale from FIELD002 exact-head review; no current QA conclusion conflicts with WORK001 because no implementation PR exists yet.
+- **Team Memory:** aligned on Work Management as the next module and on preserving Work business/query/permission/workflow truth.
+- **Decision Log:** no durable rule needs change; this is adoption of already-established V2 form ownership.
 
-There is **no current BLOCKING cross-role contradiction** on exact PR HEAD `a31addc60e5b0eaf8ee89a0fea11bded2a6e4c4a`.
-
-No Team Memory update is warranted before merge because integrated product truth has not changed. No Decision Log update is warranted because FIELD002 introduces no new durable system rule.
+There is **no BLOCKING cross-role contradiction**. Team Memory does not need an update because the overall roadmap/direction is unchanged; only the already-queued WORK001 concern is now concretely bounded.
 
 ## What changed since previous state
 
-The pre-implementation FIELD002 architecture boundary has now been independently validated against the implemented exact PR HEAD. Product Design accepts PR #43 as aligned with the North Star and the declared bounded scope, closing the Integrator's pending same-head Product Design coordination gate.
+FIELD002 is no longer an active PR: it is integrated, Development has no open implementation PR, and the previously generic WORK001 placeholder now has one concrete dependency-safe implementation target. Product Design selected and documented the `/work/new` Create Task form composition as the only READY implementation concern and explicitly deferred Work Hub/detail/management convergence.
 
 ### Cross-role handoff
-- **To:** Development Integrator; Design QA only if PR HEAD moves; UI Production Engineer only if Integrator finds a new material gate failure.
-- **What changed:** Product Design independently reviewed and accepted PR #43 exact HEAD `a31addc60e5b0eaf8ee89a0fea11bded2a6e4c4a`; FIELD002 has no current Design-System blocker and the prior integration coordination wait for fresh Director closeout is satisfied from this role.
-- **Preserve:** bounded ActivityForm-only presentation scope; visit-plan routing; GPS acquisition/verification/distance/blocking; target/history queries; customer/type/outcome/validation rules; sales/collection links; call-detail state/save behavior; payload/mutations/navigation; non-sticky Mobile actions; 640px form bound; shared responsive FormGrid behavior; honest `TESTS_AUTHORED_NOT_EXECUTED` evidence.
-- **Need from you:** Integrator should verify PR #43 still points to exact HEAD `a31addc60e5b0eaf8ee89a0fea11bded2a6e4c4a`, recheck base/drift/review threads/mergeability and merge into `design-system-v2-development` only if all normal gates remain valid. Any PR HEAD movement invalidates this acceptance and requires fresh Director + QA review.
+- **To:** UI Production Engineer; Design QA and Development Integrator after an exact implementation PR HEAD exists.
+- **What changed:** `DS2-WORK-001` is now concretely bounded to the `/work/new` Create Task presentation/form-composition migration using shared `FormSection + FormGrid + Field + FormActions + Button`; Workstream updated in commit `2b3326a5f445a3461893d1fd3397cf5619c4616b`.
+- **Preserve:** exact section order/content; title/description/outcome/next-action values and callbacks; owner vs assignee meaning; candidate loading/defaulting; acknowledgement eligibility/reset; dates and `nextActionAt > dueAt` validation; priority/visibility/completion-mode semantics; `useCreateTask` payload/`activate: true`; toast/navigation outcomes; existing PageHeader; non-sticky actions; all backend/query/permission/state-machine truth.
+- **Need from you:** UI Production Engineer should open exactly one WORK001 PR from current `design-system-v2-development` and implement only this bounded presentation migration with focused tests. Do not begin Work Hub/detail cleanup in the same PR. QA/Integrator should wait for one stable exact PR HEAD before reviewing.
 - **Blocker level:** `NONE`.
-- **Baseline:** Development inspected `f3369687cf3b52bac311fa3cadc87bb6714b31de`; accepted PR #43 exact HEAD `a31addc60e5b0eaf8ee89a0fea11bded2a6e4c4a`.
+- **Baseline:** product source inspected at Development `22962d71674be08d7f04805b213d8c423a211b2a`; workstream boundary commit `2b3326a5f445a3461893d1fd3397cf5619c4616b`.
