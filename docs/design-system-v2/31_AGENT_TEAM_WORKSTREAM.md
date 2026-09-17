@@ -96,25 +96,42 @@ System result:
 
 ## Current single READY slice
 
-### DS2-FIN-002 — Financial transaction/detail/action patterns
+### DS2-FIN-002 — Payment Receipt transaction-detail header/action foundation
 Status: `READY`
-Owner role: Product Design Director -> UI Production Engineer after the concern is bounded
+Owner role: Product Design Director -> UI Production Engineer
+Design Director baseline: `45cf7998c90254e022258d91a6debfe7179d935d`
+Representative live surface: `src/pages/finance/PaymentReceiptDetail.tsx`
 
 System intent:
-Continue Finance with one smallest dependency-safe transaction/detail/action presentation concern that reuses the proven V2 hierarchy and action grammar without changing accounting truth, eligibility, posting or financial calculations.
+Prove that Finance transaction-detail identity, workflow status and guarded review actions reuse the same shared V2 `TransactionHeader + StatusBadge + AppAction/resolveActionSet` grammar already proven in Sales, while every receipt/payment/accounting rule remains page/domain/service-owned.
 
-Initial direction:
-- Product Design Director must inspect live Finance transaction/detail surfaces on the exact latest Development baseline and select one representative presentation-only boundary before implementation begins;
-- prefer proven shared `PageHeader` / transaction header, semantic status, key-value/detail grouping, canonical `AppAction + resolveActionSet`, responsive sheet/modal and state grammar only where the live surface proves fit;
-- preserve every ledger/account/balance/payment/receipt/treasury/credit/debit/posting/approval/permission/query/cache/service/route/validation semantic exactly;
-- Mobile should expose the operational next action clearly, Tablet should use deliberate hybrid density, Desktop should retain efficient financial review/comparison;
-- author focused tests for action eligibility/placement, device composition, state and permission parity; evidence follows `33_TEST_AND_VALIDATION_POLICY.md`.
+Implement only:
+- replace the current ad-hoc sticky receipt header with a thin Finance adapter over shared `TransactionHeader`;
+- preserve receipt number identity plus existing customer/date context and links;
+- map `pending / confirmed / rejected` to shared `StatusBadge` using the current Arabic labels and semantic tones; Finance owns the mapping;
+- use shared `Button` for back navigation to `/finance/payments` with RTL-native direction and touch-safe target;
+- declare only the existing eligible review actions through canonical `AppAction`: confirm remains present only under existing `canConfirm` truth; reject remains present only under existing `isAdmin` truth; existing callbacks/modal openings remain unchanged;
+- keep `DocumentActions kind="payment-receipt" entityId={receipt.id}` in the header tools slot as output tooling, without duplicating its capabilities inside the action registry;
+- author focused tests/source contracts for status mapping, back navigation, permission/action parity, callback wiring, Mobile/Tablet registry placement and preserved output tooling.
+
+Device/state/accessibility acceptance:
+- Mobile `<=768px`: readable sticky identity/status with long Arabic customer names and mixed Latin receipt number; max one direct review action, remaining authorized review action in accessible RTL overflow; practical 44px back/action targets; no horizontal header overflow.
+- Tablet `769–1024px`: deliberate wrapped header with max two direct review actions; output tooling remains visually secondary to workflow action hierarchy.
+- Desktop `>=1025px`: efficient review actions remain visible through the shared header; existing page body/modals are preserved. This slice does not claim to solve the page's broader `maxWidth: 640` body-density debt.
+- RTL/Arabic: correct back direction, receipt-number directionality, Arabic status/customer/date wrapping and overflow placement.
+- Loading/not-found: preserve current skeleton and not-found behavior exactly; do not mount transaction header before a receipt exists.
+- Permission/workflow: no unauthorized confirm/reject appears and no authorized action disappears.
+- Accessibility: meaningful banner/action labels, shared focus/touch semantics and text-backed semantic status.
 
 Explicit exclusions:
-- no accounting calculations, journal/posting logic or workflow-state changes;
-- no DB/migration/RPC/service/query/cache/RBAC/RLS/permission/route-guard changes;
-- no broad Finance forms/statements/report redesign or speculative financial framework;
+- no `getPaymentReceipt`, `confirmPaymentReceipt`, `rejectPaymentReceipt`, direct custody query, service/query/cache/invalidation changes;
+- no changes to `isSelfCashCustody`, `isAdmin`, `canConfirm`, `finance.payments.confirm`, vault filtering/destination selection, cheque/custody handling, validation, toasts, route semantics or accounting/posting truth;
+- no confirm/reject modal redesign, receipt amount/hero redesign, proof image/PDF/file redesign, upload/output subsystem changes, detail-card/`SectionHead`/`InfoRow` convergence, timeline/audit work, Payments list migration, statements/journals/ledger/expenses/reports redesign or speculative Finance framework;
+- no DB/migration/RPC/RBAC/RLS/route-guard/backend business changes;
 - no deployment/preview/main changes.
+
+Stop condition:
+If correct implementation would require changing Finance eligibility/workflow semantics, creating a Finance-specific parallel action model, or modifying output capabilities, mark `BLOCKED` instead of expanding the slice.
 
 ## Product migration roadmap
 
@@ -156,7 +173,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### E. Finance
 - `DS2-FIN-001` Finance lists and summaries — `DONE`
-- `DS2-FIN-002` Financial transaction/detail/action patterns — `READY`
+- `DS2-FIN-002` Payment Receipt transaction-detail header/action foundation — `READY`
 
 ### F. HR / People
 - `DS2-HR-001` Mobile operational tasks — `BACKLOG`
