@@ -38,16 +38,16 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-PROC-002`.
+Product UI is integrated through `DS2-FIN-001`.
 
 Latest product integration:
-- PR: `#37 — DS2-PROC-002: establish purchase invoice form V2 shell`
-- Exact reviewed PR HEAD: `4fa613edad180de140b9c7a1c41ceeb9b7e55ee3`
-- Squash merge commit: `5b10b9fb578c91798d28526d8de407f63ffcc417`
+- PR: `#38 — DS2-FIN-001: establish vault overview V2 presentation`
+- Exact reviewed PR HEAD: `b2450e22f9cf58d06780b608dbe6a7b871b53639`
+- Squash merge commit: `7a70beccaf961b248f0df045f6bf610df4dfdc84`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Runtime/preview/release evidence: not claimed
 
-The development branch now includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement purchase-list migration, bounded shared `DataTable` pagination hardening, and the first Purchase Invoice form-shell migration using the shared Stepper/FormSection/FormGrid/FormActions/StatusBadge grammar.
+The development branch now includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, bounded shared DataTable pagination hardening, and the first Finance overview migration using shared `MetricGrid`, `ResponsiveCollection`, neutral categorical metadata, semantic status, and canonical `AppAction + resolveActionSet` device placement.
 
 ## Completed slices
 
@@ -77,35 +77,43 @@ System result:
 - supplier/product/warehouse identity, quantities, pricing, discounts, taxes, totals, landed costs/WAC/accounting/payment, receive/bill/cancel transitions, permissions, services/query/cache, routes, validation semantics, `ResponsiveModal`, mobile item flow and `DocumentActions` remain unchanged and page/domain-owned;
 - `InlineCombobox`, item-table/card convergence, receive/accounting presentation, Purchase Returns and broad form-field convergence remain outside this completed slice.
 
-## Current single active slice
-
 ### DS2-FIN-001 — Finance lists and summaries
-Status: `REVIEW`
-Owner role: UI Production Engineer
+Status: `DONE`
+Merged PR: `#38`
+Reviewed HEAD: `b2450e22f9cf58d06780b608dbe6a7b871b53639`
+Squash merge: `7a70beccaf961b248f0df045f6bf610df4dfdc84`
+Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
+Runtime/preview/release evidence: not claimed
+
+System result:
+- representative live Finance surface is the `VaultsPage` overview only; Finance calculations, balances, posting, services, permissions and workflow truth remain page/domain-owned;
+- shared `MetricGrid + StatCard` projects the existing page-owned summary values with deliberate `3 Desktop / 2 Tablet / 1 Mobile` composition and no inferred semantic tone for factual active-count;
+- one live `ResponsiveCollection<Vault>` replaces CSS-hidden Desktop/Mobile interaction trees while preserving dense Desktop `DataTable`, deliberate two-column Tablet cards, one-column Mobile cards, loading/empty/create behavior and one mounted interaction tree;
+- vault type remains neutral categorical `Badge`; active/inactive remains semantic `StatusBadge`; total-balance sign tone remains caller/page-owned;
+- page-owned `AppAction` eligibility/order feeds shared `resolveActionSet`: Mobile max one direct action, Tablet max two, remaining authorized actions stay available in accessible RTL native-details overflow; Desktop keeps dense direct row actions;
+- `finance.vaults.create/transact/update`, `current_balance === 0`, statement `pageSize: 25`, create/update/manual-adjustment/transfer services, query/cache/invalidation, validation/toasts, modal workflows, routes and accounting/posting semantics remain unchanged;
+- focused component/live-page tests were authored for summary semantics, device renderer selection, permissions/action parity, overflow, opening-balance eligibility, empty/create behavior, statement paging and service isolation.
+
+## Current single READY slice
+
+### DS2-FIN-002 — Financial transaction/detail/action patterns
+Status: `READY`
+Owner role: Product Design Director -> UI Production Engineer after the concern is bounded
 
 System intent:
-Continue the roadmap into Finance using one representative, dependency-safe list/summary presentation concern that proves shared collection, summary, state and action grammar without moving financial truth into presentation.
-
-Current bounded candidate result:
-- representative live surface remains `VaultsPage` overview only (summary metrics + vault collection presentation);
-- summary values remain page-owned and now project through shared `MetricGrid + StatCard`; total-balance semantic tone is caller-owned and factual active-count receives no inferred success tone;
-- one live `ResponsiveCollection<Vault>` replaces the CSS-hidden Desktop/Mobile dual trees, preserving dense Desktop `DataTable`, adding deliberate two-column Tablet cards and one-column Mobile cards, and keeping loading/empty/create behavior in one mounted collection boundary;
-- vault type is neutral categorical `Badge` metadata while active/inactive uses semantic `StatusBadge`;
-- Mobile/Tablet card actions consume canonical `AppAction + resolveActionSet` semantics with the existing page-owned action order and eligibility: maximum 1 direct action on Mobile, 2 on Tablet, remaining actions in accessible RTL overflow; Desktop retains dense direct table actions;
-- `finance.vaults.create/transact/update`, `current_balance === 0`, create/update/manual-adjustment/transfer services, totals/balances, statement `pageSize: 25`, query/cache/invalidation, modal workflows and validations remain page/domain-owned and unchanged;
-- forms, statement/transaction/transfer modal redesign, posting/accounting semantics and other Finance pages remain outside this bounded concern;
-- focused component and live-page source-contract tests are authored; evidence remains `TESTS_AUTHORED_NOT_EXECUTED`.
+Continue Finance with one smallest dependency-safe transaction/detail/action presentation concern that reuses the proven V2 hierarchy and action grammar without changing accounting truth, eligibility, posting or financial calculations.
 
 Initial direction:
-- preserve ledger/account/balance/payment/receipt/treasury/credit/debit/aging/calculation/posting/approval/permission/query/cache/service/route semantics exactly;
-- prefer already-proven shared `PageHeader`, collection/card/table, semantic status, summary and action patterns when the live surface proves fit;
-- Mobile remains operational and touch-safe, Tablet deliberate, Desktop dense and efficient for financial review/comparison;
-- author focused tests for material responsive/state/action/permission presentation contracts; evidence follows `33_TEST_AND_VALIDATION_POLICY.md`.
+- Product Design Director must inspect live Finance transaction/detail surfaces on the exact latest Development baseline and select one representative presentation-only boundary before implementation begins;
+- prefer proven shared `PageHeader` / transaction header, semantic status, key-value/detail grouping, canonical `AppAction + resolveActionSet`, responsive sheet/modal and state grammar only where the live surface proves fit;
+- preserve every ledger/account/balance/payment/receipt/treasury/credit/debit/posting/approval/permission/query/cache/service/route/validation semantic exactly;
+- Mobile should expose the operational next action clearly, Tablet should use deliberate hybrid density, Desktop should retain efficient financial review/comparison;
+- author focused tests for action eligibility/placement, device composition, state and permission parity; evidence follows `33_TEST_AND_VALIDATION_POLICY.md`.
 
 Explicit exclusions:
-- no accounting calculations or posting/workflow changes;
+- no accounting calculations, journal/posting logic or workflow-state changes;
 - no DB/migration/RPC/service/query/cache/RBAC/RLS/permission/route-guard changes;
-- no speculative global financial framework or chart/report redesign;
+- no broad Finance forms/statements/report redesign or speculative financial framework;
 - no deployment/preview/main changes.
 
 ## Product migration roadmap
@@ -147,8 +155,8 @@ Open only when a real migrated screen proves the recurring gap:
 - `DS2-PROC-002` Purchase Invoice form decomposition — `DONE`
 
 ### E. Finance
-- `DS2-FIN-001` Finance lists and summaries — `REVIEW`
-- `DS2-FIN-002` Financial transaction/detail/action patterns — `BACKLOG`
+- `DS2-FIN-001` Finance lists and summaries — `DONE`
+- `DS2-FIN-002` Financial transaction/detail/action patterns — `READY`
 
 ### F. HR / People
 - `DS2-HR-001` Mobile operational tasks — `BACKLOG`
