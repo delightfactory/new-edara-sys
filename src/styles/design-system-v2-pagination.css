@@ -16,13 +16,7 @@
   box-shadow: var(--ds-focus-ring);
 }
 
-@media (max-width: 768px) {
-  .ds-pagination .pagination-buttons {
-    max-width: 100%;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
+@media (max-width: 1024px) {
   .ds-pagination .pagination-btn {
     min-width: var(--ds-icon-hit-target);
     height: var(--ds-icon-hit-target);
@@ -30,5 +24,13 @@
 
   .ds-pagination .pagination-btn.pagination-btn-nav {
     min-width: 72px;
+  }
+}
+
+@media (max-width: 768px) {
+  .ds-pagination .pagination-buttons {
+    max-width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
   }
 }
