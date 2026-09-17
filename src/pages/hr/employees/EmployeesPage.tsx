@@ -217,7 +217,6 @@ export default function EmployeesPage() {
               phone: employee.personal_phone ? <span dir="ltr">{employee.personal_phone}</span> : undefined,
               salary: can('hr.payroll.read') ? `${formatNumber(employee.base_salary)} ج.م` : undefined,
               fieldLabel: employee.is_field_employee ? 'ميداني' : 'مكتبي',
-              isFieldEmployee: employee.is_field_employee,
               statusLabel: statusLabel[employee.status],
               statusTone: statusTone[employee.status],
             }}
