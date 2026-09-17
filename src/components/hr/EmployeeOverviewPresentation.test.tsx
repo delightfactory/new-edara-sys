@@ -101,7 +101,7 @@ describe('EmployeeOverviewPresentation', () => {
     expect(onEdit).toHaveBeenCalledTimes(1)
   })
 
-  it('delegates identity opening without making the generic Card itself interactive', () => {
+  it('delegates identity opening from an explicit control inside the neutral Card', () => {
     const onOpen = vi.fn()
     render(
       <EmployeeCard
@@ -112,8 +112,9 @@ describe('EmployeeOverviewPresentation', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: 'فتح ملف أحمد علي' }))
+    const openButton = screen.getByRole('button', { name: 'فتح ملف أحمد علي' })
+    fireEvent.click(openButton)
     expect(onOpen).toHaveBeenCalledTimes(1)
-    expect(screen.getByTestId ? true : true).toBe(true)
+    expect(openButton.closest('[data-employee-card]')).toHaveAttribute('data-mode', 'mobile')
   })
 })
