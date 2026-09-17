@@ -118,15 +118,23 @@ System result:
 - only the superseded local action/progress/feedback mini-system and dead visual CSS were retired; broader Attendance/HR surfaces remain outside the slice;
 - focused shared-control and live source-contract tests were authored; no executed test/build/lint/runtime/preview PASS is claimed.
 
-## Current single READY slice
+## Current single active slice
 
 ### DS2-HR-002 — HR admin lists/forms
-Status: `READY`
-Owner role: Product Design Director -> UI Production Engineer
+Status: `IN_PROGRESS`
+Owner role: UI Production Engineer
+
+Selected concern:
+- representative surface is the `EmployeesPage` administration list only; `EmployeeForm` internals remain outside this concern;
+- converge the duplicated Desktop/Mobile list trees into one `ResponsiveCollection<HREmployee>` with deliberate Desktop table, Tablet two-column cards and Mobile one-column cards;
+- map employee workflow status through shared semantic `StatusBadge`, keep field/office as neutral categorical metadata, and use caller-owned `AppAction` eligibility for card actions;
+- preserve current employee search/department/status query behavior, pagination inputs, salary permission visibility, create/edit/view permissions and callbacks exactly;
+- distinguish initial-empty from filtered-empty presentation without changing data/query semantics;
+- a shared pagination gap may be strengthened only as a presentation extraction with the exact existing page-window/callback contract.
 
 Intent:
 - continue the North-Star roadmap through HR/People after proving the Mobile operational-task grammar in HR001;
-- Product Design Director must inspect the exact latest Development baseline and choose the smallest representative HR administration list/form concern that proves reusable V2 list/form grammar rather than a broad HR redesign;
+- prove reusable V2 HR administration list grammar rather than a broad HR redesign;
 - preserve employee, attendance, leave, payroll, advances/delegations, permissions, query/cache, service, validation, route and workflow truth exactly;
 - prefer existing shared V2 collections/forms/actions/status primitives before inventing any HR-local grammar;
 - Mobile/Tablet/Desktop must be deliberate and capability-equivalent for the selected surface;
@@ -179,7 +187,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### F. HR / People
 - `DS2-HR-001` Attendance Check-in operational task controls — `DONE`
-- `DS2-HR-002` HR admin lists/forms — `READY`
+- `DS2-HR-002` HR admin lists/forms — `IN_PROGRESS`
 
 ### G. Field Activities / Targets
 - `DS2-FIELD-001` Activities/visit/call/target lists — `BACKLOG`
