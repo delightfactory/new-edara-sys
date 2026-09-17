@@ -154,7 +154,7 @@ export default function ActivitiesPage() {
       icon={<Activity size={32} />}
       title={hasActiveFilters ? 'لا توجد نتائج مطابقة' : 'لا توجد أنشطة'}
       description={hasActiveFilters ? 'جرّب تعديل البحث أو فلاتر الأنشطة.' : 'سجّل أول نشاط ميداني.'}
-      action={!hasActiveFilters && canCreate ? (
+      action={canCreate ? (
         <Button icon={<Plus size={16} />} onClick={() => navigate('/activities/new')} touchTarget>
           نشاط جديد
         </Button>
@@ -169,7 +169,7 @@ export default function ActivitiesPage() {
         subtitle={loading ? '...' : `${totalCount} نشاط`}
         actions={
           <PermissionGuard permission={PERMISSIONS.ACTIVITIES_CREATE}>
-            <Button icon={<Plus size={16} />} onClick={() => navigate('/activities/new')} className="desktop-only-btn">
+            <Button icon={<Plus size={16} />} onClick={() => navigate('/activities/new')} touchTarget>
               نشاط جديد
             </Button>
           </PermissionGuard>
@@ -333,7 +333,7 @@ export default function ActivitiesPage() {
         renderMobile={items => renderActivityCards(items, 'mobile')}
       />
 
-      {totalPages > 1 && !loading && (
+      {filtered.length > 0 && totalPages > 1 && !loading && (
         <Pagination
           page={page}
           totalPages={totalPages}
