@@ -73,9 +73,9 @@ describe('Vault overview presentation', () => {
 
   it('uses canonical AppAction resolution: one Mobile direct action and every remaining action in overflow', () => {
     const callbacks = buildActions()
-    render(<VaultCard summary={baseSummary} mode="mobile" actions={actionSet(callbacks)} />)
+    const { container } = render(<VaultCard summary={baseSummary} mode="mobile" actions={actionSet(callbacks)} />)
 
-    const direct = document.querySelector('.ds-action-set__visible')
+    const direct = container.querySelector('.ds-action-set__visible')
     expect(direct?.textContent).toContain('كشف حساب')
     expect(direct?.textContent).not.toContain('افتتاحي')
     expect(direct?.textContent).not.toContain('إيداع')
@@ -83,7 +83,9 @@ describe('Vault overview presentation', () => {
     fireEvent.click(screen.getByRole('button', { name: 'كشف حساب' }))
     expect(callbacks.statement).toHaveBeenCalledTimes(1)
 
-    fireEvent.click(screen.getByRole('button', { name: 'المزيد من إجراءات الخزنة' }))
+    const overflowTrigger = container.querySelector('.ds-action-set__overflow-trigger')
+    expect(overflowTrigger?.getAttribute('aria-label')).toBe('المزيد من إجراءات الخزنة')
+    fireEvent.click(overflowTrigger!)
     fireEvent.click(screen.getByRole('button', { name: 'إيداع' }))
     fireEvent.click(screen.getByRole('button', { name: 'سحب' }))
     fireEvent.click(screen.getByRole('button', { name: 'تعديل' }))
@@ -97,15 +99,15 @@ describe('Vault overview presentation', () => {
 
   it('keeps Tablet at two direct actions and preserves omission of unauthorized actions', () => {
     const callbacks = buildActions()
-    const { rerender } = render(
+    const { container, rerender } = render(
       <VaultCard summary={baseSummary} mode="tablet" actions={actionSet(callbacks)} />,
     )
 
-    const direct = document.querySelector('.ds-action-set__visible')
+    const direct = container.querySelector('.ds-action-set__visible')
     expect(direct?.textContent).toContain('كشف حساب')
     expect(direct?.textContent).toContain('افتتاحي')
     expect(direct?.textContent).not.toContain('إيداع')
-    expect(screen.getByRole('button', { name: 'المزيد من إجراءات الخزنة' })).not.toBeNull()
+    expect(container.querySelector('.ds-action-set__overflow-trigger')).not.toBeNull()
 
     rerender(
       <VaultCard
@@ -116,7 +118,7 @@ describe('Vault overview presentation', () => {
     )
 
     expect(screen.getByText('معطلة').closest('[data-tone]')?.getAttribute('data-tone')).toBe('neutral')
-    expect(screen.queryByRole('button', { name: 'المزيد من إجراءات الخزنة' })).toBeNull()
+    expect(container.querySelector('.ds-action-set__overflow-trigger')).toBeNull()
     expect(screen.queryByText('إيداع')).toBeNull()
     expect(screen.getByRole('button', { name: 'كشف حساب' }).classList.contains('btn-touch')).toBe(true)
   })
