@@ -1,7 +1,12 @@
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type { AppAction } from '@/components/patterns/ActionRegistry'
 import { VaultCard, VaultSummary } from './VaultOverviewPresentation'
+
+const stylesPath = fileURLToPath(new URL('../../styles/design-system-v2-surfaces.css', import.meta.url))
+const styles = readFileSync(stylesPath, 'utf8')
 
 const baseSummary = {
   name: 'الخزنة الرئيسية',
@@ -97,6 +102,11 @@ describe('Vault overview presentation', () => {
     expect(overflow?.querySelector('[data-action-id="deposit"]')?.className).toContain('btn-success')
     expect(overflow?.querySelector('[data-action-id="withdrawal"]')?.className).toContain('btn-danger')
     expect(container.querySelector('.ds-action-set__overflow-trigger')?.getAttribute('aria-label')).toBe('المزيد من إجراءات الخزنة')
+  })
+
+  it('keeps the overflow action surface closed until the native details control is expanded', () => {
+    expect(styles).toMatch(/\.ds-action-set__overflow-actions\s*\{[\s\S]*?display:\s*none;/)
+    expect(styles).toMatch(/\.ds-action-set__overflow\[open\] > \.ds-action-set__overflow-actions\s*\{[^}]*display:\s*grid;/)
   })
 
   it('keeps Tablet at two direct actions and preserves omission of unauthorized actions', () => {
