@@ -150,6 +150,17 @@
 .ds-stat-card--danger .ds-stat-card__icon,
 .ds-stat-card--danger .ds-stat-card__trend { color: var(--ds-status-danger-fg); }
 
+/* ===== MetricGrid ===== */
+.ds-metric-grid {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.ds-metric-grid--cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ds-metric-grid--cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ds-metric-grid--cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
 /* ===== KeyValueList ===== */
 .ds-key-value-list {
   display: grid;
@@ -197,6 +208,13 @@
   font-weight: 400;
 }
 
+@media (max-width: 1024px) and (min-width: 769px) {
+  .ds-metric-grid--cols-3,
+  .ds-metric-grid--cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 768px) {
   .ds-card--padding-lg {
     padding: var(--space-4);
@@ -213,6 +231,12 @@
   .ds-stat-card__meta {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .ds-metric-grid--cols-2,
+  .ds-metric-grid--cols-3,
+  .ds-metric-grid--cols-4 {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .ds-key-value-list--cols-2,
