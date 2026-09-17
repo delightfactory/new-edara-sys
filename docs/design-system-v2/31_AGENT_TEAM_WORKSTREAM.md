@@ -18,7 +18,7 @@ Authorities:
 |---|---|---|---:|---:|---:|
 | Product Design Director | System identity, architecture, next slice, design quality | every 2 hours | No | No | No |
 | UI Production Engineer | Implement/repair the single active UI slice | hourly | UI-only | No | No |
-| Design QA | Independent exact-head review | hourly | No | No |
+| Design QA | Independent exact-head review | hourly | No | No | No |
 | Development Integrator | Merge GREEN-DEV PR and advance queue | hourly | No feature work | Development only | No |
 
 `BACKLOG -> READY -> IN_PROGRESS -> REVIEW -> GREEN-DEV -> DONE`
@@ -154,7 +154,7 @@ System result:
 ## Current single active slice
 
 ### DS2-FIELD-002 — Activity create/edit form composition foundation
-Status: `IN_PROGRESS`
+Status: `REVIEW`
 Owner role: UI Production Engineer
 Representative surface: live `src/pages/activities/ActivityForm.tsx` normal create/edit path only.
 
@@ -243,7 +243,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### G. Field Activities / Targets
 - `DS2-FIELD-001` Activities/visit/call/target lists — `DONE`
-- `DS2-FIELD-002` Activity create/edit form composition foundation — `IN_PROGRESS`
+- `DS2-FIELD-002` Activity create/edit form composition foundation — `REVIEW`
 
 ### H. Work Management
 - `DS2-WORK-001` Reconcile Work UI island with V2 — `BACKLOG`
