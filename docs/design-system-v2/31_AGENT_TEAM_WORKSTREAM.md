@@ -153,20 +153,47 @@ System result:
 
 ## Current single READY slice
 
-### DS2-FIELD-002 — Field create/detail flows
+### DS2-FIELD-002 — Activity create/edit form composition foundation
 Status: `READY`
 Owner role: Product Design Director -> UI Production Engineer
+Representative surface: live `src/pages/activities/ActivityForm.tsx` normal create/edit path only.
 
-Intent:
-- continue the Field roadmap from the proven Activities list grammar into one smallest dependency-safe create/detail concern rather than reopening FIELD001 list polishing;
-- Product Design Director must inspect representative Field create/detail surfaces on the exact latest Development baseline and bound one presentation-only concern with explicit acceptance criteria;
-- prefer established V2 form/detail/action/status/device patterns before adding Field-local presentation grammar;
-- preserve activity/visit/call/target query, service, permission, routing, GPS/device, validation, ownership and workflow truth exactly;
-- Mobile remains the primary operational field surface; Tablet must be deliberate; Desktop must preserve efficient management/data-entry density and capability parity;
-- no DB/migration/RPC/service/RBAC/RLS/business/workflow/query-cache/validation-semantic change, no deployment/preview and no `main` work.
+System-pattern intent:
+- extend the already-proven shared create/edit grammar into a mobile-sensitive Field workflow using existing `FormSection + FormGrid + FormActions + Button`, rather than introducing another Field-local form shell;
+- preserve the current operational sequence and all conditional business meaning; this is composition/accessibility work, not a rewrite of activity semantics;
+- keep shared components presentation-only: ActivityForm remains owner of required/disabled truth, GPS blocking, selected type/category, customer requirement, outcome/reason visibility, dates/times, payload creation, mutations and navigation.
+
+In scope:
+1. Replace the normal create/edit form's local outer `edara-card act-form` composition with shared V2 form-section composition. Use multiple `FormSection` boundaries only where they follow the existing task sequence; do not reorder functional steps around target/history/link/call conditional surfaces.
+2. Use `FormGrid` for safe field groups so Mobile is one column, Tablet is deliberately capped at two columns, and Desktop may use the requested density without horizontal overflow. The date/start/end group is the clearest canonical proof; GPS and complex conditional content remain full-width when needed.
+3. Replace the local `act-form-actions` presentation with shared `FormActions + Button`. Preserve exact cancel/submit callbacks, labels, save loading text, `saving` disabled state and `gpsBlocking` submit suppression. Do **not** opt into sticky Mobile actions in this slice.
+4. Preserve current control semantics and values. Do not opportunistically migrate native/raw `input/select/textarea` controls, customer selection or call-direction controls to new primitives in this slice. For fields whose composition is touched, ensure visible Arabic labels remain programmatically associated with their controls and required/disabled meaning remains exposed.
+5. Remove only page-local CSS made dead by the adopted shared form composition. Consumer-owned tokenized logical spacing may separate shared sections; do not add global external margins to `FormSection`.
+6. Add/update focused authored tests/source contracts for shared form-pattern adoption plus the protected ActivityForm functional boundaries below. Evidence remains honestly labeled per policy.
+
+Explicit exclusions:
+- the visit-plan guard/blocker screen and its routing behavior;
+- `GPSStatusIndicator` internals, geolocation acquisition/verification/distance meaning and any GPS permission/workflow changes;
+- target gamification alert and customer recent-history content/queries;
+- order/collection linking sections and their navigation;
+- call-detail fields, call-direction segmented buttons, callback/recording behavior and `useSaveCallDetail` semantics;
+- toast/validation-message convergence, validation rules, payload construction, Supabase queries, services/mutations/query-cache behavior;
+- customer selector/AsyncCombobox work, primitive Input/Select migration, sticky action behavior;
+- `ActivityDetail`, visit/call plan forms/details, targets, checklists and broader Field framework redesign;
+- DB/migration/RPC/RBAC/RLS/permissions/business/workflow/route/deployment/preview/`main` changes.
+
+Acceptance:
+- **Mobile (`<=768px`):** single-column task flow; no ordinary horizontal overflow; shared actions remain touch-safe and stretch cleanly; BottomNav/FAB space is not newly occupied because sticky actions are excluded; long Arabic labels/customer values wrap without obscuring controls.
+- **Tablet (`769–1024px`):** safe field groups use deliberate two-column composition while GPS/conditional complex surfaces can remain full-width; touch remains first-class; no compressed-Desktop three-column layout.
+- **Desktop (`>=1025px`):** preserve the current efficient bounded form width and field capability; safe grouped fields may use denser shared-grid composition without losing readability or changing order.
+- **States:** create/edit labels, loading customer fallback, outcome disabled-before-type, conditional customer/outcome/reason/call/link sections, GPS-required warning, save loading/disabled state and normal cancel/navigation behavior remain semantically unchanged.
+- **Accessibility/RTL:** Arabic-first logical layout; visible labels associated with touched controls; native required/disabled semantics preserved; shared Buttons retain keyboard/focus behavior; no color-only meaning is introduced.
+- **Functional isolation:** exact activity query/service/route/GPS/validation/payload/mutation/workflow semantics remain unchanged.
 
 Stop condition:
-If the representative Field create/detail concern cannot be improved without changing route/GPS/permission/service/workflow/validation truth, narrow the slice and record the functional issue separately rather than absorbing it into Design System scope.
+If shared form composition cannot be adopted without changing ActivityForm routing, GPS, validation, query/service or payload semantics, mark the slice `BLOCKED` and isolate the functional issue rather than absorbing it into Design System scope.
+
+Remaining Field create/detail surfaces stay outside this implementation slice and must be re-evaluated as a later dependency-safe Field follow-up before the module is considered fully converged.
 
 ## Product migration roadmap
 
@@ -216,7 +243,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### G. Field Activities / Targets
 - `DS2-FIELD-001` Activities/visit/call/target lists — `DONE`
-- `DS2-FIELD-002` Field create/detail flows — `READY`
+- `DS2-FIELD-002` Activity create/edit form composition foundation — `READY`
 
 ### H. Work Management
 - `DS2-WORK-001` Reconcile Work UI island with V2 — `BACKLOG`
