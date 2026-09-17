@@ -8,6 +8,7 @@ const summary = {
   category: 'visit' as const,
   customer: null,
   date: '17 سبتمبر 2026',
+  startTime: '09:30 ص',
   notes: 'متابعة الطلب',
   gpsVerified: true,
   outcome: 'followup_scheduled' as const,
@@ -32,7 +33,7 @@ describe('ActivityOverviewPresentation', () => {
     expect(screen.getByText('لا يرد').closest('[data-tone]')).toHaveAttribute('data-tone', 'warning')
   })
 
-  it('keeps category and unverified GPS metadata neutral rather than inventing workflow state', () => {
+  it('keeps category and unverified GPS metadata neutral without duplicating category hierarchy', () => {
     render(
       <ActivityCard
         summary={{ ...summary, gpsVerified: false }}
@@ -41,10 +42,23 @@ describe('ActivityOverviewPresentation', () => {
         onOpen={vi.fn()}
       />,
     )
+    expect(screen.getAllByText('زيارة')).toHaveLength(1)
     expect(screen.getByText('زيارة', { selector: '.badge' })).toBeInTheDocument()
     expect(screen.getByText('متابعة مجدولة').closest('[data-tone]')).toHaveAttribute('data-tone', 'warning')
     expect(screen.getByText('GPS').parentElement).toHaveTextContent('—')
     expect(screen.queryByText('غير موثق')).not.toBeInTheDocument()
+  })
+
+  it('preserves optional start time on Tablet without expanding legacy Mobile information density', () => {
+    const { rerender } = render(
+      <ActivityCard summary={summary} mode="tablet" actions={[]} onOpen={vi.fn()} />,
+    )
+
+    expect(screen.getByText('الوقت').parentElement).toHaveTextContent('09:30 ص')
+
+    rerender(<ActivityCard summary={summary} mode="mobile" actions={[]} onOpen={vi.fn()} />)
+    expect(screen.queryByText('الوقت')).not.toBeInTheDocument()
+    expect(screen.queryByText('09:30 ص')).not.toBeInTheDocument()
   })
 
   it('uses canonical device action placement without owning action eligibility', () => {

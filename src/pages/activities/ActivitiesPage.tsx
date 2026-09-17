@@ -1,4 +1,4 @@
-﻿import { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Activity, Plus, Eye, Trash2, MapPin, Phone, CheckSquare } from 'lucide-react'
 import { toast } from 'sonner'
@@ -28,6 +28,10 @@ const CATEGORY_ICON: Record<string, React.ReactNode> = {
 
 function fmtDate(d: string) {
   return new Date(d).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+function fmtTime(value: string) {
+  return new Date(value).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
 }
 
 export default function ActivitiesPage() {
@@ -137,6 +141,7 @@ export default function ActivitiesPage() {
             category: activity.type?.category ?? 'task',
             customer: activity.customer,
             date: fmtDate(activity.activity_date),
+            startTime: activity.start_time ? fmtTime(activity.start_time) : undefined,
             notes: activity.outcome_notes ? activity.outcome_notes.slice(0, 60) : undefined,
             gpsVerified: activity.gps_verified,
             outcome: activity.outcome_type,
@@ -284,7 +289,7 @@ export default function ActivitiesPage() {
                       <div className="text-sm">{fmtDate(activity.activity_date)}</div>
                       {activity.start_time && (
                         <div className="text-xs text-muted">
-                          {new Date(activity.start_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
+                          {fmtTime(activity.start_time)}
                         </div>
                       )}
                     </>

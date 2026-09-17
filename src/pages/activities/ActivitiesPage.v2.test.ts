@@ -52,6 +52,12 @@ describe('ActivitiesPage V2 representative list contract', () => {
     expect(source).not.toContain('ActivityStatusBadge')
   })
 
+  it('preserves the existing start-time datum for the deliberate Tablet card composition', () => {
+    expect(source).toContain("function fmtTime(value: string)")
+    expect(source).toContain('startTime: activity.start_time ? fmtTime(activity.start_time) : undefined')
+    expect(source).toContain('{fmtTime(activity.start_time)}')
+  })
+
   it('uses shared Pagination once outside the device renderer while preserving empty-result paging behavior', () => {
     expect(source).toContain("import Pagination from '@/components/patterns/Pagination'")
     expect(source).toContain('filtered.length > 0 && totalPages > 1 && !loading')

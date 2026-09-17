@@ -89,7 +89,6 @@
   overflow-wrap: anywhere;
 }
 
-.ds-activity-card__category,
 .ds-activity-card__customer-label {
   font-size: var(--text-xs);
   color: var(--text-muted);

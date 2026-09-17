@@ -62,6 +62,7 @@ export interface ActivityCardSummary {
   category: ActivityCategory
   customer?: { id: string; name: string } | null
   date: React.ReactNode
+  startTime?: React.ReactNode
   notes?: React.ReactNode
   gpsVerified: boolean
   outcome: ActivityOutcome
@@ -108,8 +109,13 @@ export function ActivityCard({ summary, mode, actions, onOpen }: ActivityCardPro
   const category = CATEGORY_META[summary.category]
   const metadata: KeyValueItem[] = [
     { key: 'date', label: 'التاريخ', value: summary.date },
-    { key: 'gps', label: 'GPS', value: summary.gpsVerified ? 'موثق' : '—' },
   ]
+
+  if (mode === 'tablet' && summary.startTime) {
+    metadata.push({ key: 'time', label: 'الوقت', value: summary.startTime })
+  }
+
+  metadata.push({ key: 'gps', label: 'GPS', value: summary.gpsVerified ? 'موثق' : '—' })
 
   if (summary.notes) {
     metadata.push({ key: 'notes', label: 'ملاحظات', value: summary.notes })
@@ -133,7 +139,6 @@ export function ActivityCard({ summary, mode, actions, onOpen }: ActivityCardPro
           <span className="ds-activity-card__icon" aria-hidden="true">{category.icon}</span>
           <span className="ds-activity-card__copy">
             <span className="ds-activity-card__title">{summary.typeName}</span>
-            <span className="ds-activity-card__category">{category.label}</span>
           </span>
         </button>
 
