@@ -4,71 +4,59 @@
 
 - Review date: `2026-09-17`
 - Development branch: `design-system-v2-development`
-- Exact Development HEAD inspected before this state write: `cdc900ace6ac8e30adb413605debb33dd30517b6`
-- Active slice: `DS2-HR-001 — Attendance Check-in operational task controls`
-- Active PR: `#40 — DS2-HR-001: Attendance operational task controls`
+- Exact Development HEAD immediately before product merge: `faf4150620158557fd20e9bf592ab9b31c3b1e51`
+- Product merge commit: `e9a37c6ade6661bdaf6260f9c93c72dabba60768`
+- Development coordination HEAD before this state write: `5f50c80149681841e058f9f2af7d9a9a4e83b8f6`
+- Completed slice: `DS2-HR-001 — Attendance Check-in operational task controls`
+- Merged PR: `#40 — DS2-HR-001: Attendance operational task controls`
 - PR base: `design-system-v2-development`
-- PR base SHA: `1f6ee3226c1364b72ea2a2defc7879a3325fa505`
-- Exact current PR HEAD inspected: `37197361cb351a53b461f8d8ebaf62b1aff7a6d2`
-- PR state: `OPEN / DRAFT / mergeable=true`
-- Integration disposition: `NO_MERGE_BLOCKED_HR001_INCOMPLETE_LIVE_SLICE`
-- Review marker: `AGENT-REVIEW: BLOCKED`
-- Source evidence: `SOURCE_REVIEW_PASS` not granted
+- Exact reviewed PR HEAD: `c2a1c0298eaed3b7e1bc38c591d4ca55c91e0f13`
+- Integration disposition: `MERGED_GREEN_DEV`
+- Review marker: `AGENT-REVIEW: GREEN-DEV`
+- Source evidence: `SOURCE_REVIEW_PASS`
 - Test evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 - Runtime/preview/release evidence: not claimed
 
 ## Integrator decision
 
-**NO MERGE.** PR #40 does not satisfy the Development integration gate on exact current HEAD `37197361cb351a53b461f8d8ebaf62b1aff7a6d2`.
+**MERGED.** PR #40 satisfied every Development integration gate on exact reviewed HEAD `c2a1c0298eaed3b7e1bc38c591d4ca55c91e0f13` and was squash-merged into `design-system-v2-development` as `e9a37c6ade6661bdaf6260f9c93c72dabba60768`.
 
-The base is correct and the current 5-file diff is presentation/test/Implementer-owned-state only, but exact-head Design QA records `AGENT-REVIEW: BLOCKED` P2 and explicitly withholds `SOURCE_REVIEW_PASS`. The live representative surface `src/pages/hr/attendance/AttendanceCheckin.tsx` is not in the diff, so HR001 has not yet replaced the page-local action/progress/feedback mini-system or added focused live-slice protection.
+The previous Integrator blocker referred to obsolete HEAD `37197361cb351a53b461f8d8ebaf62b1aff7a6d2`, where live Attendance wiring was incomplete. That blocker was superseded by the completed live slice and fresh exact-head Design QA `GREEN-DEV + SOURCE_REVIEW_PASS`, independently aligned by Product Design Director.
 
-No GitHub Actions, Vercel preview/deploy, preview branch or `main` activity was performed.
+No GitHub Actions, hosted CI, Vercel preview/deploy, preview branch or `main` activity was performed.
 
 ## Gate revalidation
 
-- **Base gate:** PASS — PR base is exactly `design-system-v2-development`.
-- **Exact-head GREEN-DEV gate:** FAIL — exact current HEAD has `AGENT-REVIEW: BLOCKED`, not `GREEN-DEV`.
-- **Source-review gate:** FAIL — `SOURCE_REVIEW_PASS` is explicitly not granted on the current HEAD.
-- **Test-evidence honesty:** PASS — focused shared-pattern tests exist and evidence is honestly labeled `TESTS_AUTHORED_NOT_EXECUTED`.
-- **Known build/type failure gate:** no known real build/type failure is recorded; this is not an executed build/type PASS claim.
-- **Review-thread gate:** PASS — there are no inline review threads.
-- **Cross-role contradiction gate:** BLOCKING via the fresh Design QA state for this exact HEAD; the Director boundary itself remains aligned and blocker-free.
-- **Functional isolation gate:** PASS for the current partial diff — changed files are shared presentation, focused tests and UI Implementation owned state only; no DB/migration/RPC/service/query/cache/RBAC/RLS/route/business/workflow/deployment file is present.
-- **Implementation-completeness gate:** FAIL — `AttendanceCheckin.tsx` live wiring and focused live-page/source-contract evidence are missing.
-- **Single-PR gate:** PASS — PR #40 is the single open PR targeting Development.
+- **Base gate:** PASS — PR base was exactly `design-system-v2-development`.
+- **Exact-head gate:** PASS — current PR HEAD remained exactly `c2a1c0298eaed3b7e1bc38c591d4ca55c91e0f13` through integration.
+- **Review gate:** PASS — exact head had `AGENT-REVIEW: GREEN-DEV` and `SOURCE_REVIEW_PASS`.
+- **Evidence honesty:** PASS — tests are `TESTS_AUTHORED_NOT_EXECUTED`; no build/test/lint/runtime/preview PASS was inferred.
+- **Known build/type failure gate:** PASS — no known real build/type failure was recorded; this is not an executed build claim.
+- **Review-thread gate:** PASS — no unresolved inline review threads existed.
+- **Cross-role contradiction gate:** PASS — Product Design and QA were fresh and blocker-free on the exact head; the older Integrator BLOCKING state was lifecycle-stale, not a live contradiction.
+- **Scope / functional isolation gate:** PASS — 7 changed files were shared presentation, focused tests, live Attendance composition and Implementer-owned state only. No DB/migration/RPC/service/query/cache/RBAC/RLS/route/business/workflow/validation/deployment file was changed.
+- **Development drift gate:** PASS — drift from the PR base to merge time consisted only of role-state coordination commits; no overlapping product/shared-component code invalidated the exact-head review.
 
-## Current blocker
+## Integrated result
 
-The minimum dependency-safe fix remains exactly the already-approved HR001 boundary:
+- Shared `ProcessProgress` now provides caller-state-driven current/completed/pending presentation with readable state and `aria-current="step"` semantics.
+- Shared `PrimaryTaskAction` is a thin composition over canonical `Button` for one context-dependent in-flow operational next action.
+- Live `AttendanceCheckin` uses `ProcessProgress`, `PrimaryTaskAction` and existing semantic `AlertPanel` instead of its superseded page-local task-control mini-system.
+- Attendance action selection, labels/IDs/callbacks, offline/GPS permission and suppression, service/RPC/query/cache/tracking/timing/result mapping and `SUCCESS_RESET_MS = 2500` remain page/domain-owned and unchanged.
+- No confirmation, sticky/fixed behavior, `AppAction`, destructive checkout semantics or broader Attendance/HR redesign entered the slice.
 
-1. Wire the existing two Attendance steps to shared `ProcessProgress` with page-owned explicit state mapping only.
-2. Replace only the eligible in-flow local ring action with `PrimaryTaskAction`, preserving `بدء الدوام` / `إنهاء الدوام`, current disabled/loading truth and the existing `handleAction` path.
-3. Render existing transient success/error through shared `AlertPanel`, preserving current Arabic copy, optional location value and `SUCCESS_RESET_MS = 2500`; success polite, error assertive.
-4. Remove only proven-dead local visual CSS/classes.
-5. Add focused live-page/source-contract coverage for eligibility/callback parity, offline/GPS suppression, feedback/live-announcement behavior and Attendance/GPS/service boundaries.
+## Queue continuity
 
-Do not add confirmation, sticky/fixed behavior, destructive semantics, `AppAction`, new eligibility, or any GPS/RPC/query/cache/tracking/device/business logic to shared presentation.
-
-## Preserve
-
-- every attendance/time/GPS permission/RPC/query/cache/tracking/timing/error-code/service/device-capability/workflow rule remains page/domain/service-owned;
-- HR001 stays bounded to the live task-control band only, not a broad Attendance or HR redesign;
-- `PrimaryTaskAction` remains a thin composition over shared `Button`, not a second eligibility system or action registry;
-- Mobile remains the primary task surface; Tablet stays deliberate; Desktop stays capability-equivalent;
-- no hosted CI, preview/deploy or `main` activity from scheduled agents.
-
-## Coordination disposition
-
-- Workstream remains on `DS2-HR-001`; no queue advancement occurs while the active slice is blocked.
-- `TEAM_MEMORY.md`, peer specialist states and `DECISION_LOG.md` remain untouched because there is no successful integration or new durable rule.
-- Issue #27 already contains the same exact-head QA blocker, so no duplicate Integrator comment is needed.
+- `DS2-HR-001` is now `DONE` with merge `e9a37c6ade6661bdaf6260f9c93c72dabba60768`.
+- Exactly one next dependency-safe roadmap slice is `READY`: `DS2-HR-002 — HR admin lists/forms`.
+- All later Field, Work, Reports, Admin and Global-convergence roadmap items remain `BACKLOG`.
+- `DECISION_LOG.md` is unchanged because HR001 did not create or supersede a durable rule.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer, Design QA, Product Design Director
-- **What changed:** Integrator revalidated PR #40 exact HEAD `37197361cb351a53b461f8d8ebaf62b1aff7a6d2` and records `NO_MERGE_BLOCKED_HR001_INCOMPLETE_LIVE_SLICE`; the blocker is implementation completeness, not architecture direction.
-- **Preserve:** all Attendance/GPS/RPC/query/cache/tracking/device/workflow truth and the Director's bounded operational-task grammar; no scope expansion.
-- **Need from you:** UI Production Engineer should finish only the already-bounded live wiring + focused live-slice protection on the same PR. Design QA must freshly review the new exact HEAD. Integrator remains no-op until that exact head has `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` and all normal gates pass.
-- **Blocker level:** `BLOCKING`.
-- **Baseline:** Development `cdc900ace6ac8e30adb413605debb33dd30517b6`; exact reviewed PR HEAD `37197361cb351a53b461f8d8ebaf62b1aff7a6d2`.
-- **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview PASS claimed.
+- **To:** Product Design Director, UI Production Engineer, Design QA
+- **What changed:** HR001 is integrated on Development as `e9a37c6ade6661bdaf6260f9c93c72dabba60768`; the first shared operational-task control grammar is now part of the baseline and HR002 is the only READY slice.
+- **Preserve:** shared operational patterns own presentation only; HR/page/domain code owns eligibility, Attendance/GPS/service/query/cache/tracking/workflow truth. Do not force a single context-dependent task action into `AppAction/resolveActionSet` or infer business state in `ProcessProgress`.
+- **Need from you:** Product Design Director should inspect the exact latest Development baseline and bound the smallest representative HR admin list/form concern for HR002. UI Production Engineer should not implement beyond that boundary. Design QA must independently review the next exact PR HEAD.
+- **Blocker level:** `NONE`.
+- **Baseline:** product integration `e9a37c6ade6661bdaf6260f9c93c72dabba60768`; coordination baseline before this state write `5f50c80149681841e058f9f2af7d9a9a4e83b8f6`.
+- **Evidence:** `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview/release PASS claimed.
