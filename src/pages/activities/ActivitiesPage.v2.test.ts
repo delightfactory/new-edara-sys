@@ -60,11 +60,13 @@ describe('ActivitiesPage V2 representative list contract', () => {
     expect(source).not.toContain('dataCardMapping=')
   })
 
-  it('keeps field card touch targets deliberate through Tablet and Mobile grids distinct', () => {
+  it('keeps canonical device breakpoints and touch targets aligned with ResponsiveCollection', () => {
     expect(stylesheet).toContain('.ds-field-activity-grid--tablet')
     expect(stylesheet).toContain('grid-template-columns: repeat(2, minmax(0, 1fr))')
     expect(stylesheet).toContain('.ds-field-activity-grid--mobile')
     expect(stylesheet).toContain('@media (max-width: 1024px)')
+    expect(stylesheet).toContain('@media (max-width: 768px)')
+    expect(stylesheet).not.toContain('@media (max-width: 767px)')
     expect(stylesheet).toContain('min-height: var(--ds-icon-hit-target)')
     expect(stylesheet).toContain('background: var(--bg-surface-2)')
     expect(stylesheet).not.toContain('var(--bg-muted)')
