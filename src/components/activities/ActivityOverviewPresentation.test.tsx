@@ -32,10 +32,19 @@ describe('ActivityOverviewPresentation', () => {
     expect(screen.getByText('لا يرد').closest('[data-tone]')).toHaveAttribute('data-tone', 'warning')
   })
 
-  it('keeps category metadata neutral rather than presenting it as workflow state', () => {
-    render(<ActivityCard summary={summary} mode="tablet" actions={[]} onOpen={vi.fn()} />)
+  it('keeps category and unverified GPS metadata neutral rather than inventing workflow state', () => {
+    render(
+      <ActivityCard
+        summary={{ ...summary, gpsVerified: false }}
+        mode="tablet"
+        actions={[]}
+        onOpen={vi.fn()}
+      />,
+    )
     expect(screen.getByText('زيارة', { selector: '.badge' })).toBeInTheDocument()
     expect(screen.getByText('متابعة مجدولة').closest('[data-tone]')).toHaveAttribute('data-tone', 'warning')
+    expect(screen.getByText('GPS').parentElement).toHaveTextContent('—')
+    expect(screen.queryByText('غير موثق')).not.toBeInTheDocument()
   })
 
   it('uses canonical device action placement without owning action eligibility', () => {
