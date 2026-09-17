@@ -107,6 +107,12 @@
   min-width: 7rem;
 }
 
+@media (max-width: 1024px) {
+  .ds-employee-card__identity {
+    min-height: var(--ds-icon-hit-target);
+  }
+}
+
 @media (max-width: 768px) {
   .ds-hr-filter-row {
     align-items: stretch;
@@ -125,7 +131,6 @@
 
   .ds-employee-card__identity {
     width: 100%;
-    min-height: var(--ds-icon-hit-target);
   }
 
   .ds-employee-card__badges {
