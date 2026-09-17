@@ -1,13 +1,13 @@
 /* Delight Design System V2 — form composition patterns. */
 
-/* Canonical touch-safe native form controls for V2 surfaces. */
+/* Canonical native form-control sizing for V2 surfaces. */
 .form-input,
 .form-select {
-  min-height: var(--control-height-md);
+  min-height: var(--ds-control-height-standard);
 }
 
 .form-textarea {
-  min-height: max(80px, var(--control-height-md));
+  min-height: max(80px, var(--ds-control-height-standard));
 }
 
 .ds-form-section {
@@ -58,6 +58,17 @@
 .ds-form-actions--start { justify-content: flex-start; }
 .ds-form-actions--end { justify-content: flex-end; }
 .ds-form-actions--between { justify-content: space-between; }
+
+@media (max-width: 1024px) {
+  .form-input,
+  .form-select {
+    min-height: var(--ds-control-height-touch);
+  }
+
+  .form-textarea {
+    min-height: max(80px, var(--ds-control-height-touch));
+  }
+}
 
 @media (max-width: 1024px) and (min-width: 769px) {
   .ds-form-grid--cols-3,

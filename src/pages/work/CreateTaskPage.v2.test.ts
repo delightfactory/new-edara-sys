@@ -33,12 +33,16 @@ describe('CreateTaskPage V2 source contract', () => {
     expect(source).not.toContain('className="work-field"')
   })
 
-  it('keeps shared native form controls on the canonical touch-safe height contract', () => {
+  it('keeps shared native form controls on the V2 standard/touch height contract', () => {
     expect(source).toContain('className="form-input"')
     expect(source).toContain('className="form-select"')
     expect(source).toContain('className="form-textarea"')
-    expect(formsCss).toContain('.form-input,\n.form-select {\n  min-height: var(--control-height-md);\n}')
-    expect(formsCss).toContain('.form-textarea {\n  min-height: max(80px, var(--control-height-md));\n}')
+    expect(formsCss).toContain('.form-input,\n.form-select {\n  min-height: var(--ds-control-height-standard);\n}')
+    expect(formsCss).toContain('.form-textarea {\n  min-height: max(80px, var(--ds-control-height-standard));\n}')
+    expect(formsCss).toContain('@media (max-width: 1024px) {')
+    expect(formsCss).toContain('.form-input,\n  .form-select {\n    min-height: var(--ds-control-height-touch);\n  }')
+    expect(formsCss).toContain('.form-textarea {\n    min-height: max(80px, var(--ds-control-height-touch));\n  }')
+    expect(formsCss).not.toContain('--control-height-md')
   })
 
   it('keeps required controls under manual noValidate semantics while exposing Field accessibility', () => {
