@@ -114,22 +114,50 @@ System result:
 
 ## Current single READY slice
 
-### DS2-HR-001 — Mobile operational tasks
+### DS2-HR-001 — Attendance Check-in operational task controls
 Status: `READY`
 Owner role: Product Design Director -> UI Production Engineer
 
-System intent:
-Continue the North-Star roadmap into HR/People by identifying the smallest representative Mobile-first operational task concern that can prove shared V2 task/action/form/state grammar without moving HR, attendance, leave, payroll or employee-management business truth into presentation.
+Representative live surface:
+- `src/pages/hr/attendance/AttendanceCheckin.tsx` only.
+- This screen is the documented Mobile-primary Operational Task proof: GPS/online-aware, one context-dependent next action, locating/submitting progress, success/error feedback and safe-area-aware composition.
 
-Before implementation:
-- Product Design Director must inspect the live HR/People operational surfaces on the exact latest Development baseline and explicitly bound one dependency-safe presentation-only concern;
-- preserve every permission, attendance/time rule, leave/workflow rule, payroll/employee calculation, query/cache/service/validation/route/device-capability truth exactly;
-- prefer an actual recurring operational need that advances shared Mobile grammar rather than broad HR page polishing;
-- Mobile remains the primary task surface, Tablet deliberate, Desktop capability-equivalent where the selected live surface exists;
-- no DB/migration/RPC/RBAC/RLS/backend/business/workflow change, no deployment/preview/main change.
+System intent:
+Prove the first reusable V2 operational-task control grammar from the existing Attendance flow without moving attendance, time, GPS, tracking or device-capability truth into shared presentation. The slice is deliberately the **primary action + process progress + transient feedback band**, not a full Attendance page redesign.
+
+Implement in one PR only:
+- introduce a domain-agnostic `ProcessProgress` pattern under the shared V2 pattern layer; the page/HR adapter supplies the existing two steps (`تحديد الموقع GPS`, `تسجيل الحضور`) and their current/completed/pending state. The pattern owns presentation/accessibility only and must not know `FlowState`, attendance RPC codes or transition rules;
+- introduce a thin `PrimaryTaskAction` pattern composed on the existing shared `Button` rather than a second button primitive. It receives label/icon/disabled/loading/callback from the page and replaces the local custom `<button>`/ring mini-system. `بدء الدوام` and `إنهاء الدوام` remain the only page-selected actions and invoke the existing `handleAction` path exactly;
+- use the existing shared `AlertPanel` for the current transient success/error feedback, preserving current Arabic copy, optional location name and the existing success auto-reset timing; dynamic success announces politely and error announces assertively through the shared alert contract;
+- remove only the page-local CSS/classes made dead by those migrated controls after source search proves no remaining consumer. Keep the rest of the Attendance styling/composition intact;
+- add focused tests/source contracts for step state/accessibility, action label/callback/disabled parity, success/error copy + announcement, RTL/touch behavior and preservation of the page-owned attendance/GPS service boundary.
+
+Action semantics:
+- do **not** route this single task action through `AppAction/resolveActionSet`; the action registry solves multi-action placement, while Attendance has one context-dependent operational next action. `PrimaryTaskAction` is a task-surface presentation composition over shared `Button`, not a parallel eligibility system;
+- do not add a confirmation, new eligibility rule or destructive semantics to `إنهاء الدوام`. Start/end action meaning remains text/icon/page-state driven; success/danger semantic tones stay with feedback/status, not a page-local action-color rule;
+- preserve the current in-flow action location. Do not introduce sticky/fixed behavior until later runtime evidence proves it is safe with GPS banners, BottomNav/safe areas and the existing task composition.
+
+Explicit exclusions:
+- `recordAttendanceGPS`, `recordAttendanceLocationPing`, `getAttendanceDays`, query keys/cache/refetch behavior, RPC result/error mapping, timestamps, accuracy/range rules or attendance calculations;
+- `useGeoPermission`, explain-before-ask dialog behavior, blocked/prompt/granted handling, `GeoPermissionBanner`, `GeoPermissionDialog` or browser permission guidance;
+- tracking settings, periodic ping scheduling, movement thresholds, focus/resume/reconnect behavior, outside-zone/stale logic or tracking copy;
+- `LiveClock`, `TodayStatus`, top header online/offline chip, employee card, tracking card, terminal day-done summary, GPS weak-signal warning and privacy note;
+- `AttendancePage` admin, leaves, advances, delegations, payroll, employee/profile/admin surfaces;
+- broad `OperationalTaskScreen`, `ConnectionStatus`, `StickyTaskAction`, Offline/Sync framework or HR shell creation in this slice;
+- DB/migration/RPC/RBAC/RLS/service/route/business/workflow changes, Vercel, preview branches, GitHub Actions or `main`.
+
+Device/state/accessibility acceptance:
+- Mobile (`<=768px`) remains the primary completion surface: one obvious practical 44px+ task action, no horizontal overflow, long Arabic labels intact, process feedback readable above the fold where current composition allows, and safe-area behavior unchanged;
+- Tablet (`769–1024px`) stays touch-first and deliberately constrained rather than stretching a phone control across the viewport; task controls remain aligned with the current narrow operational content column;
+- Desktop (`>=1025px`) remains capability-equivalent with a focused, bounded task control rather than an HR management redesign;
+- RTL uses logical spacing/order; GPS accuracy metadata may remain LTR/tabular where appropriate; status/progress meaning must never rely on color alone;
+- `idle / locating / submitting / success / error` presentation parity is preserved. The terminal `day done` surface is intentionally unchanged;
+- `ProcessProgress` exposes current-step semantics (`aria-current="step"` or equivalent), readable step labels and non-color completion/current distinction;
+- `PrimaryTaskAction` inherits shared Button focus/loading/disabled/touch semantics. Any decorative motion must be non-essential and respect reduced-motion preferences; the current continuous pulse is not a required behavior;
+- existing offline/GPS-blocked conditions continue to suppress/prevent attendance submission exactly as today; this slice may not infer or own those conditions.
 
 Stop condition:
-If the representative HR concern cannot be migrated without changing business/attendance/payroll/workflow semantics, Product Design Director must mark it BLOCKED and choose a narrower presentation boundary rather than expanding functional scope.
+If the action/progress/feedback extraction requires moving GPS permission, attendance eligibility, RPC/result mapping, timing/tracking logic or any device/business rule into shared components, mark the slice `BLOCKED` and narrow it further rather than expanding functional scope.
 
 ## Product migration roadmap
 
@@ -174,7 +202,7 @@ Open only when a real migrated screen proves the recurring gap:
 - `DS2-FIN-002` Payment Receipt transaction-detail header/action foundation — `DONE`
 
 ### F. HR / People
-- `DS2-HR-001` Mobile operational tasks — `READY`
+- `DS2-HR-001` Attendance Check-in operational task controls — `READY`
 - `DS2-HR-002` HR admin lists/forms — `BACKLOG`
 
 ### G. Field Activities / Targets
