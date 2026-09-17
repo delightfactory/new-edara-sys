@@ -25,7 +25,6 @@ export interface EmployeeCardSummary {
   phone?: ReactNode
   salary?: ReactNode
   fieldLabel: ReactNode
-  isFieldEmployee: boolean
   statusLabel: ReactNode
   statusTone: SemanticTone
 }
