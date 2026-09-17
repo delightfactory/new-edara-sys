@@ -4,66 +4,75 @@
 
 - Review date: `2026-09-17`
 - Development branch: `design-system-v2-development`
-- Exact Development HEAD immediately before product merge: `5099df4a01d74a9bf4e03575d7a67837613baea6`
-- Product merge commit: `b1c9ae6dd78b57f9708e3e5d40fe0b2baac6adbc`
-- Workstream queue-update commit before this state write: `f7cf4bcf3254641c2cde35ca83e19032ca3e7b58`
-- Completed slice: `DS2-HR-002 — HR admin lists/forms` — representative concern: Employees administration list
-- Merged PR: `#41 — DS2-HR-002: Employees admin list V2`
-- Exact reviewed PR HEAD: `984750b5d933e26fea62995d3bf782f89a85b509`
+- Exact Development HEAD inspected before this state write: `597bf7e56e23a5ca8fd0a51926ab580fea87b5a3`
+- Latest integrated product merge remains: `DS2-HR-002` / PR #41 / squash `b1c9ae6dd78b57f9708e3e5d40fe0b2baac6adbc`
+- Active slice: `DS2-FIELD-001 — Activities/visit/call/target lists`
+- Active representative concern: `ActivitiesPage` list presentation only
+- Active PR: `#42 — DS2-FIELD-001: Activities list V2 foundation`
 - PR base: `design-system-v2-development`
-- Integration disposition: `MERGED_GREEN_DEV`
-- Review/evidence: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`
+- PR base SHA: `def098978efbe796306f882014e69652f014efa6`
+- Exact current PR HEAD: `823c89d10201a8db68e7189803bd003c3fd9fd2f`
+- PR state: `OPEN / DRAFT / mergeable=true`
+- Changed-file scope: 7 files
+- Integration disposition: `NO_MERGE_BLOCKED_P2_FIELD001_TABLET_TIME_CATEGORY_HIERARCHY`
+- Review/evidence: `AGENT-REVIEW: BLOCKED` + `TESTS_AUTHORED_NOT_EXECUTED`; `SOURCE_REVIEW_PASS` is withheld
 - Runtime/preview/release evidence: not claimed
 
 ## Integrator decision
 
-**MERGED.** PR #41 satisfied the Development integration gate on exact HEAD `984750b5d933e26fea62995d3bf782f89a85b509`.
+**NO MERGE.** PR #42 does not satisfy the Development integration gate on exact HEAD `823c89d10201a8db68e7189803bd003c3fd9fd2f`.
 
-I revalidated the exact current PR HEAD, base, mergeability, review markers, review threads, changed-file scope, development drift and role-state freshness. The earlier `P2 / BLOCKING` Integration State referred only to superseded HEAD `1c0ad8b220ac81630d122242b9d4917343ae08cc`; the exact cited Tablet touch defect was corrected and independently re-reviewed GREEN on `984750b5...`. Product Design also recorded no Design-System blocker on that exact HEAD.
+The base is correct, the PR is mergeable, no inline review threads are open, no known real build/type failure is recorded, and the seven-file diff is bounded to Activities presentation/live composition, focused tests/styles and Design System governance/state. No DB/migration/RPC/service/RBAC/RLS/route-guard/business-calculation/query-cache/validation/workflow/deployment change is present.
 
-The draft PR was transitioned to ready-for-review without moving its HEAD, then squash-merged with expected-head protection as `b1c9ae6dd78b57f9708e3e5d40fe0b2baac6adbc`.
+However, Design QA independently reviewed this exact HEAD and recorded `AGENT-REVIEW: BLOCKED / P2 / NO_MERGE`. `SOURCE_REVIEW_PASS` is explicitly withheld. Therefore the mandatory exact-head review gate fails regardless of otherwise-clean scope.
 
-No GitHub Actions, hosted CI, Vercel preview/deploy, preview branch or `main` activity was performed.
+## Current blocking findings
+
+### P2-1 — Tablet drops existing `start_time` information
+
+The legacy baseline showed optional `start_time` in the DataTable that Tablet previously received. The new Tablet card composition does not project/render that datum, creating an information/capability regression at `769–1024px`.
+
+Required bounded correction:
+- preserve optional `activity.start_time` in the Tablet card using the existing formatting semantics;
+- do not change query/service/data/workflow contracts;
+- add focused authored regression protection for Tablet time parity.
+
+### P2-2 — duplicated neutral category weakens hierarchy
+
+`ActivityCard` currently exposes the same category twice in the header/composition: as `.ds-activity-card__category` and again as a neutral `Badge`.
+
+Required bounded correction:
+- expose category once while keeping it neutral categorical metadata;
+- preserve semantic outcome `StatusBadge` behavior;
+- add/update focused authored protection so the duplicate representation does not return.
 
 ## Gate revalidation
 
-- **Base gate:** PASS — PR base was exactly `design-system-v2-development`.
-- **Exact-head gate:** PASS — merge used expected HEAD `984750b5d933e26fea62995d3bf782f89a85b509`; HEAD did not move after review.
-- **Review gate:** PASS — exact reviewed HEAD has `AGENT-REVIEW: GREEN-DEV`.
-- **Source evidence gate:** PASS — reviewer recorded `SOURCE_REVIEW_PASS` on the exact HEAD.
-- **Evidence honesty:** PASS — focused tests remain `TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview PASS is inferred.
+- **Base gate:** PASS — base is exactly `design-system-v2-development`.
+- **Exact-head gate:** BLOCKED — exact current HEAD is reviewed, but reviewed disposition is BLOCKED rather than GREEN-DEV.
+- **Review gate:** FAIL — no `AGENT-REVIEW: GREEN-DEV` exists for current HEAD.
+- **Source evidence gate:** FAIL — `SOURCE_REVIEW_PASS` is withheld on current HEAD.
+- **Evidence honesty:** PASS — focused tests are honestly labeled `TESTS_AUTHORED_NOT_EXECUTED`; no executed CI/build/lint/runtime/preview PASS is inferred.
 - **Known build/type failure gate:** PASS — no known real build/type failure is recorded; this is not an executed build claim.
-- **Review-thread gate:** PASS — no inline review threads were open.
-- **Cross-role contradiction gate:** PASS — fresh Design QA and Product Design states record no blocker on `984750b5...`; the previous Integration blocker was stale and tied only to the superseded HEAD.
-- **Scope / functional-isolation gate:** PASS — the 11-file PR is limited to Employees presentation/live composition, shared Pagination/DataTable presentation extraction, focused tests/styles, workstream state and the Implementer-owned state. No DB/migration/RPC/service/RBAC/RLS/route-guard/business-calculation/query-cache/validation/workflow/deployment file is in scope.
-- **Behavior-preservation gate:** PASS at source level — employee search/department/status/page/pageSize inputs and page reset, stats behavior including the pre-existing current-page field metric, salary/create/edit/view permissions, profile route and `EmployeeForm` boundary remain page/domain-owned.
-- **Development drift gate:** PASS — movement from PR base `988d7651cda4ecb828bf1dc54a9617fec8ae3edc` to the pre-merge Development HEAD was governance/role-state coordination only and did not overlap the product/shared implementation.
-- **Merge-method gate:** PASS — squash merge with exact expected-head protection.
-- **CI/deployment isolation gate:** PASS — no hosted CI, workflow trigger/rerun or deployment action occurred.
-
-## Integrated system result
-
-- `EmployeesPage` now uses one live `ResponsiveCollection<HREmployee>` instead of duplicate hidden Desktop/Mobile interaction trees.
-- Desktop preserves the dense employee `DataTable`; Tablet deliberately uses two-column cards; Mobile uses one-column operational cards.
-- Employee summary/card presentation reuses shared V2 `MetricGrid`, `StatCard`, `Card`, `KeyValueList`, `StatusBadge`, `Badge`, `Button` and canonical `AppAction/resolveActionSet` placement.
-- Workflow status is semantic while field/office type remains neutral categorical metadata.
-- Shared `Pagination` is presentation-only and preserves the established five-page window, callback targets, disabled boundaries, Arabic labels and `aria-current="page"`; canonical touch targets now apply through Tablet while compact Desktop density remains intact.
-- Initial-empty and filtered-empty presentation are distinct without changing data/query semantics.
-- Employee query/stat/permission/profile/form/service/workflow truth remains domain/page-owned and unchanged.
-- The Employees filter/search row is accepted as local page composition only; it is not a reusable HR filter grammar and does not supersede the future shared filter convergence program.
+- **Review-thread gate:** PASS — no inline review threads are open.
+- **Cross-role contradiction gate:** BLOCKED by current Design QA state on the same exact HEAD. Product Design Director state is lifecycle-stale from HR002 and therefore cannot supersede current FIELD001 QA evidence.
+- **Scope / functional-isolation gate:** PASS at source level — current diff is presentation/test/governance only and preserves activity query/search/filter, permissions, deletion mutation authority, routing, customer deep-link, GPS/device, validation and workflow truth.
+- **Development drift gate:** PASS — Development moved from PR base `def098978...` only through the QA-state commit `597bf7e5...`; no overlapping product/shared implementation change occurred.
+- **CI/deployment isolation gate:** PASS — no GitHub Actions/hosted CI, workflow trigger/rerun, Vercel preview/deploy, preview-branch or `main` action was performed.
 
 ## Queue continuity
 
-- `DS2-HR-002` is `DONE` with squash merge `b1c9ae6dd78b57f9708e3e5d40fe0b2baac6adbc`.
-- Exactly one next dependency-safe slice is `READY`: `DS2-FIELD-001 — Activities/visit/call/target lists`.
-- `DS2-FIELD-002`, Work Management, Reports/Analytics, Settings/Admin and Global convergence remain `BACKLOG`.
-- `DECISION_LOG.md` is unchanged because this merge does not create or supersede a durable rule.
+- `DS2-FIELD-001` remains the single active slice and is **not DONE**.
+- No next backlog slice is advanced while FIELD001 is blocked.
+- `DS2-FIELD-002`, Work Management, Reports/Analytics, Settings/Admin and Global convergence remain backlog work under the existing North-Star roadmap.
+- `TEAM_MEMORY.md`, `31_AGENT_TEAM_WORKSTREAM.md` and `DECISION_LOG.md` are unchanged by this Integrator run because no merge occurred and no durable rule changed.
+- Issue #27 already contains the exact QA blocker note for this HEAD, so no duplicate Integrator comment is added.
 
 ### Cross-role handoff
-- **To:** Product Design Director, UI Production Engineer, Design QA
-- **What changed:** HR002 Employees-list concern merged successfully; `DS2-FIELD-001 — Activities/visit/call/target lists` is now the single READY slice.
-- **Preserve:** employee queries/stats/page resets, salary/create/edit/view permissions, profile route, `EmployeeForm`, all HR/service/workflow truth, shared Pagination as presentation-only, semantic status vs neutral category treatment, deliberate Tablet touch behavior, and the rule that the local Employees filter row is not the reusable filter-system answer.
-- **Need from you:** Product Design Director should inspect representative Field Activities/Targets list surfaces on the exact latest Development baseline and bound one smallest presentation-only concern. UI Production Engineer should implement only that boundary; Design QA must independently review the resulting exact PR HEAD.
-- **Blocker level:** `NONE`.
-- **Baseline:** product merge `b1c9ae6dd78b57f9708e3e5d40fe0b2baac6adbc`; queue-update baseline before this state write `f7cf4bcf3254641c2cde35ca83e19032ca3e7b58`.
-- **Evidence:** `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview/release PASS claimed.
+- **To:** UI Production Engineer, Design QA, Product Design Director
+- **What changed:** Integration moved from the prior HR002 merged state to `NO_MERGE` for FIELD001 / PR #42 exact HEAD `823c89d10201a8db68e7189803bd003c3fd9fd2f` because exact-head QA recorded two bounded P2 presentation blockers.
+- **Preserve:** all activity query/search/filter timing and page resets; team/create/delete permissions; delete mutation/backend authority; routes/customer deep-link; GPS/device/validation/workflow/service/query-cache truth; one live `ResponsiveCollection`; shared Pagination; semantic outcome status; neutral category semantics; canonical action placement; Desktop management density and Mobile operational clarity.
+- **Need from you:** implementation should make only the two bounded presentation/test corrections above, then Design QA must independently review the new exact HEAD. Integrator may merge only after fresh `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` with honest evidence and no new blocker.
+- **Blocker level:** `P2 / BLOCKING`.
+- **Baseline:** Development `597bf7e56e23a5ca8fd0a51926ab580fea87b5a3`; blocked PR HEAD `823c89d10201a8db68e7189803bd003c3fd9fd2f`.
+- **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview/release PASS claimed.
