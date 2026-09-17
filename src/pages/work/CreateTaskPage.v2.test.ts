@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest'
 
 const sourcePath = fileURLToPath(new URL('./CreateTaskPage.tsx', import.meta.url))
 const source = readFileSync(sourcePath, 'utf8')
+const formsCssPath = fileURLToPath(new URL('../../styles/design-system-v2-forms.css', import.meta.url))
+const formsCss = readFileSync(formsCssPath, 'utf8')
 
 describe('CreateTaskPage V2 source contract', () => {
   it('adopts the shared V2 form grammar and retires local Create Task shells', () => {
@@ -29,6 +31,14 @@ describe('CreateTaskPage V2 source contract', () => {
     expect(source).not.toContain('className="work-form-grid"')
     expect(source).not.toContain('className="work-form-actions"')
     expect(source).not.toContain('className="work-field"')
+  })
+
+  it('keeps shared native form controls on the canonical touch-safe height contract', () => {
+    expect(source).toContain('className="form-input"')
+    expect(source).toContain('className="form-select"')
+    expect(source).toContain('className="form-textarea"')
+    expect(formsCss).toContain('.form-input,\n.form-select {\n  min-height: var(--control-height-md);\n}')
+    expect(formsCss).toContain('.form-textarea {\n  min-height: max(80px, var(--control-height-md));\n}')
   })
 
   it('keeps required controls under manual noValidate semantics while exposing Field accessibility', () => {
