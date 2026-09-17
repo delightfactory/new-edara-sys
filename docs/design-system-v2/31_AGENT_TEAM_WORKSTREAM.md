@@ -18,7 +18,7 @@ Authorities:
 |---|---|---|---:|---:|---:|
 | Product Design Director | System identity, architecture, next slice, design quality | every 2 hours | No | No | No |
 | UI Production Engineer | Implement/repair the single active UI slice | hourly | UI-only | No | No |
-| Design QA | Independent exact-head review | hourly | No | No | No |
+| Design QA | Independent exact-head review | hourly | No | No |
 | Development Integrator | Merge GREEN-DEV PR and advance queue | hourly | No feature work | Development only | No |
 
 `BACKLOG -> READY -> IN_PROGRESS -> REVIEW -> GREEN-DEV -> DONE`
@@ -38,16 +38,16 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-HR-001`.
+Product UI is integrated through `DS2-HR-002`.
 
 Latest product integration:
-- PR: `#40 — DS2-HR-001: Attendance operational task controls`
-- Exact reviewed PR HEAD: `c2a1c0298eaed3b7e1bc38c591d4ca55c91e0f13`
-- Squash merge commit: `e9a37c6ade6661bdaf6260f9c93c72dabba60768`
+- PR: `#41 — DS2-HR-002: Employees admin list V2`
+- Exact reviewed PR HEAD: `984750b5d933e26fea62995d3bf782f89a85b509`
+- Squash merge commit: `b1c9ae6dd78b57f9708e3e5d40fe0b2baac6adbc`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Runtime/preview/release evidence: not claimed
 
-The development branch now includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, bounded shared DataTable pagination hardening, Finance overview/detail foundations, and the first reusable HR operational-task control grammar using shared `ProcessProgress + PrimaryTaskAction + AlertPanel` while Attendance/GPS/business truth remains page/domain-owned.
+The development branch now includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task controls, and an HR administration collection proof with one live responsive employee collection plus shared presentation-only Pagination.
 
 ## Completed slices
 
@@ -118,30 +118,38 @@ System result:
 - only the superseded local action/progress/feedback mini-system and dead visual CSS were retired; broader Attendance/HR surfaces remain outside the slice;
 - focused shared-control and live source-contract tests were authored; no executed test/build/lint/runtime/preview PASS is claimed.
 
-## Current single active slice
+### DS2-HR-002 — HR admin lists/forms — Employees administration list
+Status: `DONE`
+Merged PR: `#41`
+Reviewed HEAD: `984750b5d933e26fea62995d3bf782f89a85b509`
+Squash merge: `b1c9ae6dd78b57f9708e3e5d40fe0b2baac6adbc`
+Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
+Runtime/preview/release evidence: not claimed
 
-### DS2-HR-002 — HR admin lists/forms
-Status: `REVIEW`
-Owner role: UI Production Engineer
+System result:
+- live `EmployeesPage` now uses one `ResponsiveCollection<HREmployee>` with dense Desktop `DataTable`, deliberate Tablet two-column cards and Mobile one-column cards;
+- employee summary/card presentation reuses shared `MetricGrid + StatCard + Card + KeyValueList + StatusBadge + Badge + Button`, with semantic workflow status and neutral field/office categorical metadata;
+- card action eligibility/callback truth remains page-owned and feeds canonical `AppAction + resolveActionSet`; salary/create/edit/view permissions and the profile route remain unchanged;
+- shared `Pagination` was extracted from `DataTable` as presentation only, preserving the established five-page window, callbacks, disabled boundaries, Arabic labels and `aria-current="page"` while applying canonical touch targets through Tablet;
+- initial-empty and filtered-empty presentation are distinct; employee search/department/status/page/pageSize, page resets, stats behavior including the pre-existing current-page field metric, and `EmployeeForm` remain unchanged;
+- the local Employees filter/search row remains page composition only, not a reusable HR filter grammar; shared filter convergence stays in the component-depth roadmap.
 
-Selected concern:
-- representative surface is the `EmployeesPage` administration list only; `EmployeeForm` internals remain outside this concern;
-- converge the duplicated Desktop/Mobile list trees into one `ResponsiveCollection<HREmployee>` with deliberate Desktop table, Tablet two-column cards and Mobile one-column cards;
-- map employee workflow status through shared semantic `StatusBadge`, keep field/office as neutral categorical metadata, and use caller-owned `AppAction` eligibility for card actions;
-- preserve current employee search/department/status query behavior, pagination inputs, salary permission visibility, create/edit/view permissions and callbacks exactly;
-- distinguish initial-empty from filtered-empty presentation without changing data/query semantics;
-- a shared pagination gap may be strengthened only as a presentation extraction with the exact existing page-window/callback contract.
+## Current single READY slice
+
+### DS2-FIELD-001 — Activities/visit/call/target lists
+Status: `READY`
+Owner role: Product Design Director -> UI Production Engineer
 
 Intent:
-- continue the North-Star roadmap through HR/People after proving the Mobile operational-task grammar in HR001;
-- prove reusable V2 HR administration list grammar rather than a broad HR redesign;
-- preserve employee, attendance, leave, payroll, advances/delegations, permissions, query/cache, service, validation, route and workflow truth exactly;
-- prefer existing shared V2 collections/forms/actions/status primitives before inventing any HR-local grammar;
-- Mobile/Tablet/Desktop must be deliberate and capability-equivalent for the selected surface;
+- continue the North-Star module roadmap into Field Activities / Targets rather than expanding HR polishing;
+- Product Design Director must inspect the exact latest Development baseline and choose the smallest representative field list concern that can prove reusable V2 collection/action/status/filter grammar;
+- prefer existing `ResponsiveCollection`, semantic status, `AppAction/resolveActionSet`, shared summary/state patterns and current V2 primitives before inventing field-local presentation systems;
+- preserve activity/visit/call/target query, service, permission, routing, GPS/device, validation, ownership and workflow truth exactly;
+- Mobile is the primary field-operational surface, Tablet must remain deliberate, and Desktop must preserve management density/capability parity;
 - no DB/migration/RPC/service/RBAC/RLS/business/workflow/query-cache/validation-semantic change, no deployment/preview and no `main` work.
 
 Stop condition:
-If the representative HR admin surface cannot be improved without changing permission, payroll/leave/attendance semantics, service contracts or workflow truth, narrow the slice and record the functional issue separately rather than absorbing it into Design System scope.
+If the representative Field surface cannot be improved without changing route/GPS/permission/service/workflow truth, narrow the slice and record the functional issue separately rather than absorbing it into Design System scope.
 
 ## Product migration roadmap
 
@@ -187,10 +195,10 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### F. HR / People
 - `DS2-HR-001` Attendance Check-in operational task controls — `DONE`
-- `DS2-HR-002` HR admin lists/forms — `REVIEW`
+- `DS2-HR-002` HR admin lists/forms — `DONE`
 
 ### G. Field Activities / Targets
-- `DS2-FIELD-001` Activities/visit/call/target lists — `BACKLOG`
+- `DS2-FIELD-001` Activities/visit/call/target lists — `READY`
 - `DS2-FIELD-002` Field create/detail flows — `BACKLOG`
 
 ### H. Work Management
