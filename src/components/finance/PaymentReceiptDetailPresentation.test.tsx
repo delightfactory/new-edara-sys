@@ -89,8 +89,32 @@ describe('PaymentReceiptDetailHeader', () => {
     expect(container.querySelector('.ds-transaction-header__overflow-actions')?.textContent).toContain('رفض')
 
     fireEvent.click(screen.getByRole('button', { name: 'تأكيد الاستلام' }))
-    fireEvent.click(screen.getByRole('button', { name: 'رفض' }))
+    const reject = container.querySelector<HTMLButtonElement>('[data-action-id="reject"]')
+    expect(reject).not.toBeNull()
+    fireEvent.click(reject!)
     expect(onConfirm).toHaveBeenCalledTimes(1)
     expect(onReject).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps both authorized review actions direct on Tablet', () => {
+    setViewport(900)
+
+    const { container } = render(
+      <PaymentReceiptDetailHeader
+        receiptNumber="PR-1024"
+        context="شركة النور"
+        status="pending"
+        onBack={vi.fn()}
+        actions={[
+          { id: 'confirm', label: 'تأكيد الاستلام', onSelect: vi.fn(), importance: 'primary', order: 10 },
+          { id: 'reject', label: 'رفض', onSelect: vi.fn(), importance: 'tertiary', tone: 'danger', order: 20 },
+        ]}
+      />,
+    )
+
+    expect(screen.getByRole('banner').getAttribute('data-device')).toBe('tablet')
+    expect(container.querySelector('.ds-transaction-header__visible-actions')?.textContent).toContain('تأكيد الاستلام')
+    expect(container.querySelector('.ds-transaction-header__visible-actions')?.textContent).toContain('رفض')
+    expect(container.querySelector('.ds-transaction-header__overflow')).toBeNull()
   })
 })
