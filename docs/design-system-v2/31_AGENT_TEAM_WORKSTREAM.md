@@ -38,16 +38,16 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-FIN-001`.
+Product UI is integrated through `DS2-FIN-002`.
 
 Latest product integration:
-- PR: `#38 — DS2-FIN-001: establish vault overview V2 presentation`
-- Exact reviewed PR HEAD: `b2450e22f9cf58d06780b608dbe6a7b871b53639`
-- Squash merge commit: `7a70beccaf961b248f0df045f6bf610df4dfdc84`
+- PR: `#39 — DS2-FIN-002: Payment Receipt transaction-detail header`
+- Exact reviewed PR HEAD: `0389bb0748a4eb84d40b57707b4b1da47000b369`
+- Squash merge commit: `1a9509d598b9b462397838db7adc261c4746c52f`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Runtime/preview/release evidence: not claimed
 
-The development branch now includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, bounded shared DataTable pagination hardening, and the first Finance overview migration using shared `MetricGrid`, `ResponsiveCollection`, neutral categorical metadata, semantic status, and canonical `AppAction + resolveActionSet` device placement.
+The development branch now includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, bounded shared DataTable pagination hardening, Finance overview migration using shared `MetricGrid`/`ResponsiveCollection`, and a Finance Payment Receipt transaction-detail header/action foundation reusing shared `TransactionHeader + StatusBadge + AppAction/resolveActionSet`.
 
 ## Completed slices
 
@@ -94,47 +94,42 @@ System result:
 - `finance.vaults.create/transact/update`, `current_balance === 0`, statement `pageSize: 25`, create/update/manual-adjustment/transfer services, query/cache/invalidation, validation/toasts, modal workflows, routes and accounting/posting semantics remain unchanged;
 - focused component/live-page tests were authored for summary semantics, device renderer selection, permissions/action parity, overflow, opening-balance eligibility, empty/create behavior, statement paging and service isolation.
 
-## Current single active slice
-
 ### DS2-FIN-002 — Payment Receipt transaction-detail header/action foundation
-Status: `REVIEW`
-Owner role: UI Production Engineer -> Product Design Director / Design QA
-Design Director baseline: `45cf7998c90254e022258d91a6debfe7179d935d`
-Implementation baseline: `3cb51c0eacc4fe0a35497734e1786a2c96114c32`
-Draft PR: `#39 — DS2-FIN-002: Payment Receipt transaction-detail header`
-Representative live surface: `src/pages/finance/PaymentReceiptDetail.tsx`
-Evidence: `TESTS_AUTHORED_NOT_EXECUTED`
+Status: `DONE`
+Merged PR: `#39`
+Reviewed HEAD: `0389bb0748a4eb84d40b57707b4b1da47000b369`
+Squash merge: `1a9509d598b9b462397838db7adc261c4746c52f`
+Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
+Runtime/preview/release evidence: not claimed
+
+System result:
+- live `PaymentReceiptDetail` now consumes a thin Finance adapter over shared `TransactionHeader` while receipt number, customer/date context and back route remain page-owned;
+- `pending / confirmed / rejected` use shared text-backed `StatusBadge` semantics with Finance-owned Arabic labels/tone mapping;
+- existing `isSelfCashCustody`, `isAdmin`, `canConfirm` and `finance.payments.confirm` predicates remain page-owned; existing confirm/reject callbacks are declared as `AppAction[]` without changing eligibility or workflow truth;
+- shared action placement keeps Mobile at max one direct review action, Tablet at max two, and Desktop direct under the existing registry contract; remaining authorized actions stay in accessible RTL overflow;
+- `DocumentActions kind="payment-receipt"` remains separate output tooling rather than workflow eligibility;
+- shared `TransactionHeader` overflow presentation is hardened so native `<details>` action content stays hidden while closed and is displayed only when open;
+- `getPaymentReceipt`, custody/vault/destination handling, confirm/reject services, validation/toasts/invalidation, amount hero, proof handling and review modals remain unchanged and page/domain-owned;
+- focused tests were authored for status semantics, back/tools separation, device action placement/callbacks, Finance service/predicate boundaries and overflow CSS behavior.
+
+## Current single READY slice
+
+### DS2-HR-001 — Mobile operational tasks
+Status: `READY`
+Owner role: Product Design Director -> UI Production Engineer
 
 System intent:
-Prove that Finance transaction-detail identity, workflow status and guarded review actions reuse the same shared V2 `TransactionHeader + StatusBadge + AppAction/resolveActionSet` grammar already proven in Sales, while every receipt/payment/accounting rule remains page/domain/service-owned.
+Continue the North-Star roadmap into HR/People by identifying the smallest representative Mobile-first operational task concern that can prove shared V2 task/action/form/state grammar without moving HR, attendance, leave, payroll or employee-management business truth into presentation.
 
-Implement only:
-- replace the current ad-hoc sticky receipt header with a thin Finance adapter over shared `TransactionHeader`;
-- preserve receipt number identity plus existing customer/date context and links;
-- map `pending / confirmed / rejected` to shared `StatusBadge` using the current Arabic labels and semantic tones; Finance owns the mapping;
-- use shared `Button` for back navigation to `/finance/payments` with RTL-native direction and touch-safe target;
-- declare only the existing eligible review actions through canonical `AppAction`: confirm remains present only under existing `canConfirm` truth; reject remains present only under existing `isAdmin` truth; existing callbacks/modal openings remain unchanged;
-- keep `DocumentActions kind="payment-receipt" entityId={receipt.id}` in the header tools slot as output tooling, without duplicating its capabilities inside the action registry;
-- author focused tests/source contracts for status mapping, back navigation, permission/action parity, callback wiring, Mobile/Tablet registry placement and preserved output tooling.
-
-Device/state/accessibility acceptance:
-- Mobile `<=768px`: readable sticky identity/status with long Arabic customer names and mixed Latin receipt number; max one direct review action, remaining authorized review action in accessible RTL overflow; practical 44px back/action targets; no horizontal header overflow.
-- Tablet `769–1024px`: deliberate wrapped header with max two direct review actions; output tooling remains visually secondary to workflow action hierarchy.
-- Desktop `>=1025px`: efficient review actions remain visible through the shared header; existing page body/modals are preserved. This slice does not claim to solve the page's broader `maxWidth: 640` body-density debt.
-- RTL/Arabic: correct back direction, receipt-number directionality, Arabic status/customer/date wrapping and overflow placement.
-- Loading/not-found: preserve current skeleton and not-found behavior exactly; do not mount transaction header before a receipt exists.
-- Permission/workflow: no unauthorized confirm/reject appears and no authorized action disappears.
-- Accessibility: meaningful banner/action labels, shared focus/touch semantics and text-backed semantic status.
-
-Explicit exclusions:
-- no `getPaymentReceipt`, `confirmPaymentReceipt`, `rejectPaymentReceipt`, direct custody query, service/query/cache/invalidation changes;
-- no changes to `isSelfCashCustody`, `isAdmin`, `canConfirm`, `finance.payments.confirm`, vault filtering/destination selection, cheque/custody handling, validation, toasts, route semantics or accounting/posting truth;
-- no confirm/reject modal redesign, receipt amount/hero redesign, proof image/PDF/file redesign, upload/output subsystem changes, detail-card/`SectionHead`/`InfoRow` convergence, timeline/audit work, Payments list migration, statements/journals/ledger/expenses/reports redesign or speculative Finance framework;
-- no DB/migration/RPC/RBAC/RLS/route-guard/backend business changes;
-- no deployment/preview/main changes.
+Before implementation:
+- Product Design Director must inspect the live HR/People operational surfaces on the exact latest Development baseline and explicitly bound one dependency-safe presentation-only concern;
+- preserve every permission, attendance/time rule, leave/workflow rule, payroll/employee calculation, query/cache/service/validation/route/device-capability truth exactly;
+- prefer an actual recurring operational need that advances shared Mobile grammar rather than broad HR page polishing;
+- Mobile remains the primary task surface, Tablet deliberate, Desktop capability-equivalent where the selected live surface exists;
+- no DB/migration/RPC/RBAC/RLS/backend/business/workflow change, no deployment/preview/main change.
 
 Stop condition:
-If correct implementation would require changing Finance eligibility/workflow semantics, creating a Finance-specific parallel action model, or modifying output capabilities, mark `BLOCKED` instead of expanding the slice.
+If the representative HR concern cannot be migrated without changing business/attendance/payroll/workflow semantics, Product Design Director must mark it BLOCKED and choose a narrower presentation boundary rather than expanding functional scope.
 
 ## Product migration roadmap
 
@@ -176,10 +171,10 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### E. Finance
 - `DS2-FIN-001` Finance lists and summaries — `DONE`
-- `DS2-FIN-002` Payment Receipt transaction-detail header/action foundation — `REVIEW`
+- `DS2-FIN-002` Payment Receipt transaction-detail header/action foundation — `DONE`
 
 ### F. HR / People
-- `DS2-HR-001` Mobile operational tasks — `BACKLOG`
+- `DS2-HR-001` Mobile operational tasks — `READY`
 - `DS2-HR-002` HR admin lists/forms — `BACKLOG`
 
 ### G. Field Activities / Targets
