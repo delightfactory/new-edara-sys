@@ -108,7 +108,7 @@ export function ActivityCard({ summary, mode, actions, onOpen }: ActivityCardPro
   const category = CATEGORY_META[summary.category]
   const metadata: KeyValueItem[] = [
     { key: 'date', label: 'التاريخ', value: summary.date },
-    { key: 'gps', label: 'GPS', value: summary.gpsVerified ? 'موثق' : 'غير موثق' },
+    { key: 'gps', label: 'GPS', value: summary.gpsVerified ? 'موثق' : '—' },
   ]
 
   if (summary.notes) {
