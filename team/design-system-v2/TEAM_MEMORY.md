@@ -3,10 +3,10 @@
 ## Current truth
 
 - Authoritative integration branch: `design-system-v2-development`.
-- Product UI is integrated through `DS2-HR-001`.
-- Current integrated product HEAD: `e9a37c6ade6661bdaf6260f9c93c72dabba60768` from PR #40.
-- Development coordination HEAD immediately before this memory write: `039027ae7a7e90f5d40f5b4ca0ae56a5da1cbec8`.
-- Current single READY slice: `DS2-HR-002 — HR admin lists/forms`.
+- Product UI is integrated through `DS2-HR-002`.
+- Current integrated product HEAD: `b1c9ae6dd78b57f9708e3e5d40fe0b2baac6adbc` from PR #41.
+- Development coordination HEAD immediately before this memory write: `b1d14a4b3ce81e48814f96f2956d1418ecc4d934`.
+- Current single READY slice: `DS2-FIELD-001 — Activities/visit/call/target lists`.
 - `main` remains frozen until explicit owner approval.
 - Vercel preview is user-requested only.
 - GitHub Actions / hosted CI remain forbidden for normal Design System development.
@@ -27,61 +27,65 @@ Development now includes:
 - Procurement Purchase Invoice list/form-shell migrations, initial-vs-filtered empty semantics and bounded DataTable paginator hardening;
 - Finance Vault overview with shared `MetricGrid + ResponsiveCollection` and Payment Receipt detail using shared `TransactionHeader + StatusBadge + AppAction/resolveActionSet`;
 - HR Attendance Check-in operational-task controls using shared `ProcessProgress + PrimaryTaskAction + AlertPanel` while Attendance/GPS/business truth remains page/domain-owned;
+- HR Employees administration list using one live `ResponsiveCollection<HREmployee>`, shared semantic status/action/card grammar, and shared presentation-only `Pagination` with canonical Tablet touch targets;
 - Design System North Star, test policy, role-state handoff protocol, Team Memory and durable Decision Log.
 
 ## Latest completed slice
 
-`DS2-HR-001 — Attendance Check-in operational task controls`
+`DS2-HR-002 — HR admin lists/forms` — representative concern: Employees administration list
 
 Result:
-- PR #40 exact reviewed HEAD `c2a1c0298eaed3b7e1bc38c591d4ca55c91e0f13` received `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
-- Evidence remained honestly labeled `TESTS_AUTHORED_NOT_EXECUTED`; no exact-head local build/test/lint/runtime/preview PASS is claimed.
-- Squash merge commit: `e9a37c6ade6661bdaf6260f9c93c72dabba60768`.
-- Shared `ProcessProgress` accepts caller-owned `completed/current/pending` state, exposes readable non-color state and `aria-current="step"`, and contains no Attendance/GPS/workflow inference.
-- Shared `PrimaryTaskAction` is a thin presentation composition over canonical `Button` for one context-dependent operational next action; it is not a second eligibility system or multi-action registry.
-- Live `AttendanceCheckin` now consumes `ProcessProgress`, `PrimaryTaskAction` and existing semantic `AlertPanel`, replacing only the superseded local task-control action/progress/feedback mini-system.
-- Existing `بدء الدوام` / `إنهاء الدوام`, action IDs, `handleAction(primaryActionType)`, offline/GPS suppression, permission flow, attendance services/RPC/query/cache/tracking/timing/result mapping and `SUCCESS_RESET_MS = 2500` remain page/domain-owned and unchanged.
-- No confirmation layer, sticky/fixed task action, `AppAction`, destructive checkout semantic, broad Attendance redesign, backend/business change, hosted CI, Vercel preview or `main` activity occurred.
+- PR #41 exact reviewed HEAD `984750b5d933e26fea62995d3bf782f89a85b509` received `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
+- Evidence remains honestly labeled `TESTS_AUTHORED_NOT_EXECUTED`; no exact-head local build/test/lint/runtime/preview PASS is claimed.
+- Squash merge commit: `b1c9ae6dd78b57f9708e3e5d40fe0b2baac6adbc`.
+- Live `EmployeesPage` now uses one `ResponsiveCollection<HREmployee>` with dense Desktop `DataTable`, deliberate Tablet two-column cards and Mobile one-column cards rather than duplicate hidden device interaction trees.
+- Employee summary/card presentation reuses shared `MetricGrid`, `StatCard`, `Card`, `KeyValueList`, `StatusBadge`, neutral `Badge`, `Button` and canonical `AppAction/resolveActionSet` placement.
+- Employee workflow status remains semantic; field/office is neutral categorical metadata; caller/page code retains action eligibility and callbacks.
+- Shared `Pagination` was extracted from `DataTable` as presentation only. It preserves the established five-page window, callback targets, disabled boundaries, Arabic labels and `aria-current="page"`, and canonical touch targets now apply through Tablet while compact Desktop density remains intact.
+- Initial-empty and filtered-empty presentation are distinct without changing employee data/query behavior.
+- Employee search/department/status/page/pageSize inputs, page resets, stats behavior including the pre-existing current-page field metric, salary/create/edit/view permissions, profile route, `EmployeeForm`, service/query/workflow truth remain unchanged.
+- The Employees filter/search row is accepted only as page composition; it is not a reusable HR filter grammar and does not supersede future shared filter convergence.
 
 ## Current single READY slice
 
-`DS2-HR-002 — HR admin lists/forms`
+`DS2-FIELD-001 — Activities/visit/call/target lists`
 
 Intent:
-- continue the North-Star roadmap through HR/People rather than polishing Attendance ad hoc;
-- Product Design Director must inspect representative HR administration list/form surfaces on the exact latest Development baseline and bound one smallest dependency-safe presentation-only concern;
-- prefer the established V2 collection/form/action/status grammar before adding HR-local patterns;
-- preserve employee, attendance, leave, payroll, advances/delegations, permissions, query/cache, service, validation, route and workflow truth exactly;
-- Mobile/Tablet/Desktop must be deliberately composed and capability-equivalent for the selected surface;
-- no backend/business/workflow/query-cache/permission change, broad HR redesign, deployment, preview or `main` work.
+- continue the North-Star roadmap into Field Activities / Targets rather than extending HR polishing;
+- Product Design Director must inspect representative field activity/visit/call/target list surfaces on the exact latest Development baseline and bound the smallest dependency-safe presentation-only concern;
+- prefer established `ResponsiveCollection`, semantic status, `AppAction/resolveActionSet`, shared summary/state patterns and current V2 primitives before adding field-local presentation grammar;
+- preserve activity/visit/call/target query, service, permission, route, GPS/device, validation, ownership and workflow truth exactly;
+- Mobile remains the primary operational field surface; Tablet must be deliberately composed; Desktop must preserve management density and capability parity;
+- no backend/business/workflow/query-cache/permission/validation-semantic change, broad field redesign, deployment, preview or `main` work.
 
 ## Latest role positions
 
 ### Product Design Director
-- Independently accepted HR001 exact PR HEAD `c2a1c0298eaed3b7e1bc38c591d4ca55c91e0f13` with no Design-System blocker.
-- Confirmed shared task controls remain presentation-only and the live Attendance boundary preserves business/device truth.
-- HR001 acceptance is consumed by the merge; next responsibility is to bound HR002 from the exact latest Development baseline.
+- Independently accepted HR002 / PR #41 exact HEAD `984750b5d933e26fea62995d3bf782f89a85b509` with no Design-System blocker.
+- Confirmed one live responsive employee collection, semantic status vs neutral categorical metadata, presentation-only Pagination and preservation of HR query/permission/workflow truth.
+- Recorded only a WATCH that the local Employees filter row must not become the reusable filter-system answer.
+- HR002 acceptance is consumed by the merge; next responsibility is to bound FIELD001 from the exact latest Development baseline.
 
 ### UI Production Engineer
-- Feature-head implementation completed the live HR001 wiring and focused source-contract protection with `TESTS_AUTHORED_NOT_EXECUTED` evidence.
-- That handoff is consumed by the merge.
-- Next implementation must wait for the Director's explicit HR002 boundary and start from the latest Development HEAD.
+- HR002 feature work completed the Employees list migration and the bounded Tablet touch correction with focused authored tests.
+- Evidence remained `TESTS_AUTHORED_NOT_EXECUTED`; no product/test code moved after exact-head QA approval.
+- That handoff is consumed by the merge; next implementation must wait for the Director's explicit FIELD001 boundary and start from the latest Development HEAD.
 
 ### Design QA
-- Issued exact-head `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` on `c2a1c0298eaed3b7e1bc38c591d4ca55c91e0f13` with `TESTS_AUTHORED_NOT_EXECUTED`.
-- Confirmed 7-file UI/Test/owned-state scope, preserved Attendance/GPS/service/query/tracking/workflow truth, no known build/type failure and no unresolved review thread.
-- Approval is consumed by the merge and must not be reused for HR002.
+- Issued exact-head `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` on `984750b5d933e26fea62995d3bf782f89a85b509` with `TESTS_AUTHORED_NOT_EXECUTED`.
+- Confirmed the prior P2 Tablet touch blocker was closed, the 11-file slice remained functionally isolated, no known build/type failure existed, and no unresolved review thread remained.
+- Approval is consumed by the merge and must not be reused for FIELD001.
 
 ### Development Integrator
-- Revalidated PR #40 base/head/reviews/threads/diff, Development drift and role-state freshness.
-- Confirmed Development drift from the PR base was role-state coordination only and did not invalidate the reviewed product candidate.
-- Transitioned the draft PR to ready-for-review without moving its head, then squash-merged with expected-head protection as `e9a37c6ade6661bdaf6260f9c93c72dabba60768`.
-- Integration state is `MERGED_GREEN_DEV` for HR001; workstream marks HR001 DONE and exactly one next slice, HR002, READY.
+- Revalidated PR #41 base/head/reviews/threads/diff, Development drift and role-state freshness.
+- Confirmed the previous Integration blocker applied only to superseded HEAD `1c0ad8b...`; fresh Director/QA states on `984750b5...` recorded no blocker.
+- Transitioned the draft PR to ready-for-review without moving its head, then squash-merged with expected-head protection as `b1c9ae6dd78b57f9708e3e5d40fe0b2baac6adbc`.
+- Integration state is `MERGED_GREEN_DEV` for HR002; workstream marks HR002 DONE and exactly one next slice, FIELD001, READY.
 
 ## Invariants to preserve
 
 - UI work must not alter business behavior or backend contracts.
-- Customer, Sales, Inventory, Procurement, Finance and HR business/query/permission/workflow truths remain page/domain/service-owned.
+- Customer, Sales, Inventory, Procurement, Finance, HR and Field business/query/permission/workflow truths remain page/domain/service-owned.
 - HR attendance/time, GPS/device capability, leave, payroll, employee/permission/query/service/workflow truth must not leak into shared presentation.
 - Shared `TransactionHeader` owns presentation/device placement, not business eligibility or workflow truth.
 - Shared Stepper owns visual/interaction mechanics only; page/domain code owns workflow reachability and validation truth.
@@ -93,7 +97,10 @@ Intent:
 - Complete shared Tabs keyboard/focus/ARIA/RTL semantics remain system-owned; do not reintroduce partial page-local ARIA.
 - Neutral categorical metadata uses `Badge`; semantic operational/workflow state uses `StatusBadge`.
 - Page/domain code owns action eligibility/order/callback truth; shared `AppAction + resolveActionSet` owns device placement when adopted.
-- Shared `DataTable` paginator semantics include logical Arabic previous/next, labeled navigation, accessible names, current-page semantics and width-safe controls; this does not imply full global Pagination convergence.
+- Shared `Pagination` owns presentation, accessible paging controls and page-change requests only; caller/domain code owns page/query truth.
+- Shared Pagination's established five-page window, logical Arabic previous/next, accessible names, disabled boundaries and `aria-current="page"` must remain stable unless a declared component-depth slice changes the contract.
+- Canonical touch targets remain first-class through Tablet for touch-active controls; Desktop may intentionally preserve denser pointer-oriented controls.
+- The Employees filter/search row is local page composition, not a reusable HR/filter-system contract.
 - Mobile operational actions remain clear and touch-ready; Tablet must be deliberate; Desktop must remain efficient for management/review/data entry.
 - Arabic/RTL and long real-world values are first-class acceptance conditions.
 - Initial-empty and filtered-empty are distinct states when filtering/search exists.
@@ -105,16 +112,17 @@ Intent:
 
 ## Known evidence / risks
 
-- Development evidence through HR001 remains source-level: no exact-head executed test suite, local build/lint, runtime visual pass or release approval is claimed.
+- Development evidence through HR002 remains source-level: no exact-head executed test suite, local build/lint, runtime visual pass or release approval is claimed.
 - Hosted CI quota protection remains active; absence of GitHub Actions is expected.
 - Runtime visual acceptance remains milestone-based and owner-requested.
-- `ProcessProgress` is proven here for a short two-step Attendance operation; high-step-count responsive behavior remains future evidence, not HR001 scope.
-- HR administration surfaces remain largely unmigrated and are the next work area; their permissions/payroll/leave semantics make functional isolation important.
-- Full shared Pagination convergence remains incomplete.
+- Full shared Pagination convergence remains incomplete: the shared extraction is now proven in `DataTable` and the Employees responsive-card surface, but broader consumers have not all converged.
+- The Employees `fieldEmpCount` metric remains intentionally current-page scoped while neighboring metrics are global; that is preserved pre-existing data behavior and any semantic change requires separate product/query work.
+- The local Employees filter/search composition must not be copied as the system filter answer; FilterBar/search/filter convergence remains component-depth debt.
 - Generic `DataTable` clickable-row keyboard semantics and `SearchInput` clear-affordance accessibility remain broader shared debt.
 - Error/offline-state convergence and dense-table overflow semantics remain broader system debt.
 - `DocumentActions` Mobile density/touch geometry remains a runtime-review watch.
 - `InlineCombobox` / product chooser keyboard-accessibility debt remains outside completed Procurement work.
+- Field Activities / Targets are the next roadmap area and may involve GPS/device/routing semantics, so functional isolation is especially important.
 
 ## Reusable patterns learned
 
@@ -128,8 +136,10 @@ Intent:
 - Form composition can be standardized independently from business field semantics.
 - Shared `PageHeader + FormSection + FormGrid + FormActions` has proof across Customer, Sales and Procurement.
 - Complete shared Tabs semantics can be reused through thin domain wrappers.
-- Shared `ResponsiveCollection` has proof across Sales Orders, Inventory Stock, Inventory Transfers, Procurement Purchase Invoices and Finance Vaults.
-- Shared `MetricGrid + StatCard` can project page-owned financial summary values without owning calculations or inferring semantics.
+- Shared `ResponsiveCollection` now has proof across Sales Orders, Inventory Stock, Inventory Transfers, Procurement Purchase Invoices, Finance Vaults and HR Employees.
+- Shared `MetricGrid + StatCard` can project page-owned summary values without owning calculations or inferring semantics.
+- Shared `Pagination` can be extracted from a live collection without absorbing page/query truth, while one contract serves dense tables and responsive cards.
+- Canonical Tablet touch sizing can be strengthened at the shared/presentation boundary without reducing intentional Desktop density.
 - Initial-empty and filtered-empty require distinct product language when filters/search are active.
 - Search copy should describe actual service capability rather than promise unsupported matching.
 - A live migrated surface may justify narrow shared-component hardening without opening a speculative framework rewrite.
@@ -137,6 +147,6 @@ Intent:
 
 ## Next handoff
 
-Product Design Director should inspect representative HR administration list/form surfaces on the exact latest `design-system-v2-development` baseline and bound the smallest presentation-only concern for `DS2-HR-002`, explicitly preserving employee/attendance/leave/payroll/permission/query/service/workflow truth and avoiding a broad HR framework redesign.
+Product Design Director should inspect representative Field Activities / Targets list surfaces on the exact latest `design-system-v2-development` baseline and bound the smallest presentation-only concern for `DS2-FIELD-001`, explicitly preserving activity/visit/call/target query/service/permission/routing/GPS/device/validation/ownership/workflow truth and avoiding a broad Field framework redesign.
 
 UI Production Engineer should bootstrap from the exact latest Development HEAD and take only that bounded concern. Design QA should independently review the next stable exact PR HEAD. Development Integrator should no-op until that head receives fresh `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` and all normal gates pass.
