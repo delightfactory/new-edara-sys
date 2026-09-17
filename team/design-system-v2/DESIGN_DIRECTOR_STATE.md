@@ -4,99 +4,110 @@
 
 - Review date: `2026-09-17`
 - Development branch: `design-system-v2-development`
-- Exact Development HEAD independently inspected: `45cf7998c90254e022258d91a6debfe7179d935d`
-- Product UI integrated through: `DS2-FIN-001`
-- Current single READY slice: `DS2-FIN-002`
+- Exact Development HEAD used for the final boundary record: `d164d03886da97bd8976722866b6732244587ef5`
+- Product source baseline independently inspected before the Workstream-only boundary write: `e7a93678b9726301e7a4d2d3bdb3aecf4cf7eb5b`
+- Product UI integrated through: `DS2-FIN-002`
+- Current single READY slice: `DS2-HR-001`
 - Open implementation PRs targeting Development at review: none.
-- Current Product Design disposition: `READY — FIN002 BOUNDED TO PAYMENT RECEIPT TRANSACTION-DETAIL HEADER/ACTION FOUNDATION`
+- Current Product Design disposition: `READY — HR001 BOUNDED TO ATTENDANCE CHECK-IN PRIMARY ACTION + PROCESS PROGRESS + TRANSIENT FEEDBACK`
 - Evidence level: source inspection only; no build/test/lint/runtime/preview PASS claimed.
 
 ## Independent professional judgment
 
-**The smallest dependency-safe FIN002 concern is the live `PaymentReceiptDetail` transaction header and review-action surface, not a broad Finance detail-page rewrite.**
+**The correct representative HR001 proof is `AttendanceCheckin`, but only its operational task-control band — not the whole Attendance page and not a generic HR redesign.**
 
-`PaymentReceiptDetail` is the strongest representative next proof because it already contains real Finance status, amount/context, output tools, guarded confirm/reject actions and two existing responsive review modals, while the current top-of-page composition is still a local mini-system: ad-hoc sticky header styles, generic `Badge` for workflow status, a local back button, and a peer action row outside the already-proven shared `TransactionHeader + AppAction + resolveActionSet` grammar.
+The source confirms why this is the strongest first HR/People slice: it is a true Mobile-primary Operational Task with one context-dependent next action, GPS permission gating, online/offline context, locating/submitting progress, transient success/error feedback and safe-area-aware composition. The design audit already identifies it as a `~48KB` page-local UI/CSS island whose strongest local ideas should become system patterns while workflow truth remains untouched.
 
-The shared `TransactionHeader` is already integrated and proven in Sales. Reusing it here advances one cross-module product language without moving any financial eligibility, posting, receipt confirmation/rejection or destination-selection truth into presentation.
+I also inspected the Employee self-service Leave Request surface. It is a conventional modal form already consuming shared `ResponsiveModal + Button`; it has real form/attachment/balance debt, but it is not as strong a proof of the missing operational-task grammar. Attendance therefore advances a system-wide pattern that can later serve Field Activities without inventing an HR-specific mini-system.
 
-The rest of the receipt page is intentionally not pulled into this slice. The page still has local `SectionHead` / `InfoRow` / card styling, proof/evidence presentation, amount hero and review-modal composition debt, but migrating all of that now would turn a safe representative concern into a broad Finance detail redesign.
+The present Attendance screen is functionally sophisticated and visually focused, but the control layer still owns three local system concepts independently: a custom animated circular task button, local process-step presentation, and local success/error feedback cards. Extracting exactly those concerns is dependency-safe because the page can continue to own all eligibility, GPS, RPC, tracking and timing semantics.
 
-## DS2-FIN-002 READY boundary
+## DS2-HR-001 READY boundary
 
 ### Implement in one PR only
 
-1. **Thin Finance adapter over shared `TransactionHeader`** for `PaymentReceiptDetail`.
-   - Keep receipt number as the transaction identity.
-   - Keep customer + created-at context as subtitle/context; preserve existing links and date formatting.
-   - Use shared `StatusBadge` for `pending / confirmed / rejected` with the existing Arabic labels and semantic tones; status mapping remains Finance-owned.
-   - Use shared `Button` for the back action with RTL-native cue and touch-safe target.
+1. **Shared `ProcessProgress` presentation pattern.**
+   - Add a domain-agnostic V2 pattern under `src/components/patterns`.
+   - The Attendance page/thin HR adapter supplies the existing two steps only: `تحديد الموقع GPS` and `تسجيل الحضور`, plus their explicit pending/current/completed state and optional accuracy metadata.
+   - The pattern owns layout, semantic current/completed presentation, RTL and accessibility only. It must not import/understand `FlowState`, attendance services, GPS permission state, RPC result codes or transition rules.
+   - Replace the local `ProgressSteps` renderer without changing when the progress surface appears.
 
-2. **Canonical review actions through `AppAction + resolveActionSet`.**
-   - Preserve the existing page-owned predicates exactly: `isSelfCashCustody`, `isAdmin`, `canConfirm`, receipt `pending` state and `finance.payments.confirm` permission.
-   - Preserve the existing callbacks exactly: confirm opens the current confirm modal; reject opens the current reject modal and clears the current rejection reason as it does today.
-   - Confirm remains the primary operational review action when it exists; reject remains destructive and only exists for the current admin predicate.
-   - Mobile: max one direct review action; Tablet: max two; Desktop: shared registry limits apply. Any additional authorized review action remains in shared overflow rather than disappearing.
+2. **Shared `PrimaryTaskAction` composed on the existing `Button`.**
+   - This is a task-surface composition, not a second button primitive and not a business-action registry.
+   - It receives label, icon, disabled/loading state and callback from the page.
+   - Preserve page-owned action selection exactly: no check-in record -> `بدء الدوام`; checked in and not checked out -> `إنهاء الدوام`; completed day -> no task action.
+   - Both labels continue through the existing `handleAction` path and therefore the same offline/GPS/permission/RPC behavior.
+   - Use the shared Button focus/loading/disabled/touch contract. Remove the page-local giant ring/pulse/button implementation for the migrated action.
 
-3. **Keep `DocumentActions` as output tooling, not Finance review eligibility.**
-   - Pass the existing `DocumentActions kind="payment-receipt" entityId={receipt.id}` through the header tools slot without changing its capability logic or output behavior.
-   - Do not duplicate print/PDF capabilities inside `AppAction`.
+3. **Reuse existing `AlertPanel` for transient task feedback.**
+   - Current transient success remains success feedback with the same Arabic message and optional returned location name.
+   - Current error remains danger feedback with title `تعذر التسجيل` and the same page-owned `errorMsg`.
+   - Preserve the existing `SUCCESS_RESET_MS = 2500` lifecycle exactly; `AlertPanel` only renders what the page supplies.
+   - Dynamic success uses polite announcement; dynamic error uses assertive alert semantics through the existing shared contract.
 
-4. **Focused source/test protection.**
-   - Finance status mapping -> `StatusBadge` semantic tone/label.
-   - Existing action predicates/callback wiring remain page-owned and unchanged.
-   - Mobile/Tablet placement is resolved by the shared action registry, not page-local breakpoints.
-   - `DocumentActions` remains present as output tooling.
-   - Back navigation still targets `/finance/payments`.
+4. **Retire only dead local visual code and add focused protection.**
+   - Remove only `ci-action-*`, local progress-step, feedback-card/spinner animation CSS made dead by this slice after source search proves there is no remaining consumer.
+   - Keep every unrelated Attendance class/composition untouched.
+   - Focused tests/source contracts must cover step-state semantics, current-step accessibility, Arabic labels, action callback/disabled parity, transient success/error copy + live-announcement behavior, and preservation of the page-owned attendance/GPS service boundary.
+
+### Action hierarchy decision
+
+Do **not** route Attendance's single task action through `AppAction / resolveActionSet`. That shared registry solves placement of multiple authorized peer actions; this screen has exactly one context-dependent operational next action. `PrimaryTaskAction` is a thin presentation composition over shared `Button`, while the page remains the sole owner of whether that next action exists and whether it means check-in or check-out.
+
+Do not preserve the current red/green page-local action-color rule as business semantics. `إنهاء الدوام` is the current primary task, not a destructive operation merely because it ends the workday. Meaning stays explicit through Arabic label + icon + page state. Success/danger semantic tones remain appropriate for feedback/status. Do not add a confirmation step because that would change interaction/workflow semantics.
+
+Keep the action in the current document flow. Do not make it sticky/fixed in HR001; safe interaction with GPS banners, BottomNav/safe areas and the rest of the task composition should be proven in a later controlled runtime slice before adopting `StickyTaskAction` behavior.
 
 ### Explicit exclusions
 
-Do **not** include in FIN002:
+Do **not** include in HR001:
 
-- `getPaymentReceipt`, `confirmPaymentReceipt`, `rejectPaymentReceipt` service/query semantics;
-- the direct custody lookup/query or self-cash-custody rule;
-- vault filtering, destination selection, cheque/custody handling, validation, invalidation or toast behavior;
-- confirm/reject modal field/content/action redesign;
-- receipt amount calculation/formatting or the current amount hero;
-- proof image/PDF/file rendering or upload/output subsystem changes;
-- local detail cards / `SectionHead` / `InfoRow` convergence, financial summary patterns, timelines or audit redesign;
-- Payments list migration, statements, journals, ledger, expenses, approval rules, reports or broad Finance framework work;
-- DB/migration/RPC/RBAC/RLS/route/cache/business/accounting/posting/workflow changes;
+- `recordAttendanceGPS`, `recordAttendanceLocationPing`, `getAttendanceDays`, query keys/cache/refetch, RPC error-code mapping, event timestamps, location/range/accuracy rules or attendance calculations;
+- `useGeoPermission`, explain-before-ask behavior, prompt/denied/granted/unavailable handling, `GeoPermissionBanner`, `GeoPermissionDialog` or browser permission guidance;
+- tracking enablement/settings, periodic ping scheduling, movement thresholds, focus/resume/reconnect behavior, outside-zone/stale state or tracking copy;
+- `LiveClock`, `TodayStatus`, the top online/offline header chip, employee card, tracking card, terminal day-done summary, weak-GPS warning or privacy note;
+- Attendance Admin (`AttendancePage`), Leaves, Advances, Delegations, Payroll, Employee/Profile/Admin surfaces;
+- broad `OperationalTaskScreen`, `ConnectionStatus`, `StickyTaskAction`, Offline/Sync framework creation or an HR shell rewrite;
+- DB/migration/RPC/RBAC/RLS/service/route/business/workflow changes;
 - Vercel, preview branches, GitHub Actions or `main`.
 
 ## Device / state / accessibility acceptance
 
-- **Mobile (`<=768px`):** sticky transaction identity/status remains readable with long Arabic customer names and mixed Latin receipt number; one direct review action maximum; secondary authorized review action goes to accessible RTL overflow; back and action controls remain practical 44px targets; no horizontal header overflow.
-- **Tablet (`769–1024px`):** deliberate wrapped transaction header with up to two direct review actions; tools remain secondary to review action hierarchy.
-- **Desktop (`>=1025px`):** preserve efficient review by exposing eligible actions through the shared header without changing the existing body/modal workflow. This slice does not claim to solve the page's broader 640px body-density debt.
-- **RTL / Arabic:** back direction, receipt number directionality, Arabic status labels, customer/date wrapping and overflow placement must remain correct.
-- **Loading / not found:** preserve the existing loading skeleton and not-found behavior exactly; do not force the shared header into states where no receipt exists.
-- **Permission / workflow:** no unauthorized confirm/reject action appears; no authorized action disappears.
-- **Accessibility:** shared button labels/focus/touch semantics apply; header has a meaningful banner label; status meaning is text + semantic tone, not color-only.
+- **Mobile (`<=768px`):** remains the primary completion surface. There is exactly one obvious practical `44px+` task action when eligible; no horizontal overflow; long Arabic labels remain intact; the progress/feedback band fits the current narrow operational column; safe-area behavior stays unchanged.
+- **Tablet (`769–1024px`):** remains touch-first and deliberately constrained rather than becoming an oversized phone control. The task band stays aligned with the existing narrow operational content column.
+- **Desktop (`>=1025px`):** remains capability-equivalent with a focused task control. This slice does not turn Attendance into an HR management surface.
+- **RTL / mixed values:** use logical spacing/order; Arabic labels remain first-class; GPS accuracy/time metadata may preserve appropriate LTR/tabular presentation.
+- **State completeness:** preserve `idle -> locating -> submitting -> success/error` presentation behavior. The terminal completed-day surface remains exactly outside this slice.
+- **Progress accessibility:** current step is expressed semantically (`aria-current="step"` or equivalent); completion/current/pending are distinguishable by text/icon/state, not color alone.
+- **Action accessibility:** shared Button focus, loading, disabled and touch semantics apply. The migrated task action must retain an accessible label.
+- **Dynamic feedback:** success/error updates use the existing `AlertPanel` live-announcement contract; visual tone is never the sole meaning.
+- **Motion:** any decorative motion in the shared task control is non-essential and respects reduced-motion preferences. The current continuous pulse is not required for parity.
+- **Offline/GPS blocking:** existing page logic continues to prevent/suppress submission exactly as today; no shared pattern may infer those rules.
 
 ## System-pattern intent
 
-FIN002 is a cross-module reuse proof: Sales and Finance transaction detail headers should consume the same `TransactionHeader` and canonical action-placement grammar while each domain keeps its own status vocabulary, permissions, workflow eligibility and callbacks. If the implementation needs a Finance-specific action model or business-aware shared primitive, stop and mark BLOCKED instead.
+HR001 establishes the first reusable V2 **Operational Task control grammar** from a real production workflow: page/domain code owns eligibility, device capabilities and workflow semantics; shared patterns own a clear primary task action, visible process progress and accessible transient feedback. This intentionally complements — rather than abuses — `ActionRegistry`, which remains the correct grammar for multi-action transaction/detail surfaces.
 
-This slice is intentionally a header/action foundation, not a declaration that the entire Payment Receipt detail page is migrated. Remaining local detail-card, evidence, amount-summary and modal composition debt stays visible for later Finance/global convergence.
+The slice should reduce independent visual implementations after migration. If implementation needs an HR-specific generic button, hard-coded Attendance states inside shared patterns, or business-aware GPS/RPC logic in the pattern layer, it is architecturally wrong.
 
 ## Peer-state comparison / freshness synthesis
 
 After forming the judgment above, I compared the current repository states:
 
-- **Team Memory / Integrator:** current integrated truth is FIN001 DONE and FIN002 is the sole READY slice. This state is current and aligned.
-- **UI Production Engineer:** its latest state describes the already-merged FIN001 feature head and is consumed/stale for FIN002; there is no current implementation PR.
-- **Design QA:** its GREEN-DEV record targets merged FIN001 exact head and is consumed for FIN002; no approval is carried forward.
-- **Previous Design Director state:** the FIN001 BLOCKING record was stale after PR #38 corrections/merge and is superseded by this state.
-- **No material contradiction:** there is no current BLOCKING peer-state disagreement for FIN002.
+- **Team Memory / Integration State:** both correctly record FIN002 as integrated and HR001 as the sole next READY roadmap item. Their instruction that the Director still needed to bound HR001 is now consumed by this state + the updated Workstream; that text is stale process guidance, not a blocking contradiction.
+- **UI Production Engineer:** its FIN002 feature-head state is consumed by PR #39 merge; there is no active implementation PR and no competing slice.
+- **Design QA:** its FIN002 GREEN-DEV exact-head record is consumed by merge and cannot be reused for HR001.
+- **Previous Design Director state:** FIN002 boundary is consumed/stale and is superseded by this HR001 state.
+- **No material contradiction:** there is no current BLOCKING peer-state disagreement. HR001 can start from the latest Development HEAD with exactly this boundary.
 
 ## What changed since previous state
 
-FIN001 has been integrated and its prior Director blocker is consumed. FIN002 is now explicitly bounded from the exact latest Development baseline to `PaymentReceiptDetail` header/review-action convergence only, with the rest of Finance detail presentation held outside the implementation slice.
+FIN002 is integrated. I inspected current HR/People operational source and the relevant Mobile/Operational Task blueprints, compared Attendance Check-in with self-service form surfaces, and explicitly bounded HR001 to the smallest high-value system concern: Attendance's primary task action, process progress and transient feedback only. Workstream scope was updated first on Development in `d164d03886da97bd8976722866b6732244587ef5`.
 
 ### Cross-role handoff
 - **To:** UI Production Engineer, Design QA, Development Integrator
-- **What changed:** `DS2-FIN-002` is now dependency-safe and explicitly bounded to the `PaymentReceiptDetail` transaction header/status/review-action foundation using shared `TransactionHeader + StatusBadge + AppAction/resolveActionSet`; no implementation PR is currently open.
-- **Preserve:** every payment receipt query/service, self-custody/admin predicate, confirm/reject callback and modal, destination/vault rule, output capability, invalidation/validation/toast/route/accounting/posting/workflow semantic; keep loading/not-found behavior unchanged.
-- **Need from you:** UI Production Engineer should open exactly one FIN002 PR from the latest Development HEAD and implement only this bounded concern + focused tests; Design QA should review the stable exact PR HEAD independently; Integrator remains no-op until exact-head `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` exists.
+- **What changed:** `DS2-HR-001` is dependency-safe and explicitly bounded to `AttendanceCheckin` primary task action + process progress + transient success/error feedback, using new domain-agnostic `ProcessProgress` and `PrimaryTaskAction` patterns plus existing `AlertPanel`; no implementation PR is currently open.
+- **Preserve:** every attendance/time/GPS permission/RPC/query/cache/error-code/tracking/timing/outside-zone/service/device-capability rule and callback; existing GeoPermission surfaces; LiveClock/TodayStatus/header/employee/tracking/day-done/privacy composition; no confirmation or sticky behavior is introduced.
+- **Need from you:** UI Production Engineer should open exactly one HR001 PR from the latest Development HEAD and implement only this bounded presentation concern + focused tests. Design QA must independently review the stable exact PR HEAD across source/device/state/accessibility/system-fit gates. Integrator remains no-op until exact-head `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` exists.
 - **Blocker level:** `NONE`.
-- **Baseline:** Development `45cf7998c90254e022258d91a6debfe7179d935d`; active PR: none.
+- **Baseline:** Workstream-bounded Development `d164d03886da97bd8976722866b6732244587ef5`; active PR: none.
