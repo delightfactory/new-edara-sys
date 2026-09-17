@@ -4,82 +4,92 @@
 
 - Review date: `2026-09-17`
 - Development branch: `design-system-v2-development`
-- Exact Development HEAD inspected before architecture write: `a44ce6e14a6a1fbbfd6d8663294daef3af5628b9`
-- Current coordination HEAD after Workstream boundary write: `212b2ca93608c2a853e7b4c7c2832858fde12844`
+- Exact Development HEAD independently inspected before this state write: `f3369687cf3b52bac311fa3cadc87bb6714b31de`.
 - Latest integrated product slice: `DS2-FIELD-001`, squash `cac61006d5c6ac402a509c2f15fb09ce51bafd50`.
-- Open implementation PRs targeting Development at review: `NONE`.
-- Current single READY slice: `DS2-FIELD-002 — Activity create/edit form composition foundation`.
-- Representative surface: live `src/pages/activities/ActivityForm.tsx`, normal create/edit path only.
-- Product Design disposition: `READY — DEPENDENCY-SAFE / PRESENTATION-ONLY`.
-- Blocker: `NONE`.
+- Active implementation PR: `#43 — DS2-FIELD-002: Activity form V2 composition foundation`.
+- PR base: `design-system-v2-development` from `0e90c94cd02c09f94cfb16d954bf6f9e7cc2556d`.
+- Exact implementation HEAD independently reviewed: `a31addc60e5b0eaf8ee89a0fea11bded2a6e4c4a`.
+- PR state at review: `OPEN / DRAFT`; only open implementation PR targeting Development.
+- Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER` on exact HEAD `a31addc60e5b0eaf8ee89a0fea11bded2a6e4c4a`.
+- Design QA on the same exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` with `TESTS_AUTHORED_NOT_EXECUTED`.
+- Blocker: `NONE` from Product Design. Integration may proceed only after the Integrator revalidates unchanged HEAD/base/drift/threads/mergeability.
 
 ## Independent professional judgment
 
-**FIELD002 should begin with the normal Activity create/edit form composition, not with a broad Activity/Visit/Call/Target redesign and not with ActivityDetail.**
+**PR #43 implements the intended FIELD002 architecture cleanly enough to integrate into the isolated Design System development branch.**
 
-The source already exposes the recurring system gap we need to solve: the live `ActivityForm` owns a large page-local form shell (`edara-card act-form`, local timing grid, local action row and inline CSS) while the Design System already has proven `FormSection + FormGrid + FormActions + Button` contracts. At the same time, this page contains high-risk GPS, query, validation, customer, target/history, sales-linking and call-detail semantics. The correct Design-System move is therefore a narrow composition extraction around the existing task flow, leaving every functional rule where it is.
+I formed this judgment from the exact implementation source and shared form contracts before relying on peer approval. The live normal Activity create/edit path now uses the established `FormSection + FormGrid + FormActions + Button` grammar rather than a page-local outer form/timing/action mini-system. More importantly, the implementation keeps the actual Field workflow truth in `ActivityForm`: GPS acquisition/blocking, validation, customer/type/outcome requirements, target/history data, sales/collection links, call detail, payload construction, mutations and navigation remain page/domain-owned.
 
-This advances the North Star more than a cosmetic ActivityDetail restyle because it proves the shared create/edit grammar on a mobile-primary Field workflow without inventing Field-specific primitives.
+This is the right North-Star tradeoff for the slice: improve hierarchy, responsive composition, touch behavior and label association without broadening into a functional rewrite or inventing a Field-specific form framework.
 
-## Architecture boundary
+## Exact-head Product Design findings
 
-### In scope
+### System coherence / hierarchy — PASS
 
-1. Replace the normal create/edit path's local outer form-shell composition with shared V2 `FormSection` composition. Section boundaries must follow the existing user task sequence; no functional step may be reordered around conditional target/history/link/call surfaces.
-2. Use shared `FormGrid` only for safe field groupings. The date/start/end area is the clearest proof: Mobile one column, Tablet deliberately capped at two columns, Desktop may retain efficient density. GPS and complex conditional surfaces may remain full-width.
-3. Replace the local `act-form-actions` presentation with shared `FormActions + Button`, preserving exact cancel/submit callbacks, labels, save loading copy, `saving` disabled truth and `gpsBlocking` submit suppression. `stickyOnMobile` is explicitly **not** part of this slice.
-4. Preserve native/raw control semantics and values. Do not opportunistically convert the customer selector, select/input/textarea fields or call-direction controls to new primitives in FIELD002. For composition-touched controls, visible Arabic labels must be programmatically associated and existing required/disabled semantics retained.
-5. Retire only page-local CSS made dead by shared form composition. Consumer-owned tokenized logical spacing may separate shared sections; do not add global external margins to `FormSection`.
-6. Author focused test/source contracts protecting shared-form adoption and the existing functional boundaries. Normal evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved execution environment actually runs them.
+- The normal create/edit form is now visibly structured as `بيانات النشاط` -> `النتيجة والربط` -> `التوقيت والملاحظات`, matching the existing operational sequence rather than reorganizing business steps.
+- Shared sections own visual grouping; the page owns domain conditions. No new local replacement for an existing V2 form primitive/pattern was introduced.
+- The bounded `640px` form width remains appropriate for focused data entry on Desktop while shared sections establish consistent internal hierarchy and tokenized inter-section spacing.
+- The action area now uses the same V2 form-action grammar proven elsewhere; primary submit and secondary cancel no longer depend on page-local action CSS.
 
-### Explicit exclusions
+### Device composition — PASS at source level
 
-- visit-plan guard/blocker screen and its routing behavior;
-- `GPSStatusIndicator` internals, acquisition/verification/distance/permission semantics;
-- target-gamification alert and customer recent-history queries/content;
-- order/collection linking sections and their navigation;
-- call-detail data, direction controls, callback/recording behavior and `useSaveCallDetail` semantics;
-- toast/validation-message convergence or any validation-rule change;
-- payload construction, Supabase queries, services/mutations, query-cache semantics;
-- customer-selector / AsyncCombobox work or broad Input/Select primitive migration;
-- sticky mobile actions;
-- `ActivityDetail`, visit/call plan forms/details, targets, checklists or a broad Field framework;
-- DB/migration/RPC/RBAC/RLS/permissions/business/workflow/routes/deployment/preview/`main` changes.
+- **Mobile (`<=768px`):** the canonical timing grid collapses to one column and shared actions stretch with touch targets; no sticky surface was introduced, so BottomNav/FAB space is not newly contested.
+- **Tablet (`769–1024px`):** the three-field timing group is deliberately capped at two columns rather than inheriting a compressed Desktop grid; touch remains first-class.
+- **Desktop (`>=1025px`):** date/start/end may use three columns inside the retained bounded form width, preserving efficient data-entry density.
+- The form-shell migration removes the local responsive timing rule rather than creating another page-specific breakpoint grammar.
 
-## Acceptance contract
+### RTL / Arabic / accessibility — PASS for touched scope
 
-- **Mobile (`<=768px`):** single-column operational flow; no ordinary horizontal overflow; shared action controls remain touch-safe and stretch cleanly; no new sticky surface competes with BottomNav/FAB; long Arabic labels/values wrap safely.
-- **Tablet (`769–1024px`):** deliberate two-column composition only for safe field groups; GPS/complex conditional content can remain full-width; touch remains first-class; no compressed Desktop three-column layout.
-- **Desktop (`>=1025px`):** preserve the current bounded efficient form width, field capability and task order; grouped fields may use shared-grid density without reducing readability.
-- **States:** create/edit labels, customer-loading fallback, outcome disabled before activity type, conditional customer/outcome/reason/call/link surfaces, GPS-required warning, save loading/disabled state, cancel/navigation and current validation outcomes remain semantically unchanged.
-- **Accessibility / RTL:** Arabic-first logical layout; labels for touched controls are associated with controls; native required/disabled semantics remain; shared Buttons retain keyboard/focus behavior; no new color-only meaning.
-- **Functional isolation:** activity query/service/route/GPS/validation/payload/mutation/workflow truth remains exactly page/domain-owned.
+- Composition-touched native fields now have explicit Arabic label/control associations (`htmlFor` / `id`) for activity type, customer, outcome, refusal/closed reason, date, start/end time and notes.
+- Existing required/disabled truth remains native and page-owned; outcome remains disabled before activity type selection.
+- Shared Buttons preserve canonical focus/keyboard behavior and opt into touch-safe targets.
+- No new color-only status meaning or LTR-first layout assumption was introduced.
 
-## Stop condition
+### Functional isolation — PASS
 
-If adopting the shared form composition requires changing routing, GPS truth, validation meaning, query/service behavior, payload construction or workflow semantics, FIELD002 is `BLOCKED`; isolate that functional defect instead of absorbing it into Design System scope.
+The exact reviewed source preserves:
+- visit-plan guard and execution routing;
+- `GPSStatusIndicator`, GPS acquisition/verification/distance, `gpsBlocking`, GPS validation and payload coordinates;
+- `useActivityTypes`, `useActivity`, `useCustomer`, `useCustomers`, `useActivities`, `useTargetStatus` and sales-order query inputs;
+- type/customer/outcome/reason/call-result conditions and validation meaning;
+- target gamification and recent-history behavior;
+- order/collection linking and navigation;
+- call-direction/result/attempt/phone/callback/recording state and `useSaveCallDetail` behavior;
+- payload fields, create/update mutations, toast outcomes and navigation;
+- cancel `navigate(-1)`, save labels, `saving` disabled truth and `saving || gpsBlocking` submit suppression.
+
+No DB/migration/RPC/service/RBAC/RLS/route-guard/business-calculation/query-cache/workflow/deployment change is part of the PR.
+
+### Test/evidence judgment — PASS under current policy
+
+Focused authored tests protect shared-form adoption, responsive timing/action intent, touched label associations and critical page-owned functional boundaries. Evidence remains honestly labeled `TESTS_AUTHORED_NOT_EXECUTED`; no local build/test/lint/runtime/preview PASS is claimed and no hosted CI or Vercel action is required for this development-stage gate.
+
+## Non-blocking WATCH
+
+The excluded legacy call/link sub-controls remain a local mini-system inside the broader form, including the pre-existing `act-call-grid` breakpoint behavior and local direction/link button grammar. That debt was present before FIELD002 and the PR relocates its styling mechanically rather than redefining it. It is **not** a FIELD002 blocker, but it must not be copied as the canonical Field form answer; later component-depth/runtime convergence should revisit those controls explicitly.
 
 ## Peer-state comparison / contradiction synthesis
 
-I formed the architecture judgment above before comparing the peer states.
+I formed the Product Design judgment above before comparing peer conclusions.
 
-- **Team Memory:** aligned on FIELD002 as the sole next Field create/detail slice, but intentionally broad; this state/workstream now provides the required implementation boundary.
-- **Development Integrator:** fresh for the FIELD001 merge and explicitly hands FIELD002 boundary ownership to Product Design. Aligned.
-- **UI Production Engineer:** lifecycle-stale from FIELD001 implementation. It is informative only and contains no current competing FIELD002 implementation.
-- **Design QA:** lifecycle-stale from FIELD001 exact-head review. No FIELD002 disposition exists yet.
-- **Previous Product Design state:** lifecycle-stale after FIELD001 merge and superseded by this state.
-- **Open PR inspection:** no implementation PR targets `design-system-v2-development`, so defining this one READY concern does not create a competing slice.
+- **Design QA:** aligned on the same exact HEAD `a31addc60...` with `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`; its only WATCH is the same excluded legacy call/link debt. No contradiction.
+- **Development Integrator:** current state is fresh and intentionally `NO_MERGE_WAITING_FRESH_PRODUCT_DESIGN_CLOSEOUT`; this state supplies the missing same-head Product Design gate. Its integration blocker is therefore resolved from the Design Director side, subject to the Integrator's final unchanged-head revalidation.
+- **UI Production Engineer:** the Development-side file is lifecycle-stale from FIELD001, while the PR-owned UI state on `a31addc60...` is current and aligned with the reviewed implementation. No competing slice exists.
+- **Team Memory:** remains directionally correct: FIELD002 is the active Field create/detail concern and all Field business/GPS/query/validation truth stays page/domain-owned.
+- **Review threads:** none are open on PR #43 at this review.
 
-There is **no current BLOCKING cross-role contradiction**. No Team Memory change is necessary because overall system direction and durable invariants did not change; only the already-READY Field slice was bounded for execution. No Decision Log entry is warranted because no new long-lived rule was introduced.
+There is **no current BLOCKING cross-role contradiction** on exact PR HEAD `a31addc60e5b0eaf8ee89a0fea11bded2a6e4c4a`.
+
+No Team Memory update is warranted before merge because integrated product truth has not changed. No Decision Log update is warranted because FIELD002 introduces no new durable system rule.
 
 ## What changed since previous state
 
-FIELD001 review/merge work is consumed. Product Design has now converted the broad FIELD002 placeholder into one implementation-safe concern: ActivityForm normal create/edit composition using the established shared V2 form grammar, with strict functional exclusions and explicit Mobile/Tablet/Desktop/state/accessibility acceptance.
+The pre-implementation FIELD002 architecture boundary has now been independently validated against the implemented exact PR HEAD. Product Design accepts PR #43 as aligned with the North Star and the declared bounded scope, closing the Integrator's pending same-head Product Design coordination gate.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer; Design QA after a stable implementation HEAD; Development Integrator after fresh GREEN-DEV.
-- **What changed:** `DS2-FIELD-002` is now concretely bounded to the live ActivityForm normal create/edit composition foundation using existing `FormSection + FormGrid + FormActions + Button`; no other Field create/detail surface is part of this PR.
-- **Preserve:** visit-plan guard/routing; activity type/customer/outcome/date/time values and ordering; GPS requirement/acquisition/coordinates/distance/blocking truth; target/history behavior; order/collection links; call-detail behavior; validation rules; payload construction; create/update/save-call-detail mutations; queries/cache; permissions/workflow/routes; existing cancel/navigation outcomes.
-- **Need from you:** UI Production Engineer should branch from the exact latest Development HEAD and open exactly one PR for this bounded concern, with focused authored regression contracts and no functional expansion. Design QA should independently review the exact stable PR HEAD. Integrator should no-op until fresh `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` and normal gates exist.
+- **To:** Development Integrator; Design QA only if PR HEAD moves; UI Production Engineer only if Integrator finds a new material gate failure.
+- **What changed:** Product Design independently reviewed and accepted PR #43 exact HEAD `a31addc60e5b0eaf8ee89a0fea11bded2a6e4c4a`; FIELD002 has no current Design-System blocker and the prior integration coordination wait for fresh Director closeout is satisfied from this role.
+- **Preserve:** bounded ActivityForm-only presentation scope; visit-plan routing; GPS acquisition/verification/distance/blocking; target/history queries; customer/type/outcome/validation rules; sales/collection links; call-detail state/save behavior; payload/mutations/navigation; non-sticky Mobile actions; 640px form bound; shared responsive FormGrid behavior; honest `TESTS_AUTHORED_NOT_EXECUTED` evidence.
+- **Need from you:** Integrator should verify PR #43 still points to exact HEAD `a31addc60e5b0eaf8ee89a0fea11bded2a6e4c4a`, recheck base/drift/review threads/mergeability and merge into `design-system-v2-development` only if all normal gates remain valid. Any PR HEAD movement invalidates this acceptance and requires fresh Director + QA review.
 - **Blocker level:** `NONE`.
-- **Baseline:** architecture inspected on Development `a44ce6e14a6a1fbbfd6d8663294daef3af5628b9`; Workstream boundary commit/current coordination baseline before this state write `212b2ca93608c2a853e7b4c7c2832858fde12844`; no active PR.
+- **Baseline:** Development inspected `f3369687cf3b52bac311fa3cadc87bb6714b31de`; accepted PR #43 exact HEAD `a31addc60e5b0eaf8ee89a0fea11bded2a6e4c4a`.
