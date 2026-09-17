@@ -81,7 +81,7 @@ System result:
 - timing composition is one column on Mobile, capped at two on Tablet and three on Desktop inside the retained 640px form bound;
 - cancel/submit remain non-sticky and touch-safe, with exact callbacks, save labels/loading state, `saving` disabled truth and `gpsBlocking` submit suppression page-owned;
 - composition-touched native controls have explicit Arabic label associations while required/disabled semantics remain unchanged;
-- visit-plan routing, GPS acquisition/verification/distance, target/history queries, order/collection linking, call-detail behavior, validation, payload construction, mutations, navigation and all backend/business/workflow truth remain unchanged.
+- visit-plan routing, GPS acquisition/verification/distance, target/history queries, order/collection linking, call-detail behavior, validation, payload construction, mutations, navigation and all backend/business/workflow truth remain page/domain-owned.
 
 ## Current single REVIEW slice
 
