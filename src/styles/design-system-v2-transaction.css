@@ -124,13 +124,17 @@
   inset-block-start: calc(100% + var(--space-1));
   inset-inline-end: 0;
   z-index: 20;
-  display: grid;
+  display: none;
   gap: var(--space-1);
   min-width: 12rem;
   padding: var(--space-2);
   border: 1px solid var(--ds-border-default);
   border-radius: var(--radius-md);
   background: var(--ds-surface-default);
+}
+
+.ds-transaction-header__overflow[open] > .ds-transaction-header__overflow-actions {
+  display: grid;
 }
 
 .ds-transaction-header__overflow-actions > .btn {
