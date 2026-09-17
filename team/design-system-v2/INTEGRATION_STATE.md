@@ -4,59 +4,61 @@
 
 - Review date: `2026-09-17`
 - Development branch: `design-system-v2-development`
-- Exact Development HEAD immediately before product merge: `faf4150620158557fd20e9bf592ab9b31c3b1e51`
-- Product merge commit: `e9a37c6ade6661bdaf6260f9c93c72dabba60768`
-- Development coordination HEAD before this state write: `5f50c80149681841e058f9f2af7d9a9a4e83b8f6`
-- Completed slice: `DS2-HR-001 — Attendance Check-in operational task controls`
-- Merged PR: `#40 — DS2-HR-001: Attendance operational task controls`
+- Exact Development HEAD inspected before this state write: `710045f95ccde134f61281d4a7b0400fe8ecfb82`
+- Active slice: `DS2-HR-002 — HR admin lists/forms` — representative concern: Employees administration list
+- Active PR: `#41 — DS2-HR-002: Employees admin list V2`
 - PR base: `design-system-v2-development`
-- Exact reviewed PR HEAD: `c2a1c0298eaed3b7e1bc38c591d4ca55c91e0f13`
-- Integration disposition: `MERGED_GREEN_DEV`
-- Review marker: `AGENT-REVIEW: GREEN-DEV`
-- Source evidence: `SOURCE_REVIEW_PASS`
+- PR base SHA: `988d7651cda4ecb828bf1dc54a9617fec8ae3edc`
+- Exact current PR HEAD: `1c0ad8b220ac81630d122242b9d4917343ae08cc`
+- PR state: `OPEN / DRAFT / mergeable=true`
+- Integration disposition: `NO_MERGE_BLOCKED_P2_HR002_TABLET_TOUCH_CONTRACT`
+- Review marker: `AGENT-REVIEW: BLOCKED`
+- Source evidence: `SOURCE_REVIEW_PASS` withheld
 - Test evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 - Runtime/preview/release evidence: not claimed
 
 ## Integrator decision
 
-**MERGED.** PR #40 satisfied every Development integration gate on exact reviewed HEAD `c2a1c0298eaed3b7e1bc38c591d4ca55c91e0f13` and was squash-merged into `design-system-v2-development` as `e9a37c6ade6661bdaf6260f9c93c72dabba60768`.
+**NO MERGE.** PR #41 does not satisfy the Development review gate on exact current HEAD `1c0ad8b220ac81630d122242b9d4917343ae08cc`.
 
-The previous Integrator blocker referred to obsolete HEAD `37197361cb351a53b461f8d8ebaf62b1aff7a6d2`, where live Attendance wiring was incomplete. That blocker was superseded by the completed live slice and fresh exact-head Design QA `GREEN-DEV + SOURCE_REVIEW_PASS`, independently aligned by Product Design Director.
+Design QA independently reviewed that same exact HEAD and recorded one current P2 blocker: the newly active Tablet Employees surface leaves two touch controls below the canonical V2 44px touch target. Shared `Pagination` applies `var(--ds-icon-hit-target)` only at Mobile `<=768px`, so Tablet inherits legacy 32px controls; `.ds-employee-card__identity` also receives its canonical minimum only at Mobile while Tablet normally resolves to the 40px avatar height.
+
+The minimum acceptable correction remains bounded: preserve Desktop density and all paging/query/action/business semantics, extend the canonical touch minimum through Tablet (`<=1024px`) for those two controls, add focused authored protection, then obtain fresh exact-head Design QA review. No broader HR redesign is needed.
 
 No GitHub Actions, hosted CI, Vercel preview/deploy, preview branch or `main` activity was performed.
 
 ## Gate revalidation
 
-- **Base gate:** PASS — PR base was exactly `design-system-v2-development`.
-- **Exact-head gate:** PASS — current PR HEAD remained exactly `c2a1c0298eaed3b7e1bc38c591d4ca55c91e0f13` through integration.
-- **Review gate:** PASS — exact head had `AGENT-REVIEW: GREEN-DEV` and `SOURCE_REVIEW_PASS`.
-- **Evidence honesty:** PASS — tests are `TESTS_AUTHORED_NOT_EXECUTED`; no build/test/lint/runtime/preview PASS was inferred.
-- **Known build/type failure gate:** PASS — no known real build/type failure was recorded; this is not an executed build claim.
-- **Review-thread gate:** PASS — no unresolved inline review threads existed.
-- **Cross-role contradiction gate:** PASS — Product Design and QA were fresh and blocker-free on the exact head; the older Integrator BLOCKING state was lifecycle-stale, not a live contradiction.
-- **Scope / functional isolation gate:** PASS — 7 changed files were shared presentation, focused tests, live Attendance composition and Implementer-owned state only. No DB/migration/RPC/service/query/cache/RBAC/RLS/route/business/workflow/validation/deployment file was changed.
-- **Development drift gate:** PASS — drift from the PR base to merge time consisted only of role-state coordination commits; no overlapping product/shared-component code invalidated the exact-head review.
+- **Base gate:** PASS — PR base is exactly `design-system-v2-development`.
+- **Exact-head gate:** PASS for inspection — current PR HEAD is still exactly `1c0ad8b220ac81630d122242b9d4917343ae08cc`, matching the QA-blocked review.
+- **Review gate:** FAIL — exact current HEAD has `AGENT-REVIEW: BLOCKED`; no `AGENT-REVIEW: GREEN-DEV` marker exists for this HEAD.
+- **Source evidence gate:** FAIL — `SOURCE_REVIEW_PASS` is explicitly withheld pending the Tablet touch correction.
+- **Evidence honesty:** PASS — focused tests are `TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview PASS is inferred.
+- **Known build/type failure gate:** PASS — no known real build/type failure is recorded; this is not an executed build claim.
+- **Review-thread gate:** PASS — there are no inline review threads.
+- **Cross-role contradiction gate:** FAIL for merge readiness — current `DESIGN_QA_STATE.md` records a live `P2 / BLOCKING` disposition on this exact PR HEAD. Director/UI states on Development are lifecycle-stale at HR001 and do not supersede the current QA blocker.
+- **Scope / functional-isolation gate:** PASS at Integrator source inspection — the 11-file diff is limited to Employees presentation/live composition, shared Pagination/DataTable presentation extraction, focused tests/styles, workstream state and the Implementer-owned state. No DB/migration/RPC/service/RBAC/RLS/route-guard/business-calculation/query-cache/validation/deployment/workflow-enabling file is in scope.
+- **Behavior-preservation check:** PASS at source level — existing employee query inputs/page resets, stats behavior, salary/create/edit/view permission predicates, profile route and `EmployeeForm` boundary remain page/domain-owned in the inspected patch.
+- **Development drift gate:** PASS for review freshness — Development moved from PR base `988d765...` only through QA coordination state (`710045f...`); no overlapping product/shared-component code invalidates the exact blocked review, and no merge-sync is warranted for governance-only drift.
 
-## Integrated result
+## Current blocker evidence
 
-- Shared `ProcessProgress` now provides caller-state-driven current/completed/pending presentation with readable state and `aria-current="step"` semantics.
-- Shared `PrimaryTaskAction` is a thin composition over canonical `Button` for one context-dependent in-flow operational next action.
-- Live `AttendanceCheckin` uses `ProcessProgress`, `PrimaryTaskAction` and existing semantic `AlertPanel` instead of its superseded page-local task-control mini-system.
-- Attendance action selection, labels/IDs/callbacks, offline/GPS permission and suppression, service/RPC/query/cache/tracking/timing/result mapping and `SUCCESS_RESET_MS = 2500` remain page/domain-owned and unchanged.
-- No confirmation, sticky/fixed behavior, `AppAction`, destructive checkout semantics or broader Attendance/HR redesign entered the slice.
+- `src/styles/design-system-v2-pagination.css`: the 44px `var(--ds-icon-hit-target)` sizing is currently inside `@media (max-width: 768px)` only, leaving Tablet on legacy 32px paginator controls.
+- `src/styles/hr-admin-v2.css`: `.ds-employee-card__identity` gets `min-height: var(--ds-icon-hit-target)` only at `<=768px`, leaving the Tablet open-identity control below the canonical touch contract.
+- The rest of the representative migration is directionally aligned: one live `ResponsiveCollection<HREmployee>`, deliberate Desktop/Tablet/Mobile composition, semantic employee status, neutral categorical field/office metadata, and page-owned permission/query/form truth.
 
 ## Queue continuity
 
-- `DS2-HR-001` is now `DONE` with merge `e9a37c6ade6661bdaf6260f9c93c72dabba60768`.
-- Exactly one next dependency-safe roadmap slice is `READY`: `DS2-HR-002 — HR admin lists/forms`.
-- All later Field, Work, Reports, Admin and Global-convergence roadmap items remain `BACKLOG`.
-- `DECISION_LOG.md` is unchanged because HR001 did not create or supersede a durable rule.
+- `DS2-HR-001` remains `DONE` with merge `e9a37c6ade6661bdaf6260f9c93c72dabba60768`.
+- `DS2-HR-002` remains the single active/READY roadmap slice and must not be marked DONE or replaced while PR #41 is blocked.
+- Later Field, Work, Reports, Admin and Global-convergence roadmap items remain `BACKLOG`.
+- `TEAM_MEMORY.md`, `31_AGENT_TEAM_WORKSTREAM.md` and `DECISION_LOG.md` are unchanged because no integration occurred and no durable rule changed.
 
 ### Cross-role handoff
-- **To:** Product Design Director, UI Production Engineer, Design QA
-- **What changed:** HR001 is integrated on Development as `e9a37c6ade6661bdaf6260f9c93c72dabba60768`; the first shared operational-task control grammar is now part of the baseline and HR002 is the only READY slice.
-- **Preserve:** shared operational patterns own presentation only; HR/page/domain code owns eligibility, Attendance/GPS/service/query/cache/tracking/workflow truth. Do not force a single context-dependent task action into `AppAction/resolveActionSet` or infer business state in `ProcessProgress`.
-- **Need from you:** Product Design Director should inspect the exact latest Development baseline and bound the smallest representative HR admin list/form concern for HR002. UI Production Engineer should not implement beyond that boundary. Design QA must independently review the next exact PR HEAD.
-- **Blocker level:** `NONE`.
-- **Baseline:** product integration `e9a37c6ade6661bdaf6260f9c93c72dabba60768`; coordination baseline before this state write `5f50c80149681841e058f9f2af7d9a9a4e83b8f6`.
-- **Evidence:** `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview/release PASS claimed.
+- **To:** UI Production Engineer, Design QA; Product Design Director for awareness
+- **What changed:** Integrator independently revalidated PR #41 exact HEAD `1c0ad8b220ac81630d122242b9d4917343ae08cc` and records `NO_MERGE_BLOCKED_P2_HR002_TABLET_TOUCH_CONTRACT`; the current QA blocker is merge-blocking and the PR head has not moved since review.
+- **Preserve:** employee query/stats/page reset, salary/create/edit/view permissions, profile route, `EmployeeForm`, paging callbacks/window semantics and all HR/service/workflow truth; preserve Desktop density and the current responsive collection/action hierarchy.
+- **Need from you:** Implementer should make only the bounded Tablet 44px touch-target correction for shared Pagination and employee identity/open control with focused authored protection. Design QA must then review the new exact HEAD and issue fresh `SOURCE_REVIEW_PASS + AGENT-REVIEW: GREEN-DEV` only if the blocker is resolved.
+- **Blocker level:** `P2 / BLOCKING`.
+- **Baseline:** Development `710045f95ccde134f61281d4a7b0400fe8ecfb82`; exact blocked PR HEAD `1c0ad8b220ac81630d122242b9d4917343ae08cc`.
+- **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview/release PASS claimed.
