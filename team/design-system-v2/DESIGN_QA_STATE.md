@@ -4,151 +4,127 @@
 
 - Review date: `2026-09-17`
 - Development branch: `design-system-v2-development`
-- Exact Development HEAD inspected before this review/state write: `6048bca162fdf5b76bbc8c4b8856431eb735e7f5`
-- Active slice: `DS2-PROC-002 — Purchase Invoice form decomposition`
-- Active implementation PR: `#37 — DS2-PROC-002: establish purchase invoice form V2 shell`
+- Exact Development HEAD inspected before this review/state write: `dcee85d8b23488bcf3339a0db4818e95b78ba148`
+- Active slice: `DS2-FIN-001 — Finance lists and summaries`
+- Active implementation PR: `#38 — DS2-FIN-001: establish vault overview V2 presentation`
 - PR base: `design-system-v2-development`
-- PR base SHA: `e4866c9350c507bce260beb07d880fbce55718f3`
-- Exact PR HEAD reviewed: `4fa613edad180de140b9c7a1c41ceeb9b7e55ee3`
-- Live PR state at disposition: `OPEN / DRAFT / mergeable`
-- Changed-file scope at reviewed HEAD: 8 files — Purchase Stepper adapter/test, live Purchase Invoice form, focused page source-contract test, one bounded Purchase Invoice stylesheet + shared style import, Workstream state and UI Implementation state.
-- Current disposition: `AGENT-REVIEW: GREEN-DEV`
-- Source evidence: `SOURCE_REVIEW_PASS`.
-- Test evidence: `TESTS_AUTHORED_NOT_EXECUTED`.
+- PR base SHA: `dcee85d8b23488bcf3339a0db4818e95b78ba148`
+- Exact PR HEAD reviewed: `96cc3c4f76b4f8ab506b40b7623759a50c8f0816`
+- Live PR state at disposition: `OPEN / DRAFT`
+- Changed-file scope at reviewed HEAD: 7 files — shared `MetricGrid` + test, V2 surfaces CSS, Finance `VaultOverviewPresentation` + test, Workstream state, and UI Implementation state.
+- Current disposition: `AGENT-REVIEW: BLOCKED`
+- Test evidence: `TESTS_AUTHORED_NOT_EXECUTED`
+- `SOURCE_REVIEW_PASS`: withheld while P2 blockers remain.
 - Exact-head build/test/lint/runtime/preview evidence: not claimed.
 
 ## Independent QA disposition
 
-**GREEN-DEV on exact HEAD `4fa613edad180de140b9c7a1c41ceeb9b7e55ee3`.**
+**BLOCKED on exact HEAD `96cc3c4f76b4f8ab506b40b7623759a50c8f0816`.**
 
-I formed this judgment from the exact current PR diff, live Purchase Invoice source, shared Stepper/FormSection/FormActions contracts and current Purchase status vocabulary before comparing peer states.
+I formed this judgment from the exact PR diff, the unchanged live `VaultsPage`, the new Finance adapters, shared `ResponsiveCollection`, `StatCard`, `Badge`, `StatusBadge`, `Button`, and the already-integrated Inventory card grammar before comparing peer states.
 
-The prior P2 inter-section spacing blocker on `751d54278b120ad560981b9f019ec0a0135b3061` is closed without widening the slice. The bounded shell now fits the V2 form grammar, preserves Purchase/accounting/workflow truth, and has no remaining source-level blocker under the Development policy.
+The direction is broadly correct and functionally isolated, but the current head is not review-complete and also introduces one semantic-color contradiction that would fragment the V2 language if wired as authored.
 
-## Exact-head source review
+## Exact-head findings
 
-### Prior P2 spacing blocker — CLOSED
+### P2 — implementation completeness / live responsive composition — BLOCKING
 
-The migration from legacy `sCard` to shared `FormSection` previously removed the old external `marginBottom: 16` and left **بيانات الفاتورة** without a deliberate sibling boundary.
+`src/pages/finance/VaultsPage.tsx` is not part of the PR diff. The live Finance surface therefore still uses:
 
-Current HEAD adds a narrow consumer-owned composition rule in `src/styles/purchase-invoice-v2.css`:
+- legacy `edara-stats-row` / `stat-card` summary presentation;
+- a Desktop `DataTable` tree and a separate Mobile card tree mounted together then toggled by CSS;
+- no deliberate Tablet collection composition;
+- no single `ResponsiveCollection<Vault>` boundary;
+- legacy Mobile card/actions rather than the new `VaultCard` adapter.
 
-- selector is scoped through the existing Purchase Invoice `.purch-action-bar` shell boundary;
-- the direct `.ds-form-section` receives logical `margin-block-end: var(--space-4)`;
-- the stylesheet loads after shared `design-system-v2-forms.css`;
-- shared `FormSection` / `Card` remain globally marginless;
-- no Procurement-specific primitive or shared density rule is introduced.
+The PR body and UI Implementation state both explicitly say live wiring remains pending on this same PR. This fails the slice-completeness, Device and State gates and does not yet prove FIN001 on a live product surface.
 
-The live `.purch-action-bar` is a direct child of the Purchase Invoice `.page-container`, so the selector applies to the migrated basic-information section in editable step 0 and in simultaneous receive/bill/readonly compositions. Focused source coverage protects the shell boundary, exact token and non-global ownership.
+**Minimum required fix:** on the same PR, wire the live `VaultsPage` to `VaultSummary` and one `ResponsiveCollection<Vault>` while preserving:
 
-### Shared Stepper / workflow reachability — PASS
+- dense Desktop `DataTable` information/actions;
+- deliberate Tablet card composition, expected to be two-column/touch-first where the live layout supports it;
+- one-column Mobile operational cards;
+- existing loading, empty and create-action behavior;
+- exact `finance.vaults.create`, `finance.vaults.transact`, `finance.vaults.update` permission predicates;
+- opening-balance eligibility `current_balance === 0`;
+- statement/deposit/withdrawal/edit callbacks and all current modal workflows;
+- total/balance calculations, services/query/cache/invalidation/validation/routes unchanged.
 
-`PurchaseInvoiceDraftStepper` remains a thin presentation adapter over shared V2 `Stepper`:
+Focused live-page tests/source contracts must protect renderer selection, permission/action parity and state composition.
 
-- previous steps remain reachable;
-- step 0 remains reachable;
-- step 1 unlocks only after supplier + warehouse eligibility (`canProceedStep0`);
-- step 2 unlocks only after basic eligibility + at least one valid item (`canProceedStep0 && canProceedStep1`);
-- review/final is not newly unlocked by direct navigation;
-- Stepper is mounted only for `new` and editable draft (`mode === 'draft' && !showReceivePanel`);
-- receive/bill/readonly modes do not receive editable wizard UX;
-- the old page-local Mobile `.stepper-label { display: none; }` collision is removed.
+### P2 — categorical type is using semantic color — BLOCKING
 
-Shared Stepper retains its accessible workflow navigation label, active-step `aria-current`, current/completed/future text labels, disabled semantics, visible focus treatment and overflow-safe Mobile wrap contract.
+`src/components/finance/VaultOverviewPresentation.tsx` exposes `typeVariant` with `success | info | primary | neutral`, and the focused test explicitly locks `cash -> badge-success` while describing vault type as categorical metadata.
 
-### Basic-information composition — PASS
+This conflicts with the current V2 system invariant already proven in Inventory: categorical direction/type metadata stays visually neutral; semantic success/info/warning/danger belongs to actual operational/workflow state. `active/inactive` correctly uses `StatusBadge`; vault kind should not visually impersonate success/info state.
 
-The live **بيانات الفاتورة** surface uses shared `FormSection + FormGrid columns={3}` and the shared form CSS provides the intended `3 Desktop / 2 Tablet / 1 Mobile` composition.
+**Minimum required fix:** keep vault type as neutral categorical `Badge` treatment and keep active/inactive on `StatusBadge`; remove or constrain the semantic `typeVariant` API and update focused coverage accordingly. Do not infer business state from vault type.
 
-Supplier and notes remain full-span. Supplier/warehouse/date/reference/landed-cost/notes values, conditional rendering and disabled rules remain unchanged. External section rhythm is now restored locally without moving any field/business truth into the shared pattern.
+### Shared MetricGrid — source-level PASS
 
-### Wizard actions — PASS
+The new shared `MetricGrid` is appropriately presentation-only:
 
-The editable wizard surface uses shared `FormActions + Button` while preserving page-owned behavior:
+- requested dense Desktop columns;
+- 3/4-column grids cap to 2 on Tablet `769–1024px`;
+- 2/3/4-column grids collapse to 1 on Mobile `<=768px`;
+- no business meaning/calculation is owned by the pattern;
+- CSS uses `minmax(0, 1fr)` and shared spacing tokens.
 
-- cancel/list navigation callback unchanged;
-- previous still decrements the current step;
-- next still calls the existing `goNext` validation/toast path;
-- final save still calls `handleSaveDraft`;
-- save-disabled truth is unchanged;
-- action buttons opt into touch targets;
-- `ChevronRight` for previous and `ChevronLeft` for next are RTL-native cues;
-- controls remain native focusable buttons.
+The authored test protects the requested class/data contract, although no execution evidence exists.
 
-No redesign of the broader legacy Purchase action bar was pulled into this bounded shell slice.
+### Functional isolation / scope — PASS on current diff
 
-### Semantic status — PASS
+No DB/migration/RPC/service/query/cache/RBAC/RLS/permission/route/accounting calculation/posting/workflow-transition/validation/deployment file is changed. Current PR work is UI/Test/Governance-only.
 
-The page-local raw-color badge is removed. Purchase Invoice status presentation now uses shared `StatusBadge` and exactly matches the Procurement list vocabulary:
-
-- `draft -> neutral / مسودة`
-- `received -> info / مستلمة`
-- `billed -> warning / معتمدة`
-- `paid -> success / مدفوعة`
-- `cancelled -> danger / ملغاة`
-
-Status truth and transitions remain page/domain-owned.
-
-### Functional isolation / scope — PASS
-
-The exact eight-file PR scope is UI/Test/Governance-owned only. No DB/migration/RPC/service/query/cache/RBAC/RLS/permission/route/accounting calculation/workflow-transition/validation-semantic/deployment file is changed.
-
-Source inspection confirms the material Purchase boundaries remain intact, including create/update, received quantities, landed costs/WAC receive path, bill/cancel calls, permission checks, `ResponsiveModal`, mobile item flow and `DocumentActions`.
-
-No unresolved inline PR review thread exists on this disposition. GitHub reports the exact current PR HEAD as mergeable before this state write.
+No GitHub Actions/hosted CI, Vercel preview, `main` or deployment activity was used.
 
 ## Device / state / accessibility judgment
 
-- **Desktop:** 3-column basic-information density is preserved; downstream dense transaction surfaces are untouched; major section separation is restored.
-- **Tablet:** shared form grid deliberately caps at 2 columns; touch-first Stepper/actions remain intact; no compressed-Desktop regression found in this slice.
-- **Mobile:** one-column basic information, wrapped Arabic Stepper labels and touch-target actions remain source-level sound; no ordinary overflow is introduced by the bounded shell.
-- **Editable new/draft:** guarded shared Stepper, validation and action callbacks preserve the existing workflow truth.
-- **Receive existing draft:** no editable Stepper overlay; basic-information section is separated from the following items surface; receive truth is unchanged.
-- **Bill/read-only:** no editable Stepper; semantic status and section hierarchy are coherent; accounting/read-only behavior remains unchanged.
-- **Loading/modal/output:** existing loading path, `ResponsiveModal` mobile item flow and `DocumentActions` remain outside the migrated shell and are preserved.
-- **Accessibility/RTL:** shared Stepper/Button focus and semantics, disabled states, text status meaning and logical spacing are sound at source level. No new bounded-slice accessibility blocker found.
-- **Dark/semantic color:** workflow status now uses shared semantic tones instead of a page-local palette.
+- **Desktop:** proposed summary density is sound, but live table parity has not yet been migrated/proven.
+- **Tablet:** shared metric grid is deliberate; live Vault collection remains unimplemented and therefore not accepted.
+- **Mobile:** proposed `VaultCard` uses touch-target Buttons and long-value wrapping, but live page still uses legacy cards and CSS-hidden dual trees.
+- **RTL/Arabic:** new primitives use logical/shared layout and Arabic labels; no source-level bidi blocker found in the new adapters.
+- **Status semantics:** active/inactive treatment is correct; vault type semantic coloring is not.
+- **Loading/empty/permission:** existing live behavior remains unchanged for now, but parity must be proven when `ResponsiveCollection` wiring lands.
+- **Accessibility:** native Buttons and group labels are acceptable in the adapter. Exact live renderer/focus behavior remains pending because the page is not wired.
+- **Action hierarchy WATCH:** `VaultCard` can display up to five simultaneous actions (`statement/opening/deposit/withdrawal/edit`). Once real page predicates are injected, re-check Mobile/Tablet visual priority and overflow; do not let success/danger/secondary/ghost controls compete equally.
 
 ## Test / execution evidence
 
 Evidence is **`TESTS_AUTHORED_NOT_EXECUTED`**.
 
-Focused artifacts protect:
+Focused artifacts currently cover:
 
-- Purchase-owned guarded Stepper reachability and locked review step;
-- current/completed/future Stepper ARIA semantics and Mobile wrap composition;
-- editable-only live Stepper wiring;
-- shared `FormSection + FormGrid` 3/2/1 composition and preserved disabled rules;
-- Purchase-scoped external section spacing ownership with `var(--space-4)` and no generic shared `FormSection` margin rule;
-- shared `FormActions` cancel/previous/next/save wiring and RTL cues;
-- semantic Purchase status mapping;
-- material Purchase service/permission/modal/output boundaries.
+- shared MetricGrid class/column contract;
+- Finance summary projection without calculation ownership;
+- callback execution and omission for injected actions;
+- touch-target class on rendered card actions;
+- active/inactive `StatusBadge` tone.
 
-No approved environment executed `npm test`, `npm run build` or `npm run lint`; no GitHub Actions/hosted CI or Vercel was used. No executed PASS is claimed. No known real build/type failure is recorded for this exact HEAD.
+However, current coverage also encodes the incorrect semantic coloring of categorical vault type and no live `VaultsPage` wiring tests exist yet.
+
+No approved environment executed `npm test`, `npm run build` or `npm run lint`; no executed PASS is claimed. No known real build/type failure is recorded for this exact head.
 
 ## Peer-state comparison / contradiction handling
 
 The independent disposition above was formed first, then compared with peer states.
 
-- **Product Design Director:** current Development state blocks superseded HEAD `751d5427...` and explicitly requests the same local token-based separation now present. Its blocker is stale against current PR HEAD, not a current contradiction.
-- **UI Production Engineer:** exact-PR-head owned state is fresh on the spacing correction and reports the same bounded implementation/test delta. It aligns with QA on current HEAD.
-- **Development Integrator:** current Development state remains `NO_MERGE` on superseded HEAD `751d5427...`; that is correct historical protection but stale as approval evidence. Integrator must independently revalidate current `4fa613...` before merge.
-- **Team Memory / Decision Log:** durable functional-isolation, device, branch, CI and shared-system rules remain aligned; no durable decision change is needed.
-
-There is **no current material BLOCKING contradiction** for exact PR HEAD `4fa613edad180de140b9c7a1c41ceeb9b7e55ee3`.
+- **UI Production Engineer:** its feature-head state correctly identifies the PR as `IN_PROGRESS` and says the live `VaultsPage` wiring is still pending, so QA's completeness blocker aligns with the implementer's own handoff. However, that state also describes vault type as neutral/categorical while the exact code/test lock semantic `success/info/primary` badge variants. This is a **BLOCKING implementation-state/code contradiction** until the exact source and test are aligned with the V2 invariant.
+- **Product Design Director:** Development state is stale on completed PROC002 and has not yet published a Finance-specific judgment. This is a `WATCH`, not approval evidence and not a reason to expand scope.
+- **Development Integrator:** current state correctly marks FIN001 as the next slice and provides no merge approval for PR #38. Integrator remains `NO_MERGE` while this QA blocker is current.
+- **Team Memory / Decision Log:** functional isolation, device strategy and semantic consistency rules support the blocker; no durable decision update is required.
 
 ## Remaining WATCH / release boundary
 
-- `InlineCombobox` / product chooser keyboard-accessibility debt remains pre-existing and explicitly outside PROC002.
-- Product item tables/cards, mobile item-entry details, receive/accounting surfaces and broader transaction-form convergence remain later bounded concerns.
-- The retained broader Purchase action bar remains legacy composition and was not redesigned by this shell slice; any further action-hierarchy convergence should be a separately bounded concern rather than a PROC002 expansion.
-- Actual visual geometry, browser/runtime behavior and build/test/lint evidence remain unclaimed and belong to controlled milestone/release validation.
+- Mobile/Tablet action priority after real permission predicates are injected.
+- Runtime visual geometry, long currency stress, dark mode and actual browser overflow remain milestone/release evidence and are not inferred from source review.
+- Broader Finance forms, statements, transaction/transfer modals, posting/accounting flows and other Finance pages remain outside this bounded concern.
 
 ### Cross-role handoff
-- **To:** Development Integrator, Product Design Director, UI Production Engineer
-- **What changed:** Design QA independently reviewed moved PR #37 exact HEAD `4fa613edad180de140b9c7a1c41ceeb9b7e55ee3`; the P2 inter-section spacing regression is closed with a Purchase-scoped logical `var(--space-4)` boundary and the full bounded shell now receives `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
-- **Preserve:** exact Purchase Invoice step reachability/progression, all supplier/warehouse/product identity, pricing/tax/discount/landed-cost/WAC/accounting/payment/workflow/validation/permission/query/service/route truth, semantic status mapping, shared primitive ownership, and no Actions/Vercel/main activity.
-- **Need from you:** Development Integrator should revalidate the unchanged exact PR HEAD, current mergeability/diff and role-state freshness, then integrate only if every Development gate still passes. Any moved PR HEAD requires fresh Design QA.
-- **Blocker level:** `NONE`.
-- **Baseline:** Development `6048bca162fdf5b76bbc8c4b8856431eb735e7f5`; PR #37 exact reviewed HEAD `4fa613edad180de140b9c7a1c41ceeb9b7e55ee3`.
-- **Evidence:** `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`; runtime/release gates remain separate.
+- **To:** UI Production Engineer, Product Design Director, Development Integrator
+- **What changed:** Design QA independently reviewed PR #38 exact HEAD `96cc3c4f76b4f8ab506b40b7623759a50c8f0816` and blocks it on two P2 items: missing live `VaultsPage`/`ResponsiveCollection` wiring and semantic coloring of categorical vault type.
+- **Preserve:** all Finance calculations/balances, permission predicates, opening-balance rule, services/query/cache, modal/workflow/validation/route truth; keep shared `MetricGrid` presentation-only and do not broaden FIN001 beyond the Vault overview.
+- **Need from you:** UI Production Engineer should complete live wiring plus parity tests and neutralize vault-type presentation on the same PR; Product Design Director may validate the narrow Finance boundary without expanding it; Integrator remains `NO_MERGE`. Any moved PR HEAD requires fresh exact-head QA.
+- **Blocker level:** `BLOCKING`.
+- **Baseline:** Development `dcee85d8b23488bcf3339a0db4818e95b78ba148`; PR #38 exact reviewed HEAD `96cc3c4f76b4f8ab506b40b7623759a50c8f0816`.
+- **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`; `SOURCE_REVIEW_PASS` withheld.
