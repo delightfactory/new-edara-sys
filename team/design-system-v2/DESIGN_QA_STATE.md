@@ -4,111 +4,114 @@
 
 - Review date: `2026-09-17`
 - Development branch: `design-system-v2-development`
-- Exact Development HEAD inspected before this review/state write: `1d20298ba76364fb8f367e95ac335654f8d3b2fa`
-- Active slice: `DS2-HR-001 — Attendance Check-in operational task controls`
-- Active implementation PR: `#40 — DS2-HR-001: Attendance operational task controls`
+- Exact Development HEAD inspected before this review/state write: `988d7651cda4ecb828bf1dc54a9617fec8ae3edc`
+- Active slice: `DS2-HR-002 — HR admin lists/forms` — representative concern: Employees administration list
+- Active implementation PR: `#41 — DS2-HR-002: Employees admin list V2`
 - PR base: `design-system-v2-development`
-- PR base SHA: `1f6ee3226c1364b72ea2a2defc7879a3325fa505`
-- Exact PR HEAD reviewed: `c2a1c0298eaed3b7e1bc38c591d4ca55c91e0f13`
+- PR base SHA: `988d7651cda4ecb828bf1dc54a9617fec8ae3edc`
+- Exact PR HEAD reviewed: `1c0ad8b220ac81630d122242b9d4917343ae08cc`
 - Live PR state at disposition: `OPEN / DRAFT / mergeable=true`
-- Changed-file scope: 7 files — shared `ProcessProgress`, shared `PrimaryTaskAction`, shared operational-task CSS, focused shared tests, live `AttendanceCheckin`, focused live source-contract test, and UI Implementation owned state.
-- Current disposition: `AGENT-REVIEW: GREEN-DEV`
-- Source evidence: `SOURCE_REVIEW_PASS`.
+- Changed-file scope: 11 files — Employees live page/presentation/tests/styles, shared Pagination/tests/CSS, DataTable pagination extraction, workstream state, and UI Implementation owned state.
+- Current disposition: `AGENT-REVIEW: BLOCKED`
+- Blocking severity: `P2 — Tablet touch ergonomics / canonical device contract`
+- Source evidence: `SOURCE_REVIEW_PASS` withheld pending fix.
 - Test evidence: `TESTS_AUTHORED_NOT_EXECUTED`.
 - Exact-head build/test/lint/runtime/preview evidence: not claimed.
 
 ## Independent QA disposition
 
-**GREEN-DEV on exact HEAD `c2a1c0298eaed3b7e1bc38c591d4ca55c91e0f13`.**
+**BLOCKED on exact HEAD `1c0ad8b220ac81630d122242b9d4917343ae08cc`.**
 
-The previous P2 implementation-completeness blocker is closed. I formed this judgment from the exact current PR diff and live product contracts first, including `AttendanceCheckin`, shared `Button`, shared `AlertPanel`, the new operational-task patterns, focused tests, review history/threads and Development drift. Peer states were compared only after that independent source judgment.
-
-The live representative screen now replaces the superseded page-local action/progress/feedback mini-system with shared V2 grammar while keeping Attendance/GPS/tracking/service/query/workflow truth page/domain-owned.
+I formed this judgment from the exact PR diff and current live product/shared contracts before comparing peer states. The migration is otherwise well bounded and moves HR toward the V2 North Star, but the newly introduced Tablet list surface violates the established touch-first device contract in two controls that are part of the migrated slice.
 
 ## Exact-head findings
 
 ### Scope / functional isolation — PASS
 
-The PR is UI/Test/Implementer-owned-state only. No DB/migration/RPC/service/query/cache/RBAC/RLS/route/business/workflow/validation/deployment file is changed.
+No DB/migration/RPC/service/RBAC/RLS/route/business-calculation/query-cache/validation/deployment file is changed.
 
-Preserved page/domain truth includes:
-- `recordAttendanceGPS` and `recordAttendanceLocationPing` service calls and result mapping;
-- `getAttendanceDays`, today's query key/refetch and HR tracking settings query;
-- offline guard and toast behavior;
-- `useGeoPermission`, denied/prompt/granted handling, explain-before-ask dialog/banner flow;
-- tracking enablement, timers, movement thresholds, focus/resume/reconnect pings and outside-zone handling;
-- attendance action identity and callback path;
-- `SUCCESS_RESET_MS = 2500` success lifecycle.
+Preserved domain truth includes:
+- `useHREmployees` with the same `search`, `departmentId`, `status`, `page`, `pageSize: 25` inputs;
+- page reset to 1 on search/department/status changes;
+- active/on-leave stats query behavior and the pre-existing current-page field-employee metric;
+- profile route `/hr/employees/${employee.id}`;
+- salary visibility through `hr.payroll.read`;
+- create/edit visibility through `hr.employees.create` / `hr.employees.edit`;
+- `EmployeeForm` as the existing create/edit boundary.
+
+The HR service search contract still matches the UI copy: employee search is by `full_name` or `employee_number`.
 
 ### Shared-system fit / hierarchy — PASS
 
-- `PrimaryTaskAction` is a thin presentation composition over the existing shared `Button`; it does not infer eligibility or become a second action registry.
-- `إنهاء الدوام` is rendered as the current primary operational task, not as a destructive action.
-- `ProcessProgress` is domain-agnostic and receives explicit caller-owned `completed/current/pending` state only.
-- Live success/error presentation reuses the existing semantic `AlertPanel` contract rather than inventing Attendance-specific feedback surfaces.
-- The page-local ring/pulse action, local progress renderer and local feedback-card system are removed only where superseded; unrelated Attendance clock/status/tracking/day-done surfaces remain untouched.
-- This reduces fragmentation and advances a reusable operational-task grammar consistent with the North Star.
+- One live `ResponsiveCollection<HREmployee>` replaces duplicated hidden Desktop/Mobile interaction trees.
+- Desktop remains a dense `DataTable`; Tablet is a deliberate two-column card composition; Mobile is one-column.
+- Employee workflow status uses semantic `StatusBadge`; field/office categorical metadata is neutral.
+- Cards reuse shared `Card`, `KeyValueList`, `MetricGrid`, `StatCard`, `Button` and `AppAction/resolveActionSet` rather than inventing a page-local mini-system.
+- Initial empty and filtered empty are distinct without changing query truth.
+- Shared `Pagination` is a presentation extraction from DataTable and preserves the established five-page window, callback targets, disabled boundaries, Arabic labels and `aria-current="page"` semantics.
+- Long employee names/key-value content are wrap-safe at source level; LTR employee number/phone handling is retained.
 
-### Action / workflow parity — PASS
+### P2 blocker — Tablet touch targets FAIL
 
-The live composition preserves:
-- `بدء الدوام` / `إنهاء الدوام` labels;
-- `btn-check-in` / `btn-check-out` IDs;
-- page-owned `check_in` / `check_out` selection;
-- `handleAction(primaryActionType)` callback path;
-- completed-day no-action behavior;
-- GPS-blocked suppression and prompt flow;
-- no confirmation, sticky/fixed task action, `AppAction/resolveActionSet`, new eligibility or destructive checkout semantics.
+Two newly active Tablet controls remain below the canonical V2 `--ds-icon-hit-target` / 44px touch contract:
 
-### Device / RTL / visual-quality judgment — PASS at source level
+1. `src/styles/design-system-v2-pagination.css`
+   - 44px pagination sizing is scoped only to `@media (max-width: 768px)`.
+   - Tablet (`769–1024px`) therefore inherits legacy `.pagination-btn { width: 32px; height: 32px; }` from `components.css`.
+   - PR #41 actively renders this shared Pagination below Tablet employee cards, so numbered controls are 32×32 and previous/next remain 32px high on a touch-first device class.
 
-- **Mobile:** one obvious full-width primary action with 48px minimum block size; no ordinary horizontal overflow introduced. Progress cards use `minmax(0, 1fr)`, minimum-inline-size protection and wrap-safe Arabic labels within the existing bounded operational column.
-- **Tablet:** remains deliberately constrained/touch-first in the existing narrow task column instead of stretching the operational action across the viewport.
-- **Desktop:** stays capability-equivalent and focused; this slice does not turn the check-in surface into a management layout.
-- **RTL / long content:** shared operational CSS uses logical sizing/spacing; Arabic labels can wrap; GPS accuracy metadata retains explicit LTR presentation; feedback location content can wrap.
-- Semantic color is used for status/feedback; the primary task action uses the canonical primary-action treatment rather than check-in green / checkout red page-local semantics.
+2. `src/styles/hr-admin-v2.css`
+   - `.ds-employee-card__identity` receives `min-height: var(--ds-icon-hit-target)` only inside the Mobile media query.
+   - On Tablet the new explicit identity/open button is normally driven by the 40px avatar and has no canonical 44px minimum.
+   - Adjacent Employee action buttons correctly opt into shared `touchTarget`; the primary identity/open control should meet the same Tablet contract.
+
+Minimum fix: preserve Desktop density, extend the 44px canonical minimum through the active Tablet range (`<=1024px`) for shared Pagination controls and the employee identity/open control, without changing paging/query/action semantics. Add focused authored protection for the Tablet touch boundary.
+
+### Device / RTL / accessibility judgment
+
+- **Desktop:** PASS at source level; dense table behavior and pagination semantics remain intact.
+- **Mobile:** PASS at source level; one-column cards, explicit identity control, one direct view action, touch-safe action buttons, 44px Pagination and wrap-safe layout.
+- **Tablet:** composition and capability are correct, but touch-target sizing is **BLOCKING P2** as above.
+- **RTL:** PASS at source level; logical properties, Arabic labels and LTR numeric/phone islands are appropriate.
+- **Focus/keyboard:** native button controls and shared focus-visible treatment are present. Generic DataTable clickable-row keyboard debt is pre-existing broader system debt, not introduced by this slice.
+- **States:** loading, initial-empty, filtered-empty, one-page pagination suppression and permission-projected salary/actions are source-covered. Broader query error/offline state convergence remains program-level debt, not a new HR002 regression.
 
 No runtime visual PASS is claimed.
 
-### Accessibility / state completeness — PASS at source level
+### Test Artifact Gate / evidence honesty — PASS for artifacts, not execution
 
-- Shared `Button` supplies native button semantics, focus behavior, disabled/loading behavior and touch-target treatment.
-- `ProcessProgress` exposes `aria-current="step"` for the current step and visible textual `مكتملة / الخطوة الحالية / قادمة` state, so progress meaning is not color-only.
-- Success uses `AlertPanel` polite `status` announcement; danger uses assertive `alert` semantics.
-- Existing employee-loading/no-employee, idle action, GPS denied/prompt, locating, submitting, success, error, weak-GPS warning and terminal day-done paths remain source-consistent.
-- Decorative continuous pulse motion from the old local action is removed; no new required motion is introduced.
+Focused artifacts exist for:
+- employee semantic summary/card composition and permission-projected metadata;
+- Mobile versus Tablet action eligibility;
+- explicit identity opening;
+- shared Pagination current-page semantics, five-page window, callbacks and boundaries;
+- live-page source contracts for responsive composition, query/page reset, permission gates, semantic status/type treatment, empty-state distinction and `EmployeeForm` preservation.
 
-### Test Artifact Gate / evidence honesty — PASS
+The missing risk-specific protection is the Tablet 44px touch boundary identified above; it must be added with the fix.
 
-Focused artifacts exist:
-- shared Testing Library coverage for progress state semantics, Arabic labels, metadata, `aria-current`, primary action callback, shared Button classes, loading/busy and disabled behavior;
-- live-page source-contract coverage for shared composition, action labels/IDs/callback ownership, 2500ms reset, offline/GPS permission flow, service/query/tracking boundaries, and non-reintroduction of the removed local mini-system / forbidden action patterns.
-
-The unchanged parent day-done and GPS-blocked suppression conditions were independently verified from the exact live diff/source; no extra test execution claim is inferred from source inspection.
-
-Evidence is **`TESTS_AUTHORED_NOT_EXECUTED`**. No approved environment executed `npm test`, `npm run build` or `npm run lint`; no hosted CI/Actions or Vercel preview was used. No known real build/type failure is recorded, which is not an executed build PASS claim.
+Evidence remains **`TESTS_AUTHORED_NOT_EXECUTED`**. No approved environment executed tests/build/lint; no hosted CI/Actions or Vercel preview was used. No known real build/type failure was found by source inspection, which is not an executed PASS claim.
 
 ## Peer-state comparison / contradiction handling
 
-The independent disposition above was formed first, then compared with current repository states.
+The independent disposition above was formed first.
 
-- **Product Design Director:** the HR001 boundary remains aligned with this implementation; its no-blocker boundary is still valid for design intent.
-- **UI Production Engineer:** the feature-head state at the reviewed candidate is aligned and records the live integration complete with `TESTS_AUTHORED_NOT_EXECUTED`.
-- **Development QA / Integration states on Development:** both still describe the older blocked PR HEAD `37197361cb351a53b461f8d8ebaf62b1aff7a6d2`. They are lifecycle-stale after the implementation moved to `c2a1c029...`; this is `WATCH`, not a current contradictory blocker.
-- Development drift since the PR base consists only of `DESIGN_QA_STATE.md` and `INTEGRATION_STATE.md` coordination commits; no overlapping product/shared-component change invalidates this source review.
-- PR review threads: none.
+- **Product Design Director state on Development:** lifecycle-stale at HR001; no conflicting HR002 design judgment is recorded. `WATCH`, not an additional blocker.
+- **UI Production Engineer state on Development:** lifecycle-stale at HR001. The implementer-owned state changed on the feature branch and is aligned with the HR002 scope/evidence claim, but its Tablet touch-hardening claim is incomplete relative to the actual CSS. `WATCH`; the QA P2 finding governs disposition.
+- **Integration state on Development:** current through HR001 and correctly leaves HR002 as the next isolated slice / `NO_MERGE` pending review gates.
+- **Previous QA state:** lifecycle-stale at HR001 and replaced by this material review.
+- PR review threads were empty before this review; no material contradictory peer finding existed.
 
-No current material cross-role `BLOCKING` contradiction remains for the reviewed exact HEAD.
+No separate cross-role `BLOCKING` contradiction is present. The current blocker is the independent QA device/touch finding.
 
 ## System-fit judgment
 
-HR001 now provides a credible first reusable V2 operational-task control grammar without absorbing HR business truth. The slice is appropriately bounded, Mobile-primary, RTL-aware, state-complete for the migrated band and consistent with the established V2 layering. Broader Attendance page redesign, offline/sync framework work and runtime visual hardening remain separate future concerns and are not required to integrate this slice into the isolated Development branch.
+The HR002 direction is strong: one responsive collection, shared semantic status/action/card grammar, preserved functional truth and a useful shared Pagination extraction. It should integrate cleanly after the two Tablet touch targets are brought up to the existing V2 44px contract. This is a bounded hardening correction, not a request for redesign or wider HR scope.
 
 ### Cross-role handoff
-- **To:** Development Integrator, Product Design Director, UI Production Engineer
-- **What changed:** Design QA re-reviewed PR #40 after the live integration fix and grants `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` on exact HEAD `c2a1c0298eaed3b7e1bc38c591d4ca55c91e0f13`.
-- **Preserve:** every attendance/time/GPS permission/RPC/query/cache/tracking/timing/error-code/service/device-capability/workflow rule; keep the task action in-flow, primary/non-destructive, with no confirmation, `AppAction` or sticky behavior.
-- **Need from you:** Integrator should revalidate base/head, review marker, threads, Development drift and mergeability and may integrate only if the PR HEAD remains exactly `c2a1c0298eaed3b7e1bc38c591d4ca55c91e0f13`. Any moved HEAD requires fresh QA.
-- **Blocker level:** `NONE` for Development integration on this exact reviewed HEAD; release/runtime gates remain separate.
-- **Baseline:** Development inspected `1d20298ba76364fb8f367e95ac335654f8d3b2fa`; exact reviewed PR HEAD `c2a1c0298eaed3b7e1bc38c591d4ca55c91e0f13`.
-- **Evidence:** `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview/release PASS claimed.
+- **To:** UI Production Engineer; Development Integrator after fresh QA; Product Design Director for awareness.
+- **What changed:** Design QA reviewed PR #41 exact HEAD `1c0ad8b220ac81630d122242b9d4917343ae08cc` and found one P2 Tablet touch-contract blocker spanning shared Pagination and the Employee identity/open control.
+- **Preserve:** all employee query/stats/permissions/profile-route/EmployeeForm/service/workflow truth; keep Desktop density and current responsive collection/action semantics unchanged.
+- **Need from you:** extend canonical `var(--ds-icon-hit-target)` sizing through Tablet (`<=1024px`) for the two identified controls and add focused authored protection; then request fresh exact-head QA.
+- **Blocker level:** `P2 / BLOCKING` for GREEN-DEV on this exact HEAD.
+- **Baseline:** Development inspected `988d7651cda4ecb828bf1dc54a9617fec8ae3edc`; exact reviewed PR HEAD `1c0ad8b220ac81630d122242b9d4917343ae08cc`.
+- **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`; `SOURCE_REVIEW_PASS` withheld; no executed build/test/lint/runtime/preview/release PASS claimed.
