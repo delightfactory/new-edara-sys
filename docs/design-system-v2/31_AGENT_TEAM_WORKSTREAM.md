@@ -151,11 +151,11 @@ System result:
 - initial-empty and filtered-empty presentation remain distinct, and the pre-existing Mobile empty-state CTA + shell FAB coexistence remains a later non-blocking action-convergence/runtime watch;
 - activity query/search/filter/paging, team/create/delete permissions, delete mutation/backend authority, routes/customer deep-link, GPS/device/workflow/service/query-cache/validation truth remain page/domain-owned and unchanged.
 
-## Current single READY slice
+## Current single active slice
 
 ### DS2-FIELD-002 — Activity create/edit form composition foundation
-Status: `READY`
-Owner role: Product Design Director -> UI Production Engineer
+Status: `IN_PROGRESS`
+Owner role: UI Production Engineer
 Representative surface: live `src/pages/activities/ActivityForm.tsx` normal create/edit path only.
 
 System-pattern intent:
@@ -243,7 +243,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### G. Field Activities / Targets
 - `DS2-FIELD-001` Activities/visit/call/target lists — `DONE`
-- `DS2-FIELD-002` Activity create/edit form composition foundation — `READY`
+- `DS2-FIELD-002` Activity create/edit form composition foundation — `IN_PROGRESS`
 
 ### H. Work Management
 - `DS2-WORK-001` Reconcile Work UI island with V2 — `BACKLOG`
