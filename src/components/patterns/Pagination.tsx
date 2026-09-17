@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils/helpers'
+import '@/styles/design-system-v2-pagination.css'
 
 export interface PaginationProps {
   page: number
@@ -35,18 +36,10 @@ export default function Pagination({
     onPageChange(nextPage)
   }
 
-  const navigationButtonStyle = {
-    width: 'auto',
-    minWidth: 64,
-    paddingInline: 'var(--space-3)',
-    whiteSpace: 'nowrap',
-  } as const
-
   return (
     <nav
-      className={cn('pagination', className)}
+      className={cn('pagination', 'ds-pagination', className)}
       aria-label={ariaLabel}
-      style={{ padding: 'var(--space-4)' }}
     >
       <span className="pagination-info">
         صفحة {page} من {totalPages}
@@ -57,7 +50,6 @@ export default function Pagination({
         <button
           type="button"
           className="pagination-btn pagination-btn-nav"
-          style={navigationButtonStyle}
           aria-label="الصفحة السابقة"
           disabled={page <= 1}
           onClick={() => requestPage(page - 1)}
@@ -81,7 +73,6 @@ export default function Pagination({
         <button
           type="button"
           className="pagination-btn pagination-btn-nav"
-          style={navigationButtonStyle}
           aria-label="الصفحة التالية"
           disabled={page >= totalPages}
           onClick={() => requestPage(page + 1)}
