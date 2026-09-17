@@ -85,19 +85,52 @@ System result:
 
 ## Current single READY slice
 
-### DS2-WORK-001 — Reconcile Work UI island with V2
+### DS2-WORK-001 — Create Task form composition foundation
 Status: `READY`
-Owner role: Product Design Director -> UI Production Engineer
+Owner role: UI Production Engineer
+Baseline inspected by Product Design: `22962d71674be08d7f04805b213d8c423a211b2a`
+Representative route: `/work/new`
+Representative source: `src/pages/work/CreateTaskPage.tsx`
 
-Intent:
-- continue the North-Star module roadmap into Work Management rather than reopen completed Field slices for ad-hoc polishing;
-- Product Design Director must inspect the exact latest Development baseline and bound one smallest dependency-safe representative Work Management concern before implementation;
-- prefer established V2 shell, collection, form, action, status, feedback and device patterns; add/strengthen shared grammar only when a real recurring gap is proven;
-- preserve all Work Management business/query/permission/ownership/workflow/validation/service truth exactly;
-- Mobile remains operational-first, Tablet deliberate and touch-first, Desktop efficient for planning/review/management.
+System-pattern intent:
+- reconcile the first safe Work Management form surface with the established V2 form grammar instead of restyling the Work module page by page;
+- retain Work's strong Arabic operational hierarchy while removing the local `work-form-card / work-form-grid / work-form-actions / work-field` implementation where an approved shared pattern already has parity;
+- prove that Work can consume the same presentation infrastructure as Customer/Procurement/Field without moving any Work state-machine or responsibility semantics into the design system.
+
+Implementation scope:
+- migrate the four existing Create Task visual sections to shared `FormSection` while preserving their exact order, titles and content;
+- migrate the existing safe two-column field groups to shared `FormGrid columns={2}`; full-width fields remain full-width intentionally rather than being squeezed into a grid cell;
+- migrate standard text/select/textarea field anatomy touched by the slice to shared `Field`, preserving each existing Arabic label, hint, error message, native control type, maxLength and value/update callback;
+- migrate cancel/submit composition to shared non-sticky `FormActions + Button`, preserving the existing primary/secondary hierarchy, `createTask.isPending` loading truth and navigation/submit callbacks;
+- keep the existing `PageHeader`; do not redesign Work Hub or detail chrome in this slice;
+- retire only the CreateTask-specific consumption of local form-shell CSS that becomes unused as a direct result of this migration. Do not perform broad `work.css` cleanup.
+
+Explicit exclusions:
+- no change to `validate()`, warning/error wording or the `nextActionAt > dueAt` rule;
+- no change to `useAssignmentCandidates`, candidate defaulting, owner/assignee meaning, acknowledgement eligibility/reset, completion mode, priority or visibility semantics;
+- no change to `useCreateTask`, payload fields, ISO conversion, `activate: true`, toast outcomes or post-create navigation;
+- no redesign of the acknowledgement checkbox, owner/assignee summary cells, Work Hub, Submit Request, Supervisor, management, Work detail, sticky task actions, Work badges or operational flags;
+- no Select/Combobox migration, no new Work-specific primitive, no ActionRegistry expansion, no backend/database/RPC/query/permission/RBAC/RLS/service/workflow change.
+
+Device acceptance:
+- **Mobile (`<=768px`)**: all migrated field groups are one column; controls and cancel/submit actions remain touch-safe; actions are non-sticky and must not contest BottomNav/FAB space.
+- **Tablet (`769–1024px`)**: safe paired fields may use two columns with readable Arabic labels/hints and 44px-capable touch controls; long/full-width content remains unsqueezed.
+- **Desktop (`>=1025px`)**: preserve the current efficient two-column task-entry density; do not introduce unnecessary whitespace or a wider/denser business flow.
+
+Accessibility/state acceptance:
+- each migrated labeled native control remains programmatically associated with its Arabic label;
+- `required`, `disabled`, loading and error truth remain unchanged; error/hint relationships should use the shared `Field` contract rather than color-only indication;
+- keyboard/focus behavior remains native/shared; no nested interactive structure is introduced;
+- dark-mode/RTL/token behavior must come from shared primitives/patterns, with no new hard-coded page colors or LTR layout assumptions.
+
+Validation/evidence requirement:
+- author focused source/component tests that protect shared pattern adoption, section order, responsive grid/action intent, label/error/hint association and the untouched functional boundaries above;
+- evidence must remain honestly labeled under `33_TEST_AND_VALIDATION_POLICY.md`; hosted CI/Vercel preview must not be triggered by this workstream.
 
 Stop condition:
-If the first Work concern requires backend/business/workflow/query/permission/validation-semantic change, mark it `BLOCKED` and isolate the functional issue rather than absorbing it into Design System scope.
+If shared form composition cannot preserve the current owner/assignee/acknowledgement/completion/validation/create semantics without functional change, mark `BLOCKED` and isolate the conflict rather than broadening WORK001.
+
+Remaining Work Hub/detail/management/state-surface convergence stays roadmap debt for later explicitly bounded Work slices; WORK001 does not declare the Work module converged.
 
 Remaining Field create/detail surfaces remain roadmap debt for a later explicitly bounded Field follow-up; FIELD002 completion does not declare the entire Field module converged.
 
@@ -153,7 +186,8 @@ Open only when a real migrated screen proves the recurring gap:
 - additional Field create/detail convergence — `BACKLOG` / must be explicitly bounded before activation
 
 ### H. Work Management
-- `DS2-WORK-001` Reconcile Work UI island with V2 — `READY`
+- `DS2-WORK-001` Create Task form composition foundation — `READY`
+- additional Work Hub/detail/management/state-surface convergence — `BACKLOG` / must be explicitly bounded before activation
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` Report shell/navigation/filter grammar — `BACKLOG`
