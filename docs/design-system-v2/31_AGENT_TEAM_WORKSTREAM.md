@@ -77,17 +77,23 @@ System result:
 - supplier/product/warehouse identity, quantities, pricing, discounts, taxes, totals, landed costs/WAC/accounting/payment, receive/bill/cancel transitions, permissions, services/query/cache, routes, validation semantics, `ResponsiveModal`, mobile item flow and `DocumentActions` remain unchanged and page/domain-owned;
 - `InlineCombobox`, item-table/card convergence, receive/accounting presentation, Purchase Returns and broad form-field convergence remain outside this completed slice.
 
-## Current single READY slice
+## Current single active slice
 
 ### DS2-FIN-001 — Finance lists and summaries
-Status: `READY`
-Owner role: Product Design Director -> UI Production Engineer after the concern is bounded
+Status: `IN_PROGRESS`
+Owner role: UI Production Engineer
 
 System intent:
 Continue the roadmap into Finance using one representative, dependency-safe list/summary presentation concern that proves shared collection, summary, state and action grammar without moving financial truth into presentation.
 
+Current bounded implementation concern:
+- representative live surface: `VaultsPage` overview only (summary metrics + vault collection presentation);
+- first implementation establishes a shared responsive `MetricGrid` and thin Finance-domain vault summary/card adapters before live-page wiring;
+- all total/balance calculations, permission predicates, opening-balance eligibility, transaction callbacks, statement loading, vault services/query/cache and modal workflows remain page/domain-owned;
+- live `VaultsPage` wiring, one `ResponsiveCollection<Vault>` boundary, Desktop dense table parity and deliberate Tablet/Mobile cards remain the next step on the same PR;
+- forms, statement/transaction/transfer modals, posting/accounting semantics and other Finance pages remain outside this bounded concern.
+
 Initial direction:
-- Product Design Director must inspect the live Finance surfaces on the exact latest Development baseline and bound the smallest representative presentation-only concern before implementation begins;
 - preserve ledger/account/balance/payment/receipt/treasury/credit/debit/aging/calculation/posting/approval/permission/query/cache/service/route semantics exactly;
 - prefer already-proven shared `PageHeader`, collection/card/table, semantic status, summary and action patterns when the live surface proves fit;
 - Mobile remains operational and touch-safe, Tablet deliberate, Desktop dense and efficient for financial review/comparison;
@@ -138,7 +144,7 @@ Open only when a real migrated screen proves the recurring gap:
 - `DS2-PROC-002` Purchase Invoice form decomposition — `DONE`
 
 ### E. Finance
-- `DS2-FIN-001` Finance lists and summaries — `READY`
+- `DS2-FIN-001` Finance lists and summaries — `IN_PROGRESS`
 - `DS2-FIN-002` Financial transaction/detail/action patterns — `BACKLOG`
 
 ### F. HR / People
