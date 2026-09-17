@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils/helpers'
 import DataCard from '@/components/ui/DataCard'
+import Pagination from '@/components/patterns/Pagination'
 
 interface Column<T> {
   key: string
@@ -55,7 +56,6 @@ export default function DataTable<T extends Record<string, any>>({
   rowStyle,
   dataCardMapping,
 }: DataTableProps<T>) {
-  // Skeleton loading
   if (loading) {
     return (
       <div style={{ padding: 'var(--space-6)' }}>
@@ -64,7 +64,6 @@ export default function DataTable<T extends Record<string, any>>({
     )
   }
 
-  // Empty state
   if (data.length === 0) {
     return (
       <div className="empty-state">
@@ -129,65 +128,18 @@ export default function DataTable<T extends Record<string, any>>({
         renderTable()
       )}
 
-      {/* Pagination */}
-      {page && totalPages && totalPages > 1 && onPageChange && (
-        <nav
-          className="pagination"
-          aria-label="ترقيم صفحات البيانات"
-          style={{ padding: 'var(--space-4)' }}
-        >
-          <span className="pagination-info">
-            صفحة {page} من {totalPages}
-            {totalCount != null && ` (${totalCount})`}
-          </span>
-          <div className="pagination-buttons">
-            <button
-              type="button"
-              className="pagination-btn pagination-btn-nav"
-              aria-label="الصفحة السابقة"
-              disabled={page <= 1}
-              onClick={() => onPageChange(page - 1)}
-            >
-              السابق
-            </button>
-            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-              const num = page <= 3 ? i + 1 : page + i - 2
-              if (num < 1 || num > totalPages) return null
-              return (
-                <button
-                  type="button"
-                  key={num}
-                  className={cn('pagination-btn', num === page && 'active')}
-                  aria-label={`الصفحة ${num}`}
-                  aria-current={num === page ? 'page' : undefined}
-                  onClick={() => onPageChange(num)}
-                >
-                  {num}
-                </button>
-              )
-            })}
-            <button
-              type="button"
-              className="pagination-btn pagination-btn-nav"
-              aria-label="الصفحة التالية"
-              disabled={page >= totalPages}
-              onClick={() => onPageChange(page + 1)}
-            >
-              التالي
-            </button>
-          </div>
-        </nav>
+      {page && totalPages && onPageChange && (
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          totalCount={totalCount}
+          onPageChange={onPageChange}
+        />
       )}
 
       <style>{`
         .system-desktop-table { display: block; }
         .system-mobile-cards  { display: none !important; }
-        .pagination-btn.pagination-btn-nav {
-          width: auto;
-          min-width: 64px;
-          padding-inline: var(--space-3);
-          white-space: nowrap;
-        }
         @media (max-width: 768px) {
           .system-desktop-table { display: none; }
           .system-mobile-cards  { display: flex !important; }

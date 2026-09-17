@@ -1,0 +1,144 @@
+/* EDARA Design System V2 — bounded HR administration list composition. */
+
+.ds-hr-employee-summary {
+  margin-block-end: var(--space-4);
+}
+
+.ds-hr-filter-surface {
+  margin-block-end: var(--space-4);
+}
+
+.ds-hr-filter-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.ds-hr-filter-search {
+  flex: 2 1 18rem;
+  min-width: min(100%, 18rem);
+}
+
+.ds-hr-filter-select {
+  flex: 1 1 10rem;
+  min-width: 10rem;
+}
+
+.ds-employee-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.ds-employee-card__identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.ds-employee-card__identity:focus-visible {
+  outline: none;
+  border-radius: var(--ds-radius-control);
+  box-shadow: var(--ds-focus-ring);
+}
+
+.ds-employee-card__avatar {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: var(--ds-radius-card);
+  background: var(--ds-surface-accent);
+  color: var(--color-primary);
+}
+
+.ds-employee-card__copy {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.ds-employee-card__name {
+  overflow-wrap: anywhere;
+  color: var(--ds-text-primary);
+  font-size: var(--ds-type-body-size);
+  font-weight: 700;
+}
+
+.ds-employee-card__number {
+  color: var(--ds-text-muted);
+  font-family: monospace;
+  font-size: var(--ds-type-caption-size);
+  font-weight: 600;
+}
+
+.ds-employee-card__badges {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  flex: 0 1 auto;
+}
+
+.ds-employee-card__metadata {
+  margin-block-start: var(--space-3);
+  padding-block-start: var(--space-3);
+  border-block-start: 1px solid var(--ds-border-subtle);
+}
+
+.ds-employee-card .ds-action-set__visible {
+  flex: 1 1 auto;
+}
+
+.ds-employee-card .ds-action-set__visible .btn {
+  min-width: 7rem;
+}
+
+@media (max-width: 1024px) {
+  .ds-employee-card__identity {
+    min-height: var(--ds-icon-hit-target);
+  }
+}
+
+@media (max-width: 768px) {
+  .ds-hr-filter-row {
+    align-items: stretch;
+  }
+
+  .ds-hr-filter-search,
+  .ds-hr-filter-select {
+    flex-basis: 100%;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .ds-employee-card__header {
+    flex-direction: column;
+  }
+
+  .ds-employee-card__identity {
+    width: 100%;
+  }
+
+  .ds-employee-card__badges {
+    justify-content: flex-start;
+  }
+
+  .ds-employee-card .ds-action-set__visible,
+  .ds-employee-card .ds-action-set__visible .btn {
+    width: 100%;
+  }
+}

@@ -1,0 +1,36 @@
+/* EDARA Design System V2 — shared pagination interaction contract. */
+
+.ds-pagination {
+  padding: var(--space-4);
+}
+
+.ds-pagination .pagination-btn.pagination-btn-nav {
+  width: auto;
+  min-width: 64px;
+  padding-inline: var(--space-3);
+  white-space: nowrap;
+}
+
+.ds-pagination .pagination-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--ds-focus-ring);
+}
+
+@media (max-width: 1024px) {
+  .ds-pagination .pagination-btn {
+    min-width: var(--ds-icon-hit-target);
+    height: var(--ds-icon-hit-target);
+  }
+
+  .ds-pagination .pagination-btn.pagination-btn-nav {
+    min-width: 72px;
+  }
+}
+
+@media (max-width: 768px) {
+  .ds-pagination .pagination-buttons {
+    max-width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
