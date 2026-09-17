@@ -38,16 +38,16 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-HR-002`.
+Product UI is integrated through `DS2-FIELD-001`.
 
 Latest product integration:
-- PR: `#41 — DS2-HR-002: Employees admin list V2`
-- Exact reviewed PR HEAD: `984750b5d933e26fea62995d3bf782f89a85b509`
-- Squash merge commit: `b1c9ae6dd78b57f9708e3e5d40fe0b2baac6adbc`
+- PR: `#42 — DS2-FIELD-001: Activities list V2 foundation`
+- Exact reviewed PR HEAD: `6b7569f3b98f7d8cd9a7588b3ae624e606f82f6b`
+- Squash merge commit: `cac61006d5c6ac402a509c2f15fb09ce51bafd50`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Runtime/preview/release evidence: not claimed
 
-The development branch now includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task controls, and an HR administration collection proof with one live responsive employee collection plus shared presentation-only Pagination.
+The development branch now includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, and a Field Activities list proof with one live responsive collection, semantic outcome state, neutral category metadata, canonical action placement and deliberate per-device persistent-create ownership.
 
 ## Completed slices
 
@@ -134,24 +134,39 @@ System result:
 - initial-empty and filtered-empty presentation are distinct; employee search/department/status/page/pageSize, page resets, stats behavior including the pre-existing current-page field metric, and `EmployeeForm` remain unchanged;
 - the local Employees filter/search row remains page composition only, not a reusable HR filter grammar; shared filter convergence stays in the component-depth roadmap.
 
-## Current single active slice
+### DS2-FIELD-001 — Activities/visit/call/target lists — Activities list
+Status: `DONE`
+Merged PR: `#42`
+Reviewed HEAD: `6b7569f3b98f7d8cd9a7588b3ae624e606f82f6b`
+Squash merge: `cac61006d5c6ac402a509c2f15fb09ce51bafd50`
+Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
+Runtime/preview/release evidence: not claimed
 
-### DS2-FIELD-001 — Activities/visit/call/target lists
-Status: `REVIEW`
+System result:
+- live `ActivitiesPage` now uses one `ResponsiveCollection<ActivityRow>` with dense Desktop `DataTable`, deliberate Tablet two-column cards and Mobile one-column operational cards;
+- `ActivityCard` is a thin Field projection over shared `Card + KeyValueList + Badge + StatusBadge + Button + AppAction/resolveActionSet`, while the page owns action eligibility and callbacks;
+- Tablet preserves optional `start_time` through the same page-owned formatter used by Desktop; Mobile intentionally retains its prior information density;
+- activity outcome is semantic `StatusBadge`; category is represented once as neutral `Badge`; `gps_verified === false` remains neutral read-only metadata (`—`);
+- Mobile persistent creation remains owned by the existing shell `new-activity` FAB; Tablet/Desktop retain the PageHeader create action under the unchanged permission and `/activities/new` route;
+- initial-empty and filtered-empty presentation remain distinct, and the pre-existing Mobile empty-state CTA + shell FAB coexistence remains a later non-blocking action-convergence/runtime watch;
+- activity query/search/filter/paging, team/create/delete permissions, delete mutation/backend authority, routes/customer deep-link, GPS/device/workflow/service/query-cache/validation truth remain page/domain-owned and unchanged.
+
+## Current single READY slice
+
+### DS2-FIELD-002 — Field create/detail flows
+Status: `READY`
 Owner role: Product Design Director -> UI Production Engineer
 
-Active representative concern: `ActivitiesPage` list presentation only on Draft PR #42. The implementation is intentionally bounded to responsive collection, semantic outcome state, action placement and list presentation. The two prior QA P2 findings (Tablet start-time parity and duplicate category hierarchy) are fixed; fresh exact-head Product Design / Design QA review is required. Call/visit-plan/target surfaces remain outside the current concern.
-
 Intent:
-- continue the North-Star module roadmap into Field Activities / Targets rather than expanding HR polishing;
-- Product Design Director must inspect the exact latest Development baseline and choose the smallest representative field list concern that can prove reusable V2 collection/action/status/filter grammar;
-- prefer existing `ResponsiveCollection`, semantic status, `AppAction/resolveActionSet`, shared summary/state patterns and current V2 primitives before inventing field-local presentation systems;
+- continue the Field roadmap from the proven Activities list grammar into one smallest dependency-safe create/detail concern rather than reopening FIELD001 list polishing;
+- Product Design Director must inspect representative Field create/detail surfaces on the exact latest Development baseline and bound one presentation-only concern with explicit acceptance criteria;
+- prefer established V2 form/detail/action/status/device patterns before adding Field-local presentation grammar;
 - preserve activity/visit/call/target query, service, permission, routing, GPS/device, validation, ownership and workflow truth exactly;
-- Mobile is the primary field-operational surface, Tablet must remain deliberate, and Desktop must preserve management density/capability parity;
+- Mobile remains the primary operational field surface; Tablet must be deliberate; Desktop must preserve efficient management/data-entry density and capability parity;
 - no DB/migration/RPC/service/RBAC/RLS/business/workflow/query-cache/validation-semantic change, no deployment/preview and no `main` work.
 
 Stop condition:
-If the representative Field surface cannot be improved without changing route/GPS/permission/service/workflow truth, narrow the slice and record the functional issue separately rather than absorbing it into Design System scope.
+If the representative Field create/detail concern cannot be improved without changing route/GPS/permission/service/workflow/validation truth, narrow the slice and record the functional issue separately rather than absorbing it into Design System scope.
 
 ## Product migration roadmap
 
@@ -200,8 +215,8 @@ Open only when a real migrated screen proves the recurring gap:
 - `DS2-HR-002` HR admin lists/forms — `DONE`
 
 ### G. Field Activities / Targets
-- `DS2-FIELD-001` Activities/visit/call/target lists — `REVIEW`
-- `DS2-FIELD-002` Field create/detail flows — `BACKLOG`
+- `DS2-FIELD-001` Activities/visit/call/target lists — `DONE`
+- `DS2-FIELD-002` Field create/detail flows — `READY`
 
 ### H. Work Management
 - `DS2-WORK-001` Reconcile Work UI island with V2 — `BACKLOG`
