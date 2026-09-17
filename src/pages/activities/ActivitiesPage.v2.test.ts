@@ -29,6 +29,7 @@ describe('ActivitiesPage V2 representative list contract', () => {
     expect(source).toContain('useActivities(queryParams)')
     expect(source).toContain('const filtered = useMemo(() => {')
     expect(source).toContain('a.outcome_notes?.toLowerCase().includes(q)')
+    expect(source).not.toContain('debounce')
   })
 
   it('keeps create/delete authority and backend time-window truth outside presentation components', () => {
@@ -38,6 +39,7 @@ describe('ActivitiesPage V2 representative list contract', () => {
     expect(source).toContain('can(PERMISSIONS.ACTIVITIES_READ_ALL)')
     expect(source).toContain('useSoftDeleteActivity()')
     expect(source).toContain('deleteActivity.mutate(deleteTarget.id')
+    expect(source).toContain('action={canCreate ? (')
     expect(source).not.toContain('24h')
     expect(source).not.toContain('48h')
   })
@@ -47,14 +49,15 @@ describe('ActivitiesPage V2 representative list contract', () => {
     expect(source).toContain('const activityActions = (activity: ActivityRow): AppAction[] => [')
     expect(source).toContain("id: 'view'")
     expect(source).toContain("id: 'delete'")
-    expect(source).not.toContain("ActivityStatusBadge")
+    expect(source).not.toContain('ActivityStatusBadge')
   })
 
-  it('uses shared Pagination once outside the device renderer without moving page truth', () => {
+  it('uses shared Pagination once outside the device renderer while preserving empty-result paging behavior', () => {
     expect(source).toContain("import Pagination from '@/components/patterns/Pagination'")
+    expect(source).toContain('filtered.length > 0 && totalPages > 1 && !loading')
     expect(source).toContain('page={page}')
     expect(source).toContain('onPageChange={setPage}')
-    expect(source).not.toContain('page={page}\n              totalPages={totalPages}')
+    expect(source).not.toContain('dataCardMapping=')
   })
 
   it('keeps field card touch targets deliberate through Tablet and Mobile grids distinct', () => {
@@ -63,5 +66,7 @@ describe('ActivitiesPage V2 representative list contract', () => {
     expect(stylesheet).toContain('.ds-field-activity-grid--mobile')
     expect(stylesheet).toContain('@media (max-width: 1024px)')
     expect(stylesheet).toContain('min-height: var(--ds-icon-hit-target)')
+    expect(stylesheet).toContain('background: var(--bg-surface-2)')
+    expect(stylesheet).not.toContain('var(--bg-muted)')
   })
 })
