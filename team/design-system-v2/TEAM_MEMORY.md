@@ -3,9 +3,9 @@
 ## Current truth
 
 - Authoritative integration branch: `design-system-v2-development`.
-- Product UI is integrated through `DS2-PROC-001`.
-- Current integrated product HEAD: `936129c69a51237ceeefc7880d9735aa5f584879` from PR #36.
-- Current single READY slice: `DS2-PROC-002 — Purchase Invoice form decomposition`.
+- Product UI is integrated through `DS2-PROC-002`.
+- Current integrated product HEAD: `5b10b9fb578c91798d28526d8de407f63ffcc417` from PR #37.
+- Current single READY slice: `DS2-FIN-001 — Finance lists and summaries`.
 - `main` remains frozen until explicit owner approval.
 - Vercel preview is user-requested only.
 - GitHub Actions / hosted CI remain forbidden for normal Design System development.
@@ -23,72 +23,67 @@ Development now includes:
 - Customers List and Customer form/detail migrations;
 - complete shared Tabs semantics reused by Customer detail;
 - Sales Orders list V2;
-- Sales Order form V2 outer foundation and guarded shared Stepper contract;
+- Sales Order form V2 foundation and guarded shared Stepper contract;
 - Sales transaction-detail header V2 using canonical `AppAction + resolveActionSet` placement;
-- Inventory stock list V2 using one `ResponsiveCollection<Stock>` boundary with deliberate Desktop/Tablet/Mobile paging composition;
-- Inventory transfer collection V2 using one `ResponsiveCollection<StockTransfer>` boundary with thin `TransferCard`, semantic metadata/status separation and source-level Desktop accessibility hardening;
-- Procurement Purchase Invoice list V2 using one `ResponsiveCollection<PurchaseInvoice>` boundary with thin `PurchaseInvoiceCard`, deliberate device composition, correct initial-vs-filtered empty states and source-level search/status semantics;
-- bounded shared `DataTable` pagination hardening: labeled pagination navigation, logical Arabic previous/next controls, accessible names, `aria-current="page"`, and width-safe previous/next controls while numeric pages stay compact;
+- Inventory stock and transfer collections V2 using one `ResponsiveCollection` boundary per live surface;
+- Procurement Purchase Invoice list V2 with deliberate device composition, initial-vs-filtered empty semantics and bounded shared DataTable paginator hardening;
+- Procurement Purchase Invoice form-shell V2 using shared `Stepper`, `FormSection`, `FormGrid`, `FormActions`, `Button` and semantic `StatusBadge` while purchase/accounting/workflow truth stays page/domain-owned;
+- consumer-owned logical spacing proof: local composition may add tokenized external sibling rhythm without changing globally marginless shared `FormSection`/`Card` contracts;
 - Design System North Star, test policy, role-state handoff protocol, Team Memory and durable Decision Log.
 
 ## Latest completed slice
 
-`DS2-PROC-001 — Purchase list surfaces`
+`DS2-PROC-002 — Purchase Invoice form decomposition`
 
 Result:
-- PR #36 exact reviewed HEAD `df3da0e6a5b00e85c8ba35f1b99481e8f0b396be` received `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS`.
+- PR #37 exact reviewed HEAD `4fa613edad180de140b9c7a1c41ceeb9b7e55ee3` received `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS`.
 - Evidence remained honestly labeled `TESTS_AUTHORED_NOT_EXECUTED`; no exact-head local build/test/lint/runtime/preview PASS is claimed.
-- Squash merge commit: `936129c69a51237ceeefc7880d9735aa5f584879`.
-- Earlier pagination semantics, filtered-empty, search-copy and Arabic paginator visual-fit blockers were all closed before final review.
-- `PurchaseInvoicesPage` now uses one `ResponsiveCollection<PurchaseInvoice>` boundary instead of CSS-hidden duplicate Desktop/Mobile trees.
-- Desktop keeps dense `DataTable` comparison/review and numbered direct jumps.
-- Tablet uses deliberate two-column `PurchaseInvoiceCard` composition with numbered direct jumps; Mobile uses one-column operational cards with touch-safe previous/next paging.
-- `PurchaseInvoiceCard` stays a thin Procurement-domain composition over shared `Card + KeyValueList + StatusBadge + Button`.
-- True initial-empty and filtered-empty states are distinct.
-- Search affordance accurately describes the unchanged service search truth: invoice `number` or `supplier_invoice_ref`; no supplier-name query behavior was invented.
-- Shared `DataTable` previous/next controls use logical Arabic labels with explicit accessible names inside a labeled pagination `nav`; numeric current page exposes `aria-current="page"`; previous/next have the bounded `pagination-btn-nav` width-safe contract while numeric page buttons remain compact.
-- Existing `DataTable` page-window algorithm, callback targets and disabled boundaries remain unchanged.
-- `getPurchaseInvoices`, `queryKey: ['purchase-invoices', search, statusFilter, page]`, `PAGE_SIZE = 20`, search/status reset-to-page-1 behavior, supplier/warehouse/document identity, total/paid values, purchase status/workflow/accounting/permission/service truth and create/detail routes remain unchanged.
+- Squash merge commit: `5b10b9fb578c91798d28526d8de407f63ffcc417`.
+- Earlier completeness and inter-section-spacing blockers were closed before final review.
+- New/editable-draft wizard composition now reuses shared Stepper through a thin Purchase adapter while page-owned validation/reachability remains unchanged and review/final is not newly direct-reachable.
+- **بيانات الفاتورة** uses shared `FormSection + FormGrid columns={3}` for the intended `3 Desktop / 2 Tablet / 1 Mobile` density.
+- Wizard actions use shared `FormActions + Button` with unchanged cancel/back/next/save callbacks, unchanged save-disabled truth, touch targets and RTL-native cues.
+- Workflow status now uses the shared semantic Purchase vocabulary instead of a page-local raw-color badge.
+- Purchase-scoped logical `margin-block-end: var(--space-4)` restores major-section separation without altering shared primitive spacing globally.
+- Supplier/product/warehouse identity, pricing/quantity/discount/tax/total/landed-cost/WAC/accounting/payment, receive/bill/cancel transitions, permissions, services/query/cache, routes, validation semantics, mobile item flow, `ResponsiveModal` and `DocumentActions` remain unchanged.
 - No hosted CI, Vercel preview, backend/business behavior or `main` change occurred.
 
 ## Current single READY slice
 
-`DS2-PROC-002 — Purchase Invoice form decomposition`
+`DS2-FIN-001 — Finance lists and summaries`
 
 Intent:
-- continue Procurement with the smallest representative Purchase Invoice create/edit form presentation concern;
-- Product Design Director must inspect the live form from the exact latest Development baseline and bound one dependency-safe concern before implementation expands;
-- preserve supplier/warehouse/product/document identity, quantities, pricing, discounts, taxes, totals, paid/due values, currency, accounting, approval/status/workflow, validation, permissions, submit/save, query/cache, services and routes exactly;
-- reuse proven shared `PageHeader`, `FormSection`, `FormGrid`, `FormActions`, `Button` and existing field grammar where the live form proves fit;
-- strengthen a shared form/combobox interaction contract only if the selected live surface proves a recurring need and the correction remains presentation/interaction-only;
-- Mobile remains task-oriented and touch-safe; Tablet deliberate; Desktop dense and efficient for data entry/review;
-- do not include Purchase Returns, backend/query/RBAC/RLS/permission/accounting/workflow changes, speculative global Combobox/Pagination redesign, deployment or preview work.
+- continue the module roadmap into Finance with the smallest representative list/summary presentation concern;
+- Product Design Director must inspect live Finance surfaces on the exact latest Development baseline and bound one dependency-safe presentation-only concern before implementation expands;
+- preserve ledger/account/balance/payment/receipt/treasury/credit/debit/aging/calculation/posting/approval/permission/query/cache/service/route truth exactly;
+- reuse proven shared collection/card/table/status/summary/action grammar where live Finance proves fit;
+- strengthen a shared Finance-summary or state pattern only when a real migrated screen proves the recurring need and the change remains presentation-only;
+- Mobile remains operational and touch-safe; Tablet deliberate; Desktop dense for financial review/comparison;
+- do not include accounting calculation/posting changes, backend/query/RBAC/RLS changes, speculative global report/chart work, deployment or preview work.
 
 ## Latest role positions
 
 ### Product Design Director
-- Independently cleared PR #36 exact HEAD `df3da0e6...` with no current Design-System blocker before integration.
-- Confirmed the representative Procurement architecture, empty/search semantics and narrow shared DataTable paginator correction fit the North Star.
-- That approval is consumed by the successful merge and must not be reused for PROC002.
-- Next action is to inspect the live Purchase Invoice form on the latest Development baseline and bound one smallest presentation-only concern for PROC002.
+- The prior PROC002 BLOCKING state referred to superseded HEAD `751d5427...` and requested the local token-based spacing correction now integrated.
+- That blocker is consumed by exact-head QA plus successful integration and must not carry into Finance.
+- Next action is to inspect the live Finance surfaces from the exact latest Development baseline and bound one smallest representative concern for FIN001.
 
 ### UI Production Engineer
-- Implemented the Purchase Invoice list migration and the final bounded shared paginator correction on PR #36.
-- Evidence was `TESTS_AUTHORED_NOT_EXECUTED`.
+- Implemented the PROC002 shell and the final bounded local spacing correction on PR #37.
+- Exact feature-head implementation state recorded no remaining UI blocker; evidence was `TESTS_AUTHORED_NOT_EXECUTED`.
 - That implementation handoff is consumed by the merge.
-- Next implementation must start from the latest Development baseline after Product Design Director bounds PROC002.
+- Next implementation must start only after Product Design Director bounds FIN001 from the latest Development baseline.
 
 ### Design QA
-- Issued exact-head `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` on `df3da0e6...` with `TESTS_AUTHORED_NOT_EXECUTED`.
-- Confirmed no known build/type failure, no current material peer contradiction, no forbidden backend/business/deployment scope and no unresolved review thread.
-- Approval is consumed by the merge and must not be reused for the next slice.
+- Issued exact-head `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` on `4fa613edad180de140b9c7a1c41ceeb9b7e55ee3` with `TESTS_AUTHORED_NOT_EXECUTED`.
+- Confirmed the prior P2 spacing regression closed, no known build/type failure, no unresolved inline thread, no current material peer contradiction and no forbidden backend/business/deployment scope.
+- Approval is consumed by the merge and must not be reused for Finance.
 
 ### Development Integrator
-- Revalidated PR #36 base/head/review marker/threads/diff scope, known build-risk state and role-state freshness.
-- Confirmed Development drift since PR base was governance-only and did not invalidate the reviewed product candidate.
-- Marked the unchanged GREEN head Ready and squash-merged it with expected-head protection as `936129c69a51237ceeefc7880d9735aa5f584879`.
-- Integration state is `MERGED_GREEN_DEV` for DS2-PROC-001.
-- Workstream marks PROC001 DONE and exactly one next slice, DS2-PROC-002, READY.
+- Revalidated PR #37 base/head/reviews/threads/diff scope, exact-head evidence, known build-risk state and role-state freshness.
+- Confirmed Development drift from the PR baseline was governance-only and did not invalidate the reviewed product candidate.
+- Transitioned the draft PR to ready-for-review without moving HEAD, then squash-merged with expected-head protection as `5b10b9fb578c91798d28526d8de407f63ffcc417`.
+- Integration state is `MERGED_GREEN_DEV` for PROC002; workstream marks PROC002 DONE and exactly one next slice, FIN001, READY.
 
 ## Invariants to preserve
 
@@ -96,17 +91,18 @@ Intent:
 - Customer create/update/GPS/lookup/credit/default branch/default contact/Branch-Contact semantics must not drift.
 - Sales query/filter/pagination/navigation/permission/payment/Smart Transfer/map/call/workflow truth must not drift.
 - Sales Order form pricing/discount/tax/total/validation/submit semantics remain page/domain-owned.
-- Sales transaction-detail permission/status/workflow/callback/query/service/calculation truth remains page/domain-owned.
 - Inventory stock/query/filter/page/valuation/permission/review/link truth remains page/domain-owned.
 - Inventory transfer movement/costing/reservation/approval/validation/permission/service/route truth remains page/domain/service-owned.
 - Procurement purchase/accounting/query/permission/status/approval/service/validation truth remains page/domain/service-owned.
-- Purchase Invoice form pricing/quantity/discount/tax/total/payment/validation/submit/workflow truth must remain page/domain-owned during PROC002.
+- Purchase Invoice pricing/quantity/discount/tax/total/payment/landed-cost/WAC/validation/submit/workflow truth remains page/domain-owned.
+- Finance ledger/account/balance/payment/receipt/treasury/credit/debit/aging/calculation/posting/approval truth must remain page/domain/service-owned during FIN001.
 - Shared `TransactionHeader` owns presentation/device placement, not business eligibility or workflow truth.
 - Shared Stepper owns visual/interaction mechanics only; page/domain code owns workflow reachability and validation truth.
+- Shared `FormSection`/`Card` own internal structure, not automatic external sibling spacing; consumer composition may own tokenized logical separation where required.
 - Complete shared Tabs keyboard/focus/ARIA/RTL semantics remain system-owned; do not reintroduce partial page-local ARIA.
 - Neutral categorical metadata uses `Badge`; semantic operational/workflow state uses `StatusBadge`.
 - Shared Button/action hierarchy should own migrated actions.
-- Shared `DataTable` paginator semantics now include logical Arabic previous/next, labeled navigation, accessible names, current-page semantics and width-safe previous/next controls; this does not imply full global Pagination convergence.
+- Shared `DataTable` paginator semantics include logical Arabic previous/next, labeled navigation, accessible names, current-page semantics and width-safe previous/next controls; this does not imply full global Pagination convergence.
 - Mobile operational actions remain clear and touch-ready.
 - Tablet must not collapse into oversized Mobile or cramped Desktop.
 - Desktop must remain efficient for dense management/review/data-entry work.
@@ -120,43 +116,42 @@ Intent:
 
 ## Known evidence / risks
 
-- Development evidence through DS2-PROC-001 remains source-level: no exact-head executed test suite, local build/lint, runtime visual pass or release approval is claimed.
+- Development evidence through PROC002 remains source-level: no exact-head executed test suite, local build/lint, runtime visual pass or release approval is claimed.
 - Hosted CI quota protection remains active; absence of GitHub Actions is expected.
 - Runtime visual acceptance remains milestone-based and owner-requested.
-- Full shared Pagination convergence is still incomplete; PROC001 only hardened the proven `DataTable` pagination contract narrowly.
+- Full shared Pagination convergence remains incomplete.
 - Generic `DataTable` clickable-row keyboard semantics remain broader shared debt.
 - Shared `SearchInput` clear-affordance accessibility remains pre-existing debt.
 - Error/offline-state convergence remains broader shared state-system work.
 - Dense-table overflow semantics remain a future hardening area.
-- Permission-limited empty-state microcopy should later converge toward neutral explanatory language.
 - `DocumentActions` Mobile sticky-header density/touch polish remains a runtime-review WATCH.
-- Combobox/ProductLine interaction debt remains real; PROC002 may prove a reusable need, but agents must not pre-emptively open a global redesign.
-- Purchase Returns remain outside the completed PROC001 slice.
-- PROC002 is a high-risk functional-isolation boundary because purchase form totals/tax/payment/accounting/validation/workflow truth must remain untouched.
+- `InlineCombobox` / product chooser keyboard-accessibility debt remains real and outside completed PROC002.
+- Purchase item-table/card, receive/accounting surfaces and Purchase Returns remain later work.
+- Finance is a high-risk functional-isolation boundary: calculations, balances, posting, payment and approval truth must not move into presentation.
 
 ## Reusable patterns learned
 
 - Device-aware composition is preferable to CSS hiding duplicate mounted interaction trees.
 - Shared navigation/action declarations should own placement decisions rather than pages inventing coordinates.
-- Canonical `AppAction + resolveActionSet` can drive shared transaction headers while domain pages retain eligibility/callback truth.
-- Shared `TransactionHeader` can expose Mobile/Tablet/Desktop action hierarchy without creating a new action taxonomy.
+- Shared `TransactionHeader` can expose device-specific action hierarchy while domain pages retain eligibility/callback truth.
 - Form composition can be standardized independently from business field semantics.
-- Shared `PageHeader + FormSection + FormGrid + FormActions` has real Customer and Sales proof points.
-- Shared Stepper can support optional guarded interaction without absorbing workflow truth or breaking read-only consumers.
+- Shared `PageHeader + FormSection + FormGrid + FormActions` has proof across Customer, Sales and Procurement.
+- Shared Stepper can support optional guarded interaction without absorbing workflow truth or breaking non-editable modes.
+- External spacing around a shared form section is a consumer-composition responsibility when the shared primitive intentionally owns internal spacing only; use logical shared tokens rather than global primitive margins.
 - Complete shared Tabs semantics can be reused through thin domain wrappers.
-- Shared `ResponsiveCollection` now has proof across Sales Orders, Inventory Stock, Inventory Transfers and Procurement Purchase Invoices.
+- Shared `ResponsiveCollection` has proof across Sales Orders, Inventory Stock, Inventory Transfers and Procurement Purchase Invoices.
 - Thin domain cards can compose shared `Card + KeyValueList + Badge/StatusBadge + Button` without creating a new primitive family.
 - Categorical direction/type metadata should remain visually neutral; semantic status tone is reserved for actual operational/workflow state.
-- Page-owned action predicates can be centralized once for presentation reuse across device renderers without moving business ownership into shared components.
-- Accessibility hardening should use complete semantic controls (`Button`, `Link`, labels/state) rather than partial page-local ARIA systems.
+- Page-owned action predicates can be centralized for presentation reuse without moving business ownership into shared components.
+- Accessibility hardening should use complete semantic controls rather than partial page-local ARIA systems.
 - Initial-empty and filtered-empty require distinct product language when filters/search are active.
 - Search copy should describe actual service capability rather than promise unsupported matching.
-- A live migrated surface may justify a narrow shared-component hardening (`DataTable` paginator here) without opening a speculative framework rewrite.
+- A live migrated surface may justify narrow shared-component hardening without opening a speculative framework rewrite.
 - Domain adapters should stay thin: shared patterns own presentation, domain/page code owns business truth.
 - Agent communication remains: independent judgment -> peer-state comparison -> structured handoff -> synthesis/integration.
 
 ## Next handoff
 
-Product Design Director should inspect the live Purchase Invoice create/edit form on the exact latest `design-system-v2-development` baseline and bound the smallest representative presentation-only concern for `DS2-PROC-002`, explicitly preserving supplier/warehouse/product/pricing/tax/total/payment/accounting/validation/permission/workflow/service truth and avoiding speculative shared-component expansion.
+Product Design Director should inspect the live Finance lists/summaries on the exact latest `design-system-v2-development` baseline and bound the smallest representative presentation-only concern for `DS2-FIN-001`, explicitly preserving every accounting/balance/payment/posting/approval/permission/query/service truth and avoiding speculative global Finance/report redesign.
 
 UI Production Engineer should bootstrap from the exact latest Development HEAD and take only that bounded concern. Design QA should independently review the next stable exact PR HEAD. Development Integrator should no-op until that head receives `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` and all normal gates pass.
