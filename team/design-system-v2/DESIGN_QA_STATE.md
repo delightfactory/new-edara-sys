@@ -4,65 +4,49 @@
 
 - Review date: `2026-09-18`
 - Development branch: `design-system-v2-development`
-- Exact Development HEAD inspected before this review/state write: `88fe07e6891255f26e70d6a61cbe5f6d131f42ba`
+- Exact Development HEAD inspected before this review/state write: `65b8a266a95e27b98e6fef55ff0320235af8643a`
 - Active slice: `DS2-WORK-001 — Create Task form composition foundation`
 - Representative surface: `/work/new` / `src/pages/work/CreateTaskPage.tsx`
 - Active implementation PR: `#44 — DS2-WORK-001: Create Task form V2 composition foundation`
 - PR base: `design-system-v2-development`
 - PR base SHA: `d748637fe5fd2a5fd50eced16b15645c9f75185d`
-- Exact current PR HEAD independently reviewed: `3d6ac4e01374e962a901a4548852e64363891dda`
+- Exact current PR HEAD independently reviewed: `fb83ac8eba9087fdfe579669b171d88f5aaa3e8d`
+- Corrected product/test commit inside that HEAD: `a5abec4fd903f1cc84492e64eb4d50b6bfbdfb71`
 - PR state at disposition: `OPEN / DRAFT / mergeable=true`
 - Changed-file scope: 6 files — Workstream governance, live CreateTask composition, focused component/source tests, shared V2 form CSS, and UI Implementer owned state.
-- Current disposition: `AGENT-REVIEW: BLOCKED`
-- Severity: `P2 / BLOCKING`
-- `SOURCE_REVIEW_PASS`: **not granted on exact HEAD `3d6ac4e01374e962a901a4548852e64363891dda`**.
+- Current disposition: `AGENT-REVIEW: GREEN-DEV`
+- `SOURCE_REVIEW_PASS`: **granted on exact HEAD `fb83ac8eba9087fdfe579669b171d88f5aaa3e8d`**.
 - Test evidence: `TESTS_AUTHORED_NOT_EXECUTED`.
 - Exact-head build/test/lint/runtime/preview evidence: not claimed.
 
 ## Independent QA disposition
 
-**BLOCKED on exact PR HEAD `3d6ac4e01374e962a901a4548852e64363891dda`.**
+**GREEN-DEV on exact PR HEAD `fb83ac8eba9087fdfe579669b171d88f5aaa3e8d`.**
 
-I formed this judgment from the exact current PR diff and loaded V2 style/token contracts before comparing peer role conclusions. The Create Task migration itself remains presentation-only and structurally aligned with the established V2 form grammar. However, the reviewer-fix intended to close Product Design's touch-control blocker references an undeclared custom property, so the shared control-height guarantee does not actually exist at runtime/CSS computed-value level.
+I formed this judgment from the exact current PR diff, the delta from the previously blocked HEAD, and the loaded V2 style/token/component contracts before comparing peer role conclusions. The prior P2 blocker is now closed at source level: the shared form layer uses declared V2 semantic control-height roles, the touch override extends through Tablet and Mobile, and the focused source contract protects the real semantic contract instead of the invalid `--control-height-md` reference.
 
-## Blocking finding
-
-### P2 — shared native form touch-height contract is still unresolved
+## Previous blocker closeout — PASS
 
 Locations:
 - `src/styles/design-system-v2-forms.css`
 - `src/pages/work/CreateTaskPage.v2.test.ts`
 
-Current shared CSS on this HEAD declares:
-- `.form-input, .form-select { min-height: var(--control-height-md); }`
-- `.form-textarea { min-height: max(80px, var(--control-height-md)); }`
+The corrected shared CSS now declares:
+- Desktop/default `.form-input` / `.form-select`: `min-height: var(--ds-control-height-standard)`;
+- Desktop/default `.form-textarea`: `min-height: max(80px, var(--ds-control-height-standard))`;
+- Tablet + Mobile (`<=1024px`) `.form-input` / `.form-select`: `min-height: var(--ds-control-height-touch)`;
+- Tablet + Mobile textarea: `min-height: max(80px, var(--ds-control-height-touch))`.
 
-The loaded V2 foundations instead define:
-- `--ds-control-height-standard: 42px`
-- `--ds-control-height-touch: var(--touch-target)` where `--touch-target` is 44px
-- `--ds-control-height-task: 48px`
+The loaded V2 foundations define:
+- `--ds-control-height-standard: 42px`;
+- `--ds-control-height-touch: var(--touch-target)` with the canonical touch target at 44px;
+- `--ds-control-height-task: 48px`.
 
-`--control-height-md` is not defined in the inspected token/foundation/global Work style chain. With no fallback, the declaration using that unresolved custom property is invalid at computed-value time. Therefore the new shared rule does not guarantee the 44px minimum required for Mobile and touch-first Tablet controls.
+`main.css` imports V2 foundations before V2 form composition and imports `design-system-v2-forms.css` after the generic component form styles, so the corrected semantic sizing contract is in the loaded cascade. The focused source/style test now asserts the Desktop standard role, the `<=1024px` touch role, textarea floor preservation, and explicitly rejects `--control-height-md`.
 
-The focused source/style test currently asserts the literal `--control-height-md` declaration, so it protects the broken token reference rather than the real V2 semantic sizing contract.
+The correction from blocked HEAD `3d6ac4e01374e962a901a4548852e64363891dda` to current review HEAD is narrowly bounded: product/test correction is confined to the shared V2 form CSS and focused source contract; the final HEAD movement is the UI Implementer owned handoff state.
 
-This violates:
-- **System Fit Gate** — V2 styling must use the established semantic alias layer rather than an undeclared sizing token;
-- **Device Gate** — Tablet must remain deliberately touch-first and Mobile controls touch-safe;
-- **Accessibility Gate** — target geometry is part of interaction accessibility;
-- the North-Star layering rule `tokens -> V2 semantic aliases -> shared layers -> page composition`.
-
-### Minimum bounded correction
-
-Keep WORK001 scope unchanged and repair only the shared V2 control contract:
-- use the existing V2 semantic height tokens in `design-system-v2-forms.css`;
-- guarantee at least `--ds-control-height-touch` through Tablet/Mobile (`<=1024px`);
-- Desktop may retain `--ds-control-height-standard` if 42px pointer-oriented density is intentional, or safely use touch height globally;
-- preserve textarea's larger existing floor while referencing the valid semantic token;
-- update the focused source/style contract to assert the actual V2 semantic sizing contract, not `--control-height-md`;
-- do not add a Work-local sizing exception and do not change Work business/validation/workflow truth.
-
-## Exact-head findings outside the blocker
+## Exact-head findings
 
 ### Scope / functional isolation — PASS
 
@@ -86,21 +70,23 @@ Preserved page/domain truth includes:
 - existing `PageHeader`, responsibility summary cells and acknowledgement checkbox;
 - all query/service/permission/RBAC/RLS/workflow/backend truth.
 
-### Shared-system composition / hierarchy — PASS apart from control-height token
+### Shared-system composition / hierarchy — PASS
 
 - Four task-entry sections use shared `FormSection` in the same Arabic narrative order.
 - Safe paired groups use `FormGrid columns={2}`; narrative/full-width content remains unsqueezed.
 - Standard native control anatomy uses shared `Field`.
 - Cancel/create use shared non-sticky `FormActions + Button`; callbacks, hierarchy and pending/loading truth remain page-owned.
-- No new Work-local primitive or broad Work CSS rewrite is introduced.
+- The touch-geometry fix is implemented once in the shared V2 form layer rather than with a Work-local exception.
+- No new page-local primitive or broad Work CSS rewrite is introduced.
 
-### Device / RTL / accessibility — BLOCKED only on native control touch geometry
+### Device / RTL / accessibility — PASS at source level
 
-- **Mobile (`<=768px`)**: grid collapse and non-sticky actions are correct; Button touch targets are explicit. Native input/select touch geometry is not guaranteed because the new shared min-height token is unresolved.
-- **Tablet (`769–1024px`)**: deliberate two-column composition is correct, but the same unresolved token leaves the touch-first control-height requirement unproven.
-- **Desktop (`>=1025px`)**: two-column task-entry density and hierarchy remain appropriate.
+- **Mobile (`<=768px`)**: paired grids collapse to one column; actions remain non-sticky and touch-targeted; shared inputs/selects use the canonical 44px touch role; textareas retain their larger floor.
+- **Tablet (`769–1024px`)**: deliberate two-column composition remains; shared inputs/selects use the same canonical 44px touch role through the full Tablet boundary.
+- **Desktop (`>=1025px`)**: efficient two-column task-entry density remains appropriate; standard native controls use the 42px V2 Desktop role.
 - Arabic ordering/wording remain unchanged and RTL-native.
-- Migrated controls retain programmatic Arabic labels; shared `Field` owns hint/error ids, `aria-describedby`, invalid state and visible required anatomy while manual `noValidate` semantics remain unchanged.
+- Migrated controls retain programmatic Arabic labels; shared `Field` owns hint/error IDs, `aria-describedby`, invalid state and visible required anatomy while manual `noValidate` semantics remain unchanged.
+- No source-level ordinary-overflow or interaction-tree duplication is introduced by the assigned slice.
 
 ### State coverage — PASS for assigned scope
 
@@ -112,39 +98,49 @@ Preserved states include:
 - create pending/loading/disabled primary action;
 - success/error toast outcomes and navigation.
 
-Broader Work Hub/detail/offline/error-state convergence remains outside WORK001.
+Broader Work Hub/detail, offline/error grammar and other module-wide convergence remain explicitly outside WORK001.
 
-### Test Artifact Gate / evidence honesty
+### Test Artifact Gate / evidence honesty — PASS
 
-Focused component/source tests exist for the material migration risks, including form-pattern adoption, section order, label/hint/error associations, assignment/acknowledgement boundaries, validation, payload/activation/toast/navigation and action composition.
+Focused Testing Library + source/style contracts exist for the material migration risks, including:
+- shared-pattern adoption and section order;
+- responsive grid/action intent;
+- Arabic label/hint/error relationships;
+- assignment/acknowledgement ownership boundaries;
+- validation wording/date ordering;
+- payload/activation/toast/navigation truth;
+- non-sticky touch-safe actions;
+- the corrected V2 standard/touch control-height contract.
 
-The new touch-height source contract is materially insufficient because it asserts the unresolved token reference; it must be corrected with the CSS fix above.
-
-Evidence remains **`TESTS_AUTHORED_NOT_EXECUTED`**. No approved environment executed tests/build/lint. No GitHub Actions/hosted CI or Vercel preview was used. No known real TypeScript/build failure is recorded; this blocker is a source-level CSS/system-contract defect, not an executed-build claim.
+Evidence remains **`TESTS_AUTHORED_NOT_EXECUTED`**. No approved environment executed tests/build/lint. No GitHub Actions/hosted CI or Vercel preview was used. No known real TypeScript/build failure is recorded. This is a source-level development approval, not an executed runtime/release PASS.
 
 ## Peer-state comparison / contradiction handling
 
 The independent disposition above was formed before relying on peer conclusions.
 
-- **Product Design Director:** its P2 blocker on prior HEAD `09f30f89511ebde932695883109b3dd4dc161456` remains substantively valid. It explicitly required established V2 semantic control heights and 44px-capable Tablet/Mobile controls. The current correction attempts that fix but does not actually implement it because the referenced property is undeclared.
-- **UI Production Engineer:** the PR-owned current state says the Product Design touch blocker is fixed using `--control-height-md`. This now conflicts materially with QA's exact source evidence. Contradiction level: **BLOCKING** until the semantic token reference is corrected and a new exact HEAD is reviewed.
-- **Development Integrator:** prior state is lifecycle-stale after the Product Design blocker and current HEAD movement. Integration must remain `NO_MERGE`.
-- **Team Memory / Workstream:** system direction remains aligned; no durable decision change is required.
+- **Product Design Director:** current Development state is stale to prior HEAD `09f30f89511ebde932695883109b3dd4dc161456`, but its substantive requirement is exactly the one now source-satisfied: declared V2 semantic standard/touch heights in the shared layer, with 44px-capable Tablet/Mobile controls and focused evidence. Fresh Product Design review of `fb83ac8...` remains a separate Integration gate. Freshness classification: **WATCH**, not a same-head Design QA contradiction.
+- **UI Production Engineer:** current PR-owned state is aligned with the exact correction and correctly requests fresh exact-head QA + Product Design review.
+- **Development Integrator:** current Development state is stale to blocked HEAD `3d6ac4e...`; its `NO_MERGE` remains procedurally correct until both new exact-head gates are fresh, but the underlying unresolved-token defect is closed on the current PR HEAD. Freshness classification: **WATCH**.
+- **Team Memory / Workstream / Decision Log:** durable system direction remains aligned; no decision-log change is required.
 - **Review threads:** none on the current PR.
 
-The previous QA `GREEN-DEV` on HEAD `09f30f89511ebde932695883109b3dd4dc161456` is stale and cannot be reused.
+There is no material same-head `BLOCKING` peer contradiction preventing this QA GREEN-DEV. Product Design acceptance on the exact current HEAD is still required before Integration can merge.
 
-## System-fit judgment
+## Development drift / system-fit judgment
 
-WORK001 remains a sound migration direction, but the exact current HEAD does not yet meet the North Star because the shared touch-control hardening is syntactically present while semantically ineffective. This is precisely the kind of shared-system defect that should be corrected once in the V2 layer rather than patched in Work. No speculative redesign is requested.
+Development advanced from the PR base only through governance role-state files: `DESIGN_DIRECTOR_STATE.md`, `DESIGN_QA_STATE.md`, and `INTEGRATION_STATE.md`. No product/shared implementation overlap was found, so the source comparison remains valid.
 
-Any movement of PR HEAD after `3d6ac4e01374e962a901a4548852e64363891dda` requires fresh Design QA.
+WORK001 now meets the North Star at the assigned source-review level: it removes the Create Task page-local form shell in favor of the shared V2 grammar, keeps Work business truth page/domain-owned, preserves Arabic operational hierarchy and Desktop efficiency, and makes Mobile/Tablet touch geometry deterministic through the semantic V2 alias layer.
+
+Non-blocking WATCH: the shared control-height hardening intentionally affects all consumers of the common `.form-input/.form-select/.form-textarea` classes. No source-proven regression was found; representative runtime/global visual validation remains a later milestone/release gate rather than a reason to expand WORK001 speculatively.
+
+Any movement of PR HEAD after `fb83ac8eba9087fdfe579669b171d88f5aaa3e8d` requires fresh Design QA.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer; Product Design Director and Development Integrator after a corrected exact PR HEAD exists.
-- **What changed:** Design QA independently reviewed PR #44 exact HEAD `3d6ac4e01374e962a901a4548852e64363891dda` and found the touch-target reviewer fix still BLOCKING because `--control-height-md` is undeclared; `SOURCE_REVIEW_PASS` is withheld.
-- **Preserve:** four-section Create Task narrative; responsive FormGrid composition; non-sticky actions; `toIso`; assignment candidates/defaulting; owner vs assignee meaning; acknowledgement eligibility/reset; exact validation/date rule; priority/visibility/completion mode; create payload/`activate: true`; toasts/navigation; PageHeader; responsibility summary; acknowledgement checkbox; all backend/query/permission/RBAC/RLS/service/workflow truth.
-- **Need from you:** UI Production Engineer should replace the unresolved token with the established V2 semantic standard/touch-height contract in the shared form layer and update the focused source/style test. Then Design QA and Product Design must independently re-review the new exact HEAD. Integrator remains NO_MERGE until both gates are fresh and clean.
-- **Blocker level:** `BLOCKING`.
-- **Baseline:** Development inspected at `88fe07e6891255f26e70d6a61cbe5f6d131f42ba`; blocked PR #44 exact HEAD `3d6ac4e01374e962a901a4548852e64363891dda`.
-- **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview/release PASS claimed.
+- **To:** Product Design Director; Development Integrator after fresh same-head Product Design closeout.
+- **What changed:** Design QA independently reviewed PR #44 exact HEAD `fb83ac8eba9087fdfe579669b171d88f5aaa3e8d`; the prior unresolved-token P2 is closed, `SOURCE_REVIEW_PASS` is granted, and the PR is `AGENT-REVIEW: GREEN-DEV` from QA.
+- **Preserve:** four-section Create Task narrative; responsive FormGrid composition; non-sticky actions; V2 standard Desktop / touch Tablet+Mobile sizing; `toIso`; assignment candidates/defaulting; owner vs assignee meaning; acknowledgement eligibility/reset; exact validation/date rule; priority/visibility/completion mode; create payload/`activate: true`; toasts/navigation; PageHeader; responsibility summary; acknowledgement checkbox; all backend/query/permission/RBAC/RLS/service/workflow truth.
+- **Need from you:** Product Design Director should independently review and explicitly close the prior P2 on the exact same PR HEAD `fb83ac8...`. Integrator should remain `NO_MERGE` until that same-head Product Design gate is fresh, then revalidate head/base/drift/threads/mergeability before any Development merge.
+- **Blocker level:** `NONE` from Design QA on this exact HEAD; Product Design exact-head acceptance is pending as a separate integration gate.
+- **Baseline:** Development inspected at `65b8a266a95e27b98e6fef55ff0320235af8643a`; reviewed PR #44 exact HEAD `fb83ac8eba9087fdfe579669b171d88f5aaa3e8d`.
+- **Evidence:** `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview/release PASS claimed.
