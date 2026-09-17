@@ -4,53 +4,49 @@
 
 - Review date: `2026-09-18`
 - Development branch: `design-system-v2-development`
-- Exact Development HEAD inspected before this review/state write: `65b8a266a95e27b98e6fef55ff0320235af8643a`
+- Exact Development HEAD inspected immediately before this state write: `2bd6631f5472ac4037640f38f3e2bd69ee869a8a`
 - Active slice: `DS2-WORK-001 — Create Task form composition foundation`
 - Representative surface: `/work/new` / `src/pages/work/CreateTaskPage.tsx`
 - Active implementation PR: `#44 — DS2-WORK-001: Create Task form V2 composition foundation`
-- PR base: `design-system-v2-development`
-- PR base SHA: `d748637fe5fd2a5fd50eced16b15645c9f75185d`
-- Exact current PR HEAD independently reviewed: `fb83ac8eba9087fdfe579669b171d88f5aaa3e8d`
-- Corrected product/test commit inside that HEAD: `a5abec4fd903f1cc84492e64eb4d50b6bfbdfb71`
+- PR base branch: `design-system-v2-development`
+- Feature baseline / merge base: `d748637fe5fd2a5fd50eced16b15645c9f75185d`
+- Exact current PR HEAD independently reviewed: `e71a1a9b310fda53a4cb3330baeb316a1f849f83`
+- Corrected WORK001 product/test commit inside that HEAD: `13f2a81d475144b8df4e93ff3516c14df54abfaa`
 - PR state at disposition: `OPEN / DRAFT / mergeable=true`
-- Changed-file scope: 6 files — Workstream governance, live CreateTask composition, focused component/source tests, shared V2 form CSS, and UI Implementer owned state.
-- Current disposition: `AGENT-REVIEW: GREEN-DEV`
-- `SOURCE_REVIEW_PASS`: **granted on exact HEAD `fb83ac8eba9087fdfe579669b171d88f5aaa3e8d`**.
-- Test evidence: `TESTS_AUTHORED_NOT_EXECUTED`.
-- Exact-head build/test/lint/runtime/preview evidence: not claimed.
+- Changed-file scope: 6 files — Workstream governance, Create Task composition, focused component/source tests, shared V2 form CSS, and UI Implementer owned state.
+- Current disposition: `AGENT-REVIEW: BLOCKED`
+- Severity: `P2 / BLOCKING — known TypeScript/build baseline is stale on the reviewed exact HEAD`
+- `SOURCE_REVIEW_PASS`: **withheld on exact HEAD `e71a1a9b310fda53a4cb3330baeb316a1f849f83`** because a real known type/build failure still exists in inherited files on that exact branch snapshot.
+- Test evidence for WORK001: `TESTS_AUTHORED_NOT_EXECUTED`.
+- Exact-head build/test/lint/runtime/preview PASS: not claimed.
 
 ## Independent QA disposition
 
-**GREEN-DEV on exact PR HEAD `fb83ac8eba9087fdfe579669b171d88f5aaa3e8d`.**
+**BLOCKED on exact PR HEAD `e71a1a9b310fda53a4cb3330baeb316a1f849f83`.**
 
-I formed this judgment from the exact current PR diff, the delta from the previously blocked HEAD, and the loaded V2 style/token/component contracts before comparing peer role conclusions. The prior P2 blocker is now closed at source level: the shared form layer uses declared V2 semantic control-height roles, the touch override extends through Tablet and Mobile, and the focused source contract protects the real semantic contract instead of the invalid `--control-height-md` reference.
+The WORK001 design correction itself is source-clean and materially improved. The previous Product Design selector-ownership blocker is resolved at source level: shared native-control sizing is now owned by the established V2 `Field` boundary rather than globally targeting every legacy `.form-*` consumer. The blocker in this review is instead the Test & Validation Policy hard gate: the reviewed PR HEAD predates already-confirmed TypeScript fixes now present on current Development.
 
-## Previous blocker closeout — PASS
+## Product/design correction closeout — PASS at source level
 
 Locations:
 - `src/styles/design-system-v2-forms.css`
 - `src/pages/work/CreateTaskPage.v2.test.ts`
 
-The corrected shared CSS now declares:
-- Desktop/default `.form-input` / `.form-select`: `min-height: var(--ds-control-height-standard)`;
-- Desktop/default `.form-textarea`: `min-height: max(80px, var(--ds-control-height-standard))`;
-- Tablet + Mobile (`<=1024px`) `.form-input` / `.form-select`: `min-height: var(--ds-control-height-touch)`;
+Current PR HEAD correctly uses:
+- Desktop/default `.ds-field .form-input` / `.ds-field .form-select`: `min-height: var(--ds-control-height-standard)`;
+- Desktop/default `.ds-field .form-textarea`: `min-height: max(80px, var(--ds-control-height-standard))`;
+- Tablet + Mobile (`<=1024px`) `.ds-field .form-input` / `.ds-field .form-select`: `min-height: var(--ds-control-height-touch)`;
 - Tablet + Mobile textarea: `min-height: max(80px, var(--ds-control-height-touch))`.
 
-The loaded V2 foundations define:
-- `--ds-control-height-standard: 42px`;
-- `--ds-control-height-touch: var(--touch-target)` with the canonical touch target at 44px;
-- `--ds-control-height-task: 48px`.
+The loaded V2 foundations define `--ds-control-height-standard: 42px` and `--ds-control-height-touch: var(--touch-target)` with the canonical 44px touch target. `main.css` imports V2 foundations before the V2 form layer and imports the V2 form layer after generic component styles. `Field` exposes the stable `.ds-field` wrapper, so selector ownership now follows `semantic tokens -> shared V2 Field layer -> explicit page adoption` without a Work-local exception or product-wide legacy blast radius.
 
-`main.css` imports V2 foundations before V2 form composition and imports `design-system-v2-forms.css` after the generic component form styles, so the corrected semantic sizing contract is in the loaded cascade. The focused source/style test now asserts the Desktop standard role, the `<=1024px` touch role, textarea floor preservation, and explicitly rejects `--control-height-md`.
+The focused source/style contract protects the Field-scoped standard/touch rules, the `<=1024px` touch boundary, textarea floor preservation, rejection of unscoped root-level form sizing, and rejection of the invalid `--control-height-md` token.
 
-The correction from blocked HEAD `3d6ac4e01374e962a901a4548852e64363891dda` to current review HEAD is narrowly bounded: product/test correction is confined to the shared V2 form CSS and focused source contract; the final HEAD movement is the UI Implementer owned handoff state.
-
-## Exact-head findings
+## Exact-head WORK001 findings
 
 ### Scope / functional isolation — PASS
 
-The PR changes only:
+PR #44 changes only:
 - `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md`
 - `src/pages/work/CreateTaskPage.tsx`
 - `src/pages/work/CreateTaskPage.test.tsx`
@@ -58,89 +54,76 @@ The PR changes only:
 - `src/styles/design-system-v2-forms.css`
 - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
-No DB/migration/RPC/service/RBAC/RLS/route-guard/business-calculation/query-cache/validation/workflow/deployment file is changed.
+No DB/migration/RPC/service/RBAC/RLS/route-guard/business calculation/query-cache/validation/workflow/deployment file is changed.
 
 Preserved page/domain truth includes:
 - `toIso` conversion;
 - `useAssignmentCandidates('')`, self/first-candidate defaulting, owner/accountability meaning and assignee/current-ball meaning;
-- `assigneeIsSelf`, acknowledgement reset/disabled rule and payload suppression for self assignment;
-- exact `validate()` messages and the `nextActionAt > dueAt` comparison;
+- acknowledgement eligibility/reset/disabled rule and self-assignment payload suppression;
+- exact `validate()` messages and `nextActionAt > dueAt` comparison;
 - priority, visibility and completion-mode values/options/callbacks;
 - `useCreateTask`, trim/null conversion, payload keys, `activate: true`, success/error toasts and post-create navigation;
 - existing `PageHeader`, responsibility summary cells and acknowledgement checkbox;
 - all query/service/permission/RBAC/RLS/workflow/backend truth.
 
-### Shared-system composition / hierarchy — PASS
+### Shared-system / hierarchy / devices — PASS at source level
 
-- Four task-entry sections use shared `FormSection` in the same Arabic narrative order.
-- Safe paired groups use `FormGrid columns={2}`; narrative/full-width content remains unsqueezed.
-- Standard native control anatomy uses shared `Field`.
-- Cancel/create use shared non-sticky `FormActions + Button`; callbacks, hierarchy and pending/loading truth remain page-owned.
-- The touch-geometry fix is implemented once in the shared V2 form layer rather than with a Work-local exception.
-- No new page-local primitive or broad Work CSS rewrite is introduced.
+- Four task-entry sections retain the exact Arabic operational narrative and use shared `FormSection`.
+- Safe paired groups use `FormGrid columns={2}`; narrative/full-width fields remain unsqueezed.
+- Standard native controls use shared `Field` with programmatic Arabic labels and shared hint/error relationships.
+- Cancel/create use non-sticky shared `FormActions + Button`; callbacks, action priority and pending truth remain page-owned.
+- Mobile collapses paired grids to one column and uses the 44px touch role.
+- Tablet retains deliberate two-column composition and the same 44px touch role through the full `<=1024px` boundary.
+- Desktop preserves efficient two-column density with the 42px standard role.
+- RTL order, long-value containment primitives (`minmax(0, 1fr)` / shared min-width handling), focus behavior and disabled/loading semantics remain consistent with V2 contracts.
+- No new page-local mini design system is introduced.
 
-### Device / RTL / accessibility — PASS at source level
+### Relevant states — PASS for assigned scope
 
-- **Mobile (`<=768px`)**: paired grids collapse to one column; actions remain non-sticky and touch-targeted; shared inputs/selects use the canonical 44px touch role; textareas retain their larger floor.
-- **Tablet (`769–1024px`)**: deliberate two-column composition remains; shared inputs/selects use the same canonical 44px touch role through the full Tablet boundary.
-- **Desktop (`>=1025px`)**: efficient two-column task-entry density remains appropriate; standard native controls use the 42px V2 Desktop role.
-- Arabic ordering/wording remain unchanged and RTL-native.
-- Migrated controls retain programmatic Arabic labels; shared `Field` owns hint/error IDs, `aria-describedby`, invalid state and visible required anatomy while manual `noValidate` semantics remain unchanged.
-- No source-level ordinary-overflow or interaction-tree duplication is introduced by the assigned slice.
+Preserved/represented states include assignment-candidate loading disablement, manual validation errors, acknowledgement disabled/reset behavior, owner/assignee responsibility summary, create pending/loading/disabled state, success/error toast outcomes and navigation. Broader Work Hub/detail/offline/module convergence remains explicitly outside WORK001.
 
-### State coverage — PASS for assigned scope
+## Hard Test & Validation Policy blocker
 
-Preserved states include:
-- assignment-candidate loading disablement;
-- manual validation errors and exact wording;
-- acknowledgement disabled/reset behavior;
-- owner/assignee responsibility summary visibility;
-- create pending/loading/disabled primary action;
-- success/error toast outcomes and navigation.
+Current Development advanced from feature baseline `d748637...` to `2bd6631f5472ac4037640f38f3e2bd69ee869a8a`. That Development commit explicitly clears known preview TypeScript blockers by changing four inherited files:
 
-Broader Work Hub/detail, offline/error grammar and other module-wide convergence remain explicitly outside WORK001.
+- `src/components/activities/ActivityOverviewPresentation.test.tsx`
+- `src/components/hr/EmployeeOverviewPresentation.test.tsx`
+- `src/components/patterns/Pagination.test.tsx`
+- `src/pages/hr/attendance/AttendanceCheckin.tsx`
 
-### Test Artifact Gate / evidence honesty — PASS
+The reviewed exact PR HEAD `e71a1a9b...` predates those fixes. Direct inspection confirms it still carries the pre-fix matcher form in the Activity test, and the branch is nine Development commits behind current Development. Therefore the known type/build defect is not fixed on the exact reviewed HEAD.
 
-Focused Testing Library + source/style contracts exist for the material migration risks, including:
-- shared-pattern adoption and section order;
-- responsive grid/action intent;
-- Arabic label/hint/error relationships;
-- assignment/acknowledgement ownership boundaries;
-- validation wording/date ordering;
-- payload/activation/toast/navigation truth;
-- non-sticky touch-safe actions;
-- the corrected V2 standard/touch control-height contract.
+This blocks GREEN under `33_TEST_AND_VALIDATION_POLICY.md` and the explicit Design QA instruction that a real known build/type failure prevents GREEN until fixed. GitHub mergeability does not replace that evidence gate.
 
-Evidence remains **`TESTS_AUTHORED_NOT_EXECUTED`**. No approved environment executed tests/build/lint. No GitHub Actions/hosted CI or Vercel preview was used. No known real TypeScript/build failure is recorded. This is a source-level development approval, not an executed runtime/release PASS.
+Minimum required fix without expanding WORK001: synchronize/rebase the feature branch onto current `design-system-v2-development` or otherwise incorporate the already-landed `2bd6631...` TypeScript fixes while preserving the six-file WORK001 product delta and all functional boundaries. No new Work redesign or business change is required. Any resulting HEAD requires fresh Design QA and Product Design review.
+
+## Test Artifact Gate / evidence honesty
+
+WORK001 focused Testing Library + source/style contracts exist for shared-pattern adoption, section order, responsive grid/action intent, Arabic label/hint/error relationships, validation, assignment/acknowledgement boundaries, payload/activation/toast/navigation truth, non-sticky touch actions and Field-scoped control heights.
+
+Evidence remains **`TESTS_AUTHORED_NOT_EXECUTED`** for the current PR HEAD. No tests/build/lint/runtime were executed by Design QA. No GitHub Actions/hosted CI or Vercel preview was triggered. No exact-head execution PASS is claimed.
 
 ## Peer-state comparison / contradiction handling
 
-The independent disposition above was formed before relying on peer conclusions.
+The independent disposition above was formed from the exact PR source and current Development evidence before relying on peer conclusions.
 
-- **Product Design Director:** current Development state is stale to prior HEAD `09f30f89511ebde932695883109b3dd4dc161456`, but its substantive requirement is exactly the one now source-satisfied: declared V2 semantic standard/touch heights in the shared layer, with 44px-capable Tablet/Mobile controls and focused evidence. Fresh Product Design review of `fb83ac8...` remains a separate Integration gate. Freshness classification: **WATCH**, not a same-head Design QA contradiction.
-- **UI Production Engineer:** current PR-owned state is aligned with the exact correction and correctly requests fresh exact-head QA + Product Design review.
-- **Development Integrator:** current Development state is stale to blocked HEAD `3d6ac4e...`; its `NO_MERGE` remains procedurally correct until both new exact-head gates are fresh, but the underlying unresolved-token defect is closed on the current PR HEAD. Freshness classification: **WATCH**.
-- **Team Memory / Workstream / Decision Log:** durable system direction remains aligned; no decision-log change is required.
-- **Review threads:** none on the current PR.
+- **Product Design Director:** the current state is tied to old HEAD `fb83ac8...` and correctly blocked its unscoped global form selectors. The new `.ds-field` correction satisfies that stated source requirement. Fresh Director acceptance on the new exact HEAD is still required. Classification: **WATCH / stale old-head blocker**, not the reason for this QA BLOCKED status.
+- **UI Production Engineer:** current PR-owned state accurately records the `.ds-field` source correction and `TESTS_AUTHORED_NOT_EXECUTED`, but it predates Development commit `2bd6631...`; its statement that no known TypeScript/build error was found is now stale relative to the current target baseline evidence.
+- **Development Integrator:** existing `NO_MERGE` remains directionally correct. The Integrator must preserve current Development's TypeScript fixes when the feature branch is synchronized and must revalidate exact head/base/drift/threads/mergeability.
+- **Team Memory / Workstream / Decision Log:** durable UI-only/system-first direction remains aligned; no durable decision change is required.
+- **Review threads:** none.
 
-There is no material same-head `BLOCKING` peer contradiction preventing this QA GREEN-DEV. Product Design acceptance on the exact current HEAD is still required before Integration can merge.
+The current peer disagreement on the prior selector ownership is resolved substantively in source but not yet fresh in Director state. The active **BLOCKING** contradiction is evidence/baseline freshness: the feature HEAD lacks known type fixes that already exist on current Development.
 
 ## Development drift / system-fit judgment
 
-Development advanced from the PR base only through governance role-state files: `DESIGN_DIRECTOR_STATE.md`, `DESIGN_QA_STATE.md`, and `INTEGRATION_STATE.md`. No product/shared implementation overlap was found, so the source comparison remains valid.
-
-WORK001 now meets the North Star at the assigned source-review level: it removes the Create Task page-local form shell in favor of the shared V2 grammar, keeps Work business truth page/domain-owned, preserves Arabic operational hierarchy and Desktop efficiency, and makes Mobile/Tablet touch geometry deterministic through the semantic V2 alias layer.
-
-Non-blocking WATCH: the shared control-height hardening intentionally affects all consumers of the common `.form-input/.form-select/.form-textarea` classes. No source-proven regression was found; representative runtime/global visual validation remains a later milestone/release gate rather than a reason to expand WORK001 speculatively.
-
-Any movement of PR HEAD after `fb83ac8eba9087fdfe579669b171d88f5aaa3e8d` requires fresh Design QA.
+Comparison from feature baseline `d748637...` to current Development `2bd6631...` shows seven changed files: the four type-fix files listed above plus `DESIGN_DIRECTOR_STATE.md`, `DESIGN_QA_STATE.md`, and `INTEGRATION_STATE.md`. There is no overlap with the six WORK001 PR files, `Field`, or the shared V2 form contracts. This means the UI/design correction remains valid and should survive a clean synchronization; the blocker is exact-head build/type freshness, not a design regression.
 
 ### Cross-role handoff
-- **To:** Product Design Director; Development Integrator after fresh same-head Product Design closeout.
-- **What changed:** Design QA independently reviewed PR #44 exact HEAD `fb83ac8eba9087fdfe579669b171d88f5aaa3e8d`; the prior unresolved-token P2 is closed, `SOURCE_REVIEW_PASS` is granted, and the PR is `AGENT-REVIEW: GREEN-DEV` from QA.
-- **Preserve:** four-section Create Task narrative; responsive FormGrid composition; non-sticky actions; V2 standard Desktop / touch Tablet+Mobile sizing; `toIso`; assignment candidates/defaulting; owner vs assignee meaning; acknowledgement eligibility/reset; exact validation/date rule; priority/visibility/completion mode; create payload/`activate: true`; toasts/navigation; PageHeader; responsibility summary; acknowledgement checkbox; all backend/query/permission/RBAC/RLS/service/workflow truth.
-- **Need from you:** Product Design Director should independently review and explicitly close the prior P2 on the exact same PR HEAD `fb83ac8...`. Integrator should remain `NO_MERGE` until that same-head Product Design gate is fresh, then revalidate head/base/drift/threads/mergeability before any Development merge.
-- **Blocker level:** `NONE` from Design QA on this exact HEAD; Product Design exact-head acceptance is pending as a separate integration gate.
-- **Baseline:** Development inspected at `65b8a266a95e27b98e6fef55ff0320235af8643a`; reviewed PR #44 exact HEAD `fb83ac8eba9087fdfe579669b171d88f5aaa3e8d`.
-- **Evidence:** `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview/release PASS claimed.
+- **To:** UI Production Engineer first; Product Design Director + Design QA after the feature HEAD is synchronized; Development Integrator only after both fresh exact-head gates pass.
+- **What changed:** Design QA reviewed PR #44 HEAD `e71a1a9b310fda53a4cb3330baeb316a1f849f83`. The `.ds-field` selector-scope correction passes source/design review, but QA discovered that current Development `2bd6631...` contains known TypeScript fixes absent from the reviewed feature HEAD, which triggers the hard build/type gate.
+- **Preserve:** the six-file WORK001 delta; `.ds-field`-owned standard/touch sizing; four-section Arabic narrative; responsive grids; non-sticky actions; validation/assignment/acknowledgement/payload/navigation semantics; all backend/query/permission/RBAC/RLS/service/workflow truth.
+- **Need from you:** synchronize/rebase PR #44 onto current Development or incorporate the already-landed `2bd6631...` fixes without changing WORK001 scope, then request fresh exact-head QA + Product Design review.
+- **Blocker level:** `P2 / BLOCKING` from Design QA until the known type/build fixes are present on the reviewed exact HEAD.
+- **Baseline:** Development inspected at `2bd6631f5472ac4037640f38f3e2bd69ee869a8a`; reviewed PR #44 exact HEAD `e71a1a9b310fda53a4cb3330baeb316a1f849f83`.
+- **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`; `SOURCE_REVIEW_PASS` withheld; no executed build/test/lint/runtime/preview/release PASS claimed.
