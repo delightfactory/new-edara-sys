@@ -24,13 +24,13 @@ function actions(): AppAction[] {
 describe('ActivityOverviewPresentation', () => {
   it('maps field outcomes to readable semantic V2 status tones', () => {
     const { rerender } = render(<ActivityOutcomeBadge outcome="visited" />)
-    expect(screen.getByText('تمت الزيارة').closest('[data-tone]')).toHaveAttribute('data-tone', 'success')
+    expect(screen.getByText('تمت الزيارة').closest('[data-tone]')?.getAttribute('data-tone')).toBe('success')
 
     rerender(<ActivityOutcomeBadge outcome="refused" />)
-    expect(screen.getByText('رفض').closest('[data-tone]')).toHaveAttribute('data-tone', 'danger')
+    expect(screen.getByText('رفض').closest('[data-tone]')?.getAttribute('data-tone')).toBe('danger')
 
     rerender(<ActivityOutcomeBadge outcome="no_answer" />)
-    expect(screen.getByText('لا يرد').closest('[data-tone]')).toHaveAttribute('data-tone', 'warning')
+    expect(screen.getByText('لا يرد').closest('[data-tone]')?.getAttribute('data-tone')).toBe('warning')
   })
 
   it('keeps category and unverified GPS metadata neutral without duplicating category hierarchy', () => {
@@ -43,10 +43,10 @@ describe('ActivityOverviewPresentation', () => {
       />,
     )
     expect(screen.getAllByText('زيارة')).toHaveLength(1)
-    expect(screen.getByText('زيارة', { selector: '.badge' })).toBeInTheDocument()
-    expect(screen.getByText('متابعة مجدولة').closest('[data-tone]')).toHaveAttribute('data-tone', 'warning')
-    expect(screen.getByText('GPS').parentElement).toHaveTextContent('—')
-    expect(screen.queryByText('غير موثق')).not.toBeInTheDocument()
+    expect(screen.getByText('زيارة', { selector: '.badge' })).toBeTruthy()
+    expect(screen.getByText('متابعة مجدولة').closest('[data-tone]')?.getAttribute('data-tone')).toBe('warning')
+    expect(screen.getByText('GPS').parentElement?.textContent).toContain('—')
+    expect(screen.queryByText('غير موثق')).toBeNull()
   })
 
   it('preserves optional start time on Tablet without expanding legacy Mobile information density', () => {
@@ -54,11 +54,11 @@ describe('ActivityOverviewPresentation', () => {
       <ActivityCard summary={summary} mode="tablet" actions={[]} onOpen={vi.fn()} />,
     )
 
-    expect(screen.getByText('الوقت').parentElement).toHaveTextContent('09:30 ص')
+    expect(screen.getByText('الوقت').parentElement?.textContent).toContain('09:30 ص')
 
     rerender(<ActivityCard summary={summary} mode="mobile" actions={[]} onOpen={vi.fn()} />)
-    expect(screen.queryByText('الوقت')).not.toBeInTheDocument()
-    expect(screen.queryByText('09:30 ص')).not.toBeInTheDocument()
+    expect(screen.queryByText('الوقت')).toBeNull()
+    expect(screen.queryByText('09:30 ص')).toBeNull()
   })
 
   it('uses canonical device action placement without owning action eligibility', () => {
@@ -70,13 +70,13 @@ describe('ActivityOverviewPresentation', () => {
     const group = screen.getByRole('group', { name: 'إجراءات النشاط' })
     const direct = group.querySelector('.ds-action-set__visible') as HTMLElement
     expect(within(direct).getAllByRole('button')).toHaveLength(1)
-    expect(group.querySelector('details')).toBeInTheDocument()
+    expect(group.querySelector('details')).toBeTruthy()
 
     rerender(<ActivityCard summary={summary} mode="tablet" actions={activityActions} onOpen={vi.fn()} />)
     const tabletGroup = screen.getByRole('group', { name: 'إجراءات النشاط' })
     const tabletDirect = tabletGroup.querySelector('.ds-action-set__visible') as HTMLElement
     expect(within(tabletDirect).getAllByRole('button')).toHaveLength(2)
-    expect(tabletGroup.querySelector('details')).not.toBeInTheDocument()
+    expect(tabletGroup.querySelector('details')).toBeNull()
   })
 
   it('delegates open and action callbacks to the caller', () => {

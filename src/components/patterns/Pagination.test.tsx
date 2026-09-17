@@ -18,12 +18,12 @@ describe('Pagination', () => {
       />,
     )
 
-    expect(screen.getByRole('navigation', { name: 'ترقيم صفحات البيانات' })).toBeInTheDocument()
-    expect(screen.getByText('صفحة 4 من 8 (173)')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'الصفحة 4' })).toHaveAttribute('aria-current', 'page')
-    expect(screen.getByRole('button', { name: 'الصفحة 2' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'الصفحة 6' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'الصفحة 1' })).not.toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: 'ترقيم صفحات البيانات' })).toBeTruthy()
+    expect(screen.getByText('صفحة 4 من 8 (173)')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'الصفحة 4' }).getAttribute('aria-current')).toBe('page')
+    expect(screen.getByRole('button', { name: 'الصفحة 2' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'الصفحة 6' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'الصفحة 1' })).toBeNull()
   })
 
   it('delegates bounded previous, numbered and next page requests', () => {
@@ -52,7 +52,7 @@ describe('Pagination', () => {
       />,
     )
 
-    expect(screen.getByRole('button', { name: 'الصفحة السابقة' })).toBeDisabled()
+    expect((screen.getByRole('button', { name: 'الصفحة السابقة' }) as HTMLButtonElement).disabled).toBe(true)
 
     rerender(
       <Pagination
@@ -61,7 +61,7 @@ describe('Pagination', () => {
         onPageChange={() => undefined}
       />,
     )
-    expect(screen.getByRole('button', { name: 'الصفحة التالية' })).toBeDisabled()
+    expect((screen.getByRole('button', { name: 'الصفحة التالية' }) as HTMLButtonElement).disabled).toBe(true)
 
     rerender(
       <Pagination
@@ -70,7 +70,7 @@ describe('Pagination', () => {
         onPageChange={() => undefined}
       />,
     )
-    expect(screen.queryByRole('navigation')).not.toBeInTheDocument()
+    expect(screen.queryByRole('navigation')).toBeNull()
   })
 
   it('keeps pagination controls on the canonical touch target through Tablet without changing Desktop density', () => {
