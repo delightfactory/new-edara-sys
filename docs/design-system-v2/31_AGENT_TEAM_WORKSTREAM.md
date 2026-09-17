@@ -18,7 +18,7 @@ Authorities:
 |---|---|---|---:|---:|---:|
 | Product Design Director | System identity, architecture, next slice, design quality | every 2 hours | No | No | No |
 | UI Production Engineer | Implement/repair the single active UI slice | hourly | UI-only | No | No |
-| Design QA | Independent exact-head review | hourly | No | No | No |
+| Design QA | Independent exact-head review | hourly | No | No |
 | Development Integrator | Merge GREEN-DEV PR and advance queue | hourly | No feature work | Development only | No |
 
 `BACKLOG -> READY -> IN_PROGRESS -> REVIEW -> GREEN-DEV -> DONE`
@@ -185,7 +185,7 @@ Explicit exclusions:
 Acceptance:
 - **Mobile (`<=768px`):** single-column task flow; no ordinary horizontal overflow; shared actions remain touch-safe and stretch cleanly; BottomNav/FAB space is not newly occupied because sticky actions are excluded; long Arabic labels/customer values wrap without obscuring controls.
 - **Tablet (`769–1024px`):** safe field groups use deliberate two-column composition while GPS/conditional complex surfaces can remain full-width; touch remains first-class; no compressed-Desktop three-column layout.
-- **Desktop (`>=1025px`):** preserve the current efficient bounded form width and field capability; safe grouped fields may use denser shared-grid composition without losing readability or changing order.
+- **Desktop (`>=1025px`)**: preserve the current efficient bounded form width and field capability; safe grouped fields may use denser shared-grid composition without losing readability or changing order.
 - **States:** create/edit labels, loading customer fallback, outcome disabled-before-type, conditional customer/outcome/reason/call/link sections, GPS-required warning, save loading/disabled state and normal cancel/navigation behavior remain semantically unchanged.
 - **Accessibility/RTL:** Arabic-first logical layout; visible labels associated with touched controls; native required/disabled semantics preserved; shared Buttons retain keyboard/focus behavior; no color-only meaning is introduced.
 - **Functional isolation:** exact activity query/service/route/GPS/validation/payload/mutation/workflow semantics remain unchanged.
