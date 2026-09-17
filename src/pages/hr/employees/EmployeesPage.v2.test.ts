@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest'
 
 const sourcePath = fileURLToPath(new URL('./EmployeesPage.tsx', import.meta.url))
 const source = readFileSync(sourcePath, 'utf8')
+const stylesheetPath = fileURLToPath(new URL('../../../styles/hr-admin-v2.css', import.meta.url))
+const stylesheet = readFileSync(stylesheetPath, 'utf8')
 
 describe('EmployeesPage V2 administration-list contract', () => {
   it('uses one responsive collection boundary with deliberate Desktop, Tablet and Mobile composition', () => {
@@ -64,5 +66,21 @@ describe('EmployeesPage V2 administration-list contract', () => {
     expect(source).toContain('employee={editEmp}')
     expect(source).toContain('setEditEmp(null); setFormOpen(true)')
     expect(source).toContain('setEditEmp(emp); setFormOpen(true)')
+  })
+
+  it('keeps the employee identity/open control touch-safe through Tablet while preserving Mobile-only full width', () => {
+    const tabletMediaStart = stylesheet.indexOf('@media (max-width: 1024px)')
+    const mobileMediaStart = stylesheet.indexOf('@media (max-width: 768px)')
+
+    expect(tabletMediaStart).toBeGreaterThan(-1)
+    expect(mobileMediaStart).toBeGreaterThan(tabletMediaStart)
+
+    const tabletContract = stylesheet.slice(tabletMediaStart, mobileMediaStart)
+    expect(tabletContract).toContain('.ds-employee-card__identity')
+    expect(tabletContract).toContain('min-height: var(--ds-icon-hit-target)')
+
+    const mobileContract = stylesheet.slice(mobileMediaStart)
+    expect(mobileContract).toContain('.ds-employee-card__identity')
+    expect(mobileContract).toContain('width: 100%')
   })
 })
