@@ -6,8 +6,9 @@
 - Development branch: `design-system-v2-development`
 - Exact slice baseline: `1f6ee3226c1364b72ea2a2defc7879a3325fa505`
 - Feature branch: `ds2/hr-attendance-task-controls-v2`
-- Draft PR: pending creation in this run
-- Product/test HEAD before this owned-state write: `139aada576a99fa3604cd2a038323f0e52ca55ea`
+- Draft PR: `#40 — DS2-HR-001: Attendance operational task controls`
+- Product/test HEAD before first owned-state write: `139aada576a99fa3604cd2a038323f0e52ca55ea`
+- Branch HEAD before this PR-state write: `2682ce4f7eba82db29fcaa11c439c6ead192ae1a`
 - Active slice: `DS2-HR-001 — Attendance Check-in operational task controls`
 - Disposition: `IN_PROGRESS`
 - Evidence: `TESTS_AUTHORED_NOT_EXECUTED`
@@ -20,11 +21,12 @@ The first implementation concern therefore establishes only the missing shared p
 
 ## Material implementation progress
 
+- Opened Draft PR #40 targeting `design-system-v2-development` from the exact baseline above; `NO_MERGE` while this slice is IN_PROGRESS.
 - Added shared `ProcessProgress` with caller-owned `completed/current/pending` state, visible non-color state labels and `aria-current="step"` semantics.
 - Added shared `PrimaryTaskAction` as a single operational next-action composition over `Button`, inheriting `btn-lg`, `btn-touch`, loading/disabled/focus semantics and keeping a neutral primary action treatment.
 - Added reusable logical/RTL-safe operational-control CSS with a bounded responsive progress grid, 48px minimum action height and no essential motion.
 - Added focused Testing Library coverage for current/completed semantics, Arabic labels/meta, callback delegation, shared Button touch classes and loading/disabled behavior.
-- No live Attendance business or presentation file has been changed yet; integration remains the next concern on this same branch/PR.
+- No live Attendance business or presentation file has been changed yet; integration remains the next concern on this same PR.
 - Did not touch peer role-state files, Team Memory or Decision Log.
 
 ## Changed-file / pattern scope
@@ -69,9 +71,9 @@ No known TypeScript/build error was discovered by source inspection. This is not
 
 ### Cross-role handoff
 - **To:** next UI Production Engineer run; Product Design Director / Design QA for awareness only while IN_PROGRESS.
-- **What changed:** reusable shared operational-task progress and single-action presentation foundations now exist with focused tests.
+- **What changed:** reusable shared operational-task progress and single-action presentation foundations now exist with focused tests in Draft PR #40.
 - **Preserve:** all HR/GPS/tracking/service/query/workflow truth and every explicit exclusion in DS2-HR-001.
 - **Need next:** integrate the live Attendance action/progress/feedback band only, then perform exact-head source review before moving to REVIEW.
 - **Integrator:** `NO_MERGE`; slice is `IN_PROGRESS` and not ready for integration.
-- **Baseline:** `1f6ee3226c1364b72ea2a2defc7879a3325fa505`; product/test HEAD before state write `139aada576a99fa3604cd2a038323f0e52ca55ea`.
+- **Baseline:** `1f6ee3226c1364b72ea2a2defc7879a3325fa505`; first product/test HEAD `139aada576a99fa3604cd2a038323f0e52ca55ea`; branch HEAD before PR-state write `2682ce4f7eba82db29fcaa11c439c6ead192ae1a`.
 - **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`.
