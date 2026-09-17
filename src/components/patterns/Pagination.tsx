@@ -31,7 +31,7 @@ export default function Pagination({
   }).filter((number): number is number => number != null)
 
   const requestPage = (nextPage: number) => {
-    if (nextPage < 1 || nextPage > totalPages || nextPage === page) return
+    if (nextPage < 1 || nextPage > totalPages) return
     onPageChange(nextPage)
   }
 
