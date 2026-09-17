@@ -4,6 +4,7 @@ import { Activity, Plus, Eye, Trash2, MapPin, Phone, CheckSquare } from 'lucide-
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
 import { useActivities, useSoftDeleteActivity, useActivityTypes, useHREmployees } from '@/hooks/useQueryHooks'
+import { useDeviceMode } from '@/hooks/useDeviceMode'
 import { PERMISSIONS } from '@/lib/permissions/constants'
 import PageHeader from '@/components/shared/PageHeader'
 import SearchInput from '@/components/shared/SearchInput'
@@ -36,6 +37,7 @@ function fmtTime(value: string) {
 
 export default function ActivitiesPage() {
   const navigate = useNavigate()
+  const deviceMode = useDeviceMode()
   const can = useAuthStore(s => s.can)
 
   const [search, setSearch] = useState('')
@@ -172,13 +174,13 @@ export default function ActivitiesPage() {
       <PageHeader
         title="الأنشطة الميدانية"
         subtitle={loading ? '...' : `${totalCount} نشاط`}
-        actions={
+        actions={deviceMode !== 'mobile' ? (
           <PermissionGuard permission={PERMISSIONS.ACTIVITIES_CREATE}>
             <Button icon={<Plus size={16} />} onClick={() => navigate('/activities/new')} touchTarget>
               نشاط جديد
             </Button>
           </PermissionGuard>
-        }
+        ) : undefined}
       />
 
       <div className="edara-card p-4 mb-4">
