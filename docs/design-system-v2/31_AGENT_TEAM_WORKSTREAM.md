@@ -94,13 +94,16 @@ System result:
 - `finance.vaults.create/transact/update`, `current_balance === 0`, statement `pageSize: 25`, create/update/manual-adjustment/transfer services, query/cache/invalidation, validation/toasts, modal workflows, routes and accounting/posting semantics remain unchanged;
 - focused component/live-page tests were authored for summary semantics, device renderer selection, permissions/action parity, overflow, opening-balance eligibility, empty/create behavior, statement paging and service isolation.
 
-## Current single READY slice
+## Current single active slice
 
 ### DS2-FIN-002 — Payment Receipt transaction-detail header/action foundation
-Status: `READY`
-Owner role: Product Design Director -> UI Production Engineer
+Status: `REVIEW`
+Owner role: UI Production Engineer -> Product Design Director / Design QA
 Design Director baseline: `45cf7998c90254e022258d91a6debfe7179d935d`
+Implementation baseline: `3cb51c0eacc4fe0a35497734e1786a2c96114c32`
+Draft PR: `#39 — DS2-FIN-002: Payment Receipt transaction-detail header`
 Representative live surface: `src/pages/finance/PaymentReceiptDetail.tsx`
+Evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 
 System intent:
 Prove that Finance transaction-detail identity, workflow status and guarded review actions reuse the same shared V2 `TransactionHeader + StatusBadge + AppAction/resolveActionSet` grammar already proven in Sales, while every receipt/payment/accounting rule remains page/domain/service-owned.
@@ -173,7 +176,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### E. Finance
 - `DS2-FIN-001` Finance lists and summaries — `DONE`
-- `DS2-FIN-002` Payment Receipt transaction-detail header/action foundation — `READY`
+- `DS2-FIN-002` Payment Receipt transaction-detail header/action foundation — `REVIEW`
 
 ### F. HR / People
 - `DS2-HR-001` Mobile operational tasks — `BACKLOG`
