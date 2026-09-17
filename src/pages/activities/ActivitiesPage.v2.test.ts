@@ -44,6 +44,16 @@ describe('ActivitiesPage V2 representative list contract', () => {
     expect(source).not.toContain('48h')
   })
 
+  it('keeps the persistent create action shell-owned on Mobile while retaining PageHeader create on Tablet/Desktop', () => {
+    expect(source).toContain("import { useDeviceMode } from '@/hooks/useDeviceMode'")
+    expect(source).toContain('const deviceMode = useDeviceMode()')
+    expect(source).toContain("actions={deviceMode !== 'mobile' ? (")
+    expect(source).toContain('<PermissionGuard permission={PERMISSIONS.ACTIVITIES_CREATE}>')
+    expect(source).toContain("onClick={() => navigate('/activities/new')}")
+    expect(source).toContain(') : undefined}')
+    expect(source).toContain('action={canCreate ? (')
+  })
+
   it('uses semantic outcome status and canonical page-owned action declarations', () => {
     expect(source).toContain('<ActivityOutcomeBadge outcome={activity.outcome_type} />')
     expect(source).toContain('const activityActions = (activity: ActivityRow): AppAction[] => [')
