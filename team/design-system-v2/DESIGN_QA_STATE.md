@@ -4,137 +4,122 @@
 
 - Review date: `2026-09-17`
 - Development branch: `design-system-v2-development`
-- Exact Development HEAD inspected before this review/state write: `b0b5240f19bbdcb889e68753e20c308539072e67`
-- Active slice: `DS2-FIELD-001 — Activities/visit/call/target lists`
-- Active representative concern: `ActivitiesPage` list presentation only
-- Active implementation PR: `#42 — DS2-FIELD-001: Activities list V2 foundation`
+- Exact Development HEAD inspected before this review/state write: `0e90c94cd02c09f94cfb16d954bf6f9e7cc2556d`
+- Active slice: `DS2-FIELD-002 — Activity create/edit form composition foundation`
+- Representative surface: live `src/pages/activities/ActivityForm.tsx` normal create/edit path only
+- Active implementation PR: `#43 — DS2-FIELD-002: Activity form V2 composition foundation`
 - PR base: `design-system-v2-development`
-- PR base SHA: `def098978efbe796306f882014e69652f014efa6`
-- Exact current PR HEAD independently reviewed: `6b7569f3b98f7d8cd9a7588b3ae624e606f82f6b`
-- Live PR state at disposition: `OPEN / DRAFT / mergeable=true`
-- Changed-file scope: 7 files — Activities live page, thin Field presentation adapter, focused tests, bounded Field CSS, workstream state and UI Implementation owned state.
+- PR base SHA: `0e90c94cd02c09f94cfb16d954bf6f9e7cc2556d`
+- Exact current PR HEAD independently reviewed: `a31addc60e5b0eaf8ee89a0fea11bded2a6e4c4a`
+- PR state at disposition: `OPEN / DRAFT / mergeable=true`
+- Changed-file scope: 6 files — ActivityForm live composition, focused tests, bounded Field stylesheet, Workstream governance and UI Implementer owned state.
 - Current disposition: `AGENT-REVIEW: GREEN-DEV`
-- `SOURCE_REVIEW_PASS`: **granted on exact HEAD `6b7569f3b98f7d8cd9a7588b3ae624e606f82f6b`**.
+- `SOURCE_REVIEW_PASS`: **granted on exact HEAD `a31addc60e5b0eaf8ee89a0fea11bded2a6e4c4a`**.
 - Test evidence: `TESTS_AUTHORED_NOT_EXECUTED`.
 - Exact-head build/test/lint/runtime/preview evidence: not claimed.
 
 ## Independent QA disposition
 
-**GREEN-DEV on exact PR HEAD `6b7569f3b98f7d8cd9a7588b3ae624e606f82f6b`.**
+**GREEN-DEV on exact PR HEAD `a31addc60e5b0eaf8ee89a0fea11bded2a6e4c4a`.**
 
-I formed this judgment from the exact current PR diff, the exact bounded correction delta from previously reviewed HEAD `8ac8ed1e46fd8e48f1b7b065f74ab6f1dfac21df`, and the current shell/device/action contracts before comparing peer states. The Product Design P2 Mobile persistent-create duplication is source-resolved on the moved HEAD, the earlier Tablet/category P2 corrections remain intact, the slice remains functionally isolated, and no new material source-level blocker is present.
+I formed this judgment from the exact PR diff, the live ActivityForm contracts and the existing V2 `FormSection`, `FormGrid`, `FormActions` and `Button` behavior before comparing peer role positions. The implementation removes the page-local outer form/timing/action mini-system, preserves the operational sequence and protected Field behavior, and introduces no material source-level blocker.
 
 ## Exact-head findings
 
-### Product Design P2 Mobile create-ownership blocker — CLOSED at source level
-
-The prior same-head contradiction on `8ac8ed1...` was valid: the Activities PageHeader create control had become visible on Mobile while the existing shell already owns the same creation capability through the registered `new-activity` FAB.
-
-Exact current HEAD `6b7569f3...` applies the requested bounded correction:
-
-- `ActivitiesPage` imports and uses the canonical `useDeviceMode()` contract.
-- PageHeader `نشاط جديد` is passed only when `deviceMode !== 'mobile'`.
-- Canonical device truth remains Mobile `<=768px`, Tablet `769–1024px`, Desktop `>=1025px`.
-- The existing shell action registry remains unchanged and still declares `new-activity` for `/activities/list` -> `/activities/new` under `activities.create`.
-- `FAB` still resolves that registry action and owns Mobile persistent creation; no shell/FAB/registry file is changed by this PR.
-- Tablet/Desktop retain the authorized PageHeader create action under the same `PERMISSIONS.ACTIVITIES_CREATE` predicate and `/activities/new` route.
-- The existing permission-projected empty-state CTA remains unchanged, matching the Director's explicit bounded scope; global empty-state CTA/FAB convergence remains later debt.
-- Focused source-contract protection now asserts the canonical device hook and Mobile-vs-Tablet/Desktop PageHeader ownership boundary.
-
-The delta from `8ac8ed1...` to `6b7569f3...` is limited to `ActivitiesPage.tsx`, `ActivitiesPage.v2.test.ts`, and the UI Implementer owned state. No unrelated product/shared behavior moved with the correction.
-
-### Earlier QA P2 blockers — remain CLOSED
-
-1. **Tablet start-time parity:** optional `activity.start_time` is still projected through one page-owned `fmtTime` formatter and rendered for Tablet; Desktop uses the same formatter. Mobile intentionally retains its prior information density.
-2. **Duplicate category hierarchy:** category is still represented once as neutral `Badge` metadata while activity outcome remains semantic `StatusBadge`.
-
-Focused authored regressions remain present for both corrections.
-
 ### Scope / functional isolation — PASS
+
+The PR changes only:
+- `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md`
+- `src/pages/activities/ActivityForm.tsx`
+- `src/pages/activities/ActivityForm.test.tsx`
+- `src/pages/activities/ActivityForm.v2.test.ts`
+- `src/styles/field-activity-form-v2.css`
+- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
 No DB/migration/RPC/service/RBAC/RLS/route-guard/business-calculation/query-cache/validation/workflow/deployment file is changed.
 
-Preserved product/domain truth includes:
-- `useActivities(queryParams)` still receives `typeCategory`, `outcomeType`, `dateFrom`, `dateTo`, `employeeId`, `customerId`, `page`, `pageSize: 25` from page-owned state;
-- client-side text search remains immediate and still matches customer name, activity type name and outcome notes on the current server page;
-- search/filter changes still reset `page` to 1;
-- team-employee visibility remains `ACTIVITIES_READ_TEAM || ACTIVITIES_READ_ALL`;
-- create eligibility remains `ACTIVITIES_CREATE`; only PageHeader placement changes by device;
-- delete eligibility remains `ACTIVITIES_UPDATE_OWN || ACTIVITIES_READ_TEAM || ACTIVITIES_READ_ALL`;
-- deletion still delegates to `useSoftDeleteActivity().mutate(deleteTarget.id)`; backend time-window authority is not duplicated in UI code;
-- detail/create routes remain `/activities/${activity.id}` and `/activities/new`;
-- customer deep-link filtering still initializes from `customerId` and can be cleared;
-- `useActivityTypes()` remains unchanged;
-- GPS remains read-only list metadata; false is neutral `—`, with no acquisition/verification semantics moved into presentation;
-- outcome mapping remains presentation-only and does not change workflow values or transitions.
+Preserved page/domain truth includes:
+- visit-plan blocker and plan-resolution/navigation behavior;
+- `GPSStatusIndicator`, GPS acquisition/verification/distance calculation, `gpsBlocking`, payload coordinates and GPS-required validation;
+- `useActivityTypes`, `useActivity`, `useCustomer`, `useCustomers`, `useActivities`, `useTargetStatus` and sales-order lookup inputs;
+- type/category/customer/outcome/refusal/closed/call-result conditions and validation meaning;
+- target gamification and recent-history behavior;
+- sales-order and collection linking routes/callbacks;
+- call direction/result/attempt/phone/callback/recording state and `useSaveCallDetail` behavior;
+- Activity payload fields, create/update mutations, toast outcomes and navigation;
+- cancel `navigate(-1)`, save labels, `saving` disabled truth and `saving || gpsBlocking` submit suppression.
 
-Development drift from the PR base to inspected Development HEAD remains governance-only and does not overlap the product/shared implementation.
+Pre-form code changes are formatting/comment removal only; the behavioral expressions remain equivalent.
 
 ### Shared-system fit / hierarchy — PASS at source level
 
-- One live `ResponsiveCollection<ActivityRow>` owns device composition rather than mounting parallel hidden interaction trees.
-- Desktop retains the dense `DataTable` management surface.
-- Tablet intentionally uses two-column cards; Mobile uses one-column operational cards.
-- Outcome state uses shared semantic `StatusBadge`; activity category uses neutral `Badge` metadata.
-- `Card`, `KeyValueList`, `Button`, `Pagination` and canonical `AppAction + resolveActionSet` are reused instead of creating a Field-local parallel grammar.
-- Page/domain code owns action eligibility, ordering and callbacks; shared resolution owns device placement only.
-- Persistent create placement now follows the existing system ownership contract: shell FAB on Mobile, PageHeader on Tablet/Desktop.
-- Initial-empty and filtered-empty copy remain distinct.
-- Existing immediate filter/search semantics are preserved rather than silently adopting a different debounce/query contract.
+- The normal create/edit path now reuses shared `FormSection + FormGrid + FormActions + Button` instead of retaining local outer-card, timing-grid and action-row composition.
+- Three sections follow the existing task order: activity data -> outcome/link/call conditional content -> timing/notes. Conditional surfaces are not reordered across workflow boundaries.
+- No new shared Field primitive or page-local replacement for an existing V2 form pattern is introduced.
+- The page retains its bounded 640px form width and uses tokenized logical section spacing.
+- Excluded call/link/GPS-warning presentation is moved mechanically from inline styles to the bounded Field stylesheet rather than redesigned inside this slice.
 
-### Device / RTL / accessibility / state judgment — PASS at source level
+### Device / RTL / accessibility — PASS at source level
 
-- **Desktop (`>=1025px`):** dense table preserves customer, date + optional start time, outcome, notes, GPS and authorized view/delete actions; authorized PageHeader create remains present; table overflow stays contained.
-- **Tablet (`769–1024px`):** deliberate two-column cards preserve optional start time and operational metadata, expose up to two eligible direct record actions, retain touch-safe identity/actions, and keep the authorized PageHeader create action.
-- **Mobile (`<=768px`):** one-column cards retain prior information density, expose one direct eligible record action plus accessible RTL overflow when needed, use touch-safe controls, avoid a parallel Desktop interaction tree, and no longer render a competing persistent PageHeader create action. Existing shell FAB remains the single persistent create owner.
-- **RTL / Arabic / long content:** logical alignment, Arabic accessible labels, flex wrapping, `min-width: 0` and `overflow-wrap: anywhere` protect ordinary long-content composition; category/outcome semantics are text-backed rather than color-only.
-- **Focus / keyboard:** card identity is a native button with visible focus treatment; actions are native shared Buttons; shared Pagination retains navigation landmark, labels, disabled boundaries and `aria-current="page"`.
-- **States:** loading, initial-empty, filtered-empty, permission-projected create/delete, destructive confirmation, one-page pagination suppression and empty live-filter pagination suppression remain preserved. Broader query-error/offline convergence is existing program debt, not a new FIELD001 regression.
+- **Mobile (`<=768px`):** shared `FormGrid columns={3}` collapses the date/start/end group to one column; form/actions remain within the bounded width; actions are non-sticky so BottomNav/FAB space is not newly occupied; cancel/submit use `touchTarget`.
+- **Tablet (`769–1024px`):** shared FormGrid caps the timing group at two columns, giving deliberate touch-first composition rather than a compressed three-column Desktop grid.
+- **Desktop (`>=1025px`):** the same timing group uses three columns inside the retained 640px form bound, preserving efficient data-entry density.
+- Arabic task order remains RTL-native. Composition-touched native controls now use explicit `htmlFor`/`id` associations for type, customer, outcome, refusal/closed reason, date, start/end time and notes.
+- Existing native required/disabled semantics remain unchanged. Shared Buttons retain keyboard/focus behavior.
+- No ordinary timing-layout horizontal overflow is introduced by the migrated composition.
 
-No runtime visual PASS is claimed.
+### State coverage — PASS for assigned scope
+
+Preserved source states include:
+- create vs edit PageHeader/save copy;
+- visit-plan blocker path;
+- customer-loading fallback;
+- outcome disabled before activity type;
+- conditional required-customer, refusal/closed reason, sales/collection linking and call-detail surfaces;
+- GPS-required warning and submit suppression;
+- save loading/disabled state;
+- cancel and post-save navigation outcomes.
+
+Broader error/offline/toast convergence is outside the bounded FIELD002 concern and was not changed.
 
 ### Test Artifact Gate / evidence honesty
 
-Focused authored artifacts protect:
-- one responsive renderer boundary;
-- preserved query/search/filter inputs and paging behavior;
-- permission/delete mutation boundaries;
-- semantic outcome mapping and neutral category/GPS treatment;
-- Mobile/Tablet record-action placement and callback delegation;
-- Tablet start-time parity and unchanged Mobile time density;
-- single category representation;
-- canonical device breakpoints/touch sizing;
-- Mobile persistent-create ownership through canonical `useDeviceMode`, while Tablet/Desktop retain PageHeader create and the existing empty-state CTA remains present.
+Focused artifacts protect:
+- shared form-pattern adoption and retirement of the superseded local outer/timing/action mini-system;
+- label associations and preserved native required/disabled state;
+- responsive timing-grid and non-sticky touch-safe action intent;
+- cancel callback and create-state labels;
+- validation, GPS, payload, mutation, query, visit-plan routing, sales/collection linking and call-detail ownership boundaries.
 
-Evidence is **`TESTS_AUTHORED_NOT_EXECUTED`**. No approved environment executed tests/build/lint; no hosted GitHub Actions/CI or Vercel preview was used. No known real build/type failure is recorded. This is not an executed PASS claim.
+Evidence is **`TESTS_AUTHORED_NOT_EXECUTED`**. No approved environment executed tests/build/lint; no GitHub Actions/hosted CI or Vercel preview was used. No known real build/type failure is recorded. This is not an executed PASS claim.
 
 ## Peer-state comparison / contradiction handling
 
-The independent disposition above was formed first.
+The independent disposition above was formed before relying on peer conclusions.
 
-- **UI Production Engineer feature-head state:** fresh and aligned. It records the same bounded correction, unchanged functional boundaries and `TESTS_AUTHORED_NOT_EXECUTED` evidence.
-- **Product Design Director state on Development:** materially relevant but stale because its `P2 / BLOCKING` disposition is explicitly anchored to superseded HEAD `8ac8ed1...`. The exact minimum correction it requested is present on `6b7569f3...`. Classification for this QA review: stale `WATCH`, not current same-head `BLOCKING` evidence. Product Design Director still needs an independent fresh review of `6b7569f3...` before Integration may treat the cross-role contradiction as formally closed.
-- **Integration state on Development:** also blocks superseded HEAD `8ac8ed1...` for the same now-corrected source defect. Classification: stale `WATCH`; Integrator should remain `NO_MERGE` until the Director refreshes the same exact head and normal integration gates are revalidated.
-- **Team Memory / Development workstream:** lifecycle-stale relative to the current moved FIELD001 review head; the active PR and feature-head Implementer state carry the current correction handoff.
-- **PR review threads:** none open.
+- **Product Design Director:** current FIELD002 architecture boundary is aligned and `READY — DEPENDENCY-SAFE / PRESENTATION-ONLY`; its acceptance/exclusions match the implemented slice. No BLOCKING contradiction.
+- **UI Production Engineer:** Development-side role state is lifecycle-stale from FIELD001, while PR #43 contains the current owned-state update aligned with the reviewed source and `TESTS_AUTHORED_NOT_EXECUTED` evidence.
+- **Development Integrator:** current Development state is lifecycle-stale from the completed FIELD001 merge and correctly has no FIELD002 approval to reuse.
+- **Team Memory:** aligned on FIELD002 as the sole next Field create/detail concern, with the Director state providing the narrower ActivityForm boundary.
+- **Review threads/comments before this QA review:** none.
 
-No current exact-head source evidence supports retaining the old P2 blocker on `6b7569f3b98f7d8cd9a7588b3ae624e606f82f6b`.
+No current material disagreement relevant to the exact reviewed head is `BLOCKING`.
 
-## Non-blocking watch
+## Non-blocking WATCH
 
-On Mobile initial/filtered-empty states, the permission-projected `StatePanel` CTA can coexist with the shell FAB. This duplication predates the bounded correction and was explicitly kept outside FIELD001 by Product Design; it remains a later action-convergence/runtime-density `WATCH`, not a regression introduced by this HEAD and not a reason to expand the current slice.
+The excluded legacy call/link sub-controls retain pre-existing local presentation/accessibility debt (for example their local button/control grammar). FIELD002 only relocates their existing CSS where required to remove the inline style block; it does not worsen or redefine those contracts. Convergence remains later component-depth/runtime work and is not a reason to expand this slice.
 
 ## System-fit judgment
 
-FIELD001 now advances the North Star cleanly: a single responsive capability, semantic Field status grammar, neutral categorical metadata, canonical record-action placement, correct persistent-create ownership by device, and deliberate Tablet/Mobile compositions without moving Field business truth into shared presentation.
+FIELD002 advances the North Star cleanly by proving the shared create/edit form composition on a mobile-sensitive Field workflow while keeping all Field business truth page/domain-owned. The result is a more coherent Arabic-first form hierarchy with deliberate Mobile/Tablet/Desktop timing composition and canonical touch-safe save/cancel actions, without speculative redesign of excluded conditional subsystems.
 
-Any movement of PR HEAD after `6b7569f3b98f7d8cd9a7588b3ae624e606f82f6b` invalidates this exact-head GREEN-DEV and requires fresh Design QA.
+Any movement of PR HEAD after `a31addc60e5b0eaf8ee89a0fea11bded2a6e4c4a` invalidates this exact-head GREEN-DEV and requires fresh Design QA.
 
 ### Cross-role handoff
 - **To:** Product Design Director, Development Integrator, UI Production Engineer.
-- **What changed:** Design QA independently reviewed PR #42 exact HEAD `6b7569f3b98f7d8cd9a7588b3ae624e606f82f6b`, confirmed the Product Design Mobile create-ownership blocker is source-resolved by the bounded device-placement correction, and issued `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
-- **Preserve:** every activity query/search/filter input and timing; team/create/delete permissions; `/activities/new` and detail routes; delete mutation/backend authority; customer deep-link; GPS/device/workflow/validation/service/query-cache truth; one live `ResponsiveCollection`; shared Pagination; semantic outcome status; neutral category treatment; Desktop density; restored Tablet time parity; existing shell `new-activity` FAB ownership on Mobile; PageHeader create on Tablet/Desktop.
-- **Need from you:** Product Design Director should independently review the same exact HEAD and explicitly close or restate the prior P2 contradiction. Integrator must remain `NO_MERGE` until that fresh same-head design gate exists, PR HEAD is unchanged, no current BLOCKING contradiction remains, and base/mergeability/drift are revalidated.
-- **Blocker level:** `NONE` from Design QA; stale Director/Integrator state is a same-head-review `WATCH` for Integration, not a current source blocker.
-- **Baseline:** Development inspected `b0b5240f19bbdcb889e68753e20c308539072e67`; exact reviewed PR HEAD `6b7569f3b98f7d8cd9a7588b3ae624e606f82f6b`.
+- **What changed:** Design QA independently reviewed PR #43 exact HEAD `a31addc60e5b0eaf8ee89a0fea11bded2a6e4c4a` and issued `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` for the bounded ActivityForm V2 composition slice.
+- **Preserve:** visit-plan routing; GPS acquisition/verification/distance/blocking; Activity queries/services/validation/payload/mutations; customer/type/outcome rules; target/history behavior; sales/collection links; call-detail behavior; non-sticky Mobile actions; 640px bounded form; shared responsive FormGrid contract.
+- **Need from you:** Product Design Director should independently confirm the same exact HEAD against the FIELD002 design boundary. Development Integrator must revalidate exact head, current Director/QA freshness, review threads, Development drift and mergeability before integration; do not reuse FIELD001 gates.
+- **Blocker level:** `NONE` from Design QA; fresh same-head Product Design acceptance remains an Integration gate, not a QA source blocker.
+- **Baseline:** Development inspected `0e90c94cd02c09f94cfb16d954bf6f9e7cc2556d`; exact reviewed PR HEAD `a31addc60e5b0eaf8ee89a0fea11bded2a6e4c4a`.
 - **Evidence:** `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview/release PASS claimed.
