@@ -1,9 +1,10 @@
-﻿import { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Activity, Plus, Eye, Trash2, MapPin, Phone, CheckSquare } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
 import { useActivities, useSoftDeleteActivity, useActivityTypes, useHREmployees } from '@/hooks/useQueryHooks'
+import { useDeviceMode } from '@/hooks/useDeviceMode'
 import { PERMISSIONS } from '@/lib/permissions/constants'
 import PageHeader from '@/components/shared/PageHeader'
 import SearchInput from '@/components/shared/SearchInput'
@@ -12,34 +13,43 @@ import PermissionGuard from '@/components/shared/PermissionGuard'
 import { CustomerLink } from '@/components/shared/EntityLink'
 import Button from '@/components/ui/Button'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
-import ActivityStatusBadge from '@/components/shared/ActivityStatusBadge'
+import ResponsiveCollection from '@/components/patterns/ResponsiveCollection'
+import Pagination from '@/components/patterns/Pagination'
+import StatePanel from '@/components/patterns/StatePanel'
+import type { AppAction } from '@/components/patterns/ActionRegistry'
+import { ActivityCard, ActivityOutcomeBadge } from '@/components/activities/ActivityOverviewPresentation'
 import type { Activity as ActivityRow } from '@/lib/types/activities'
+import '@/styles/field-activities-v2.css'
 
 const CATEGORY_ICON: Record<string, React.ReactNode> = {
-  visit:  <MapPin    size={14} />,
-  call:   <Phone     size={14} />,
-  task:   <CheckSquare size={14} />,
+  visit: <MapPin size={14} />,
+  call: <Phone size={14} />,
+  task: <CheckSquare size={14} />,
 }
 
 function fmtDate(d: string) {
   return new Date(d).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
+function fmtTime(value: string) {
+  return new Date(value).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
+}
+
 export default function ActivitiesPage() {
   const navigate = useNavigate()
-  const can      = useAuthStore(s => s.can)
+  const deviceMode = useDeviceMode()
+  const can = useAuthStore(s => s.can)
 
-  const [search,         setSearch]         = useState('')
-  const [categoryFilter, setCategoryFilter]  = useState('')
-  const [outcomeFilter,  setOutcomeFilter]   = useState('')
-  const [dateFrom,       setDateFrom]        = useState('')
-  const [dateTo,         setDateTo]          = useState('')
-  const [employeeFilter, setEmployeeFilter]  = useState('')
-  const [page,           setPage]            = useState(1)
-  const [deleteTarget,   setDeleteTarget]    = useState<ActivityRow | null>(null)
-  const [deleting,       setDeleting]        = useState(false)
+  const [search, setSearch] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('')
+  const [outcomeFilter, setOutcomeFilter] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [employeeFilter, setEmployeeFilter] = useState('')
+  const [page, setPage] = useState(1)
+  const [deleteTarget, setDeleteTarget] = useState<ActivityRow | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
-  // Read customerId from URL (deep link from customer detail)
   const [searchParams] = useSearchParams()
   const urlCustomerId = searchParams.get('customerId') ?? ''
   const [customerFilter, setCustomerFilter] = useState(urlCustomerId)
@@ -47,46 +57,44 @@ export default function ActivitiesPage() {
   const { data: activityTypes = [] } = useActivityTypes()
   const deleteActivity = useSoftDeleteActivity()
 
-  // فلتر الموظف: يظهر فقط للمديرين
   const canReadTeam = can(PERMISSIONS.ACTIVITIES_READ_TEAM) || can(PERMISSIONS.ACTIVITIES_READ_ALL)
   const { data: employeesResult } = useHREmployees(canReadTeam ? { status: 'active' } : undefined)
   const teamEmployees = employeesResult?.data ?? []
 
   const queryParams = useMemo(() => ({
     typeCategory: categoryFilter || undefined,
-    outcomeType:  outcomeFilter  || undefined,
-    dateFrom:     dateFrom       || undefined,
-    dateTo:       dateTo         || undefined,
-    employeeId:   employeeFilter || undefined,
-    customerId:   customerFilter || undefined,
+    outcomeType: outcomeFilter || undefined,
+    dateFrom: dateFrom || undefined,
+    dateTo: dateTo || undefined,
+    employeeId: employeeFilter || undefined,
+    customerId: customerFilter || undefined,
     page,
     pageSize: 25,
   }), [categoryFilter, outcomeFilter, dateFrom, dateTo, employeeFilter, customerFilter, page])
 
   const { data: result, isLoading: loading } = useActivities(queryParams)
-  const activities  = result?.data     ?? []
-  const totalPages  = result?.totalPages ?? 1
-  const totalCount  = result?.count    ?? 0
+  const activities = result?.data ?? []
+  const totalPages = result?.totalPages ?? 1
+  const totalCount = result?.count ?? 0
 
-  // فلترة الـ search (client-side لأن backend لا يدعم text search مباشرة)
+  // Client-side text search is intentionally preserved because the existing backend query has no text-search input.
   const filtered = useMemo(() => {
     if (!search) return activities
     const q = search.toLowerCase()
     return activities.filter(a =>
       a.customer?.name.toLowerCase().includes(q) ||
-      a.type?.name.toLowerCase().includes(q)     ||
+      a.type?.name.toLowerCase().includes(q) ||
       a.outcome_notes?.toLowerCase().includes(q)
     )
   }, [activities, search])
 
   const canCreate = can(PERMISSIONS.ACTIVITIES_CREATE)
-  // Wave A Final Fix: align with backend soft_delete_activity() RLS authority:
-  //   - UPDATE_OWN → rep can delete their own activities (24h window enforced server-side)
-  //   - READ_TEAM / READ_ALL → supervisor/manager can delete team activities (48h window server-side)
-  // UI shows the button; the actual time-window check is enforced by the RPC — not duplicated here.
   const canDelete = can(PERMISSIONS.ACTIVITIES_UPDATE_OWN) ||
-                    can(PERMISSIONS.ACTIVITIES_READ_TEAM)  ||
+                    can(PERMISSIONS.ACTIVITIES_READ_TEAM) ||
                     can(PERMISSIONS.ACTIVITIES_READ_ALL)
+  const hasActiveFilters = Boolean(
+    search || categoryFilter || outcomeFilter || dateFrom || dateTo || employeeFilter || customerFilter,
+  )
 
   const handleDelete = async () => {
     if (!deleteTarget) return
@@ -105,24 +113,79 @@ export default function ActivitiesPage() {
     }
   }
 
+  const activityActions = (activity: ActivityRow): AppAction[] => [
+    {
+      id: 'view',
+      label: 'عرض',
+      icon: <Eye size={14} />,
+      importance: 'primary',
+      tone: 'secondary',
+      onSelect: () => navigate(`/activities/${activity.id}`),
+    },
+    ...(canDelete ? [{
+      id: 'delete',
+      label: 'حذف',
+      icon: <Trash2 size={14} />,
+      importance: 'secondary' as const,
+      tone: 'danger' as const,
+      onSelect: () => setDeleteTarget(activity),
+    }] : []),
+  ]
+
+  const renderActivityCards = (items: ActivityRow[], mode: 'mobile' | 'tablet') => (
+    <div className={`ds-field-activity-grid ds-field-activity-grid--${mode}`}>
+      {items.map(activity => (
+        <ActivityCard
+          key={activity.id}
+          mode={mode}
+          summary={{
+            typeName: activity.type?.name ?? 'نشاط',
+            category: activity.type?.category ?? 'task',
+            customer: activity.customer,
+            date: fmtDate(activity.activity_date),
+            startTime: activity.start_time ? fmtTime(activity.start_time) : undefined,
+            notes: activity.outcome_notes ? activity.outcome_notes.slice(0, 60) : undefined,
+            gpsVerified: activity.gps_verified,
+            outcome: activity.outcome_type,
+          }}
+          actions={activityActions(activity)}
+          onOpen={() => navigate(`/activities/${activity.id}`)}
+        />
+      ))}
+    </div>
+  )
+
+  const emptyState = (
+    <StatePanel
+      kind="empty"
+      icon={<Activity size={32} />}
+      title={hasActiveFilters ? 'لا توجد نتائج مطابقة' : 'لا توجد أنشطة'}
+      description={hasActiveFilters ? 'جرّب تعديل البحث أو فلاتر الأنشطة.' : 'سجّل أول نشاط ميداني.'}
+      action={canCreate ? (
+        <Button icon={<Plus size={16} />} onClick={() => navigate('/activities/new')} touchTarget>
+          نشاط جديد
+        </Button>
+      ) : undefined}
+    />
+  )
+
   return (
     <div className="page-container animate-enter">
       <PageHeader
         title="الأنشطة الميدانية"
         subtitle={loading ? '...' : `${totalCount} نشاط`}
-        actions={
+        actions={deviceMode !== 'mobile' ? (
           <PermissionGuard permission={PERMISSIONS.ACTIVITIES_CREATE}>
-            <Button icon={<Plus size={16} />} onClick={() => navigate('/activities/new')} className="desktop-only-btn">
+            <Button icon={<Plus size={16} />} onClick={() => navigate('/activities/new')} touchTarget>
               نشاط جديد
             </Button>
           </PermissionGuard>
-        }
+        ) : undefined}
       />
 
-      {/* ── Filters ─────────────────────────────────────────────── */}
       <div className="edara-card p-4 mb-4">
-        <div className="act-filter-row">
-          <div className="flex-[2] min-w-[180px]">
+        <div className="ds-field-activities__filters">
+          <div className="ds-field-activities__search">
             <SearchInput
               value={search}
               onChange={val => { setSearch(val); setPage(1) }}
@@ -131,20 +194,20 @@ export default function ActivitiesPage() {
           </div>
           {canReadTeam && teamEmployees.length > 0 && (
             <select
-              className="form-select filter-select"
+              className="form-select ds-field-activities__filter-control"
               value={employeeFilter}
               onChange={e => { setEmployeeFilter(e.target.value); setPage(1) }}
+              aria-label="المندوب"
             >
               <option value="">كل المندوبين</option>
-              {teamEmployees.map(emp => (
-                <option key={emp.id} value={emp.id}>{emp.full_name}</option>
-              ))}
+              {teamEmployees.map(emp => <option key={emp.id} value={emp.id}>{emp.full_name}</option>)}
             </select>
           )}
           <select
-            className="form-select filter-select"
+            className="form-select ds-field-activities__filter-control"
             value={categoryFilter}
             onChange={e => { setCategoryFilter(e.target.value); setPage(1) }}
+            aria-label="فئة النشاط"
           >
             <option value="">كل الفئات</option>
             <option value="visit">زيارات</option>
@@ -152,9 +215,10 @@ export default function ActivitiesPage() {
             <option value="task">مهام</option>
           </select>
           <select
-            className="form-select filter-select"
+            className="form-select ds-field-activities__filter-control"
             value={outcomeFilter}
             onChange={e => { setOutcomeFilter(e.target.value); setPage(1) }}
+            aria-label="نتيجة النشاط"
           >
             <option value="">كل النتائج</option>
             <option value="order_placed">طلب مبيعات</option>
@@ -168,146 +232,123 @@ export default function ActivitiesPage() {
           </select>
           <input
             type="date"
-            className="form-input filter-select"
+            className="form-input ds-field-activities__filter-control"
             value={dateFrom}
             onChange={e => { setDateFrom(e.target.value); setPage(1) }}
             title="من تاريخ"
+            aria-label="من تاريخ"
           />
           <input
             type="date"
-            className="form-input filter-select"
+            className="form-input ds-field-activities__filter-control"
             value={dateTo}
             onChange={e => { setDateTo(e.target.value); setPage(1) }}
             title="إلى تاريخ"
+            aria-label="إلى تاريخ"
           />
           {customerFilter && (
-            <button
-              className="btn btn--ghost btn--sm flex items-center gap-1 whitespace-nowrap text-xs"
+            <Button
+              variant="ghost"
+              size="sm"
+              touchTarget
               onClick={() => { setCustomerFilter(''); setPage(1) }}
-              title="إزالة فلتر العميل"
+              aria-label="إزالة فلتر العميل"
             >
               ✕ فلتر عميل
-            </button>
+            </Button>
           )}
         </div>
       </div>
 
-      {/* ── DESKTOP: DataTable ─────────────────────────────────── */}
-      <div className="act-table-view edara-card overflow-auto">
-        <DataTable<ActivityRow>
-          columns={[
-            {
-              key: 'type', label: 'النوع / العميل',
-              render: a => (
-                <>
-                  <div className="flex items-center gap-2 font-semibold text-sm">
-                    <span className="text-muted">
-                      {CATEGORY_ICON[a.type?.category ?? 'task']}
+      <ResponsiveCollection<ActivityRow>
+        items={filtered}
+        loading={loading}
+        emptyState={emptyState}
+        renderDesktop={items => (
+          <div className="ds-field-activities__desktop-table edara-card">
+            <DataTable<ActivityRow>
+              columns={[
+                {
+                  key: 'type', label: 'النوع / العميل',
+                  render: activity => (
+                    <>
+                      <div className="flex items-center gap-2 font-semibold text-sm">
+                        <span className="text-muted">{CATEGORY_ICON[activity.type?.category ?? 'task']}</span>
+                        {activity.type?.name ?? '—'}
+                      </div>
+                      {activity.customer && (
+                        <div className="text-xs text-muted mt-0.5">
+                          <CustomerLink id={activity.customer.id} name={activity.customer.name} />
+                        </div>
+                      )}
+                    </>
+                  ),
+                },
+                {
+                  key: 'activity_date', label: 'التاريخ',
+                  render: activity => (
+                    <>
+                      <div className="text-sm">{fmtDate(activity.activity_date)}</div>
+                      {activity.start_time && (
+                        <div className="text-xs text-muted">
+                          {fmtTime(activity.start_time)}
+                        </div>
+                      )}
+                    </>
+                  ),
+                },
+                {
+                  key: 'outcome_type', label: 'النتيجة',
+                  render: activity => <ActivityOutcomeBadge outcome={activity.outcome_type} />,
+                },
+                {
+                  key: 'outcome_notes', label: 'ملاحظات',
+                  render: activity => activity.outcome_notes ? (
+                    <span className="text-xs text-muted">
+                      {activity.outcome_notes.slice(0, 60)}{activity.outcome_notes.length > 60 ? '...' : ''}
                     </span>
-                    {a.type?.name ?? '—'}
-                  </div>
-                  {a.customer && (
-                    <div className="text-xs text-muted mt-0.5">
-                      <CustomerLink id={a.customer.id} name={a.customer.name} />
+                  ) : <span className="text-muted">—</span>,
+                },
+                {
+                  key: 'gps', label: 'GPS', width: 60,
+                  render: activity => activity.gps_verified
+                    ? <span className="text-success text-xs">✓</span>
+                    : <span className="text-muted text-xs">—</span>,
+                },
+                {
+                  key: 'actions', label: 'إجراءات', width: 80,
+                  render: activity => (
+                    <div className="flex gap-1" onClick={event => event.stopPropagation()}>
+                      <Button variant="ghost" size="sm" onClick={() => navigate(`/activities/${activity.id}`)} aria-label="عرض النشاط">
+                        <Eye size={14} />
+                      </Button>
+                      {canDelete && (
+                        <Button variant="danger" size="sm" onClick={() => setDeleteTarget(activity)} aria-label="حذف النشاط">
+                          <Trash2 size={14} />
+                        </Button>
+                      )}
                     </div>
-                  )}
-                </>
-              ),
-            },
-            {
-              key: 'activity_date', label: 'التاريخ',
-              render: a => (
-                <>
-                  <div className="text-sm">{fmtDate(a.activity_date)}</div>
-                  {a.start_time && (
-                    <div className="text-xs text-muted">
-                      {new Date(a.start_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                  )}
-                </>
-              ),
-            },
-            {
-              key: 'outcome_type', label: 'النتيجة',
-              render: a => <ActivityStatusBadge outcomeType={a.outcome_type} size="sm" />,
-            },
-            {
-              key: 'outcome_notes', label: 'ملاحظات', hideOnMobile: true,
-              render: a => a.outcome_notes ? (
-                <span className="text-xs text-muted">
-                  {a.outcome_notes.slice(0, 60)}{a.outcome_notes.length > 60 ? '...' : ''}
-                </span>
-              ) : <span className="text-muted">—</span>,
-            },
-            {
-              key: 'gps', label: 'GPS', hideOnMobile: true, width: 60,
-              render: a => a.gps_verified ? (
-                <span className="text-success text-xs">✓</span>
-              ) : (
-                <span className="text-muted text-xs">—</span>
-              ),
-            },
-            {
-              key: 'actions', label: 'إجراءات', width: 80,
-              render: a => (
-                <div className="flex gap-1" onClick={e => e.stopPropagation()}>
-                  <Button variant="ghost" size="sm" onClick={() => navigate(`/activities/${a.id}`)}>
-                    <Eye size={14} />
-                  </Button>
-                  {canDelete && (
-                    <Button variant="danger" size="sm" onClick={() => setDeleteTarget(a)}>
-                      <Trash2 size={14} />
-                    </Button>
-                  )}
-                </div>
-              ),
-            },
-          ]}
-          data={filtered}
-          loading={loading}
-          onRowClick={a => navigate(`/activities/${a.id}`)}
-          emptyIcon={<Activity size={48} />}
-          emptyTitle="لا توجد أنشطة"
-          emptyText="سجّل أول نشاط ميداني"
-          emptyAction={
-            <PermissionGuard permission={PERMISSIONS.ACTIVITIES_CREATE}>
-              <Button icon={<Plus size={16} />} onClick={() => navigate('/activities/new')}>
-                نشاط جديد
-              </Button>
-            </PermissionGuard>
-          }
+                  ),
+                },
+              ]}
+              data={items}
+              onRowClick={activity => navigate(`/activities/${activity.id}`)}
+            />
+          </div>
+        )}
+        renderTablet={items => renderActivityCards(items, 'tablet')}
+        renderMobile={items => renderActivityCards(items, 'mobile')}
+      />
+
+      {filtered.length > 0 && totalPages > 1 && !loading && (
+        <Pagination
           page={page}
           totalPages={totalPages}
           totalCount={totalCount}
           onPageChange={setPage}
-          dataCardMapping={a => ({
-            title: a.type?.name ?? 'نشاط',
-            subtitle: a.customer?.name,
-            badge: <ActivityStatusBadge outcomeType={a.outcome_type} size="sm" />,
-            metadata: [
-              { label: 'التاريخ', value: fmtDate(a.activity_date) },
-              ...(a.outcome_notes ? [{ label: 'ملاحظات', value: a.outcome_notes.slice(0, 60) }] : []),
-            ],
-            actions: (
-              <div className="flex gap-2 w-full">
-                <Button variant="secondary" size="sm" onClick={() => navigate(`/activities/${a.id}`)}
-                  className="flex-1 justify-center">
-                  <Eye size={14} /> عرض
-                </Button>
-                {canDelete && (
-                  <Button variant="danger" size="sm" onClick={() => setDeleteTarget(a)}
-                    className="justify-center">
-                    <Trash2 size={14} />
-                  </Button>
-                )}
-              </div>
-            ),
-            onClick: () => navigate(`/activities/${a.id}`),
-          })}
         />
-      </div>
+      )}
 
-      {/* ── Delete Modal ──────────────────────────────────────── */}
       <ResponsiveModal
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
@@ -326,15 +367,6 @@ export default function ActivitiesPage() {
           هل تريد حذف هذا النشاط؟ لا يمكن التراجع عن هذا الإجراء.
         </p>
       </ResponsiveModal>
-
-      <style>{`
-        .act-filter-row { display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: flex-end; }
-        .filter-select { min-width: 120px; flex: 1; }
-        .act-table-view { display: block; }
-        @media (max-width: 768px) {
-          .desktop-only-btn { display: none; }
-        }
-      `}</style>
     </div>
   )
 }

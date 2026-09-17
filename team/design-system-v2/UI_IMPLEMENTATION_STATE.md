@@ -4,91 +4,98 @@
 
 - Run date: `2026-09-17`
 - Development branch: `design-system-v2-development`
-- Exact slice baseline: `988d7651cda4ecb828bf1dc54a9617fec8ae3edc`
-- Current Development HEAD inspected this run: `7fbd6d1346eb98d06ec3a66e9b0dd0b46b6334cd` (coordination-only drift from the slice baseline; no overlapping product/shared implementation change found)
-- Feature branch: `ds2/hr-employees-list-v2`
-- Draft PR: `#41 — DS2-HR-002: Employees admin list V2`
-- Previous QA-blocked HEAD: `1c0ad8b220ac81630d122242b9d4917343ae08cc`
-- Product/test HEAD after the bounded reviewer fix and before this owned-state write: `284eb608f909394a6056a1e6d11ac5664b15dc45`
-- Active slice: `DS2-HR-002 — HR admin lists/forms` — representative concern: Employees administration list only
-- Disposition: `REVIEW — QA P2 FIX APPLIED / FRESH EXACT-HEAD REVIEW REQUIRED`
+- Exact slice baseline: `def098978efbe796306f882014e69652f014efa6`
+- Current Development HEAD inspected this run: `b0b5240f19bbdcb889e68753e20c308539072e67`.
+- Development drift from the slice baseline is governance-only: `DESIGN_DIRECTOR_STATE.md`, `DESIGN_QA_STATE.md`, `INTEGRATION_STATE.md`; no overlapping product/shared implementation change was found.
+- Feature branch: `ds2/field-activities-list-v2`
+- Draft PR: `#42 — DS2-FIELD-001: Activities list V2 foundation`
+- Previous QA-blocked HEAD: `823c89d10201a8db68e7189803bd003c3fd9fd2f`
+- Previous QA-GREEN / Product-Design-blocked HEAD: `8ac8ed1e46fd8e48f1b7b065f74ab6f1dfac21df`
+- Product/test HEAD after the bounded Product Design correction and before this owned-state write: `408569579e2c516b312e18d1f482dc89d0617c41`
+- Active slice: `DS2-FIELD-001 — Activities/visit/call/target lists`
+- Active representative concern: `ActivitiesPage` list presentation only
+- Disposition: `REVIEW — PRODUCT DESIGN P2 FIX APPLIED / FRESH EXACT-HEAD DIRECTOR + QA REVIEW REQUIRED`
 - Evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 
 ## Independent implementation judgment
 
-The QA P2 blocker on Tablet touch ergonomics is resolved within the existing Employees-list concern without changing Desktop density or any employee/pagination/business semantics. The fix extends the already-established canonical `var(--ds-icon-hit-target)` contract through Tablet (`<=1024px`) only for the two newly active touch surfaces identified by QA: shared Pagination controls and the Employee identity/open control.
+The Product Design Director's P2 finding on exact HEAD `8ac8ed1...` is valid and source-proven: PR #42 had removed the pre-slice Mobile suppression from the PageHeader `نشاط جديد` action while the shell already owns the same `/activities/new` capability on `/activities/list` through the registered Mobile FAB under the same create permission. That creates two persistent primary create surfaces for authorized Mobile users during normal non-empty use.
 
-The rest of the HR002 implementation remains unchanged: `EmployeesPage` uses one responsive collection capability, shared semantic summary/status/action patterns, deliberate device composition and shared Pagination, while employee query inputs, stats queries, route navigation, salary visibility, create/edit/view permissions, `EmployeeForm`, services, validation and workflow truth remain caller/domain-owned.
+The bounded correction keeps creation ownership consistent without broadening FIELD001: `ActivitiesPage` now uses the canonical `useDeviceMode()` contract and does not pass a PageHeader create action when `deviceMode === 'mobile'`. Tablet/Desktop retain the existing PageHeader create action with the same `PERMISSIONS.ACTIVITIES_CREATE` guard and `/activities/new` route. The existing empty-state CTA remains unchanged, matching the Director's explicit boundary that global empty-state/FAB convergence is later debt rather than scope for this slice.
+
+The previously accepted collection/status/device corrections also remain intact: one live `ResponsiveCollection<ActivityRow>`, dense Desktop table, deliberate Tablet/Mobile cards, restored Tablet `start_time` parity, category represented once as neutral `Badge`, semantic outcome state, shared Pagination and page-owned action eligibility.
 
 ## Material implementation progress
 
-- Addressed Design QA P2 finding on exact blocked HEAD `1c0ad8b...`.
-- Shared `design-system-v2-pagination.css` now applies the canonical hit target to Pagination buttons through Tablet (`@media (max-width: 1024px)`), including previous/next controls, while Desktop keeps its compact legacy density.
-- `hr-admin-v2.css` now gives `.ds-employee-card__identity` the canonical minimum touch height through Tablet; Mobile-only `width: 100%` remains scoped to `<=768px`.
-- Added focused authored protection in `Pagination.test.tsx` that verifies the Tablet touch contract lives in the `<=1024px` band before the Mobile-only composition band.
-- Added focused authored protection in `EmployeesPage.v2.test.ts` that verifies the Employee identity/open control gets the Tablet minimum while full-width treatment remains Mobile-only.
-- No pagination page-window/callback/disabled/ARIA/query behavior changed.
-- No Employee action eligibility, permission predicate, route, query, stats, form or business behavior changed.
-- Existing broader HR002 implementation remains: one `ResponsiveCollection<HREmployee>`, dense Desktop DataTable, Tablet two-column cards, Mobile one-column cards, semantic employee status, neutral field/office metadata, shared Pagination extraction and initial-vs-filtered empty distinction.
+- Read the fresh Product Design Director and Integration `P2 / BLOCKING` states on exact HEAD `8ac8ed1...` before modifying the PR.
+- Independently revalidated the live page and canonical `useDeviceMode` boundaries before choosing the correction.
+- Added `useDeviceMode()` at the Activities page composition boundary; no shared primitive or shell contract was changed.
+- PageHeader `نشاط جديد` is now rendered only when `deviceMode !== 'mobile'`; Tablet/Desktop keep the page-header create capability.
+- Mobile persistent creation remains shell-owned by the existing registered FAB; this PR does not alter the FAB, creation registry, AppLayout or global action system.
+- Existing empty-state `StatePanel` create CTA remains permission-projected and unchanged, per the explicit bounded-fix instruction.
+- Added focused source-contract protection proving the canonical device hook is used and that PageHeader create is excluded on Mobile while the permission/route/empty-state create contract remains present.
+- Exact correction delta `8ac8ed1... -> 40856957...` is only two files: `ActivitiesPage.tsx` and `ActivitiesPage.v2.test.ts`.
+- Development drift check `def09897... -> b0b5240...` is governance-only (`DESIGN_DIRECTOR_STATE.md`, `DESIGN_QA_STATE.md`, `INTEGRATION_STATE.md`) and does not overlap the product/shared implementation.
 - Did not mutate peer role-state files, Team Memory or Decision Log.
 
 ## Changed-file / pattern scope
 
-Current branch product/test/governance scope remains:
+Current branch scope remains 7 UI/Test/Governance-owned files:
 - `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md`
-- `src/components/hr/EmployeeOverviewPresentation.tsx`
-- `src/components/hr/EmployeeOverviewPresentation.test.tsx`
-- `src/components/patterns/Pagination.tsx`
-- `src/components/patterns/Pagination.test.tsx`
-- `src/components/shared/DataTable.tsx`
-- `src/pages/hr/employees/EmployeesPage.tsx`
-- `src/pages/hr/employees/EmployeesPage.v2.test.ts`
-- `src/styles/design-system-v2-pagination.css`
-- `src/styles/hr-admin-v2.css`
+- `src/components/activities/ActivityOverviewPresentation.tsx`
+- `src/components/activities/ActivityOverviewPresentation.test.tsx`
+- `src/pages/activities/ActivitiesPage.tsx`
+- `src/pages/activities/ActivitiesPage.v2.test.ts`
+- `src/styles/field-activities-v2.css`
 - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md` (owned state only)
 
-Reviewer-requested fix delta is limited to the two CSS files, the two focused test files, and this owned state. No DB/migration/RPC/service/query-cache/RBAC/RLS/route-guard/payroll/attendance/leave/workflow/validation/deployment file is in scope.
+Current Product Design reviewer-fix delta is limited to the live Activities page and its focused source-contract test. No DB/migration/RPC/service/query-cache/RBAC/RLS/route-guard/GPS acquisition/business/workflow/validation/deployment file is in scope.
 
 ## Preserve / verified boundaries
 
-- Employee query remains `search`, `departmentId`, `status`, `page`, `pageSize: 25` through the existing `useHREmployees(queryParams)` path.
-- Search/department/status changes still reset `page` to 1 exactly as before; no debounce/query timing change was introduced.
-- Existing active/on-leave stats queries remain unchanged. The pre-existing field-employee metric still reflects the current page because no field-employee API filter exists; this slice does not change that business/data behavior.
-- `hr.payroll.read`, `hr.employees.create` and `hr.employees.edit` predicates remain the visibility/eligibility source of truth.
-- Employee profile navigation remains `/hr/employees/${employee.id}`.
-- `EmployeeForm` remains the existing create/edit boundary; no form/service/validation semantics were moved into V2 presentation components.
-- Shared `Pagination` owns presentation only; the caller still owns page/query truth.
-- The touch correction does not alter Pagination page-window, previous/next targets, disabled boundaries or `aria-current="page"` semantics.
+- `useActivities(queryParams)` still receives `typeCategory`, `outcomeType`, `dateFrom`, `dateTo`, `employeeId`, `customerId`, `page`, `pageSize: 25` exactly from page-owned state.
+- Existing client-side search still matches customer name, activity type name and outcome notes on the current server page; no debounce/timing change was introduced.
+- Search and every filter still reset `page` to 1.
+- Team-employee visibility remains `ACTIVITIES_READ_TEAM || ACTIVITIES_READ_ALL`.
+- Create eligibility remains exactly `ACTIVITIES_CREATE`; the correction changes only persistent PageHeader placement by device, not permission or route truth.
+- `/activities/new` remains the create route; Mobile persistent access is shell/FAB-owned, Tablet/Desktop retain PageHeader access, and the existing empty-state CTA remains unchanged.
+- Delete eligibility remains `ACTIVITIES_UPDATE_OWN || ACTIVITIES_READ_TEAM || ACTIVITIES_READ_ALL`; deletion still delegates to `useSoftDeleteActivity().mutate(deleteTarget.id)` and backend time-window authority is not duplicated.
+- Detail route remains `/activities/${activity.id}`.
+- Customer deep-link filtering still initializes from `customerId` and can still be cleared.
+- `useActivityTypes()` invocation remains unchanged.
+- GPS remains read-only list metadata; false remains neutral `—` and no acquisition/verification meaning moved into shared presentation.
+- Outcome mapping remains presentation-only semantic state; no workflow value/transition changed.
+- Shared Pagination remains caller-owned for page/query truth and remains suppressed while loading, on one page, and when the live client-filtered collection is empty.
 
 ## Device / state coverage
 
-- **Desktop (`>=1025px`):** dense DataTable and compact paginator density remain unchanged; Employee cards are not the active Desktop collection surface.
-- **Tablet (`769–1024px`):** two-column employee cards retain identity/metadata/actions and now both the identity/open button and shared paginator controls meet the canonical `--ds-icon-hit-target` minimum.
-- **Mobile (`<=768px`):** one-column cards retain full-width identity/action treatment; Pagination remains touch-safe and can wrap without horizontal overflow.
-- **RTL/accessibility:** logical CSS, explicit Arabic aria labels, semantic status text, neutral categorical badges, focus-visible identity control and `aria-current="page"` pagination semantics remain intact.
-- **States:** loading remains owned by `ResponsiveCollection`; initial-empty and filtered-empty stay distinct; salary metadata is omitted when unauthorized; pagination disappears for one page and disables boundary navigation correctly.
+- **Desktop (`>=1025px`):** dense DataTable remains the active management surface; PageHeader create remains available when authorized; customer/date + optional time/outcome/notes/GPS/view-delete capability are unchanged.
+- **Tablet (`769–1024px`):** two-column cards retain restored optional start time, type/customer/outcome/date/notes/GPS/actions and touch-safe identity/actions; PageHeader create remains available when authorized.
+- **Mobile (`<=768px`):** one-column cards retain prior information density and canonical action placement; the PageHeader persistent create action is not rendered, leaving the existing shell FAB as the persistent create owner. Existing initial/filtered-empty CTA behavior remains unchanged.
+- **RTL/accessibility:** logical CSS, Arabic labels, neutral category metadata, readable semantic outcome text, explicit action/filter labels and focus-visible identity control remain intact. The device correction is render ownership, not CSS hiding.
+- **States:** loading, initial-empty, filtered-empty, permission-projected create/delete, destructive confirmation and paginator suppression remain unchanged by the correction.
 
 ## Test / execution evidence
 
 Evidence remains **`TESTS_AUTHORED_NOT_EXECUTED`**.
 
-Focused Vitest/Testing Library and source-contract tests were authored/updated for the QA-identified Tablet touch risks, but no approved executable repository checkout / `package.json` is available in this run, so `npm test`, `npm run build` and `npm run lint` were not executed. No PASS is claimed. No GitHub Actions/hosted CI was triggered and no Vercel preview/deploy was used.
+Focused Vitest/Testing Library and source-contract tests exist for renderer selection, query/permission/deletion boundaries, status semantics, paging, canonical breakpoints, Tablet time parity, single category representation and now Mobile persistent-create ownership. The available sandbox was inspected and contains no executable repository checkout or `package.json`, so `npm test`, `npm run build` and `npm run lint` were not executed. No PASS is claimed.
 
-No known TypeScript/build error was found during source inspection. This is not a runtime/build PASS claim.
+No GitHub Actions/hosted CI was triggered and no Vercel preview/deploy was used. No known TypeScript/build error was found during source inspection; this is not an executed build/type PASS claim.
 
 ## Risks / review boundary
 
-- Fresh exact-head QA is mandatory because the PR HEAD moved after the blocked review.
-- Runtime/build evidence remains unavailable in this execution environment; exact-head source/test-artifact review is the current development evidence path.
-- `fieldEmpCount` intentionally retains the existing current-page calculation; correcting its data scope would require a service/query capability change and remains outside this UI slice.
-- Shared Pagination remains a presentation primitive only; do not expand this fix into query/paging semantics or global pagination redesign.
-- `EmployeeForm` internals and all other HR administration surfaces remain outside this representative concern.
+- Exact-head Product Design Director and Design QA review is mandatory because the PR HEAD moved after the prior QA GREEN and Product Design blocker.
+- The pre-existing Mobile empty-state CTA + shell FAB duplication remains a documented non-blocking later action-convergence/runtime watch and was intentionally not expanded into this slice.
+- Runtime/build evidence remains unavailable in this environment.
+- The local Activities filter composition still deliberately preserves immediate search/filter semantics rather than adopting legacy `FilterBar`; shared filter convergence remains later component-depth work.
+- Legacy activity plan/target/create/detail surfaces remain outside this representative concern.
 
 ### Cross-role handoff
-- **To:** Design QA + Product Design Director for fresh exact-head review; Development Integrator only after required gates.
-- **What changed:** the exact QA P2 Tablet touch blocker is fixed: shared Pagination and Employee identity/open controls now honor the canonical touch target through `<=1024px`, with focused authored regression protection.
-- **Preserve:** Desktop density; employee queries/stats/page reset; salary/create/edit/view permissions; profile route; `EmployeeForm`; Pagination page-window/callback/disabled/ARIA behavior; all service/payroll/attendance/leave/workflow/validation truth.
-- **Need from you:** review the exact PR HEAD produced by this owned-state write and issue fresh `SOURCE_REVIEW_PASS + AGENT-REVIEW: GREEN-DEV` only if the Tablet touch blocker is fully closed.
-- **Blocker level:** `NONE` from implementation on the bounded fix; PR remains `NO_MERGE` until fresh exact-head QA/Director gates.
-- **Baseline:** slice `988d7651cda4ecb828bf1dc54a9617fec8ae3edc`; Development inspected `7fbd6d1346eb98d06ec3a66e9b0dd0b46b6334cd`; product/test fix HEAD before state write `284eb608f909394a6056a1e6d11ac5664b15dc45`.
+- **To:** Product Design Director + Design QA for fresh exact-head review; Development Integrator only after both fresh gates.
+- **What changed:** the Director's P2 Mobile action-ownership blocker is corrected on the same PR: PageHeader create is omitted on Mobile via canonical `useDeviceMode`, while Tablet/Desktop retain it and Mobile persistent creation remains shell-FAB-owned.
+- **Preserve:** every activity query/search/filter input and timing; team/create/delete permissions; `/activities/new` and detail routes; delete mutation/backend authority; customer deep-link; GPS/device/workflow/service/validation/query-cache truth; one live `ResponsiveCollection`; shared Pagination; semantic outcome/neutral category treatment; restored Tablet time parity; existing shell creation registry/FAB ownership.
+- **Need from you:** independently review the exact final PR HEAD produced by this owned-state write. QA must issue fresh `SOURCE_REVIEW_PASS + AGENT-REVIEW: GREEN-DEV` only if the moved head is clean; Product Design Director must explicitly close the same-head P2 contradiction. Integrator remains `NO_MERGE` until both are fresh and no material blocker remains.
+- **Blocker level:** `NONE` from implementation after the bounded correction; external review gates remain pending.
+- **Baseline:** slice `def098978efbe796306f882014e69652f014efa6`; Development inspected `b0b5240f19bbdcb889e68753e20c308539072e67`; product/test correction HEAD before state write `408569579e2c516b312e18d1f482dc89d0617c41`.
 - **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`.
