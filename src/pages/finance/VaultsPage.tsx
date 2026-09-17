@@ -8,6 +8,11 @@ import type { Vault, VaultInput, VaultTransaction, VaultType } from '@/lib/types
 import { formatCurrency, formatDateTime } from '@/lib/utils/format'
 import PageHeader from '@/components/shared/PageHeader'
 import DataTable from '@/components/shared/DataTable'
+import ResponsiveCollection from '@/components/patterns/ResponsiveCollection'
+import StatePanel from '@/components/patterns/StatePanel'
+import StatusBadge from '@/components/patterns/StatusBadge'
+import type { AppAction } from '@/components/patterns/ActionRegistry'
+import { VaultCard, VaultSummary } from '@/components/finance/VaultOverviewPresentation'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
@@ -21,10 +26,6 @@ const VAULT_TYPES: { value: VaultType; label: string }[] = [
 ]
 
 const vaultTypeLabel = (t: VaultType) => VAULT_TYPES.find(v => v.value === t)?.label || t
-const vaultTypeBadge = (t: VaultType): 'primary' | 'success' | 'info' => {
-  const map: Record<VaultType, 'primary' | 'success' | 'info'> = { cash: 'success', bank: 'primary', mobile_wallet: 'info' }
-  return map[t] || 'primary'
-}
 
 export default function VaultsPage() {
   const can = useAuthStore(s => s.can)
@@ -230,9 +231,101 @@ export default function VaultsPage() {
     return 'neutral'
   }
 
-  // ── Totals ──
+  // ── Totals / overview presentation ──
   const totalBalance = vaults.reduce((s, v) => s + v.current_balance, 0)
   const activeCount = vaults.filter(v => v.is_active).length
+
+  const vaultActions = (v: Vault): AppAction[] => {
+    const actions: AppAction[] = [
+      {
+        id: 'statement',
+        label: 'كشف حساب',
+        ariaLabel: `كشف حساب ${v.name}`,
+        icon: <Eye size={14} />,
+        tone: 'ghost',
+        onSelect: () => openStatement(v),
+      },
+    ]
+
+    if (can('finance.vaults.transact')) {
+      if (v.current_balance === 0) {
+        actions.push({
+          id: 'opening',
+          label: 'افتتاحي',
+          ariaLabel: `تعيين الرصيد الافتتاحي لـ ${v.name}`,
+          icon: <Layers size={14} />,
+          tone: 'secondary',
+          onSelect: () => openTx(v, 'opening'),
+        })
+      }
+      actions.push(
+        {
+          id: 'deposit',
+          label: 'إيداع',
+          ariaLabel: `إيداع في ${v.name}`,
+          icon: <ArrowDownToLine size={14} />,
+          tone: 'success',
+          onSelect: () => openTx(v, 'deposit'),
+        },
+        {
+          id: 'withdrawal',
+          label: 'سحب',
+          ariaLabel: `سحب من ${v.name}`,
+          icon: <ArrowUpFromLine size={14} />,
+          tone: 'danger',
+          onSelect: () => openTx(v, 'withdrawal'),
+        },
+      )
+    }
+
+    if (can('finance.vaults.update')) {
+      actions.push({
+        id: 'edit',
+        label: 'تعديل',
+        ariaLabel: `تعديل ${v.name}`,
+        icon: <Edit size={14} />,
+        tone: 'ghost',
+        onSelect: () => openEdit(v),
+      })
+    }
+
+    return actions
+  }
+
+  const renderVaultCards = (items: Vault[], mode: 'mobile' | 'tablet') => (
+    <div className={`ds-responsive-card-grid ds-responsive-card-grid--${mode}`}>
+      {items.map(v => (
+        <VaultCard
+          key={v.id}
+          mode={mode}
+          summary={{
+            name: v.name,
+            kind: v.type,
+            typeLabel: vaultTypeLabel(v.type),
+            balance: `${formatCurrency(v.current_balance)} ج.م`,
+            balanceTone: v.current_balance >= 0 ? 'success' : 'danger',
+            branch: v.branch?.name,
+            responsible: v.responsible?.full_name,
+            statusLabel: v.is_active ? 'نشطة' : 'معطلة',
+            statusTone: v.is_active ? 'success' : 'neutral',
+          }}
+          actions={vaultActions(v)}
+        />
+      ))}
+    </div>
+  )
+
+  const emptyVaultsState = (
+    <StatePanel
+      kind="empty"
+      icon={<Landmark size={40} />}
+      title="لا توجد خزائن"
+      description="قم بإنشاء أول خزنة لبدء العمل"
+      action={can('finance.vaults.create') ? (
+        <Button icon={<Plus size={16} />} onClick={openCreate}>خزنة جديدة</Button>
+      ) : undefined}
+    />
+  )
 
   return (
     <div className="page-container animate-enter">
@@ -251,145 +344,73 @@ export default function VaultsPage() {
         }
       />
 
-      {/* Stats */}
-      <div className="edara-stats-row">
-        <div className="edara-card stat-card">
-          <span className="stat-label">إجمالي الرصيد</span>
-          <span className="stat-value" style={{ color: totalBalance >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
-            {formatCurrency(totalBalance)}{' '}
-            <small style={{ fontSize: '0.6em', fontWeight: 500, opacity: 0.7 }}>ج.م</small>
-          </span>
-        </div>
-        <div className="edara-card stat-card">
-          <span className="stat-label">الخزائن النشطة</span>
-          <span className="stat-value">{activeCount}</span>
-        </div>
-        <div className="edara-card stat-card">
-          <span className="stat-label">إجمالي الخزائن</span>
-          <span className="stat-value">{vaults.length}</span>
-        </div>
-      </div>
-
-      {/* ── DESKTOP: DataTable ─────────────────────────── */}
-      <div className="vault-table-view edara-card" style={{ overflow: 'auto' }}>
-        <DataTable<Vault>
-          columns={[
-            { key: 'name', label: 'اسم الخزنة', render: (v) => (
-              <div className="flex gap-2" style={{ alignItems: 'center' }}>
-                {v.type === 'cash' ? <Wallet size={16} /> : v.type === 'bank' ? <Building2 size={16} /> : <Landmark size={16} />}
-                <span style={{ fontWeight: 600 }}>{v.name}</span>
-              </div>
-            )},
-            { key: 'type', label: 'النوع', render: (v) => <Badge variant={vaultTypeBadge(v.type)}>{vaultTypeLabel(v.type)}</Badge> },
-            { key: 'current_balance', label: 'الرصيد', render: (v) => (
-              <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: v.current_balance >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
-                {formatCurrency(v.current_balance)} ج.م
-              </span>
-            )},
-            { key: 'branch', label: 'الفرع', hideOnMobile: true, render: (v) => v.branch?.name || <span style={{ color: 'var(--text-muted)' }}>—</span> },
-            { key: 'responsible', label: 'المسؤول', hideOnMobile: true, render: (v) => v.responsible?.full_name || <span style={{ color: 'var(--text-muted)' }}>—</span> },
-            { key: 'is_active', label: 'الحالة', render: (v) => <Badge variant={v.is_active ? 'success' : 'neutral'}>{v.is_active ? 'نشطة' : 'معطلة'}</Badge> },
-            { key: 'actions', label: 'إجراءات', width: 160, render: (v) => (
-              <div className="action-group" onClick={e => e.stopPropagation()}>
-                <Button variant="ghost" size="sm" title="كشف حساب" onClick={() => openStatement(v)}><Eye size={14} /></Button>
-                {can('finance.vaults.transact') && (
-                  <>
-                    {/* Opening balance — only available when vault has never been used */}
-                    {v.current_balance === 0 && (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        title="تعيين الرصيد الافتتاحي (متاح عند رصيد صفر فقط)"
-                        onClick={() => openTx(v, 'opening')}
-                      >
-                        <Layers size={14} />
-                      </Button>
-                    )}
-                    <Button variant="success" size="sm" title="إيداع" onClick={() => openTx(v, 'deposit')}><ArrowDownToLine size={14} /></Button>
-                    <Button variant="danger" size="sm" title="سحب" onClick={() => openTx(v, 'withdrawal')}><ArrowUpFromLine size={14} /></Button>
-                  </>
-                )}
-                {can('finance.vaults.update') && (
-                  <Button variant="ghost" size="sm" title="تعديل" onClick={() => openEdit(v)}><Edit size={14} /></Button>
-                )}
-              </div>
-            )},
-          ]}
-          data={vaults}
-          loading={loading}
-          emptyIcon={<Landmark size={48} />}
-          emptyTitle="لا توجد خزائن"
-          emptyText="قم بإنشاء أول خزنة لبدء العمل"
-          emptyAction={can('finance.vaults.create') ? <Button icon={<Plus size={16} />} onClick={openCreate}>خزنة جديدة</Button> : undefined}
+      <div style={{ marginBlockEnd: 'var(--space-5)' }}>
+        <VaultSummary
+          metrics={{
+            totalBalance: `${formatCurrency(totalBalance)} ج.م`,
+            totalBalanceTone: totalBalance >= 0 ? 'success' : 'danger',
+            activeCount,
+            totalCount: vaults.length,
+          }}
         />
       </div>
 
-      {/* ── MOBILE: Vault Cards ───────────────────────────── */}
-      <div className="vault-card-view">
-        {loading ? (
-          <div className="mobile-card-list">
-            {[1,2,3].map(i => <div key={i} className="edara-card" style={{ height: 120 }}><div className="skeleton" style={{ height: '100%' }} /></div>)}
-          </div>
-        ) : vaults.length === 0 ? (
-          <div className="edara-card" style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)' }}>
-            <Landmark size={40} style={{ margin: '0 auto 12px', display: 'block', opacity: 0.3 }} />
-            <p>لا توجد خزائن</p>
-          </div>
-        ) : (
-          <div className="mobile-card-list">
-            {vaults.map((v: Vault) => {
-              const VaultIcon = v.type === 'cash' ? Wallet : v.type === 'bank' ? Building2 : Landmark
-              return (
-                <div key={v.id} className="edara-card vault-mobile-card">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-md)', background: 'rgba(37,99,235,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <VaultIcon size={18} style={{ color: 'var(--color-primary)' }} />
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: 'var(--text-sm)' }}>{v.name}</div>
-                        <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-                          <Badge variant={vaultTypeBadge(v.type)}>{vaultTypeLabel(v.type)}</Badge>
-                          <Badge variant={v.is_active ? 'success' : 'neutral'}>{v.is_active ? 'نشطة' : 'معطلة'}</Badge>
-                        </div>
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'end' }}>
-                      <div style={{ fontWeight: 800, fontSize: '1.1rem', color: v.current_balance >= 0 ? 'var(--color-success)' : 'var(--color-danger)', fontVariantNumeric: 'tabular-nums' }}>
-                        {formatCurrency(v.current_balance)} ج.م
-                      </div>
-                      {v.branch?.name && <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{v.branch.name}</div>}
-                    </div>
+      <ResponsiveCollection<Vault>
+        items={vaults}
+        loading={loading}
+        emptyState={emptyVaultsState}
+        renderDesktop={items => (
+          <div className="edara-card" style={{ overflow: 'auto' }}>
+            <DataTable<Vault>
+              columns={[
+                { key: 'name', label: 'اسم الخزنة', render: (v) => (
+                  <div className="flex gap-2" style={{ alignItems: 'center' }}>
+                    {v.type === 'cash' ? <Wallet size={16} /> : v.type === 'bank' ? <Building2 size={16} /> : <Landmark size={16} />}
+                    <span style={{ fontWeight: 600 }}>{v.name}</span>
                   </div>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <Button variant="ghost" size="sm" icon={<Eye size={12} />} onClick={() => openStatement(v)}>كشف</Button>
+                )},
+                { key: 'type', label: 'النوع', render: (v) => <Badge variant="neutral">{vaultTypeLabel(v.type)}</Badge> },
+                { key: 'current_balance', label: 'الرصيد', render: (v) => (
+                  <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: v.current_balance >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
+                    {formatCurrency(v.current_balance)} ج.م
+                  </span>
+                )},
+                { key: 'branch', label: 'الفرع', hideOnMobile: true, render: (v) => v.branch?.name || <span style={{ color: 'var(--text-muted)' }}>—</span> },
+                { key: 'responsible', label: 'المسؤول', hideOnMobile: true, render: (v) => v.responsible?.full_name || <span style={{ color: 'var(--text-muted)' }}>—</span> },
+                { key: 'is_active', label: 'الحالة', render: (v) => <StatusBadge label={v.is_active ? 'نشطة' : 'معطلة'} tone={v.is_active ? 'success' : 'neutral'} /> },
+                { key: 'actions', label: 'إجراءات', width: 160, render: (v) => (
+                  <div className="action-group" onClick={e => e.stopPropagation()}>
+                    <Button variant="ghost" size="sm" title="كشف حساب" aria-label={`كشف حساب ${v.name}`} onClick={() => openStatement(v)}><Eye size={14} /></Button>
                     {can('finance.vaults.transact') && (
                       <>
-                        {/* Opening balance — only when vault is unused (balance = 0) */}
                         {v.current_balance === 0 && (
                           <Button
                             variant="secondary"
                             size="sm"
-                            icon={<Layers size={12} />}
+                            title="تعيين الرصيد الافتتاحي (متاح عند رصيد صفر فقط)"
+                            aria-label={`تعيين الرصيد الافتتاحي لـ ${v.name}`}
                             onClick={() => openTx(v, 'opening')}
                           >
-                            افتتاحي
+                            <Layers size={14} />
                           </Button>
                         )}
-                        <Button variant="success" size="sm" icon={<ArrowDownToLine size={12} />} onClick={() => openTx(v, 'deposit')}>إيداع</Button>
-                        <Button variant="danger" size="sm" icon={<ArrowUpFromLine size={12} />} onClick={() => openTx(v, 'withdrawal')}>سحب</Button>
+                        <Button variant="success" size="sm" title="إيداع" aria-label={`إيداع في ${v.name}`} onClick={() => openTx(v, 'deposit')}><ArrowDownToLine size={14} /></Button>
+                        <Button variant="danger" size="sm" title="سحب" aria-label={`سحب من ${v.name}`} onClick={() => openTx(v, 'withdrawal')}><ArrowUpFromLine size={14} /></Button>
                       </>
                     )}
                     {can('finance.vaults.update') && (
-                      <Button variant="ghost" size="sm" icon={<Edit size={12} />} onClick={() => openEdit(v)}>تعديل</Button>
+                      <Button variant="ghost" size="sm" title="تعديل" aria-label={`تعديل ${v.name}`} onClick={() => openEdit(v)}><Edit size={14} /></Button>
                     )}
                   </div>
-                </div>
-              )
-            })}
+                )},
+              ]}
+              data={items}
+            />
           </div>
         )}
-      </div>
+        renderTablet={items => renderVaultCards(items, 'tablet')}
+        renderMobile={items => renderVaultCards(items, 'mobile')}
+      />
 
       {/* Smart local FAB — hides when any modal is open or scrolling down */}
       {can('finance.vaults.create') && (
@@ -610,13 +631,8 @@ export default function VaultsPage() {
       </Modal>
 
       <style>{`
-        .vault-table-view { display: block; }
-        .vault-card-view  { display: none; }
-        .vault-mobile-card { padding: var(--space-4); }
-        .mobile-card-list { display: flex; flex-direction: column; gap: var(--space-3); }
+        .vault-fab { display: none; }
         @media (max-width: 768px) {
-          .vault-table-view { display: none; }
-          .vault-card-view  { display: block; }
           .vault-fab {
             display: flex;
             align-items: center;

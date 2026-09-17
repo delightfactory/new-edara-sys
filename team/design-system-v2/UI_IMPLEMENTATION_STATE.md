@@ -4,103 +4,102 @@
 
 - Run date: `2026-09-17`
 - Development branch: `design-system-v2-development`
-- Exact slice baseline: `e4866c9350c507bce260beb07d880fbce55718f3`
-- Latest Development HEAD inspected this run: `6048bca162fdf5b76bbc8c4b8856431eb735e7f5`
-- Development drift from the slice baseline was rechecked before implementation and remains peer-governance/state movement only; no product/shared-component sync is required for this bounded fix.
-- Feature branch: `ds2/purchase-invoice-form-shell-v2`
-- Draft PR: `#37 — DS2-PROC-002: establish purchase invoice form V2 shell`
-- Reviewer-blocked HEAD: `751d54278b120ad560981b9f019ec0a0135b3061`
-- Reviewer-fix implementation/test HEAD before this state write: `4e0ac3ae495d0d2e3b8062efe7e5f88fc0fec8d2`
-- Active slice: `DS2-PROC-002 — Purchase Invoice form decomposition`
+- Exact slice baseline: `dcee85d8b23488bcf3339a0db4818e95b78ba148`
+- Latest Development HEAD rechecked this run: `c59f821e2e212c17396bb79456d5f84aa2a68b67`
+- Development drift from slice baseline: governance-only (`DESIGN_DIRECTOR_STATE.md`, `DESIGN_QA_STATE.md`, `INTEGRATION_STATE.md`); no product/shared-component drift requiring sync.
+- Feature branch: `ds2/finance-vaults-overview-v2`
+- Draft PR: `#38 — DS2-FIN-001: establish vault overview V2 presentation`
+- Product/test/workstream HEAD before this owned-state write: `00fb73b51d5a9063fab06515d6a67b2d3232e156`
+- Active slice: `DS2-FIN-001 — Finance lists and summaries`
 - Disposition: `REVIEW`
 - Evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 
 ## Independent implementation judgment
 
-Before comparing peer states, I independently re-read the live Purchase Invoice composition and shared `FormSection` contract. The P2 blocker is valid: the legacy basic-information card owned `marginBottom: 16`, while shared `FormSection` intentionally owns internal spacing only. On editable step 0 the migrated basic section could visually touch `FormActions`; on receive/bill/readonly it could touch the following items surface.
+`VaultsPage` remains the correct bounded FIN001 representative because it proves shared financial summary hierarchy and responsive operational collection composition without requiring any accounting, posting or service-layer change. The implementation boundary stays on overview presentation only: summary, vault list/card hierarchy, semantic state treatment and action placement.
 
-The correct boundary is external Purchase Invoice composition spacing, not a global change to `FormSection` or `Card`. The reviewer fix therefore restores exactly one token-based logical block separation, scoped to the Purchase Invoice shell through its existing `purch-action-bar` boundary, while leaving the shared form primitive marginless.
+The live page now owns every Finance truth exactly where it did before. Shared V2 owns only layout/presentation and device-aware action placement. No broad Finance redesign was introduced.
 
-## Material progress this run
+## Peer-state comparison and reviewer-requested fixes
 
-1. Completed the required shared-memory bootstrap in order, then inspected issue #27, current Development HEAD, all open PRs targeting Development and exact PR #37 HEAD.
-2. Confirmed PR #37 is the only active implementation PR and exact HEAD `751d54278b120ad560981b9f019ec0a0135b3061` did **not** have `AGENT-REVIEW: GREEN-DEV`; both Design Director and Design QA independently block only the inter-section spacing regression.
-3. Added `src/styles/purchase-invoice-v2.css` as a narrow consumer-owned shell composition rule:
-   - selector is scoped to `.page-container:has(> .purch-action-bar) > .ds-form-section`;
-   - spacing is logical `margin-block-end`;
-   - value is shared `var(--space-4)`;
-   - shared `FormSection` / `Card` contracts remain unchanged and marginless.
-4. Imported that bounded shell stylesheet after shared V2 form styles in `src/styles/main.css`, so the rule is active in every Purchase Invoice mode without changing workflow/render predicates.
-5. Extended `PurchaseInvoiceForm.v2.test.ts` with focused source-contract coverage that requires:
-   - the existing Purchase Invoice `purch-action-bar` shell boundary;
-   - the stylesheet import;
-   - the exact Purchase-scoped selector;
-   - `margin-block-end: var(--space-4)`;
-   - no standalone generic `.ds-form-section { ... }` external-margin rule in the bounded stylesheet.
-6. Created the fix as one coherent implementation/test commit and compared it against blocked HEAD before moving the branch. Exact delta from `751d5427...` to `4e0ac3ae...` is only three files: the focused page test, `main.css` one-line import, and the new seven-line Purchase Invoice shell stylesheet.
-7. No DB/migration/RPC/service/query/cache/RBAC/RLS/route-guard/accounting calculation/workflow transition/validation semantic, shared primitive behavior, preview branch, deployment or `main` file was changed. No GitHub Actions/hosted CI or Vercel was used.
+Fresh peer states on exact prior PR HEAD `96cc3c4f76b4f8ab506b40b7623759a50c8f0816` identified three P2 corrections. This run addressed all three within the same PR:
+
+1. **Live wiring:** legacy CSS-hidden Desktop/Mobile interaction trees were replaced by one `ResponsiveCollection<Vault>` boundary with dense Desktop DataTable, deliberate two-column Tablet cards and one-column Mobile cards.
+2. **Semantic hierarchy:** vault type is now neutral categorical `Badge`; active/inactive remains semantic `StatusBadge`; factual active-count no longer receives a hardcoded success tone in `VaultSummary`.
+3. **Action hierarchy:** Mobile/Tablet cards now consume canonical `AppAction + resolveActionSet`. Existing page-owned action order/predicates/callbacks are preserved; Mobile resolves at most one direct action, Tablet at most two, with remaining actions in accessible RTL overflow. Desktop keeps its dense direct action group.
+
+During final source inspection I also caught and fixed a presentation risk in the new overflow CSS: the overflow action panel is now explicitly `display: none` until native `<details open>` is true, with a focused source-contract assertion so author CSS cannot accidentally defeat the native collapsed state.
+
+The previous Design Director / Design QA / Integrator BLOCKED states are therefore stale against the new candidate HEAD and require fresh exact-head review; they were not mutated by this role.
+
+## Material implementation progress
+
+- Wired `VaultsPage` to shared `VaultSummary` and one `ResponsiveCollection<Vault>`.
+- Preserved `totalBalance`, `activeCount`, sign treatment, `finance.vaults.create`, `finance.vaults.transact`, `finance.vaults.update`, and `current_balance === 0` as page-owned predicates/calculations.
+- Preserved create/update/manual adjustment/transfer services, invalidation, validation/toasts, and all form/transaction/statement/transfer modal workflows.
+- Preserved statement loading exactly at `getVaultTransactions(..., { pageSize: 25 })` for initial load and paging.
+- Kept Desktop comparison density and direct actions; added explicit accessible names to icon-only vault-row actions without changing callbacks or eligibility.
+- Added shared responsive card-grid/action-set styling using semantic V2 tokens, touch/focus-safe overflow control, and explicit closed/open overflow-state CSS.
+- Kept the existing Mobile create FAB behavior while making it explicitly Mobile-only; PageHeader create remains the Desktop/Tablet path.
+- Added focused presentation tests for caller-owned metric tone, categorical-vs-semantic badges, canonical Mobile/Tablet action resolution, callback execution, unauthorized-action omission, and overflow closed-state CSS.
+- Added live-page source-contract tests for single responsive collection wiring, totals, permissions, opening-balance predicate, semantic badge treatment, empty/create behavior, statement paging and unchanged Finance mutation-service calls.
+- Updated the workstream candidate to `REVIEW`.
+- Did not touch peer role-state files, Team Memory or Decision Log.
 
 ## Changed-file / pattern scope
 
-Reviewer-fix delta only:
-- `src/styles/purchase-invoice-v2.css`
-- `src/styles/main.css`
-- `src/pages/purchases/PurchaseInvoiceForm.v2.test.ts`
+PR #38 remains UI/Test/Governance-owned only:
+- `src/components/patterns/MetricGrid.tsx`
+- `src/components/patterns/MetricGrid.test.tsx`
+- `src/components/finance/VaultOverviewPresentation.tsx`
+- `src/components/finance/VaultOverviewPresentation.test.tsx`
+- `src/pages/finance/VaultsPage.tsx`
+- `src/pages/finance/VaultsPage.v2.test.ts`
+- `src/styles/design-system-v2-surfaces.css`
+- `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md`
 - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md` (owned state only)
 
-Existing PR product/test scope remains:
-- `src/components/purchases/PurchaseInvoiceDraftStepper.tsx`
-- `src/components/purchases/PurchaseInvoiceDraftStepper.test.tsx`
-- `src/pages/purchases/PurchaseInvoiceForm.tsx`
-- `src/pages/purchases/PurchaseInvoiceForm.v2.test.ts`
-- the bounded stylesheet/import above
-- `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md`
-- this owned state file
-
-No backend/business/query/permission/deployment file is in scope.
+No DB/migration/RPC/service/query/cache/RBAC/RLS/route-guard/accounting-calculation/posting/workflow/validation/deployment file is in the PR.
 
 ## Preserve / verified boundaries
 
-- Supplier, warehouse and product identity/search/select behavior.
-- Product unit selection and purchase-price metric fallback behavior.
-- Ordered/received quantities, discounts, taxes, landed costs, totals, WAC/accounting/payment calculations.
-- Draft create/update, receive, bill, pay/cancel service calls and all workflow transitions.
-- Procurement/finance permissions, route/query/cache and validation semantics.
-- Existing new/draft Stepper reachability, `goNext`, cancel/back/save callbacks and disabled truth.
-- Receive/bill/readonly render predicates, `ResponsiveModal`, mobile item flow and `DocumentActions`.
-- Shared `FormSection`, `Card`, `FormGrid`, `FormActions`, `Stepper` and `StatusBadge` base contracts.
+- `totalBalance`, `activeCount`, per-vault balances and sign decisions remain page-owned.
+- Vault type is categorical metadata; active/inactive is semantic operational state.
+- `finance.vaults.create`, `finance.vaults.transact`, `finance.vaults.update` predicates remain unchanged.
+- Opening-balance eligibility remains exactly `current_balance === 0`.
+- Card action declarations preserve existing order: statement; opening when eligible; deposit; withdrawal; edit when permitted. `resolveActionSet` only controls device placement.
+- Statement paging remains `pageSize: 25`; `stmtPage`, `stmtTotal`, `stmtTotalPages`, and `loadStmtPage` behavior remain unchanged.
+- `createVault`, `updateVault`, `postManualVaultAdjustment`, `transferBetweenVaults`, query hooks, invalidation, validation and toast behavior remain unchanged.
+- Form, transaction, statement and transfer modal workflows remain outside the visual migration.
 
 ## Device / state coverage
 
-- **Desktop:** 3-column basic-info density remains; `var(--space-4)` restores a clear major-section/action boundary without reducing transaction density.
-- **Tablet:** shared 2-column form cap remains unchanged; the same logical block spacing separates the basic section from its next sibling.
-- **Mobile:** shared 1-column form composition and wrapped Arabic Stepper remain unchanged; the basic card no longer visually merges into task actions.
-- **Editable new/draft step 0:** basic `FormSection` is separated from `FormActions`.
-- **Receive / bill / readonly:** basic `FormSection` is separated from the following items surface.
-- **RTL/accessibility:** logical block spacing is direction-independent; existing shared Stepper/Button/status semantics and focus/touch behavior are untouched.
+- **Desktop:** three-column summary metrics plus existing dense DataTable fields/actions; type neutral, active state semantic.
+- **Tablet:** summary grid caps at two columns; vault collection is an explicit two-column card grid; maximum two direct card actions with overflow; touch-safe controls.
+- **Mobile:** summary collapses to one column; one-column compact vault cards; maximum one direct card action with RTL overflow; existing smart create FAB retained.
+- **Loading:** one `ResponsiveCollection` loading state; duplicate hidden interactive descendants are removed.
+- **Empty / permission:** shared `StatePanel` keeps empty guidance and conditionally exposes create only with `finance.vaults.create`; card actions are omitted from declarations when permission predicates fail.
+- **RTL/accessibility:** logical CSS properties, native `<details>/<summary>` overflow with explicit closed/open presentation contract, touch targets, focus ring, semantic status, and accessible names for Desktop icon-only actions.
 
 ## Test / execution evidence
 
-Evidence remains **`TESTS_AUTHORED_NOT_EXECUTED`**.
+Evidence is **`TESTS_AUTHORED_NOT_EXECUTED`**.
 
-The approved sandbox has no executable repository checkout / `package.json`; `npm test`, `npm run build` and `npm run lint` were not executed. No PASS is claimed. No GitHub Actions/hosted CI or Vercel was triggered.
+No executable project checkout / `package.json` is available in the approved sandbox for this run, so `npm test`, `npm run build` and `npm run lint` were not executed. No execution PASS is claimed. No GitHub Actions/hosted CI was triggered and no Vercel preview/deploy was used.
 
-Focused authored coverage now additionally protects the reviewer-requested local spacing ownership and prevents accidental conversion into a generic external margin on shared `FormSection`.
+No known TypeScript/build error was discovered by source inspection. This is not a runtime/build PASS claim.
 
-## Risks / review notes
+## Risks / next boundary
 
-- Fresh exact-head Design QA + Product Design Director source review is required because the PR HEAD moved after the blocked review.
-- Runtime/browser visual evidence remains unavailable and is not inferred from source coverage.
-- The page-scoped rule intentionally uses the existing Purchase Invoice action-bar boundary; it does not broaden shared form spacing policy or create a Procurement primitive.
-- Combobox/product-table/receive/accounting presentation debt remains out of this repair and must not be pulled into the current slice.
+- Fresh exact-head Product Design Director and Design QA review is required because all prior BLOCKED evidence targets obsolete HEAD `96cc3c4f...`.
+- Runtime visual validation is still unclaimed; reviewers should specifically inspect long Arabic vault names/large balances and overflow-menu placement once an approved runtime exists.
+- Forms and Finance transaction/detail patterns remain explicitly deferred; do not broaden PR #38 beyond the Vault overview concern.
 
-## Cross-role handoff
-
+### Cross-role handoff
 - **To:** Product Design Director, Design QA, Development Integrator
-- **What changed:** the single P2 spacing/hierarchy blocker on PR #37 was corrected with a Purchase Invoice-scoped logical `var(--space-4)` external separation and focused source-contract protection. The fix delta is presentation/test-only and leaves shared `FormSection` / `Card` marginless.
-- **Preserve:** all already-approved shell architecture plus every purchase/accounting/workflow/validation/permission/query/service/route truth.
-- **Request:** review the new exact PR HEAD after this owned state commit; Integrator remains `NO_MERGE` until the exact current HEAD has fresh `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
-- **Blocker level:** `NONE` from UI Implementation after the bounded correction; awaiting independent exact-head review.
-- **Baseline:** `e4866c9350c507bce260beb07d880fbce55718f3`.
-- **Reviewer-fix implementation/test HEAD:** `4e0ac3ae495d0d2e3b8062efe7e5f88fc0fec8d2`.
+- **What changed:** all three P2 blockers from the prior exact-head review were addressed on PR #38. Live Vault overview now uses shared summary/collection semantics; categorical/semantic tone misuse is removed; Mobile/Tablet actions use canonical `AppAction + resolveActionSet` with one/two direct-action limits and overflow. Final source inspection also hardened the native overflow closed state.
+- **Preserve:** all Finance calculations, permissions, opening-balance eligibility, services/query/cache/invalidation, statement paging, modal workflows, validations and routes.
+- **Need from you:** perform fresh exact-head source/design/QA review after this owned-state commit. Prior BLOCKED labels apply only to obsolete `96cc3c4f...` and must not be reused as evidence for the new head.
+- **Integrator:** `NO_MERGE` until fresh `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`; do not infer runtime evidence.
+- **Baseline:** `dcee85d8b23488bcf3339a0db4818e95b78ba148`; latest Development `c59f821e2e212c17396bb79456d5f84aa2a68b67`; product/test/workstream HEAD before state write `00fb73b51d5a9063fab06515d6a67b2d3232e156`.
 - **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`.

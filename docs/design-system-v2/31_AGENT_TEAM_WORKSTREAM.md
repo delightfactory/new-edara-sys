@@ -77,17 +77,26 @@ System result:
 - supplier/product/warehouse identity, quantities, pricing, discounts, taxes, totals, landed costs/WAC/accounting/payment, receive/bill/cancel transitions, permissions, services/query/cache, routes, validation semantics, `ResponsiveModal`, mobile item flow and `DocumentActions` remain unchanged and page/domain-owned;
 - `InlineCombobox`, item-table/card convergence, receive/accounting presentation, Purchase Returns and broad form-field convergence remain outside this completed slice.
 
-## Current single READY slice
+## Current single active slice
 
 ### DS2-FIN-001 — Finance lists and summaries
-Status: `READY`
-Owner role: Product Design Director -> UI Production Engineer after the concern is bounded
+Status: `REVIEW`
+Owner role: UI Production Engineer
 
 System intent:
 Continue the roadmap into Finance using one representative, dependency-safe list/summary presentation concern that proves shared collection, summary, state and action grammar without moving financial truth into presentation.
 
+Current bounded candidate result:
+- representative live surface remains `VaultsPage` overview only (summary metrics + vault collection presentation);
+- summary values remain page-owned and now project through shared `MetricGrid + StatCard`; total-balance semantic tone is caller-owned and factual active-count receives no inferred success tone;
+- one live `ResponsiveCollection<Vault>` replaces the CSS-hidden Desktop/Mobile dual trees, preserving dense Desktop `DataTable`, adding deliberate two-column Tablet cards and one-column Mobile cards, and keeping loading/empty/create behavior in one mounted collection boundary;
+- vault type is neutral categorical `Badge` metadata while active/inactive uses semantic `StatusBadge`;
+- Mobile/Tablet card actions consume canonical `AppAction + resolveActionSet` semantics with the existing page-owned action order and eligibility: maximum 1 direct action on Mobile, 2 on Tablet, remaining actions in accessible RTL overflow; Desktop retains dense direct table actions;
+- `finance.vaults.create/transact/update`, `current_balance === 0`, create/update/manual-adjustment/transfer services, totals/balances, statement `pageSize: 25`, query/cache/invalidation, modal workflows and validations remain page/domain-owned and unchanged;
+- forms, statement/transaction/transfer modal redesign, posting/accounting semantics and other Finance pages remain outside this bounded concern;
+- focused component and live-page source-contract tests are authored; evidence remains `TESTS_AUTHORED_NOT_EXECUTED`.
+
 Initial direction:
-- Product Design Director must inspect the live Finance surfaces on the exact latest Development baseline and bound the smallest representative presentation-only concern before implementation begins;
 - preserve ledger/account/balance/payment/receipt/treasury/credit/debit/aging/calculation/posting/approval/permission/query/cache/service/route semantics exactly;
 - prefer already-proven shared `PageHeader`, collection/card/table, semantic status, summary and action patterns when the live surface proves fit;
 - Mobile remains operational and touch-safe, Tablet deliberate, Desktop dense and efficient for financial review/comparison;
@@ -138,7 +147,7 @@ Open only when a real migrated screen proves the recurring gap:
 - `DS2-PROC-002` Purchase Invoice form decomposition — `DONE`
 
 ### E. Finance
-- `DS2-FIN-001` Finance lists and summaries — `READY`
+- `DS2-FIN-001` Finance lists and summaries — `REVIEW`
 - `DS2-FIN-002` Financial transaction/detail/action patterns — `BACKLOG`
 
 ### F. HR / People

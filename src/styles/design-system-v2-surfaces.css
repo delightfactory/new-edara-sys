@@ -150,6 +150,17 @@
 .ds-stat-card--danger .ds-stat-card__icon,
 .ds-stat-card--danger .ds-stat-card__trend { color: var(--ds-status-danger-fg); }
 
+/* ===== MetricGrid ===== */
+.ds-metric-grid {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.ds-metric-grid--cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ds-metric-grid--cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ds-metric-grid--cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
 /* ===== KeyValueList ===== */
 .ds-key-value-list {
   display: grid;
@@ -197,6 +208,168 @@
   font-weight: 400;
 }
 
+/* ===== Responsive operational card grids ===== */
+.ds-responsive-card-grid {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.ds-responsive-card-grid--tablet {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ds-responsive-card-grid--mobile {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* ===== Canonical card action set ===== */
+.ds-action-set {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-block-start: var(--space-3);
+  padding-block-start: var(--space-3);
+  border-block-start: 1px solid var(--ds-border-subtle);
+}
+
+.ds-action-set__visible {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.ds-action-set__overflow {
+  position: relative;
+}
+
+.ds-action-set__overflow-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--ds-icon-hit-target);
+  padding-inline: var(--space-3);
+  border: 1px solid var(--ds-border-default);
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-surface-default);
+  color: var(--ds-text-secondary);
+  font-family: inherit;
+  font-size: var(--ds-type-caption-size);
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.ds-action-set__overflow-trigger::-webkit-details-marker {
+  display: none;
+}
+
+.ds-action-set__overflow-trigger:hover {
+  background: var(--ds-surface-hover);
+  color: var(--ds-text-primary);
+}
+
+.ds-action-set__overflow-trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--ds-focus-ring);
+}
+
+.ds-action-set__overflow-actions {
+  position: absolute;
+  z-index: 20;
+  inset-inline-end: 0;
+  top: calc(100% + var(--space-2));
+  display: none;
+  gap: var(--space-2);
+  min-width: 11rem;
+  padding: var(--space-2);
+  border: 1px solid var(--ds-border-default);
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-surface-default);
+  box-shadow: var(--ds-elevation-floating);
+}
+
+.ds-action-set__overflow[open] > .ds-action-set__overflow-actions {
+  display: grid;
+}
+
+.ds-action-set__overflow-actions .btn {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+/* ===== Finance Vault card composition ===== */
+.ds-vault-card__identity,
+.ds-vault-card__heading-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.ds-vault-card__icon {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: var(--ds-radius-card);
+  background: var(--ds-surface-accent);
+  color: var(--color-primary);
+}
+
+.ds-vault-card__main,
+.ds-vault-card__heading,
+.ds-vault-card__balance-wrap {
+  min-width: 0;
+}
+
+.ds-vault-card__main {
+  flex: 1;
+}
+
+.ds-vault-card__heading-row {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.ds-vault-card__name {
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+
+.ds-vault-card__badges {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-block-start: var(--space-1);
+}
+
+.ds-vault-card__balance-wrap {
+  text-align: end;
+}
+
+.ds-vault-card__balance {
+  overflow-wrap: anywhere;
+  font-size: var(--ds-type-section-title-size);
+  font-weight: 800;
+  font-variant-numeric: var(--ds-type-numeric-font-variant);
+}
+
+.ds-vault-card__metadata {
+  margin-block-start: var(--space-3);
+}
+
+@media (max-width: 1024px) and (min-width: 769px) {
+  .ds-metric-grid--cols-3,
+  .ds-metric-grid--cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 768px) {
   .ds-card--padding-lg {
     padding: var(--space-4);
@@ -215,9 +388,19 @@
     flex-direction: column;
   }
 
+  .ds-metric-grid--cols-2,
+  .ds-metric-grid--cols-3,
+  .ds-metric-grid--cols-4 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .ds-key-value-list--cols-2,
   .ds-key-value-list--cols-3,
   .ds-key-value-list--cols-4 {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ds-vault-card__balance {
+    font-size: var(--ds-type-body-size);
   }
 }
