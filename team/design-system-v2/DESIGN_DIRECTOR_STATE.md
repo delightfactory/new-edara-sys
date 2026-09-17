@@ -4,123 +4,99 @@
 
 - Review date: `2026-09-17`
 - Development branch: `design-system-v2-development`
-- Exact Development HEAD independently inspected before this state write: `1314f5c63ab5ffb996c3b3177de584f7cb70fd88`
-- Current Development drift from the FIN001 slice baseline is governance-only: `dcee85d8b23488bcf3339a0db4818e95b78ba148 -> 1314f5c63ab5ffb996c3b3177de584f7cb70fd88` changes only `team/design-system-v2/DESIGN_QA_STATE.md`.
-- Active slice: `DS2-FIN-001 — Finance lists and summaries`
-- Active implementation PR: `#38 — DS2-FIN-001: establish vault overview V2 presentation`
-- PR base: `design-system-v2-development`
-- Slice baseline / PR base SHA: `dcee85d8b23488bcf3339a0db4818e95b78ba148`
-- Exact PR HEAD independently inspected: `96cc3c4f76b4f8ab506b40b7623759a50c8f0816`
-- PR state at review: `OPEN / DRAFT`; live PR metadata currently reports `mergeable: false`, which is not treated as a design conclusion and must be re-evaluated after the blocked product head moves.
-- Current Product Design disposition: `BLOCKED — FIN001 VAULT OVERVIEW INCOMPLETE + SEMANTIC-TONE + MOBILE/TABLET ACTION-HIERARCHY P2`
-- Evidence level: source inspection only; `TESTS_AUTHORED_NOT_EXECUTED`; no runtime/build/lint/preview PASS claimed.
+- Exact Development HEAD independently inspected: `45cf7998c90254e022258d91a6debfe7179d935d`
+- Product UI integrated through: `DS2-FIN-001`
+- Current single READY slice: `DS2-FIN-002`
+- Open implementation PRs targeting Development at review: none.
+- Current Product Design disposition: `READY — FIN002 BOUNDED TO PAYMENT RECEIPT TRANSACTION-DETAIL HEADER/ACTION FOUNDATION`
+- Evidence level: source inspection only; no build/test/lint/runtime/preview PASS claimed.
 
 ## Independent professional judgment
 
-**The chosen FIN001 boundary is correct: `VaultsPage` is an appropriate smallest representative Finance surface, and the new shared `MetricGrid` is a sound system addition. PR #38 is not yet acceptable for integration because the live page is not wired and the current card adapter would carry two avoidable Finance mini-system defects into V2: semantic coloring of categorical metadata and an unbounded Mobile/Tablet action cluster.**
+**The smallest dependency-safe FIN002 concern is the live `PaymentReceiptDetail` transaction header and review-action surface, not a broad Finance detail-page rewrite.**
 
-I formed this judgment from the exact PR source/diff plus the unchanged live `VaultsPage` before comparing peer conclusions.
+`PaymentReceiptDetail` is the strongest representative next proof because it already contains real Finance status, amount/context, output tools, guarded confirm/reject actions and two existing responsive review modals, while the current top-of-page composition is still a local mini-system: ad-hoc sticky header styles, generic `Badge` for workflow status, a local back button, and a peer action row outside the already-proven shared `TransactionHeader + AppAction + resolveActionSet` grammar.
 
-The positive architecture is worth preserving:
+The shared `TransactionHeader` is already integrated and proven in Sales. Reusing it here advances one cross-module product language without moving any financial eligibility, posting, receipt confirmation/rejection or destination-selection truth into presentation.
 
-- `MetricGrid` owns layout only and gives `3 Desktop / 2 Tablet / 1 Mobile` for this summary without absorbing financial meaning or calculations.
-- `VaultSummary` / `VaultCard` are thin Finance-domain compositions over shared `StatCard`, `Card`, `KeyValueList`, `Badge`, `StatusBadge` and `Button`.
-- Finance calculations, balances, permissions, opening-balance eligibility, service/query/cache behavior and modal workflows remain page/domain-owned on the reviewed head.
-- The slice remains narrow enough to prove summary + collection + action grammar without entering posting, ledger or accounting semantics.
+The rest of the receipt page is intentionally not pulled into this slice. The page still has local `SectionHead` / `InfoRow` / card styling, proof/evidence presentation, amount hero and review-modal composition debt, but migrating all of that now would turn a safe representative concern into a broad Finance detail redesign.
 
-## Blocking P2 corrections on the same PR
+## DS2-FIN-002 READY boundary
 
-### 1. Live `VaultsPage` wiring / device-state completeness
+### Implement in one PR only
 
-`src/pages/finance/VaultsPage.tsx` is absent from the current PR diff. The live surface therefore still mounts the legacy Desktop DataTable tree and separate Mobile card tree, toggled by CSS, with no deliberate Tablet renderer and no single `ResponsiveCollection<Vault>` boundary.
+1. **Thin Finance adapter over shared `TransactionHeader`** for `PaymentReceiptDetail`.
+   - Keep receipt number as the transaction identity.
+   - Keep customer + created-at context as subtitle/context; preserve existing links and date formatting.
+   - Use shared `StatusBadge` for `pending / confirmed / rejected` with the existing Arabic labels and semantic tones; status mapping remains Finance-owned.
+   - Use shared `Button` for the back action with RTL-native cue and touch-safe target.
 
-The same PR must wire the live overview to:
+2. **Canonical review actions through `AppAction + resolveActionSet`.**
+   - Preserve the existing page-owned predicates exactly: `isSelfCashCustody`, `isAdmin`, `canConfirm`, receipt `pending` state and `finance.payments.confirm` permission.
+   - Preserve the existing callbacks exactly: confirm opens the current confirm modal; reject opens the current reject modal and clears the current rejection reason as it does today.
+   - Confirm remains the primary operational review action when it exists; reject remains destructive and only exists for the current admin predicate.
+   - Mobile: max one direct review action; Tablet: max two; Desktop: shared registry limits apply. Any additional authorized review action remains in shared overflow rather than disappearing.
 
-- `VaultSummary` for the existing three page-owned values;
-- one `ResponsiveCollection<Vault>` capability boundary;
-- dense Desktop DataTable parity;
-- deliberate two-column Tablet cards when the available width supports that composition;
-- one-column Mobile operational cards;
-- the existing loading, empty and create-action behavior.
+3. **Keep `DocumentActions` as output tooling, not Finance review eligibility.**
+   - Pass the existing `DocumentActions kind="payment-receipt" entityId={receipt.id}` through the header tools slot without changing its capability logic or output behavior.
+   - Do not duplicate print/PDF capabilities inside `AppAction`.
 
-Focused live-page protection must prove renderer selection, state composition and permission/action parity.
+4. **Focused source/test protection.**
+   - Finance status mapping -> `StatusBadge` semantic tone/label.
+   - Existing action predicates/callback wiring remain page-owned and unchanged.
+   - Mobile/Tablet placement is resolved by the shared action registry, not page-local breakpoints.
+   - `DocumentActions` remains present as output tooling.
+   - Back navigation still targets `/finance/payments`.
 
-### 2. Semantic tone must remain system-owned, not inferred from Finance categories/counts
+### Explicit exclusions
 
-The exact PR adapter exposes `typeVariant` and the focused test explicitly locks `cash -> badge-success` while describing vault type as categorical metadata. That is a direct semantic contradiction. `cash`, `bank` and `mobile_wallet` are categories, not success/info/primary states.
+Do **not** include in FIN002:
 
-Required correction:
+- `getPaymentReceipt`, `confirmPaymentReceipt`, `rejectPaymentReceipt` service/query semantics;
+- the direct custody lookup/query or self-cash-custody rule;
+- vault filtering, destination selection, cheque/custody handling, validation, invalidation or toast behavior;
+- confirm/reject modal field/content/action redesign;
+- receipt amount calculation/formatting or the current amount hero;
+- proof image/PDF/file rendering or upload/output subsystem changes;
+- local detail cards / `SectionHead` / `InfoRow` convergence, financial summary patterns, timelines or audit redesign;
+- Payments list migration, statements, journals, ledger, expenses, approval rules, reports or broad Finance framework work;
+- DB/migration/RPC/RBAC/RLS/route/cache/business/accounting/posting/workflow changes;
+- Vercel, preview branches, GitHub Actions or `main`.
 
-- Vault type uses neutral generic `Badge` treatment only; remove/constrain the semantic `typeVariant` escape hatch.
-- Active/inactive remains semantic `StatusBadge`.
-- `VaultSummary` must not hardcode `tone="success"` for `activeCount`. The adapter's own contract says tone decisions are caller-owned, and the live legacy summary does not assign success meaning to that factual count. Keep the count neutral unless a page-owned semantic reason is explicitly supplied.
-- Existing page-owned positive/negative balance emphasis may remain; do not invent new finance meaning.
+## Device / state / accessibility acceptance
 
-### 3. Mobile/Tablet vault actions require canonical priority + overflow
+- **Mobile (`<=768px`):** sticky transaction identity/status remains readable with long Arabic customer names and mixed Latin receipt number; one direct review action maximum; secondary authorized review action goes to accessible RTL overflow; back and action controls remain practical 44px targets; no horizontal header overflow.
+- **Tablet (`769–1024px`):** deliberate wrapped transaction header with up to two direct review actions; tools remain secondary to review action hierarchy.
+- **Desktop (`>=1025px`):** preserve efficient review by exposing eligible actions through the shared header without changing the existing body/modal workflow. This slice does not claim to solve the page's broader 640px body-density debt.
+- **RTL / Arabic:** back direction, receipt number directionality, Arabic status labels, customer/date wrapping and overflow placement must remain correct.
+- **Loading / not found:** preserve the existing loading skeleton and not-found behavior exactly; do not force the shared header into states where no receipt exists.
+- **Permission / workflow:** no unauthorized confirm/reject action appears; no authorized action disappears.
+- **Accessibility:** shared button labels/focus/touch semantics apply; header has a meaningful banner label; status meaning is text + semantic tone, not color-only.
 
-The exact adapter renders every supplied callback as a peer-visible Button. The live page predicates make the worst case source-provable: a user with `finance.vaults.transact` + `finance.vaults.update` on a zero-balance vault can receive **five simultaneous actions** — statement, opening balance, deposit, withdrawal and edit.
+## System-pattern intent
 
-That is below the North Star for Mobile/Tablet action clarity even if every button is individually touch-safe. It also recreates placement logic outside the already-integrated action grammar.
+FIN002 is a cross-module reuse proof: Sales and Finance transaction detail headers should consume the same `TransactionHeader` and canonical action-placement grammar while each domain keeps its own status vocabulary, permissions, workflow eligibility and callbacks. If the implementation needs a Finance-specific action model or business-aware shared primitive, stop and mark BLOCKED instead.
 
-Required correction is presentation-only and bounded to the same PR:
+This slice is intentionally a header/action foundation, not a declaration that the entire Payment Receipt detail page is migrated. Remaining local detail-card, evidence, amount-summary and modal composition debt stays visible for later Finance/global convergence.
 
-- keep every existing permission predicate, callback and opening-balance rule exactly page-owned;
-- express eligible card actions through the canonical `AppAction` / `resolveActionSet` semantics, or the smallest shared renderer consuming that same contract — **do not create a Finance-specific parallel action model**;
-- Mobile: at most one direct visible action, remaining authorized actions in an accessible, touch-safe RTL overflow;
-- Tablet: at most two direct visible actions, remaining authorized actions in overflow;
-- Desktop DataTable may retain its current dense direct action presentation in this slice;
-- no authorized action may disappear, and no new business priority/eligibility rule may be invented merely to style the card.
+## Peer-state comparison / freshness synthesis
 
-This is not a request for a global CommandBar rewrite. It is the minimum system-fit correction needed so the first Finance card proves the existing V2 action language rather than normalizing a five-button mobile cluster.
+After forming the judgment above, I compared the current repository states:
 
-## Functional isolation / truths to preserve
-
-Do not alter:
-
-- `totalBalance`, `activeCount`, per-vault balances or any calculation;
-- `finance.vaults.create`, `finance.vaults.transact`, `finance.vaults.update` predicates;
-- opening-balance eligibility `current_balance === 0`;
-- statement paging (`pageSize: 25`) or statement loading semantics;
-- create/update/manual adjustment/transfer services, invalidation, validation or toast behavior;
-- statement, create/edit, deposit, withdrawal, opening-balance or transfer modal workflows;
-- routes, queries, cache semantics, accounting/posting truth, DB/RPC/RBAC/RLS or backend contracts.
-
-Do not broaden FIN001 into Finance forms, statements redesign, transaction modals, ledger/journal work, reports/charts, or a speculative financial framework.
-
-## Device / state / accessibility acceptance after correction
-
-- **Desktop:** three-metric summary remains dense and legible; the DataTable preserves name/type/balance/branch/responsible/status/action comparison and existing direct actions.
-- **Tablet:** summary caps at two columns; collection uses deliberate touch-first two-column cards; no five-button peer action row.
-- **Mobile:** summary stacks to one column; vault cards prioritize identity, semantic status and balance, keep practical 44px targets, and expose one direct action + accessible overflow without horizontal scrolling.
-- **RTL / Arabic:** long vault/branch/responsible names and large monetary values must wrap safely; overflow trigger/menu semantics must remain RTL-native.
-- **States:** existing loading, true-empty and permission-limited create/action behavior remains equivalent; only one device interaction tree is mounted through `ResponsiveCollection`.
-- **Semantic system:** vault kind is neutral category metadata; active/inactive is workflow/operational status; balance tone remains caller/page-owned.
-
-## Director synthesis after peer-state comparison
-
-After forming the judgment above, I compared the repository peer states and exact PR discussion:
-
-- **Design QA:** both exact-head blockers are valid: live wiring is incomplete and vault type semantic coloring contradicts the V2 invariant. I adopt both.
-- **Design QA action-hierarchy WATCH:** I elevate this to **BLOCKING for the same FIN001 head** because the exact adapter plus live predicates already prove the five-action Mobile/Tablet case; waiting for runtime wiring would knowingly carry a page-local action cluster into the first Finance migration. The correction can reuse existing V2 action semantics without changing Finance truth.
-- **UI Production Engineer:** the PR-head state correctly says the Vault overview is the intended narrow boundary and that financial predicates remain page-owned. However, its statement that vault type is neutral conflicts with the exact code/test, and its claim that touch-safe buttons are sufficient does not address multi-action priority/overflow.
-- **Development Integrator:** its state is correctly consumed by the PROC002 merge and provides no FIN001 approval. It must remain `NO_MERGE` while this exact-head Director/QA block is current.
-- **No durable-direction contradiction:** the corrections reinforce existing Team Memory / North Star rules; no Team Memory or Decision Log change is needed.
-
-## Remaining non-blocking WATCH
-
-- The legacy page-local smart create FAB remains broader action-orchestration debt; do not turn this FIN001 repair into a global FAB retirement unless the live wiring cannot preserve a clear create path otherwise.
-- Finance form/modal field convergence is later work.
-- Runtime visual stress for dark mode, large currency values, long Arabic content and browser overflow remains milestone/release evidence and is not claimed from source.
-- PR mergeability must be rechecked after a corrected head exists; do not create governance-only SHA churn solely to chase the current mergeability flag.
+- **Team Memory / Integrator:** current integrated truth is FIN001 DONE and FIN002 is the sole READY slice. This state is current and aligned.
+- **UI Production Engineer:** its latest state describes the already-merged FIN001 feature head and is consumed/stale for FIN002; there is no current implementation PR.
+- **Design QA:** its GREEN-DEV record targets merged FIN001 exact head and is consumed for FIN002; no approval is carried forward.
+- **Previous Design Director state:** the FIN001 BLOCKING record was stale after PR #38 corrections/merge and is superseded by this state.
+- **No material contradiction:** there is no current BLOCKING peer-state disagreement for FIN002.
 
 ## What changed since previous state
 
-PROC002 is already integrated and the previous Director state was stale. FIN001 is now active on PR #38. This state validates the Vault overview as the correct narrow Finance boundary, accepts shared `MetricGrid`, adopts QA's two P2 blockers, and adds one system-fit requirement: the source-proven five-action Mobile/Tablet card cluster must converge on the existing canonical action-priority/overflow grammar before Finance establishes it as precedent.
+FIN001 has been integrated and its prior Director blocker is consumed. FIN002 is now explicitly bounded from the exact latest Development baseline to `PaymentReceiptDetail` header/review-action convergence only, with the rest of Finance detail presentation held outside the implementation slice.
 
 ### Cross-role handoff
 - **To:** UI Production Engineer, Design QA, Development Integrator
-- **What changed:** Product Design Director validates the `VaultsPage` overview as the correct FIN001 boundary but blocks PR #38 exact HEAD `96cc3c4f76b4f8ab506b40b7623759a50c8f0816` until live `ResponsiveCollection` wiring, neutral category/summary tone ownership, and canonical Mobile/Tablet action priority + overflow are corrected on the same PR.
-- **Preserve:** all vault balances/calculations, permissions, `current_balance === 0` opening rule, callbacks/modal flows, statement paging, services/query/cache/validation/routes/accounting truth; keep `MetricGrid` presentation-only and Desktop review density intact.
-- **Need from you:** UI Production Engineer should make only these bounded overview corrections + focused parity/action/semantic tests on PR #38; Design QA must independently review the moved exact HEAD; Integrator remains `NO_MERGE` until fresh `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` and normal gates pass.
-- **Blocker level:** `BLOCKING`.
-- **Baseline:** Development `1314f5c63ab5ffb996c3b3177de584f7cb70fd88`; PR #38 exact reviewed HEAD `96cc3c4f76b4f8ab506b40b7623759a50c8f0816`.
+- **What changed:** `DS2-FIN-002` is now dependency-safe and explicitly bounded to the `PaymentReceiptDetail` transaction header/status/review-action foundation using shared `TransactionHeader + StatusBadge + AppAction/resolveActionSet`; no implementation PR is currently open.
+- **Preserve:** every payment receipt query/service, self-custody/admin predicate, confirm/reject callback and modal, destination/vault rule, output capability, invalidation/validation/toast/route/accounting/posting/workflow semantic; keep loading/not-found behavior unchanged.
+- **Need from you:** UI Production Engineer should open exactly one FIN002 PR from the latest Development HEAD and implement only this bounded concern + focused tests; Design QA should review the stable exact PR HEAD independently; Integrator remains no-op until exact-head `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` exists.
+- **Blocker level:** `NONE`.
+- **Baseline:** Development `45cf7998c90254e022258d91a6debfe7179d935d`; active PR: none.
