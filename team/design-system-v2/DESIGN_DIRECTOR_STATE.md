@@ -4,101 +4,93 @@
 
 - Review date: `2026-09-17`.
 - Development branch: `design-system-v2-development`.
-- Exact product Development HEAD independently inspected before coordination writes: `22962d71674be08d7f04805b213d8c423a211b2a`.
+- Exact Development HEAD independently inspected before this state write: `a83ea41718f23001851003a56bc5abcdfe4b7ed2`.
 - Latest integrated product slice: `DS2-FIELD-002`, squash `2492fa475e7bc5beb9148124f31a4b4837057c19`.
-- Open implementation PRs targeting Development at review: `NONE`.
-- Product Design disposition: `DS2-WORK-001 READY — Create Task form composition foundation`.
-- Workstream boundary commit: `2b3326a5f445a3461893d1fd3397cf5619c4616b`.
-- Blocker: `NONE`.
+- Active implementation PR: `#44 — DS2-WORK-001: Create Task form V2 composition foundation`.
+- PR base: `design-system-v2-development` at `d748637fe5fd2a5fd50eced16b15645c9f75185d`.
+- Exact PR HEAD independently reviewed: `09f30f89511ebde932695883109b3dd4dc161456`.
+- PR state at review: `OPEN / DRAFT / mergeable=true`; review threads: `NONE`.
+- Product Design disposition: `P2 / BLOCKING — shared Field control touch geometry is not guaranteed through Tablet/Mobile`.
+- QA disposition on the same exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
+- Blocker: `BLOCKING` until the touch-control contract is corrected on the same PR and the new exact HEAD is re-reviewed.
 
 ## Independent professional judgment
 
-**The smallest dependency-safe Work Management entry point is `/work/new` (`CreateTaskPage`) and specifically its local form grammar, not the Work Hub or stateful Work detail.**
+**WORK001 is architecturally correct in its form decomposition, but the exact implementation HEAD cannot be accepted yet because it does not satisfy the declared Mobile/Tablet touch-control contract.**
 
-I formed this judgment from the latest Work source and the established V2 form contracts before relying on peer lifecycle states. Work Management is already one of the repository's strongest responsive modules, but it still carries a broad CSS island and local form primitives. `CreateTaskPage` duplicates `work-form-card`, `work-form-grid`, `work-form-actions` and `work-field` even though V2 now has proven `FormSection`, `FormGrid`, `FormActions`, `Field` and shared `Button` contracts. At the same time, the page's actual task semantics remain clearly page/domain-owned, making this a high-value presentation migration without entering Work's critical state machine.
+I formed this judgment from the exact PR source and shared V2 CSS/contracts before comparing peer conclusions. The migration correctly replaces the page-local Create Task form shell with shared `FormSection + FormGrid + Field + FormActions + Button`, preserves Work business/state-machine truth, and keeps the action area non-sticky. However, the migrated native `input` and `select` controls now consume `.form-input` / `.form-select` inside `Field`, and the shared V2 Field/control CSS does not set a minimum control height. The previous Work-local `.work-field input/select` contract explicitly guaranteed `min-height: 42px`; the new shared path removes even that explicit floor.
 
-The Work Hub is intentionally not the first slice. Its clickable summary metrics, multi-permission action surface, local search/mode controls and operational queue states expose several separate pattern questions; bundling those into the first Work PR would violate the one-concern rule. Work detail is even less appropriate because its transition/ownership/approval semantics are state-machine critical.
+This matters because the North Star/device contract makes touch ergonomics first-class, the V2 foundations already define `--ds-control-height-standard: 42px` and `--ds-control-height-touch: 44px`, and the WORK001 acceptance explicitly requires touch-safe Mobile controls and 44px-capable Tablet controls. `Button touchTarget` correctly enforces the action hit area, but there is no equivalent source-level guarantee for the migrated text/date/select controls. A browser-dependent computed height is not an acceptable Design System contract.
 
-## WORK001 architecture boundary
+This is a shared-system gap exposed by a real migrated screen, so the correction belongs in the shared V2 Field/control layer rather than in a new `work-*` local patch.
 
-### In scope
+## Exact-head review findings
 
-- Route/surface: `/work/new` only.
-- Source: `src/pages/work/CreateTaskPage.tsx` plus only directly necessary presentation tests/styles.
-- Replace the four existing visual section shells with shared `FormSection`, preserving exact order, titles and content.
-- Replace safe paired field layouts with `FormGrid columns={2}`; full-width fields remain intentionally full-width.
-- Move standard text/select/textarea field anatomy touched by the slice to shared `Field`, preserving labels, hints, errors, native control types, values, callbacks and current max-length/disabled behavior.
-- Replace local cancel/submit row composition with non-sticky `FormActions + Button` while preserving secondary cancel, primary submit, loading state and callbacks.
-- Keep the existing `PageHeader` unchanged.
-- Remove only CreateTask-specific local form-shell CSS that becomes unused because of this migration; no broad Work CSS cleanup.
+### Scope / functional isolation — PASS
 
-### Explicitly out of scope
+The five-file PR remains inside the bounded `/work/new` presentation concern. Source review confirms preservation of:
 
-- `validate()` semantics, message wording and the `nextActionAt > dueAt` rule.
-- `useAssignmentCandidates`, default candidate selection, owner/accountability meaning, assignee/current-ball meaning, acknowledgement eligibility/reset, completion mode, priority or visibility semantics.
-- `useCreateTask`, `toIso`, payload shape, `activate: true`, toast outcomes and post-create navigation.
-- The acknowledgement checkbox grammar and selected owner/assignee summary cells.
-- Work Hub, Submit Request, Supervisor, management, Work detail, sticky task actions, badges and operational flags.
-- Select/Combobox convergence, ActionRegistry expansion, new Work-specific shared primitives, or any backend/database/RPC/query/permission/RBAC/RLS/service/workflow change.
+- `toIso` behavior;
+- `useAssignmentCandidates('')`, self/first-candidate defaulting, owner/accountability meaning and assignee/current-ball meaning;
+- acknowledgement reset/disabled rule and payload suppression for self assignment;
+- `validate()` wording and `nextActionAt > dueAt` comparison;
+- priority, visibility and completion-mode values/options/callbacks;
+- `useCreateTask`, payload keys, `activate: true`, success/error toasts and post-create navigation;
+- existing `PageHeader`, responsibility summary cells and acknowledgement checkbox;
+- all backend/query/service/permission/RBAC/RLS/workflow truth.
 
-If preserving any of those truths requires functional modification, WORK001 becomes `BLOCKED`; the implementation must not absorb the functional issue.
+No backend/business change is requested to resolve the blocker.
 
-## Product-quality acceptance
+### Shared-system fit / hierarchy — PASS apart from touch geometry
 
-### System coherence / hierarchy
+- Four task-entry sections use shared `FormSection` in the same Arabic narrative order.
+- Safe owner/assignee, timing and priority/visibility pairs use `FormGrid columns={2}`; narrative/completion content remains full-width.
+- Standard field anatomy uses shared `Field` rather than introducing a Work-local replacement.
+- Actions use shared non-sticky `FormActions + Button`; cancel remains secondary and create remains primary.
+- Shared `Field` correctly owns label/hint/error relationships and invalid state without moving validation semantics into the component.
 
-- The task-entry narrative remains exactly: what is required -> responsibility/current ball holder -> next action/timing -> priority/privacy/completion behavior.
-- Shared patterns own spacing, section hierarchy, field anatomy and action composition; Work owns task meaning and business state.
-- No page-local replacement is introduced for a V2 primitive already capable of the presentation requirement.
-- No attempt is made to flatten Work's useful operational terminology into generic component vocabulary.
+### Device / RTL / accessibility — BLOCKING on one bounded point
 
-### Device contract
+- **Mobile (`<=768px`)**: grid collapse and non-sticky action placement are correct; action buttons are touch-safe through `touchTarget`. Native text/date/select controls, however, have no shared 44px minimum-height guarantee after leaving `.work-field`.
+- **Tablet (`769–1024px`)**: deliberate two-column grouping is correct, but the same native control geometry gap violates the declared touch-first Tablet contract.
+- **Desktop (`>=1025px`)**: two-column density and hierarchy are appropriate. Desktop may remain on the standard 42px control-density role.
+- Arabic labels, `htmlFor`/ids, `aria-describedby`, `aria-invalid`, manual `noValidate` semantics and error text are otherwise coherent.
 
-- **Mobile (`<=768px`)**: migrated grids collapse to one column; controls/actions remain touch-safe; actions stay non-sticky and do not compete with BottomNav/FAB space.
-- **Tablet (`769–1024px`)**: safe paired fields may use two columns; long Arabic labels/hints and validation remain readable without compressed control geometry.
-- **Desktop (`>=1025px`)**: preserve the current efficient two-column task-entry density; do not invent denser three/four-column business grouping.
+## Required bounded correction on PR #44
 
-### RTL / Arabic / accessibility / states
+Do not redesign Create Task and do not reopen Work Hub/detail scope. Fix the same PR by strengthening the **shared V2 Field/control sizing contract** so migrated standard controls have deterministic geometry:
 
-- Every migrated labeled native control remains programmatically associated with its Arabic label.
-- Shared `Field` should own hint/error relationships through ids/`aria-describedby`; error meaning must not be color-only.
-- Existing `required`, `disabled`, loading and validation truth remains unchanged.
-- Focus/keyboard behavior remains native/shared, and no nested interactive pattern is introduced.
-- Dark-mode/RTL styling comes from shared tokens/patterns; no new hard-coded colors or LTR assumptions.
+- shared `Field`-scoped text/date inputs and native selects must have at least the V2 standard control height on Desktop;
+- through Tablet and Mobile they must have at least `--ds-control-height-touch` (`44px`);
+- textarea behavior may retain its existing larger minimum height;
+- implement this in the shared V2 component/style layer, not with a CreateTask-specific `work-*` rule;
+- add focused source/style test evidence protecting the shared control-height contract and keep all existing WORK001 functional-isolation tests intact.
 
-### Evidence
+This is presentation-only hardening. If the Implementer finds that satisfying it would require changing Work semantics, validation, native control values/callbacks or backend behavior, stop and mark the slice blocked instead.
 
-Focused authored tests should protect shared-pattern adoption, section ordering, responsive grid/action intent, label/hint/error association and explicit preservation of the functional boundaries above. Evidence remains subject to `33_TEST_AND_VALIDATION_POLICY.md`; no hosted CI, Vercel preview or deployment action is permitted.
+## Non-blocking WATCH after that correction
 
-## Current Work-island observations for later slices
-
-These are roadmap observations, not WORK001 scope:
-
-- `WorkHubPage` still carries a local hero, clickable KPI summary cards, local segmented mode control, local search surface, local section headers/action cards/empty state and a mobile create treatment.
-- `work.css` contains a mature 1024/768 responsive system; this should be mined selectively rather than deleted wholesale.
-- `WorkItemCard` already composes the shared `DataCard` and feature-level Work badges, so future collection migration must preserve that good ownership boundary instead of replacing domain presentation indiscriminately.
-- Existing V2 `SegmentedControl`, `MetricGrid/StatCard`, `SectionHeader`, `StatePanel`, `ResponsiveCollection` and action patterns are candidates for later Work slices only after exact interaction parity is proven.
+- `work.css` remains a broader legacy island. In particular, Mobile `.work-page` retains its pre-existing bottom-spacing contract and the responsibility/acknowledgement sub-surfaces remain Work-local. These are later convergence debt, not a reason to expand WORK001.
+- Shared `FormSection` density should be runtime-validated at the next owner-requested visual milestone; no runtime visual PASS is claimed in this source-only run.
 
 ## Peer-state comparison / contradiction synthesis
 
-I formed the Product Design judgment above from current source before comparing the peer role files.
+I formed the Product Design judgment above before comparing peer states.
 
-- **Development Integrator:** fresh direction is aligned: FIELD002 is integrated and WORK001 is the next single READY roadmap concern.
-- **UI Production Engineer:** Development-side state is lifecycle-stale from the completed FIELD002 implementation; it does not conflict with the new WORK001 boundary.
-- **Design QA:** Development-side state is lifecycle-stale from FIELD002 exact-head review; no current QA conclusion conflicts with WORK001 because no implementation PR exists yet.
-- **Team Memory:** aligned on Work Management as the next module and on preserving Work business/query/permission/workflow truth.
-- **Decision Log:** no durable rule needs change; this is adoption of already-established V2 form ownership.
-
-There is **no BLOCKING cross-role contradiction**. Team Memory does not need an update because the overall roadmap/direction is unchanged; only the already-queued WORK001 concern is now concretely bounded.
+- **Design QA:** current and fresh on the same exact PR HEAD, but its `GREEN-DEV` conclusion missed the lack of a deterministic touch-height contract for the newly migrated native controls. This is now a **material BLOCKING design-system contradiction** until a new exact HEAD is reviewed.
+- **Development Integrator:** correctly held `NO_MERGE_WAITING_FRESH_PRODUCT_DESIGN_CLOSEOUT`; that gate now resolves to `NO_MERGE` because Product Design found a concrete P2 blocker rather than granting acceptance.
+- **UI Production Engineer:** the Development-side state is lifecycle-stale from FIELD002, while the PR-owned WORK001 state is current and otherwise aligned. Its claim that actions are touch-safe is correct; the unresolved issue is the shared field-control geometry.
+- **Team Memory / Workstream:** system direction remains aligned. No Team Memory or Decision Log update is required because the durable strategy has not changed.
+- **Development drift since PR base:** only QA/Integration governance commits advanced Development; no relevant shared component/product implementation drift invalidates the source comparison.
 
 ## What changed since previous state
 
-FIELD002 is no longer an active PR: it is integrated, Development has no open implementation PR, and the previously generic WORK001 placeholder now has one concrete dependency-safe implementation target. Product Design selected and documented the `/work/new` Create Task form composition as the only READY implementation concern and explicitly deferred Work Hub/detail/management convergence.
+The pre-implementation WORK001 boundary has now been tested against PR #44 exact HEAD `09f30f89511ebde932695883109b3dd4dc161456`. The composition and functional-isolation direction pass, but the Director found one source-proven touch-ergonomics gap in the shared Field/control contract. WORK001 therefore remains the single active slice and must not integrate or advance the queue until that bounded correction is made and the new exact HEAD receives fresh QA + Product Design review.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer; Design QA and Development Integrator after an exact implementation PR HEAD exists.
-- **What changed:** `DS2-WORK-001` is now concretely bounded to the `/work/new` Create Task presentation/form-composition migration using shared `FormSection + FormGrid + Field + FormActions + Button`; Workstream updated in commit `2b3326a5f445a3461893d1fd3397cf5619c4616b`.
-- **Preserve:** exact section order/content; title/description/outcome/next-action values and callbacks; owner vs assignee meaning; candidate loading/defaulting; acknowledgement eligibility/reset; dates and `nextActionAt > dueAt` validation; priority/visibility/completion-mode semantics; `useCreateTask` payload/`activate: true`; toast/navigation outcomes; existing PageHeader; non-sticky actions; all backend/query/permission/state-machine truth.
-- **Need from you:** UI Production Engineer should open exactly one WORK001 PR from current `design-system-v2-development` and implement only this bounded presentation migration with focused tests. Do not begin Work Hub/detail cleanup in the same PR. QA/Integrator should wait for one stable exact PR HEAD before reviewing.
-- **Blocker level:** `NONE`.
-- **Baseline:** product source inspected at Development `22962d71674be08d7f04805b213d8c423a211b2a`; workstream boundary commit `2b3326a5f445a3461893d1fd3397cf5619c4616b`.
+- **To:** UI Production Engineer; Design QA and Development Integrator after the corrected exact PR HEAD exists.
+- **What changed:** Product Design independently reviewed PR #44 exact HEAD `09f30f89511ebde932695883109b3dd4dc161456`; form architecture/function isolation pass, but a P2 BLOCKING gap was found because migrated `Field` inputs/selects no longer have a deterministic standard/touch minimum-height contract.
+- **Preserve:** exact section order/content; owner vs assignee and acknowledgement semantics; candidate loading/defaulting; validation wording/date rule; priority/visibility/completion mode; `toIso`; create payload/`activate: true`; toasts/navigation; PageHeader; responsibility summary/checkbox; non-sticky actions; all backend/query/permission/state-machine truth; full Reports/Admin/Global roadmap.
+- **Need from you:** UI Production Engineer should repair the same PR by hardening shared `Field`-scoped standard input/select sizing to standard Desktop height and at least `--ds-control-height-touch` through Tablet/Mobile, with focused test/source evidence and no Work-local sizing patch. QA then reviews the new exact HEAD; Product Design must also re-close the new HEAD before Integration. Integrator remains `NO_MERGE` meanwhile.
+- **Blocker level:** `BLOCKING`.
+- **Baseline:** Development reviewed at `a83ea41718f23001851003a56bc5abcdfe4b7ed2`; blocked PR #44 exact HEAD `09f30f89511ebde932695883109b3dd4dc161456`.
