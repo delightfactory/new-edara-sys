@@ -4,84 +4,74 @@
 
 - Run date: `2026-09-17`
 - Development branch: `design-system-v2-development`
-- Exact slice baseline: `3cb51c0eacc4fe0a35497734e1786a2c96114c32`
-- Feature branch: `ds2/payment-receipt-detail-header-v2`
-- Draft PR: `#39 — DS2-FIN-002: Payment Receipt transaction-detail header`
-- Product/test/workstream HEAD before this owned-state write: `a2688dd490fa1e3988c67a59a4ee76c237626720`
-- Active slice: `DS2-FIN-002 — Payment Receipt transaction-detail header/action foundation`
-- Disposition: `REVIEW`
+- Exact slice baseline: `1f6ee3226c1364b72ea2a2defc7879a3325fa505`
+- Feature branch: `ds2/hr-attendance-task-controls-v2`
+- Draft PR: pending creation in this run
+- Product/test HEAD before this owned-state write: `139aada576a99fa3604cd2a038323f0e52ca55ea`
+- Active slice: `DS2-HR-001 — Attendance Check-in operational task controls`
+- Disposition: `IN_PROGRESS`
 - Evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 
 ## Independent implementation judgment
 
-`PaymentReceiptDetail` is the correct bounded FIN002 representative. The local sticky hero duplicated transaction identity, semantic status, navigation and review-action placement already standardized by the shared V2 transaction grammar. The implementation therefore replaces only that header/action surface and leaves Finance truth, body cards, amount hero, proof handling and review modals untouched.
+The Design Director boundary is correct and intentionally narrower than a page redesign: Attendance is the first Mobile-primary operational-task proof, but this slice owns only the primary action + process-progress + transient-feedback band. GPS permission, attendance eligibility, RPC/result mapping, tracking, clock/status/employee/tracking/day-done surfaces remain HR/page-owned.
 
-The page continues to own every eligibility predicate and workflow callback. Shared V2 owns only header presentation and device-aware placement.
+The first implementation concern therefore establishes only the missing shared presentation grammar before touching the live page. `ProcessProgress` accepts caller-computed step states and `PrimaryTaskAction` is a thin composition over the existing shared `Button`; neither component knows attendance, `FlowState`, GPS, RPC codes, permissions or transitions.
 
 ## Material implementation progress
 
-- Added `PaymentReceiptDetailHeader`, a thin Finance adapter over shared `TransactionHeader`.
-- Mapped `pending / confirmed / rejected` to shared text-backed `StatusBadge` tones while preserving the existing Arabic labels.
-- Preserved receipt number identity, `CustomerLink`, created-at formatting and `/finance/payments` back route.
-- Replaced the local confirm/reject button group with page-owned `AppAction[]` declarations.
-- Preserved exact predicates: `isSelfCashCustody`, pending state, cash/custody linkage, `isAdmin`, `finance.payments.confirm`, and `canConfirm`.
-- Preserved exact callbacks: confirm still calls `openConfirm`; reject still clears `rejectReason` then opens the existing reject modal.
-- Kept `DocumentActions kind="payment-receipt"` as header tools; output actions were not duplicated into workflow actions.
-- Hardened shared `TransactionHeader` overflow CSS so author styles cannot expose overflow actions while native `<details>` is closed.
-- Added focused Testing Library/source-contract tests for status mapping, back/tools, Mobile/Tablet action placement, predicates/callbacks, service boundaries and collapsed overflow presentation.
-- Updated the workstream slice to `REVIEW` and PR #39.
+- Added shared `ProcessProgress` with caller-owned `completed/current/pending` state, visible non-color state labels and `aria-current="step"` semantics.
+- Added shared `PrimaryTaskAction` as a single operational next-action composition over `Button`, inheriting `btn-lg`, `btn-touch`, loading/disabled/focus semantics and keeping a neutral primary action treatment.
+- Added reusable logical/RTL-safe operational-control CSS with a bounded responsive progress grid, 48px minimum action height and no essential motion.
+- Added focused Testing Library coverage for current/completed semantics, Arabic labels/meta, callback delegation, shared Button touch classes and loading/disabled behavior.
+- No live Attendance business or presentation file has been changed yet; integration remains the next concern on this same branch/PR.
 - Did not touch peer role-state files, Team Memory or Decision Log.
 
 ## Changed-file / pattern scope
 
-PR #39 is UI/Test/Governance-owned only:
-- `src/components/finance/PaymentReceiptDetailPresentation.tsx`
-- `src/components/finance/PaymentReceiptDetailPresentation.test.tsx`
-- `src/pages/finance/PaymentReceiptDetail.tsx`
-- `src/pages/finance/PaymentReceiptDetail.v2.test.ts`
-- `src/styles/design-system-v2-transaction.css`
-- `src/components/patterns/TransactionHeader.styles.test.ts`
-- `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md`
+Current branch product/test scope:
+- `src/components/patterns/OperationalTaskControls.css`
+- `src/components/patterns/ProcessProgress.tsx`
+- `src/components/patterns/PrimaryTaskAction.tsx`
+- `src/components/patterns/OperationalTaskControls.test.tsx`
 - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md` (owned state only)
 
-No DB/migration/RPC/service/query/cache/RBAC/RLS/route-guard/accounting/posting/workflow/validation/deployment file is in the implementation scope.
+No DB/migration/RPC/service/query/cache/RBAC/RLS/route-guard/attendance-policy/tracking/deployment file is in scope.
 
 ## Preserve / verified boundaries
 
-- `getPaymentReceipt`, `confirmPaymentReceipt`, `rejectPaymentReceipt` calls and arguments remain unchanged.
-- Custody lookup/query and self-cash-custody semantics remain page-owned and unchanged.
-- Vault filtering, cheque/custody destination behavior, confirmation validation, invalidation and toasts remain unchanged.
-- Loading and not-found behavior still exits before any transaction header renders.
-- Amount hero, local receipt/payment/review/proof/collection detail cards and both review modals remain outside this slice.
-- `DocumentActions` remains a separate tool capability, not workflow truth.
+- `recordAttendanceGPS`, `recordAttendanceLocationPing`, `getAttendanceDays`, query keys/refetch and result/error mapping remain untouched.
+- `useGeoPermission`, `GeoPermissionBanner`, `GeoPermissionDialog` and explain-before-ask behavior remain untouched.
+- Tracking settings/pings/movement thresholds/focus-resume-reconnect/outside-zone logic remain untouched.
+- The new shared patterns contain no attendance types, service imports, workflow transitions or eligibility inference.
+- `PrimaryTaskAction` does not use `AppAction/resolveActionSet`; it is deliberately one context-dependent task action over shared `Button`.
 
 ## Device / state coverage
 
-- **Desktop:** shared sticky transaction header keeps receipt identity/status/context and efficient direct review actions; output tools remain separate.
-- **Tablet:** shared registry permits at most two direct review actions; header/actions wrap deliberately and tools occupy the secondary row when needed.
-- **Mobile:** one direct review action maximum; reject moves to accessible RTL overflow when both actions are eligible; shared back/review controls use touch targets.
-- **States:** pending/confirmed/rejected are text-backed semantic statuses. Unauthorized or ineligible review actions are omitted at declaration time rather than visually disabled as a permission substitute.
-- **Loading/not-found:** unchanged and header-free until receipt data exists.
+- **Mobile:** action composition opts into shared `btn-touch` and enforces a 48px minimum block size; Arabic labels wrap rather than truncate. Progress uses logical spacing and bounded equal columns.
+- **Tablet/Desktop:** patterns remain parent-width bounded and do not introduce sticky/fixed behavior or stretch policy.
+- **RTL/accessibility:** logical properties only; progress exposes readable state text plus current-step semantics; optional metadata may remain caller-provided LTR/tabular.
+- **States covered in shared layer:** completed/current/pending progress and enabled/disabled/loading primary action. Attendance `idle/locating/submitting/success/error` mapping remains to be wired by the page in the next concern.
 
 ## Test / execution evidence
 
 Evidence is **`TESTS_AUTHORED_NOT_EXECUTED`**.
 
-No executable repository checkout / `package.json` is available in the approved sandbox in this run, so `npm test`, `npm run build` and `npm run lint` were not executed. No execution PASS is claimed. No GitHub Actions/hosted CI was triggered and no Vercel preview/deploy was used.
+The approved sandbox contains no executable repository checkout / `package.json`, so `npm test`, `npm run build` and `npm run lint` were not executed. No PASS is claimed. No GitHub Actions/hosted CI was triggered and no Vercel preview/deploy was used.
 
 No known TypeScript/build error was discovered by source inspection. This is not a runtime/build PASS claim.
 
 ## Risks / next boundary
 
-- Fresh exact-head Product Design Director and Design QA review is required for PR #39.
-- Runtime visual validation remains unclaimed; reviewers should inspect long Arabic customer names, Latin receipt identifiers, Mobile overflow opening and DocumentActions wrapping when an approved runtime is available.
-- Do not broaden FIN002 into amount hero, body cards, proof handling, review modals or Finance workflow/service changes.
+- The slice is intentionally not review-ready yet because `AttendanceCheckin.tsx` still uses its local `ProgressSteps` and custom ring `<button>` and transient feedback cards.
+- Next UI concern on the same PR: wire the existing two caller-computed steps into `ProcessProgress`, replace only `SmartActionButton` presentation with `PrimaryTaskAction`, migrate current success/error cards to existing `AlertPanel`, and remove only CSS/classes proven dead by that extraction.
+- Preserve all existing suppression/gating conditions and callbacks exactly; if integration requires moving any GPS/attendance/tracking truth into shared patterns, stop and mark BLOCKED instead.
 
 ### Cross-role handoff
-- **To:** Product Design Director, Design QA, Development Integrator
-- **What changed:** Payment Receipt detail now consumes the canonical V2 transaction header/status/action grammar while keeping Finance eligibility and callbacks page-owned. The shared overflow was also corrected so closed native details cannot leak action content.
-- **Preserve:** every Finance query/service, permission, self-custody predicate, validation, invalidation, modal workflow, output tool and route truth listed above.
-- **Need from you:** review the exact PR #39 HEAD produced by this owned-state commit for design hierarchy, source boundary and accessibility/device behavior.
-- **Integrator:** `NO_MERGE` until fresh `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`; do not infer runtime evidence.
-- **Baseline:** `3cb51c0eacc4fe0a35497734e1786a2c96114c32`; product/test/workstream HEAD before state write `a2688dd490fa1e3988c67a59a4ee76c237626720`.
+- **To:** next UI Production Engineer run; Product Design Director / Design QA for awareness only while IN_PROGRESS.
+- **What changed:** reusable shared operational-task progress and single-action presentation foundations now exist with focused tests.
+- **Preserve:** all HR/GPS/tracking/service/query/workflow truth and every explicit exclusion in DS2-HR-001.
+- **Need next:** integrate the live Attendance action/progress/feedback band only, then perform exact-head source review before moving to REVIEW.
+- **Integrator:** `NO_MERGE`; slice is `IN_PROGRESS` and not ready for integration.
+- **Baseline:** `1f6ee3226c1364b72ea2a2defc7879a3325fa505`; product/test HEAD before state write `139aada576a99fa3604cd2a038323f0e52ca55ea`.
 - **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`.
