@@ -121,7 +121,7 @@ System result:
 ## Current single active slice
 
 ### DS2-HR-002 — HR admin lists/forms
-Status: `IN_PROGRESS`
+Status: `REVIEW`
 Owner role: UI Production Engineer
 
 Selected concern:
@@ -187,7 +187,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### F. HR / People
 - `DS2-HR-001` Attendance Check-in operational task controls — `DONE`
-- `DS2-HR-002` HR admin lists/forms — `IN_PROGRESS`
+- `DS2-HR-002` HR admin lists/forms — `REVIEW`
 
 ### G. Field Activities / Targets
 - `DS2-FIELD-001` Activities/visit/call/target lists — `BACKLOG`
