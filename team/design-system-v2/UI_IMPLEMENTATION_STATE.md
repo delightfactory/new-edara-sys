@@ -4,40 +4,36 @@
 
 - Run date: `2026-09-17`
 - Development branch: `design-system-v2-development`
-- Exact slice baseline / current Development HEAD inspected: `def098978efbe796306f882014e69652f014efa6`
+- Exact slice baseline: `def098978efbe796306f882014e69652f014efa6`
+- Current Development HEAD inspected this run: `59e8bdc692c9e46571d52e602eb8c5ef78187cf4` (coordination-only QA/Integration state drift from the slice baseline; no overlapping product/shared implementation change found)
 - Feature branch: `ds2/field-activities-list-v2`
 - Draft PR: `#42 — DS2-FIELD-001: Activities list V2 foundation`
-- Product/test HEAD before this owned-state write: `f012e4f3059ba7cd6ec27734faa815ba944b70c1`
+- Previous QA-blocked HEAD: `823c89d10201a8db68e7189803bd003c3fd9fd2f`
+- Product/test HEAD after the bounded reviewer fixes and before this owned-state write: `25306f0cf5a7f9d0d76fae2bfad800978a84b6d1`
 - Active slice: `DS2-FIELD-001 — Activities/visit/call/target lists`
 - Active representative concern: `ActivitiesPage` list presentation only
-- Disposition: `IN_PROGRESS — REPRESENTATIVE LIST IMPLEMENTED / POST-CORRECTION EXACT-DIFF PASS PENDING`
+- Disposition: `REVIEW — QA P2 FIXES APPLIED / FRESH EXACT-HEAD REVIEW REQUIRED`
 - Evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 
 ## Independent implementation judgment
 
-`ActivitiesPage` is the smallest dependency-safe representative Field list on the current Development baseline. It exposes the recurring V2 gaps directly — a legacy dual table/card render path through `DataTable.dataCardMapping`, local outcome color badges, direct page-owned device action placement and page-local list styling — while its query, permission, delete-RPC, customer deep-link and routing truth can remain untouched.
+The two exact P2 findings from Design QA are resolved within the existing Activities-list concern without changing any field query, permission, deletion, route, GPS, workflow or service truth.
 
-The implementation therefore migrates only the Activities list capability. It does not broaden into call plans, visit plans, targets, activity create/detail flows, GPS acquisition, field workflow or backend semantics.
+The Tablet composition now preserves the optional activity start-time datum that the baseline DataTable exposed, using one page-owned `fmtTime` formatter shared by Desktop table and card projection. Mobile intentionally remains at its pre-existing information density and does not gain the time row. The duplicated category treatment is also removed: category now appears once as neutral `Badge` metadata while semantic outcome remains `StatusBadge`.
+
+A post-fix exact source/diff pass found no additional material issue in the bounded correction. The representative migration still uses one live responsive collection capability and does not broaden into plan/target/create/detail/GPS-acquisition work.
 
 ## Material implementation progress
 
-- Created `ActivityOverviewPresentation` as a thin Field-domain adapter over shared `Card + KeyValueList + StatusBadge + Badge + Button + AppAction/resolveActionSet`.
-- Replaced legacy outcome color badges on this list with readable semantic V2 outcome tones while preserving the existing Arabic outcome labels.
-- `ActivitiesPage` now mounts exactly one `ResponsiveCollection<Activity>` renderer at a time: dense Desktop `DataTable`, deliberate two-column Tablet cards and one-column Mobile cards.
-- Removed `DataTable.dataCardMapping` from this live page so Desktop/Mobile interactive descendants are not duplicated in the DOM.
-- Page-owned action declarations preserve view/delete eligibility and callbacks; shared action grammar owns only Mobile/Tablet placement (one direct Mobile action, two direct Tablet actions when eligible).
-- Shared `Pagination` is now outside device renderers and retains caller-owned `page`, `totalPages`, `totalCount` and `setPage` truth.
-- Preserved the existing client-side text-search behavior and all server query inputs exactly; no debounce or query timing change was introduced.
-- Preserved the existing delete permission predicates and `useSoftDeleteActivity` mutation boundary; the backend-enforced deletion time window remains backend truth and is not duplicated in presentation code.
-- Added initial-empty vs filtered-empty copy while keeping the authorized create action available in either empty state and in the PageHeader.
-- Added a dedicated Field stylesheet for list/card/filter layout and Tablet touch sizing; removed the page-local `<style>` mini-system.
-- Source self-review closed five bounded presentation/capability risks before review handoff:
-  - authorized create remains available in filtered-empty Mobile states;
-  - shared Pagination remains suppressed when the live client-side filtered collection is empty, matching previous visible behavior;
-  - the card icon uses existing semantic token `--bg-surface-2`, not a nonexistent token;
-  - Field CSS now uses canonical Mobile `<=768px` exactly, matching `useDeviceMode` / `ResponsiveCollection` rather than leaving a 768px composition mismatch;
-  - `gps_verified === false` remains neutral `—` metadata instead of being reinterpreted as the negative workflow-like phrase `غير موثق`.
-- Authored focused Testing Library coverage for status semantics, neutral category/GPS metadata, device action placement and callback delegation, plus source-contract tests for query/permission/mutation/collection/pagination/capability/breakpoint boundaries.
+- Addressed Design QA P2 findings on exact blocked HEAD `823c89d...`.
+- Added page-owned `fmtTime(value)` and reused it for the existing Desktop date/time cell and the Activity-card summary projection, avoiding divergent formatting semantics.
+- `ActivityCardSummary` now accepts optional presentation-only `startTime`; `ActivityCard` renders it only in `mode="tablet"`, preserving Tablet parity without expanding the prior Mobile information surface.
+- Removed the duplicate `.ds-activity-card__category` subtitle and its dead CSS selector; neutral category remains represented exactly once by shared `Badge`.
+- Semantic outcome `StatusBadge`, category icon, customer link, GPS marker, notes and page-owned action eligibility remain unchanged.
+- Added focused Testing Library protection proving Tablet renders optional start time while Mobile does not, and proving category text appears once while remaining a neutral badge.
+- Added live-page source-contract protection proving the same `fmtTime` formatter feeds Desktop and Tablet projection.
+- Re-read the exact bounded fix delta (`823c89d... -> 25306f0...`): five product/test/style files only, with no functional-isolation boundary change.
+- Raw PR mergeability on product/test HEAD `25306f0...` is `mergeable=true / mergeable_state=clean`.
 - Did not mutate peer role-state files, Team Memory or Decision Log.
 
 ## Changed-file / pattern scope
@@ -51,53 +47,52 @@ Current branch scope remains 7 UI/Test/Governance-owned files:
 - `src/styles/field-activities-v2.css`
 - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md` (owned state only)
 
-No DB/migration/RPC/service/query-cache/RBAC/RLS/route-guard/GPS acquisition/business/workflow/validation/deployment file is in scope.
+Reviewer-requested fix delta is limited to the Activity presentation adapter/test, Activities live page/source-contract test and bounded Field CSS. No DB/migration/RPC/service/query-cache/RBAC/RLS/route-guard/GPS acquisition/business/workflow/validation/deployment file is in scope.
 
 ## Preserve / verified boundaries
 
 - `useActivities(queryParams)` still receives `typeCategory`, `outcomeType`, `dateFrom`, `dateTo`, `employeeId`, `customerId`, `page`, `pageSize: 25` exactly from page-owned state.
-- Existing client-side search still matches customer name, activity type name and outcome notes on the current server page.
-- Search and every filter still reset `page` to 1; no debounce was introduced.
-- Team-employee visibility remains gated by `ACTIVITIES_READ_TEAM || ACTIVITIES_READ_ALL`.
-- Create remains gated by `ACTIVITIES_CREATE`; the migration does not remove the authorized creation path from a filtered-empty Mobile state.
-- Delete action eligibility remains `ACTIVITIES_UPDATE_OWN || ACTIVITIES_READ_TEAM || ACTIVITIES_READ_ALL`; deletion still delegates to `useSoftDeleteActivity().mutate`.
-- Activity detail navigation remains `/activities/${activity.id}` and creation remains `/activities/new`.
-- Customer deep-link filtering remains initialized from the `customerId` URL search parameter and can still be cleared.
-- Outcome status mapping is presentation-only; no outcome value or workflow transition is changed.
-- GPS is read-only list metadata here; `true` is shown as verified while false remains the same neutral absence marker used by the prior list. No GPS/device acquisition or verification behavior moved into V2 presentation.
-- Pagination remains hidden while loading, on one page, and when the live filtered collection is empty, preserving the previous visible paging behavior while using shared `Pagination`.
-- `useActivityTypes()` remains invoked exactly as on the baseline; this slice does not alter its query/service behavior.
+- Existing client-side search still matches customer name, activity type name and outcome notes on the current server page; no debounce/timing change was introduced.
+- Search and every filter still reset `page` to 1.
+- Team-employee visibility remains `ACTIVITIES_READ_TEAM || ACTIVITIES_READ_ALL`.
+- Create remains `ACTIVITIES_CREATE` and remains available in initial/filtered empty presentation when authorized.
+- Delete eligibility remains `ACTIVITIES_UPDATE_OWN || ACTIVITIES_READ_TEAM || ACTIVITIES_READ_ALL`; deletion still delegates to `useSoftDeleteActivity().mutate(deleteTarget.id)` and backend time-window authority is not duplicated.
+- Detail/create routes remain `/activities/${activity.id}` and `/activities/new`.
+- Customer deep-link filtering still initializes from `customerId` and can still be cleared.
+- `useActivityTypes()` invocation remains unchanged.
+- GPS remains read-only list metadata; false remains neutral `—` and no acquisition/verification meaning moved into shared presentation.
+- Outcome mapping remains presentation-only semantic state; no workflow value/transition changed.
+- Shared Pagination remains caller-owned for page/query truth and remains suppressed while loading, on one page, and when the live client-filtered collection is empty.
 
 ## Device / state coverage
 
-- **Desktop (`>=1025px`):** dense DataTable remains the active management surface with customer link, date/time, semantic outcome, notes, GPS and existing view/delete capability.
-- **Tablet (`769–1024px`):** two-column Activity cards with type/customer/outcome/date/notes/GPS and up to two direct eligible actions; identity/open control uses the canonical touch target.
-- **Mobile (`<=768px`):** one-column Activity cards; one primary direct action with secondary delete in canonical overflow when eligible; touch-safe identity/actions; authorized create remains available; CSS composition uses the same exact canonical breakpoint as `useDeviceMode`.
-- **RTL/accessibility:** logical CSS, Arabic labels, explicit filter/action aria labels, readable semantic status text and focus-visible identity control.
-- **States:** loading remains shared `ResponsiveCollection` presentation; initial-empty and filtered-empty are distinct; create remains permission-projected; delete remains omitted when unauthorized; empty filtered result does not expose a misleading paginator; unverified GPS remains neutral metadata.
+- **Desktop (`>=1025px`):** dense DataTable remains the active management surface with customer, date plus optional start time, outcome, notes, GPS and existing view/delete capability. Existing time formatting is now routed through the extracted page-local `fmtTime` helper only.
+- **Tablet (`769–1024px`):** two-column cards retain type/customer/outcome/date/notes/GPS/actions and now restore optional start time when present using the same formatter as Desktop. Identity/open and actions remain touch-safe.
+- **Mobile (`<=768px`):** one-column cards intentionally retain the prior mobile information density; optional start time is not newly exposed. One primary direct action plus eligible overflow behavior remains unchanged.
+- **RTL/accessibility:** logical CSS, Arabic labels, neutral category metadata, readable semantic outcome text, explicit action/filter labels and focus-visible identity control remain intact.
+- **States:** loading, initial-empty, filtered-empty, permission-projected create/delete, destructive confirmation and paginator suppression remain unchanged by the fix.
 
 ## Test / execution evidence
 
-Evidence: **`TESTS_AUTHORED_NOT_EXECUTED`**.
+Evidence remains **`TESTS_AUTHORED_NOT_EXECUTED`**.
 
-Focused Vitest/Testing Library and source-contract tests were authored, but the automation sandbox contains no executable repository checkout / `package.json`, so `npm test`, `npm run build` and `npm run lint` were not executed. No PASS is claimed. No GitHub Actions/hosted CI was triggered and no Vercel preview/deploy was used.
+Focused Vitest/Testing Library and source-contract tests were authored/updated for the QA-identified Tablet information-parity and category-hierarchy risks, but the available sandbox contains no executable repository checkout / `package.json`, so `npm test`, `npm run build` and `npm run lint` were not executed. No PASS is claimed. No GitHub Actions/hosted CI was triggered and no Vercel preview/deploy was used.
 
-No known TypeScript/build error was identified during source-level inspection. This is not an executed build/type PASS claim.
+No known TypeScript/build error was found during source inspection. This is not an executed build/type PASS claim.
 
-## Risks / next implementation boundary
+## Risks / review boundary
 
-- Draft PR #42 remains `IN_PROGRESS`; exact-head Design Director/QA review is not requested yet because the exact diff moved during the final source pass and needs one post-correction re-read.
+- Fresh exact-head Design QA is mandatory because the PR HEAD moved after the blocked review; the earlier `AGENT-REVIEW: BLOCKED` applies only to superseded HEAD `823c89d...`.
+- Product Design Director's Development state is lifecycle-stale from HR002 for FIELD001, so a fresh Product Design exact-head judgment remains desirable before integration.
 - Runtime/build evidence remains unavailable in this environment.
-- The existing `FilterBar` shared component introduces its own debounced search behavior and a large embedded style block; adopting it here would alter current Activities search timing and expand component-depth scope, so this concern deliberately keeps existing immediate `SearchInput`/select/date behavior while moving layout CSS out of the page.
-- Legacy `ActivityStatusBadge` remains used by other plan/target surfaces; this concern does not refactor it globally.
-- No review submissions or inline review threads existed before the latest bounded corrections.
-- Next action on this same PR is one post-correction exact-diff source pass; if no material defect is found, move this bounded Activities-list concern to `REVIEW` and request fresh Product Design Director + Design QA exact-head review. Do not start another Field surface while #42 remains active.
+- The local Activities filter composition still deliberately preserves immediate search/filter semantics rather than adopting legacy `FilterBar`; shared filter convergence remains later component-depth work.
+- Legacy activity plan/target/create/detail surfaces remain outside this representative concern.
 
 ### Cross-role handoff
-- **To:** Product Design Director + Design QA only after implementation marks this PR `REVIEW`; Development Integrator only after required gates.
-- **What changed:** Activities list now has one responsive collection capability, semantic outcome state, canonical page-owned action declarations/shared placement, shared Pagination, deliberate canonical-breakpoint Tablet/Mobile cards and focused authored regression protection; self-review has already closed create/paging/token/breakpoint/GPS presentation risks.
-- **Preserve:** all activity query inputs/search timing; team/create/delete permissions; delete mutation/RPC authority; activity/customer routes; customer URL filter; `useActivityTypes()` invocation; GPS/device truth; all workflow/validation/service/query-cache semantics.
-- **Need from reviewers:** once moved to REVIEW, inspect the exact PR HEAD for Arabic/RTL hierarchy, semantic outcome mapping, Mobile/Tablet action placement, Desktop density and functional isolation.
-- **Blocker level:** `NONE` known at source level; implementation remains active pending one post-correction exact-diff pass.
-- **Baseline:** `def098978efbe796306f882014e69652f014efa6`.
+- **To:** Design QA + Product Design Director for fresh exact-head review; Development Integrator only after required gates.
+- **What changed:** both QA P2 blockers are fixed: Tablet now retains optional `start_time` with the same formatter as Desktop, and category is exposed once as neutral metadata rather than duplicated.
+- **Preserve:** every activity query/search/filter input and timing; team/create/delete permissions; delete mutation/backend authority; routes/customer deep-link; GPS/device truth; `useActivityTypes()` invocation; semantic outcome mapping; one live `ResponsiveCollection`; shared Pagination; all workflow/validation/service/query-cache truth.
+- **Need from you:** independently review the exact PR HEAD produced by this owned-state/workstream write and issue fresh `SOURCE_REVIEW_PASS + AGENT-REVIEW: GREEN-DEV` only if both P2 defects are fully closed and no new blocker exists.
+- **Blocker level:** `NONE` from implementation on the bounded fixes; PR remains `NO_MERGE` until fresh exact-head review gates.
+- **Baseline:** slice `def098978efbe796306f882014e69652f014efa6`; Development inspected `59e8bdc692c9e46571d52e602eb8c5ef78187cf4`; product/test fix HEAD before state write `25306f0cf5a7f9d0d76fae2bfad800978a84b6d1`.
 - **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`.

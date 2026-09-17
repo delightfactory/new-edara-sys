@@ -137,10 +137,10 @@ System result:
 ## Current single active slice
 
 ### DS2-FIELD-001 — Activities/visit/call/target lists
-Status: `IN_PROGRESS`
+Status: `REVIEW`
 Owner role: Product Design Director -> UI Production Engineer
 
-Active representative concern: `ActivitiesPage` list presentation only on Draft PR #42. The implementation is intentionally bounded to responsive collection, semantic outcome state, action placement and list presentation. Call/visit-plan/target surfaces remain outside the current concern until this PR is reviewed or a reviewer requests a bounded shared fix.
+Active representative concern: `ActivitiesPage` list presentation only on Draft PR #42. The implementation is intentionally bounded to responsive collection, semantic outcome state, action placement and list presentation. The two prior QA P2 findings (Tablet start-time parity and duplicate category hierarchy) are fixed; fresh exact-head Product Design / Design QA review is required. Call/visit-plan/target surfaces remain outside the current concern.
 
 Intent:
 - continue the North-Star module roadmap into Field Activities / Targets rather than expanding HR polishing;
@@ -200,7 +200,7 @@ Open only when a real migrated screen proves the recurring gap:
 - `DS2-HR-002` HR admin lists/forms — `DONE`
 
 ### G. Field Activities / Targets
-- `DS2-FIELD-001` Activities/visit/call/target lists — `IN_PROGRESS`
+- `DS2-FIELD-001` Activities/visit/call/target lists — `REVIEW`
 - `DS2-FIELD-002` Field create/detail flows — `BACKLOG`
 
 ### H. Work Management
