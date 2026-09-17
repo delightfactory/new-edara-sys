@@ -4,28 +4,34 @@
 
 - Review date: `2026-09-17`
 - Development branch: `design-system-v2-development`
-- Exact Development HEAD inspected before this review/state write: `def098978efbe796306f882014e69652f014efa6`
+- Exact Development HEAD inspected before this review/state write: `59e8bdc692c9e46571d52e602eb8c5ef78187cf4`
 - Active slice: `DS2-FIELD-001 — Activities/visit/call/target lists`
 - Active representative concern: `ActivitiesPage` list presentation only
 - Active implementation PR: `#42 — DS2-FIELD-001: Activities list V2 foundation`
 - PR base: `design-system-v2-development`
 - PR base SHA: `def098978efbe796306f882014e69652f014efa6`
-- Exact current PR HEAD independently reviewed: `823c89d10201a8db68e7189803bd003c3fd9fd2f`
+- Exact current PR HEAD independently reviewed: `8ac8ed1e46fd8e48f1b7b065f74ab6f1dfac21df`
 - Live PR state at disposition: `OPEN / DRAFT / mergeable=true`
 - Changed-file scope: 7 files — Activities live page, thin Field presentation adapter, focused tests, bounded Field CSS, workstream state and UI Implementation owned state.
-- Current disposition: `AGENT-REVIEW: BLOCKED`
-- Severity: `P2 / NO_MERGE`
-- `SOURCE_REVIEW_PASS`: **withheld** pending the bounded fixes below.
+- Current disposition: `AGENT-REVIEW: GREEN-DEV`
+- `SOURCE_REVIEW_PASS`: **granted on exact HEAD `8ac8ed1e46fd8e48f1b7b065f74ab6f1dfac21df`**.
 - Test evidence: `TESTS_AUTHORED_NOT_EXECUTED`.
 - Exact-head build/test/lint/runtime/preview evidence: not claimed.
 
 ## Independent QA disposition
 
-**BLOCKED on exact PR HEAD `823c89d10201a8db68e7189803bd003c3fd9fd2f`.**
+**GREEN-DEV on exact PR HEAD `8ac8ed1e46fd8e48f1b7b065f74ab6f1dfac21df`.**
 
-I formed this judgment from the exact PR diff and the current Activities/shared-component contracts before comparing peer states. The migration is directionally strong and functionally isolated, but it introduces one real Tablet information-parity regression and one bounded hierarchy defect that should be corrected before GREEN-DEV.
+I formed this judgment from the exact current PR diff, the bounded correction delta from blocked HEAD `823c89d10201a8db68e7189803bd003c3fd9fd2f`, and the current shared V2 contracts before comparing peer states. Both prior P2 findings are closed, the slice remains functionally isolated, and no new material source-level blocker is present.
 
 ## Exact-head findings
+
+### Prior P2 blockers — CLOSED
+
+1. **Tablet start-time parity:** `ActivitiesPage` now projects optional `activity.start_time` through one page-owned `fmtTime` formatter, and `ActivityCard` renders that datum for `mode="tablet"`. Desktop uses the same formatter. Mobile intentionally retains its prior information density and does not gain a time row.
+2. **Duplicate category hierarchy:** `ActivityCard` no longer renders a second category subtitle beneath the title. Category appears once as neutral `Badge` metadata while activity outcome remains semantic `StatusBadge`.
+
+Focused authored regressions protect both corrections.
 
 ### Scope / functional isolation — PASS
 
@@ -38,93 +44,78 @@ Preserved product/domain truth includes:
 - team-employee visibility remains `ACTIVITIES_READ_TEAM || ACTIVITIES_READ_ALL`;
 - create remains `ACTIVITIES_CREATE`;
 - delete eligibility remains `ACTIVITIES_UPDATE_OWN || ACTIVITIES_READ_TEAM || ACTIVITIES_READ_ALL`;
-- deletion still delegates to `useSoftDeleteActivity().mutate(deleteTarget.id)` and backend time-window authority is not duplicated in UI code;
+- deletion still delegates to `useSoftDeleteActivity().mutate(deleteTarget.id)`; backend time-window authority is not duplicated in UI code;
 - detail/create routes remain `/activities/${activity.id}` and `/activities/new`;
 - customer deep-link filtering still initializes from `customerId` and can be cleared;
-- GPS remains read-only list metadata; no acquisition/verification semantics moved into presentation;
-- `useActivityTypes()` invocation remains unchanged.
+- `useActivityTypes()` remains unchanged;
+- GPS remains read-only list metadata; false is neutral `—`, with no acquisition/verification semantics moved into presentation;
+- outcome mapping is presentation-only and does not change workflow values or transitions.
 
-### P2-1 — Tablet information/capability parity regression — BLOCKING
+Development drift from the PR base to inspected Development HEAD is governance-only (`DESIGN_QA_STATE.md` / `INTEGRATION_STATE.md`) and does not overlap product/shared implementation.
 
-**Locations:**
-- `src/pages/activities/ActivitiesPage.tsx` — `renderActivityCards` summary projection;
-- `src/components/activities/ActivityOverviewPresentation.tsx` — `ActivityCard` metadata.
+### Shared-system fit / hierarchy — PASS at source level
 
-On the exact Development baseline, Tablet (`769–1024px`) still received the DataTable composition because the legacy mobile-card switch occurred only at `<=768px`. That table showed `start_time` beneath the activity date whenever present.
+- One live `ResponsiveCollection<ActivityRow>` owns device composition rather than mounting separate hidden interaction trees.
+- Desktop retains the dense `DataTable` management surface.
+- Tablet intentionally uses two-column cards; Mobile uses one-column operational cards.
+- Outcome state uses shared semantic `StatusBadge`; activity category uses neutral `Badge` metadata.
+- `Card`, `KeyValueList`, `Button`, `Pagination` and canonical `AppAction + resolveActionSet` are reused instead of creating a Field-local parallel grammar.
+- Page/domain code owns action eligibility, ordering and callbacks; shared resolution owns device placement only.
+- Initial-empty and filtered-empty copy are distinct.
+- Existing immediate filter/search semantics are preserved rather than silently adopting a debounced filter contract.
 
-The new Tablet card receives only `date`, `notes`, `gpsVerified` and `outcome`; `start_time` is not projected or rendered. Therefore the migration drops an existing operational datum specifically when Tablet moves from the table to cards.
+### Device / RTL / accessibility / state judgment — PASS at source level
 
-This violates the North-Star responsive-composition rule that business meaning and available capability remain equivalent while device composition changes, and the requirement for deliberate Tablet information density.
-
-**Minimum required fix:** preserve the existing start-time datum in Tablet card composition when `activity.start_time` exists, using the same existing formatting semantics and without changing any query/service/workflow/data contract. Add a focused authored regression assertion covering this Tablet parity risk.
-
-### P2-2 — redundant category representation weakens card hierarchy — BLOCKING
-
-**Location:** `src/components/activities/ActivityOverviewPresentation.tsx` — `ActivityCard` header.
-
-The same categorical value is currently rendered twice in the same header:
-- `.ds-activity-card__category` beneath the title; and
-- neutral `Badge` beside the outcome status.
-
-This can produce a hierarchy such as `زيارة متابعة` + `زيارة` + another `زيارة` badge. Category is correctly neutral metadata, but duplicate exposure adds noise and gives supporting metadata unnecessary visual weight.
-
-This conflicts with the North-Star strong-hierarchy/progressive-disclosure bar.
-
-**Minimum required fix:** expose category once in the card header/composition, preserving neutral categorical treatment and leaving the semantic outcome `StatusBadge` unchanged. Add/update the focused presentation contract so the duplicate does not return.
-
-### Shared-system fit — otherwise PASS at source level
-
-- One live `ResponsiveCollection<ActivityRow>` replaces the legacy duplicated table/mobile-card interaction path.
-- Desktop keeps the dense DataTable management surface.
-- Tablet intentionally becomes a two-column card composition; Mobile becomes one column.
-- Outcome uses shared semantic `StatusBadge`; category remains neutral metadata.
-- Page/domain code owns view/delete eligibility and callbacks; `resolveActionSet` owns device placement only.
-- Mobile exposes one direct view action with delete overflow when permitted; Tablet exposes both eligible actions directly.
-- Shared `Pagination` sits outside device renderers and remains caller-owned for page/query truth.
-- Initial empty and filtered empty are distinct; authorized create remains available.
-- Canonical Mobile `<=768px` / Tablet-through-`1024px` boundaries and card identity touch target are present.
-- The former page-local inline style block is replaced with bounded Field CSS; the existing immediate filter semantics are intentionally retained instead of adopting a debounced shared FilterBar.
-
-### Device / RTL / accessibility / state judgment
-
-- **Desktop:** dense list content/actions remain intact, including date + optional start time; table overflow remains contained.
-- **Tablet:** touch/action/card composition is directionally correct, but GREEN is blocked by the lost `start_time` datum.
-- **Mobile:** one-column cards, touch-safe identity/actions, authorized create path and canonical overflow placement pass source review. Mobile did not previously expose start time in the legacy DataCard, so P2-1 is specifically a Tablet parity regression.
-- **RTL/accessibility:** logical layout, Arabic labels, explicit filter/action accessible labels, native identity button and visible focus treatment are present.
-- **States:** loading, initial-empty, filtered-empty, permission-projected create/delete and destructive confirmation are preserved. Broader query error/offline convergence remains program debt rather than a new regression.
+- **Desktop (`>=1025px`):** dense table preserves customer, date + optional start time, outcome, notes, GPS and authorized view/delete actions; table overflow remains contained.
+- **Tablet (`769–1024px`):** deliberate two-column cards preserve the existing optional start-time datum, use two-column metadata, expose up to two eligible direct actions and retain canonical touch-safe identity/actions.
+- **Mobile (`<=768px`):** one-column cards retain prior information density, expose one direct eligible action plus accessible RTL overflow when needed, use touch-safe controls and avoid a parallel Desktop interaction tree.
+- **RTL / Arabic / long content:** logical alignment, Arabic accessible labels, flex wrapping, `min-width: 0` and `overflow-wrap: anywhere` protect ordinary long-content composition; category/outcome semantics are text-backed rather than color-only.
+- **Focus / keyboard:** card identity is a native button with visible focus treatment; actions are native shared Buttons; shared Pagination retains navigation landmark, labels, disabled boundaries and `aria-current="page"`.
+- **States:** loading, initial-empty, filtered-empty, permission-projected create/delete, destructive confirmation, one-page pagination suppression and empty live-filter pagination suppression are preserved. Broader query-error/offline convergence is existing program debt, not a new FIELD001 regression.
 
 No runtime visual PASS is claimed.
 
 ### Test Artifact Gate / evidence honesty
 
-Focused authored artifacts cover responsive renderer selection, query/search preservation, permission/delete boundaries, semantic outcomes, action placement/callback delegation, paging visibility, canonical breakpoints/touch sizing and neutral GPS/category treatment.
+Focused authored artifacts protect:
+- one responsive renderer boundary;
+- preserved query/search/filter inputs and paging behavior;
+- permission/delete mutation boundaries;
+- semantic outcome mapping and neutral category/GPS treatment;
+- Mobile/Tablet action placement and callback delegation;
+- Tablet start-time parity and unchanged Mobile time density;
+- single category representation;
+- canonical device breakpoints/touch sizing.
 
-Evidence remains **`TESTS_AUTHORED_NOT_EXECUTED`**. No approved environment executed tests/build/lint; no hosted CI/Actions or Vercel preview was used. No known real build/type failure is recorded. This is not an executed PASS claim.
-
-The current artifacts do **not** yet protect the two QA findings above; the next HEAD should add bounded regression coverage for Tablet start-time parity and single category representation.
+Evidence is **`TESTS_AUTHORED_NOT_EXECUTED`**. No approved environment executed tests/build/lint; no hosted GitHub Actions/CI or Vercel preview was used. No known real build/type failure is recorded. This is not an executed PASS claim.
 
 ## Peer-state comparison / contradiction handling
 
 The independent disposition above was formed first.
 
-- **UI Production Engineer feature-head state:** fresh and aligned on scope/evidence but still explicitly marks the slice `IN_PROGRESS` with a post-correction exact-diff pass pending. It did not identify the Tablet time loss or duplicate category. No contradiction; the two QA findings remain blocking.
-- **Product Design Director state on Development:** lifecycle-stale from the prior HR slice and contains no FIELD001 exact-head judgment. `WATCH`, not an additional blocker.
-- **Integration state on Development:** correctly records HR002 merged and FIELD001 as the next slice; it has no exact-head FIELD001 merge decision yet. `WATCH`, not a contradiction.
-- **PR review threads/comments before this review:** none.
+- **UI Production Engineer feature-head state:** fresh and aligned; it records both bounded P2 corrections, exact review handoff and the same `TESTS_AUTHORED_NOT_EXECUTED` evidence.
+- **Product Design Director state on Development:** lifecycle-stale from HR002 and contains no current FIELD001 exact-head judgment. Classification: `WATCH`, not a contradictory blocker.
+- **Integration state on Development:** correctly blocks only superseded HEAD `823c89d...` on the two findings now closed. Classification: stale `WATCH`, not current `BLOCKING` evidence.
+- **Team Memory / Development workstream:** lifecycle-stale relative to the live FIELD001 review phase; the active PR itself carries the current bounded workstream update.
+- **PR review threads:** none open.
 
-No peer-state disagreement supersedes the independent findings. The active blockers are the exact-head source defects above.
+No current material cross-role `BLOCKING` contradiction exists for exact HEAD `8ac8ed1e46fd8e48f1b7b065f74ab6f1dfac21df`.
+
+## Non-blocking watch
+
+On Mobile empty states, the authorized create affordance can be present in both the `PageHeader` and `StatePanel`. This is consistent with an already-seen action-convergence/runtime-density watch and does not alter permission or business truth. It should be judged in the later global action-convergence/runtime pass rather than expanding this bounded FIELD001 slice.
 
 ## System-fit judgment
 
-FIELD001 is moving EDARA in the correct direction: shared responsive collection, semantic status grammar, canonical action placement and a deliberate Tablet/Mobile collection are the right architecture. It is not yet GREEN because responsive migration cannot silently reduce Tablet operational information, and the card header should not duplicate categorical metadata.
+FIELD001 now advances the North Star cleanly: a single responsive capability, semantic Field status grammar, neutral categorical metadata, canonical action placement and deliberate Tablet/Mobile compositions without moving Field business truth into shared presentation. The previously identified information-parity and hierarchy defects are closed.
 
-Any new PR HEAD requires fresh exact-head QA.
+Any movement of PR HEAD after `8ac8ed1e46fd8e48f1b7b065f74ab6f1dfac21df` invalidates this exact-head GREEN-DEV and requires fresh QA.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer; Product Design Director for awareness; Development Integrator remains `NO_MERGE`.
-- **What changed:** Design QA reviewed PR #42 exact HEAD `823c89d10201a8db68e7189803bd003c3fd9fd2f` and recorded `AGENT-REVIEW: BLOCKED` with two bounded P2 presentation findings.
-- **Preserve:** every existing activity query/search/filter input and timing; team/create/delete permissions; delete RPC/mutation authority; routes/customer deep-link; GPS/device/workflow/validation/service/query-cache truth; one `ResponsiveCollection`; shared Pagination; semantic outcome status and shared action placement.
-- **Need from implementation:** restore optional start-time information in the Tablet card composition; remove duplicate category exposure while keeping one neutral category representation; add focused authored regression protection; then request fresh exact-head QA.
-- **Blocker level:** `P2 / BLOCKING`.
-- **Baseline:** Development `def098978efbe796306f882014e69652f014efa6`; reviewed PR HEAD `823c89d10201a8db68e7189803bd003c3fd9fd2f`.
-- **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`; `SOURCE_REVIEW_PASS` withheld; no executed build/test/lint/runtime/preview/release PASS claimed.
+- **To:** Development Integrator; Product Design Director for awareness; UI Production Engineer.
+- **What changed:** Design QA re-reviewed PR #42 exact HEAD `8ac8ed1e46fd8e48f1b7b065f74ab6f1dfac21df`, confirmed both prior P2 blockers closed and issued `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
+- **Preserve:** every activity query/search/filter input and timing; team/create/delete permissions; delete mutation/backend authority; routes/customer deep-link; GPS/device/workflow/validation/service/query-cache truth; one live `ResponsiveCollection`; shared Pagination; semantic outcome status; neutral category treatment; canonical action placement; Desktop density and restored Tablet time parity.
+- **Need from you:** Integrator should revalidate exact PR HEAD/base, Development governance drift, review threads and mergeability and may integrate only while HEAD remains `8ac8ed1e46fd8e48f1b7b065f74ab6f1dfac21df` and no fresh BLOCKING contradiction appears. Product Design Director may refresh the lifecycle-stale FIELD001 view independently without invalidating this QA evidence unless it records a material contradiction.
+- **Blocker level:** `NONE`; Mobile create-density and release/runtime evidence remain `WATCH`/later gates.
+- **Baseline:** Development inspected `59e8bdc692c9e46571d52e602eb8c5ef78187cf4`; exact reviewed PR HEAD `8ac8ed1e46fd8e48f1b7b065f74ab6f1dfac21df`.
+- **Evidence:** `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview/release PASS claimed.
