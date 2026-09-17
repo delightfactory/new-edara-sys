@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import {
-  MapPin, CheckCircle, XCircle, AlertCircle,
+  MapPin, CheckCircle, AlertCircle,
   LogIn, LogOut, Wifi, WifiOff, Info, UserX,
   Clock, Timer,
 } from 'lucide-react'
@@ -14,6 +14,9 @@ import {
 } from '@/lib/services/hr'
 import type { HRAttendanceDay } from '@/lib/types/hr'
 import Spinner from '@/components/ui/Spinner'
+import AlertPanel from '@/components/patterns/AlertPanel'
+import ProcessProgress, { type ProcessProgressStep } from '@/components/patterns/ProcessProgress'
+import PrimaryTaskAction from '@/components/patterns/PrimaryTaskAction'
 import { toast } from 'sonner'
 import useGeoPermission from '@/hooks/useGeoPermission'
 import GeoPermissionDialog from '@/components/shared/GeoPermissionDialog'
@@ -172,90 +175,24 @@ function TodayStatus({
   )
 }
 
-// ─────────────────────────────────────────────────────────────
-// SMART ACTION BUTTON — زر واحد يتغير بالسياق
-// ─────────────────────────────────────────────────────────────
-interface ActionBtnProps {
-  record: HRAttendanceDay | null
-  flowState: FlowState
-  onAction: (type: ActionType) => void
-}
-function SmartActionButton({ record, flowState, onAction }: ActionBtnProps) {
-  const isProcessing = ['locating', 'validating', 'submitting'].includes(flowState)
-
-  // الحالة المنطقية الصحيحة
-  const hasCheckIn  = !!record?.punch_in_time
-  const hasCheckOut = !!record?.punch_out_time
-  const isDayDone   = hasCheckIn && hasCheckOut
-
-  if (isDayDone) return null // لا حاجة لأي زر
-
-  const isCheckin = !hasCheckIn
-  const color     = isCheckin ? 'var(--color-success)' : 'var(--color-danger)'
-  const label     = isCheckin ? 'بدء الدوام' : 'إنهاء الدوام'
-  const Icon      = isCheckin ? LogIn : LogOut
-
-  return (
-    <button
-      id={isCheckin ? 'btn-check-in' : 'btn-check-out'}
-      type="button"
-      disabled={isProcessing || flowState === 'success'}
-      onClick={() => onAction(isCheckin ? 'check_in' : 'check_out')}
-      className="ci-action-btn"
-      style={{ '--action-color': color } as React.CSSProperties}
-      aria-label={label}
-    >
-      <span className="ci-action-ring">
-        <span className="ci-action-ring-pulse" />
-        <span className="ci-action-icon-wrap">
-          {isProcessing
-            ? <div className="ci-spinner" />
-            : <Icon size={36} strokeWidth={2.5} />
-          }
-        </span>
-      </span>
-      <span className="ci-action-label">{isProcessing ? 'جارٍ التسجيل...' : label}</span>
-    </button>
-  )
-}
-
-// ─────────────────────────────────────────────────────────────
-// PROGRESS STEPS — خطوات التسجيل
-// ─────────────────────────────────────────────────────────────
-// خطوتان فقط بعد إلغاء validating المنفصلة
-const STEPS: { id: FlowState; label: string }[] = [
+// خطوتان فقط بعد إلغاء validating المنفصلة. الصفحة تملك معنى الحالة،
+// والمكوّن المشترك يملك العرض/الدلالة فقط.
+const STEPS: { id: Extract<FlowState, 'locating' | 'submitting'>; label: string }[] = [
   { id: 'locating',   label: 'تحديد الموقع GPS' },
   { id: 'submitting', label: 'تسجيل الحضور' },
 ]
-function ProgressSteps({ flowState, position }: { flowState: FlowState; position: GeoPos | null }) {
-  const cur = STEPS.findIndex(s => s.id === flowState)
-  return (
-    <div className="ci-progress">
-      {STEPS.map((step, i) => {
-        const done   = i < cur
-        const active = i === cur
-        return (
-          <div key={step.id} className={`ci-step ${done ? 'ci-step--done' : active ? 'ci-step--active' : 'ci-step--pending'}`}>
-            <div className="ci-step-dot">
-              {done
-                ? <CheckCircle size={12} />
-                : active
-                ? <div className="ci-spinner ci-spinner--sm" />
-                : <span>{i + 1}</span>
-              }
-            </div>
-            <div className="ci-step-info">
-              <span className="ci-step-label">{step.label}</span>
-              {done && step.id === 'locating' && position && (
-                <span className="ci-step-sub" dir="ltr">±{Math.round(position.accuracy)}م</span>
-              )}
-            </div>
-            {i < STEPS.length - 1 && <div className="ci-step-line" />}
-          </div>
-        )
-      })}
-    </div>
-  )
+
+function getProcessProgressSteps(flowState: FlowState, position: GeoPos | null): ProcessProgressStep[] {
+  const currentIndex = STEPS.findIndex(step => step.id === flowState)
+
+  return STEPS.map((step, index) => ({
+    id: step.id,
+    label: step.label,
+    state: index < currentIndex ? 'completed' : index === currentIndex ? 'current' : 'pending',
+    meta: index < currentIndex && step.id === 'locating' && position
+      ? <span dir="ltr">±{Math.round(position.accuracy)}م</span>
+      : undefined,
+  }))
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -603,6 +540,11 @@ export default function AttendanceCheckin() {
   const hasCheckIn    = !!todayRecord?.punch_in_time
   const hasCheckOut   = !!todayRecord?.punch_out_time
   const isDayDone     = hasCheckIn && hasCheckOut
+  const isCheckInAction = !hasCheckIn
+  const primaryActionType: ActionType = isCheckInAction ? 'check_in' : 'check_out'
+  const primaryActionLabel = isCheckInAction ? 'بدء الدوام' : 'إنهاء الدوام'
+  const PrimaryActionIcon = isCheckInAction ? LogIn : LogOut
+  const processSteps = isProcessing ? getProcessProgressSteps(flowState, position) : []
   const trackingRunning = trackingEnabled && hasCheckIn && !hasCheckOut
   const effectiveLastPingAt = lastPingAt ?? todayRecord?.last_tracking_ping_at ?? null
   // ★ تهيئة outsideZone من todayRecord عند فتح الصفحة (لا ننتظر ping جديدة)
@@ -689,30 +631,30 @@ export default function AttendanceCheckin() {
 
       {/* ── نجاح ── */}
       {flowState === 'success' && (
-        <div className="ci-feedback-card ci-feedback-card--success">
-          <div className="ci-success-ring">
-            <CheckCircle size={32} />
-          </div>
-          <div className="ci-feedback-title">
-            {actionType === 'check_in' ? 'تم تسجيل الحضور!' : 'تم تسجيل الانصراف!'}
-          </div>
-          {rpcResult?.location_name && (
-            <div className="ci-feedback-sub">
+        <AlertPanel
+          tone="success"
+          title={actionType === 'check_in' ? 'تم تسجيل الحضور!' : 'تم تسجيل الانصراف!'}
+          announce
+          className="ci-task-control"
+        >
+          {rpcResult?.location_name ? (
+            <span className="ci-task-feedback-location">
               <MapPin size={12} /> {rpcResult.location_name}
-            </div>
-          )}
-        </div>
+            </span>
+          ) : null}
+        </AlertPanel>
       )}
 
       {/* ── خطأ ── */}
       {flowState === 'error' && errorMsg && (
-        <div className="ci-feedback-card ci-feedback-card--error">
-          <XCircle size={22} />
-          <div>
-            <div className="ci-feedback-title">تعذر التسجيل</div>
-            <div className="ci-feedback-sub">{errorMsg}</div>
-          </div>
-        </div>
+        <AlertPanel
+          tone="danger"
+          title="تعذر التسجيل"
+          announce
+          className="ci-task-control"
+        >
+          {errorMsg}
+        </AlertPanel>
       )}
 
       {/* ── بانر حالة GPS (للحالات: checking/denied/prompt) ── */}
@@ -725,7 +667,11 @@ export default function AttendanceCheckin() {
 
       {/* ── تقدم العملية ── */}
       {isProcessing && (
-        <ProgressSteps flowState={flowState} position={position} />
+        <ProcessProgress
+          steps={processSteps}
+          ariaLabel="تقدم تسجيل الحضور"
+          className="ci-task-control"
+        />
       )}
 
       {/* ── الزر الذكي الرئيسي ── */}
@@ -753,10 +699,16 @@ export default function AttendanceCheckin() {
           /* الصلاحية محظورة — GeoPermissionBanner يعرض الإرشادات */
           null
         ) : (
-          <SmartActionButton
-            record={todayRecord}
-            flowState={flowState}
-            onAction={handleAction}
+          <PrimaryTaskAction
+            id={isCheckInAction ? 'btn-check-in' : 'btn-check-out'}
+            label={primaryActionLabel}
+            loadingLabel="جارٍ التسجيل..."
+            icon={<PrimaryActionIcon size={20} strokeWidth={2.5} />}
+            disabled={isProcessing || flowState === 'success'}
+            loading={isProcessing}
+            onClick={() => handleAction(primaryActionType)}
+            ariaLabel={primaryActionLabel}
+            className="ci-task-control"
           />
         )
       )}
@@ -846,7 +798,7 @@ export default function AttendanceCheckin() {
         }
         .ci-time-badge--elapsed { font-weight: 800; font-size: 12px; }
 
-        /* ══ Employee card ══ */
+        /* ══ Tracking / employee cards ══ */
         .ci-tracking-card {
           width: 100%; max-width: 440px;
           border-radius: var(--radius-2xl);
@@ -943,101 +895,17 @@ export default function AttendanceCheckin() {
         .ci-emp-name  { font-weight: 700; font-size: var(--text-sm); color: var(--text-primary); }
         .ci-emp-meta  { font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px; }
 
-        /* ══ Smart Action Button ══ */
-        .ci-action-btn {
-          display: flex; flex-direction: column; align-items: center; gap: var(--space-4);
-          background: none; border: none; cursor: pointer;
-          font-family: var(--font-sans);
-          padding: var(--space-4) 0;
-          transition: transform 0.15s;
+        /* ══ Migrated task-control composition ══ */
+        .ci-task-control {
+          width: 100%;
+          max-width: 440px;
         }
-        .ci-action-btn:active { transform: scale(0.96); }
-        .ci-action-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
-        .ci-action-ring {
-          position: relative;
-          width: 140px; height: 140px;
-          border-radius: 50%;
-          background: var(--action-color);
-          display: flex; align-items: center; justify-content: center;
-          box-shadow:
-            0 0 0 0 color-mix(in srgb, var(--action-color) 35%, transparent),
-            0 16px 48px color-mix(in srgb, var(--action-color) 40%, transparent);
-          animation: ci-pulse-ring 2.5s ease-in-out infinite;
+        .ci-task-feedback-location {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          flex-wrap: wrap;
         }
-        .ci-action-ring-pulse {
-          position: absolute; inset: -12px;
-          border-radius: 50%;
-          border: 2px solid color-mix(in srgb, var(--action-color) 30%, transparent);
-          animation: ci-ring-scale 2.5s ease-out infinite;
-        }
-        .ci-action-icon-wrap { color: #fff; display: flex; align-items: center; justify-content: center; }
-        .ci-action-label { font-size: var(--text-xl); font-weight: 700; color: var(--text-primary); }
-
-        /* ══ Spinner ══ */
-        .ci-spinner {
-          width: 32px; height: 32px; border-radius: 50%;
-          border: 3px solid rgba(255,255,255,0.3);
-          border-top-color: #fff;
-          animation: ci-spin 0.75s linear infinite;
-        }
-        .ci-spinner--sm { width: 14px; height: 14px; border-width: 2px; border-color: rgba(0,0,0,0.15); border-top-color: currentColor; }
-
-        /* ══ Progress Steps ══ */
-        .ci-progress {
-          display: flex; flex-direction: column; gap: var(--space-3);
-          width: 100%; max-width: 440px;
-          background: var(--bg-card);
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-2xl);
-          padding: var(--space-5);
-        }
-        .ci-step { display: flex; align-items: center; gap: var(--space-3); }
-        .ci-step-dot {
-          width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 11px; font-weight: 700;
-          transition: all 0.3s;
-        }
-        .ci-step--done    .ci-step-dot { background: color-mix(in srgb, var(--color-success) 12%, transparent); color: var(--color-success); }
-        .ci-step--active  .ci-step-dot { background: color-mix(in srgb, var(--color-primary) 12%, transparent); color: var(--color-primary); }
-        .ci-step--pending .ci-step-dot { background: var(--bg-surface-2); color: var(--text-muted); }
-        .ci-step--pending { opacity: 0.4; }
-        .ci-step-info  { flex: 1; }
-        .ci-step-label { font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); }
-        .ci-step-sub   { font-size: 11px; color: var(--color-success); margin-top: 2px; display: block; }
-        .ci-step-line  {
-          display: none; /* vertical connector — hidden for now */
-        }
-
-        /* ══ Feedback cards ══ */
-        .ci-feedback-card {
-          display: flex; align-items: center; gap: var(--space-3);
-          width: 100%; max-width: 440px;
-          border-radius: var(--radius-2xl);
-          padding: var(--space-4) var(--space-5);
-          border: 1px solid transparent;
-        }
-        .ci-feedback-card--success {
-          flex-direction: column; text-align: center;
-          background: color-mix(in srgb, var(--color-success) 6%, transparent);
-          border-color: color-mix(in srgb, var(--color-success) 22%, transparent);
-          color: var(--color-success);
-          padding: var(--space-6);
-        }
-        .ci-feedback-card--error {
-          background: color-mix(in srgb, var(--color-danger) 6%, transparent);
-          border-color: color-mix(in srgb, var(--color-danger) 22%, transparent);
-          color: var(--color-danger);
-        }
-        .ci-success-ring {
-          width: 64px; height: 64px; border-radius: 50%;
-          background: color-mix(in srgb, var(--color-success) 15%, transparent);
-          display: flex; align-items: center; justify-content: center;
-          animation: ci-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .ci-feedback-title { font-size: var(--text-base); font-weight: 700; }
-        .ci-feedback-sub   { font-size: var(--text-xs); opacity: 0.8; margin-top: 4px; display: flex; align-items: center; gap: 4px; justify-content: center; flex-wrap: wrap; }
 
         /* ══ Day done ══ */
         .ci-day-done {
@@ -1071,30 +939,10 @@ export default function AttendanceCheckin() {
           margin-top: auto; padding-top: var(--space-4);
         }
 
-        /* ══ Animations ══ */
-        @keyframes ci-pulse-ring {
-          0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--action-color) 35%, transparent), 0 16px 48px color-mix(in srgb, var(--action-color) 40%, transparent); }
-          50%       { box-shadow: 0 0 0 14px color-mix(in srgb, var(--action-color) 0%, transparent), 0 16px 48px color-mix(in srgb, var(--action-color) 40%, transparent); }
-        }
-        @keyframes ci-ring-scale {
-          0%   { transform: scale(1);    opacity: 0.8; }
-          100% { transform: scale(1.35); opacity: 0; }
-        }
+        /* ══ Existing status animation only ══ */
         @keyframes ci-pulse-dot {
           0%, 100% { opacity: 1; transform: scale(1); }
           50%      { opacity: 0.4; transform: scale(0.7); }
-        }
-        @keyframes ci-spin  { to { transform: rotate(360deg); } }
-        @keyframes ci-pop {
-          0%   { transform: scale(0.5); opacity: 0; }
-          60%  { transform: scale(1.15); }
-          100% { transform: scale(1); opacity: 1; }
-        }
-
-        /* ══ Responsive ══ */
-        @media (max-width: 380px) {
-          .ci-action-ring { width: 120px; height: 120px; }
-          .ci-action-label { font-size: var(--text-lg); }
         }
       `}</style>
 
