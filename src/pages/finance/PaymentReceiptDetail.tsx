@@ -2,7 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
-  ArrowRight, Check, XCircle, Receipt, User, CreditCard,
+  Check, XCircle, Receipt, User, CreditCard,
   Calendar, Building2, FileText, Wallet, ExternalLink,
   ImageIcon, Clock, AlertTriangle,
 } from 'lucide-react'
@@ -14,9 +14,11 @@ import { formatCurrency, formatDateTime } from '@/lib/utils/format'
 import Button from '@/components/ui/Button'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
 import Badge from '@/components/ui/Badge'
+import type { AppAction } from '@/components/patterns/ActionRegistry'
 import { useState } from 'react'
 import { DocumentActions } from '@/features/output/components/DocumentActions'
 import { CustomerLink, SalesOrderLink } from '@/components/shared/EntityLink'
+import { PaymentReceiptDetailHeader } from '@/components/finance/PaymentReceiptDetailPresentation'
 
 // ══════════════════════════════════════════════════════════════
 // Config
@@ -203,60 +205,48 @@ export default function PaymentReceiptDetail() {
   const isProofImage = receipt.proof_url && /\.(jpg|jpeg|png|gif|webp)$/i.test(receipt.proof_url)
   const isProofPdf   = receipt.proof_url && /\.pdf$/i.test(receipt.proof_url)
 
+  const headerActions: AppAction[] = []
+
+  if (canConfirm) {
+    headerActions.push({
+      id: 'confirm',
+      label: isSelfCashCustody && !isAdmin ? 'تأكيد استلام النقدية' : 'تأكيد الاستلام',
+      icon: <Check size={13} aria-hidden="true" />,
+      onSelect: openConfirm,
+      importance: 'primary',
+      order: 10,
+    })
+  }
+
+  if (isAdmin) {
+    headerActions.push({
+      id: 'reject',
+      label: 'رفض',
+      icon: <XCircle size={13} aria-hidden="true" />,
+      onSelect: () => { setRejectReason(''); setRejectOpen(true) },
+      importance: 'tertiary',
+      tone: 'danger',
+      order: 20,
+    })
+  }
+
   return (
     <div style={{ maxWidth: 640, margin: '0 auto', padding: '0 0 80px' }}>
 
-      {/* ── Hero Header ── */}
-      <div style={{
-        background: 'var(--bg-surface)',
-        borderBottom: '1px solid var(--border-primary)',
-        padding: '14px 16px',
-        position: 'sticky', top: 0, zIndex: 10,
-        backdropFilter: 'blur(12px)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-          <button onClick={() => navigate('/finance/payments')}
-            style={{
-              background: 'var(--bg-surface-2)', border: '1px solid var(--border-primary)',
-              borderRadius: 8, padding: '6px 10px', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 4,
-              fontSize: 12, color: 'var(--text-secondary)',
-            }}>
-            <ArrowRight size={13} /> رجوع
-          </button>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <h1 style={{ fontSize: 17, fontWeight: 800, margin: 0, direction: 'ltr', display: 'inline-block' }}>
-                {receipt.number}
-              </h1>
-              <Badge variant={sc?.variant}>{sc?.label}</Badge>
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-              {receipt.customer ? (
-                <CustomerLink id={receipt.customer.id} name={receipt.customer.name} />
-              ) : '—'} • {formatDateTime(receipt.created_at)}
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <DocumentActions kind="payment-receipt" entityId={receipt.id} />
-          
-          {canConfirm && (
-            <div style={{ display: 'flex', gap: 8 }}>
-              <Button size="sm" onClick={openConfirm} icon={<Check size={13} />}>
-                {isSelfCashCustody && !isAdmin ? 'تأكيد استلام النقدية' : 'تأكيد الاستلام'}
-              </Button>
-              {isAdmin && (
-                <Button variant="danger" size="sm" onClick={() => { setRejectReason(''); setRejectOpen(true) }}
-                  icon={<XCircle size={13} />}>
-                  رفض
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+      <PaymentReceiptDetailHeader
+        receiptNumber={receipt.number}
+        context={(
+          <>
+            {receipt.customer ? (
+              <CustomerLink id={receipt.customer.id} name={receipt.customer.name} />
+            ) : '—'}{' '}• {formatDateTime(receipt.created_at)}
+          </>
+        )}
+        status={receipt.status}
+        onBack={() => navigate('/finance/payments')}
+        actions={headerActions}
+        tools={<DocumentActions kind="payment-receipt" entityId={receipt.id} />}
+      />
 
       {/* ── Amount Hero ── */}
       <div style={{
