@@ -4,78 +4,89 @@
 
 - Review date: `2026-09-17`
 - Development branch: `design-system-v2-development`
-- Exact Development HEAD inspected before this state write: `55111047e8a1f62605de217d9daec1a8e24b6440`
-- Active slice: `DS2-HR-002 — HR admin lists/forms` — representative concern: Employees administration list only
-- Active implementation PR: `#41 — DS2-HR-002: Employees admin list V2`
+- Exact Development HEAD inspected before this state write: `6037b0eb08fc698eb079acfa5b4f563c151ee6a5`
+- Active slice: `DS2-FIELD-001 — Activities/visit/call/target lists`
+- Active representative concern: `ActivitiesPage` list presentation only
+- Active implementation PR: `#42 — DS2-FIELD-001: Activities list V2 foundation`
 - PR base: `design-system-v2-development`
-- PR base SHA: `988d7651cda4ecb828bf1dc54a9617fec8ae3edc`
-- Exact PR HEAD independently reviewed: `984750b5d933e26fea62995d3bf782f89a85b509`
-- Live PR state at review: `OPEN / DRAFT / mergeable=true`; exact HEAD unchanged from Design QA GREEN review.
-- Current Product Design disposition: `PASS — ARCHITECTURALLY ALIGNED / NO DESIGN-SYSTEM BLOCKER`
+- PR base SHA: `def098978efbe796306f882014e69652f014efa6`
+- Exact PR HEAD independently reviewed: `8ac8ed1e46fd8e48f1b7b065f74ab6f1dfac21df`
+- Live PR state at review: `OPEN / DRAFT`; exact HEAD unchanged from Design QA GREEN review.
 - Design QA disposition on the same exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
-- Evidence level: source review; focused tests exist but are `TESTS_AUTHORED_NOT_EXECUTED`. No build/test/lint/runtime/preview PASS is claimed here.
+- Current Product Design disposition: `BLOCKED — P2 MOBILE PRIMARY-ACTION DUPLICATION`.
+- Evidence level: exact-head source review. Focused tests exist but remain `TESTS_AUTHORED_NOT_EXECUTED`; no build/test/lint/runtime/preview PASS is claimed.
 
 ## Independent professional judgment
 
-**HR002 is architecturally acceptable for its bounded Employees-list concern on exact PR HEAD `984750b5d933e26fea62995d3bf782f89a85b509`.**
+**FIELD001 is directionally and architecturally sound in its collection/status/device work, but exact PR HEAD `8ac8ed1e46fd8e48f1b7b065f74ab6f1dfac21df` is not ready to integrate because the slice introduces a source-proven Mobile primary-action duplication.**
 
-I reviewed the exact live-page/presentation/shared-pagination diff against the North Star, component/page-pattern documents and current device contract before comparing peer dispositions. The slice advances the common V2 collection grammar without moving HR truth into presentation or creating a second collection/action/status system.
+I formed this judgment from the exact live page, Field adapter, shell creation-action registry/FAB contract and pre-slice baseline before comparing peer states.
 
-### Shared-system fit / hierarchy — PASS
+### Collection / hierarchy / semantic grammar — PASS
 
-- `EmployeesPage` now has one live `ResponsiveCollection<HREmployee>` boundary instead of duplicated hidden Desktop/Mobile trees.
-- Desktop preserves the dense employee `DataTable`; Tablet deliberately uses a two-column card collection; Mobile uses one-column operational cards.
-- `EmployeeCard` is a thin HR-domain projection over shared `Card`, `KeyValueList`, `StatusBadge`, neutral `Badge`, `Button` and canonical `AppAction/resolveActionSet`. Permission/action eligibility remains caller-owned.
-- Employee workflow status uses semantic `StatusBadge`; field/office type is neutral categorical metadata rather than a warning state.
-- `EmployeeSummary` reuses `MetricGrid + StatCard`; categorical field count is not given warning/status semantics.
-- Shared `Pagination` is a presentation extraction from the existing DataTable implementation. It preserves the established page-window/callback/disabled/current-page contract while giving the same paginator one reusable V2 boundary.
-- Initial empty and filtered empty are now intentionally distinct.
+- `ActivitiesPage` uses one live `ResponsiveCollection<ActivityRow>` rather than parallel mounted Desktop/Mobile interaction trees.
+- Desktop keeps the dense management `DataTable`; Tablet deliberately uses two-column cards; Mobile uses one-column operational cards.
+- The two previous QA P2 defects are correctly closed: Tablet preserves optional `start_time` with the same page-owned formatter as Desktop, and category is exposed once as neutral `Badge` metadata while outcome uses semantic `StatusBadge`.
+- `ActivityCard` is a thin Field projection over shared `Card`, `KeyValueList`, `Badge`, `StatusBadge`, `Button`, `Pagination` and canonical `AppAction + resolveActionSet` placement.
+- GPS false remains neutral read-only metadata (`—`), not an invented failure state.
+- Initial-empty and filtered-empty language are distinct.
 
-### Functional isolation / parity — PASS
+### Functional isolation / capability parity — PASS
 
-The implementation preserves current employee query and workflow truth: `search`, `departmentId`, `status`, `page`, `pageSize: 25`, page reset on filter changes, active/on-leave stats queries, current-page field-employee metric behavior, profile route, salary visibility through `hr.payroll.read`, create/edit visibility through existing employee permissions, and the existing `EmployeeForm` create/edit boundary.
+The slice preserves page/domain truth: `useActivities(queryParams)` inputs, immediate client-side text search, page resets, `pageSize: 25`, team/create/delete permission predicates, delete mutation/backend time-window authority, routes, customer deep-link, activity-type lookup, GPS meaning, workflow values and service/query/validation semantics remain outside shared presentation.
 
-No DB/migration/RPC/service/RBAC/RLS/route-guard/business calculation/query-cache/validation/deployment file is in the PR. The shared Pagination owns presentation only and does not own query/page truth.
+No backend/business/RBAC/RLS/query-cache/deployment change is part of the implementation.
 
-### Device / RTL / accessibility — PASS at source level
+### Device / RTL / accessibility — PASS except action ownership blocker
 
-- Mobile keeps one-column scan-friendly cards and one directly visible view action; authorized edit remains intentionally unavailable there exactly as before.
-- Tablet keeps the full authorized view/edit capability in a deliberate two-column card layout.
-- The previous QA P2 defect is correctly repaired at the shared/presentation boundary: Pagination controls and Employee identity/open controls use `var(--ds-icon-hit-target)` through Tablet (`<=1024px`) while compact Desktop density is preserved.
-- Pagination exposes Arabic previous/next accessible names, a navigation landmark and `aria-current="page"`; employee identity/actions are native buttons with explicit Arabic labels and focus-visible treatment.
-- Long Arabic employee names are wrap-safe; employee number/phone remain appropriate LTR islands.
-- Loading, initial-empty, filtered-empty, one-page pagination suppression, disabled boundaries and permission-projected salary/actions are source-covered.
+- Desktop density is preserved.
+- Tablet has deliberate two-column composition, restored start-time parity and touch-safe card controls.
+- Mobile card identity/actions are touch-safe, one direct eligible record action is shown before overflow, and long Arabic content has wrap/min-width protection.
+- Shared Pagination retains its established accessible Arabic paging contract.
 
-No runtime visual PASS is claimed.
+## P2 BLOCKER — Mobile now exposes the same create action through two persistent primary surfaces
 
-## System watches / bounded exclusions
+This is a current-slice regression, not merely pre-existing global action debt:
 
-- The Employees filter/search row is acceptable here as page/domain composition, not as a new reusable HR filter grammar. It must not be copied as the system solution; shared FilterBar/search/filter convergence remains a later component-depth concern because the existing legacy FilterBar still has known accessibility/touch debt.
-- The pre-existing `fieldEmpCount` metric is current-page scoped while neighboring metrics are global. This slice correctly preserves that data behavior; changing its meaning requires a separate service/query/product decision, not a Design System patch.
-- Generic `DataTable` clickable-row keyboard semantics and `SearchInput` clear-affordance accessibility remain broader shared debt and are not introduced by HR002.
-- Any movement of PR #41 HEAD after `984750b5d933e26fea62995d3bf782f89a85b509` invalidates this exact-head acceptance and requires fresh review.
+1. On the pre-slice Activities baseline, the PageHeader `نشاط جديد` button carried `desktop-only-btn`, with a local `<=768px` rule hiding it on Mobile.
+2. PR #42 removes that Mobile suppression and now renders the authorized PageHeader `نشاط جديد` action on Mobile.
+3. The existing shell already owns the same Mobile creation capability: `CREATION_ACTIONS` declares `new-activity` for `/activities/list` -> `/activities/new` under the same `activities.create` permission; `FAB` resolves that registry action; its existing test explicitly proves `+ نشاط` is present on `/activities/list`; `AppLayout` documents the context-aware FAB as part of the Mobile shell.
 
-## Peer-state comparison / freshness synthesis
+Therefore an authorized user on the Mobile Activities list receives both the shell FAB and the new PageHeader create button for the same action during ordinary non-empty use. On empty states the page CTA may add a third visible copy, but that empty-state/FAB convergence is older debt and does not need to be expanded in this slice.
 
-After forming the judgment above, I compared current peer states and live PR evidence:
+This conflicts with the North Star's one-obvious-primary-action rule and with the existing central creation-action ownership already proven by the shell registry. It also reverses the pre-slice Mobile placement decision without an explicit system-level action-convergence change.
 
-- **Design QA:** aligned and fresh on the same exact PR HEAD `984750b5...`; grants `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` and explicitly closes the previous Tablet touch blocker.
-- **UI Production Engineer:** Development copy is lifecycle-stale at HR001, but the owned state carried on PR HEAD `984750b5...` is fresh/aligned and records the bounded touch correction with `TESTS_AUTHORED_NOT_EXECUTED`.
-- **Integration State:** stale, not contradictory. It records `P2 / BLOCKING` only for superseded PR HEAD `1c0ad8b...`; that exact defect is corrected and independently GREEN on `984750b5...`.
-- **Team Memory / Development workstream:** lifecycle-stale at HR002 `READY` because no merge has occurred; the live single PR is the only implementation slice, so there is no competing work.
-- Development drift from PR base to inspected Development HEAD is governance-only (`DESIGN_QA_STATE.md` / `INTEGRATION_STATE.md`) and does not overlap the product/shared implementation.
-- No current material cross-role `BLOCKING` design contradiction exists for exact PR HEAD `984750b5...`.
+### Minimum bounded correction
+
+Keep PR #42 and its current concern. Do **not** redesign the global FAB, PageHeader, ActionRegistry or Field creation flow.
+
+Required outcome only:
+- on Mobile (`<=768px`) for the Activities list, the persistent create action must remain shell-owned by the existing registered FAB; the PageHeader create control must not render/compete there;
+- keep the PageHeader create action available on Tablet/Desktop;
+- preserve the exact `activities.create` permission, `/activities/new` route and all existing empty-state/business semantics;
+- add focused authored protection proving Mobile does not gain a second persistent create surface while Tablet/Desktop retain the page-header create capability.
+
+The existing Mobile empty-state CTA + FAB duplication remains a non-blocking action-convergence/runtime watch because it predates this PR; do not broaden FIELD001 to solve the global action system.
+
+## Peer-state comparison / contradiction synthesis
+
+After the independent review above:
+
+- **Design QA:** fresh on the same exact HEAD and GREEN for the earlier Tablet/category fixes, but its non-blocking action-density watch under-scopes the current source evidence because it considers PageHeader + StatePanel while the shell's existing `/activities/list` FAB creates a persistent duplicate even when the list is non-empty. This is a material Product Design disagreement and is `BLOCKING` until bounded as above.
+- **UI Production Engineer:** feature-head state is otherwise fresh/aligned and correctly preserves Field business truth; it did not identify the PageHeader/FAB ownership regression.
+- **Integration State:** stale blocker applies only to superseded HEAD `823c89d...`; those two findings are closed. It is not the current blocker.
+- **Team Memory / Development workstream:** lifecycle-stale relative to the live FIELD001 review phase. No competing implementation slice exists.
+
+No Team Memory or Decision Log update is warranted: the durable rule has not changed. This blocker enforces already-established Mobile action clarity and central creation-action ownership rather than introducing a new system decision.
 
 ## What changed since previous state
 
-Product Design moved from the completed HR001 acceptance to an independent review of HR002 / PR #41. The Employees administration list concern is accepted on exact HEAD `984750b5d933e26fea62995d3bf782f89a85b509`; the previous Tablet touch defect is closed without scope drift, business-semantic change or Desktop-density regression.
-
-No Team Memory or Decision Log change is warranted from this Director run: no long-lived system direction changed, and Team Memory should be synchronized by the Integrator after a successful merge.
+Product Design moved from the completed HR002 acceptance to an independent exact-head FIELD001 review. The previous QA P2 issues are accepted as fixed, but a new source-proven Mobile action-ownership regression is now explicitly blocking integration on PR #42 exact HEAD `8ac8ed1e46fd8e48f1b7b065f74ab6f1dfac21df`.
 
 ### Cross-role handoff
-- **To:** Development Integrator, Design QA, UI Production Engineer
-- **What changed:** Product Design independently accepts PR #41 exact HEAD `984750b5d933e26fea62995d3bf782f89a85b509`; HR002 Employees-list architecture now has no Design-System blocker.
-- **Preserve:** employee queries/stats/page reset, current-page field metric behavior, salary/create/edit/view permissions, profile route, `EmployeeForm`, Pagination page-window/callback/disabled/ARIA behavior, Desktop density, semantic status vs neutral category treatment and all HR/service/workflow truth; do not promote the local filter row into a reusable HR filter system.
-- **Need from you:** Integrator should revalidate that PR #41 still points to exact HEAD `984750b5d933e26fea62995d3bf782f89a85b509`, verify base/drift/review threads/mergeability and integrate only while the fresh exact-head QA GREEN remains valid. Any moved HEAD requires fresh Product Design/QA review.
-- **Blocker level:** `NONE` for Product Design on this exact HEAD; filter convergence and runtime/release evidence remain `WATCH`/future work.
-- **Baseline:** Development `55111047e8a1f62605de217d9daec1a8e24b6440`; exact accepted PR HEAD `984750b5d933e26fea62995d3bf782f89a85b509`.
+- **To:** UI Production Engineer, Design QA, Development Integrator
+- **What changed:** Product Design independently found a P2 blocker on PR #42 exact HEAD `8ac8ed1e46fd8e48f1b7b065f74ab6f1dfac21df`: Mobile now shows the Activities create action both in PageHeader and the already-registered shell FAB.
+- **Preserve:** all activity query/search/filter timing and page resets; team/create/delete permissions; delete mutation/backend authority; routes/customer deep-link; GPS/device/workflow/service/validation truth; one live `ResponsiveCollection`; semantic outcome / neutral category treatment; shared Pagination; Desktop density; restored Tablet start-time parity; existing shell `new-activity` registry/FAB ownership on Mobile.
+- **Need from you:** UI Production Engineer should make only the bounded Mobile PageHeader-create placement correction on the same PR and author focused protection; Design QA must re-review the new exact HEAD. Integrator must remain `NO_MERGE` until the moved HEAD receives fresh `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` and this Product Design contradiction is closed.
+- **Blocker level:** `P2 / BLOCKING`.
+- **Baseline:** Development `6037b0eb08fc698eb079acfa5b4f563c151ee6a5`; blocked PR HEAD `8ac8ed1e46fd8e48f1b7b065f74ab6f1dfac21df`.
