@@ -38,17 +38,17 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-WORK-003`.
+Product UI is integrated through `DS2-REPORT-001`.
 
 Latest product integration:
-- PR: `#47 — DS2-WORK-003: converge supervisor operational summary metrics`
-- Exact reviewed PR HEAD: `9cb08546e073e553a02fb019dfc6389b53339ad8`
-- Squash merge commit: `95a84a8109f45cf9ac32c92d5d950f64d38dbaa0`
+- PR: `#48 — DS2-REPORT-001: converge report route sub-navigation`
+- Exact reviewed PR HEAD: `02f5d4f381d3999a9a3cda7ce8fbe0fc394926ba`
+- Squash merge commit: `5d2c57d9a502a4bbb2d355d94634bcf8b53075d2`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact HEAD
 - Runtime/preview/release evidence: not claimed
 
-The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, and Supervisor Work shared KPI summary convergence.
+The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, Supervisor Work shared KPI summary convergence, and Reports shared route-level sub-navigation convergence.
 
 ## Completed slices
 
@@ -69,73 +69,50 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - `DS2-FIELD-002 — Activity create/edit form composition foundation` — `DONE` — PR #43 — merge `2492fa475e7bc5beb9148124f31a4b4837057c19` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
 - `DS2-WORK-001 — Create Task form composition foundation` — `DONE` — PR #44 — merge `57747123643d0dd846cbda3ef340e9463a5f7647` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-WORK-002 — Work Hub view-mode selector convergence` — `DONE` — PR #46 — merge `add39ea8ee76b61d9a5a5938aa6cd03e2cc13456` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
+- `DS2-WORK-003 — Supervisor operational summary metric convergence` — `DONE` — PR #47 — merge `95a84a8109f45cf9ac32c92d5d950f64d38dbaa0` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 
-### DS2-WORK-003 — Supervisor operational summary metric convergence
+### DS2-REPORT-001 — Report route sub-navigation convergence
 Status: `DONE`
-Merged PR: `#47`
-Reviewed HEAD: `9cb08546e073e553a02fb019dfc6389b53339ad8`
-Squash merge: `95a84a8109f45cf9ac32c92d5d950f64d38dbaa0`
+Merged PR: `#48`
+Reviewed HEAD: `02f5d4f381d3999a9a3cda7ce8fbe0fc394926ba`
+Squash merge: `5d2c57d9a502a4bbb2d355d94634bcf8b53075d2`
 Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER`
 Runtime/preview/release evidence: not claimed
 
 System result:
-- `/work/team` now uses shared `MetricGrid columns={4}` + `StatCard` for the existing four operational supervisor metrics;
-- exact rendered metric order/calculations remain `active`, `overdue`, `blocked`, `atRisk`, with the same Arabic labels and icons;
-- presentation tones are `neutral / danger / danger / warning`, while text labels/values preserve non-color-only meaning;
-- shared responsive KPI grammar provides 4 Desktop columns, 2 Tablet columns and 1 Mobile column, with a named non-interactive summary group;
-- `useSupervisorOverview`, assignee/attention filters, loading/error/empty/list/navigation behavior and all Work service/query/permission/ownership/workflow/state-machine truth remain page/domain-owned;
-- global `.work-summary-*` CSS remains because other legacy Work consumers still exist;
+- the common `ReportsLayout` route navigation now uses shared V2 `SubNav` instead of the report-local `reports-tabs` / inline `NavLink` mini-system;
+- all 14 report destinations, exact order, Arabic labels/icons and permission arrays remain unchanged;
+- caller-owned `tab.permissions.some(permission => can(permission))` eligibility remains in `ReportsLayout`;
+- `/reports/visits` and `/reports/reengagement` remain outside `AnalyticsGate`; all other report outlets remain gated;
+- shared `SubNav` owns route-link semantics, active/focus treatment, horizontal containment, RTL-safe layout and touch geometry;
+- child report filters, queries, calculations, export/print, routing and business semantics remain untouched;
 - focused tests are authored but were not executed.
 
 ## Current single READY slice
 
-### DS2-REPORT-001 — Report route sub-navigation convergence
+### Report date/scope filter grammar and `ReportFilterBar` convergence
 Status: `READY`
-Owner role: UI Production Engineer next
-Dependency baseline: `DS2-WORK-003` integrated at `95a84a8109f45cf9ac32c92d5d950f64d38dbaa0`
-Representative surface: `src/pages/reports/ReportsLayout.tsx`
+Owner role: Product Design Director next
+Dependency baseline: `DS2-REPORT-001` integrated at `5d2c57d9a502a4bbb2d355d94634bcf8b53075d2`
 
 System intent:
-- replace only the report-local `reports-tabs` / inline `NavLink` secondary-navigation renderer with the established shared `SubNav` route-navigation pattern;
-- remove one report-local mini design system without inventing a Reports-only navigation primitive;
-- keep route-level navigation as real link semantics while the report domain continues to own which destinations are visible;
-- prove the existing shared navigation grammar on the common shell consumed by all report families before deeper filter/metric/chart/table work.
+- inspect representative report filter/date-scope surfaces on the exact latest Development baseline and bound one smallest dependency-safe presentation-only concern;
+- converge recurring report filter controls toward the shared V2 filter/search/date-control grammar instead of treating the current report-local `ReportFilterBar` as canonical by default;
+- resolve the known touch-geometry/design-system debt around report preset/date controls without changing what any filter means;
+- preserve the full Reports/Analytics roadmap and keep `DS2-REPORT-002` metrics/charts/tables work separately bounded.
 
 Preserve exactly:
-- all 14 current report destinations, their current order, Arabic labels and Lucide icon choices;
-- each destination's existing permission array and the current `tab.permissions.some(permission => can(permission))` visibility rule;
-- every route destination and routing behavior;
-- `usePageTitle` / page-title behavior;
-- the existing operational-page split where `/reports/reengagement` and `/reports/visits` bypass `AnalyticsGate` and other report outlets remain gated;
-- report content composition/padding and all child-page query, aggregation, calculation, trust, permission, export/print and business semantics.
+- report query parameters, date normalization/range semantics, preset meaning and scope eligibility;
+- permissions, `AnalyticsGate`, route behavior, cache/query/service contracts and calculations;
+- export/print behavior and child-report business truth;
+- Mobile operational readability, Tablet deliberate touch-first composition, Desktop dense management/report review, RTL/Arabic and long/numeric content.
 
-Implementation boundary:
-- use shared `SubNav` with a clear Arabic navigation label such as `أقسام التقارير`;
-- map the already permission-filtered report destination model into `SubNav` items; the caller remains responsible for permission eligibility;
-- use the existing shared `SubNav` visual/responsive/accessibility contract as-is unless exact source evidence proves a parity blocker;
-- remove only `reports-tabs` markup/styles that become proven dead after adoption; do not use REPORT001 as a general `ReportsLayout` inline-style or CSS cleanup;
-- add focused authored protection for shared `SubNav` adoption, exact permitted route order/labels, real-link/active-route semantics and preservation of the operational `AnalyticsGate` bypass contract.
-
-Device / RTL / accessibility acceptance:
-- **Mobile (`<=768px`)**: all permitted report destinations remain reachable in the contained horizontal secondary-nav track; canonical touch height remains at least 44px; no new ordinary page horizontal overflow; long Arabic labels remain readable as discrete nav items;
-- **Tablet (`769–1024px`)**: touch-first horizontal route navigation remains deliberate and all permitted destinations remain reachable without compressing controls below the shared touch contract;
-- **Desktop (`>=1025px`)**: preserve efficient one-line report-family scanning/route access with horizontal overflow available when width requires it;
-- **RTL/Arabic**: preserve destination order and Arabic labels; rely on logical/shared layout rather than physical left/right positioning;
-- **Accessibility**: named `<nav>`, real links, shared focus-visible/active-route behavior, icons decorative through shared `SubNav`; do not introduce ARIA tab semantics for route navigation.
-
-Explicit exclusions:
-- `ReportFilterBar`, preset/date-range behavior, filter query semantics and shared FilterBar decomposition;
-- report page headers beyond what is required to host the unchanged shell;
-- metrics, `MetricCard`, trust/freshness surfaces, charts, legends, tables, drill-down, loading/empty/error states, export/print actions and report child-page redesign;
-- `ReportsRedirect`, route definitions, permissions, `AnalyticsGate`, analytics hooks/services/cache/business calculations;
-- broad report CSS cleanup, shared `SubNav` redesign, backend/business/workflow changes, preview/deploy, hosted CI or `main` work.
-
-Architectural watch:
-- `ReportFilterBar` remains a separate report-local filter grammar with inline preset/date controls, and the current layout still carries 32px preset-button treatment; this is not accepted as the final Design System filter answer. Shared FilterBar/search/date-filter convergence remains explicit component-depth/report debt and must be separately bounded rather than silently copied or considered complete by REPORT001.
-
-Blocker rule:
-- if preserving exact route/permission/gating behavior requires functional semantics to change, mark `BLOCKED` instead of widening the slice.
+Boundary rule:
+- Product Design must identify the exact representative surface and smallest safe presentation concern before UI implementation begins;
+- prefer existing shared V2 primitives/patterns when they cover the need; strengthen the shared layer only when source evidence proves a recurring gap;
+- if parity requires functional/query/business semantic change, mark `BLOCKED` instead of widening the slice;
+- no backend/business/query-cache/permission/validation/workflow change, preview/deploy, hosted CI or `main` work.
 
 ## Product migration roadmap
 
@@ -195,8 +172,8 @@ Open only when a real migrated screen proves the recurring gap:
 - further Work detail/feedback/management convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
 
 ### I. Reports / Analytics
-- `DS2-REPORT-001` Report route sub-navigation convergence — `READY` / bounded to shared `SubNav` adoption in `ReportsLayout`
-- report date/scope filter grammar and `ReportFilterBar` convergence — `BACKLOG` / must be separately bounded; REPORT001 does not satisfy this debt
+- `DS2-REPORT-001` Report route sub-navigation convergence — `DONE` / PR #48 / merge `5d2c57d9a502a4bbb2d355d94634bcf8b53075d2`
+- report date/scope filter grammar and `ReportFilterBar` convergence — `READY` / Product Design must separately bound one smallest dependency-safe presentation concern
 - `DS2-REPORT-002` Metrics/charts/tables and responsive report composition — `BACKLOG`
 
 ### J. Settings / Administration
