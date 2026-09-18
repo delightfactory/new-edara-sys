@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { useState } from 'react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
+import navigationStyles from '../../styles/design-system-v2-navigation.css?raw'
 import SegmentedControl from './SegmentedControl'
 import SubNav from './SubNav'
 import Tabs from './Tabs'
@@ -100,5 +101,15 @@ describe('SegmentedControl', () => {
     fireEvent.click(table)
     expect(table.getAttribute('aria-pressed')).toBe('true')
     expect(screen.queryByRole('tab')).toBeNull()
+  })
+
+  it('keeps default items intrinsic while block mode retains equal-width stretching', () => {
+    const defaultItemRule = navigationStyles.match(/\.ds-segmented-control__item\s*\{([^}]*)\}/)?.[1]
+    const blockItemRule = navigationStyles.match(/\.ds-segmented-control--block\s+\.ds-segmented-control__item\s*\{([^}]*)\}/)?.[1]
+    const mobileRule = navigationStyles.match(/@media \(max-width: 768px\)\s*\{([\s\S]*?)\n\}/)?.[1]
+
+    expect(defaultItemRule).toContain('flex: 0 0 auto;')
+    expect(blockItemRule).toContain('flex: 1 1 0;')
+    expect(mobileRule).toMatch(/\.ds-segmented-control\s*\{[^}]*overflow-x:\s*auto;/)
   })
 })
