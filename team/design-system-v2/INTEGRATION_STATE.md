@@ -4,59 +4,61 @@
 
 - Review date: `2026-09-18`.
 - Development branch: `design-system-v2-development`.
-- Product merge commit integrated this run: `add39ea8ee76b61d9a5a5938aa6cd03e2cc13456`.
-- Completed slice: `DS2-WORK-002 — Work Hub view-mode selector convergence`.
-- Merged PR: `#46 — DS2-WORK-002: converge Work Hub view-mode selector`.
-- Exact reviewed PR HEAD: `e3d557d59a811f3c896ffe90922e9512bbb3cdee`.
-- PR base was exactly `design-system-v2-development` at `3a6ec3df1476765747859b06f1f5f8511ac758fb`.
-- Integration disposition: `MERGED_GREEN_DEV`.
-- QA evidence: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` on the exact merged HEAD.
-- Product Design exact-head disposition: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact HEAD.
+- Exact Development HEAD inspected: `71c6e3515cd97bd019d3e6d52c4c4ded6854f82b`.
+- Active slice: `DS2-WORK-003 — Supervisor operational summary metric convergence`.
+- Active PR: `#47 — DS2-WORK-003: converge supervisor operational summary metrics`.
+- PR base: exactly `design-system-v2-development` at `e1680a2fe918cb77b93db8fb7e5f6dc41624366b`.
+- Exact current PR HEAD: `9cb08546e073e553a02fb019dfc6389b53339ad8`.
+- PR state: `OPEN / DRAFT / mergeable=true`.
+- Current Integration disposition: `NO_MERGE_WAITING_FRESH_PRODUCT_DESIGN_CLOSEOUT`.
+- QA evidence: exact-head `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
+- Product Design exact-head disposition: not yet recorded for PR HEAD `9cb08546e073e553a02fb019dfc6389b53339ad8`; current Director state is the pre-implementation WORK003 boundary only.
 - Runtime/build/lint/preview/release PASS: not claimed.
-- Next single READY slice: `DS2-WORK-003 — Work detail/management state-surface convergence`, with Product Design required to bound one smallest presentation-only concern before implementation.
 
 ## Integrator decision
 
-**MERGED.** PR #46 satisfied every Development integration gate on exact HEAD `e3d557d59a811f3c896ffe90922e9512bbb3cdee`.
+**NO MERGE this run.**
 
-Before merge, Integration revalidated:
-- base exactly `design-system-v2-development`;
-- unchanged exact PR HEAD matching QA and Product Design review evidence;
+PR #47 is technically green at source-review level on exact HEAD `9cb08546e073e553a02fb019dfc6389b53339ad8`, but the current QA handoff explicitly requires fresh independent Product Design exact-head acceptance before Integration. That closeout is not yet present, so the review gate is incomplete.
+
+Integration independently revalidated:
+- base is exactly `design-system-v2-development`;
+- current PR HEAD remains exactly `9cb08546e073e553a02fb019dfc6389b53339ad8` and matches QA's GREEN-DEV marker;
 - `mergeable=true`;
-- no inline review threads;
-- six-file UI/Test/Governance-only scope;
-- no backend/business/query-cache/permission/validation/workflow/state-machine change;
-- no workflow/deployment-enabling change;
-- no known outstanding build/type failure;
-- no current role-state `BLOCKING` contradiction;
-- Development drift from the PR base was governance-only in the three specialist state files and did not overlap WORK002 product/shared files.
-
-The draft PR was moved to ready-for-review without changing its head, then squash-merged with expected-head protection as `add39ea8ee76b61d9a5a5938aa6cd03e2cc13456`.
+- no submitted reviews and no inline review threads exist;
+- changed-file scope is exactly three files: `SupervisorWorkPage.tsx`, focused `SupervisorWorkPage.test.tsx`, and UI Production Engineer owned state;
+- source diff is presentation/test/governance-only and contains no backend/business/query-cache/permission/validation/workflow/state-machine change;
+- no workflow/deployment-enabling file is changed;
+- no known source-visible build/type blocker is outstanding;
+- current role states contain no same-slice `BLOCKING` contradiction;
+- Development moved one commit beyond the PR base only in `team/design-system-v2/DESIGN_QA_STATE.md`, so current branch drift is governance-only and does not overlap the product/test files in PR #47.
 
 No feature/product code was implemented by Integration. No GitHub Actions or hosted CI were triggered or rerun, no Vercel/preview branch was touched, and `main` was not touched.
 
-## Integrated WORK002 impact
+## Current WORK003 integration assessment
 
-- `/work` now uses shared `SegmentedControl` for the existing `actions | work | attention` view modes instead of the local `.work-segmented` renderer.
-- Exact Arabic labels/order/default and page-owned `mode` / `setMode` semantics remain unchanged.
-- `useMyActionInbox(100)`, `useVisibleWorkItems({ limit: 150 })`, `useOperationalFlags(itemIds)`, filtering/search calculations, summary-card mode callbacks, permissions, request routing, Mobile create behavior and all Work query/service/workflow/state-machine truth remain page/domain-owned.
-- Selector-specific `work.css` was removed without broad Work styling cleanup.
-- Shared `SegmentedControl` now owns native-button presentation, `aria-pressed`, focus-visible treatment, selected-state surface/elevation, canonical Mobile/Tablet touch geometry and Mobile horizontal containment for this Work Hub concern.
-- Focused behavior/source tests protect labels/order/default, all three mode changes, shared-control adoption and continued page ownership of functional semantics.
+The bounded change remains aligned with the Product Design boundary at source level:
+- `/work/team` replaces only the local four-card supervisor summary renderer with shared `MetricGrid columns={4}` + `StatCard`;
+- existing metric calculations and rendered order remain `active`, `overdue`, `blocked`, `atRisk` with the same Arabic labels and icons;
+- presentation tones are `neutral / danger / danger / warning`;
+- the metric region is a named non-interactive group and semantic meaning remains text-readable rather than color-only;
+- `useSupervisorOverview`, `assignee`, `attentionOnly`, loading/error/empty/list/navigation behavior and all Work lifecycle/state-machine truth remain page/domain-owned;
+- global `.work-summary-*` CSS is intentionally untouched because Work Hub still consumes that legacy family;
+- focused tests are authored but not executed.
 
 ## Queue continuity
 
-- `DS2-WORK-002` is now `DONE` with merge `add39ea8ee76b61d9a5a5938aa6cd03e2cc13456`.
-- Exactly one next dependency-safe slice is READY: `DS2-WORK-003 — Work detail/management state-surface convergence`.
-- WORK003 READY means Product Design must first inspect the exact latest Development baseline and bound one smallest presentation-only concern; it does not authorize a broad multi-surface implementation.
+- `DS2-WORK-003` remains the single active slice and must not advance to DONE yet.
+- The queue must not advance until the same unchanged PR HEAD receives fresh Product Design exact-head acceptance and all normal Integration gates still pass.
+- Any PR HEAD movement invalidates current QA GREEN-DEV evidence and requires fresh QA plus fresh Product Design review.
 - Reports/Analytics, Settings/Admin, remaining Field debt, further Work convergence and Global cleanup remain preserved in the North-Star roadmap.
 - No durable rule changed, so `DECISION_LOG.md` remains untouched.
 
 ### Cross-role handoff
-- **To:** Product Design Director first; UI Production Engineer after a precise WORK003 boundary is recorded.
-- **What changed:** WORK002 was squash-merged as `add39ea8ee76b61d9a5a5938aa6cd03e2cc13456`; Work Hub now consumes shared `SegmentedControl` for view-mode selection and the queue advanced exactly one dependency-safe step to WORK003.
-- **Preserve:** exact Work mode values/Arabic labels/order/default; page-owned mode/filter/query/search/summary-card/permission/request/routing/Mobile-create/workflow truth; shared `SegmentedControl` interaction contract; one-active-slice rule; full Reports/Admin/Global roadmap.
-- **Need from you:** Product Design Director should inspect representative Work detail, Supervisor/Team, management/configuration and state surfaces on the exact latest Development baseline and bound one smallest presentation-only WORK003 concern. UI implementation starts only after that boundary is current.
-- **Blocker level:** `NONE`.
-- **Baseline:** integrated product merge `add39ea8ee76b61d9a5a5938aa6cd03e2cc13456`; merged PR #46 reviewed HEAD `e3d557d59a811f3c896ffe90922e9512bbb3cdee`.
-- **Evidence:** `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; Product Design `PASS — NO DESIGN-SYSTEM BLOCKER`; no executed build/test/lint/runtime/preview/release PASS claimed.
+- **To:** Product Design Director; Development Integrator after Director closeout if the PR HEAD remains unchanged.
+- **What changed:** PR #47 exact HEAD `9cb08546e073e553a02fb019dfc6389b53339ad8` is QA GREEN-DEV and source-clean, but Integration is holding merge because the required fresh Product Design exact-head closeout is still missing.
+- **Preserve:** exact four metric calculations/order/Arabic labels/icons; supervisor query/filter ownership; unchanged loading/error/empty/list/navigation behavior; shared `MetricGrid + StatCard` responsive/accessibility contract; global `.work-summary-*` legacy consumers; all backend/business/workflow/state-machine truth; one-active-slice rule and full roadmap.
+- **Need from you:** Product Design Director should independently accept or block exact PR HEAD `9cb08546e073e553a02fb019dfc6389b53339ad8`. If accepted and the HEAD remains fixed, Integration should revalidate base/head/drift/threads/mergeability and merge only if every gate remains valid.
+- **Blocker level:** `WATCH` — no technical/QA blocker remains; fresh Product Design exact-head acceptance is the outstanding Integration prerequisite.
+- **Baseline:** Development `71c6e3515cd97bd019d3e6d52c4c4ded6854f82b`; PR #47 HEAD `9cb08546e073e553a02fb019dfc6389b53339ad8`.
+- **Evidence:** `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview/release PASS claimed.
