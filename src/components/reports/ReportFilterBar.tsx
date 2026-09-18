@@ -1,5 +1,5 @@
 import { Calendar } from 'lucide-react'
-import { SegmentedControl } from '@/components/patterns/SegmentedControl'
+import SegmentedControl from '@/components/patterns/SegmentedControl'
 import { normalizeDateRange, toLocalISODate } from '@/lib/utils/date'
 
 export interface DateRange {
@@ -52,7 +52,7 @@ export default function ReportFilterBar({ value, onChange }: Props) {
       <SegmentedControl
         ariaLabel="اختصارات الفترة"
         value={activePreset}
-        options={presets.map(preset => ({ value: preset.label, label: preset.label }))}
+        items={presets.map(preset => ({ value: preset.label, label: preset.label }))}
         onValueChange={label => {
           const preset = presets.find(item => item.label === label)
           if (preset) onChange(preset.range)
