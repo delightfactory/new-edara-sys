@@ -90,20 +90,52 @@ System result:
 
 ## Current single READY slice
 
-### DS2-REPORT-001 — Report shell/navigation/filter grammar
+### DS2-REPORT-001 — Report route sub-navigation convergence
 Status: `READY`
-Owner role: Product Design Director first, then UI Production Engineer after one bounded concern is recorded
+Owner role: UI Production Engineer next
 Dependency baseline: `DS2-WORK-003` integrated at `95a84a8109f45cf9ac32c92d5d950f64d38dbaa0`
+Representative surface: `src/pages/reports/ReportsLayout.tsx`
 
-Intent:
-- advance the North-Star roadmap from representative Work convergence into Reports/Analytics rather than continuing ad-hoc Work page polishing;
-- Product Design must inspect representative report entry/navigation/filter surfaces on the exact latest Development baseline and select one smallest dependency-safe presentation-only concern for implementation;
-- prefer existing V2 page shell, navigation, filter, metric, collection, status, action and state grammar before inventing report-local patterns;
-- preserve every report query, aggregation, calculation, permission, export/print, route and business semantic exactly;
-- keep Mobile operational readability, deliberate Tablet composition, dense Desktop management/report review, RTL/Arabic and long/numeric content first-class;
-- no backend/business/query-cache/permission/validation/workflow change, preview/deploy, hosted CI or `main` work.
+System intent:
+- replace only the report-local `reports-tabs` / inline `NavLink` secondary-navigation renderer with the established shared `SubNav` route-navigation pattern;
+- remove one report-local mini design system without inventing a Reports-only navigation primitive;
+- keep route-level navigation as real link semantics while the report domain continues to own which destinations are visible;
+- prove the existing shared navigation grammar on the common shell consumed by all report families before deeper filter/metric/chart/table work.
 
-If a recurring report gap proves a missing shared pattern, Product Design may activate the relevant shared component-depth item only as the bounded slice requires; do not widen REPORT001 into a broad analytics redesign.
+Preserve exactly:
+- all 14 current report destinations, their current order, Arabic labels and Lucide icon choices;
+- each destination's existing permission array and the current `tab.permissions.some(permission => can(permission))` visibility rule;
+- every route destination and routing behavior;
+- `usePageTitle` / page-title behavior;
+- the existing operational-page split where `/reports/reengagement` and `/reports/visits` bypass `AnalyticsGate` and other report outlets remain gated;
+- report content composition/padding and all child-page query, aggregation, calculation, trust, permission, export/print and business semantics.
+
+Implementation boundary:
+- use shared `SubNav` with a clear Arabic navigation label such as `أقسام التقارير`;
+- map the already permission-filtered report destination model into `SubNav` items; the caller remains responsible for permission eligibility;
+- use the existing shared `SubNav` visual/responsive/accessibility contract as-is unless exact source evidence proves a parity blocker;
+- remove only `reports-tabs` markup/styles that become proven dead after adoption; do not use REPORT001 as a general `ReportsLayout` inline-style or CSS cleanup;
+- add focused authored protection for shared `SubNav` adoption, exact permitted route order/labels, real-link/active-route semantics and preservation of the operational `AnalyticsGate` bypass contract.
+
+Device / RTL / accessibility acceptance:
+- **Mobile (`<=768px`)**: all permitted report destinations remain reachable in the contained horizontal secondary-nav track; canonical touch height remains at least 44px; no new ordinary page horizontal overflow; long Arabic labels remain readable as discrete nav items;
+- **Tablet (`769–1024px`)**: touch-first horizontal route navigation remains deliberate and all permitted destinations remain reachable without compressing controls below the shared touch contract;
+- **Desktop (`>=1025px`)**: preserve efficient one-line report-family scanning/route access with horizontal overflow available when width requires it;
+- **RTL/Arabic**: preserve destination order and Arabic labels; rely on logical/shared layout rather than physical left/right positioning;
+- **Accessibility**: named `<nav>`, real links, shared focus-visible/active-route behavior, icons decorative through shared `SubNav`; do not introduce ARIA tab semantics for route navigation.
+
+Explicit exclusions:
+- `ReportFilterBar`, preset/date-range behavior, filter query semantics and shared FilterBar decomposition;
+- report page headers beyond what is required to host the unchanged shell;
+- metrics, `MetricCard`, trust/freshness surfaces, charts, legends, tables, drill-down, loading/empty/error states, export/print actions and report child-page redesign;
+- `ReportsRedirect`, route definitions, permissions, `AnalyticsGate`, analytics hooks/services/cache/business calculations;
+- broad report CSS cleanup, shared `SubNav` redesign, backend/business/workflow changes, preview/deploy, hosted CI or `main` work.
+
+Architectural watch:
+- `ReportFilterBar` remains a separate report-local filter grammar with inline preset/date controls, and the current layout still carries 32px preset-button treatment; this is not accepted as the final Design System filter answer. Shared FilterBar/search/date-filter convergence remains explicit component-depth/report debt and must be separately bounded rather than silently copied or considered complete by REPORT001.
+
+Blocker rule:
+- if preserving exact route/permission/gating behavior requires functional semantics to change, mark `BLOCKED` instead of widening the slice.
 
 ## Product migration roadmap
 
@@ -163,7 +195,8 @@ Open only when a real migrated screen proves the recurring gap:
 - further Work detail/feedback/management convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
 
 ### I. Reports / Analytics
-- `DS2-REPORT-001` Report shell/navigation/filter grammar — `READY` / Product Design must bound one representative concern before implementation
+- `DS2-REPORT-001` Report route sub-navigation convergence — `READY` / bounded to shared `SubNav` adoption in `ReportsLayout`
+- report date/scope filter grammar and `ReportFilterBar` convergence — `BACKLOG` / must be separately bounded; REPORT001 does not satisfy this debt
 - `DS2-REPORT-002` Metrics/charts/tables and responsive report composition — `BACKLOG`
 
 ### J. Settings / Administration
