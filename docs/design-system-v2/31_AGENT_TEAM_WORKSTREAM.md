@@ -119,26 +119,44 @@ System result:
 
 ## Current single READY slice
 
-### DS2-WORK-003 — Work detail/management state-surface convergence
+### DS2-WORK-003 — Supervisor operational summary metric convergence
 Status: `READY`
-Owner role: Product Design Director for boundary selection before implementation
-Dependency baseline: `DS2-WORK-002` integrated at `add39ea8ee76b61d9a5a5938aa6cd03e2cc13456`
+Owner role: UI Production Engineer for one bounded implementation PR
+Dependency baseline: `DS2-WORK-002` integrated at `add39ea8ee76b61d9a5a5938aa6cd03e2cc13456`; Product Design boundary selected from Development `530ad16afb589d318c3c31f6ae67d4f6d109a7e1`
+Target surface: `/work/team` — `src/pages/work/SupervisorWorkPage.tsx`
 
-Intent:
-- continue Work Management convergence before Reports/Analytics while preserving the North-Star roadmap;
-- inspect representative Work detail, Supervisor/Team, management/configuration and state surfaces on the exact latest Development baseline;
-- bound exactly one smallest dependency-safe presentation-only concern before UI implementation begins;
-- prefer existing shared V2 shell, action, status, collection, form, feedback and state grammar over Work-local invention;
-- preserve all Work query/service/permission/ownership/responsibility/validation/workflow/state-machine truth exactly.
+System-pattern intent:
+- replace the Supervisor page-local four-card operational summary composition with the established shared `MetricGrid + StatCard` grammar;
+- prove the same semantic KPI hierarchy and responsive metric layout on a Work management surface without entering Work lifecycle/state-machine behavior;
+- keep metric values and business meaning caller-owned; the Design System owns hierarchy, semantic emphasis and responsive layout only.
 
-Explicit guardrails:
-- this READY state authorizes Product Design boundary selection, not a broad multi-surface implementation;
-- no backend/business/query-cache/permission/validation/workflow change;
-- no reopening WORK001/WORK002 for ad-hoc polish;
-- no preview, deployment, hosted CI or `main` work;
-- if the smallest safe concern cannot be isolated from functional semantics, mark the slice `BLOCKED` rather than widening scope.
+In scope:
+- the four currently rendered summary metrics only: `active`, `overdue`, `blocked`, `atRisk`;
+- preserve the existing calculations from `overview.data`, exact Arabic labels and existing icons;
+- render through `MetricGrid columns={4}` and `StatCard` rather than `.work-summary-grid` / `.work-summary-card` markup on this page;
+- semantic tone mapping is presentation-only and fixed for this proof: active=`neutral`, overdue=`danger`, blocked=`danger`, atRisk=`warning`; labels/icons remain visible so meaning is never color-only;
+- retain one accessible summary grouping label for the four metrics;
+- add focused source/component coverage proving shared-component adoption, exact four metrics/labels and no mutation of supervisor query/filter behavior.
 
-Remaining Field create/detail convergence stays backlog debt and must be separately bounded later. Reports/Analytics, Settings/Admin and Global convergence remain preserved below.
+Device/state/accessibility acceptance:
+- **Mobile (`<=768px`)**: shared `MetricGrid` canonical one-column composition; no clipping, horizontal page overflow or truncated Arabic metric labels; values remain legible with tabular-number treatment from `StatCard`;
+- **Tablet (`769–1024px`)**: canonical two-column metric composition with stable spacing and no compressed Desktop-only row;
+- **Desktop (`>=1025px`)**: four dense equal-width metrics in one row, visually subordinate to the page header and ahead of filters/list content;
+- **RTL/Arabic**: no physical left/right positioning assumptions; Arabic labels remain exact and wrapping-safe;
+- **Accessibility**: summary remains text-readable without color, icons stay decorative through the shared component, and no interactive semantics are added to non-interactive metrics;
+- loading/error/empty states remain exactly as-is in this slice.
+
+Explicit exclusions:
+- no change to `useSupervisorOverview`, `assignee`, `attentionOnly`, `people`, metric calculations, status/flag derivation, routing or navigation;
+- no change to page header/back action, filter form, native select/checkbox, loading/error/empty states, work-item cards, badges, next-action panel or due/follow-up text;
+- no Work Hub summary-card change and no reopening WORK001/WORK002;
+- no Work Detail, `WorkDetailAdministration`, `WorkDetailExtensions`, `WorkDueGovernance`, Submit Request or management/configuration migration;
+- no shared `MetricGrid`, `StatCard`, token or global responsive-contract redesign unless a verified defect makes the bounded slice impossible; if so mark `BLOCKED` rather than widening scope;
+- do not remove `.work-summary-*` CSS globally because Work Hub still owns that legacy usage;
+- no backend/business/query-cache/permission/validation/workflow/state-machine change;
+- no preview, deployment, hosted CI or `main` work.
+
+Remaining Work detail/feedback/management convergence stays backlog debt and must be separately bounded after WORK003. Remaining Field create/detail convergence stays backlog debt and must be separately bounded later. Reports/Analytics, Settings/Admin and Global convergence remain preserved below.
 
 ## Product migration roadmap
 
@@ -194,8 +212,8 @@ Open only when a real migrated screen proves the recurring gap:
 ### H. Work Management
 - `DS2-WORK-001` Create Task form composition foundation — `DONE`
 - `DS2-WORK-002` Work Hub view-mode selector convergence — `DONE` / PR #46 / merge `add39ea8ee76b61d9a5a5938aa6cd03e2cc13456`
-- `DS2-WORK-003` Work detail/management state-surface convergence — `READY` / Product Design must bound one smallest concern before implementation
-- further Work convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
+- `DS2-WORK-003` Supervisor operational summary metric convergence — `READY` / bounded to `/work/team` summary metrics only
+- further Work detail/feedback/management convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` Report shell/navigation/filter grammar — `BACKLOG`
