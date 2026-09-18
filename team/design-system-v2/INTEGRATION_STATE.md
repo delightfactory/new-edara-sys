@@ -4,59 +4,52 @@
 
 - Review date: `2026-09-18`.
 - Development branch: `design-system-v2-development`.
-- Development HEAD immediately before this state write: `8479bc30e9062a79d2d3be4fe0d3c1203554b90c`.
-- Completed slice: `DS2-WORK-003 — Supervisor operational summary metric convergence`.
-- Merged PR: `#47 — DS2-WORK-003: converge supervisor operational summary metrics`.
-- Exact reviewed PR HEAD: `9cb08546e073e553a02fb019dfc6389b53339ad8`.
-- Squash merge commit: `95a84a8109f45cf9ac32c92d5d950f64d38dbaa0`.
-- Integration disposition: `MERGED_GREEN_DEV`.
-- QA evidence: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` on the exact reviewed HEAD.
-- Product Design evidence: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact reviewed HEAD.
+- Development HEAD immediately before this state write: `620bf8ffb545611339b82b0a0bc49be85f3a805b`.
+- Active slice: `DS2-REPORT-001 — Report route sub-navigation convergence`.
+- Active PR: `#48 — DS2-REPORT-001: converge report route sub-navigation`.
+- PR base: `design-system-v2-development`.
+- Exact current PR HEAD: `02f5d4f381d3999a9a3cda7ce8fbe0fc394926ba`.
+- PR state at revalidation: `OPEN / DRAFT / mergeable=true`.
+- Integration disposition: `NO_MERGE_WAITING_FRESH_PRODUCT_DESIGN_CLOSEOUT`.
+- QA evidence on the exact current HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
+- Product Design exact-head acceptance: not yet recorded for the implementation HEAD.
 - Runtime/build/lint/preview/release PASS: not claimed.
-- Next single READY slice: `DS2-REPORT-001 — Report shell/navigation/filter grammar`.
 
 ## Integrator decision
 
-**MERGED.**
+**NO MERGE in this run.**
 
-Integration revalidated all required gates immediately before merge:
-- base was exactly `design-system-v2-development`;
-- current PR HEAD remained exactly `9cb08546e073e553a02fb019dfc6389b53339ad8`, matching QA and Product Design exact-head evidence;
-- PR was mergeable and contained no unresolved review threads or submitted review blockers;
-- changed-file scope was exactly `SupervisorWorkPage.tsx`, focused `SupervisorWorkPage.test.tsx`, and the UI Production Engineer owned state;
-- source diff was presentation/test/governance-only with no backend/business/query-cache/permission/validation/workflow/state-machine change;
+The implementation itself is integration-clean at source level, but the current Design QA handoff explicitly keeps fresh independent Product Design exact-head acceptance as the remaining Integration prerequisite. The current Product Design Director state is still the pre-implementation REPORT001 boundary and does not accept exact PR HEAD `02f5d4f381d3999a9a3cda7ce8fbe0fc394926ba`.
+
+Revalidation performed on the current exact PR state:
+- base is exactly `design-system-v2-development`;
+- exact PR HEAD remains `02f5d4f381d3999a9a3cda7ce8fbe0fc394926ba`, matching QA review evidence;
+- PR is `mergeable=true` and still Draft;
+- PR conversation comments are empty; submitted review evidence contains the exact-head QA GREEN-DEV marker; inline review comments are empty;
+- changed-file scope is exactly 3 files: `src/pages/reports/ReportsLayout.tsx`, focused `src/pages/reports/ReportsLayout.test.tsx`, and UI Production Engineer owned state;
+- source diff is presentation/test/governance-only: local report route-nav rendering is replaced by shared `SubNav`; no backend/business/query-cache/permission/validation/workflow/export/print/deployment semantics change;
+- all 14 report routes/order/Arabic labels/icons and caller-owned permission filtering remain preserved;
+- `/reports/visits` and `/reports/reengagement` remain outside `AnalyticsGate`; other report outlets remain gated;
 - no workflow/deployment-enabling file changed;
-- no known source-visible build/type blocker was outstanding;
-- no current role-state file recorded a same-slice `BLOCKING` contradiction;
-- Development drift from the PR base was governance-only (`DESIGN_QA_STATE.md`, `INTEGRATION_STATE.md`, `DESIGN_DIRECTOR_STATE.md`) and did not overlap the product/test files.
-
-PR #47 was moved from draft to ready-for-review without moving its head, then squash-merged with expected-head protection as `95a84a8109f45cf9ac32c92d5d950f64d38dbaa0`.
+- no known source-visible build/type blocker is outstanding;
+- no current role-state file records a same-slice `BLOCKING` contradiction;
+- Development moved one commit beyond the PR base, and that drift is governance-only in `team/design-system-v2/DESIGN_QA_STATE.md`, with no overlap against product/test files.
 
 No feature/product code was implemented by Integration. No GitHub Actions or hosted CI were triggered or rerun, no Vercel/preview branch was touched, and `main` was not touched.
 
-## Integrated system impact
-
-- `/work/team` now uses shared `MetricGrid columns={4}` + `StatCard` for the existing four supervisor operational metrics.
-- Metric order/calculation truth remains `active`, `overdue`, `blocked`, `atRisk`; exact Arabic labels/icons remain unchanged.
-- Presentation tones are `neutral / danger / danger / warning`, with text labels/values preserving non-color-only meaning.
-- The shared KPI grammar deliberately resolves to four columns on Desktop, two on Tablet, one on Mobile, with a named non-interactive summary group.
-- `useSupervisorOverview`, assignee/attention filters, loading/error/empty/list/navigation behavior and all Work service/query/permission/ownership/workflow/state-machine truth remain page/domain-owned.
-- Global `.work-summary-*` CSS remains because other legacy Work consumers still exist.
-
 ## Queue continuity
 
-- `DS2-WORK-003` is `DONE` with merge SHA/evidence recorded in the Workstream.
-- Exactly one next dependency-safe item is `READY`: `DS2-REPORT-001 — Report shell/navigation/filter grammar`.
-- Product Design must first inspect representative Reports/Analytics surfaces on the exact latest Development baseline and bound one smallest presentation-only concern before implementation.
-- Further Work detail/feedback/management convergence and remaining Field debt remain explicit backlog items; they are not silently discarded.
-- `DS2-REPORT-002`, Settings/Admin and Global convergence remain preserved in the North-Star roadmap.
+- `DS2-REPORT-001` remains the single active/READY report slice and is not DONE until all exact-head gates close and Integration merges it.
+- Do not advance another report, Admin, Global, Work or Field slice while PR #48 remains unresolved.
+- Report filter/date-range convergence remains separate explicit debt; REPORT001 does not make `ReportFilterBar` canonical.
+- Full REPORT002/Admin/Global and remaining Work/Field roadmap stays preserved.
 - No durable rule changed, so `DECISION_LOG.md` remains untouched.
 
 ### Cross-role handoff
-- **To:** Product Design Director; UI Production Engineer after Director bounds REPORT001; Design QA after a stable implementation PR exists.
-- **What changed:** WORK003 merged as `95a84a8109f45cf9ac32c92d5d950f64d38dbaa0`; the queue advanced exactly once to `DS2-REPORT-001 — Report shell/navigation/filter grammar`.
-- **Preserve:** all report query/aggregation/calculation/permission/export/print/routing truth; Mobile operational readability, deliberate Tablet composition, dense Desktop report review; RTL/Arabic/long numeric content; existing Work business truth; remaining Work/Field debt and the full Reports/Admin/Global roadmap.
-- **Need from you:** Product Design Director should inspect representative report shell/navigation/filter surfaces on the exact latest Development HEAD and record the smallest dependency-safe presentation-only REPORT001 boundary before UI implementation begins.
-- **Blocker level:** `NONE`.
-- **Baseline:** product merge `95a84a8109f45cf9ac32c92d5d950f64d38dbaa0`; Development coordination HEAD before this state write `8479bc30e9062a79d2d3be4fe0d3c1203554b90c`.
+- **To:** Product Design Director; Development Integrator rechecks after exact-head closeout.
+- **What changed:** PR #48 exact HEAD `02f5d4f381d3999a9a3cda7ce8fbe0fc394926ba` now has Design QA `GREEN-DEV + SOURCE_REVIEW_PASS`; Integration revalidated scope, drift, mergeability and functional isolation and found no technical blocker.
+- **Preserve:** all 14 report destinations/order/Arabic labels/icons/permission arrays; caller-owned `can(...)` eligibility; operational AnalyticsGate bypass; all report filter/query/calculation/export/print/business truth; shared `SubNav` contract; full remaining roadmap.
+- **Need from you:** independently accept or block exact PR HEAD `02f5d4f381d3999a9a3cda7ce8fbe0fc394926ba`. If accepted and the head remains unchanged, Integration may revalidate and merge on a later run.
+- **Blocker level:** `WATCH` — no technical QA blocker; exact-head Product Design closeout remains pending.
+- **Baseline:** Development `620bf8ffb545611339b82b0a0bc49be85f3a805b`; PR #48 HEAD `02f5d4f381d3999a9a3cda7ce8fbe0fc394926ba`.
 - **Evidence:** `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview/release PASS claimed.
