@@ -18,7 +18,7 @@ Authorities:
 |---|---|---|---:|---:|---:|
 | Product Design Director | System identity, architecture, next slice, design quality | every 2 hours | No | No | No |
 | UI Production Engineer | Implement/repair the single active UI slice | hourly | UI-only | No | No |
-| Design QA | Independent exact-head review | hourly | No | No |
+| Design QA | Independent exact-head review | hourly | No | No | No |
 | Development Integrator | Merge GREEN-DEV PR and advance queue | hourly | No feature work | Development only | No |
 
 `BACKLOG -> READY -> IN_PROGRESS -> REVIEW -> GREEN-DEV -> DONE`
@@ -102,23 +102,51 @@ System result:
 
 ## Current single READY slice
 
-### DS2-WORK-002 — Work Hub/detail/management state-surface convergence
+### DS2-WORK-002 — Work Hub view-mode selector convergence
 Status: `READY`
-Owner role: Product Design Director for bounding; UI Production Engineer after the boundary is recorded
+Owner role: UI Production Engineer
 Dependency baseline: `DS2-WORK-001` integrated at `57747123643d0dd846cbda3ef340e9463a5f7647`
+Representative live surface: `/work` / `src/pages/work/WorkHubPage.tsx`
+
+Why this is the next smallest dependency-safe concern:
+- Work Hub currently recreates a local `.work-segmented` single-choice mode selector for `actions | work | attention` even though shared `SegmentedControl` exists specifically for compact filter/view-mode selection;
+- the local buttons use a 36px minimum height, below the canonical touch-first geometry expected on Mobile/Tablet, while shared `SegmentedControl` already owns `--ds-control-height-touch`, focus-visible treatment, `aria-pressed` selected state and Mobile horizontal containment;
+- the change can stay presentation-only because `mode`, `setMode`, search/filter calculations, query ownership and Work state-machine truth remain entirely in `WorkHubPage`/domain code;
+- Work Detail, Supervisor and management surfaces carry materially higher state-machine sensitivity and are intentionally not combined with this proof.
+
+In scope:
+- replace only the Work Hub local `work-segmented` renderer with shared `SegmentedControl`;
+- preserve exactly the same three values, Arabic labels, order, default `actions` mode and `setMode` behavior;
+- preserve the existing `work-toolbar` and search placement/behavior around the shared selector; no search semantics or FilterBar redesign in this slice;
+- remove only selector CSS that becomes genuinely dead after adoption; do not perform broad `work.css` cleanup;
+- author focused tests/source contracts for exact mode labels/order, selected `aria-pressed` state, mode changes, and continued presentation-only ownership.
+
+Explicit exclusions:
+- Work Hub summary cards/metrics and their click behavior;
+- search input/SearchField/FilterBar convergence;
+- action-inbox cards, `WorkItemCard`, loading skeletons, empty/error/offline state convergence;
+- Mobile create action placement;
+- Work Detail, Supervisor/Team, management/configuration, Submit Request and all other Work surfaces;
+- any change to `useMyActionInbox`, `useVisibleWorkItems`, operational flags, `filteredItems`, `filteredActions`, permissions, routes, query/cache/service contracts, ownership/responsibility, validation, workflow or state-machine semantics.
+
+Device acceptance:
+- **Mobile (`<=768px`)**: each selector item retains at least the shared 44px touch-height contract; the control stays within the viewport and may horizontally contain long labels without causing page-level horizontal overflow; Arabic labels remain readable and the selector does not compete with the page's primary create action.
+- **Tablet (`769–1024px`)**: touch-first 44px geometry remains; all three modes keep clear selected/unselected hierarchy and coexist with the search control without reverting to compressed desktop-only buttons.
+- **Desktop (`>=1025px`)**: the selector stays visually subordinate to page actions/content, preserves efficient toolbar density and does not alter Work Hub information hierarchy or search placement.
+
+Accessibility / state acceptance:
+- group retains accessible name `نوع العرض`;
+- each option remains a native `button type="button"` with `aria-pressed` driven by the current `mode`;
+- keyboard activation and visible `:focus-visible` treatment come from the shared control; selected state must remain perceivable beyond color alone through the shared surface/elevation treatment;
+- all three selected states (`actions`, `work`, `attention`) must remain representable with no change to the data/filtering truth they project;
+- no loading, empty, error or permission behavior is changed by this slice.
 
 System-pattern intent:
-- continue the North-Star Work Management convergence rather than jump to ad-hoc page polishing or skip directly to Reports before the next safe Work concern is bounded;
-- inspect representative Work Hub, task-detail, management/supervisor and state surfaces on the exact latest Development baseline and choose the smallest dependency-safe presentation-only concern;
-- prefer existing V2 shell, collection, action, status, feedback and form grammar before introducing any Work-local pattern;
-- preserve Work query/service/permission/ownership/responsibility/workflow/validation/state-machine truth exactly.
+- retire a proven page-local duplicate in favor of the existing V2 navigation/filter primitive rather than beautifying Work Hub locally;
+- establish `SegmentedControl` as the canonical presentation for Work view-mode selection while keeping Work mode/filter truth page-owned;
+- leave adjacent Work Hub search, metrics, queues and state surfaces as explicit later convergence debt so WORK002 remains small, reversible and source-reviewable.
 
-Bounding requirements:
-- select one coherent concern and one representative live surface before implementation;
-- state explicit Mobile/Tablet/Desktop, Arabic/RTL, accessibility and relevant state acceptance criteria;
-- do not combine Work Hub, detail, supervisor/management and state surfaces in one broad rewrite;
-- if the next proof exposes a recurring shared-system gap, strengthen the shared layer only when the boundary can remain presentation-only;
-- no backend/database/RPC/query/cache/permission/RBAC/RLS/service/workflow/validation-semantic change, Vercel preview, hosted CI or `main` work.
+If preserving the exact existing Work mode semantics requires a functional/query/workflow change, mark the slice `BLOCKED` rather than expanding scope.
 
 Further Work convergence after WORK002 remains backlog debt. Reports/Analytics, Settings/Admin and Global convergence remain preserved in the roadmap below.
 
@@ -177,8 +205,8 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### H. Work Management
 - `DS2-WORK-001` Create Task form composition foundation — `DONE`
-- `DS2-WORK-002` Work Hub/detail/management state-surface convergence — `READY` / Product Design must bound one smallest concern before implementation
-- further Work convergence — `BACKLOG` / must be explicitly bounded before activation
+- `DS2-WORK-002` Work Hub view-mode selector convergence — `READY` / bounded to shared `SegmentedControl` adoption on `/work`
+- further Work Hub/detail/management/state convergence — `BACKLOG` / must be explicitly bounded before activation
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` Report shell/navigation/filter grammar — `BACKLOG`
