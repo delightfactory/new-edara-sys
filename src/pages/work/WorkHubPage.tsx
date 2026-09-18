@@ -17,6 +17,7 @@ import {
   Users2,
 } from 'lucide-react'
 import Button from '@/components/ui/Button'
+import SegmentedControl from '@/components/patterns/SegmentedControl'
 import { useAuthStore } from '@/stores/auth-store'
 import WorkItemCard from '@/features/work/components/WorkItemCard'
 import { useVisibleWorkItems } from '@/features/work/hooks'
@@ -29,6 +30,12 @@ import './work.css'
 import './work-interactions.css'
 
 type HubMode = 'actions' | 'work' | 'attention'
+
+const HUB_MODE_ITEMS = [
+  { value: 'actions', label: 'مطلوب مني الآن' },
+  { value: 'work', label: 'كل الأعمال' },
+  { value: 'attention', label: 'يحتاج انتباه' },
+]
 
 const MANAGEMENT_PERMISSIONS = [
   'work.queues.manage',
@@ -188,11 +195,12 @@ export default function WorkHubPage() {
       </section>
 
       <section className="work-toolbar" aria-label="تصفية الأعمال">
-        <div className="work-segmented" role="group" aria-label="نوع العرض">
-          <button type="button" aria-pressed={mode === 'actions'} onClick={() => setMode('actions')}>مطلوب مني الآن</button>
-          <button type="button" aria-pressed={mode === 'work'} onClick={() => setMode('work')}>كل الأعمال</button>
-          <button type="button" aria-pressed={mode === 'attention'} onClick={() => setMode('attention')}>يحتاج انتباه</button>
-        </div>
+        <SegmentedControl
+          value={mode}
+          onValueChange={value => setMode(value as HubMode)}
+          items={HUB_MODE_ITEMS}
+          ariaLabel="نوع العرض"
+        />
         <label className="work-search">
           <Search size={16} aria-hidden="true" />
           <input value={search} onChange={event => setSearch(event.target.value)} placeholder="ابحث بالعنوان أو رقم العمل أو الإجراء التالي" aria-label="البحث في الأعمال" />
