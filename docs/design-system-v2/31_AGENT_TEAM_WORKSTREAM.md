@@ -105,30 +105,54 @@ System result:
 
 ## Current single READY slice
 
-### Report custom-date/filter-composite convergence beyond the preset selector
+### DS2-REPORT-003 — Report custom-date field convergence
 Status: `READY`
-Owner role: Product Design Director first; UI Production Engineer only after the boundary is recorded
+Owner role: UI Production Engineer
 Dependency baseline: `DS2-REPORT-002` integrated at `cc91792263d9fc606b9c2f28a531daa826997c75`
-Primary inspection target: `src/components/reports/ReportFilterBar.tsx` plus representative report consumers
+Representative surface: `src/components/reports/ReportFilterBar.tsx`
+Shared-system target: V2 `DateField` form composite built from the existing `Field` / `Input` grammar; no date-range or analytics semantics inside the shared component
 
-System intent:
-- inspect the remaining custom-date and recurring report-filter presentation on the exact latest Development baseline;
-- bound exactly one smallest dependency-safe presentation-only concern that advances shared V2 filter/date-control grammar without moving report semantics into a visual primitive;
-- prefer an existing shared V2 field/filter/control contract, or strengthen a proven shared contract only when the real consumer demonstrates the need;
-- keep Mobile operational readability and touch safety, Tablet deliberate composition, Desktop dense report review, RTL/Arabic and long/numeric content first-class.
+System-pattern intent:
+- retire the two raw, inline-styled `<input type="date">` controls in `ReportFilterBar` as a local primitive family;
+- establish the blueprint-declared shared V2 `DateField` presentation contract using native `input[type="date"]` semantics and the existing V2 Field/Input anatomy rather than inventing a Reports-only date-control variant;
+- make the shared layer own input surface, border/radius, typography, dark-mode tokens, focus/invalid/disabled treatment, standard control geometry and touch geometry;
+- keep Reports responsible for from/to meaning, ordering, normalization, presets and every analytics/query effect;
+- preserve compact Desktop report review while allowing deliberate wrap/stack containment on Tablet/Mobile without viewport-level overflow or compressed touch targets.
+
+Implementation boundary:
+- add/evolve exactly one domain-agnostic shared `DateField` form composite under the existing V2 field system; it may forward normal native date-input props and Field metadata but must not parse, normalize, compare or mutate dates;
+- migrate only the two custom date inputs in `ReportFilterBar` to that shared contract;
+- retain local ReportFilterBar composition/layout ownership for the date pair; only obsolete raw-input visual styling may be removed;
+- each date input must have an independent Arabic accessible name (`من تاريخ` / `إلى تاريخ`) that does not rely on the calendar icon or separator; visible label treatment may use the existing Field grammar only if it preserves compact filter density without a Reports-specific primitive variant;
+- preserve the decorative calendar/date-range cue only if it remains non-essential to meaning;
+- author focused tests for the shared DateField contract and ReportFilterBar custom-date behavior; evidence must be reported honestly under `33_TEST_AND_VALIDATION_POLICY.md`.
 
 Preserve exactly:
 - `ReportFilterBar` external `value: DateRange` / `onChange(DateRange)` contract;
-- current date normalization/local-date/current-month/range semantics and the four preset meanings already integrated in REPORT002;
-- report query parameters, hook/cache/service contracts, calculations, metrics/charts/tables, permissions, routing, `AnalyticsGate`, export/print and business truth;
-- REPORT001 `SubNav` and REPORT002 shared `SegmentedControl` contracts;
-- Settings/Admin, Global convergence, remaining Work and Field debt in the roadmap.
+- existing `normalizeDateRange(...)` calls and their current from/to normalization behavior;
+- local-date/current-month/preset calculations and the exact four REPORT002 preset labels/order/meaning;
+- REPORT001 `SubNav` and REPORT002 `SegmentedControl` behavior/geometry;
+- report query parameters, hook/cache/service contracts, analytics calculations, metrics/charts/tables, permissions, routing, `AnalyticsGate`, export/print and all business truth;
+- native browser date-input semantics; no custom date picker, timezone reinterpretation, locale parser or new validation rule.
 
-Boundary / BLOCK rule:
-- Product Design Director must inspect the exact latest Development source and record the smallest safe concern before implementation begins;
-- if safe convergence requires changing date/query/business semantics, mark `BLOCKED` instead of widening scope;
-- do not broaden this slice into REPORT003 metrics/charts/tables, a whole Reports redesign, generic FilterBar decomposition, backend work, preview/deploy, hosted CI or `main` work;
-- exactly one implementation PR may carry the concern after Product Design bounds it.
+Device / state / accessibility acceptance:
+- **Desktop (`>=1025px`)**: date editing stays compact and visually subordinate to report content while using canonical V2 control styling/focus; no unnecessary full-width field expansion.
+- **Tablet (`769–1024px`)**: both controls retain at least the shared touch control height and may wrap deliberately with the surrounding filter composition instead of shrinking into ambiguous controls.
+- **Mobile (`<=768px`)**: no page-level horizontal overflow; both date controls remain independently reachable/readable with at least shared touch geometry, and wrapping/stacking is allowed when width is constrained.
+- **RTL/Arabic**: from/to order and Arabic accessible naming remain unambiguous; layout uses logical flow and does not depend on physical left/right assumptions.
+- **Dark mode**: date controls consume existing shared semantic input tokens; no report-local hard-coded light surface/border/text colors.
+- **Focus/keyboard**: native focusability is preserved with the shared visible focus treatment; no custom keyboard model is introduced.
+- **Disabled/read-only/error plumbing**: if exposed by the shared DateField API, it must forward existing Field/Input semantics only; this slice must not invent new report states or validation rules.
+- **Behavior**: editing either date must still emit the same normalized `DateRange` through the parent callback; changing to a custom range must not falsely select a preset.
+
+Explicit exclusions / BLOCK rule:
+- no generic FilterBar redesign or Mobile filter-sheet work;
+- no metrics/charts/tables/responsive report composition work (deferred to `DS2-REPORT-004`);
+- no loading/empty/error/offline/sync report-state redesign;
+- no query/cache/service/RPC/DB, permissions/RBAC/RLS, routing, `AnalyticsGate`, export/print or backend work;
+- no custom calendar/date-picker implementation;
+- no preview/deploy, hosted CI or `main` work;
+- if the implementation requires changing date normalization, range semantics, query parameters or business meaning, mark `BLOCKED` instead of widening the slice.
 
 ## Product migration roadmap
 
@@ -190,8 +214,8 @@ Open only when a real migrated screen proves the recurring gap:
 ### I. Reports / Analytics
 - `DS2-REPORT-001` Report route sub-navigation convergence — `DONE` / PR #48 / merge `5d2c57d9a502a4bbb2d355d94634bcf8b53075d2`
 - `DS2-REPORT-002` Report date-preset selector convergence — `DONE` / PR #49 / merge `cc91792263d9fc606b9c2f28a531daa826997c75`
-- custom-date/filter-composite convergence beyond the preset selector — `READY` / Product Design must independently bound one presentation-only concern before implementation
-- `DS2-REPORT-003` Metrics/charts/tables and responsive report composition — `BACKLOG`
+- `DS2-REPORT-003` Report custom-date field convergence — `READY`
+- `DS2-REPORT-004` Metrics/charts/tables and responsive report composition — `BACKLOG`
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
