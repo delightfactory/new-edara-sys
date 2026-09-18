@@ -4,61 +4,64 @@
 
 - Review date: `2026-09-18`.
 - Development branch: `design-system-v2-development`.
-- Development coordination HEAD immediately before this state write: `c61784e427c0ffee7166d4868fc821128264ebd6`.
-- Completed slice: `DS2-WORK-001 — Create Task form composition foundation`.
-- Merged PR: `#44 — DS2-WORK-001: Create Task form V2 composition foundation`.
-- Exact reviewed PR HEAD: `6eb3be28216ec1370ccd5fceced7ea8c5c224cd0`.
-- Squash merge commit: `57747123643d0dd846cbda3ef340e9463a5f7647`.
-- Integration disposition: `MERGED_GREEN_DEV`.
-- QA evidence: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` on the exact merged HEAD.
-- Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact HEAD.
+- Development coordination HEAD immediately before this state write: `cb6aee8f3357c344253388204af1b5d77834e83f` (`DESIGN_QA_STATE.md` only after the WORK002 implementation baseline).
+- Active slice: `DS2-WORK-002 — Work Hub view-mode selector convergence`.
+- Active PR: `#46 — DS2-WORK-002: converge Work Hub view-mode selector`.
+- PR base: `design-system-v2-development` at `3a6ec3df1476765747859b06f1f5f8511ac758fb`.
+- Exact current PR HEAD: `e3d557d59a811f3c896ffe90922e9512bbb3cdee`.
+- PR state: `OPEN / DRAFT / mergeable=true`.
+- Integration disposition: `NO_MERGE_WAITING_FRESH_PRODUCT_DESIGN_CLOSEOUT`.
+- QA evidence: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` on the exact current HEAD.
+- Product Design exact-head closeout: pending; current Director state is the pre-implementation WORK002 boundary and has not independently accepted or blocked `e3d557d59a811f3c896ffe90922e9512bbb3cdee`.
 - Runtime/build/lint/preview/release PASS: not claimed.
-- Next single READY slice: `DS2-WORK-002 — Work Hub/detail/management state-surface convergence` for Product Design bounding before implementation.
 
 ## Integrator decision
 
-**MERGED.** PR #44 passed all Development integration gates on exact HEAD `6eb3be28216ec1370ccd5fceced7ea8c5c224cd0`. The PR was moved from Draft to Ready without moving its HEAD, then squash-merged into `design-system-v2-development` with expected-head protection as `57747123643d0dd846cbda3ef340e9463a5f7647`.
+**NO MERGE yet.** PR #46 satisfies the base, exact-head QA, source-review, honest-evidence, scope, functional-isolation, review-thread, mergeability and no-known-build/type-blocker gates at the current exact HEAD. However, the current Design QA handoff explicitly keeps fresh independent Product Design exact-head acceptance as an Integration gate, while `DESIGN_DIRECTOR_STATE.md` remains lifecycle-stale to the pre-implementation WORK002 boundary.
+
+The correct disposition is therefore to preserve the exact PR HEAD and wait for Product Design to independently accept or block that same HEAD. If the PR HEAD moves, fresh QA and Product Design review are required before Integration.
 
 No feature/product code was implemented by Integration. No GitHub Actions or hosted CI were triggered or rerun, no Vercel/preview branch was touched, and `main` was not touched.
 
-## Final gate revalidation
+## Current gate revalidation
 
-- **Base gate:** PASS — base was exactly `design-system-v2-development`.
-- **Exact-head gate:** PASS — merge used exact reviewed HEAD `6eb3be28216ec1370ccd5fceced7ea8c5c224cd0` and expected-head protection.
+- **Base gate:** PASS — PR base is exactly `design-system-v2-development`.
+- **Exact-head gate:** PASS for review identity — current PR HEAD remains `e3d557d59a811f3c896ffe90922e9512bbb3cdee`, matching QA's exact reviewed HEAD.
 - **QA gate:** PASS — exact-head `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` with honest `TESTS_AUTHORED_NOT_EXECUTED` evidence.
-- **Known build/type failure gate:** PASS at source-evidence level — the synchronized branch inherited the previously required Development TypeScript fixes; no known outstanding build/type blocker remained. No executed build PASS is claimed.
-- **Product Design / contradiction gate:** PASS — Product Design independently accepted the exact same HEAD; no current role state recorded a same-head `BLOCKING` contradiction.
-- **Review-thread gate:** PASS — no inline review threads existed.
-- **Scope / functional-isolation gate:** PASS — six-file UI/Test/Governance-only delta; no DB/migration/RPC/service/RBAC/RLS/route-guard/business-calculation/query-cache/validation/workflow/deployment change.
-- **Workflow/deployment gate:** PASS — no workflow/deployment-enabling change.
-- **Development drift gate:** PASS — Development drift after the synchronized baseline was governance-only (`DESIGN_QA_STATE.md`, then `DESIGN_DIRECTOR_STATE.md`) and did not overlap the six WORK001 product/shared files.
-- **Mergeability:** PASS — GitHub reported `mergeable=true` before merge.
-- **CI/deployment isolation:** PASS — absence of Actions was expected and no Actions/Vercel/preview/`main` activity occurred.
+- **Known build/type failure gate:** PASS at current source-evidence level — no known outstanding build/type blocker is recorded. No executed build/type PASS is claimed.
+- **Product Design / cross-role gate:** WAIT — no current `BLOCKING` contradiction is recorded, but the fresh same-head Product Design closeout requested by QA has not yet occurred.
+- **Review-thread gate:** PASS — no inline review threads exist.
+- **Scope gate:** PASS — six changed files only: Workstream governance, `WorkHubPage` composition, focused behavior/source tests, deletion-only selector CSS cleanup, and UI Implementer owned state.
+- **Functional-isolation gate:** PASS — no DB/migration/RPC/service/RBAC/RLS/permission/route-guard/business/query-cache/validation/workflow/state-machine change is present in the reviewed diff.
+- **Workflow/deployment gate:** PASS — no workflow or deployment-enabling file is changed.
+- **Development drift gate:** PASS for non-overlap — Development moved one governance-only commit after the PR baseline, changing only `team/design-system-v2/DESIGN_QA_STATE.md`; no WORK002 product/test/shared file overlap exists.
+- **Mergeability:** PASS — GitHub currently reports `mergeable=true`.
+- **Draft state:** retained while the independent Product Design gate is pending; Integration will not merge the draft prematurely.
+- **CI/deployment isolation:** PASS — absence of Actions is expected; no Actions/Vercel/preview/`main` activity occurred.
 
-## Integrated system impact
+## Reviewed WORK002 impact
 
-WORK001 establishes the first Work Management form proof in the shared V2 grammar:
+The current PR remains presentation-only and bounded:
 
-- `/work/new` uses shared `FormSection + FormGrid + Field + FormActions + Button` while preserving the existing four-section Arabic operational sequence.
-- V2 native input/select geometry is owned by the explicit `.ds-field` boundary rather than generic legacy `.form-*` consumers.
-- `--ds-control-height-touch` remains first-class through Tablet/Mobile; Desktop uses `--ds-control-height-standard`; textarea keeps the larger 80px floor.
-- Mobile collapses paired fields to one column; Tablet remains deliberate two-column/touch-first; Desktop preserves efficient two-column entry density.
-- Arabic labels/hints/errors use the shared `Field` relationship contract; non-sticky action hierarchy and pending state are preserved.
-- Work `toIso`, assignment/defaulting, owner-vs-assignee meaning, acknowledgement eligibility/reset, validation wording/date rule, priority/visibility/completion mode, create payload/`activate: true`, toasts/navigation, queries/services/permissions/RBAC/RLS/workflow/backend truth remain page/domain-owned and unchanged.
+- `/work` replaces the local `.work-segmented` three-option renderer with shared `SegmentedControl`.
+- Exact values/order/Arabic labels remain `actions | work | attention` → `مطلوب مني الآن | كل الأعمال | يحتاج انتباه`.
+- Default `actions`, page-owned `mode`, `setMode`, search/filter calculations, summary-card callbacks, permissions, request routing, Mobile create behavior and all Work query/service/workflow/state-machine truth remain page/domain-owned.
+- Dead selector-specific CSS is removed without broad `work.css` cleanup.
+- Shared touch/focus/`aria-pressed`/Mobile containment behavior is reused rather than reimplemented locally.
+- Focused tests protect exact labels/order/default selection, all three mode transitions, shared-control adoption and retained page ownership of functional semantics.
 
 ## Queue continuity
 
-- `DS2-WORK-001` is now `DONE` with merge `57747123643d0dd846cbda3ef340e9463a5f7647` and source-level evidence only.
-- Exactly one next dependency-safe item is `READY`: `DS2-WORK-002 — Work Hub/detail/management state-surface convergence`.
-- Product Design must first inspect the latest integrated Development baseline and bound one smallest coherent presentation-only concern; this READY state is not permission for a broad Work rewrite.
-- Reports/Analytics, Settings/Admin, shared component-depth work, remaining Field debt and Global convergence remain preserved in the North-Star roadmap.
-- `DECISION_LOG.md` remains unchanged because no durable rule was superseded or newly established beyond already-active design-system principles.
+- `DS2-WORK-002` remains the single active slice in `REVIEW`; the queue must not advance.
+- No next slice becomes READY until WORK002 is either merged or explicitly returned for correction.
+- Reports/Analytics, Settings/Admin, remaining Field debt, further Work convergence and Global cleanup remain preserved in the North-Star roadmap.
+- `TEAM_MEMORY.md`, `DECISION_LOG.md` and the Workstream queue remain unchanged because no merge or durable-rule change occurred.
 
 ### Cross-role handoff
-- **To:** Product Design Director first; UI Production Engineer after a bounded WORK002 concern is recorded.
-- **What changed:** WORK001 is integrated as `57747123643d0dd846cbda3ef340e9463a5f7647`; the queue advanced by exactly one item to WORK002 READY.
-- **Preserve:** `.ds-field`-owned semantic standard/touch sizing; textarea 80px floor; Work functional/business/query/permission/ownership/workflow/validation truth; one active implementation concern at a time; full Reports/Admin/Global roadmap.
-- **Need from you:** Product Design Director should inspect representative Work Hub/detail/management/state surfaces on the exact latest Development HEAD and bound one smallest dependency-safe WORK002 presentation concern with explicit device/state/accessibility acceptance before implementation starts.
-- **Blocker level:** `NONE`.
-- **Baseline:** merged product commit `57747123643d0dd846cbda3ef340e9463a5f7647`; coordination HEAD before this state write `c61784e427c0ffee7166d4868fc821128264ebd6`.
+- **To:** Product Design Director first; Development Integrator after that exact-head closeout.
+- **What changed:** Integrator independently revalidated PR #46 exact HEAD `e3d557d59a811f3c896ffe90922e9512bbb3cdee`; all technical/source integration gates are green, but merge is held for the fresh Product Design exact-head gate explicitly requested by QA.
+- **Preserve:** exact PR HEAD if possible; shared `SegmentedControl` adoption only; exact Work mode values/Arabic labels/order/default; page-owned mode/filter/query/search/permission/request/routing/Mobile-create/workflow truth; one active slice; full roadmap.
+- **Need from you:** Product Design Director should independently accept or block PR #46 exact HEAD `e3d557d59a811f3c896ffe90922e9512bbb3cdee`. If accepted and the HEAD remains fixed, Integration should revalidate metadata/drift/threads/mergeability once more and may merge if all gates still pass.
+- **Blocker level:** `WATCH` — no implementation/QA blocker; only the pending independent Product Design exact-head integration gate.
+- **Baseline:** PR base `3a6ec3df1476765747859b06f1f5f8511ac758fb`; current Development before this state write `cb6aee8f3357c344253388204af1b5d77834e83f`; exact PR HEAD `e3d557d59a811f3c896ffe90922e9512bbb3cdee`.
 - **Evidence:** `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview/release PASS claimed.
