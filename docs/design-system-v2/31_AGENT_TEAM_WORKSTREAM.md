@@ -100,11 +100,13 @@ System result:
 - Arabic label/hint/error relationships now use the shared `Field` accessibility contract;
 - `toIso`, assignment/defaulting, owner-vs-assignee meaning, acknowledgement eligibility/reset, validation wording/date rule, priority/visibility/completion mode, `useCreateTask`, payload/`activate: true`, toasts/navigation, queries/services/permissions/RBAC/RLS/workflow/backend truth remain page/domain-owned and unchanged.
 
-## Current single READY slice
+## Current single REVIEW slice
 
 ### DS2-WORK-002 — Work Hub view-mode selector convergence
-Status: `READY`
+Status: `REVIEW`
 Owner role: UI Production Engineer
+Draft PR: `#46`
+Evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 Dependency baseline: `DS2-WORK-001` integrated at `57747123643d0dd846cbda3ef340e9463a5f7647`
 Representative live surface: `/work` / `src/pages/work/WorkHubPage.tsx`
 
@@ -205,7 +207,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### H. Work Management
 - `DS2-WORK-001` Create Task form composition foundation — `DONE`
-- `DS2-WORK-002` Work Hub view-mode selector convergence — `READY` / bounded to shared `SegmentedControl` adoption on `/work`
+- `DS2-WORK-002` Work Hub view-mode selector convergence — `REVIEW` / Draft PR #46
 - further Work Hub/detail/management/state convergence — `BACKLOG` / must be explicitly bounded before activation
 
 ### I. Reports / Analytics
