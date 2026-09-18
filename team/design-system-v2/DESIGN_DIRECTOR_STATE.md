@@ -4,84 +4,112 @@
 
 - Review date: `2026-09-18`.
 - Authoritative branch: `design-system-v2-development`.
-- Development HEAD inspected before Director writes: `530ad16afb589d318c3c31f6ae67d4f6d109a7e1`.
+- Development HEAD independently inspected before this Director write: `a69ff572cd0fdf6a5f817049e8c235edcb2471df`.
 - Latest integrated product slice: `DS2-WORK-002`, merged via `add39ea8ee76b61d9a5a5938aa6cd03e2cc13456`.
-- Open implementation PRs targeting Development at decision time: none.
-- Active/next slice: `DS2-WORK-003 — Supervisor operational summary metric convergence`.
-- Slice state: `READY` for one UI implementation PR.
-- Product Design disposition: `READY — dependency-safe bounded presentation slice; no functional semantics authorized`.
-- Workstream scope commit created this run: `7df1227cb93b48a65ce39387ec4b776651019004`.
+- Active implementation slice: `DS2-WORK-003 — Supervisor operational summary metric convergence`.
+- Active PR: `#47 — DS2-WORK-003: converge supervisor operational summary metrics`.
+- PR base: `design-system-v2-development` at `e1680a2fe918cb77b93db8fb7e5f6dc41624366b`.
+- Exact PR HEAD independently reviewed: `9cb08546e073e553a02fb019dfc6389b53339ad8`.
+- PR state at review: `OPEN / DRAFT / mergeable=true`.
+- Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER` on the exact PR HEAD above.
+- QA disposition on the same exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
+- Runtime/build/lint/preview/release PASS: not claimed.
 
 ## Independent Product Design judgment
 
-The next safe Work step is not a broad Work Detail redesign. `WorkDetailCorePage` and `WorkDetailAdministration` are dense with responsibility, acknowledgement, lifecycle, permission, mutation, escalation, due-date and state-version semantics; entering those surfaces before isolating a proven presentation concern would couple Design System work to business truth.
+**PASS on exact PR HEAD `9cb08546e073e553a02fb019dfc6389b53339ad8`.**
 
-The safer proof is the four-metric operational summary on `/work/team`. `SupervisorWorkPage` currently recomputes `active`, `overdue`, `blocked` and `atRisk` correctly from `overview.data` but renders them through the Work-local `.work-summary-grid` / `.work-summary-card` mini-system. V2 already has stable shared `MetricGrid` and `StatCard` contracts whose stated responsibility is exactly responsive KPI composition and semantic presentation while leaving metric calculation/meaning caller-owned.
+The implementation stays inside the bounded WORK003 system concern and materially improves Design System coherence rather than performing page-local beautification. `/work/team` now uses the established shared KPI grammar for the same four operational supervisor metrics, while Work business/query/filter/workflow truth remains page/domain-owned.
 
-This is a system-pattern migration, not page beautification: it exercises the established metric grammar on a management surface while deliberately leaving Work lifecycle/state-machine semantics untouched.
+The chosen composition is appropriate for the North Star: the metric summary is visually subordinate to the page header, precedes the operational filters/list, uses semantic emphasis without relying on color alone, and deliberately adapts as four Desktop columns, two Tablet columns and one Mobile column through the existing shared `MetricGrid` contract.
 
-## Bounded WORK003 contract
+No reason exists to widen this PR into Work Detail/Admin, filters, list cards, shared-component redesign or global Work CSS cleanup.
 
-### In scope
+## Exact-head Product Design findings
 
-- Target only `src/pages/work/SupervisorWorkPage.tsx` summary metrics.
-- Preserve the exact four rendered metrics and existing calculations from `overview.data`: `active`, `overdue`, `blocked`, `atRisk`.
-- Preserve exact Arabic labels and existing icons.
-- Replace the page-local summary layout/cards with shared `MetricGrid columns={4}` + `StatCard`.
-- Fixed semantic presentation mapping for this proof: active=`neutral`, overdue=`danger`, blocked=`danger`, atRisk=`warning`.
-- Keep a text-readable accessible summary grouping; color must never carry meaning alone.
-- Add focused tests/source assertions for shared adoption, metric order/labels/values and preserved supervisor filter/query ownership.
+### Scope / functional isolation — PASS
 
-### Device / RTL / accessibility acceptance
+The product/test change is limited to the Supervisor summary composition plus focused tests; the third changed file is the UI Production Engineer owned state.
 
-- **Mobile (`<=768px`)**: canonical `MetricGrid` one-column layout; no horizontal page overflow, clipping or Arabic truncation.
-- **Tablet (`769–1024px`)**: canonical two-column metric layout.
-- **Desktop (`>=1025px`)**: four equal-width dense metrics in one row, subordinate to the page header and before filters/list content.
-- **RTL/Arabic**: no physical left/right layout dependency; exact labels remain wrapping-safe.
-- **Accessibility**: metrics remain non-interactive, labels/values remain readable without semantic color, and `StatCard` decorative icons remain hidden from assistive technology.
+Preserved exactly:
+- `useSupervisorOverview({ assigneeUserId: assignee || null, attentionOnly })`;
+- `assignee`, `attentionOnly` and `people` ownership/derivation;
+- all existing metric calculations from `overview.data`, including retained `waiting` calculation;
+- the four rendered metrics `active`, `overdue`, `blocked`, `atRisk` in the same order;
+- exact Arabic labels and existing Lucide icon choices;
+- loading/error/empty behavior, filter controls, work-item cards, status/flag derivation, next-action content, due/follow-up text and navigation;
+- all Work service/query-cache/permission/ownership/responsibility/validation/workflow/state-machine/RBAC/RLS truth.
 
-### Explicit exclusions
+No backend/business semantics were absorbed by shared presentation.
 
-Do not change:
-- `useSupervisorOverview`, `assignee`, `attentionOnly`, `people`, metric calculations or status/flag derivation;
-- header/back action, filter select/checkbox, loading/error/empty states, work-item cards, badges, next-action content, due/follow-up text or navigation;
-- Work Hub summary cards or completed WORK001/WORK002 surfaces;
-- Work Detail/Core/Administration/Extensions/DueGovernance, Submit Request or management/configuration flows;
-- shared `MetricGrid`, `StatCard`, tokens or global responsive contracts unless a verified defect makes this exact slice impossible; in that case mark `BLOCKED` instead of widening scope;
-- `.work-summary-*` CSS globally because Work Hub still uses that legacy family;
-- backend, services, queries/cache, permissions, ownership/responsibility, validation, workflow, state-machine, RBAC/RLS, preview/deployment/hosted CI/`main`.
+### System fit / hierarchy — PASS
 
-## Evidence / system fit
+- The page-local `.work-summary-grid` / `.work-summary-card` renderer is replaced only on `/work/team` by shared `MetricGrid columns={4}` + `StatCard`.
+- `MetricGrid` remains layout-only and `StatCard` remains hierarchy/semantic-emphasis-only; calculations and meaning stay with the page/domain.
+- Presentation mapping exactly matches the approved boundary: active=`neutral`, overdue=`danger`, blocked=`danger`, atRisk=`warning`.
+- Global `.work-summary-*` CSS remains untouched because other Work surfaces still consume that legacy family; this avoids speculative cleanup and accidental blast radius.
+- No new Work-local primitive or one-off variant was introduced.
 
-- `SupervisorWorkPage.tsx` has a local four-card operational summary and derives metrics from `overview.data`; the summary itself is presentation-only.
-- Shared `MetricGrid` owns canonical 4-column Desktop -> 2-column Tablet -> 1-column Mobile KPI composition and does not calculate metrics.
-- Shared `StatCard` owns label/value/icon hierarchy and semantic tone while explicitly leaving KPI meaning to the caller.
-- Existing Work local summary CSS is broader and still used by Work Hub, so WORK003 must not perform global cleanup.
-- `WorkDetailAdministration` contains permission-gated mutations, state-versioned actions, delegation/transfer/escalation/due/subtask semantics; it is intentionally excluded from this slice.
+### Device / RTL / Arabic — PASS at source level
+
+The adopted shared surface contract already provides:
+- **Mobile (`<=768px`)**: one-column KPI composition with `minmax(0, 1fr)` containment and no new horizontal overflow dependency;
+- **Tablet (`769–1024px`)**: deliberate two-column composition rather than compressed Desktop;
+- **Desktop (`>=1025px`)**: four equal-width dense metrics in one row;
+- **RTL/Arabic**: no physical left/right dependency in the migrated summary and exact Arabic labels remain wrapping-capable;
+- numeric hierarchy through the shared KPI treatment.
+
+No runtime visual PASS is claimed.
+
+### Accessibility / semantic clarity — PASS
+
+- The summary is exposed as a named non-interactive `role="group"` with Arabic accessible name `ملخص حالة أعمال الفريق`.
+- Metric cards do not gain false interactive semantics.
+- Shared `StatCard` keeps icons decorative through `aria-hidden="true"`.
+- Explicit labels and numeric values carry meaning independently of semantic color.
+- No focus, keyboard or touch interaction regression is introduced because this slice adds no interactive control.
+
+### Test artifact / evidence honesty — PASS
+
+Focused authored tests protect:
+- shared `MetricGrid` / `StatCard` adoption;
+- exact four metrics, order, Arabic labels, values and semantic tones;
+- absence of the local summary-card renderer on this page;
+- continued page ownership of supervisor assignee/attention query inputs.
+
+Evidence remains `TESTS_AUTHORED_NOT_EXECUTED`. No build, lint, runtime, preview or hosted CI execution is claimed.
+
+## Development drift / integration readiness
+
+Current Development moved two commits beyond the PR branch baseline, and both are governance-only role-state updates (`DESIGN_QA_STATE.md`, then `INTEGRATION_STATE.md`). The merge-base remains `e1680a2fe918cb77b93db8fb7e5f6dc41624366b`; there is no product/test overlap with PR #47.
+
+PR #47 remains on exact HEAD `9cb08546e073e553a02fb019dfc6389b53339ad8`, `mergeable=true`, with no inline review threads. QA and Product Design are now aligned on the same exact HEAD. Product Design therefore has no remaining blocker; final base/head/drift/thread/mergeability revalidation remains the Integrator's responsibility.
+
+Any PR HEAD movement invalidates this Product Design acceptance and requires a fresh exact-head review.
 
 ## Peer-state synthesis
 
-The Product Design judgment above was formed from current source and shared V2 contracts before peer comparison.
+The Product Design judgment above was formed from the exact PR source, shared components/CSS, blueprint/component rules and current Development drift before peer conclusions were used for alignment checking.
 
-- **Development Integrator:** current and aligned on lifecycle: WORK002 is merged and exactly one WORK003 placeholder was queued for Product Design boundary selection. This state now supplies that boundary.
-- **Design QA:** its last exact-head approval concerns completed WORK002; it is informative but not approval evidence for WORK003.
-- **UI Production Engineer:** last implementation state concerns WORK002; no WORK003 implementation PR exists yet.
-- **Team Memory:** current integration truth remains valid; no overall North-Star or long-lived design direction changed, so no Director mutation is warranted.
+- **Design QA:** current and aligned; independently issued exact-head GREEN-DEV on `9cb08546e073e553a02fb019dfc6389b53339ad8` with honest non-executed test evidence.
+- **Development Integrator:** current and aligned; explicitly held merge only for missing fresh Product Design exact-head closeout. That prerequisite is now satisfied if the PR HEAD remains unchanged.
+- **UI Production Engineer:** feature-branch implementation state aligns with the independently verified scope and exclusions; Development copy remains lifecycle-stale until merge.
+- **Team Memory:** integrated truth and North-Star direction remain valid; no overall direction change requires Director mutation.
 - **Decision Log:** no durable rule changed; no update warranted.
 
-No current cross-role `BLOCKING` contradiction exists. The only active requirement is strict scope discipline when WORK003 implementation begins.
+No current cross-role `BLOCKING` contradiction exists.
 
 ## What changed since previous Director state
 
-- WORK002 moved from reviewed-open to integrated/DONE through the Integrator lane.
-- Product Design inspected the new Development baseline, representative Work Detail/Administration risk, Supervisor/Team surface, shared metric contracts and current Work-local CSS.
-- The broad WORK003 placeholder is now reduced to one dependency-safe concern: Supervisor operational summary metrics only.
+- WORK003 progressed from READY boundary definition to a stable implementation PR.
+- Product Design independently reviewed PR #47 exact HEAD `9cb08546e073e553a02fb019dfc6389b53339ad8` and accepted it with no Design-System blocker.
+- The outstanding Integration prerequisite identified by QA/Integrator is now closed from the Product Design lane.
 - No product code, peer specialist state, Team Memory, Decision Log, GitHub Actions, Vercel, preview branch, `main`, deployment or merge action was performed.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer; Design QA and Development Integrator observe until an exact stable PR HEAD exists.
-- **What changed:** `DS2-WORK-003` is now implementation-ready and bounded exclusively to `/work/team` four-metric summary convergence onto shared `MetricGrid + StatCard`.
-- **Preserve:** exact metric calculations/labels/order, supervisor query/filter/permission/routing truth, non-interactive metric semantics, canonical Mobile/Tablet/Desktop shared metric layout, all Work lifecycle/state-machine behavior, and the one-active-slice rule.
-- **Need from you:** UI Production Engineer opens exactly one PR from latest `design-system-v2-development`, implements only the documented WORK003 boundary, authors focused tests without using hosted CI, and records the exact PR HEAD for independent QA/Director review. If shared metric contracts cannot support the slice without wider functional/global changes, mark it `BLOCKED` rather than expanding scope.
+- **To:** Development Integrator; Design QA/UI Production Engineer observe unless the PR HEAD moves.
+- **What changed:** Product Design independently accepted PR #47 exact HEAD `9cb08546e073e553a02fb019dfc6389b53339ad8` with `PASS — NO DESIGN-SYSTEM BLOCKER`; same-head QA is already GREEN-DEV.
+- **Preserve:** exact four metric calculations/order/Arabic labels/icons; supervisor query/filter/permission/routing truth; unchanged loading/error/empty/list/navigation behavior; shared `MetricGrid + StatCard` responsive/accessibility contract; global `.work-summary-*` legacy consumers; all backend/business/workflow/state-machine truth; one-active-slice rule and full Reports/Admin/Global roadmap.
+- **Need from you:** revalidate current PR head/base, governance-only Development drift, review threads and mergeability; merge into `design-system-v2-development` only if the PR HEAD remains exactly `9cb08546e073e553a02fb019dfc6389b53339ad8` and all normal Integration gates still pass. Any head movement requires fresh QA + Product Design review.
 - **Blocker level:** `NONE`.
-- **Baseline:** Product Design source decision on Development `530ad16afb589d318c3c31f6ae67d4f6d109a7e1`; bounded Workstream scope commit `7df1227cb93b48a65ce39387ec4b776651019004`.
+- **Baseline:** Development inspected at `a69ff572cd0fdf6a5f817049e8c235edcb2471df`; accepted PR #47 HEAD `9cb08546e073e553a02fb019dfc6389b53339ad8`.
