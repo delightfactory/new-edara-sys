@@ -4,86 +4,87 @@
 
 - Review date: `2026-09-18`.
 - Authoritative branch: `design-system-v2-development`.
-- Development HEAD at start of this Product Design run: `a364d2a1e0600c2502a8780af4199c6506ff3009`.
-- Development HEAD immediately before this owned-state write: `f88e62c41474d699e59677001a72e17c9e01d606` (`31_AGENT_TEAM_WORKSTREAM.md` bounding commit only).
-- Latest completed product slice: `DS2-WORK-001 — Create Task form composition foundation`, merged as `57747123643d0dd846cbda3ef340e9463a5f7647`.
-- Open implementation PRs targeting Development: none at review time.
-- Current single implementation-ready slice: `DS2-WORK-002 — Work Hub view-mode selector convergence`.
-- Representative live surface: `/work` / `src/pages/work/WorkHubPage.tsx`.
-- Product Design disposition: `READY — BOUNDED PRESENTATION-ONLY SLICE`.
+- Development HEAD at start of this exact-head review: `1d3455661b230f50b8b947affe71e90716baaa7f`.
+- Active slice: `DS2-WORK-002 — Work Hub view-mode selector convergence`.
+- Active PR: `#46 — DS2-WORK-002: converge Work Hub view-mode selector`.
+- PR base: `design-system-v2-development` at `3a6ec3df1476765747859b06f1f5f8511ac758fb`.
+- Exact PR HEAD independently reviewed: `e3d557d59a811f3c896ffe90922e9512bbb3cdee`.
+- PR state at review: `OPEN / DRAFT / mergeable=true`.
+- Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER`.
+- Evidence: `SOURCE_REVIEW_PASS` from Product Design inspection; QA independently records `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` on the same exact HEAD.
+- Executed build/test/lint/runtime/preview evidence: not claimed.
 
 ## Independent Product Design judgment
 
-The next safe Work Management step should not be a broad Work Hub/detail/management rewrite. Work Detail and management surfaces are tightly coupled to acknowledgement, assignment, waiting/resume, completion review, approval, triage, attachment and other state-machine behaviors. The smallest useful system-level proof is instead the Work Hub view-mode selector.
+PR #46 satisfies the bounded WORK002 intent and improves system coherence without widening into Work business semantics. The live `/work` page now consumes the established shared `SegmentedControl` for the existing three Work Hub view modes instead of maintaining a page-local selector mini-system.
 
-`WorkHubPage` currently owns a local `.work-segmented` control for the three presentation modes `actions | work | attention`. That control duplicates the already-established shared `SegmentedControl`, which is explicitly designed for single-choice filter/view-mode selection. The local implementation also uses a 36px minimum button height, while the shared control owns the canonical touch-height token, focus-visible behavior, `aria-pressed` selection semantics and Mobile horizontal containment.
+The change is architecturally appropriate because the interaction is exactly the shared pattern's responsibility: one compact, single-choice view/filter value with native button semantics, `aria-pressed`, visible focus, canonical touch geometry and bounded Mobile overflow behavior. The page continues to own the actual Work mode value, filtering calculations, query hooks, summary-card mode changes and all workflow/state-machine truth.
 
-This is therefore a real Design System convergence step rather than page beautification: retire the duplicate local selector and consume the shared V2 pattern while leaving Work filtering/query/workflow truth where it is.
+## Exact-head Product Design findings
 
-## WORK002 bounded scope
+### System fit / hierarchy — PASS
 
-### In scope
-
-- Replace only the Work Hub local `work-segmented` renderer with shared `SegmentedControl`.
-- Preserve exactly the existing three values, Arabic labels and order:
+- The local `.work-segmented` renderer is retired rather than restyled or duplicated.
+- Shared `SegmentedControl` is used as the canonical presentation primitive for `actions | work | attention`.
+- Exact Arabic labels/order remain:
   - `actions` — `مطلوب مني الآن`
   - `work` — `كل الأعمال`
   - `attention` — `يحتاج انتباه`
-- Preserve default `actions`, current `mode` state ownership and the same `setMode` callback behavior.
-- Preserve the surrounding `work-toolbar` and existing search placement/behavior.
-- Remove only selector-specific CSS proven dead after migration; no broad `work.css` cleanup.
-- Add focused source/component tests for exact option order/labels, current `aria-pressed` state, mode switching and presentation-only ownership.
+- Default `actions`, page-owned `mode` state and `setMode` transition behavior remain intact.
+- Existing Work Hub hero/actions, summary cards, toolbar/search placement, queues/cards and Mobile create action are not opportunistically redesigned.
+- Selector-specific `work.css` removal is deletion-only and does not become a broad Work CSS cleanup.
 
-### Explicit exclusions
+### Functional isolation — PASS
 
-- Work Hub summary cards/metrics and their click-to-filter behavior.
-- Search input, SearchField or FilterBar convergence.
-- Action-inbox cards, `WorkItemCard`, loading skeletons and empty/error/offline state convergence.
-- Mobile create action placement.
-- Work Detail, Supervisor/Team, management/configuration and Submit Request surfaces.
-- Any change to `useMyActionInbox`, `useVisibleWorkItems`, operational flags, `filteredItems`, `filteredActions`, permissions, routing, query/cache/service contracts, ownership/responsibility, validation, workflow or Work state-machine semantics.
+No Product Design evidence indicates any change to:
+- `useMyActionInbox(100)`;
+- `useVisibleWorkItems({ limit: 150 })`;
+- `useOperationalFlags(itemIds)`;
+- `filteredItems` / `filteredActions` or current search semantics;
+- summary calculations or summary-card click-to-mode callbacks;
+- permissions, routing, Submit Request behavior or Mobile create behavior;
+- ownership/responsibility, service/query-cache, RBAC/RLS, validation, workflow or Work state-machine semantics.
 
-If exact behavior cannot be preserved without changing one of those functional contracts, WORK002 becomes `BLOCKED`; scope must not expand to make the migration convenient.
+The shared component receives only presentation state and callback ownership remains page/domain-local.
 
-## Device / RTL / accessibility acceptance
+### Device / RTL / accessibility — PASS at source level
 
-- **Mobile (`<=768px`)**: selector options retain the shared 44px touch-height contract; long Arabic labels remain readable; horizontal containment must not create page-level overflow; the mode selector stays subordinate to the page's primary task/create actions.
-- **Tablet (`769–1024px`)**: touch-first 44px geometry remains and the three view modes retain clear selected/unselected hierarchy without reverting to compressed desktop-only buttons; the adjacent search composition is preserved.
-- **Desktop (`>=1025px`)**: toolbar remains efficient and balanced; shared selector adoption must not change search position, Work Hub hierarchy or the data shown for each mode.
-- **RTL**: existing Arabic order and labels are preserved; no LTR-only layout assumption is introduced.
-- **Accessibility**: group accessible name remains `نوع العرض`; each option remains a native `button type="button"` with `aria-pressed` derived from `mode`; shared visible focus treatment is preserved; selected state remains visually distinguishable beyond text color through the shared surface/elevation treatment.
-- **States**: all three selected modes remain representable; loading/empty/error/permission behavior is explicitly unchanged in this slice.
+- **Mobile (`<=768px`)**: shared items keep the canonical touch-height contract; `max-width: 100%` plus Mobile internal horizontal overflow contains long fixed Arabic labels without introducing a page-level scrolling contract. Primary/create behavior is unchanged.
+- **Tablet (`769–1024px`)**: touch-first geometry remains; the existing wrapping toolbar/search composition stays intact and no compressed Desktop-only selector is reintroduced.
+- **Desktop (`>=1025px`)**: the selector remains visually subordinate to primary Work actions and content; search position and Work Hub information hierarchy are unchanged.
+- **RTL/Arabic**: label order/content is preserved with no LTR-only positioning assumption.
+- **Accessibility**: group name remains `نوع العرض`; items remain native `button type="button"`; `aria-pressed` tracks current value; shared `:focus-visible` and selected surface/elevation treatment provide non-color-only selection feedback.
 
-## System-pattern intent
+### State coverage — PASS for assigned scope
 
-- Canonical pattern: shared `SegmentedControl` for Work Hub view-mode selection.
-- Page/domain ownership: Work mode value, filtering calculations and data/query semantics.
-- This proof advances the broader Tabs/SubNav/SegmentedControl adoption cleanup already documented in the shared component-depth roadmap.
-- Adjacent Work Hub search, metrics, cards and state surfaces remain explicit later debt rather than being opportunistically folded into WORK002.
+- All three selected modes remain representable.
+- Loading/empty/error/permission behavior is not changed by this selector-only slice.
+- Focused authored tests cover option order/default state, all three mode transitions, `aria-pressed`, shared-control adoption and retained page ownership of Work semantics.
+- Evidence remains honestly `TESTS_AUTHORED_NOT_EXECUTED`; no runtime visual PASS is inferred from source review.
 
 ## Peer-state synthesis
 
-The independent judgment above was formed from the current Work Hub source and shared pattern contracts before relying on peer conclusions.
+The Product Design judgment above was formed from the exact PR source/diff and shared component/device contracts before comparison with peer state.
 
-- **Development Integrator:** current and aligned. It records WORK001 merged and explicitly hands WORK002 to Product Design for one smallest bounded concern.
-- **UI Production Engineer:** lifecycle-stale to the completed PR #44; no contradiction because there is no active implementation PR.
-- **Design QA:** lifecycle-stale to the completed PR #44; no contradiction because there is no active review HEAD.
-- **Team Memory:** current overall direction is aligned but intentionally broad at WORK002; this run narrows the implementation boundary in the Workstream without changing durable system direction.
-- **Decision Log:** no durable rule is changed; no update warranted.
+- **Design QA:** current and aligned. QA independently marked exact HEAD `e3d557d59a811f3c896ffe90922e9512bbb3cdee` `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`, with no executed-test claim.
+- **Development Integrator:** current and aligned. Integration revalidated the same HEAD and is intentionally holding only for this Product Design exact-head closeout.
+- **UI Production Engineer:** Development copy is lifecycle-stale to WORK001, but the PR-branch owned state is current for WORK002 and aligned with the exact diff.
+- **Development drift:** current Development is two governance-only commits ahead of the PR base, touching only `DESIGN_QA_STATE.md` and `INTEGRATION_STATE.md`; there is no product/shared-file overlap with WORK002.
+- **Team Memory / Decision Log:** no durable design rule changes in this review; no mutation warranted.
 
-No current cross-role `BLOCKING` contradiction exists.
+No current same-slice `BLOCKING` contradiction remains.
 
 ## Material repository action this run
 
-- Updated `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md` in commit `f88e62c41474d699e59677001a72e17c9e01d606` so WORK002 is a genuinely implementation-ready single concern rather than a broad placeholder.
-- No product code, peer specialist state, Team Memory or Decision Log was modified.
-- No GitHub Actions, Vercel, preview branch, `main`, merge or deployment action was performed.
+- Independently reviewed PR #46 exact HEAD `e3d557d59a811f3c896ffe90922e9512bbb3cdee` against the North Star, device strategy, shared component contract, current Workstream and peer states.
+- Accepted the exact HEAD with `PASS — NO DESIGN-SYSTEM BLOCKER`.
+- No product code, peer specialist state, Team Memory, Decision Log, GitHub Actions, Vercel, preview branch, `main`, deployment or merge action was performed.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer; Design QA after an exact stable implementation HEAD exists; Development Integrator only after Product Design + QA gates are satisfied.
-- **What changed:** `DS2-WORK-002` is now bounded to one dependency-safe presentation concern on `/work`: replace the local Work Hub `work-segmented` mode selector with shared `SegmentedControl`, preserving all mode/filter/query/workflow semantics and excluding the rest of Work Hub/detail/management convergence.
-- **Preserve:** exact `actions | work | attention` values, Arabic labels/order/default, `mode` + `setMode` page ownership, search/filter calculations, summary-card behavior, query/service/permission/route/ownership/workflow/state-machine truth, Mobile-primary / Tablet-touch / Desktop-density contracts, and the one-active-slice rule.
-- **Need from you:** UI Production Engineer should open exactly one Development-targeted WORK002 PR from the latest Development HEAD and implement only this selector convergence with focused tests. QA and Product Design should independently review the exact stable PR HEAD afterward.
+- **To:** Development Integrator.
+- **What changed:** Product Design independently accepted PR #46 exact HEAD `e3d557d59a811f3c896ffe90922e9512bbb3cdee`; the pending Product Design integration gate is now closed with no Design-System blocker.
+- **Preserve:** exact mode values/Arabic labels/order/default, page-owned `mode`/`setMode`, search/filter/query/summary-card/permission/request/routing/Mobile-create/workflow truth, shared `SegmentedControl` accessibility/touch contract, one-active-slice rule, and the remaining Reports/Admin/Global roadmap.
+- **Need from you:** revalidate that PR #46 still has the same exact HEAD, Development base/drift remains non-overlapping, review threads remain clear and mergeability remains green; if so, integrate WORK002 into `design-system-v2-development` under the normal controlled merge gate. Any PR HEAD movement requires fresh QA + Product Design review.
 - **Blocker level:** `NONE`.
-- **Baseline:** initial Development `a364d2a1e0600c2502a8780af4199c6506ff3009`; WORK002 boundary commit `f88e62c41474d699e59677001a72e17c9e01d606`.
-- **Evidence:** `SOURCE_REVIEW_ONLY`; no implementation/test/build/lint/runtime/preview evidence exists yet for WORK002.
+- **Baseline:** Development `1d3455661b230f50b8b947affe71e90716baaa7f`; reviewed PR #46 HEAD `e3d557d59a811f3c896ffe90922e9512bbb3cdee`.
+- **Evidence:** Product Design `SOURCE_REVIEW_PASS`; peer QA `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview/release PASS claimed.
