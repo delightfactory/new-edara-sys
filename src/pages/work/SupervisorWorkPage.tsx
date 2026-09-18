@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, ArrowRight, Clock3, Loader2, ShieldAlert, Users2 } from 'lucide-react'
+import MetricGrid from '@/components/patterns/MetricGrid'
+import StatCard from '@/components/patterns/StatCard'
 import { useSupervisorOverview } from '@/features/work/supervisor'
 
 const statusLabel: Record<string, string> = {
@@ -49,12 +51,17 @@ export default function SupervisorWorkPage() {
         <button type="button" className="btn btn-secondary" onClick={() => navigate('/work')}><ArrowRight size={16} /> العودة للعمل</button>
       </div>
 
-      <div className="work-summary-grid" style={{ marginBottom: 'var(--space-5)' }}>
-        <div className="work-summary-card"><Users2 size={18} /><strong>{metrics.active}</strong><span>عمل نشط</span></div>
-        <div className="work-summary-card"><Clock3 size={18} /><strong>{metrics.overdue}</strong><span>متأخر</span></div>
-        <div className="work-summary-card"><ShieldAlert size={18} /><strong>{metrics.blocked}</strong><span>معطل</span></div>
-        <div className="work-summary-card"><AlertTriangle size={18} /><strong>{metrics.atRisk}</strong><span>معرض للخطر</span></div>
-      </div>
+      <MetricGrid
+        columns={4}
+        role="group"
+        aria-label="ملخص حالة أعمال الفريق"
+        style={{ marginBottom: 'var(--space-5)' }}
+      >
+        <StatCard label="عمل نشط" value={metrics.active} icon={<Users2 size={18} />} tone="neutral" />
+        <StatCard label="متأخر" value={metrics.overdue} icon={<Clock3 size={18} />} tone="danger" />
+        <StatCard label="معطل" value={metrics.blocked} icon={<ShieldAlert size={18} />} tone="danger" />
+        <StatCard label="معرض للخطر" value={metrics.atRisk} icon={<AlertTriangle size={18} />} tone="warning" />
+      </MetricGrid>
 
       <section className="edara-card" style={{ padding: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
         <div className="grid grid-2 gap-3">
