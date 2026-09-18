@@ -704,7 +704,7 @@ export default function AttendanceCheckin() {
             label={primaryActionLabel}
             loadingLabel="جارٍ التسجيل..."
             icon={<PrimaryActionIcon size={20} strokeWidth={2.5} />}
-            disabled={isProcessing || flowState === 'success'}
+            disabled={isProcessing}
             loading={isProcessing}
             onClick={() => handleAction(primaryActionType)}
             ariaLabel={primaryActionLabel}

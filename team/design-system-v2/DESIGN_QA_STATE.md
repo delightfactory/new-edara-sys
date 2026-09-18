@@ -2,124 +2,128 @@
 
 ## Reviewed baseline
 
-- Review date: `2026-09-17`
+- Review date: `2026-09-18`
 - Development branch: `design-system-v2-development`
-- Exact Development HEAD inspected before this review/state write: `0e90c94cd02c09f94cfb16d954bf6f9e7cc2556d`
-- Active slice: `DS2-FIELD-002 — Activity create/edit form composition foundation`
-- Representative surface: live `src/pages/activities/ActivityForm.tsx` normal create/edit path only
-- Active implementation PR: `#43 — DS2-FIELD-002: Activity form V2 composition foundation`
-- PR base: `design-system-v2-development`
-- PR base SHA: `0e90c94cd02c09f94cfb16d954bf6f9e7cc2556d`
-- Exact current PR HEAD independently reviewed: `a31addc60e5b0eaf8ee89a0fea11bded2a6e4c4a`
+- Exact Development HEAD inspected immediately before this state write: `2bd6631f5472ac4037640f38f3e2bd69ee869a8a`
+- Active slice: `DS2-WORK-001 — Create Task form composition foundation`
+- Representative surface: `/work/new` / `src/pages/work/CreateTaskPage.tsx`
+- Active implementation PR: `#44 — DS2-WORK-001: Create Task form V2 composition foundation`
+- PR base branch: `design-system-v2-development`
+- Feature baseline / merge base: `d748637fe5fd2a5fd50eced16b15645c9f75185d`
+- Exact current PR HEAD independently reviewed: `e71a1a9b310fda53a4cb3330baeb316a1f849f83`
+- Corrected WORK001 product/test commit inside that HEAD: `13f2a81d475144b8df4e93ff3516c14df54abfaa`
 - PR state at disposition: `OPEN / DRAFT / mergeable=true`
-- Changed-file scope: 6 files — ActivityForm live composition, focused tests, bounded Field stylesheet, Workstream governance and UI Implementer owned state.
-- Current disposition: `AGENT-REVIEW: GREEN-DEV`
-- `SOURCE_REVIEW_PASS`: **granted on exact HEAD `a31addc60e5b0eaf8ee89a0fea11bded2a6e4c4a`**.
-- Test evidence: `TESTS_AUTHORED_NOT_EXECUTED`.
-- Exact-head build/test/lint/runtime/preview evidence: not claimed.
+- Changed-file scope: 6 files — Workstream governance, Create Task composition, focused component/source tests, shared V2 form CSS, and UI Implementer owned state.
+- Current disposition: `AGENT-REVIEW: BLOCKED`
+- Severity: `P2 / BLOCKING — known TypeScript/build baseline is stale on the reviewed exact HEAD`
+- `SOURCE_REVIEW_PASS`: **withheld on exact HEAD `e71a1a9b310fda53a4cb3330baeb316a1f849f83`** because a real known type/build failure still exists in inherited files on that exact branch snapshot.
+- Test evidence for WORK001: `TESTS_AUTHORED_NOT_EXECUTED`.
+- Exact-head build/test/lint/runtime/preview PASS: not claimed.
 
 ## Independent QA disposition
 
-**GREEN-DEV on exact PR HEAD `a31addc60e5b0eaf8ee89a0fea11bded2a6e4c4a`.**
+**BLOCKED on exact PR HEAD `e71a1a9b310fda53a4cb3330baeb316a1f849f83`.**
 
-I formed this judgment from the exact PR diff, the live ActivityForm contracts and the existing V2 `FormSection`, `FormGrid`, `FormActions` and `Button` behavior before comparing peer role positions. The implementation removes the page-local outer form/timing/action mini-system, preserves the operational sequence and protected Field behavior, and introduces no material source-level blocker.
+The WORK001 design correction itself is source-clean and materially improved. The previous Product Design selector-ownership blocker is resolved at source level: shared native-control sizing is now owned by the established V2 `Field` boundary rather than globally targeting every legacy `.form-*` consumer. The blocker in this review is instead the Test & Validation Policy hard gate: the reviewed PR HEAD predates already-confirmed TypeScript fixes now present on current Development.
 
-## Exact-head findings
+## Product/design correction closeout — PASS at source level
+
+Locations:
+- `src/styles/design-system-v2-forms.css`
+- `src/pages/work/CreateTaskPage.v2.test.ts`
+
+Current PR HEAD correctly uses:
+- Desktop/default `.ds-field .form-input` / `.ds-field .form-select`: `min-height: var(--ds-control-height-standard)`;
+- Desktop/default `.ds-field .form-textarea`: `min-height: max(80px, var(--ds-control-height-standard))`;
+- Tablet + Mobile (`<=1024px`) `.ds-field .form-input` / `.ds-field .form-select`: `min-height: var(--ds-control-height-touch)`;
+- Tablet + Mobile textarea: `min-height: max(80px, var(--ds-control-height-touch))`.
+
+The loaded V2 foundations define `--ds-control-height-standard: 42px` and `--ds-control-height-touch: var(--touch-target)` with the canonical 44px touch target. `main.css` imports V2 foundations before the V2 form layer and imports the V2 form layer after generic component styles. `Field` exposes the stable `.ds-field` wrapper, so selector ownership now follows `semantic tokens -> shared V2 Field layer -> explicit page adoption` without a Work-local exception or product-wide legacy blast radius.
+
+The focused source/style contract protects the Field-scoped standard/touch rules, the `<=1024px` touch boundary, textarea floor preservation, rejection of unscoped root-level form sizing, and rejection of the invalid `--control-height-md` token.
+
+## Exact-head WORK001 findings
 
 ### Scope / functional isolation — PASS
 
-The PR changes only:
+PR #44 changes only:
 - `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md`
-- `src/pages/activities/ActivityForm.tsx`
-- `src/pages/activities/ActivityForm.test.tsx`
-- `src/pages/activities/ActivityForm.v2.test.ts`
-- `src/styles/field-activity-form-v2.css`
+- `src/pages/work/CreateTaskPage.tsx`
+- `src/pages/work/CreateTaskPage.test.tsx`
+- `src/pages/work/CreateTaskPage.v2.test.ts`
+- `src/styles/design-system-v2-forms.css`
 - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
-No DB/migration/RPC/service/RBAC/RLS/route-guard/business-calculation/query-cache/validation/workflow/deployment file is changed.
+No DB/migration/RPC/service/RBAC/RLS/route-guard/business calculation/query-cache/validation/workflow/deployment file is changed.
 
 Preserved page/domain truth includes:
-- visit-plan blocker and plan-resolution/navigation behavior;
-- `GPSStatusIndicator`, GPS acquisition/verification/distance calculation, `gpsBlocking`, payload coordinates and GPS-required validation;
-- `useActivityTypes`, `useActivity`, `useCustomer`, `useCustomers`, `useActivities`, `useTargetStatus` and sales-order lookup inputs;
-- type/category/customer/outcome/refusal/closed/call-result conditions and validation meaning;
-- target gamification and recent-history behavior;
-- sales-order and collection linking routes/callbacks;
-- call direction/result/attempt/phone/callback/recording state and `useSaveCallDetail` behavior;
-- Activity payload fields, create/update mutations, toast outcomes and navigation;
-- cancel `navigate(-1)`, save labels, `saving` disabled truth and `saving || gpsBlocking` submit suppression.
+- `toIso` conversion;
+- `useAssignmentCandidates('')`, self/first-candidate defaulting, owner/accountability meaning and assignee/current-ball meaning;
+- acknowledgement eligibility/reset/disabled rule and self-assignment payload suppression;
+- exact `validate()` messages and `nextActionAt > dueAt` comparison;
+- priority, visibility and completion-mode values/options/callbacks;
+- `useCreateTask`, trim/null conversion, payload keys, `activate: true`, success/error toasts and post-create navigation;
+- existing `PageHeader`, responsibility summary cells and acknowledgement checkbox;
+- all query/service/permission/RBAC/RLS/workflow/backend truth.
 
-Pre-form code changes are formatting/comment removal only; the behavioral expressions remain equivalent.
+### Shared-system / hierarchy / devices — PASS at source level
 
-### Shared-system fit / hierarchy — PASS at source level
+- Four task-entry sections retain the exact Arabic operational narrative and use shared `FormSection`.
+- Safe paired groups use `FormGrid columns={2}`; narrative/full-width fields remain unsqueezed.
+- Standard native controls use shared `Field` with programmatic Arabic labels and shared hint/error relationships.
+- Cancel/create use non-sticky shared `FormActions + Button`; callbacks, action priority and pending truth remain page-owned.
+- Mobile collapses paired grids to one column and uses the 44px touch role.
+- Tablet retains deliberate two-column composition and the same 44px touch role through the full `<=1024px` boundary.
+- Desktop preserves efficient two-column density with the 42px standard role.
+- RTL order, long-value containment primitives (`minmax(0, 1fr)` / shared min-width handling), focus behavior and disabled/loading semantics remain consistent with V2 contracts.
+- No new page-local mini design system is introduced.
 
-- The normal create/edit path now reuses shared `FormSection + FormGrid + FormActions + Button` instead of retaining local outer-card, timing-grid and action-row composition.
-- Three sections follow the existing task order: activity data -> outcome/link/call conditional content -> timing/notes. Conditional surfaces are not reordered across workflow boundaries.
-- No new shared Field primitive or page-local replacement for an existing V2 form pattern is introduced.
-- The page retains its bounded 640px form width and uses tokenized logical section spacing.
-- Excluded call/link/GPS-warning presentation is moved mechanically from inline styles to the bounded Field stylesheet rather than redesigned inside this slice.
+### Relevant states — PASS for assigned scope
 
-### Device / RTL / accessibility — PASS at source level
+Preserved/represented states include assignment-candidate loading disablement, manual validation errors, acknowledgement disabled/reset behavior, owner/assignee responsibility summary, create pending/loading/disabled state, success/error toast outcomes and navigation. Broader Work Hub/detail/offline/module convergence remains explicitly outside WORK001.
 
-- **Mobile (`<=768px`):** shared `FormGrid columns={3}` collapses the date/start/end group to one column; form/actions remain within the bounded width; actions are non-sticky so BottomNav/FAB space is not newly occupied; cancel/submit use `touchTarget`.
-- **Tablet (`769–1024px`):** shared FormGrid caps the timing group at two columns, giving deliberate touch-first composition rather than a compressed three-column Desktop grid.
-- **Desktop (`>=1025px`):** the same timing group uses three columns inside the retained 640px form bound, preserving efficient data-entry density.
-- Arabic task order remains RTL-native. Composition-touched native controls now use explicit `htmlFor`/`id` associations for type, customer, outcome, refusal/closed reason, date, start/end time and notes.
-- Existing native required/disabled semantics remain unchanged. Shared Buttons retain keyboard/focus behavior.
-- No ordinary timing-layout horizontal overflow is introduced by the migrated composition.
+## Hard Test & Validation Policy blocker
 
-### State coverage — PASS for assigned scope
+Current Development advanced from feature baseline `d748637...` to `2bd6631f5472ac4037640f38f3e2bd69ee869a8a`. That Development commit explicitly clears known preview TypeScript blockers by changing four inherited files:
 
-Preserved source states include:
-- create vs edit PageHeader/save copy;
-- visit-plan blocker path;
-- customer-loading fallback;
-- outcome disabled before activity type;
-- conditional required-customer, refusal/closed reason, sales/collection linking and call-detail surfaces;
-- GPS-required warning and submit suppression;
-- save loading/disabled state;
-- cancel and post-save navigation outcomes.
+- `src/components/activities/ActivityOverviewPresentation.test.tsx`
+- `src/components/hr/EmployeeOverviewPresentation.test.tsx`
+- `src/components/patterns/Pagination.test.tsx`
+- `src/pages/hr/attendance/AttendanceCheckin.tsx`
 
-Broader error/offline/toast convergence is outside the bounded FIELD002 concern and was not changed.
+The reviewed exact PR HEAD `e71a1a9b...` predates those fixes. Direct inspection confirms it still carries the pre-fix matcher form in the Activity test, and the branch is nine Development commits behind current Development. Therefore the known type/build defect is not fixed on the exact reviewed HEAD.
 
-### Test Artifact Gate / evidence honesty
+This blocks GREEN under `33_TEST_AND_VALIDATION_POLICY.md` and the explicit Design QA instruction that a real known build/type failure prevents GREEN until fixed. GitHub mergeability does not replace that evidence gate.
 
-Focused artifacts protect:
-- shared form-pattern adoption and retirement of the superseded local outer/timing/action mini-system;
-- label associations and preserved native required/disabled state;
-- responsive timing-grid and non-sticky touch-safe action intent;
-- cancel callback and create-state labels;
-- validation, GPS, payload, mutation, query, visit-plan routing, sales/collection linking and call-detail ownership boundaries.
+Minimum required fix without expanding WORK001: synchronize/rebase the feature branch onto current `design-system-v2-development` or otherwise incorporate the already-landed `2bd6631...` TypeScript fixes while preserving the six-file WORK001 product delta and all functional boundaries. No new Work redesign or business change is required. Any resulting HEAD requires fresh Design QA and Product Design review.
 
-Evidence is **`TESTS_AUTHORED_NOT_EXECUTED`**. No approved environment executed tests/build/lint; no GitHub Actions/hosted CI or Vercel preview was used. No known real build/type failure is recorded. This is not an executed PASS claim.
+## Test Artifact Gate / evidence honesty
+
+WORK001 focused Testing Library + source/style contracts exist for shared-pattern adoption, section order, responsive grid/action intent, Arabic label/hint/error relationships, validation, assignment/acknowledgement boundaries, payload/activation/toast/navigation truth, non-sticky touch actions and Field-scoped control heights.
+
+Evidence remains **`TESTS_AUTHORED_NOT_EXECUTED`** for the current PR HEAD. No tests/build/lint/runtime were executed by Design QA. No GitHub Actions/hosted CI or Vercel preview was triggered. No exact-head execution PASS is claimed.
 
 ## Peer-state comparison / contradiction handling
 
-The independent disposition above was formed before relying on peer conclusions.
+The independent disposition above was formed from the exact PR source and current Development evidence before relying on peer conclusions.
 
-- **Product Design Director:** current FIELD002 architecture boundary is aligned and `READY — DEPENDENCY-SAFE / PRESENTATION-ONLY`; its acceptance/exclusions match the implemented slice. No BLOCKING contradiction.
-- **UI Production Engineer:** Development-side role state is lifecycle-stale from FIELD001, while PR #43 contains the current owned-state update aligned with the reviewed source and `TESTS_AUTHORED_NOT_EXECUTED` evidence.
-- **Development Integrator:** current Development state is lifecycle-stale from the completed FIELD001 merge and correctly has no FIELD002 approval to reuse.
-- **Team Memory:** aligned on FIELD002 as the sole next Field create/detail concern, with the Director state providing the narrower ActivityForm boundary.
-- **Review threads/comments before this QA review:** none.
+- **Product Design Director:** the current state is tied to old HEAD `fb83ac8...` and correctly blocked its unscoped global form selectors. The new `.ds-field` correction satisfies that stated source requirement. Fresh Director acceptance on the new exact HEAD is still required. Classification: **WATCH / stale old-head blocker**, not the reason for this QA BLOCKED status.
+- **UI Production Engineer:** current PR-owned state accurately records the `.ds-field` source correction and `TESTS_AUTHORED_NOT_EXECUTED`, but it predates Development commit `2bd6631...`; its statement that no known TypeScript/build error was found is now stale relative to the current target baseline evidence.
+- **Development Integrator:** existing `NO_MERGE` remains directionally correct. The Integrator must preserve current Development's TypeScript fixes when the feature branch is synchronized and must revalidate exact head/base/drift/threads/mergeability.
+- **Team Memory / Workstream / Decision Log:** durable UI-only/system-first direction remains aligned; no durable decision change is required.
+- **Review threads:** none.
 
-No current material disagreement relevant to the exact reviewed head is `BLOCKING`.
+The current peer disagreement on the prior selector ownership is resolved substantively in source but not yet fresh in Director state. The active **BLOCKING** contradiction is evidence/baseline freshness: the feature HEAD lacks known type fixes that already exist on current Development.
 
-## Non-blocking WATCH
+## Development drift / system-fit judgment
 
-The excluded legacy call/link sub-controls retain pre-existing local presentation/accessibility debt (for example their local button/control grammar). FIELD002 only relocates their existing CSS where required to remove the inline style block; it does not worsen or redefine those contracts. Convergence remains later component-depth/runtime work and is not a reason to expand this slice.
-
-## System-fit judgment
-
-FIELD002 advances the North Star cleanly by proving the shared create/edit form composition on a mobile-sensitive Field workflow while keeping all Field business truth page/domain-owned. The result is a more coherent Arabic-first form hierarchy with deliberate Mobile/Tablet/Desktop timing composition and canonical touch-safe save/cancel actions, without speculative redesign of excluded conditional subsystems.
-
-Any movement of PR HEAD after `a31addc60e5b0eaf8ee89a0fea11bded2a6e4c4a` invalidates this exact-head GREEN-DEV and requires fresh Design QA.
+Comparison from feature baseline `d748637...` to current Development `2bd6631...` shows seven changed files: the four type-fix files listed above plus `DESIGN_DIRECTOR_STATE.md`, `DESIGN_QA_STATE.md`, and `INTEGRATION_STATE.md`. There is no overlap with the six WORK001 PR files, `Field`, or the shared V2 form contracts. This means the UI/design correction remains valid and should survive a clean synchronization; the blocker is exact-head build/type freshness, not a design regression.
 
 ### Cross-role handoff
-- **To:** Product Design Director, Development Integrator, UI Production Engineer.
-- **What changed:** Design QA independently reviewed PR #43 exact HEAD `a31addc60e5b0eaf8ee89a0fea11bded2a6e4c4a` and issued `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` for the bounded ActivityForm V2 composition slice.
-- **Preserve:** visit-plan routing; GPS acquisition/verification/distance/blocking; Activity queries/services/validation/payload/mutations; customer/type/outcome rules; target/history behavior; sales/collection links; call-detail behavior; non-sticky Mobile actions; 640px bounded form; shared responsive FormGrid contract.
-- **Need from you:** Product Design Director should independently confirm the same exact HEAD against the FIELD002 design boundary. Development Integrator must revalidate exact head, current Director/QA freshness, review threads, Development drift and mergeability before integration; do not reuse FIELD001 gates.
-- **Blocker level:** `NONE` from Design QA; fresh same-head Product Design acceptance remains an Integration gate, not a QA source blocker.
-- **Baseline:** Development inspected `0e90c94cd02c09f94cfb16d954bf6f9e7cc2556d`; exact reviewed PR HEAD `a31addc60e5b0eaf8ee89a0fea11bded2a6e4c4a`.
-- **Evidence:** `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview/release PASS claimed.
+- **To:** UI Production Engineer first; Product Design Director + Design QA after the feature HEAD is synchronized; Development Integrator only after both fresh exact-head gates pass.
+- **What changed:** Design QA reviewed PR #44 HEAD `e71a1a9b310fda53a4cb3330baeb316a1f849f83`. The `.ds-field` selector-scope correction passes source/design review, but QA discovered that current Development `2bd6631...` contains known TypeScript fixes absent from the reviewed feature HEAD, which triggers the hard build/type gate.
+- **Preserve:** the six-file WORK001 delta; `.ds-field`-owned standard/touch sizing; four-section Arabic narrative; responsive grids; non-sticky actions; validation/assignment/acknowledgement/payload/navigation semantics; all backend/query/permission/RBAC/RLS/service/workflow truth.
+- **Need from you:** synchronize/rebase PR #44 onto current Development or incorporate the already-landed `2bd6631...` fixes without changing WORK001 scope, then request fresh exact-head QA + Product Design review.
+- **Blocker level:** `P2 / BLOCKING` from Design QA until the known type/build fixes are present on the reviewed exact HEAD.
+- **Baseline:** Development inspected at `2bd6631f5472ac4037640f38f3e2bd69ee869a8a`; reviewed PR #44 exact HEAD `e71a1a9b310fda53a4cb3330baeb316a1f849f83`.
+- **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`; `SOURCE_REVIEW_PASS` withheld; no executed build/test/lint/runtime/preview/release PASS claimed.
