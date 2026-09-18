@@ -4,71 +4,74 @@
 
 - Run date: `2026-09-18`
 - Development branch: `design-system-v2-development`
-- Exact Development baseline / branch creation HEAD: `3a6ec3df1476765747859b06f1f5f8511ac758fb`
-- Feature branch: `ds2/work-hub-segmented-control`
-- Draft PR: `#46 — DS2-WORK-002: converge Work Hub view-mode selector`
-- Product/test HEAD before this owned-state write: `6a4ded0d6dadc7f07bccac0e89f57c083db5331e`
-- Active slice: `DS2-WORK-002 — Work Hub view-mode selector convergence`
-- Representative surface: `/work` / `src/pages/work/WorkHubPage.tsx`
+- Exact Development baseline / branch creation HEAD: `e1680a2fe918cb77b93db8fb7e5f6dc41624366b`
+- Feature branch: `ds2/work-supervisor-metrics`
+- Draft PR: `#47 — DS2-WORK-003: converge supervisor operational summary metrics`
+- Product/test HEAD before this owned-state write: `2d85603dd617937420d93a7dc8bf247cbc532b8e`
+- Active slice: `DS2-WORK-003 — Supervisor operational summary metric convergence`
+- Representative surface: `/work/team` / `src/pages/work/SupervisorWorkPage.tsx`
 - Disposition: `REVIEW — FRESH EXACT-HEAD PRODUCT DESIGN + DESIGN QA REQUIRED`
 - Evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 
 ## Independent implementation judgment
 
-The Product Design boundary is dependency-safe and presentation-only: Work Hub duplicated a three-option view-mode selector in page-local `.work-segmented` markup even though shared `SegmentedControl` already owns this single-choice interaction grammar. The correct implementation is therefore shared-pattern adoption without touching Work filtering/query/workflow truth or broadening into adjacent Work Hub surfaces.
+The Product Design boundary is correctly narrow and presentation-only. `SupervisorWorkPage` already owns the four operational metric calculations and the supervisor filter/query truth; the only local design-system duplication in scope was the `.work-summary-grid` / `.work-summary-card` renderer. Shared `MetricGrid + StatCard` exactly matches that responsibility without absorbing Work business semantics.
+
+The implementation therefore adopts the shared KPI grammar only for the four rendered supervisor metrics and deliberately leaves Work Hub, Work Detail/Admin, filters, list cards, status flags, loading/error/empty states and all lifecycle/state-machine behavior unchanged.
 
 ## Material implementation progress
 
-- Replaced only the local Work Hub mode renderer with shared `SegmentedControl`.
-- Preserved exact values, Arabic labels and order: `actions` / `work` / `attention` → `مطلوب مني الآن` / `كل الأعمال` / `يحتاج انتباه`.
-- Preserved default `actions`, page-owned `mode` state and the same `setMode` state transition behavior.
-- Preserved `work-toolbar`, search placement/behavior and summary-card mode callbacks.
-- Removed only selector-specific `.work-segmented` CSS and its Mobile selector reference; no broad `work.css` cleanup was performed.
-- Added focused Testing Library coverage for exact option order, native buttons, default/current `aria-pressed` truth and switching across all three modes.
-- Added source-contract coverage for shared-control adoption, dead local-selector retirement and preservation of page-owned query/filter/search/permission/routing boundaries.
+- Replaced the `/work/team` local four-card summary renderer with shared `MetricGrid columns={4}` and four `StatCard` instances.
+- Preserved the exact existing metric calculations from `overview.data`: `active`, `overdue`, `blocked`, `waiting`, `atRisk`; the four previously rendered metrics remain `active`, `overdue`, `blocked`, `atRisk` in the same order.
+- Preserved exact Arabic labels and existing Lucide icon choices.
+- Applied the Product Design presentation-only tone mapping: active=`neutral`, overdue=`danger`, blocked=`danger`, atRisk=`warning`.
+- Added a text-readable `role="group"` + Arabic `aria-label` around the shared metric grid; metric cards remain non-interactive and shared `StatCard` keeps decorative icons `aria-hidden`.
+- Did not remove or alter global `.work-summary-*` CSS because Work Hub still uses that legacy family.
+- Added focused Testing Library coverage for shared metric adoption, exact order/labels/values/tones, four-column shared contract and continued page ownership of supervisor assignee/attention filters.
 
 Files/patterns touched before this state write:
-- `src/pages/work/WorkHubPage.tsx`
-- `src/pages/work/WorkHubPage.test.tsx`
-- `src/pages/work/WorkHubPage.v2.test.ts`
-- `src/pages/work/work.css`
+- `src/pages/work/SupervisorWorkPage.tsx`
+- `src/pages/work/SupervisorWorkPage.test.tsx`
 
 ## Preserve / verified boundaries
 
-- `useMyActionInbox(100)`, `useVisibleWorkItems({ limit: 150 })`, `useOperationalFlags(itemIds)`, `flagMap`, summary calculations, `filteredItems` and `filteredActions` remain page/domain-owned and unchanged.
-- Summary-card click-to-mode behavior remains unchanged.
-- Search value/change/placeholder/accessibility and toolbar placement remain unchanged.
-- Work permissions, Submit Request branch, navigation, mobile-create behavior, ownership/responsibility, backend/service/query-cache/RBAC/RLS/route-guard/validation/workflow/state-machine semantics remain unchanged.
-- No Work Detail, Supervisor/Team, management/configuration or other Work surface is included.
+- `useSupervisorOverview({ assigneeUserId: assignee || null, attentionOnly })` remains page-owned and unchanged.
+- `assignee`, `attentionOnly`, `people` derivation and all existing metric calculations remain page-owned.
+- Header/back action, native select/checkbox, loading/error/empty states, work-item cards, status/flag derivation, next-action content, due/follow-up text and navigation remain unchanged.
+- No Work Hub summary change and no reopening of WORK001/WORK002.
+- No Work Detail/Core/Administration/Extensions/DueGovernance, Submit Request or management/configuration change.
+- No shared `MetricGrid`, `StatCard`, token or global responsive-contract modification.
+- No DB/migration/RPC/service/query-cache/RBAC/RLS/permission/route-guard/validation/workflow/state-machine/business-calculation change.
 
 ## Device / state coverage
 
-- **Mobile (`<=768px`)**: shared selector provides canonical touch-first control geometry and horizontal containment; Arabic labels/order remain intact; page-level Mobile create hierarchy is unchanged.
-- **Tablet (`769–1024px`)**: shared selector retains touch-first geometry while the existing toolbar/search composition remains page-owned.
-- **Desktop (`>=1025px`)**: selector remains compact and subordinate to page actions/content; search placement and Work Hub density are unchanged.
-- **RTL/accessibility**: accessible group name remains `نوع العرض`; options remain native `button type="button"`; `aria-pressed` derives from current `mode`; shared focus-visible/selected-surface behavior is now canonical.
-- **States**: all three mode selections are explicitly covered; loading/empty/error/permission states are unchanged by this slice.
+- **Mobile (`<=768px`)**: the adopted shared `MetricGrid` owns canonical one-column KPI composition; no new horizontal layout or physical left/right dependency was introduced.
+- **Tablet (`769–1024px`)**: shared grid owns canonical two-column composition with touch-first surrounding behavior unchanged.
+- **Desktop (`>=1025px`)**: `columns={4}` yields the established dense four-column metric row ahead of the existing filter/list content.
+- **RTL/Arabic**: exact Arabic labels are preserved and shared cards/grid use logical/shared layout contracts.
+- **Accessibility**: summary has an accessible Arabic group label; labels and numeric values carry meaning independently of semantic color; icons remain decorative through `StatCard`.
+- **States**: loading/error/empty/filter/list states are unchanged by this metric-renderer-only slice.
 
 ## Test / execution evidence
 
 Evidence: **`TESTS_AUTHORED_NOT_EXECUTED`**.
 
-The available sandbox has no executable repository checkout or `package.json`, so `npm test`, `npm run build` and `npm run lint` were not executed. No execution PASS is claimed. No hosted GitHub Actions/CI was triggered and no Vercel preview/deploy was used.
+Focused Testing Library tests were authored for material composition/ownership risks. The available sandbox has no executable repository checkout or `package.json`; `npm test`, `npm run build` and `npm run lint` were therefore not executed. No execution PASS is claimed. No hosted GitHub Actions/CI was triggered and no Vercel preview/deploy was used.
 
 ## Peer-state comparison / current risk
 
-- **Product Design Director:** current and aligned; explicitly bounded WORK002 to this single selector convergence with no functional expansion.
-- **Design QA:** stale to completed WORK001; fresh exact-head review is required for PR #46.
-- **Development Integrator:** prior state is lifecycle-stale to WORK001 completion; PR #46 must remain `NO_MERGE` until fresh Product Design + QA gates exist on the same exact head.
-- **Team Memory / Decision Log:** no durable rule changed; no mutation warranted.
-- Residual risk is review/runtime-only: tests are authored but not executable in the available sandbox.
+- **Product Design Director:** current and aligned; it explicitly bounded WORK003 to the `/work/team` four-metric renderer and prohibited wider Work/shared-contract cleanup.
+- **Design QA:** last state approves completed WORK002 and is stale for WORK003; fresh exact-head review is required.
+- **Development Integrator:** last state records WORK002 merged and WORK003 awaiting the Director boundary; that prerequisite is now satisfied, but PR #47 remains `NO_MERGE` until fresh exact-head gates exist.
+- **Team Memory / Decision Log:** North-Star and durable rules remain aligned; no mutation by UI Production Engineer is warranted.
+- Residual risk is source-review/runtime-only: tests are authored but not executable in the available sandbox.
 
 ### Cross-role handoff
 - **To:** Product Design Director + Design QA for fresh exact-head review; Development Integrator only after both gates are current.
-- **What changed:** `/work` now consumes shared `SegmentedControl` for the three existing view modes and the duplicate local selector CSS is retired.
-- **Preserve:** exact mode values/labels/order/default; page-owned `mode`/`setMode`; search/filter/query/summary-card/permission/routing semantics; Mobile/Tablet touch behavior; Desktop density; RTL; all backend/business/workflow truth.
-- **Need from you:** review the final exact PR #46 HEAD after this owned-state write. QA should issue `SOURCE_REVIEW_PASS + AGENT-REVIEW: GREEN-DEV` only on that same head; Product Design should independently close the same head. Integrator remains `NO_MERGE` until both are fresh.
+- **What changed:** `/work/team` now renders its same four operational supervisor metrics through shared `MetricGrid + StatCard` while all metric/query/filter/workflow truth remains page/domain-owned.
+- **Preserve:** exact calculations/order/Arabic labels/icons; supervisor `assignee` / `attentionOnly` query ownership; unchanged loading/error/empty/list/status/navigation behavior; shared metric responsive/accessibility contract; all backend/business/workflow truth.
+- **Need from you:** review the final exact PR #47 HEAD after this owned-state write. QA should issue `SOURCE_REVIEW_PASS + AGENT-REVIEW: GREEN-DEV` only on that same head; Product Design should independently close the same exact head. Integrator remains `NO_MERGE` until both are fresh.
 - **Blocker level:** `NONE` from implementation.
-- **Baseline:** `3a6ec3df1476765747859b06f1f5f8511ac758fb`.
-- **Product/test HEAD before state write:** `6a4ded0d6dadc7f07bccac0e89f57c083db5331e`.
+- **Baseline:** `e1680a2fe918cb77b93db8fb7e5f6dc41624366b`.
+- **Product/test HEAD before state write:** `2d85603dd617937420d93a7dc8bf247cbc532b8e`.
 - **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`.
