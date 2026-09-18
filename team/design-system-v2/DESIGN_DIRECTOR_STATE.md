@@ -4,115 +4,98 @@
 
 - Review date: `2026-09-18`.
 - Authoritative branch: `design-system-v2-development`.
+- Development HEAD immediately before this Director-state write: `0d131d58936e0a895beb0eb6a126482a5c638eb8`.
 - Latest integrated product slice: `DS2-REPORT-001 — Report route sub-navigation convergence`, PR #48, squash merge `5d2c57d9a502a4bbb2d355d94634bcf8b53075d2`.
-- Development slice-definition HEAD before this Director-state write: `e181c904c521110d000538552007565b9d0a02ed`.
-- Open implementation PRs targeting Development at slice selection: `0`.
-- Current single READY slice: `DS2-REPORT-002 — Report date-preset selector convergence`.
-- Product Design disposition: `READY — DEPENDENCY-SAFE / NO DESIGN-SYSTEM BLOCKER`.
-- No runtime visual, build, test, lint, preview or release PASS is claimed in this Director planning run.
+- Active slice: `DS2-REPORT-002 — Report date-preset selector convergence`.
+- Active implementation PR: `#49 — DS2-REPORT-002: converge report date preset selector`.
+- Exact PR HEAD independently reviewed: `c71a486562bb6a9c3066cc4e074a23adacd51efe`.
+- PR state at review: `OPEN / DRAFT / mergeable=true`.
+- Product Design disposition: `BLOCKING — P2 SHARED MOBILE/LONG-CONTENT GEOMETRY DEFECT`.
+- Evidence remains source-level only; no runtime visual, build, test, lint, preview or release PASS is claimed.
 
 ## Independent Product Design judgment
 
-**REPORT002 should converge only the four preset date-range buttons inside the domain-local `ReportFilterBar` to the existing shared `SegmentedControl`.**
+**PR #49 is directionally correct and functionally isolated, but it is not yet acceptable for integration on exact HEAD `c71a486562bb6a9c3066cc4e074a23adacd51efe`.**
 
-This is the smallest system-advancing Reports slice after REPORT001. The current `ReportFilterBar` still owns valid Reports-domain semantics: it receives a `{ from, to }` value, calculates preset ranges, normalizes dates and emits the resulting `DateRange` back to each page. Those semantics should stay domain-owned. The duplicated visual primitive is the preset selector itself: four local buttons independently recreate single-choice selected state, border/background hierarchy, focus behavior and touch geometry despite a shared V2 single-choice control already existing.
+The REPORT002 composition itself is right: the four Reports presets should use the shared V2 `SegmentedControl`, while `ReportFilterBar` and its callers continue to own `DateRange`, preset calculations, normalization and report-query meaning. The implementation preserves that boundary.
 
-The source supports a presentation-only convergence. `SegmentedControl` accepts an externally owned string selection, exposes native buttons with `aria-pressed`, a named group and visible shared focus treatment, and its CSS already guarantees `var(--ds-control-height-touch)` plus mobile horizontal containment. The Reports component can derive which preset is currently active by comparing the caller range with the existing preset calculations, map a selected preset back to the existing `DateRange`, and leave a custom range with no preset selected. No report query or business meaning has to move into the shared layer.
+However, my previous planning assumption that the existing shared `SegmentedControl` contract already guaranteed Mobile horizontal reachability **without compressed targets** was incorrect. Independent inspection of the exact shared CSS confirms the defect identified by Design QA:
 
-I do **not** approve migrating the custom date inputs or making the whole `ReportFilterBar` a generic shared `FilterBar` in this slice. The component decision matrix explicitly calls for FilterBar decomposition, not premature replacement, and the report date inputs are part of the domain composite that feeds analytics hooks. Broadening now would mix primitive convergence with date-control and report-query concerns.
+- `.ds-segmented-control` is `inline-flex` with `max-width: 100%`;
+- default `.ds-segmented-control__item` uses `min-width: 0` and does not disable flex shrinking;
+- flex items therefore retain the default `flex-shrink: 1`;
+- labels are `white-space: nowrap`;
+- Mobile adds `overflow-x: auto` only to the container.
 
-## Source / blueprint evidence
+For the four long Arabic report labels, container overflow alone does not establish a non-compression contract. The item boxes are allowed to shrink before horizontal overflow becomes the containment mechanism, while their nowrap text can spill beyond the shrunken target. That fails the explicit REPORT002 acceptance condition that all four labels remain reachable as discrete, touch-safe controls without compressed sub-touch targets.
 
-### Component architecture — aligned
+This is a **shared-component contract defect proven by a real migrated surface**, not a Reports-local styling problem. Product Design therefore aligns with QA on the blocker.
 
-- The component-system rules require domain surfaces to compose shared components rather than duplicate primitives, while business rules remain outside visual primitives.
-- The component decision matrix says `FilterBar` should be decomposed internally and preserve compound behavior initially.
-- The Reports/Analytics migration wave explicitly targets filter grammar, visualization hierarchy and drilldown, so the preset selector is an appropriate system-depth step before chart/table redesign.
+## Required bounded repair
 
-### Current ReportFilterBar — bounded recurring gap
+The active slice remains REPORT002; no competing slice is opened. UI Production Engineer may revise **the same PR #49** with one narrowly bounded shared hardening:
 
-`src/components/reports/ReportFilterBar.tsx` currently:
-- defines exactly four presets: `آخر 7 أيام`, `آخر 30 يوماً`, `آخر 90 يوماً`, `هذا الشهر`;
-- calculates their date ranges locally through `applyPreset(...)` and `normalizeDateRange(...)`;
-- marks a preset active only when both `from` and `to` equal the caller value;
-- renders each preset as a local styled `<button>` with approximately 32px-class visual geometry rather than the V2 practical 44px touch target;
-- keeps two custom native date inputs alongside the presets;
-- exposes only `value: DateRange` and `onChange(DateRange)` to report pages.
+1. Default/non-block `SegmentedControl` items must retain intrinsic control width under constrained horizontal space rather than flex-shrinking. `flex: 0 0 auto` or an equivalent non-shrinking contract is acceptable.
+2. The existing `SegmentedControl --block` equal-width behavior must remain intact (`flex: 1 1 0` or equivalent). The repair must not accidentally disable block stretching.
+3. Mobile containment/scrolling remains owned by shared `SegmentedControl`; no `ReportFilterBar`-specific CSS escape hatch is acceptable.
+4. Add focused contract coverage/evidence for the shared non-shrinking default-item geometry. Existing DOM tests are useful for selection semantics but do not prove this layout contract.
+5. Preserve all existing preset/date/report semantics exactly.
 
-Representative consumers confirm that date state is functional input, not presentation state: `OverviewPage` passes `range.from/range.to` into sales, treasury and AR hooks and uses `range.to` for customer health; `SalesPage` passes the same range into sales daily/summary hooks. Therefore REPORT002 must preserve the external `DateRange` contract exactly.
+This repair is authorized because it closes a real shared primitive gap exposed by the current consumer and strengthens the system-wide grammar. It does **not** authorize broader navigation CSS cleanup, a new SegmentedControl variant, custom-date redesign, or unrelated Reports work.
 
-### Shared SegmentedControl — correct primitive
+## Scope / semantic review — PASS
 
-`src/components/patterns/SegmentedControl.tsx` is explicitly documented as a compact single-choice control for filters/view modes. It does not claim tab-panel or route semantics. Its shared contract provides:
-- caller-owned `value` and `onValueChange`;
-- native button keyboard behavior;
-- `role="group"` plus required `ariaLabel`;
-- `aria-pressed` selection semantics;
-- shared active/hover/focus treatment;
-- minimum touch height through `--ds-control-height-touch`;
-- mobile horizontal overflow containment.
+On the reviewed PR HEAD, the following remain correct and must not drift during repair:
 
-No Reports-specific shared variant is needed.
+- exactly four presets in the same order and Arabic copy: `آخر 7 أيام`, `آخر 30 يوماً`, `آخر 90 يوماً`, `هذا الشهر`;
+- existing `applyPreset(...)`, local-date conversion and `normalizeDateRange(...)` behavior;
+- external `value: DateRange` / `onChange(DateRange)` ownership;
+- both custom native date inputs and their normalization behavior;
+- a custom range matching no preset leaves every preset unselected;
+- shared `SegmentedControl` remains presentation-only and does not absorb report date/business logic;
+- no query/cache/service/hook/calculation/chart/table/metric/export/print/permission/routing/`AnalyticsGate`, DB/RPC, RBAC/RLS, workflow or business-semantic change.
 
-## REPORT002 approved boundary
+The shared component implementation also confirms that button clicks call `onValueChange(item.value)` without suppressing a click on the currently selected item; no selected-item interaction blocker is present in the exact source.
 
-### In scope
+## Blueprint / system-fit synthesis
 
-- Replace only the preset-button group inside `ReportFilterBar` with shared `SegmentedControl`.
-- Preserve the exact four presets, order, Arabic copy and calculated range meaning.
-- Derive the selected preset from the current `{ from, to }` range using the existing preset calculations.
-- Allow a custom range that matches no preset to render with no preset falsely selected.
-- On preset selection, continue emitting the same normalized `DateRange` through the unchanged `onChange` contract.
-- Add/update focused source-level tests for exact preset order/copy, emitted range parity, `aria-pressed` selected semantics and custom-range no-selection behavior.
+The V2 component architecture requires domain surfaces to compose shared primitives and prohibits page-local primitive forks, while business rules stay outside visual primitives. The component decision matrix explicitly favors evolving sound shared contracts and decomposing `FilterBar` internally rather than replacing domain behavior. The migration matrix places Reports/Analytics in the filter-grammar wave. REPORT002 remains aligned with all three principles.
 
-### Explicit exclusions
+The newly proven geometry gap does not invalidate use of `SegmentedControl`; it is exactly the kind of shared depth defect that should be corrected once at the system layer when a real consumer exposes it.
 
-- No redesign/shared migration of the two custom `<input type="date">` controls.
-- No external `ReportFilterBar` API change.
-- No change to `applyPreset`, normalization, month-boundary meaning or page default ranges except a strictly mechanical refactor that produces identical values.
-- No report query/cache/service/hook/calculation/chart/table/metric/export/print/permission/routing/`AnalyticsGate` change.
-- No REPORT001 SubNav change, broad report-page redesign, unrelated inline-style cleanup, backend/business change, preview/deploy, hosted CI or `main` work.
+## Device / RTL / accessibility disposition
 
-### Device / RTL / accessibility acceptance
+- **Mobile (`<=768px`) — BLOCKING until repair:** four long Arabic presets require stable intrinsic-width touch controls plus contained horizontal scrolling; current shared CSS does not guarantee that.
+- **Tablet (`769–1024px`) — PASS at source/composition level:** surrounding ReportFilterBar wrapping and 44px minimum height remain appropriate.
+- **Desktop (`>=1025px`) — PASS at source/composition level:** compact single-choice hierarchy is appropriate beside custom dates.
+- **RTL/Arabic — PASS except the shared Mobile compression risk:** exact copy/order and logical structure remain correct.
+- **Accessibility — PASS at DOM/source level subject to geometry repair:** named group, native buttons, `aria-pressed`, focus-visible treatment and non-color-only active surface are appropriate.
+- **Custom range state — PASS:** unmatched ranges do not falsely announce a preset as selected.
 
-- **Desktop (`>=1025px`)**: four presets remain compact and legible beside the existing custom-date controls without unnecessary hierarchy or wrapping regressions.
-- **Tablet (`769–1024px`)**: selector remains touch-first with shared practical 44px control height; surrounding filter-bar wrapping remains intact.
-- **Mobile (`<=768px`)**: all four Arabic labels remain reachable through the shared horizontal containment contract without viewport overflow or compressed sub-touch targets; no hover dependency.
-- **RTL/Arabic**: preserve exact Arabic order/copy and logical direction; no clipped or abbreviated labels.
-- **Accessibility**: concise Arabic group label, native button keyboard operation, shared `:focus-visible`, `aria-pressed` state and a selected treatment that is not communicated by color alone.
-- **Custom range state**: if no existing preset equals the caller range, no preset may be announced selected; the existing date inputs remain the custom-range editor.
+## Peer-state synthesis / contradiction resolution
 
-## BLOCK rule
+This judgment was formed from the exact PR implementation and shared CSS before adopting peer conclusions.
 
-If consuming `SegmentedControl` cannot preserve the current four preset range outputs and the external `DateRange` contract without changing report functional/query semantics, REPORT002 becomes `BLOCKED`; the implementation must not widen the slice or move analytics/date business logic into the shared primitive.
+- **Design QA:** current and correct. Its P2 blocker is directly supported by the shared flex CSS and by the explicit Mobile/long-Arabic acceptance condition.
+- **UI Production Engineer:** PR-head state is current for the implementation but its claim that existing shared horizontal containment prevents compression is disproven by the CSS contract. The implementation must revise the same PR with the bounded shared repair.
+- **Development Integrator:** Development-branch state is lifecycle-stale from REPORT001. Regardless, Integration remains `NO_MERGE` because REPORT002 has a current same-slice blocker.
+- **Previous Director State:** superseded on one material assumption: the existing `SegmentedControl` Mobile containment was not sufficient to guarantee non-compressed long-content items.
+- **Team Memory / Decision Log:** no overall system direction or durable design principle changed; no update is warranted.
 
-## Peer-state synthesis
-
-The judgment above was formed from the current source and V2 architecture/device/migration/component-decision documents before comparing peer conclusions.
-
-- **Integration State:** current lifecycle authority confirms REPORT001 is merged and no implementation PR is active; aligned with handing the queue back to Product Design.
-- **Team Memory:** confirms REPORT001 integration and explicitly carries report date/scope convergence as remaining debt; aligned.
-- **Design QA State:** lifecycle-stale by design after the REPORT001 merge, but its last exact-head QA conclusion does not contradict the new planning state.
-- **UI Implementation State:** lifecycle-stale after the completed prior slice; no active product-code claim conflicts with REPORT002.
-- **Previous Director State:** lifecycle-stale because it still handed REPORT001 to Integration; this file now supersedes that state.
-- **Decision Log:** no durable design/system rule changed in this run, so no update is warranted.
-
-No current cross-role `BLOCKING` contradiction exists.
+The cross-role design contradiction is now synthesized: **Product Design agrees with QA.** The blocker remains implementation-actionable until a new exact PR HEAD contains the shared hardening and receives fresh exact-head Product Design + QA review.
 
 ## Repository actions this run
 
-- Inspected current Development HEAD, issue #27, open PRs and the mandatory shared-memory chain.
-- Inspected V2 component architecture, migration matrix, device strategy and component decision matrix.
-- Inspected `ReportFilterBar`, representative Overview/Sales consumers, shared `SegmentedControl` and its navigation CSS contract.
-- Updated `31_AGENT_TEAM_WORKSTREAM.md` to make REPORT002 the one exact dependency-safe READY slice and moved metrics/charts/tables to `DS2-REPORT-003` backlog.
-- Did not modify product code, peer specialist states, Team Memory, Decision Log, GitHub Actions, preview branches, Vercel, `main`, deployment or merge state.
+- Completed the mandatory shared-memory bootstrap from Development in required order.
+- Inspected issue #27, Development HEAD, the one open implementation PR, exact PR HEAD, PR-head implementation state, and current QA/Integration states.
+- Re-inspected `03_COMPONENT_SYSTEM.md`, `05_MIGRATION_MATRIX.md`, `12_COMPONENT_DECISION_MATRIX.md`, `SegmentedControl.tsx`, its exact navigation CSS, and REPORT002 source/tests.
+- Did not implement product code, modify peer specialist states, merge, touch `main`, trigger/rerun GitHub Actions, use hosted CI, deploy Vercel or modify preview branches.
+- Did not update Team Memory or Decision Log because no durable direction changed.
 
-## Cross-role Handoff
-- From: Product Design Director
-- To: UI Production Engineer; Design QA and Development Integrator observe until an exact stable implementation PR HEAD exists
-- Artifact: `DS2-REPORT-002 — Report date-preset selector convergence`; authoritative scope in `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md`
-- Exact HEAD: `e181c904c521110d000538552007565b9d0a02ed` (slice-definition baseline immediately before this Director-state governance write)
-- Status: `READY — DEPENDENCY-SAFE / NO DESIGN-SYSTEM BLOCKER`
-- Evidence: current `ReportFilterBar` source; representative `OverviewPage`/`SalesPage` consumers; shared `SegmentedControl` source and CSS; V2 component/migration/device/component-decision blueprints; zero open implementation PRs at selection time
-- Caveats: preserve exact DateRange/preset semantics; custom date inputs and all report query/business/chart/table/export/permission behavior are out of scope; no runtime/test/build/preview PASS is claimed; branch from the latest Development HEAD, which includes this governance-only state update
-- Next action: UI Production Engineer opens exactly one REPORT002 implementation PR from the latest `design-system-v2-development` HEAD and changes only the preset-selector boundary; Product Design and QA wait for one stable exact PR HEAD before review
+### Cross-role handoff
+- **To:** UI Production Engineer + Design QA; Development Integrator remains `NO_MERGE`.
+- **What changed:** Product Design independently confirmed QA's P2 Mobile/long-content blocker on PR #49 exact HEAD `c71a486562bb6a9c3066cc4e074a23adacd51efe` and superseded the earlier assumption that existing SegmentedControl overflow alone prevented target compression.
+- **Preserve:** exact four preset labels/order/range outputs; external `DateRange value/onChange`; custom date inputs; all report query/calculation/export/permission/routing/business truth; shared-system ownership of segmented-control geometry; `--block` equal-width behavior.
+- **Need from you:** UI Production Engineer should harden only the shared default/non-block SegmentedControl item geometry in the same PR, preserve block stretching, and add focused contract evidence; Design QA and Product Design must then re-review the new stable exact HEAD.
+- **Blocker level:** `BLOCKING`.
+- **Baseline:** Development `0d131d58936e0a895beb0eb6a126482a5c638eb8`; reviewed PR #49 HEAD `c71a486562bb6a9c3066cc4e074a23adacd51efe`.
