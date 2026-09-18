@@ -4,104 +4,115 @@
 
 - Review date: `2026-09-18`.
 - Authoritative branch: `design-system-v2-development`.
-- Latest integrated product slice: `DS2-WORK-003`, squash-merged as `95a84a8109f45cf9ac32c92d5d950f64d38dbaa0`.
-- Development HEAD immediately before this Director closeout write: `d4b495f91f562bbf47a9ff9460573ea6bd5bb183`.
-- Active slice: `DS2-REPORT-001 — Report route sub-navigation convergence`.
-- Active PR: `#48 — DS2-REPORT-001: converge report route sub-navigation`.
-- PR base: `design-system-v2-development` at `9c9708f50682e38390eed8cd7c91924df89f4bdc`.
-- Exact PR HEAD independently reviewed: `02f5d4f381d3999a9a3cda7ce8fbe0fc394926ba`.
-- PR state at closeout: `OPEN / DRAFT / mergeable=true`.
-- Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER`.
-- Design QA on the same exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
-- Evidence remains `TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview/release PASS is claimed.
+- Latest integrated product slice: `DS2-REPORT-001 — Report route sub-navigation convergence`, PR #48, squash merge `5d2c57d9a502a4bbb2d355d94634bcf8b53075d2`.
+- Development slice-definition HEAD before this Director-state write: `e181c904c521110d000538552007565b9d0a02ed`.
+- Open implementation PRs targeting Development at slice selection: `0`.
+- Current single READY slice: `DS2-REPORT-002 — Report date-preset selector convergence`.
+- Product Design disposition: `READY — DEPENDENCY-SAFE / NO DESIGN-SYSTEM BLOCKER`.
+- No runtime visual, build, test, lint, preview or release PASS is claimed in this Director planning run.
 
 ## Independent Product Design judgment
 
-**PASS on exact PR HEAD `02f5d4f381d3999a9a3cda7ce8fbe0fc394926ba`.**
+**REPORT002 should converge only the four preset date-range buttons inside the domain-local `ReportFilterBar` to the existing shared `SegmentedControl`.**
 
-REPORT001 lands the correct first Reports/Analytics convergence step: the common report shell now uses the established V2 `SubNav` for route-level secondary navigation instead of maintaining a report-local `reports-tabs` / inline `NavLink` mini-system. The implementation remains presentation-only and keeps report permission eligibility, route meaning, analytics gating and all report query/calculation/export/business truth outside the visual primitive.
+This is the smallest system-advancing Reports slice after REPORT001. The current `ReportFilterBar` still owns valid Reports-domain semantics: it receives a `{ from, to }` value, calculates preset ranges, normalizes dates and emits the resulting `DateRange` back to each page. Those semantics should stay domain-owned. The duplicated visual primitive is the preset selector itself: four local buttons independently recreate single-choice selected state, border/background hierarchy, focus behavior and touch geometry despite a shared V2 single-choice control already existing.
 
-The result improves system coherence without prematurely broadening into filter/date-range, metric, chart, table or report-state redesign. That is the correct architectural trade-off for this slice.
+The source supports a presentation-only convergence. `SegmentedControl` accepts an externally owned string selection, exposes native buttons with `aria-pressed`, a named group and visible shared focus treatment, and its CSS already guarantees `var(--ds-control-height-touch)` plus mobile horizontal containment. The Reports component can derive which preset is currently active by comparing the caller range with the existing preset calculations, map a selected preset back to the existing `DateRange`, and leave a custom range with no preset selected. No report query or business meaning has to move into the shared layer.
 
-## Exact-head evidence and acceptance
+I do **not** approve migrating the custom date inputs or making the whole `ReportFilterBar` a generic shared `FilterBar` in this slice. The component decision matrix explicitly calls for FilterBar decomposition, not premature replacement, and the report date inputs are part of the domain composite that feeds analytics hooks. Broadening now would mix primitive convergence with date-control and report-query concerns.
 
-### Shared-system fit — PASS
+## Source / blueprint evidence
 
-- `ReportsLayout` now maps the already permission-filtered destination model into shared `SubNav`.
-- Shared `SubNav` retains its single responsibility: route-level secondary navigation through real `NavLink` semantics.
-- No report-specific `SubNav` variant or shared-component fork was introduced.
-- Only dead `reports-tabs` renderer/style rules were removed; unrelated report content/filter/grid CSS remains in place.
-- This directly follows the North Star rule that recurring navigation grammar belongs in the shared system rather than page-local implementations.
+### Component architecture — aligned
 
-### Route / permission / analytics parity — PASS
+- The component-system rules require domain surfaces to compose shared components rather than duplicate primitives, while business rules remain outside visual primitives.
+- The component decision matrix says `FilterBar` should be decomposed internally and preserve compound behavior initially.
+- The Reports/Analytics migration wave explicitly targets filter grammar, visualization hierarchy and drilldown, so the preset selector is an appropriate system-depth step before chart/table redesign.
 
-- All 14 report destinations remain present in the same order with the same Arabic labels, Lucide icons and permission arrays.
-- Visibility remains caller-owned through the unchanged `tab.permissions.some(permission => can(permission))` rule.
-- `/reports/visits` and `/reports/reengagement` remain outside `AnalyticsGate` exactly as before; all other report outlets remain gated.
-- `ReportsRedirect`, route definitions, report hooks, query/cache behavior, calculations, exports/printing and permissions were not changed.
+### Current ReportFilterBar — bounded recurring gap
 
-### Device / RTL / accessibility — PASS at source level
+`src/components/reports/ReportFilterBar.tsx` currently:
+- defines exactly four presets: `آخر 7 أيام`, `آخر 30 يوماً`, `آخر 90 يوماً`, `هذا الشهر`;
+- calculates their date ranges locally through `applyPreset(...)` and `normalizeDateRange(...)`;
+- marks a preset active only when both `from` and `to` equal the caller value;
+- renders each preset as a local styled `<button>` with approximately 32px-class visual geometry rather than the V2 practical 44px touch target;
+- keeps two custom native date inputs alongside the presets;
+- exposes only `value: DateRange` and `onChange(DateRange)` to report pages.
 
-- **Mobile (`<=768px`)**: shared `SubNav` provides a contained horizontally reachable track, scroll-snap assistance and at least `var(--ds-control-height-touch)` item height; long Arabic labels remain discrete route targets rather than wrapping into ambiguous controls.
-- **Tablet (`769–1024px`)**: navigation remains touch-first and horizontally reachable without compressing 14 destinations below the shared touch contract.
-- **Desktop (`>=1025px`)**: the shared route strip preserves efficient report-family scanning and remains scrollable when the permitted destination set exceeds width.
-- **RTL/Arabic**: existing Arabic copy/order is preserved and the shared logical-layout contract replaces report-local physical presentation rules.
-- **Accessibility**: the navigation is a named semantic `<nav aria-label="أقسام التقارير">`; destinations remain real links, active-route styling/focus-visible behavior are shared, icons are decorative, and no incorrect ARIA tab semantics were introduced.
+Representative consumers confirm that date state is functional input, not presentation state: `OverviewPage` passes `range.from/range.to` into sales, treasury and AR hooks and uses `range.to` for customer health; `SalesPage` passes the same range into sales daily/summary hooks. Therefore REPORT002 must preserve the external `DateRange` contract exactly.
 
-No runtime visual PASS is claimed.
+### Shared SegmentedControl — correct primitive
 
-### Sticky-behavior judgment — accepted, non-blocking
+`src/components/patterns/SegmentedControl.tsx` is explicitly documented as a compact single-choice control for filters/view modes. It does not claim tab-panel or route semantics. Its shared contract provides:
+- caller-owned `value` and `onValueChange`;
+- native button keyboard behavior;
+- `role="group"` plus required `ariaLabel`;
+- `aria-pressed` selection semantics;
+- shared active/hover/focus treatment;
+- minimum touch height through `--ds-control-height-touch`;
+- mobile horizontal overflow containment.
 
-The pre-slice local `reports-tabs` renderer was sticky; the canonical shared `SubNav` is not. I do **not** require a Reports-only sticky patch in REPORT001. Sticky secondary-navigation behavior is not a documented report functional invariant, and recreating it locally would immediately reintroduce page-specific chrome around the shared pattern. The canonical shared contract is therefore accepted as-is for this slice. If controlled runtime review later proves persistent route access is materially needed, that should be resolved as a shared navigation/system decision rather than a Reports-only exception.
+No Reports-specific shared variant is needed.
 
-### Test-artifact / evidence gate — PASS
+## REPORT002 approved boundary
 
-Focused authored tests protect:
-- exact report destination order/copy and route hrefs;
-- shared named navigation and active real-link semantics;
-- caller ownership of permission eligibility;
-- analytics-gated pages remaining gated;
-- `/reports/visits` and `/reports/reengagement` remaining outside `AnalyticsGate`.
+### In scope
 
-Evidence remains `TESTS_AUTHORED_NOT_EXECUTED`. No hosted GitHub Actions/CI, Vercel preview, local build/test/lint or runtime visual execution was used or claimed.
+- Replace only the preset-button group inside `ReportFilterBar` with shared `SegmentedControl`.
+- Preserve the exact four presets, order, Arabic copy and calculated range meaning.
+- Derive the selected preset from the current `{ from, to }` range using the existing preset calculations.
+- Allow a custom range that matches no preset to render with no preset falsely selected.
+- On preset selection, continue emitting the same normalized `DateRange` through the unchanged `onChange` contract.
+- Add/update focused source-level tests for exact preset order/copy, emitted range parity, `aria-pressed` selected semantics and custom-range no-selection behavior.
 
-## Development drift / integration readiness
+### Explicit exclusions
 
-Current Development is two commits ahead of the PR base. The exact compare from `9c9708f50682e38390eed8cd7c91924df89f4bdc` to pre-closeout Development `d4b495f91f562bbf47a9ff9460573ea6bd5bb183` changes only:
-- `team/design-system-v2/DESIGN_QA_STATE.md`
-- `team/design-system-v2/INTEGRATION_STATE.md`
+- No redesign/shared migration of the two custom `<input type="date">` controls.
+- No external `ReportFilterBar` API change.
+- No change to `applyPreset`, normalization, month-boundary meaning or page default ranges except a strictly mechanical refactor that produces identical values.
+- No report query/cache/service/hook/calculation/chart/table/metric/export/print/permission/routing/`AnalyticsGate` change.
+- No REPORT001 SubNav change, broad report-page redesign, unrelated inline-style cleanup, backend/business change, preview/deploy, hosted CI or `main` work.
 
-That drift is governance-only and does not overlap the PR product/test files. It does not invalidate this Product Design acceptance.
+### Device / RTL / accessibility acceptance
 
-PR #48 remained on exact HEAD `02f5d4f381d3999a9a3cda7ce8fbe0fc394926ba`, Draft and `mergeable=true` immediately before this closeout write.
+- **Desktop (`>=1025px`)**: four presets remain compact and legible beside the existing custom-date controls without unnecessary hierarchy or wrapping regressions.
+- **Tablet (`769–1024px`)**: selector remains touch-first with shared practical 44px control height; surrounding filter-bar wrapping remains intact.
+- **Mobile (`<=768px`)**: all four Arabic labels remain reachable through the shared horizontal containment contract without viewport overflow or compressed sub-touch targets; no hover dependency.
+- **RTL/Arabic**: preserve exact Arabic order/copy and logical direction; no clipped or abbreviated labels.
+- **Accessibility**: concise Arabic group label, native button keyboard operation, shared `:focus-visible`, `aria-pressed` state and a selected treatment that is not communicated by color alone.
+- **Custom range state**: if no existing preset equals the caller range, no preset may be announced selected; the existing date inputs remain the custom-range editor.
+
+## BLOCK rule
+
+If consuming `SegmentedControl` cannot preserve the current four preset range outputs and the external `DateRange` contract without changing report functional/query semantics, REPORT002 becomes `BLOCKED`; the implementation must not widen the slice or move analytics/date business logic into the shared primitive.
 
 ## Peer-state synthesis
 
-The Product Design judgment above was formed from the exact PR diff/source, shared `SubNav` implementation/CSS/tests and current blueprint/page-pattern/component-migration rules before using peer conclusions as acceptance evidence.
+The judgment above was formed from the current source and V2 architecture/device/migration/component-decision documents before comparing peer conclusions.
 
-- **Design QA:** current and aligned on the same exact PR HEAD with `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`; no QA blocker remains.
-- **Development Integrator:** current and aligned; it independently revalidated scope, functional isolation, mergeability and governance-only drift, and is waiting only for this exact-head Product Design closeout.
-- **UI Production Engineer:** the Development copy is lifecycle-stale from WORK003, but the PR-owned state is current and aligned with the inspected implementation/exclusions.
-- **Team Memory / Workstream:** lifecycle direction remains valid; REPORT001 stays the single active slice until Integration completes it.
-- **Decision Log:** no durable rule changed, so no update is warranted.
-- **Team Memory:** no overall design/system direction changed; Integrator should synchronize shared memory after a successful merge, not before.
+- **Integration State:** current lifecycle authority confirms REPORT001 is merged and no implementation PR is active; aligned with handing the queue back to Product Design.
+- **Team Memory:** confirms REPORT001 integration and explicitly carries report date/scope convergence as remaining debt; aligned.
+- **Design QA State:** lifecycle-stale by design after the REPORT001 merge, but its last exact-head QA conclusion does not contradict the new planning state.
+- **UI Implementation State:** lifecycle-stale after the completed prior slice; no active product-code claim conflicts with REPORT002.
+- **Previous Director State:** lifecycle-stale because it still handed REPORT001 to Integration; this file now supersedes that state.
+- **Decision Log:** no durable design/system rule changed in this run, so no update is warranted.
 
 No current cross-role `BLOCKING` contradiction exists.
 
-## What changed since previous Director state
+## Repository actions this run
 
-- REPORT001 moved from pre-implementation READY direction to exact-head Product Design acceptance.
-- PR #48 exact HEAD `02f5d4f381d3999a9a3cda7ce8fbe0fc394926ba` was independently reviewed and accepted.
-- The shared `SubNav` adoption, route/permission/gating parity, Arabic/RTL/touch/accessibility contract and focused test artifacts all pass source review.
-- The old local sticky route-nav behavior is explicitly treated as non-blocking and must not be reintroduced through a Reports-only patch; any future sticky policy belongs to shared navigation convergence.
-- Report filter/date-range convergence remains explicit later debt; REPORT001 does not make `ReportFilterBar` canonical.
-- No product code, peer role state, Team Memory, Decision Log, Workstream, GitHub Actions, Vercel, preview branch, `main`, deployment or merge action was performed by Product Design.
+- Inspected current Development HEAD, issue #27, open PRs and the mandatory shared-memory chain.
+- Inspected V2 component architecture, migration matrix, device strategy and component decision matrix.
+- Inspected `ReportFilterBar`, representative Overview/Sales consumers, shared `SegmentedControl` and its navigation CSS contract.
+- Updated `31_AGENT_TEAM_WORKSTREAM.md` to make REPORT002 the one exact dependency-safe READY slice and moved metrics/charts/tables to `DS2-REPORT-003` backlog.
+- Did not modify product code, peer specialist states, Team Memory, Decision Log, GitHub Actions, preview branches, Vercel, `main`, deployment or merge state.
 
-### Cross-role handoff
-- **To:** Development Integrator; UI Production Engineer and Design QA observe unless the PR HEAD moves.
-- **What changed:** Product Design independently accepted PR #48 exact HEAD `02f5d4f381d3999a9a3cda7ce8fbe0fc394926ba` with `PASS — NO DESIGN-SYSTEM BLOCKER`; the remaining Integration prerequisite identified by QA/Integrator is closed.
-- **Preserve:** exact 14 report destinations/order/Arabic labels/icons/permission arrays; caller-owned `can(...)` filtering; `/reports/visits` + `/reports/reengagement` AnalyticsGate bypass; shared `SubNav` route-link/touch/focus/RTL contract; all report filter/query/calculation/export/print/business truth; filter/REPORT002/Admin/Global backlog; no Reports-only sticky reimplementation.
-- **Need from you:** revalidate current PR head/base, Development drift, review threads/comments, changed-file scope and mergeability. If HEAD is still `02f5d4f381d3999a9a3cda7ce8fbe0fc394926ba` and all normal gates remain satisfied, merge PR #48 into `design-system-v2-development`. Any PR HEAD movement requires fresh Product Design + QA review.
-- **Blocker level:** `NONE`.
-- **Baseline:** Development pre-closeout `d4b495f91f562bbf47a9ff9460573ea6bd5bb183`; accepted PR #48 HEAD `02f5d4f381d3999a9a3cda7ce8fbe0fc394926ba`.
-- **Evidence:** Product Design `SOURCE_REVIEW_PASS`; QA `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`; tests authored but not executed; no runtime/build/lint/preview/release PASS claimed.
+## Cross-role Handoff
+- From: Product Design Director
+- To: UI Production Engineer; Design QA and Development Integrator observe until an exact stable implementation PR HEAD exists
+- Artifact: `DS2-REPORT-002 — Report date-preset selector convergence`; authoritative scope in `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md`
+- Exact HEAD: `e181c904c521110d000538552007565b9d0a02ed` (slice-definition baseline immediately before this Director-state governance write)
+- Status: `READY — DEPENDENCY-SAFE / NO DESIGN-SYSTEM BLOCKER`
+- Evidence: current `ReportFilterBar` source; representative `OverviewPage`/`SalesPage` consumers; shared `SegmentedControl` source and CSS; V2 component/migration/device/component-decision blueprints; zero open implementation PRs at selection time
+- Caveats: preserve exact DateRange/preset semantics; custom date inputs and all report query/business/chart/table/export/permission behavior are out of scope; no runtime/test/build/preview PASS is claimed; branch from the latest Development HEAD, which includes this governance-only state update
+- Next action: UI Production Engineer opens exactly one REPORT002 implementation PR from the latest `design-system-v2-development` HEAD and changes only the preset-selector boundary; Product Design and QA wait for one stable exact PR HEAD before review
