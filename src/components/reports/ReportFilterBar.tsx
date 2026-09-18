@@ -1,5 +1,6 @@
 import { Calendar } from 'lucide-react'
 import SegmentedControl from '@/components/patterns/SegmentedControl'
+import DateField from '@/components/ui/DateField'
 import { normalizeDateRange, toLocalISODate } from '@/lib/utils/date'
 
 export interface DateRange {
@@ -59,39 +60,30 @@ export default function ReportFilterBar({ value, onChange }: Props) {
         }}
       />
 
-      {/* Custom date inputs */}
-      <div className="report-filter-dates" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', minWidth: 0 }}>
-        <Calendar size={14} color="var(--text-muted)" />
-        <input
-          type="date"
+      <div
+        className="report-filter-dates"
+        role="group"
+        aria-label="الفترة المخصصة"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--space-2)',
+          flexWrap: 'wrap',
+          minWidth: 0,
+          maxWidth: '100%',
+        }}
+      >
+        <Calendar size={14} color="var(--text-muted)" aria-hidden="true" />
+        <DateField
+          aria-label="من تاريخ"
           value={value.from}
           onChange={e => onChange(normalizeDateRange(e.target.value, value.to))}
-          style={{
-            padding: '4px 8px',
-            borderRadius: 'var(--radius-sm)',
-            border: '1px solid var(--border-primary)',
-            background: 'var(--bg-input)',
-            color: 'var(--text-primary)',
-            fontSize: 'var(--text-xs)',
-            fontFamily: 'var(--font-sans)',
-            outline: 'none',
-          }}
         />
-        <span style={{ color: 'var(--text-muted)', fontSize: 'var(--text-xs)' }}>—</span>
-        <input
-          type="date"
+        <span aria-hidden="true" style={{ color: 'var(--text-muted)', fontSize: 'var(--text-xs)' }}>—</span>
+        <DateField
+          aria-label="إلى تاريخ"
           value={value.to}
           onChange={e => onChange(normalizeDateRange(value.from, e.target.value))}
-          style={{
-            padding: '4px 8px',
-            borderRadius: 'var(--radius-sm)',
-            border: '1px solid var(--border-primary)',
-            background: 'var(--bg-input)',
-            color: 'var(--text-primary)',
-            fontSize: 'var(--text-xs)',
-            fontFamily: 'var(--font-sans)',
-            outline: 'none',
-          }}
         />
       </div>
     </div>
