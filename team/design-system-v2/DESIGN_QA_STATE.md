@@ -4,115 +4,107 @@
 
 - Review date: `2026-09-18`.
 - Development branch: `design-system-v2-development`.
-- Exact Development HEAD independently inspected before this state write: `e1680a2fe918cb77b93db8fb7e5f6dc41624366b`.
-- Active slice: `DS2-WORK-003 — Supervisor operational summary metric convergence`.
-- Representative surface: `/work/team` / `src/pages/work/SupervisorWorkPage.tsx`.
-- Active implementation PR: `#47 — DS2-WORK-003: converge supervisor operational summary metrics`.
-- PR base: `design-system-v2-development` at `e1680a2fe918cb77b93db8fb7e5f6dc41624366b`.
-- Exact PR HEAD independently reviewed: `9cb08546e073e553a02fb019dfc6389b53339ad8`.
+- Exact Development HEAD independently inspected before this state write: `9c9708f50682e38390eed8cd7c91924df89f4bdc`.
+- Active slice: `DS2-REPORT-001 — Report route sub-navigation convergence`.
+- Representative surface: `/reports/*` / `src/pages/reports/ReportsLayout.tsx`.
+- Active implementation PR: `#48 — DS2-REPORT-001: converge report route sub-navigation`.
+- PR base: `design-system-v2-development` at `9c9708f50682e38390eed8cd7c91924df89f4bdc`.
+- Exact PR HEAD independently reviewed: `02f5d4f381d3999a9a3cda7ce8fbe0fc394926ba`.
 - PR state at review: `OPEN / DRAFT / mergeable=true`.
-- Branch relation at review: `ahead_by=3 / behind_by=0`; merge-base exactly the Development baseline above.
-- Changed-file scope: 3 files — Supervisor page composition, focused Testing Library coverage, and UI Production Engineer owned state.
+- Changed-file scope: 3 files — Reports shell composition, focused Testing Library coverage, and UI Production Engineer owned state.
 - Current disposition: `AGENT-REVIEW: GREEN-DEV`.
 - Evidence: `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
 - Exact-head test/build/lint/runtime/preview PASS: not claimed.
 
 ## Independent QA disposition
 
-**GREEN-DEV on exact PR HEAD `9cb08546e073e553a02fb019dfc6389b53339ad8`.**
+**GREEN-DEV on exact PR HEAD `02f5d4f381d3999a9a3cda7ce8fbe0fc394926ba`.**
 
-The bounded WORK003 implementation is source-clean and advances Design System convergence without absorbing Work business truth. `/work/team` now uses the established shared KPI grammar for the same four supervisor metrics while calculations, supervisor query/filter ownership, loading/error/empty behavior, work-item content and lifecycle/state-machine semantics remain unchanged and page/domain-owned.
+REPORT001 is correctly bounded and source-clean. The common Reports route navigation now uses the established shared V2 `SubNav` instead of the report-local `reports-tabs` / inline `NavLink` mini-system, while report destination eligibility, route meaning, analytics gating and all query/calculation/export/business truth remain caller/domain-owned.
 
 ## Exact-head findings
 
 ### Scope / functional isolation — PASS
 
 The exact diff contains only:
-- `src/pages/work/SupervisorWorkPage.tsx`
-- `src/pages/work/SupervisorWorkPage.test.tsx`
+- `src/pages/reports/ReportsLayout.tsx`
+- `src/pages/reports/ReportsLayout.test.tsx`
 - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
-No DB/migration/RPC/service/query-cache/RBAC/RLS/permission/route-guard/business-calculation/validation/workflow/state-machine/deployment contract is changed.
+No DB/migration/RPC/service/query-cache/RBAC/RLS/permission/route-guard/business-calculation/validation/workflow/export/print/deployment contract is changed.
 
-The pre-change and exact-head page source preserve:
-- `useSupervisorOverview({ assigneeUserId: assignee || null, attentionOnly })`;
-- `assignee`, `attentionOnly` and `people` derivation;
-- all existing metric calculations, including the retained unused `waiting` calculation;
-- loading and error branches;
-- initial/filtered empty rendering as currently implemented;
-- filter select/checkbox behavior;
-- work-item status/flag derivation, next-action content, due/follow-up text and navigation.
+The implementation preserves all 14 report destinations with the same route paths, order, Arabic labels, Lucide icon choices and permission arrays. Permission filtering remains in `ReportsLayout` through the unchanged `tab.permissions.some(permission => can(permission))` rule before items reach the shared visual pattern.
 
-The four previously rendered summary metrics remain exactly `active`, `overdue`, `blocked`, `atRisk` in the same order with the same Arabic labels and existing Lucide icons.
+The operational report split also remains unchanged: `/reports/visits` and `/reports/reengagement` render outside `AnalyticsGate`; all other report outlets remain gated.
 
-### System fit / hierarchy / semantic tone — PASS
+### System fit / hierarchy — PASS
 
-- The page-local `.work-summary-grid` / `.work-summary-card` renderer is replaced only on `/work/team` by shared `MetricGrid columns={4}` + `StatCard`.
-- Shared `MetricGrid` owns KPI layout only; shared `StatCard` owns label/value/icon hierarchy and semantic emphasis while the caller retains metric meaning/calculation.
-- Presentation mapping matches the Product Design boundary exactly: active=`neutral`, overdue=`danger`, blocked=`danger`, atRisk=`warning`.
-- Meaning remains text-readable through explicit labels and values; color is not the sole carrier of status.
-- No new Work-local mini design system or page-specific shared-component variant was created.
-- Global `.work-summary-*` CSS is correctly left intact because Work Hub still consumes that legacy family; no speculative cleanup widened the slice.
-- The metric group remains subordinate to the page header and precedes the existing filter/list content, preserving management scan order.
+- Shared `SubNav` is the correct route-level secondary-navigation pattern and already owns real-link semantics, active styling, focus treatment, horizontal containment, touch geometry and decorative-icon handling.
+- The page no longer maintains a parallel report-local route-navigation renderer or navigation-specific CSS family.
+- `SubNav` itself is not modified and no report-specific shared-component variant is introduced.
+- Only proven-dead `reports-tabs` navigation rules are removed; unrelated report content/filter/grid CSS remains in place.
+- REPORT001 does not silently treat the existing `ReportFilterBar` as canonical; filter convergence remains separate debt.
 
 ### Device / RTL / content tolerance — PASS at source level
 
-The adopted shared V2 surface contract provides:
-- **Mobile (`<=768px`)**: one-column `MetricGrid`, `minmax(0, 1fr)` containment and no new horizontal layout dependency;
-- **Tablet (`769–1024px`)**: deliberate two-column metric composition rather than compressed Desktop;
-- **Desktop (`>=1025px`)**: four equal-width dense metrics in one row;
-- **RTL/Arabic**: no physical left/right positioning in the migrated metric surface; Arabic labels remain exact and shared card labels are wrapping-capable;
-- **numeric/readability:** `StatCard` uses the shared KPI numeric treatment and stable hierarchy.
+The adopted shared contract provides:
+- **Mobile (`<=768px`)**: contained horizontally scrollable navigation, snap assistance and at least `var(--ds-control-height-touch)` item height; all permitted destinations remain reachable without creating ordinary page-level horizontal overflow.
+- **Tablet (`769–1024px`)**: touch-first route navigation remains horizontally reachable rather than compressing 14 destinations into undersized controls.
+- **Desktop (`>=1025px`)**: efficient single-track report-family scanning with horizontal overflow available when required.
+- **RTL/Arabic**: exact Arabic labels/order are preserved; shared flex/overflow presentation uses logical document direction rather than physical left/right page rules.
+- **Long labels**: shared items remain discrete `nowrap` route targets within the scroll track rather than wrapping into ambiguous multi-line navigation.
 
-No runtime visual PASS is claimed; this is exact-head source validation only.
+No runtime visual PASS is claimed.
 
-### Accessibility / interaction — PASS for assigned scope
+### Accessibility / interaction — PASS
 
-- The summary region is explicitly exposed as `role="group"` with Arabic accessible name `ملخص حالة أعمال الفريق`.
-- Metric cards remain non-interactive; no false button/link semantics were introduced.
-- `StatCard` keeps metric icons decorative with `aria-hidden="true"`.
-- Labels and values communicate metric meaning independently of semantic color.
-- The slice introduces no focus/keyboard/touch regression because it adds no new interactive control and leaves the existing filter/actions untouched.
+- Navigation is exposed as a named semantic `<nav aria-label="أقسام التقارير">`.
+- Destinations remain real `NavLink` links; route navigation is not misrepresented as ARIA tabs.
+- Shared focus-visible and active-route styling apply.
+- Icons are wrapped as decorative `aria-hidden` content while text labels retain the accessible route name.
+- Touch target height is 44px-capable through the shared `SubNav` contract.
 
 ### Relevant states — PASS for assigned scope
 
-- Loading, error, empty, filter and work-item states are unchanged by the summary-renderer migration.
-- Permission/query visibility remains owned by the existing `useSupervisorOverview` contract.
-- Offline/sync behavior is not newly introduced or altered by this bounded surface change.
+- Permission-limited destination visibility is preserved and explicitly tested.
+- Analytics-gated versus operational-bypass rendering is preserved and explicitly tested.
+- Child report loading/empty/error/filter/query states are outside this renderer-only slice and remain untouched.
+- No new disabled/read-only/offline/sync semantics are introduced by this route-navigation convergence.
 
 ## Test Artifact Gate / evidence honesty
 
 Focused authored tests protect:
-- adoption of shared `MetricGrid` / `StatCard` semantics;
-- the exact four rendered metric labels/order/values;
-- the required `neutral / danger / danger / warning` tone mapping;
-- removal of the local summary-card renderer from this page;
-- continued page ownership of `assigneeUserId` and `attentionOnly` inputs to `useSupervisorOverview`.
+- exact destination order/copy and real route hrefs;
+- active-route class semantics through the shared navigation contract;
+- absence of route-as-tab semantics;
+- continued caller ownership of permission eligibility;
+- analytics pages remaining gated;
+- `/reports/visits` and `/reports/reengagement` remaining outside `AnalyticsGate`.
 
 Evidence remains **`TESTS_AUTHORED_NOT_EXECUTED`**. Design QA did not run tests, build, lint or runtime inspection. No GitHub Actions/hosted CI or Vercel preview was triggered. No executed PASS is claimed. No known source-visible build/type blocker is present on the reviewed exact HEAD.
 
-PR conversation comments, submitted reviews, inline review comments and GraphQL review threads were empty before this QA review.
+PR conversation comments, submitted reviews and inline review threads were empty before this QA review.
 
 ## Peer-state comparison / contradiction handling
 
-The QA disposition above was formed from the exact diff, pre-change page contract and current shared V2 components/CSS before peer conclusions were used for alignment checking.
+The QA disposition above was formed from the exact PR diff, pre-change Reports contract and current shared `SubNav` component/CSS before peer conclusions were used for alignment checking.
 
-- **Product Design Director:** current and aligned on the bounded WORK003 concern: Supervisor four-metric renderer only, exact metric parity, shared `MetricGrid + StatCard`, fixed semantic tones and no functional/global widening. Its state is pre-implementation direction; fresh independent exact-head Director acceptance remains an Integration gate, not a QA blocker.
-- **UI Production Engineer:** feature-branch owned state is current and aligns with the independently verified diff and exclusions. Development copy is lifecycle-stale until Integration.
-- **Development Integrator:** current Development state records WORK002 merged and WORK003 awaiting bounded implementation; lifecycle is now stale to PR #47 existing but contains no contradictory design/functional judgment.
-- **Team Memory / Workstream / Decision Log:** North-Star and durable rules remain aligned; no QA mutation is warranted.
+- **Product Design Director:** current and aligned; it bounded REPORT001 specifically to `ReportsLayout` route sub-navigation -> existing shared `SubNav`, preserves the same 14 destinations/permissions/gating truth, and explicitly defers filter convergence. Its state is pre-implementation direction; fresh independent exact-head Director closeout remains an Integration prerequisite, not a QA blocker.
+- **UI Production Engineer:** Development copy is lifecycle-stale from WORK003, but PR-owned state is current and aligns with the independently verified implementation and exclusions.
+- **Development Integrator:** Development state is lifecycle-stale from completed WORK003 and contains no contradictory REPORT001 judgment.
+- **Team Memory / Workstream / Decision Log:** shared-system-first, functional-isolation, device and evidence rules remain aligned; no QA mutation is warranted outside this owned state.
 
-No same-slice `BLOCKING` contradiction exists. Fresh Product Design exact-head closeout remains a `WATCH` integration prerequisite.
+No same-slice `BLOCKING` contradiction exists. Fresh Product Design exact-head acceptance remains a `WATCH` integration prerequisite.
 
 ## System-fit judgment
 
-WORK003 is a valid convergence slice: it removes a local supervisor KPI renderer and reuses the existing V2 metric grammar without redesigning unrelated Work surfaces or moving any Work calculation/query/workflow truth into shared presentation. It improves consistency across management surfaces while preserving Mobile/Tablet/Desktop and Arabic-first system contracts.
+REPORT001 is a valid convergence slice. It removes a route-navigation mini design system from the common Reports shell and reuses the established V2 route-navigation grammar without moving any permission, analytics, query, calculation or routing truth into a visual primitive. It strengthens one coherent Arabic-first product language while keeping deeper report filter/metric/chart/table work separately bounded.
 
 ### Cross-role handoff
 - **To:** Product Design Director for independent exact-head closeout; Development Integrator only after that gate is current.
-- **What changed:** Design QA independently reviewed PR #47 exact HEAD `9cb08546e073e553a02fb019dfc6389b53339ad8` and issued `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` with `TESTS_AUTHORED_NOT_EXECUTED`.
-- **Preserve:** exact four metric calculations/order/Arabic labels/icons; `useSupervisorOverview`, `assignee` / `attentionOnly` query ownership; unchanged loading/error/empty/filter/list/navigation behavior; shared `MetricGrid + StatCard` responsive/accessibility contract; all backend/business/workflow/state-machine truth; global `.work-summary-*` CSS until remaining consumers are separately migrated.
+- **What changed:** Design QA independently reviewed PR #48 exact HEAD `02f5d4f381d3999a9a3cda7ce8fbe0fc394926ba` and issued `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` with `TESTS_AUTHORED_NOT_EXECUTED`.
+- **Preserve:** all 14 report paths/order/Arabic labels/icons/permission arrays; caller-owned `can(...)` filtering; `/reports/visits` + `/reports/reengagement` AnalyticsGate bypass; all report filter/query/calculation/export/print/business truth; shared `SubNav` route-link/accessibility/device contract; unrelated report CSS and the full REPORT002/Admin/Global backlog.
 - **Need from you:** Product Design Director should independently accept or block this same exact HEAD. If accepted and HEAD remains fixed, Development Integrator should revalidate base/head/drift/review threads/mergeability and all normal gates before any Development merge.
 - **Blocker level:** `WATCH` — no QA blocker remains; fresh independent Product Design exact-head acceptance is still required before Integration.
-- **Baseline:** Development `e1680a2fe918cb77b93db8fb7e5f6dc41624366b`; reviewed PR #47 HEAD `9cb08546e073e553a02fb019dfc6389b53339ad8`.
+- **Baseline:** Development `9c9708f50682e38390eed8cd7c91924df89f4bdc`; reviewed PR #48 HEAD `02f5d4f381d3999a9a3cda7ce8fbe0fc394926ba`.
 - **Evidence:** `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview/release PASS claimed.
