@@ -3,7 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { CalendarClock, CheckCircle2, UserRound, UsersRound } from 'lucide-react'
 import { toast } from 'sonner'
 import Button from '@/components/ui/Button'
+import Field from '@/components/ui/Field'
 import PageHeader from '@/components/shared/PageHeader'
+import FormSection from '@/components/patterns/FormSection'
+import FormGrid from '@/components/patterns/FormGrid'
+import FormActions from '@/components/patterns/FormActions'
 import { useAssignmentCandidates, useCreateTask } from '@/features/work/runtime-hooks'
 import type { WorkCompletionMode, WorkPriority, WorkVisibility } from '@/features/work/types'
 import './work.css'
@@ -102,87 +106,118 @@ export default function CreateTaskPage() {
       />
 
       <form className="work-form" onSubmit={handleSubmit} noValidate>
-        <section className="work-form-card">
-          <h2 className="work-form-section-title">ما المطلوب بالضبط؟</h2>
-          <div className="work-form">
-            <div className="work-field">
-              <label htmlFor="work-title">عنوان المهمة *</label>
+        <FormSection title="ما المطلوب بالضبط؟">
+          <Field id="work-title" label="عنوان المهمة" required error={errors.title}>
+            {({ controlId, describedBy, invalid }) => (
               <input
-                id="work-title"
+                id={controlId}
+                className="form-input"
                 value={title}
                 onChange={event => setTitle(event.target.value)}
                 maxLength={250}
                 placeholder="مثال: مراجعة مديونية العميل قبل الزيارة"
                 autoFocus
+                aria-required="true"
+                aria-invalid={invalid || undefined}
+                aria-describedby={describedBy}
               />
-              {errors.title && <span className="form-error">{errors.title}</span>}
-            </div>
+            )}
+          </Field>
 
-            <div className="work-field">
-              <label htmlFor="work-description">تفاصيل التنفيذ</label>
+          <Field id="work-description" label="تفاصيل التنفيذ">
+            {({ controlId, describedBy, invalid }) => (
               <textarea
-                id="work-description"
+                id={controlId}
+                className="form-textarea"
                 value={description}
                 onChange={event => setDescription(event.target.value)}
                 placeholder="أضف السياق أو البيانات التي يحتاجها المنفذ بدون تكرار العنوان."
+                aria-invalid={invalid || undefined}
+                aria-describedby={describedBy}
               />
-            </div>
+            )}
+          </Field>
 
-            <div className="work-field">
-              <label htmlFor="work-outcome">النتيجة المتوقعة *</label>
+          <Field
+            id="work-outcome"
+            label="النتيجة المتوقعة"
+            hint="هذه ليست خطوة تنفيذ؛ هي تعريف واضح للنتيجة النهائية المقبولة."
+            required
+            error={errors.expectedOutcome}
+          >
+            {({ controlId, describedBy, invalid }) => (
               <textarea
-                id="work-outcome"
+                id={controlId}
+                className="form-textarea"
                 value={expectedOutcome}
                 onChange={event => setExpectedOutcome(event.target.value)}
                 placeholder="متى نستطيع أن نقول إن المهمة انتهت بنجاح؟"
+                aria-required="true"
+                aria-invalid={invalid || undefined}
+                aria-describedby={describedBy}
               />
-              <span className="work-field-hint">هذه ليست خطوة تنفيذ؛ هي تعريف واضح للنتيجة النهائية المقبولة.</span>
-              {errors.expectedOutcome && <span className="form-error">{errors.expectedOutcome}</span>}
-            </div>
-          </div>
-        </section>
+            )}
+          </Field>
+        </FormSection>
 
-        <section className="work-form-card">
-          <h2 className="work-form-section-title">من المسؤول ومن يمسك الكرة الآن؟</h2>
-          <div className="work-form-grid">
-            <div className="work-field">
-              <label htmlFor="work-owner"><UsersRound size={15} /> المسؤول النهائي *</label>
-              <select
-                id="work-owner"
-                value={ownerUserId}
-                onChange={event => setOwnerUserId(event.target.value)}
-                disabled={candidatesLoading}
-              >
-                <option value="">اختر المسؤول</option>
-                {candidates.map(candidate => (
-                  <option key={candidate.user_id} value={candidate.user_id}>
-                    {candidate.full_name}{candidate.is_self ? ' — أنا' : ''}
-                  </option>
-                ))}
-              </select>
-              <span className="work-field-hint">يبقى مسؤولًا عن النتيجة حتى لو تم تفويض التنفيذ لشخص آخر.</span>
-              {errors.ownerUserId && <span className="form-error">{errors.ownerUserId}</span>}
-            </div>
+        <FormSection title="من المسؤول ومن يمسك الكرة الآن؟">
+          <FormGrid columns={2}>
+            <Field
+              id="work-owner"
+              label={<><UsersRound size={15} /> المسؤول النهائي</>}
+              hint="يبقى مسؤولًا عن النتيجة حتى لو تم تفويض التنفيذ لشخص آخر."
+              required
+              error={errors.ownerUserId}
+            >
+              {({ controlId, describedBy, invalid }) => (
+                <select
+                  id={controlId}
+                  className="form-select"
+                  value={ownerUserId}
+                  onChange={event => setOwnerUserId(event.target.value)}
+                  disabled={candidatesLoading}
+                  aria-required="true"
+                  aria-invalid={invalid || undefined}
+                  aria-describedby={describedBy}
+                >
+                  <option value="">اختر المسؤول</option>
+                  {candidates.map(candidate => (
+                    <option key={candidate.user_id} value={candidate.user_id}>
+                      {candidate.full_name}{candidate.is_self ? ' — أنا' : ''}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </Field>
 
-            <div className="work-field">
-              <label htmlFor="work-assignee"><UserRound size={15} /> المكلف الحالي *</label>
-              <select
-                id="work-assignee"
-                value={assigneeUserId}
-                onChange={event => setAssigneeUserId(event.target.value)}
-                disabled={candidatesLoading}
-              >
-                <option value="">اختر المكلف</option>
-                {candidates.map(candidate => (
-                  <option key={candidate.user_id} value={candidate.user_id}>
-                    {candidate.full_name}{candidate.is_self ? ' — أنا' : ''}
-                  </option>
-                ))}
-              </select>
-              <span className="work-field-hint">هو الشخص الذي يجب أن يتحرك الآن فعليًا.</span>
-              {errors.assigneeUserId && <span className="form-error">{errors.assigneeUserId}</span>}
-            </div>
-          </div>
+            <Field
+              id="work-assignee"
+              label={<><UserRound size={15} /> المكلف الحالي</>}
+              hint="هو الشخص الذي يجب أن يتحرك الآن فعليًا."
+              required
+              error={errors.assigneeUserId}
+            >
+              {({ controlId, describedBy, invalid }) => (
+                <select
+                  id={controlId}
+                  className="form-select"
+                  value={assigneeUserId}
+                  onChange={event => setAssigneeUserId(event.target.value)}
+                  disabled={candidatesLoading}
+                  aria-required="true"
+                  aria-invalid={invalid || undefined}
+                  aria-describedby={describedBy}
+                >
+                  <option value="">اختر المكلف</option>
+                  {candidates.map(candidate => (
+                    <option key={candidate.user_id} value={candidate.user_id}>
+                      {candidate.full_name}{candidate.is_self ? ' — أنا' : ''}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </Field>
+          </FormGrid>
 
           {selectedOwner && selectedAssignee && (
             <div className="work-info-grid" style={{ marginTop: 'var(--space-4)' }}>
@@ -209,90 +244,126 @@ export default function CreateTaskPage() {
               <span className="work-field-hint" style={{ display: 'block' }}>مفيد عندما تكون المهمة مسندة لشخص آخر؛ فتح المهمة وحده لا يعتبر تنفيذًا.</span>
             </span>
           </label>
-        </section>
+        </FormSection>
 
-        <section className="work-form-card">
-          <h2 className="work-form-section-title">ما الخطوة التالية ومتى؟</h2>
-          <div className="work-form-grid">
-            <div className="work-field" style={{ gridColumn: '1 / -1' }}>
-              <label htmlFor="work-next-action">الإجراء التالي *</label>
+        <FormSection title="ما الخطوة التالية ومتى؟">
+          <Field id="work-next-action" label="الإجراء التالي" required error={errors.nextActionText}>
+            {({ controlId, describedBy, invalid }) => (
               <input
-                id="work-next-action"
+                id={controlId}
+                className="form-input"
                 value={nextActionText}
                 onChange={event => setNextActionText(event.target.value)}
                 maxLength={500}
                 placeholder="مثال: الاتصال بالعميل لتأكيد الرصيد قبل الساعة 12"
+                aria-required="true"
+                aria-invalid={invalid || undefined}
+                aria-describedby={describedBy}
               />
-              {errors.nextActionText && <span className="form-error">{errors.nextActionText}</span>}
-            </div>
+            )}
+          </Field>
 
-            <div className="work-field">
-              <label htmlFor="work-next-action-at"><CalendarClock size={15} /> موعد الإجراء التالي</label>
-              <input
-                id="work-next-action-at"
-                type="datetime-local"
-                value={nextActionAt}
-                onChange={event => setNextActionAt(event.target.value)}
-              />
-              {errors.nextActionAt && <span className="form-error">{errors.nextActionAt}</span>}
-            </div>
+          <FormGrid columns={2}>
+            <Field
+              id="work-next-action-at"
+              label={<><CalendarClock size={15} /> موعد الإجراء التالي</>}
+              error={errors.nextActionAt}
+            >
+              {({ controlId, describedBy, invalid }) => (
+                <input
+                  id={controlId}
+                  className="form-input"
+                  type="datetime-local"
+                  value={nextActionAt}
+                  onChange={event => setNextActionAt(event.target.value)}
+                  aria-invalid={invalid || undefined}
+                  aria-describedby={describedBy}
+                />
+              )}
+            </Field>
 
-            <div className="work-field">
-              <label htmlFor="work-due-at"><CalendarClock size={15} /> الموعد النهائي</label>
-              <input
-                id="work-due-at"
-                type="datetime-local"
-                value={dueAt}
-                onChange={event => setDueAt(event.target.value)}
-              />
-            </div>
-          </div>
-        </section>
+            <Field id="work-due-at" label={<><CalendarClock size={15} /> الموعد النهائي</>}>
+              {({ controlId, describedBy, invalid }) => (
+                <input
+                  id={controlId}
+                  className="form-input"
+                  type="datetime-local"
+                  value={dueAt}
+                  onChange={event => setDueAt(event.target.value)}
+                  aria-invalid={invalid || undefined}
+                  aria-describedby={describedBy}
+                />
+              )}
+            </Field>
+          </FormGrid>
+        </FormSection>
 
-        <section className="work-form-card">
-          <h2 className="work-form-section-title">أولوية وخصوصية الإجراء</h2>
-          <div className="work-form-grid">
-            <div className="work-field">
-              <label htmlFor="work-priority">الأولوية</label>
-              <select id="work-priority" value={priority} onChange={event => setPriority(event.target.value as WorkPriority)}>
-                <option value="low">منخفضة</option>
-                <option value="normal">عادية</option>
-                <option value="high">مهمة</option>
-                <option value="urgent">عاجلة</option>
-                <option value="critical">حرجة</option>
-              </select>
-            </div>
+        <FormSection title="أولوية وخصوصية الإجراء">
+          <FormGrid columns={2}>
+            <Field id="work-priority" label="الأولوية">
+              {({ controlId, describedBy, invalid }) => (
+                <select
+                  id={controlId}
+                  className="form-select"
+                  value={priority}
+                  onChange={event => setPriority(event.target.value as WorkPriority)}
+                  aria-invalid={invalid || undefined}
+                  aria-describedby={describedBy}
+                >
+                  <option value="low">منخفضة</option>
+                  <option value="normal">عادية</option>
+                  <option value="high">مهمة</option>
+                  <option value="urgent">عاجلة</option>
+                  <option value="critical">حرجة</option>
+                </select>
+              )}
+            </Field>
 
-            <div className="work-field">
-              <label htmlFor="work-visibility">الخصوصية</label>
-              <select id="work-visibility" value={visibility} onChange={event => setVisibility(event.target.value as WorkVisibility)}>
-                <option value="standard">عادية — وفق نطاق الصلاحيات</option>
-                <option value="restricted">مقيدة — تحتاج صلاحية إضافية</option>
-                <option value="private">خاصة — أضيق نطاق رؤية</option>
-              </select>
-            </div>
+            <Field id="work-visibility" label="الخصوصية">
+              {({ controlId, describedBy, invalid }) => (
+                <select
+                  id={controlId}
+                  className="form-select"
+                  value={visibility}
+                  onChange={event => setVisibility(event.target.value as WorkVisibility)}
+                  aria-invalid={invalid || undefined}
+                  aria-describedby={describedBy}
+                >
+                  <option value="standard">عادية — وفق نطاق الصلاحيات</option>
+                  <option value="restricted">مقيدة — تحتاج صلاحية إضافية</option>
+                  <option value="private">خاصة — أضيق نطاق رؤية</option>
+                </select>
+              )}
+            </Field>
+          </FormGrid>
 
-            <div className="work-field" style={{ gridColumn: '1 / -1' }}>
-              <label htmlFor="work-completion-mode">طريقة اعتماد الإتمام</label>
+          <Field
+            id="work-completion-mode"
+            label="طريقة اعتماد الإتمام"
+            hint="الاعتماد متعدد المراحل يُربط بقالب اعتماد مخصص من إعدادات Work وليس من هذا النموذج السريع."
+          >
+            {({ controlId, describedBy, invalid }) => (
               <select
-                id="work-completion-mode"
+                id={controlId}
+                className="form-select"
                 value={completionMode}
                 onChange={event => setCompletionMode(event.target.value as WorkCompletionMode)}
+                aria-invalid={invalid || undefined}
+                aria-describedby={describedBy}
               >
                 <option value="assignee_closes">المكلف يغلق المهمة عند اكتمال النتيجة</option>
                 <option value="owner_review">المسؤول النهائي يراجع الإتمام</option>
               </select>
-              <span className="work-field-hint">الاعتماد متعدد المراحل يُربط بقالب اعتماد مخصص من إعدادات Work وليس من هذا النموذج السريع.</span>
-            </div>
-          </div>
-        </section>
+            )}
+          </Field>
+        </FormSection>
 
-        <div className="work-form-actions">
-          <Button type="button" variant="secondary" onClick={() => navigate('/work')}>إلغاء</Button>
-          <Button type="submit" loading={createTask.isPending} icon={<CheckCircle2 size={17} />}>
+        <FormActions>
+          <Button type="button" variant="secondary" touchTarget onClick={() => navigate('/work')}>إلغاء</Button>
+          <Button type="submit" touchTarget loading={createTask.isPending} icon={<CheckCircle2 size={17} />}>
             إنشاء وتفعيل المهمة
           </Button>
-        </div>
+        </FormActions>
       </form>
     </div>
   )

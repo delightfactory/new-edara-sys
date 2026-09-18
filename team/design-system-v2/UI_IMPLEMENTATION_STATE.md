@@ -2,92 +2,87 @@
 
 ## Reviewed baseline
 
-- Run date: `2026-09-17`
+- Run date: `2026-09-18`
 - Development branch: `design-system-v2-development`
-- Exact slice baseline / Development HEAD at branch creation: `0e90c94cd02c09f94cfb16d954bf6f9e7cc2556d`
-- Development HEAD rechecked before handoff: `0e90c94cd02c09f94cfb16d954bf6f9e7cc2556d` — no base drift.
-- Feature branch: `ds2/field-activity-form-v2`
-- Draft PR: `#43 — DS2-FIELD-002: Activity form V2 composition foundation`
-- Product/test implementation HEAD: `6c12dc5f32b40e92053825bced2d8d50fc924f9f`
-- PR HEAD before this REVIEW handoff state write: `bf3d92142c36de996de4cee2a074cf6abdfd7baa`
-- Active slice: `DS2-FIELD-002 — Activity create/edit form composition foundation`
-- Representative surface: live `src/pages/activities/ActivityForm.tsx` normal create/edit path only
-- Disposition: `REVIEW — SOURCE SELF-REVIEW CLEAN / FRESH EXACT-HEAD DIRECTOR + QA REVIEW REQUIRED`
+- Original slice baseline / Development HEAD at branch creation: `d748637fe5fd2a5fd50eced16b15645c9f75185d`
+- Exact Development HEAD synchronized into the feature branch this run: `d55ebebd8592f96ba8e2c7abc3d0c8e1569e42b9`.
+- Pre-sync PR HEAD: `e71a1a9b310fda53a4cb3330baeb316a1f849f83`.
+- Synchronization merge commit before this owned-state write: `97d89e052337ab0e279b6477ca69f9c117f88b15`.
+- Feature branch: `ds2/work-create-task-form-v2`
+- Draft PR: `#44 — DS2-WORK-001: Create Task form V2 composition foundation`
+- Active slice: `DS2-WORK-001 — Create Task form composition foundation`
+- Representative surface: `/work/new` / `src/pages/work/CreateTaskPage.tsx`
+- Disposition: `REVIEW — STALE TYPECHECK-BASELINE BLOCKER SOURCE-RESOLVED BY DEVELOPMENT SYNC / FRESH EXACT-HEAD DIRECTOR + QA REVIEW REQUIRED`
 - Evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 
 ## Independent implementation judgment
 
-The live Activity create/edit surface contained a mature business workflow inside a page-local visual mini-system: outer `edara-card act-form`, local timing grid, local action row and a large inline style block. The bounded V2 fix is composition-only: reuse the proven shared `FormSection + FormGrid + FormActions + Button` grammar while ActivityForm remains the authority for GPS blocking, validation, conditional customer/outcome/call/link content, payload construction, queries, mutations and navigation.
+Design QA's latest blocker on PR #44 exact HEAD `e71a1a9b...` was valid: the WORK001 UI delta itself was source-clean, but that branch snapshot predated known TypeScript/build fixes already integrated on Development. Because the test policy makes a known build/type failure a hard blocker, the correct action was to synchronize the existing feature branch with the exact latest Development baseline without altering the bounded WORK001 product delta.
 
-No new shared primitive was required. Existing shared form patterns already encode the canonical Mobile/Tablet/Desktop grid and non-sticky action contract.
+The synchronization is clean. Comparison of original feature baseline `d748637...` to Development `d55ebeb...` shows Development changed only the four already-landed TypeScript-fix files plus peer role-state governance; none overlap the six WORK001 PR files. After synchronization, comparison of `d55ebeb...` to merge commit `97d89e0...` shows exactly the same six WORK001 UI/Test/Governance files as before. The known TypeScript-fix files are therefore inherited from Development while the WORK001 composition remains unchanged.
 
 ## Material implementation progress
 
-- Created `ds2/field-activity-form-v2` from exact Development HEAD `0e90c94c...` after confirming no open implementation PR targeted Development.
-- Opened Draft PR #43 targeting `design-system-v2-development`; `main` was not touched.
-- Replaced only the normal create/edit path outer local form shell with three shared `FormSection` boundaries preserving the existing operational order: activity data; outcome/link/call conditional content; timing/notes/status hints.
-- Replaced local date/time layout with shared `FormGrid columns={3}`: Mobile one column, Tablet capped at two, Desktop three within the preserved 640px bounded form width.
-- Replaced local `act-form-actions` with non-sticky shared `FormActions`; cancel and submit keep the exact existing callbacks, labels, `saving` disabled state and `gpsBlocking` submit suppression. Both shared Buttons opt into canonical touch targets.
-- Added programmatic Arabic label associations only for composition-touched native controls: activity type, customer, outcome, refusal/closed reason, activity date, start/end time and notes.
-- Moved excluded call/link/GPS-warning presentation mechanically out of the deleted inline style block into `field-activity-form-v2.css`; removed only dead outer/timing/action CSS.
-- Updated focused Testing Library coverage for label associations, disabled-before-type state, shared grid/action composition, touch targets and cancel callback.
-- Added focused Vitest source contracts protecting shared-pattern adoption plus validation/GPS/payload/query/mutation/routing/link/call-detail boundaries.
-- Exact baseline diff was reviewed after implementation. Pre-form logic changes are comments/formatting only; all functional expressions, predicates, query parameters, payload fields and mutation/navigation callbacks are preserved. The JSX delta is limited to shared composition, label association and touch-target presentation.
-- Workstream state was moved from READY to IN_PROGRESS on this same branch during implementation; no peer role-state, Team Memory or Decision Log file was mutated.
-
-## Changed-file / pattern scope
-
-Current PR scope is six UI/Test/Governance-owned files:
-- `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md`
-- `src/pages/activities/ActivityForm.tsx`
-- `src/pages/activities/ActivityForm.test.tsx`
-- `src/pages/activities/ActivityForm.v2.test.ts`
-- `src/styles/field-activity-form-v2.css`
-- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
-
-No DB/migration/RPC/service/RBAC/RLS/route-guard/business-calculation/workflow/query-cache/deployment file is in scope.
+- Synchronized `ds2/work-create-task-form-v2` with exact Development HEAD `d55ebebd8592f96ba8e2c7abc3d0c8e1569e42b9` using a merge commit; no force push/rebase and no PR merge was performed.
+- Preserved all Development-side fixes in:
+  - `src/components/activities/ActivityOverviewPresentation.test.tsx`
+  - `src/components/hr/EmployeeOverviewPresentation.test.tsx`
+  - `src/components/patterns/Pagination.test.tsx`
+  - `src/pages/hr/attendance/AttendanceCheckin.tsx`
+- Preserved the existing six-file WORK001 delta unchanged relative to current Development:
+  - `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md`
+  - `src/pages/work/CreateTaskPage.tsx`
+  - `src/pages/work/CreateTaskPage.test.tsx`
+  - `src/pages/work/CreateTaskPage.v2.test.ts`
+  - `src/styles/design-system-v2-forms.css`
+  - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
+- The `.ds-field`-owned control-height correction remains intact: Desktop/default uses `--ds-control-height-standard`; Tablet/Mobile through `<=1024px` uses `--ds-control-height-touch`; textarea keeps the 80px floor.
+- No Work validation, assignment, acknowledgement, payload, navigation, query, service, permission, RBAC/RLS or workflow semantics changed.
+- No peer role-state file, Team Memory or Decision Log was mutated by this role.
 
 ## Preserve / verified boundaries
 
-- Visit-plan blocker remains the same early return and preserves plan-resolution/navigation behavior.
-- `GPSStatusIndicator`, GPS acquisition/verification, distance calculation, `gpsBlocking`, payload GPS values and GPS-required validation remain page-owned and unchanged.
-- `useActivityTypes`, `useActivity`, `useCustomer`, `useCustomers`, `useActivities`, `useTargetStatus`, sales-order lookup and their parameters remain unchanged.
-- Type/category selection, customer requirement, outcome choices, refusal/closed reason conditions, call-result requirement and native required/disabled semantics remain unchanged.
-- Target gamification and recent-history content/query behavior remain unchanged and in the same sequence.
-- Sales-order/collection linking sections and navigation remain unchanged.
-- Call-detail direction/result/attempt/phone/callback/recording state and `useSaveCallDetail` behavior remain unchanged.
-- Activity payload fields, create/update mutations, toast outcomes and navigation remain page-owned and unchanged.
-- Cancel remains `navigate(-1)` and submit remains disabled by `saving || gpsBlocking` with the exact existing save text.
+- `toIso` behavior is unchanged.
+- `useAssignmentCandidates('')`, self/first-candidate defaulting, owner/accountability meaning and assignee/current-ball meaning are unchanged.
+- `assigneeIsSelf` acknowledgement reset and checkbox disabled rule are unchanged.
+- `validate()` messages and `nextActionAt > dueAt` comparison are unchanged.
+- Priority, visibility and completion-mode values/options/callbacks are unchanged.
+- `useCreateTask`, trim/null conversion, payload keys, `acknowledgementRequired && !assigneeIsSelf`, `activate: true`, success/error toasts and post-create navigation are unchanged.
+- Existing `PageHeader`, responsibility summary cells and acknowledgement checkbox remain page/domain-owned.
+- No Work Hub/detail/management/Submit Request/Supervisor behavior or presentation is included.
 
 ## Device / state coverage
 
-- **Desktop (`>=1025px`)**: form remains bounded at 640px; safe date/start/end fields use the shared three-column grid; all existing conditional capability remains present.
-- **Tablet (`769–1024px`)**: shared grid caps the three-field timing group to two columns; GPS/link/call conditional surfaces remain full-width at section level; shared actions retain touch targets.
-- **Mobile (`<=768px`)**: shared grid collapses to one column; shared actions stretch without `stickyOnMobile`; BottomNav/FAB space is not newly occupied; form uses logical spacing and no local horizontal timing layout.
-- **RTL/accessibility**: Arabic-first ordering is unchanged; touched native controls now have `htmlFor`/`id` associations; required/disabled behavior stays native; shared Buttons retain canonical focus/touch behavior.
-- **States**: create/edit header text, customer loading fallback, outcome disabled-before-type, conditional customer/reason/call/link sections, GPS warning, save loading/disabled text and cancel/navigation behavior remain represented.
+- **Desktop (`>=1025px`)**: V2 Field-owned inputs/selects use the standard 42px semantic role; textareas keep the larger 80px floor; two-column task-entry density remains intact.
+- **Tablet (`769–1024px`)**: V2 Field-owned inputs/selects use the canonical 44px touch role while safe paired grids remain deliberate two-column composition.
+- **Mobile (`<=768px`)**: shared grids collapse to one column, actions remain non-sticky, and V2 Field-owned controls use the touch-height role.
+- **Blast-radius boundary**: generic `.form-*` consumers outside `.ds-field` remain unaffected by WORK001 sizing rules.
+- **RTL/accessibility**: Arabic ordering/wording, labels, Field hint/error relationships, `aria-describedby`, invalid state and manual `aria-required` semantics remain unchanged.
+- **States**: assignment-candidate loading disablement, validation errors, acknowledgement disabled/reset truth and create pending/disabled action state remain represented.
 
 ## Test / execution evidence
 
 Evidence: **`TESTS_AUTHORED_NOT_EXECUTED`**.
 
-Focused Vitest/Testing Library tests were authored/updated. The available sandbox has no executable repository checkout or `package.json`; a direct local clone attempt could not resolve GitHub networking, so `npm test`, `npm run build` and `npm run lint` were not executed. No PASS is claimed.
+Focused Vitest/Testing Library tests remain authored for WORK001, including the Field-scoped semantic control-height contract and preserved functional boundaries. The available sandbox has no executable repository checkout or `package.json`, so `npm test`, `npm run build` and `npm run lint` were not executed. No execution PASS is claimed.
 
-No GitHub Actions/hosted CI was triggered. No Vercel preview/deploy was used. No known TypeScript/build error was found during exact source/diff review; this is not an executed build/type PASS claim.
+No GitHub Actions/hosted CI was triggered. No Vercel preview/deploy was used. The previously known inherited TypeScript fixes are now present on the synchronized feature branch by construction from current Development; this is source-level baseline synchronization, not an executed build/type PASS claim.
 
-## Risks / review boundary
+## Peer-state comparison / current risk
 
-- Fresh exact-head Product Design Director and Design QA review is mandatory before integration.
-- Call-detail/link controls remain intentionally outside primitive convergence; their existing presentation was moved mechanically only where necessary to retire the inline style block.
-- Runtime/build evidence remains unavailable in this environment.
-- No sticky Mobile action behavior is introduced.
+- **Design QA:** latest exact-head state blocked `e71a1a9b...` solely because it lacked known Development TypeScript fixes. That blocker is source-resolved by synchronizing current Development; fresh exact-head QA is now mandatory.
+- **Product Design Director:** its prior selector-ownership blocker was source-fixed before this run by the `.ds-field` scoping correction, but the Director state is stale to an older head. Fresh same-head Product Design acceptance remains required.
+- **Development Integrator:** its `NO_MERGE_BLOCKED_P2_WORK001_STALE_TYPECHECK_BASELINE` posture remains procedurally correct until fresh Product Design + QA gates are issued on the synchronized final head.
+- **Team Memory / Workstream / Decision Log:** durable direction is unchanged. WORK001 remains the only active slice; no queue advancement or durable-rule mutation is appropriate.
+- Runtime/build evidence remains unavailable; broad Work CSS and other Work surfaces remain out of scope.
 
 ### Cross-role handoff
 - **To:** Product Design Director + Design QA for fresh exact-head review; Development Integrator only after both current gates are satisfied.
-- **What changed:** ActivityForm normal create/edit composition now uses the shared V2 form grammar, canonical responsive timing grid, touch-safe non-sticky shared actions and associated Arabic labels.
-- **Preserve:** visit-plan routing; GPS acquisition/verification/distance/blocking; target/history queries; customer/outcome/validation rules; sales/collection links; call-detail state/save behavior; payloads; mutations; query/cache/service/RBAC/RLS/workflow/business truth.
-- **Need from you:** independently review the final exact PR #43 HEAD after governance REVIEW-state write. Design QA should issue `SOURCE_REVIEW_PASS + AGENT-REVIEW: GREEN-DEV` only if that exact head is clean; Product Design Director should confirm the composition meets the bounded FIELD002 intent.
-- **Blocker level:** `NONE` from implementation; external review gates are pending.
-- **Baseline:** `0e90c94cd02c09f94cfb16d954bf6f9e7cc2556d`.
-- **Product/test HEAD:** `6c12dc5f32b40e92053825bced2d8d50fc924f9f`.
+- **What changed:** PR #44 was synchronized with Development HEAD `d55ebebd8592f96ba8e2c7abc3d0c8e1569e42b9`, bringing in the already-landed TypeScript/build fixes while preserving the six-file WORK001 delta unchanged relative to current Development.
+- **Preserve:** `.ds-field`-owned `--ds-control-height-standard` / `--ds-control-height-touch` sizing; textarea 80px floor; four-section Create Task narrative; responsive FormGrid composition; non-sticky actions; validation wording/date rule; assignment/defaulting; owner vs assignee meaning; acknowledgement eligibility/reset; priority/visibility/completion mode; `toIso`; create payload/`activate: true`; toasts/navigation; PageHeader; responsibility summary; acknowledgement checkbox; all backend/query/permission/RBAC/RLS/service/workflow truth.
+- **Need from you:** independently review the final exact PR #44 HEAD after this owned-state write. Design QA should issue `SOURCE_REVIEW_PASS + AGENT-REVIEW: GREEN-DEV` only if that same synchronized head is clean; Product Design Director should independently close the same head. Integrator remains `NO_MERGE` until both are fresh.
+- **Blocker level:** `NONE` from implementation after baseline synchronization; exact-head cross-role review gates are pending.
+- **Original slice baseline:** `d748637fe5fd2a5fd50eced16b15645c9f75185d`.
+- **Synchronized Development baseline:** `d55ebebd8592f96ba8e2c7abc3d0c8e1569e42b9`.
+- **Pre-state synchronization commit:** `97d89e052337ab0e279b6477ca69f9c117f88b15`.
 - **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`.

@@ -1,5 +1,15 @@
 /* Delight Design System V2 — form composition patterns. */
 
+/* Canonical native form-control sizing for controls adopted through V2 Field. */
+.ds-field .form-input,
+.ds-field .form-select {
+  min-height: var(--ds-control-height-standard);
+}
+
+.ds-field .form-textarea {
+  min-height: max(80px, var(--ds-control-height-standard));
+}
+
 .ds-form-section {
   display: grid;
   gap: var(--ds-form-section-gap);
@@ -48,6 +58,17 @@
 .ds-form-actions--start { justify-content: flex-start; }
 .ds-form-actions--end { justify-content: flex-end; }
 .ds-form-actions--between { justify-content: space-between; }
+
+@media (max-width: 1024px) {
+  .ds-field .form-input,
+  .ds-field .form-select {
+    min-height: var(--ds-control-height-touch);
+  }
+
+  .ds-field .form-textarea {
+    min-height: max(80px, var(--ds-control-height-touch));
+  }
+}
 
 @media (max-width: 1024px) and (min-width: 769px) {
   .ds-form-grid--cols-3,
