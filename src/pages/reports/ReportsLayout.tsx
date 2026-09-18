@@ -1,7 +1,8 @@
-import { NavLink, Outlet, useMatch } from 'react-router-dom'
+import { Outlet, useMatch } from 'react-router-dom'
 import { usePageTitle } from '@/components/layout/PageTitleContext'
 import { useEffect } from 'react'
 import { BarChart3, TrendingUp, Wallet, Users2, LayoutDashboard, Package, AlertTriangle, MapPin, Target, UserCheck, LineChart, ShieldCheck, RefreshCcw, Route } from 'lucide-react'
+import SubNav from '@/components/patterns/SubNav'
 import AnalyticsGate from '@/components/reports/AnalyticsGate'
 import { useAuthStore } from '@/stores/auth-store'
 
@@ -31,49 +32,17 @@ export default function ReportsLayout() {
   // تعمل دائماً بغض النظر عن حالة analytics — لا تمر بـ AnalyticsGate
   const isOperationalPage = !!useMatch('/reports/reengagement') || !!useMatch('/reports/visits')
 
+  const permittedTabs = TABS
+    .filter(tab => tab.permissions.some(permission => can(permission)))
+    .map(({ to, label, icon: Icon }) => ({
+      to,
+      label,
+      icon: <Icon size={14} />,
+    }))
+
   return (
     <div className="reports-shell" style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', gap: 0 }}>
-      {/* Sub-nav tabs */}
-      <div className="reports-tabs" style={{
-        background: 'var(--bg-surface)',
-        borderBottom: '1px solid var(--border-primary)',
-        padding: '0 var(--space-4)',
-        display: 'flex',
-        gap: '2px',
-        overflowX: 'auto',
-        scrollbarWidth: 'none',
-        flexShrink: 0,
-        position: 'sticky',
-        top: 0,
-        zIndex: 'var(--z-sticky)',
-      }}>
-        {TABS.filter(tab => tab.permissions.some(permission => can(permission))).map(t => {
-          const Icon = t.icon
-          return (
-            <NavLink
-              key={t.to}
-              to={t.to}
-              style={({ isActive }) => ({
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '12px 16px',
-                fontSize: 'var(--text-sm)',
-                fontWeight: 500,
-                color: isActive ? 'var(--color-primary)' : 'var(--text-secondary)',
-                borderBottom: `2px solid ${isActive ? 'var(--color-primary)' : 'transparent'}`,
-                textDecoration: 'none',
-                whiteSpace: 'nowrap',
-                transition: 'color 0.15s',
-                flexShrink: 0,
-              })}
-            >
-              <Icon size={14} />
-              {t.label}
-            </NavLink>
-          )
-        })}
-      </div>
+      <SubNav items={permittedTabs} ariaLabel="أقسام التقارير" />
 
       {/* Page content
           - الصفحات التشغيلية المستقلة: تعرض Outlet مباشرة
@@ -108,16 +77,6 @@ export default function ReportsLayout() {
         .reports-shell *::before,
         .reports-shell *::after {
           box-sizing: border-box;
-        }
-        .reports-tabs {
-          max-width: 100%;
-          -webkit-overflow-scrolling: touch;
-        }
-        .reports-tabs::-webkit-scrollbar {
-          display: none;
-        }
-        .reports-tabs a {
-          min-height: 44px;
         }
         .reports-content,
         .reports-content > *,
@@ -219,13 +178,6 @@ export default function ReportsLayout() {
           }
         }
         @media (max-width: 768px) {
-          .reports-tabs {
-            padding: 0 var(--space-2) !important;
-          }
-          .reports-tabs a {
-            padding: 10px 12px !important;
-            font-size: var(--text-xs) !important;
-          }
           .reports-content {
             padding: var(--space-3) !important;
             gap: var(--space-4) !important;
@@ -258,13 +210,6 @@ export default function ReportsLayout() {
           }
         }
         @media (max-width: 480px) {
-          .reports-tabs a {
-            padding: 9px 10px !important;
-          }
-          .reports-tabs svg {
-            width: 13px;
-            height: 13px;
-          }
           .reports-content {
             padding: var(--space-2) !important;
           }
