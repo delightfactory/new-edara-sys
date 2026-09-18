@@ -38,17 +38,17 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-WORK-002`.
+Product UI is integrated through `DS2-WORK-003`.
 
 Latest product integration:
-- PR: `#46 — DS2-WORK-002: converge Work Hub view-mode selector`
-- Exact reviewed PR HEAD: `e3d557d59a811f3c896ffe90922e9512bbb3cdee`
-- Squash merge commit: `add39ea8ee76b61d9a5a5938aa6cd03e2cc13456`
+- PR: `#47 — DS2-WORK-003: converge supervisor operational summary metrics`
+- Exact reviewed PR HEAD: `9cb08546e073e553a02fb019dfc6389b53339ad8`
+- Squash merge commit: `95a84a8109f45cf9ac32c92d5d950f64d38dbaa0`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact HEAD
 - Runtime/preview/release evidence: not claimed
 
-The development branch now includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, and Work Hub shared view-mode selector convergence.
+The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, and Supervisor Work shared KPI summary convergence.
 
 ## Completed slices
 
@@ -66,97 +66,44 @@ The development branch now includes semantic foundations, responsive shell/navig
 - `DS2-HR-001 — Attendance Check-in operational task controls` — `DONE` — PR #40 — merge `e9a37c6ade6661bdaf6260f9c93c72dabba60768` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
 - `DS2-HR-002 — HR admin lists/forms — Employees administration list` — `DONE` — PR #41 — merge `b1c9ae6dd78b57f9708e3e5d40fe0b2baac6adbc` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
 - `DS2-FIELD-001 — Activities/visit/call/target lists — Activities list` — `DONE` — PR #42 — merge `cac61006d5c6ac402a509c2f15fb09ce51bafd50` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
+- `DS2-FIELD-002 — Activity create/edit form composition foundation` — `DONE` — PR #43 — merge `2492fa475e7bc5beb9148124f31a4b4837057c19` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
+- `DS2-WORK-001 — Create Task form composition foundation` — `DONE` — PR #44 — merge `57747123643d0dd846cbda3ef340e9463a5f7647` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
+- `DS2-WORK-002 — Work Hub view-mode selector convergence` — `DONE` — PR #46 — merge `add39ea8ee76b61d9a5a5938aa6cd03e2cc13456` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 
-### DS2-FIELD-002 — Activity create/edit form composition foundation
+### DS2-WORK-003 — Supervisor operational summary metric convergence
 Status: `DONE`
-Merged PR: `#43`
-Reviewed HEAD: `a31addc60e5b0eaf8ee89a0fea11bded2a6e4c4a`
-Squash merge: `2492fa475e7bc5beb9148124f31a4b4837057c19`
-Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
-Runtime/preview/release evidence: not claimed
-
-System result:
-- live normal `ActivityForm` create/edit path now composes through shared `FormSection + FormGrid + FormActions + Button` instead of the page-local outer form/timing/action mini-system;
-- task order remains activity data -> outcome/link/call conditional content -> timing/notes; conditional business meaning was not reordered;
-- timing composition is one column on Mobile, capped at two on Tablet and three on Desktop inside the retained 640px form bound;
-- cancel/submit remain non-sticky and touch-safe, with exact callbacks, save labels/loading state, `saving` disabled truth and `gpsBlocking` submit suppression page-owned;
-- composition-touched native controls have explicit Arabic label associations while required/disabled semantics remain unchanged;
-- visit-plan routing, GPS acquisition/verification/distance, target/history queries, order/collection linking, call-detail behavior, validation, payload construction, mutations, navigation and all backend/business/workflow truth remain page/domain-owned.
-
-### DS2-WORK-001 — Create Task form composition foundation
-Status: `DONE`
-Merged PR: `#44`
-Reviewed HEAD: `6eb3be28216ec1370ccd5fceced7ea8c5c224cd0`
-Squash merge: `57747123643d0dd846cbda3ef340e9463a5f7647`
+Merged PR: `#47`
+Reviewed HEAD: `9cb08546e073e553a02fb019dfc6389b53339ad8`
+Squash merge: `95a84a8109f45cf9ac32c92d5d950f64d38dbaa0`
 Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER`
 Runtime/preview/release evidence: not claimed
 
 System result:
-- `/work/new` now uses shared `FormSection + FormGrid + Field + FormActions + Button` while retaining the existing four-section Arabic operational order;
-- safe paired fields remain one column on Mobile and two on Tablet/Desktop; narrative/full-width controls remain unsqueezed;
-- V2 native input/select sizing is owned by the explicit `.ds-field` boundary, with `--ds-control-height-touch` through Tablet/Mobile and `--ds-control-height-standard` on Desktop; textarea preserves its larger 80px floor;
-- cancel/create actions remain non-sticky, touch-safe and preserve existing secondary/primary hierarchy plus pending/loading truth;
-- Arabic label/hint/error relationships now use the shared `Field` accessibility contract;
-- `toIso`, assignment/defaulting, owner-vs-assignee meaning, acknowledgement eligibility/reset, validation wording/date rule, priority/visibility/completion mode, `useCreateTask`, payload/`activate: true`, toasts/navigation, queries/services/permissions/RBAC/RLS/workflow/backend truth remain page/domain-owned and unchanged.
-
-### DS2-WORK-002 — Work Hub view-mode selector convergence
-Status: `DONE`
-Merged PR: `#46`
-Reviewed HEAD: `e3d557d59a811f3c896ffe90922e9512bbb3cdee`
-Squash merge: `add39ea8ee76b61d9a5a5938aa6cd03e2cc13456`
-Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
-Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER`
-Runtime/preview/release evidence: not claimed
-
-System result:
-- `/work` now uses shared `SegmentedControl` for the existing `actions | work | attention` view modes instead of the page-local `.work-segmented` mini-system;
-- exact Arabic labels/order/default and page-owned `mode` / `setMode` behavior remain unchanged;
-- Work query hooks, operational flags, filtering/search calculations, summary-card mode callbacks, permissions, request routing, Mobile create behavior and workflow/state-machine truth remain page/domain-owned;
-- selector-specific Work CSS was retired without broad Work styling cleanup;
-- shared native button, `aria-pressed`, focus-visible, selected-surface, canonical Mobile/Tablet touch geometry and Mobile horizontal-containment contracts are reused;
-- focused behavior/source tests protect the exact selector contract and retained functional ownership; evidence remains non-executed.
+- `/work/team` now uses shared `MetricGrid columns={4}` + `StatCard` for the existing four operational supervisor metrics;
+- exact rendered metric order/calculations remain `active`, `overdue`, `blocked`, `atRisk`, with the same Arabic labels and icons;
+- presentation tones are `neutral / danger / danger / warning`, while text labels/values preserve non-color-only meaning;
+- shared responsive KPI grammar provides 4 Desktop columns, 2 Tablet columns and 1 Mobile column, with a named non-interactive summary group;
+- `useSupervisorOverview`, assignee/attention filters, loading/error/empty/list/navigation behavior and all Work service/query/permission/ownership/workflow/state-machine truth remain page/domain-owned;
+- global `.work-summary-*` CSS remains because other legacy Work consumers still exist;
+- focused tests are authored but were not executed.
 
 ## Current single READY slice
 
-### DS2-WORK-003 — Supervisor operational summary metric convergence
+### DS2-REPORT-001 — Report shell/navigation/filter grammar
 Status: `READY`
-Owner role: UI Production Engineer for one bounded implementation PR
-Dependency baseline: `DS2-WORK-002` integrated at `add39ea8ee76b61d9a5a5938aa6cd03e2cc13456`; Product Design boundary selected from Development `530ad16afb589d318c3c31f6ae67d4f6d109a7e1`
-Target surface: `/work/team` — `src/pages/work/SupervisorWorkPage.tsx`
+Owner role: Product Design Director first, then UI Production Engineer after one bounded concern is recorded
+Dependency baseline: `DS2-WORK-003` integrated at `95a84a8109f45cf9ac32c92d5d950f64d38dbaa0`
 
-System-pattern intent:
-- replace the Supervisor page-local four-card operational summary composition with the established shared `MetricGrid + StatCard` grammar;
-- prove the same semantic KPI hierarchy and responsive metric layout on a Work management surface without entering Work lifecycle/state-machine behavior;
-- keep metric values and business meaning caller-owned; the Design System owns hierarchy, semantic emphasis and responsive layout only.
+Intent:
+- advance the North-Star roadmap from representative Work convergence into Reports/Analytics rather than continuing ad-hoc Work page polishing;
+- Product Design must inspect representative report entry/navigation/filter surfaces on the exact latest Development baseline and select one smallest dependency-safe presentation-only concern for implementation;
+- prefer existing V2 page shell, navigation, filter, metric, collection, status, action and state grammar before inventing report-local patterns;
+- preserve every report query, aggregation, calculation, permission, export/print, route and business semantic exactly;
+- keep Mobile operational readability, deliberate Tablet composition, dense Desktop management/report review, RTL/Arabic and long/numeric content first-class;
+- no backend/business/query-cache/permission/validation/workflow change, preview/deploy, hosted CI or `main` work.
 
-In scope:
-- the four currently rendered summary metrics only: `active`, `overdue`, `blocked`, `atRisk`;
-- preserve the existing calculations from `overview.data`, exact Arabic labels and existing icons;
-- render through `MetricGrid columns={4}` and `StatCard` rather than `.work-summary-grid` / `.work-summary-card` markup on this page;
-- semantic tone mapping is presentation-only and fixed for this proof: active=`neutral`, overdue=`danger`, blocked=`danger`, atRisk=`warning`; labels/icons remain visible so meaning is never color-only;
-- retain one accessible summary grouping label for the four metrics;
-- add focused source/component coverage proving shared-component adoption, exact four metrics/labels and no mutation of supervisor query/filter behavior.
-
-Device/state/accessibility acceptance:
-- **Mobile (`<=768px`)**: shared `MetricGrid` canonical one-column composition; no clipping, horizontal page overflow or truncated Arabic metric labels; values remain legible with tabular-number treatment from `StatCard`;
-- **Tablet (`769–1024px`)**: canonical two-column metric composition with stable spacing and no compressed Desktop-only row;
-- **Desktop (`>=1025px`)**: four dense equal-width metrics in one row, visually subordinate to the page header and ahead of filters/list content;
-- **RTL/Arabic**: no physical left/right positioning assumptions; Arabic labels remain exact and wrapping-safe;
-- **Accessibility**: summary remains text-readable without color, icons stay decorative through the shared component, and no interactive semantics are added to non-interactive metrics;
-- loading/error/empty states remain exactly as-is in this slice.
-
-Explicit exclusions:
-- no change to `useSupervisorOverview`, `assignee`, `attentionOnly`, `people`, metric calculations, status/flag derivation, routing or navigation;
-- no change to page header/back action, filter form, native select/checkbox, loading/error/empty states, work-item cards, badges, next-action panel or due/follow-up text;
-- no Work Hub summary-card change and no reopening WORK001/WORK002;
-- no Work Detail, `WorkDetailAdministration`, `WorkDetailExtensions`, `WorkDueGovernance`, Submit Request or management/configuration migration;
-- no shared `MetricGrid`, `StatCard`, token or global responsive-contract redesign unless a verified defect makes the bounded slice impossible; if so mark `BLOCKED` rather than widening scope;
-- do not remove `.work-summary-*` CSS globally because Work Hub still owns that legacy usage;
-- no backend/business/query-cache/permission/validation/workflow/state-machine change;
-- no preview, deployment, hosted CI or `main` work.
-
-Remaining Work detail/feedback/management convergence stays backlog debt and must be separately bounded after WORK003. Remaining Field create/detail convergence stays backlog debt and must be separately bounded later. Reports/Analytics, Settings/Admin and Global convergence remain preserved below.
+If a recurring report gap proves a missing shared pattern, Product Design may activate the relevant shared component-depth item only as the bounded slice requires; do not widen REPORT001 into a broad analytics redesign.
 
 ## Product migration roadmap
 
@@ -212,11 +159,11 @@ Open only when a real migrated screen proves the recurring gap:
 ### H. Work Management
 - `DS2-WORK-001` Create Task form composition foundation — `DONE`
 - `DS2-WORK-002` Work Hub view-mode selector convergence — `DONE` / PR #46 / merge `add39ea8ee76b61d9a5a5938aa6cd03e2cc13456`
-- `DS2-WORK-003` Supervisor operational summary metric convergence — `READY` / bounded to `/work/team` summary metrics only
+- `DS2-WORK-003` Supervisor operational summary metric convergence — `DONE` / PR #47 / merge `95a84a8109f45cf9ac32c92d5d950f64d38dbaa0`
 - further Work detail/feedback/management convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
 
 ### I. Reports / Analytics
-- `DS2-REPORT-001` Report shell/navigation/filter grammar — `BACKLOG`
+- `DS2-REPORT-001` Report shell/navigation/filter grammar — `READY` / Product Design must bound one representative concern before implementation
 - `DS2-REPORT-002` Metrics/charts/tables and responsive report composition — `BACKLOG`
 
 ### J. Settings / Administration
