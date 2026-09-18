@@ -27,7 +27,7 @@ describe('ReportFilterBar', () => {
     ])
   })
 
-  it('preserves the existing seven-day date math and parent callback ownership', () => {
+  it('preserves all existing preset date outputs and parent callback ownership', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date(2026, 8, 18, 12, 0, 0))
     const onChange = vi.fn()
@@ -39,10 +39,18 @@ describe('ReportFilterBar', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: 'آخر 7 أيام' }))
+    const expectedRanges = [
+      ['آخر 7 أيام', { from: '2026-09-12', to: '2026-09-18' }],
+      ['آخر 30 يوماً', { from: '2026-08-20', to: '2026-09-18' }],
+      ['آخر 90 يوماً', { from: '2026-06-21', to: '2026-09-18' }],
+      ['هذا الشهر', { from: '2026-09-01', to: '2026-09-30' }],
+    ] as const
 
-    expect(onChange).toHaveBeenCalledTimes(1)
-    expect(onChange).toHaveBeenCalledWith({ from: '2026-09-12', to: '2026-09-18' })
+    expectedRanges.forEach(([label, range], index) => {
+      fireEvent.click(screen.getByRole('button', { name: label }))
+      expect(onChange).toHaveBeenNthCalledWith(index + 1, range)
+    })
+    expect(onChange).toHaveBeenCalledTimes(expectedRanges.length)
   })
 
   it('marks a matching preset as pressed and leaves custom ranges unselected', () => {
