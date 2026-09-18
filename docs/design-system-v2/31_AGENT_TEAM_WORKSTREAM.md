@@ -38,17 +38,17 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-WORK-001`.
+Product UI is integrated through `DS2-WORK-002`.
 
 Latest product integration:
-- PR: `#44 — DS2-WORK-001: Create Task form V2 composition foundation`
-- Exact reviewed PR HEAD: `6eb3be28216ec1370ccd5fceced7ea8c5c224cd0`
-- Squash merge commit: `57747123643d0dd846cbda3ef340e9463a5f7647`
+- PR: `#46 — DS2-WORK-002: converge Work Hub view-mode selector`
+- Exact reviewed PR HEAD: `e3d557d59a811f3c896ffe90922e9512bbb3cdee`
+- Squash merge commit: `add39ea8ee76b61d9a5a5938aa6cd03e2cc13456`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact HEAD
 - Runtime/preview/release evidence: not claimed
 
-The development branch now includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, and the first Work Management form proof using the shared V2 form grammar with Field-scoped semantic native-control sizing.
+The development branch now includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, and Work Hub shared view-mode selector convergence.
 
 ## Completed slices
 
@@ -100,59 +100,45 @@ System result:
 - Arabic label/hint/error relationships now use the shared `Field` accessibility contract;
 - `toIso`, assignment/defaulting, owner-vs-assignee meaning, acknowledgement eligibility/reset, validation wording/date rule, priority/visibility/completion mode, `useCreateTask`, payload/`activate: true`, toasts/navigation, queries/services/permissions/RBAC/RLS/workflow/backend truth remain page/domain-owned and unchanged.
 
-## Current single REVIEW slice
-
 ### DS2-WORK-002 — Work Hub view-mode selector convergence
-Status: `REVIEW`
-Owner role: UI Production Engineer
-Draft PR: `#46`
-Evidence: `TESTS_AUTHORED_NOT_EXECUTED`
-Dependency baseline: `DS2-WORK-001` integrated at `57747123643d0dd846cbda3ef340e9463a5f7647`
-Representative live surface: `/work` / `src/pages/work/WorkHubPage.tsx`
+Status: `DONE`
+Merged PR: `#46`
+Reviewed HEAD: `e3d557d59a811f3c896ffe90922e9512bbb3cdee`
+Squash merge: `add39ea8ee76b61d9a5a5938aa6cd03e2cc13456`
+Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
+Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER`
+Runtime/preview/release evidence: not claimed
 
-Why this is the next smallest dependency-safe concern:
-- Work Hub currently recreates a local `.work-segmented` single-choice mode selector for `actions | work | attention` even though shared `SegmentedControl` exists specifically for compact filter/view-mode selection;
-- the local buttons use a 36px minimum height, below the canonical touch-first geometry expected on Mobile/Tablet, while shared `SegmentedControl` already owns `--ds-control-height-touch`, focus-visible treatment, `aria-pressed` selected state and Mobile horizontal containment;
-- the change can stay presentation-only because `mode`, `setMode`, search/filter calculations, query ownership and Work state-machine truth remain entirely in `WorkHubPage`/domain code;
-- Work Detail, Supervisor and management surfaces carry materially higher state-machine sensitivity and are intentionally not combined with this proof.
+System result:
+- `/work` now uses shared `SegmentedControl` for the existing `actions | work | attention` view modes instead of the page-local `.work-segmented` mini-system;
+- exact Arabic labels/order/default and page-owned `mode` / `setMode` behavior remain unchanged;
+- Work query hooks, operational flags, filtering/search calculations, summary-card mode callbacks, permissions, request routing, Mobile create behavior and workflow/state-machine truth remain page/domain-owned;
+- selector-specific Work CSS was retired without broad Work styling cleanup;
+- shared native button, `aria-pressed`, focus-visible, selected-surface, canonical Mobile/Tablet touch geometry and Mobile horizontal-containment contracts are reused;
+- focused behavior/source tests protect the exact selector contract and retained functional ownership; evidence remains non-executed.
 
-In scope:
-- replace only the Work Hub local `work-segmented` renderer with shared `SegmentedControl`;
-- preserve exactly the same three values, Arabic labels, order, default `actions` mode and `setMode` behavior;
-- preserve the existing `work-toolbar` and search placement/behavior around the shared selector; no search semantics or FilterBar redesign in this slice;
-- remove only selector CSS that becomes genuinely dead after adoption; do not perform broad `work.css` cleanup;
-- author focused tests/source contracts for exact mode labels/order, selected `aria-pressed` state, mode changes, and continued presentation-only ownership.
+## Current single READY slice
 
-Explicit exclusions:
-- Work Hub summary cards/metrics and their click behavior;
-- search input/SearchField/FilterBar convergence;
-- action-inbox cards, `WorkItemCard`, loading skeletons, empty/error/offline state convergence;
-- Mobile create action placement;
-- Work Detail, Supervisor/Team, management/configuration, Submit Request and all other Work surfaces;
-- any change to `useMyActionInbox`, `useVisibleWorkItems`, operational flags, `filteredItems`, `filteredActions`, permissions, routes, query/cache/service contracts, ownership/responsibility, validation, workflow or state-machine semantics.
+### DS2-WORK-003 — Work detail/management state-surface convergence
+Status: `READY`
+Owner role: Product Design Director for boundary selection before implementation
+Dependency baseline: `DS2-WORK-002` integrated at `add39ea8ee76b61d9a5a5938aa6cd03e2cc13456`
 
-Device acceptance:
-- **Mobile (`<=768px`)**: each selector item retains at least the shared 44px touch-height contract; the control stays within the viewport and may horizontally contain long labels without causing page-level horizontal overflow; Arabic labels remain readable and the selector does not compete with the page's primary create action.
-- **Tablet (`769–1024px`)**: touch-first 44px geometry remains; all three modes keep clear selected/unselected hierarchy and coexist with the search control without reverting to compressed desktop-only buttons.
-- **Desktop (`>=1025px`)**: the selector stays visually subordinate to page actions/content, preserves efficient toolbar density and does not alter Work Hub information hierarchy or search placement.
+Intent:
+- continue Work Management convergence before Reports/Analytics while preserving the North-Star roadmap;
+- inspect representative Work detail, Supervisor/Team, management/configuration and state surfaces on the exact latest Development baseline;
+- bound exactly one smallest dependency-safe presentation-only concern before UI implementation begins;
+- prefer existing shared V2 shell, action, status, collection, form, feedback and state grammar over Work-local invention;
+- preserve all Work query/service/permission/ownership/responsibility/validation/workflow/state-machine truth exactly.
 
-Accessibility / state acceptance:
-- group retains accessible name `نوع العرض`;
-- each option remains a native `button type="button"` with `aria-pressed` driven by the current `mode`;
-- keyboard activation and visible `:focus-visible` treatment come from the shared control; selected state must remain perceivable beyond color alone through the shared surface/elevation treatment;
-- all three selected states (`actions`, `work`, `attention`) must remain representable with no change to the data/filtering truth they project;
-- no loading, empty, error or permission behavior is changed by this slice.
+Explicit guardrails:
+- this READY state authorizes Product Design boundary selection, not a broad multi-surface implementation;
+- no backend/business/query-cache/permission/validation/workflow change;
+- no reopening WORK001/WORK002 for ad-hoc polish;
+- no preview, deployment, hosted CI or `main` work;
+- if the smallest safe concern cannot be isolated from functional semantics, mark the slice `BLOCKED` rather than widening scope.
 
-System-pattern intent:
-- retire a proven page-local duplicate in favor of the existing V2 navigation/filter primitive rather than beautifying Work Hub locally;
-- establish `SegmentedControl` as the canonical presentation for Work view-mode selection while keeping Work mode/filter truth page-owned;
-- leave adjacent Work Hub search, metrics, queues and state surfaces as explicit later convergence debt so WORK002 remains small, reversible and source-reviewable.
-
-If preserving the exact existing Work mode semantics requires a functional/query/workflow change, mark the slice `BLOCKED` rather than expanding scope.
-
-Further Work convergence after WORK002 remains backlog debt. Reports/Analytics, Settings/Admin and Global convergence remain preserved in the roadmap below.
-
-Remaining Field create/detail surfaces remain roadmap debt for a later explicitly bounded Field follow-up; FIELD002 completion does not declare the entire Field module converged.
+Remaining Field create/detail convergence stays backlog debt and must be separately bounded later. Reports/Analytics, Settings/Admin and Global convergence remain preserved below.
 
 ## Product migration roadmap
 
@@ -207,8 +193,9 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### H. Work Management
 - `DS2-WORK-001` Create Task form composition foundation — `DONE`
-- `DS2-WORK-002` Work Hub view-mode selector convergence — `REVIEW` / Draft PR #46
-- further Work Hub/detail/management/state convergence — `BACKLOG` / must be explicitly bounded before activation
+- `DS2-WORK-002` Work Hub view-mode selector convergence — `DONE` / PR #46 / merge `add39ea8ee76b61d9a5a5938aa6cd03e2cc13456`
+- `DS2-WORK-003` Work detail/management state-surface convergence — `READY` / Product Design must bound one smallest concern before implementation
+- further Work convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` Report shell/navigation/filter grammar — `BACKLOG`
