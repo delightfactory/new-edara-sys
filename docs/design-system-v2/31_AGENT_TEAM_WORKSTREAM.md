@@ -38,17 +38,17 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-001`.
+Product UI is integrated through `DS2-REPORT-002`.
 
 Latest product integration:
-- PR: `#48 — DS2-REPORT-001: converge report route sub-navigation`
-- Exact reviewed PR HEAD: `02f5d4f381d3999a9a3cda7ce8fbe0fc394926ba`
-- Squash merge commit: `5d2c57d9a502a4bbb2d355d94634bcf8b53075d2`
+- PR: `#49 — DS2-REPORT-002: converge report date preset selector`
+- Exact reviewed PR HEAD: `3e0f11d52de77f07953dd2a226c82ff19ec2f75f`
+- Squash merge commit: `cc91792263d9fc606b9c2f28a531daa826997c75`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact HEAD
 - Runtime/preview/release evidence: not claimed
 
-The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, Supervisor Work shared KPI summary convergence, and Reports shared route-level sub-navigation convergence.
+The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, Supervisor Work shared KPI summary convergence, Reports shared route-level sub-navigation convergence, and Reports shared date-preset selector convergence with hardened shared `SegmentedControl` long-content geometry.
 
 ## Completed slices
 
@@ -81,58 +81,54 @@ Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER`
 Runtime/preview/release evidence: not claimed
 
 System result:
-- the common `ReportsLayout` route navigation now uses shared V2 `SubNav` instead of the report-local `reports-tabs` / inline `NavLink` mini-system;
-- all 14 report destinations, exact order, Arabic labels/icons and permission arrays remain unchanged;
-- caller-owned `tab.permissions.some(permission => can(permission))` eligibility remains in `ReportsLayout`;
-- `/reports/visits` and `/reports/reengagement` remain outside `AnalyticsGate`; all other report outlets remain gated;
+- the common `ReportsLayout` route navigation uses shared V2 `SubNav` instead of the report-local route-navigation mini-system;
+- all 14 report destinations, order, Arabic labels/icons and permission arrays remain unchanged;
+- permission eligibility and `AnalyticsGate` ownership remain caller/domain-owned;
 - shared `SubNav` owns route-link semantics, active/focus treatment, horizontal containment, RTL-safe layout and touch geometry;
-- child report filters, queries, calculations, export/print, routing and business semantics remain untouched;
-- focused tests are authored but were not executed.
+- child report filters, queries, calculations, export/print, routing and business semantics remain untouched.
+
+### DS2-REPORT-002 — Report date-preset selector convergence
+Status: `DONE`
+Merged PR: `#49`
+Reviewed HEAD: `3e0f11d52de77f07953dd2a226c82ff19ec2f75f`
+Squash merge: `cc91792263d9fc606b9c2f28a531daa826997c75`
+Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
+Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER`
+Runtime/preview/release evidence: not claimed
+
+System result:
+- the four report date presets now use shared V2 `SegmentedControl` inside domain-local `ReportFilterBar`;
+- exact preset labels/order/range outputs, external `DateRange value/onChange`, both custom date inputs and all date normalization/current-month semantics remain unchanged;
+- all report query/cache/service/calculation/chart/table/metric/export/print/permission/routing/`AnalyticsGate` truth remains domain-owned and unchanged;
+- shared default/non-block segmented items now retain intrinsic width through `flex: 0 0 auto`, while `--block` preserves equal-width `flex: 1 1 0` and Mobile containment remains `overflow-x: auto` in the shared layer;
+- focused behavior and CSS-contract tests are authored but were not executed.
 
 ## Current single READY slice
 
-### DS2-REPORT-002 — Report date-preset selector convergence
+### Report custom-date/filter-composite convergence beyond the preset selector
 Status: `READY`
-Owner role: UI Production Engineer next
-Dependency baseline: `DS2-REPORT-001` integrated at `5d2c57d9a502a4bbb2d355d94634bcf8b53075d2`
-Primary implementation target: `src/components/reports/ReportFilterBar.tsx`
-Shared pattern target: `src/components/patterns/SegmentedControl.tsx`
+Owner role: Product Design Director first; UI Production Engineer only after the boundary is recorded
+Dependency baseline: `DS2-REPORT-002` integrated at `cc91792263d9fc606b9c2f28a531daa826997c75`
+Primary inspection target: `src/components/reports/ReportFilterBar.tsx` plus representative report consumers
 
 System intent:
-- converge only the four report date-preset buttons inside the domain-local `ReportFilterBar` onto shared V2 `SegmentedControl`;
-- retire the report-local preset-button mini-system for selection hierarchy, focus, selected state and touch geometry while keeping the whole `ReportFilterBar` as a Reports-domain composite;
-- use the existing shared single-choice filter/view-mode grammar rather than creating a Reports-specific segmented variant;
-- close the known preset touch-target debt without widening into custom-date, query, chart, metric or table redesign.
+- inspect the remaining custom-date and recurring report-filter presentation on the exact latest Development baseline;
+- bound exactly one smallest dependency-safe presentation-only concern that advances shared V2 filter/date-control grammar without moving report semantics into a visual primitive;
+- prefer an existing shared V2 field/filter/control contract, or strengthen a proven shared contract only when the real consumer demonstrates the need;
+- keep Mobile operational readability and touch safety, Tablet deliberate composition, Desktop dense report review, RTL/Arabic and long/numeric content first-class.
 
-In scope:
-- replace only the `report-filter-presets` button group with shared `SegmentedControl`;
-- derive the selected preset from the current `{ from, to }` range by comparing it with the existing preset range calculations; a custom range that matches no preset may legitimately render with no preset selected;
-- on preset selection, continue emitting the existing normalized `DateRange` through the existing `onChange` contract;
-- preserve the existing four presets exactly, in the same order and Arabic copy: `آخر 7 أيام`, `آخر 30 يوماً`, `آخر 90 يوماً`, `هذا الشهر`;
-- preserve the existing `applyPreset`, `normalizeDateRange` and local-date semantics unless a mechanical refactor is strictly necessary to wire the shared control without changing output;
-- add/update focused source-level tests for preset order/copy, emitted ranges, selected-state semantics and custom-range no-selection behavior.
-
-Explicit exclusions:
-- no redesign or shared migration of the two custom `<input type="date">` controls in this slice;
-- no change to `ReportFilterBar`'s external `value/onChange` contract, date normalization, month-boundary meaning, default ranges or report-page ownership of state;
-- no change to `OverviewPage`, `SalesPage` or other report hook inputs beyond any strictly mechanical consumer/test adjustment required by unchanged `ReportFilterBar` API;
-- no query/cache/service/calculation/chart/table/metric/export/print/permission/routing/`AnalyticsGate` change;
-- no REPORT001 `SubNav` change, report-page redesign, backend/business change, preview/deploy, hosted CI or `main` work;
-- no broad cleanup of unrelated Reports inline styles or dead code.
-
-Device/state/accessibility acceptance:
-- **Desktop (`>=1025px`)**: the four presets remain a compact, legible single-choice report filter with no unnecessary wrapping or hierarchy regression beside the existing custom-date controls;
-- **Tablet (`769–1024px`)**: the selector remains touch-first with shared 44px practical target geometry and preserves the surrounding filter bar's deliberate wrapping/containment;
-- **Mobile (`<=768px`)**: shared `SegmentedControl` containment/overflow keeps all four Arabic preset labels reachable without viewport overflow or compressed sub-touch targets; no hover dependency;
-- **RTL/Arabic**: preserve exact Arabic labels/order and logical layout; labels stay readable and are not clipped into ambiguous abbreviations;
-- **Accessibility**: provide a concise Arabic group name via `ariaLabel`, preserve native button keyboard behavior, shared visible `:focus-visible`, and `aria-pressed` selected semantics; selected meaning must not depend on color alone;
-- **Custom range state**: if neither preset range equals the caller value, no preset is falsely marked selected; the two existing date inputs remain the source of custom-range editing.
+Preserve exactly:
+- `ReportFilterBar` external `value: DateRange` / `onChange(DateRange)` contract;
+- current date normalization/local-date/current-month/range semantics and the four preset meanings already integrated in REPORT002;
+- report query parameters, hook/cache/service contracts, calculations, metrics/charts/tables, permissions, routing, `AnalyticsGate`, export/print and business truth;
+- REPORT001 `SubNav` and REPORT002 shared `SegmentedControl` contracts;
+- Settings/Admin, Global convergence, remaining Work and Field debt in the roadmap.
 
 Boundary / BLOCK rule:
-- `SegmentedControl` already owns the needed presentation semantics (`role="group"`, `aria-pressed`, focus-visible, 44px minimum height and mobile horizontal containment), so this slice must consume that contract rather than fork it locally;
-- the Reports domain remains responsible for calculating preset date ranges and for the `DateRange` value emitted to analytics consumers;
-- if parity with the current four preset meanings requires a functional/query/business semantic change, mark `BLOCKED` instead of widening the slice;
-- exactly one implementation PR may carry REPORT002.
+- Product Design Director must inspect the exact latest Development source and record the smallest safe concern before implementation begins;
+- if safe convergence requires changing date/query/business semantics, mark `BLOCKED` instead of widening scope;
+- do not broaden this slice into REPORT003 metrics/charts/tables, a whole Reports redesign, generic FilterBar decomposition, backend work, preview/deploy, hosted CI or `main` work;
+- exactly one implementation PR may carry the concern after Product Design bounds it.
 
 ## Product migration roadmap
 
@@ -193,8 +189,8 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` Report route sub-navigation convergence — `DONE` / PR #48 / merge `5d2c57d9a502a4bbb2d355d94634bcf8b53075d2`
-- `DS2-REPORT-002` Report date-preset selector convergence — `READY` / shared `SegmentedControl` adoption inside `ReportFilterBar` only
-- custom-date/filter-composite convergence beyond the preset selector — `BACKLOG` / must be independently bounded from report business/query semantics
+- `DS2-REPORT-002` Report date-preset selector convergence — `DONE` / PR #49 / merge `cc91792263d9fc606b9c2f28a531daa826997c75`
+- custom-date/filter-composite convergence beyond the preset selector — `READY` / Product Design must independently bound one presentation-only concern before implementation
 - `DS2-REPORT-003` Metrics/charts/tables and responsive report composition — `BACKLOG`
 
 ### J. Settings / Administration
