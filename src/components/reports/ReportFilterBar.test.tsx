@@ -79,4 +79,27 @@ describe('ReportFilterBar', () => {
       expect(button.getAttribute('aria-pressed')).toBe('false')
     })
   })
+
+  it('keeps both custom dates independently named and preserves normalized parent callbacks', () => {
+    const onChange = vi.fn()
+
+    render(
+      <ReportFilterBar
+        value={{ from: '2026-09-10', to: '2026-09-18' }}
+        onChange={onChange}
+      />,
+    )
+
+    const fromInput = screen.getByLabelText('من تاريخ') as HTMLInputElement
+    const toInput = screen.getByLabelText('إلى تاريخ') as HTMLInputElement
+
+    expect(fromInput.type).toBe('date')
+    expect(toInput.type).toBe('date')
+
+    fireEvent.change(fromInput, { target: { value: '2026-09-12' } })
+    expect(onChange).toHaveBeenNthCalledWith(1, { from: '2026-09-12', to: '2026-09-18' })
+
+    fireEvent.change(toInput, { target: { value: '2026-09-17' } })
+    expect(onChange).toHaveBeenNthCalledWith(2, { from: '2026-09-10', to: '2026-09-17' })
+  })
 })
