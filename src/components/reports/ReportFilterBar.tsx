@@ -1,5 +1,5 @@
-import { Calendar, ChevronDown } from 'lucide-react'
-import { useState } from 'react'
+import { Calendar } from 'lucide-react'
+import { SegmentedControl } from '@/components/patterns/SegmentedControl'
 import { normalizeDateRange, toLocalISODate } from '@/lib/utils/date'
 
 export interface DateRange {
@@ -32,7 +32,13 @@ function applyPreset(days: number, mode?: 'current-month') {
 }
 
 export default function ReportFilterBar({ value, onChange }: Props) {
-  const [open, setOpen] = useState(false)
+  const presets = PRESETS.map(preset => ({
+    ...preset,
+    range: applyPreset(preset.days, preset.mode),
+  }))
+  const activePreset = presets.find(preset => (
+    preset.range.from === value.from && preset.range.to === value.to
+  ))?.label ?? ''
 
   return (
     <div className="report-filter-bar" style={{
@@ -43,33 +49,15 @@ export default function ReportFilterBar({ value, onChange }: Props) {
       minWidth: 0,
       maxWidth: '100%',
     }}>
-      {/* Preset buttons */}
-      <div className="report-filter-presets" style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', minWidth: 0 }}>
-        {PRESETS.map(p => {
-          const range = applyPreset(p.days, p.mode)
-          const isActive = range.from === value.from && range.to === value.to
-          return (
-            <button
-              key={p.label}
-              onClick={() => { onChange(range); setOpen(false) }}
-              style={{
-                padding: '5px 12px',
-                borderRadius: 'var(--radius-full)',
-                fontSize: 'var(--text-xs)',
-                fontWeight: isActive ? 700 : 500,
-                border: `1px solid ${isActive ? 'var(--color-primary)' : 'var(--border-primary)'}`,
-                background: isActive ? 'var(--color-primary-light)' : 'var(--bg-surface)',
-                color: isActive ? 'var(--color-primary)' : 'var(--text-secondary)',
-                cursor: 'pointer',
-                transition: 'all 0.15s',
-                fontFamily: 'var(--font-sans)',
-              }}
-            >
-              {p.label}
-            </button>
-          )
-        })}
-      </div>
+      <SegmentedControl
+        ariaLabel="اختصارات الفترة"
+        value={activePreset}
+        options={presets.map(preset => ({ value: preset.label, label: preset.label }))}
+        onValueChange={label => {
+          const preset = presets.find(item => item.label === label)
+          if (preset) onChange(preset.range)
+        }}
+      />
 
       {/* Custom date inputs */}
       <div className="report-filter-dates" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', minWidth: 0 }}>
