@@ -4,80 +4,92 @@
 
 - Run date: `2026-09-18`
 - Development branch: `design-system-v2-development`
-- Exact Development baseline / branch creation HEAD: `41cdbf9dba7fa5301777a2f461ce3de40bae168a`
+- Exact Development branch-creation baseline: `41cdbf9dba7fa5301777a2f461ce3de40bae168a`
+- Current Development HEAD observed during this run: `6f897f009959556f376b24610286125ab4baeba7`
 - Feature branch: `ds2/report-002-date-presets`
 - Draft PR: `#49 — DS2-REPORT-002: converge report date preset selector`
-- Product/test HEAD before this owned-state write: `f6187f83a89ab5556fe542517602594f0d8b1270`
+- Reviewer-blocked exact PR HEAD: `c71a486562bb6a9c3066cc4e074a23adacd51efe`
+- Shared-geometry repair product/test HEAD: `78deb60bec73b6d6a7d4382fe6494d4cb49e3da6`
 - Active slice: `DS2-REPORT-002 — Report date-preset selector convergence`
 - Representative surface: `src/components/reports/ReportFilterBar.tsx` inherited by Reports consumers
-- Disposition: `REVIEW — FRESH EXACT-HEAD PRODUCT DESIGN + DESIGN QA REQUIRED`
+- Disposition: `REVIEW — REVIEWER-REQUESTED FIX APPLIED; FRESH EXACT-HEAD PRODUCT DESIGN + DESIGN QA REQUIRED`
 - Evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 
 ## Independent implementation judgment
 
-The Product Design boundary remains dependency-safe. `ReportFilterBar` owns the four report date-range meanings and the external `DateRange` callback contract; the duplicated concern was only the local preset-button presentation. Existing shared V2 `SegmentedControl` provides the needed single-choice semantics, named grouping, `aria-pressed`, focus-visible behavior, touch geometry and contained mobile overflow without taking ownership of report date calculations.
+The REPORT002 composition remains correct: `ReportFilterBar` owns the four report date-range meanings and external `DateRange` callback contract, while shared V2 `SegmentedControl` owns only single-choice presentation/interaction.
 
-The implementation therefore consumes the existing shared primitive only for the four presets while preserving the exact preset order/copy, `applyPreset`/`normalizeDateRange` behavior, custom date inputs and caller-owned `value/onChange` contract.
+Fresh Product Design and Design QA review of exact HEAD `c71a486...` proved one shared presentation defect in that primitive contract: default segmented items could flex-shrink under constrained Mobile width while their Arabic labels remained `white-space: nowrap`. The correct fix is therefore shared and narrowly bounded, not a Reports-local workaround.
+
+The repair now gives default/non-block segmented items intrinsic non-shrinking flex geometry while preserving the existing block/equal-width contract and the existing Mobile horizontal-scroll containment.
 
 ## Material implementation progress
 
-- Replaced the report-local `report-filter-presets` button renderer with shared `SegmentedControl`.
-- Preserved exactly: `آخر 7 أيام`, `آخر 30 يوماً`, `آخر 90 يوماً`, `هذا الشهر`, in the same order.
-- Preserved `applyPreset(...)`, local-date conversion, normalization and current-month first/last-day meaning.
-- Derived the selected preset by comparing each existing calculated range with caller-owned `value`; a custom range now intentionally passes an empty shared selection so every preset exposes `aria-pressed="false"`.
-- Preserved the external `value: DateRange` / `onChange(DateRange)` API and both custom `<input type="date">` controls unchanged.
-- Removed only the obsolete local preset-only state/imports that had no functional consumer after the shared renderer replacement.
-- Authored focused Testing Library coverage for exact Arabic preset order/copy, all four emitted range outputs, callback ownership, matching `aria-pressed` selection and custom-range no-selection.
-- During source review, caught and fixed an implementation-only TypeScript/API mismatch before handoff: `SegmentedControl` is a default export and accepts `items`, not a named export with `options`. The branch now consumes the canonical shared API without modifying the primitive.
-- Opened one Draft PR #49 targeting `design-system-v2-development`; no second slice was started.
+- Kept the REPORT002 migration of the four report date presets onto shared `SegmentedControl` unchanged.
+- Applied the reviewer-requested shared hardening in `src/styles/design-system-v2-navigation.css`:
+  - default `.ds-segmented-control__item` now uses `flex: 0 0 auto`;
+  - `.ds-segmented-control--block .ds-segmented-control__item` remains `flex: 1 1 0`;
+  - Mobile `.ds-segmented-control { overflow-x: auto; }` remains the containment/scroll owner.
+- Added focused Vitest source-contract coverage in `NavigationPatterns.test.tsx` that protects all three geometry invariants above.
+- Did not add any `ReportFilterBar`-specific CSS escape hatch, new SegmentedControl variant, or unrelated navigation cleanup.
+- Existing REPORT002 Testing Library coverage remains in place for exact Arabic preset order/copy, all four emitted range outputs, callback ownership, matching `aria-pressed` state, and custom-range no-selection.
+- No second slice was started.
 
-Files/patterns touched before this state write:
+Files/patterns touched in the active PR after the repair:
 - `src/components/reports/ReportFilterBar.tsx`
 - `src/components/reports/ReportFilterBar.test.tsx`
+- `src/styles/design-system-v2-navigation.css`
+- `src/components/patterns/NavigationPatterns.test.tsx`
+- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
 ## Preserve / verified boundaries
 
-- Exact `DateRange` external contract remains `value` + `onChange`.
-- Exact preset labels/order and range outputs remain domain-owned and unchanged.
-- Manual date inputs and their normalization behavior remain unchanged.
-- Shared `SegmentedControl` remains presentation-only; no report calculation or eligibility logic moved into it.
+- Exact external contract remains `value: DateRange` + `onChange(DateRange)`.
+- Exact preset labels/order remain: `آخر 7 أيام`, `آخر 30 يوماً`, `آخر 90 يوماً`, `هذا الشهر`.
+- Existing `applyPreset(...)`, local-date conversion, `normalizeDateRange(...)`, and current-month first/last-day meaning remain unchanged.
+- Both custom `<input type="date">` controls and their normalization behavior remain unchanged.
+- Shared `SegmentedControl` remains presentation-only; no report date/business/query meaning moved into it.
+- Existing `--block` equal-width behavior is explicitly preserved.
 - No query/cache/service/hook/calculation/chart/table/metric/export/print/permission/routing/`AnalyticsGate` behavior changed.
-- No REPORT001 `SubNav`, report-page layout, DB/RPC, RBAC/RLS, route guard, workflow, validation or business-semantic change.
-- No shared token/component CSS modification was required.
+- No DB/migration/RPC, RBAC/RLS, route guard, workflow, validation, deployment, preview-branch or business-semantic change.
 
 ## Device / state coverage
 
-- **Mobile (`<=768px`)**: shared `SegmentedControl` horizontal containment keeps all four Arabic labels reachable without page-level overflow or compressed local buttons.
-- **Tablet (`769–1024px`)**: shared practical touch-height geometry remains first-class inside the existing wrapping report filter bar.
-- **Desktop (`>=1025px`)**: compact single-choice hierarchy remains beside the existing custom-date controls; surrounding filter composition is unchanged.
-- **RTL/Arabic**: exact Arabic copy/order are preserved and the shared logical layout is reused.
-- **Accessibility**: `ariaLabel="اختصارات الفترة"`, native buttons, shared `:focus-visible`, and `aria-pressed`; selection is not color-only through the shared active class contract.
-- **Custom range state**: values matching no preset intentionally leave every preset unselected while the existing date inputs remain the editor.
-- **Other report states**: loading/empty/error/permission/query/export states are outside this primitive-only slice and remain untouched.
+- **Mobile (`<=768px`)**: default segmented items now retain intrinsic width instead of shrinking; existing shared horizontal scrolling remains responsible for reachability of all four long Arabic labels while touch-height stays unchanged.
+- **Tablet (`769–1024px`)**: surrounding ReportFilterBar wrapping and shared 44px-class touch geometry remain unchanged.
+- **Desktop (`>=1025px`)**: compact single-choice hierarchy remains beside the existing custom-date controls with no domain behavior change.
+- **RTL/Arabic**: exact Arabic copy/order and logical shared layout remain unchanged; long labels no longer rely on shrunken target boxes in constrained Mobile geometry.
+- **Accessibility**: named `role="group"`, native `type="button"`, `aria-pressed`, shared focus-visible treatment, and active-surface semantics remain unchanged.
+- **Custom range state**: unmatched ranges still leave every preset unselected while native date inputs remain the editor.
+- **Other report states**: loading/empty/error/disabled/read-only/permission/query/export semantics are outside this primitive-only repair and remain untouched.
 
 ## Test / execution evidence
 
 Evidence: **`TESTS_AUTHORED_NOT_EXECUTED`**.
 
-Focused Vitest/Testing Library tests protect exact preset order/copy, all four preset output ranges at a fixed local date, callback ownership, selected-state semantics and custom-range no-selection. No approved executable repository checkout/package runtime was available in the sandbox, so `npm test`, `npm run build` and `npm run lint` were not executed. No local/build/test/lint/runtime/preview PASS is claimed. Hosted GitHub Actions/CI and Vercel were not used.
+Authored/retained focused coverage now protects both layers relevant to the slice:
+- Reports composition/behavior via Testing Library: preset order/copy, all four outputs, callback ownership, selected `aria-pressed`, custom-range no-selection.
+- Shared geometry source contract via Vitest: default `flex: 0 0 auto`, block override `flex: 1 1 0`, and Mobile `overflow-x: auto` containment.
 
-No known source-visible TypeScript/build blocker remains after correcting the shared component import/prop API mismatch described above.
+No approved executable repository checkout/package runtime was available in the sandbox. A filesystem inspection found no mounted checkout to run against, so `npm test`, `npm run build`, and `npm run lint` were not executed. No local/build/test/lint/runtime/preview PASS is claimed. Hosted GitHub Actions/CI and Vercel were not used.
+
+No source-visible TypeScript/API mismatch is introduced by this repair; it changes shared CSS plus test coverage only.
 
 ## Peer-state comparison / current risk
 
-- **Product Design Director:** current and aligned; REPORT002 is explicitly bounded to preset-selector convergence onto existing shared `SegmentedControl`, with custom date inputs and broader filter/report redesign excluded.
-- **Design QA:** lifecycle-stale from REPORT001; fresh exact-head review is required for PR #49.
-- **Development Integrator:** lifecycle authority confirms REPORT001 is integrated; Development HEAD remained the branch baseline `41cdbf9d...` through PR creation.
-- **Team Memory / Decision Log:** shared-system-first, functional-isolation, device and evidence rules remain aligned; no UI Production mutation is warranted.
-- Residual risk is execution/runtime evidence only: focused tests are authored but not executed in the available environment.
+- **Product Design Director:** current and blocking on `c71a486...`; explicitly authorized only this shared non-shrinking default-item repair, preservation of block stretching, and focused geometry evidence. The new repair follows that boundary exactly.
+- **Design QA:** current and blocking on the same `c71a486...`; requested the same shared CSS contract hardening and focused source/CSS artifact. The new repair addresses the stated blocker without widening scope.
+- **Development Integrator:** remains `NO_MERGE` until fresh Product Design + Design QA gates exist on one stable exact PR HEAD.
+- **Team Memory / Decision Log / Workstream:** shared-system-first, Mobile/RTL/touch, functional-isolation, and evidence-honesty rules remain aligned; no mutation outside this owned state is warranted.
+- Residual risk is review/runtime evidence only: the reviewer-requested source fix is applied, but tests/build/lint were not executable in this run and fresh exact-head specialist gates are still required.
 
 ### Cross-role handoff
-- **To:** Product Design Director + Design QA for fresh exact-head review; Development Integrator only after both gates are current.
-- **What changed:** the four report date presets now use shared V2 `SegmentedControl` while all preset/date/report semantics remain owned by `ReportFilterBar` and its callers.
-- **Preserve:** exact four labels/order/range calculations; external `DateRange` API; custom date inputs; all report query/cache/service/calculation/chart/table/metric/export/print/permission/routing/`AnalyticsGate` truth; REPORT001 SubNav and broader REPORT003/Admin/Global backlog.
-- **Need from you:** review the final exact PR #49 HEAD after this owned-state write. QA should issue `SOURCE_REVIEW_PASS + AGENT-REVIEW: GREEN-DEV` only on that same head; Product Design should independently close the same exact head. Integrator remains `NO_MERGE` until both are fresh.
-- **Blocker level:** `NONE` from implementation.
-- **Baseline:** `41cdbf9dba7fa5301777a2f461ce3de40bae168a`.
-- **Product/test HEAD before state write:** `f6187f83a89ab5556fe542517602594f0d8b1270`.
+- **To:** Product Design Director + Design QA for fresh exact-head review; Development Integrator remains `NO_MERGE` until both gates are current on the same head.
+- **What changed:** the shared default/non-block `SegmentedControl` item contract now prevents flex shrinking (`flex: 0 0 auto`), while block equal-width behavior (`flex: 1 1 0`) and Mobile shared horizontal scrolling remain intact; focused CSS-contract coverage was added.
+- **Preserve:** exact four preset labels/order/range calculations; external `DateRange` API; custom date inputs; all report query/cache/service/calculation/chart/table/metric/export/print/permission/routing/`AnalyticsGate` truth; no page-local segmented-control fork.
+- **Need from you:** independently review the final exact PR #49 HEAD after this owned-state write. QA should issue `SOURCE_REVIEW_PASS + AGENT-REVIEW: GREEN-DEV` only on that same stable head if satisfied; Product Design should independently close the same head. Integrator must not merge before both are fresh.
+- **Blocker level:** `NONE` from UI implementation after the bounded repair; specialist gates remain pending.
+- **Baseline:** branch creation `41cdbf9dba7fa5301777a2f461ce3de40bae168a`; current Development observed `6f897f009959556f376b24610286125ab4baeba7`.
+- **Repair product/test HEAD before owned-state write:** `78deb60bec73b6d6a7d4382fe6494d4cb49e3da6`.
 - **PR:** `#49` / `ds2/report-002-date-presets` -> `design-system-v2-development`.
 - **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`.
