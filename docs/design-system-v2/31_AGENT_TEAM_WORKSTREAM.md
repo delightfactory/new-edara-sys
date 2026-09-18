@@ -91,28 +91,48 @@ System result:
 
 ## Current single READY slice
 
-### Report date/scope filter grammar and `ReportFilterBar` convergence
+### DS2-REPORT-002 — Report date-preset selector convergence
 Status: `READY`
-Owner role: Product Design Director next
+Owner role: UI Production Engineer next
 Dependency baseline: `DS2-REPORT-001` integrated at `5d2c57d9a502a4bbb2d355d94634bcf8b53075d2`
+Primary implementation target: `src/components/reports/ReportFilterBar.tsx`
+Shared pattern target: `src/components/patterns/SegmentedControl.tsx`
 
 System intent:
-- inspect representative report filter/date-scope surfaces on the exact latest Development baseline and bound one smallest dependency-safe presentation-only concern;
-- converge recurring report filter controls toward the shared V2 filter/search/date-control grammar instead of treating the current report-local `ReportFilterBar` as canonical by default;
-- resolve the known touch-geometry/design-system debt around report preset/date controls without changing what any filter means;
-- preserve the full Reports/Analytics roadmap and keep `DS2-REPORT-002` metrics/charts/tables work separately bounded.
+- converge only the four report date-preset buttons inside the domain-local `ReportFilterBar` onto shared V2 `SegmentedControl`;
+- retire the report-local preset-button mini-system for selection hierarchy, focus, selected state and touch geometry while keeping the whole `ReportFilterBar` as a Reports-domain composite;
+- use the existing shared single-choice filter/view-mode grammar rather than creating a Reports-specific segmented variant;
+- close the known preset touch-target debt without widening into custom-date, query, chart, metric or table redesign.
 
-Preserve exactly:
-- report query parameters, date normalization/range semantics, preset meaning and scope eligibility;
-- permissions, `AnalyticsGate`, route behavior, cache/query/service contracts and calculations;
-- export/print behavior and child-report business truth;
-- Mobile operational readability, Tablet deliberate touch-first composition, Desktop dense management/report review, RTL/Arabic and long/numeric content.
+In scope:
+- replace only the `report-filter-presets` button group with shared `SegmentedControl`;
+- derive the selected preset from the current `{ from, to }` range by comparing it with the existing preset range calculations; a custom range that matches no preset may legitimately render with no preset selected;
+- on preset selection, continue emitting the existing normalized `DateRange` through the existing `onChange` contract;
+- preserve the existing four presets exactly, in the same order and Arabic copy: `آخر 7 أيام`, `آخر 30 يوماً`, `آخر 90 يوماً`, `هذا الشهر`;
+- preserve the existing `applyPreset`, `normalizeDateRange` and local-date semantics unless a mechanical refactor is strictly necessary to wire the shared control without changing output;
+- add/update focused source-level tests for preset order/copy, emitted ranges, selected-state semantics and custom-range no-selection behavior.
 
-Boundary rule:
-- Product Design must identify the exact representative surface and smallest safe presentation concern before UI implementation begins;
-- prefer existing shared V2 primitives/patterns when they cover the need; strengthen the shared layer only when source evidence proves a recurring gap;
-- if parity requires functional/query/business semantic change, mark `BLOCKED` instead of widening the slice;
-- no backend/business/query-cache/permission/validation/workflow change, preview/deploy, hosted CI or `main` work.
+Explicit exclusions:
+- no redesign or shared migration of the two custom `<input type="date">` controls in this slice;
+- no change to `ReportFilterBar`'s external `value/onChange` contract, date normalization, month-boundary meaning, default ranges or report-page ownership of state;
+- no change to `OverviewPage`, `SalesPage` or other report hook inputs beyond any strictly mechanical consumer/test adjustment required by unchanged `ReportFilterBar` API;
+- no query/cache/service/calculation/chart/table/metric/export/print/permission/routing/`AnalyticsGate` change;
+- no REPORT001 `SubNav` change, report-page redesign, backend/business change, preview/deploy, hosted CI or `main` work;
+- no broad cleanup of unrelated Reports inline styles or dead code.
+
+Device/state/accessibility acceptance:
+- **Desktop (`>=1025px`)**: the four presets remain a compact, legible single-choice report filter with no unnecessary wrapping or hierarchy regression beside the existing custom-date controls;
+- **Tablet (`769–1024px`)**: the selector remains touch-first with shared 44px practical target geometry and preserves the surrounding filter bar's deliberate wrapping/containment;
+- **Mobile (`<=768px`)**: shared `SegmentedControl` containment/overflow keeps all four Arabic preset labels reachable without viewport overflow or compressed sub-touch targets; no hover dependency;
+- **RTL/Arabic**: preserve exact Arabic labels/order and logical layout; labels stay readable and are not clipped into ambiguous abbreviations;
+- **Accessibility**: provide a concise Arabic group name via `ariaLabel`, preserve native button keyboard behavior, shared visible `:focus-visible`, and `aria-pressed` selected semantics; selected meaning must not depend on color alone;
+- **Custom range state**: if neither preset range equals the caller value, no preset is falsely marked selected; the two existing date inputs remain the source of custom-range editing.
+
+Boundary / BLOCK rule:
+- `SegmentedControl` already owns the needed presentation semantics (`role="group"`, `aria-pressed`, focus-visible, 44px minimum height and mobile horizontal containment), so this slice must consume that contract rather than fork it locally;
+- the Reports domain remains responsible for calculating preset date ranges and for the `DateRange` value emitted to analytics consumers;
+- if parity with the current four preset meanings requires a functional/query/business semantic change, mark `BLOCKED` instead of widening the slice;
+- exactly one implementation PR may carry REPORT002.
 
 ## Product migration roadmap
 
@@ -173,8 +193,9 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` Report route sub-navigation convergence — `DONE` / PR #48 / merge `5d2c57d9a502a4bbb2d355d94634bcf8b53075d2`
-- report date/scope filter grammar and `ReportFilterBar` convergence — `READY` / Product Design must separately bound one smallest dependency-safe presentation concern
-- `DS2-REPORT-002` Metrics/charts/tables and responsive report composition — `BACKLOG`
+- `DS2-REPORT-002` Report date-preset selector convergence — `READY` / shared `SegmentedControl` adoption inside `ReportFilterBar` only
+- custom-date/filter-composite convergence beyond the preset selector — `BACKLOG` / must be independently bounded from report business/query semantics
+- `DS2-REPORT-003` Metrics/charts/tables and responsive report composition — `BACKLOG`
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
