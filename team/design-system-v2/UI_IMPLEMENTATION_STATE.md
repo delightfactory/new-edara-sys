@@ -5,7 +5,7 @@
 - Run date: `2026-09-18`
 - Development branch: `design-system-v2-development`
 - Exact Development branch-creation baseline: `41cdbf9dba7fa5301777a2f461ce3de40bae168a`
-- Current Development HEAD observed during this run: `6f897f009959556f376b24610286125ab4baeba7`
+- Current Development HEAD observed during this run: `6f009031e86e0bb4f0062637f8608d3daf687681`
 - Feature branch: `ds2/report-002-date-presets`
 - Draft PR: `#49 — DS2-REPORT-002: converge report date preset selector`
 - Reviewer-blocked exact PR HEAD: `c71a486562bb6a9c3066cc4e074a23adacd51efe`
@@ -89,7 +89,7 @@ No source-visible TypeScript/API mismatch is introduced by this repair; it chang
 - **Preserve:** exact four preset labels/order/range calculations; external `DateRange` API; custom date inputs; all report query/cache/service/calculation/chart/table/metric/export/print/permission/routing/`AnalyticsGate` truth; no page-local segmented-control fork.
 - **Need from you:** independently review the final exact PR #49 HEAD after this owned-state write. QA should issue `SOURCE_REVIEW_PASS + AGENT-REVIEW: GREEN-DEV` only on that same stable head if satisfied; Product Design should independently close the same head. Integrator must not merge before both are fresh.
 - **Blocker level:** `NONE` from UI implementation after the bounded repair; specialist gates remain pending.
-- **Baseline:** branch creation `41cdbf9dba7fa5301777a2f461ce3de40bae168a`; current Development observed `6f897f009959556f376b24610286125ab4baeba7`.
+- **Baseline:** branch creation `41cdbf9dba7fa5301777a2f461ce3de40bae168a`; current Development observed `6f009031e86e0bb4f0062637f8608d3daf687681`.
 - **Repair product/test HEAD before owned-state write:** `78deb60bec73b6d6a7d4382fe6494d4cb49e3da6`.
 - **PR:** `#49` / `ds2/report-002-date-presets` -> `design-system-v2-development`.
 - **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`.
