@@ -38,17 +38,17 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-FIELD-002`.
+Product UI is integrated through `DS2-WORK-001`.
 
 Latest product integration:
-- PR: `#43 — DS2-FIELD-002: Activity form V2 composition foundation`
-- Exact reviewed PR HEAD: `a31addc60e5b0eaf8ee89a0fea11bded2a6e4c4a`
-- Squash merge commit: `2492fa475e7bc5beb9148124f31a4b4837057c19`
+- PR: `#44 — DS2-WORK-001: Create Task form V2 composition foundation`
+- Exact reviewed PR HEAD: `6eb3be28216ec1370ccd5fceced7ea8c5c224cd0`
+- Squash merge commit: `57747123643d0dd846cbda3ef340e9463a5f7647`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact HEAD
 - Runtime/preview/release evidence: not claimed
 
-The development branch now includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list proof, and the first Field create/edit form composition proof using the common V2 form grammar.
+The development branch now includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, and the first Work Management form proof using the shared V2 form grammar with Field-scoped semantic native-control sizing.
 
 ## Completed slices
 
@@ -83,54 +83,44 @@ System result:
 - composition-touched native controls have explicit Arabic label associations while required/disabled semantics remain unchanged;
 - visit-plan routing, GPS acquisition/verification/distance, target/history queries, order/collection linking, call-detail behavior, validation, payload construction, mutations, navigation and all backend/business/workflow truth remain page/domain-owned.
 
-## Current single REVIEW slice
-
 ### DS2-WORK-001 — Create Task form composition foundation
-Status: `REVIEW`
-Owner role: UI Production Engineer
-Baseline inspected by Product Design: `22962d71674be08d7f04805b213d8c423a211b2a`
-Representative route: `/work/new`
-Representative source: `src/pages/work/CreateTaskPage.tsx`
+Status: `DONE`
+Merged PR: `#44`
+Reviewed HEAD: `6eb3be28216ec1370ccd5fceced7ea8c5c224cd0`
+Squash merge: `57747123643d0dd846cbda3ef340e9463a5f7647`
+Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
+Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER`
+Runtime/preview/release evidence: not claimed
+
+System result:
+- `/work/new` now uses shared `FormSection + FormGrid + Field + FormActions + Button` while retaining the existing four-section Arabic operational order;
+- safe paired fields remain one column on Mobile and two on Tablet/Desktop; narrative/full-width controls remain unsqueezed;
+- V2 native input/select sizing is owned by the explicit `.ds-field` boundary, with `--ds-control-height-touch` through Tablet/Mobile and `--ds-control-height-standard` on Desktop; textarea preserves its larger 80px floor;
+- cancel/create actions remain non-sticky, touch-safe and preserve existing secondary/primary hierarchy plus pending/loading truth;
+- Arabic label/hint/error relationships now use the shared `Field` accessibility contract;
+- `toIso`, assignment/defaulting, owner-vs-assignee meaning, acknowledgement eligibility/reset, validation wording/date rule, priority/visibility/completion mode, `useCreateTask`, payload/`activate: true`, toasts/navigation, queries/services/permissions/RBAC/RLS/workflow/backend truth remain page/domain-owned and unchanged.
+
+## Current single READY slice
+
+### DS2-WORK-002 — Work Hub/detail/management state-surface convergence
+Status: `READY`
+Owner role: Product Design Director for bounding; UI Production Engineer after the boundary is recorded
+Dependency baseline: `DS2-WORK-001` integrated at `57747123643d0dd846cbda3ef340e9463a5f7647`
 
 System-pattern intent:
-- reconcile the first safe Work Management form surface with the established V2 form grammar instead of restyling the Work module page by page;
-- retain Work's strong Arabic operational hierarchy while removing the local `work-form-card / work-form-grid / work-form-actions / work-field` implementation where an approved shared pattern already has parity;
-- prove that Work can consume the same presentation infrastructure as Customer/Procurement/Field without moving any Work state-machine or responsibility semantics into the design system.
+- continue the North-Star Work Management convergence rather than jump to ad-hoc page polishing or skip directly to Reports before the next safe Work concern is bounded;
+- inspect representative Work Hub, task-detail, management/supervisor and state surfaces on the exact latest Development baseline and choose the smallest dependency-safe presentation-only concern;
+- prefer existing V2 shell, collection, action, status, feedback and form grammar before introducing any Work-local pattern;
+- preserve Work query/service/permission/ownership/responsibility/workflow/validation/state-machine truth exactly.
 
-Implementation scope:
-- migrate the four existing Create Task visual sections to shared `FormSection` while preserving their exact order, titles and content;
-- migrate the existing safe two-column field groups to shared `FormGrid columns={2}`; full-width fields remain full-width intentionally rather than being squeezed into a grid cell;
-- migrate standard text/select/textarea field anatomy touched by the slice to shared `Field`, preserving each existing Arabic label, hint, error message, native control type, maxLength and value/update callback;
-- migrate cancel/submit composition to shared non-sticky `FormActions + Button`, preserving the existing primary/secondary hierarchy, `createTask.isPending` loading truth and navigation/submit callbacks;
-- keep the existing `PageHeader`; do not redesign Work Hub or detail chrome in this slice;
-- retire only the CreateTask-specific consumption of local form-shell CSS that becomes unused as a direct result of this migration. Do not perform broad `work.css` cleanup.
+Bounding requirements:
+- select one coherent concern and one representative live surface before implementation;
+- state explicit Mobile/Tablet/Desktop, Arabic/RTL, accessibility and relevant state acceptance criteria;
+- do not combine Work Hub, detail, supervisor/management and state surfaces in one broad rewrite;
+- if the next proof exposes a recurring shared-system gap, strengthen the shared layer only when the boundary can remain presentation-only;
+- no backend/database/RPC/query/cache/permission/RBAC/RLS/service/workflow/validation-semantic change, Vercel preview, hosted CI or `main` work.
 
-Explicit exclusions:
-- no change to `validate()`, warning/error wording or the `nextActionAt > dueAt` rule;
-- no change to `useAssignmentCandidates`, candidate defaulting, owner/assignee meaning, acknowledgement eligibility/reset, completion mode, priority or visibility semantics;
-- no change to `useCreateTask`, payload fields, ISO conversion, `activate: true`, toast outcomes or post-create navigation;
-- no redesign of the acknowledgement checkbox, owner/assignee summary cells, Work Hub, Submit Request, Supervisor, management, Work detail, sticky task actions, Work badges or operational flags;
-- no Select/Combobox migration, no new Work-specific primitive, no ActionRegistry expansion, no backend/database/RPC/query/permission/RBAC/RLS/service/workflow change.
-
-Device acceptance:
-- **Mobile (`<=768px`)**: all migrated field groups are one column; controls and cancel/submit actions remain touch-safe; actions are non-sticky and must not contest BottomNav/FAB space.
-- **Tablet (`769–1024px`)**: safe paired fields may use two columns with readable Arabic labels/hints and 44px-capable touch controls; long/full-width content remains unsqueezed.
-- **Desktop (`>=1025px`)**: preserve the current efficient two-column task-entry density; do not introduce unnecessary whitespace or a wider/denser business flow.
-
-Accessibility/state acceptance:
-- each migrated labeled native control remains programmatically associated with its Arabic label;
-- `required`, `disabled`, loading and error truth remain unchanged; error/hint relationships should use the shared `Field` contract rather than color-only indication;
-- keyboard/focus behavior remains native/shared; no nested interactive structure is introduced;
-- dark-mode/RTL/token behavior must come from shared primitives/patterns, with no new hard-coded page colors or LTR layout assumptions.
-
-Validation/evidence requirement:
-- author focused source/component tests that protect shared pattern adoption, section order, responsive grid/action intent, label/error/hint association and the untouched functional boundaries above;
-- evidence must remain honestly labeled under `33_TEST_AND_VALIDATION_POLICY.md`; hosted CI/Vercel preview must not be triggered by this workstream.
-
-Stop condition:
-If shared form composition cannot preserve the current owner/assignee/acknowledgement/completion/validation/create semantics without functional change, mark `BLOCKED` and isolate the conflict rather than broadening WORK001.
-
-Remaining Work Hub/detail/management/state-surface convergence stays roadmap debt for later explicitly bounded Work slices; WORK001 does not declare the Work module converged.
+Further Work convergence after WORK002 remains backlog debt. Reports/Analytics, Settings/Admin and Global convergence remain preserved in the roadmap below.
 
 Remaining Field create/detail surfaces remain roadmap debt for a later explicitly bounded Field follow-up; FIELD002 completion does not declare the entire Field module converged.
 
@@ -186,8 +176,9 @@ Open only when a real migrated screen proves the recurring gap:
 - additional Field create/detail convergence — `BACKLOG` / must be explicitly bounded before activation
 
 ### H. Work Management
-- `DS2-WORK-001` Create Task form composition foundation — `REVIEW`
-- additional Work Hub/detail/management/state-surface convergence — `BACKLOG` / must be explicitly bounded before activation
+- `DS2-WORK-001` Create Task form composition foundation — `DONE`
+- `DS2-WORK-002` Work Hub/detail/management state-surface convergence — `READY` / Product Design must bound one smallest concern before implementation
+- further Work convergence — `BACKLOG` / must be explicitly bounded before activation
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` Report shell/navigation/filter grammar — `BACKLOG`
