@@ -2,61 +2,60 @@
 
 ## Reviewed baseline
 
-- Review date: `2026-09-18`.
+- Review date: `2026-09-19`.
 - Development branch: `design-system-v2-development`.
-- Development HEAD immediately before this state write: `3a3d03393f28e8ab6bfd8acd62f8946f5ad15229`.
-- Completed slice: `DS2-REPORT-002 — Report date-preset selector convergence`.
-- Merged PR: `#49 — DS2-REPORT-002: converge report date preset selector`.
-- Exact reviewed PR HEAD: `3e0f11d52de77f07953dd2a226c82ff19ec2f75f`.
-- Squash merge commit: `cc91792263d9fc606b9c2f28a531daa826997c75`.
-- Integration disposition: `MERGED_GREEN_DEV`.
-- QA evidence: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` on the exact merged HEAD.
-- Product Design evidence: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact merged HEAD.
+- Development HEAD immediately before this state write: `88e07e79cb0516865cf790ee6b9cd4486680a4d4`.
+- Active slice: `DS2-REPORT-003 — Report custom-date field convergence`.
+- Active PR: `#50 — DS2-REPORT-003: converge report custom date fields`.
+- PR base: `design-system-v2-development`.
+- Feature baseline: `d1f8e2e4adbcbbe1247304d5f644a6f82223f003`.
+- Exact current PR HEAD: `4b81eee69d4a8722333db165041e481fa80f24fe`.
+- PR state: `OPEN / DRAFT / mergeable=true`.
+- Integration disposition: `NO_MERGE_WAITING_FRESH_PRODUCT_DESIGN_CLOSEOUT`.
+- QA evidence: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` on exact HEAD `4b81eee69d4a8722333db165041e481fa80f24fe`.
 - Runtime/build/lint/preview/release PASS: not claimed.
 
 ## Integrator decision
 
-**MERGED in this run.**
+**NO MERGE in this run.**
 
-Final integration revalidation established all required gates before merge:
-- PR base was exactly `design-system-v2-development`;
-- exact current PR HEAD remained `3e0f11d52de77f07953dd2a226c82ff19ec2f75f` through the ready-for-review transition and merge;
-- Design QA had a fresh `AGENT-REVIEW: GREEN-DEV` marker on that exact HEAD and recorded `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`;
-- Product Design independently accepted that same exact HEAD with `PASS — NO DESIGN-SYSTEM BLOCKER`;
-- no known source-visible build/type blocker was outstanding;
-- PR inline review threads were empty;
-- the previous P2 review was anchored to superseded HEAD `c71a486...` and was explicitly closed by fresh QA + Product Design review on `3e0f11d...`;
-- exact diff scope was five files only: `ReportFilterBar` composition/test, shared navigation CSS/contract test, and UI Production Engineer owned state;
-- no DB/RPC/service/query-cache/RBAC/RLS/permission/route-guard/business-calculation/validation/workflow/export/print/deployment-enabling change was present;
-- Development drift from feature baseline `41cdbf9...` to pre-merge `dfb829a...` was independently compared and touched only `DESIGN_DIRECTOR_STATE.md`, `DESIGN_QA_STATE.md`, and `INTEGRATION_STATE.md`, with no overlap in product/shared implementation files.
+Fresh integration revalidation established:
+- PR base is exactly `design-system-v2-development`;
+- exact current PR HEAD remains `4b81eee69d4a8722333db165041e481fa80f24fe`;
+- Design QA has a fresh same-head `AGENT-REVIEW: GREEN-DEV` marker with `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`;
+- no known source-visible build/type blocker is outstanding in the current QA evidence;
+- PR inline review threads are empty;
+- exact diff scope is five files only: shared `DateField` + focused test, `ReportFilterBar` composition + focused test, and UI Production Engineer owned state;
+- no DB/migration/RPC/service/query-cache/RBAC/RLS/permission/route-guard/business-calculation/validation/workflow/export/print/deployment-enabling change is present;
+- Development drift from feature baseline `d1f8e2e...` to pre-write Development `88e07e7...` is one governance-only commit touching only `team/design-system-v2/DESIGN_QA_STATE.md`, with no overlap in product/shared implementation files.
 
-The PR was moved from Draft to Ready without changing its HEAD, then squash-merged with expected-head protection as `cc91792263d9fc606b9c2f28a531daa826997c75`.
+The remaining gate is fresh Product Design implementation closeout on this same exact PR HEAD. The current `DESIGN_DIRECTOR_STATE.md` records the pre-implementation REPORT003 boundary and does **not** accept exact implementation HEAD `4b81eee69d4a8722333db165041e481fa80f24fe`. Design QA explicitly leaves that same-head Product Design closeout as a separate integration prerequisite.
 
-## Integrated system result
+Accordingly, the PR remains unmerged. Draft status is not changed, the queue is not advanced, and no shared-memory completion state is written.
 
-- The four report date presets now use shared V2 `SegmentedControl` inside domain-local `ReportFilterBar`.
-- Exact preset labels/order/range outputs remain unchanged: `آخر 7 أيام`, `آخر 30 يوماً`, `آخر 90 يوماً`, `هذا الشهر`.
-- External `DateRange value/onChange`, both custom date inputs, normalization/current-month semantics and report ownership of date/query state remain unchanged.
-- Shared default/non-block segmented items now use `flex: 0 0 auto`; `--block` preserves `flex: 1 1 0`; Mobile horizontal containment remains shared through `overflow-x: auto`.
-- Focused report behavior tests and shared CSS-contract tests are authored but were not executed.
-- No runtime visual or release readiness claim is made.
+## Current slice result under review
+
+- One shared presentation-only V2 `DateField` composes the existing `Input -> Field` grammar and fixes native `type="date"` without adding date parsing, normalization, comparison, timezone or business rules.
+- Only the two custom native date editors in `ReportFilterBar` migrate to the shared control.
+- Each editor has an independent Arabic accessible name (`من تاريخ` / `إلى تاريخ`); the date-pair group is named and wrap-capable under constrained width.
+- External `DateRange value/onChange`, existing `normalizeDateRange(...)`, current-month/local-date/preset semantics, REPORT001 `SubNav`, REPORT002 `SegmentedControl`, and all report query/cache/service/calculation/chart/table/metric/export/print/permission/routing/`AnalyticsGate` truth remain unchanged at source-review level.
+- Focused `DateField` and `ReportFilterBar` tests are authored but were not executed.
 
 ## Queue continuity
 
 - `DS2-REPORT-001` remains `DONE`.
-- `DS2-REPORT-002` is now `DONE` with merge `cc91792263d9fc606b9c2f28a531daa826997c75`.
-- Exactly one next dependency-safe roadmap item is now `READY`: **report custom-date/filter-composite convergence beyond the preset selector**.
-- That READY item requires Product Design Director to inspect the exact latest Development baseline and record one smallest presentation-only boundary before UI Production implementation starts.
-- `DS2-REPORT-003`, Settings/Admin, Global convergence, remaining Work and Field debt remain preserved in the roadmap.
-- `DECISION_LOG.md` remains unchanged because this merge applies existing durable rules and does not supersede one.
+- `DS2-REPORT-002` remains `DONE` at merge `cc91792263d9fc606b9c2f28a531daa826997c75`.
+- `DS2-REPORT-003` remains the single active slice in `REVIEW`; no next backlog slice is advanced while this integration gate is open.
+- `DS2-REPORT-004`, Settings/Admin, Global convergence, remaining Work and Field debt remain preserved in the North-Star roadmap.
+- `DECISION_LOG.md` remains unchanged because no durable rule is changed or superseded by this disposition.
 
 No feature/product code was implemented by Integration. No GitHub Actions or hosted CI were triggered or rerun, no Vercel/preview branch was touched, and `main` was not touched.
 
 ### Cross-role handoff
-- **To:** Product Design Director first; UI Production Engineer after the new boundary is recorded; Design QA after a future stable PR HEAD.
-- **What changed:** REPORT002 is integrated at `cc91792263d9fc606b9c2f28a531daa826997c75`, and the queue advances exactly one step to report custom-date/filter-composite convergence beyond the preset selector.
-- **Preserve:** `ReportFilterBar` external `DateRange value/onChange`; all date normalization/preset/query/cache/service/calculation/chart/table/metric/export/print/permission/routing/`AnalyticsGate` truth; REPORT001 `SubNav`; REPORT002 shared `SegmentedControl` geometry; full REPORT003/Admin/Global/remaining Work+Field roadmap.
-- **Need from you:** Product Design Director should inspect the exact latest `design-system-v2-development` baseline and record one smallest dependency-safe presentation-only custom-date/filter-composite concern. UI Production must not widen into report business/query semantics or REPORT003.
-- **Blocker level:** `NONE`.
-- **Baseline:** Development pre-state `3a3d03393f28e8ab6bfd8acd62f8946f5ad15229`; integrated product merge `cc91792263d9fc606b9c2f28a531daa826997c75`.
+- **To:** Product Design Director first; Development Integrator after exact-head Product Design closeout.
+- **What changed:** PR #50 exact HEAD `4b81eee69d4a8722333db165041e481fa80f24fe` is QA GREEN-DEV and integration-clean at source/diff/thread level, but integration is intentionally withheld pending fresh Product Design acceptance of that exact implementation HEAD.
+- **Preserve:** presentation-only `DateField`; native date semantics; external `DateRange value/onChange`; existing `normalizeDateRange(...)`; preset/current-month/local-date semantics; REPORT001 `SubNav`; REPORT002 `SegmentedControl`; all report query/cache/service/calculation/chart/table/metric/export/print/permission/routing/`AnalyticsGate` truth; full remaining roadmap.
+- **Need from you:** Product Design Director should independently accept or block PR #50 exact HEAD `4b81eee69d4a8722333db165041e481fa80f24fe`. If accepted and the PR HEAD remains unchanged, Integrator should revalidate base/drift/reviews/threads/mergeability and may merge only if every normal gate still passes.
+- **Blocker level:** `NONE` from Integration mechanics; pending specialist closeout is a required gate, not a source defect.
+- **Baseline:** Development pre-write `88e07e79cb0516865cf790ee6b9cd4486680a4d4`; PR #50 exact HEAD `4b81eee69d4a8722333db165041e481fa80f24fe`.
 - **Evidence:** `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview/release PASS claimed.
