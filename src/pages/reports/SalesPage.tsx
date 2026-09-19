@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useSystemTrustState, useTrustForComponent } from '@/hooks/useSystemTrustState'
 import { useSalesDailyTotals, useSalesSummary } from '@/hooks/useSalesGrain'
 import MetricCard from '@/components/reports/MetricCard'
@@ -141,8 +141,7 @@ export default function SalesPage() {
       </ChartPanel>
 
       {/* Bar chart */}
-      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-primary)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', boxShadow: 'var(--shadow-sm)' }}>
-        <div style={{ fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--text-primary)', marginBottom: 'var(--space-4)' }}>توزيع الإيرادات اليومي (إيراد + ضريبة)</div>
+      <ChartPanel title="توزيع الإيرادات اليومي (إيراد + ضريبة)">
         {dailyLoading ? <SkeletonCard height={200} /> : (
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={chartData} margin={{ top: 4, left: -10, right: 4, bottom: 0 }}>
@@ -155,7 +154,7 @@ export default function SalesPage() {
             </BarChart>
           </ResponsiveContainer>
         )}
-      </div>
+      </ChartPanel>
     </div>
   )
 }
