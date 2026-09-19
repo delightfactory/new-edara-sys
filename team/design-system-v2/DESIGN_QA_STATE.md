@@ -4,23 +4,23 @@
 
 - Review date: `2026-09-19`.
 - Development branch: `design-system-v2-development`.
-- Exact Development HEAD independently inspected before this state write: `d1f8e2e4adbcbbe1247304d5f644a6f82223f003`.
-- Active slice: `DS2-REPORT-003 — Report custom-date field convergence`.
-- Representative surface: `src/components/reports/ReportFilterBar.tsx` using shared V2 `DateField` + existing `SegmentedControl`.
-- Active implementation PR: `#50 — DS2-REPORT-003: converge report custom date fields`.
-- Feature-branch base: `d1f8e2e4adbcbbe1247304d5f644a6f82223f003` on `design-system-v2-development`.
-- Exact PR HEAD independently reviewed: `4b81eee69d4a8722333db165041e481fa80f24fe`.
+- Exact Development HEAD independently inspected before this state write: `4eebb0be4fd08d0d111bb7297c172fa9d20abc23`.
+- Active slice: `DS2-REPORT-004 — Reports Overview summary metric-grid convergence`.
+- Representative surface: `src/pages/reports/OverviewPage.tsx` primary four-card KPI summary.
+- Active implementation PR: `#51 — DS2-REPORT-004: converge Reports Overview summary metric grid`.
+- Feature-branch base: `4eebb0be4fd08d0d111bb7297c172fa9d20abc23` on `design-system-v2-development`.
+- Exact PR HEAD independently reviewed: `0dad8a5eb73e1a4fac73475dda5a247182db2e51`.
 - PR state at review: `OPEN / DRAFT / mergeable=true`.
-- Changed-file scope: 5 files — shared `DateField` + test, Reports composition/test, and UI Production Engineer owned state.
+- Changed-file scope: 3 files — Overview composition, focused Overview test, and UI Production Engineer owned state.
 - Current disposition: `AGENT-REVIEW: GREEN-DEV`.
 - Evidence: `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
 - Exact-head build/test/lint/runtime/preview PASS: not claimed.
 
 ## Independent QA disposition
 
-**GREEN-DEV on exact PR HEAD `4b81eee69d4a8722333db165041e481fa80f24fe`.**
+**GREEN-DEV on exact PR HEAD `0dad8a5eb73e1a4fac73475dda5a247182db2e51`.**
 
-REPORT003 is correctly bounded and materially improves the shared form grammar without moving report/date business meaning into the Design System. The two report custom-date inputs now consume one thin domain-agnostic `DateField` built on the existing `Input -> Field` anatomy, while all range normalization, preset calculation, query/analytics meaning and parent state ownership remain in `ReportFilterBar` / domain code.
+REPORT004 is correctly bounded to one presentation-only composition change. The primary Reports Overview KPI summary replaces only its local `report-grid` wrapper with shared `MetricGrid columns={4}`. Existing report-domain `MetricCard` children, loading behavior and all report/business truth remain caller-owned and unchanged.
 
 No material Design System, functional-isolation, accessibility, device-composition or source-visible build/type blocker was found on the reviewed HEAD.
 
@@ -29,93 +29,78 @@ No material Design System, functional-isolation, accessibility, device-compositi
 ### Scope / functional isolation — PASS
 
 The exact PR diff contains only:
-- `src/components/ui/DateField.tsx`
-- `src/components/ui/DateField.test.tsx`
-- `src/components/reports/ReportFilterBar.tsx`
-- `src/components/reports/ReportFilterBar.test.tsx`
+- `src/pages/reports/OverviewPage.tsx`
+- `src/pages/reports/OverviewPage.test.tsx`
 - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
-No DB/migration/RPC/service/query-cache/RBAC/RLS/permission/route-guard/report-hook/business-calculation/validation/workflow/export/print/deployment contract is changed.
+The product-code change is limited to importing shared `MetricGrid` and replacing the opening/closing wrapper around the existing primary four-card summary. The exact baseline and reviewed HEAD confirm the four report metrics remain in the same order with the same props and caller-owned data:
+- `صافي الإيراد`
+- `إجمالي المبيعات`
+- `صافي التحصيل الخزيني`
+- `تحصيل AR المنسوب`
 
-The implementation preserves:
-- `ReportFilterBar` external `value: DateRange` / `onChange(DateRange)` contract;
-- the existing `normalizeDateRange(...)` calls and ordering semantics;
-- local-date/current-month/preset calculations;
-- exact REPORT002 preset labels/order/meaning;
-- REPORT001 `SubNav` and REPORT002 `SegmentedControl` behavior;
-- native browser date-input semantics;
-- all report query/cache/service/calculation/chart/table/metric/export/print/permission/routing/`AnalyticsGate` truth.
-
-The base branch at review start is the same SHA the feature branch was created from, so no Development product-code drift exists for this review baseline.
+No DB/migration/RPC/service/query-cache/RBAC/RLS/permission/route-guard/report-hook/business-calculation/validation/workflow/export/print/deployment contract is changed. `MetricCard` itself is untouched. The Customer Health metric strip, navigation grid and every second report page remain out of scope.
 
 ### Shared-system fit — PASS
 
-`DateField` matches the blueprint-declared form-composite layer and is intentionally thin:
-- `DateFieldProps = Omit<InputProps, 'type'>`;
-- native `type="date"` is fixed by the shared component;
-- all normal native input props and Field metadata continue through `Input`;
-- no parser, formatter, date comparison, range ordering, timezone, analytics or validation business rule is introduced;
-- no Reports-only date primitive or page-local CSS mini-system was added.
+Shared `MetricGrid` is the correct existing V2 layout primitive for this boundary. Its responsibility is responsive KPI layout only; metric values and business meaning remain caller-owned. The implementation does not introduce Reports-only breakpoints, local wrapper variants or a new page-local mini design system.
 
-The report-local raw input surface/border/radius/typography/focus styling is removed in favor of the existing shared `.form-input` / `.ds-field` contract.
+Preserving report-domain `MetricCard` is correct: it owns trust/freshness and COMPLETE/warning/RUNNING/BLOCKED presentation semantics that are not equivalent to generic `StatCard`. This slice therefore improves system convergence without flattening report-domain trust semantics.
 
 ### Device / density / overflow — PASS at source level
 
-- **Desktop (`>=1025px`) — PASS:** the controls remain compact flex items in the report filter composition and inherit standard V2 control geometry/focus rather than expanding into a separate full-width report form pattern.
-- **Tablet (`769–1024px`) — PASS:** `.ds-field .form-input` retains shared touch-height through `<=1024px`; the date-pair composition may wrap rather than compressing controls.
-- **Mobile (`<=768px`) — PASS:** the date-pair group is wrap-capable with `minWidth: 0` and `maxWidth: 100%`; the change removes the former rigid no-wrap pair without introducing page-level horizontal overflow or a duplicate Mobile interaction tree.
-- **Density:** the slice does not widen into generic FilterBar, chart/table or report-layout redesign.
+The current shared contract provides:
+- **Desktop (`>=1025px`)**: `columns={4}` resolves to four equal `minmax(0, 1fr)` columns, preserving useful comparison density.
+- **Tablet (`769–1024px`)**: four-column grids intentionally collapse to two columns, retaining deliberate touch-first intermediate composition.
+- **Mobile (`<=768px`)**: the grid becomes one column and remains contained without ordinary viewport-level horizontal overflow.
 
-No `RUNTIME_VISUAL_PASS` is claimed.
+`MetricGrid` has `min-width: 0`; the existing `MetricCard` also has `minWidth: 0`, and its numeric value uses `overflowWrap: anywhere`. No wrapper-induced clipping or false truncation is introduced for the current Arabic labels or large numeric values. No `RUNTIME_VISUAL_PASS` is claimed.
 
-### RTL / Arabic / accessibility / interaction — PASS at DOM/source level
+### RTL / Arabic / accessibility / interaction — PASS at source level
 
-- Each custom date editor has an independent Arabic accessible name: `من تاريخ` and `إلى تاريخ`.
-- The custom-date pair is a named `role="group"` (`الفترة المخصصة`).
-- Calendar icon and separator are presentation-only and correctly hidden from the accessibility tree.
-- Native `input[type=date]` keyboard/focus semantics remain intact.
-- Shared `.form-input:focus` visible focus treatment applies.
-- `DateField` preserves Field label/error/hint/required accessibility plumbing rather than creating a second accessibility model.
-- Logical flex flow is used; no physical left/right assumption is introduced.
+- No physical LTR-only positioning is introduced by the shared grid.
+- Existing Arabic labels/subtitles remain unchanged.
+- Existing report trust/freshness badges and non-color-only blocked/running/warning copy remain unchanged.
+- The summary cards are non-interactive; no focus, keyboard or touch-action contract is added, removed or weakened.
+- No new icon/control semantics are introduced.
 
 ### Relevant states — PASS for assigned semantics
 
-- Shared disabled/read-only/error plumbing is forwarded from existing `Input` / `Field` behavior.
-- No new report validation rule or report state is invented.
-- Editing either date continues to call the parent with a normalized `DateRange` through the existing caller-owned callback.
-- Existing custom-range behavior remains compatible with REPORT002: unmatched ranges do not falsely select a preset.
-- Wider report loading/empty/error/offline/permission/export states remain outside this slice and untouched.
+- The existing four-card skeleton loading branch remains inside the same summary position, now inside shared `MetricGrid`.
+- COMPLETE, warning/reconciled, RUNNING and BLOCKED/FAILED presentation continues to be owned by unchanged `MetricCard` logic and unchanged trust inputs.
+- Wider report error/offline/permission/export states are outside this wrapper-only slice and remain untouched.
 
 ## Test Artifact Gate / evidence honesty
 
-Focused authored coverage protects the material risks introduced by REPORT003:
-- `DateField.test.tsx`: native `type="date"`, native prop forwarding, accessible naming, change callback forwarding, and inherited Field error/disabled/read-only relationships.
-- `ReportFilterBar.test.tsx`: independent Arabic names, native date controls, preserved parent callback shape for both editors, while retaining existing preset order/output/pressed-state coverage.
+Focused authored coverage in `OverviewPage.test.tsx` protects the material risks introduced by REPORT004:
+- shared `MetricGrid` adoption with the four-column contract;
+- exact current four primary `MetricCard` children in source order with representative values;
+- preserved four-skeleton loading state inside the shared grid.
 
 Evidence is **`TESTS_AUTHORED_NOT_EXECUTED`**. Design QA did not execute tests, build, lint, runtime inspection or preview. No GitHub Actions/hosted CI or Vercel preview was triggered. No execution PASS is claimed.
 
-No known source-visible TypeScript/API mismatch is present on the reviewed HEAD. PR inline review threads were empty at review time.
+No known source-visible TypeScript/API mismatch is present on the reviewed HEAD: `MetricGrid` is the default export, accepts `columns?: 2 | 3 | 4`, and the consumer passes `columns={4}` with unchanged React children. PR inline review threads and prior review submissions were empty before this QA review.
 
 ## Peer-state comparison / contradiction handling
 
-This judgment was formed from the exact PR diff, current shared `Input` / `Field` / form CSS contracts, tests and report date contract before applying peer conclusions.
+This judgment was formed from the exact PR diff, exact Development baseline, shared `MetricGrid`/CSS contract, report-domain `MetricCard`, focused tests and current product contracts before relying on peer conclusions.
 
-- **Product Design Director:** current and aligned on REPORT003. Its recorded boundary explicitly calls for one shared presentation-only `DateField`, migration of only the two custom date controls, Arabic accessible names, preserved native semantics and unchanged report/query truth.
-- **UI Production Engineer:** the Development copy of its state is lifecycle-stale from integrated REPORT002, but the PR's current UI-owned state is aligned with the exact implementation reviewed here and honestly records `TESTS_AUTHORED_NOT_EXECUTED`.
-- **Development Integrator:** Development state is lifecycle-stale on REPORT002 and must remain `NO_MERGE` until fresh same-head Product Design closeout and final integration revalidation.
-- **Team Memory / Workstream / Decision Log:** shared-system-first, Mobile-primary/touch, RTL/Arabic, Field-composition, functional-isolation and evidence-honesty rules are satisfied. No durable rule changes in this slice.
+- **Product Design Director:** core direction is aligned: migrate only the existing primary four-card summary wrapper to shared `MetricGrid`, preserve the report-domain `MetricCard` children/business truth, and do not widen into other report surfaces. However, its recorded illustrative wrapper/class and metric-label list are stale versus the exact Development source. This contradiction is **`WATCH`**, not `BLOCKING`, because the same Director boundary repeatedly requires preserving the *existing* children verbatim and the exact baseline source is unambiguous. Product Design must explicitly close this descriptive mismatch on the same exact PR HEAD before integration.
+- **UI Production Engineer:** current PR-owned state is aligned with the exact implementation and independently identified the same source-truth mismatch as `WATCH`; its evidence label `TESTS_AUTHORED_NOT_EXECUTED` is accurate.
+- **Development Integrator:** current Development state belongs to completed REPORT003 and has no competing REPORT004 approval; integration must remain `NO_MERGE` until fresh same-head Product Design closeout exists and all normal gates are revalidated.
+- **Team Memory / Workstream / Decision Log:** shared-system-first, Mobile/Tablet/Desktop, Arabic/RTL, functional-isolation and evidence-honesty rules are satisfied. No durable rule changes in this slice.
 
-No material peer contradiction is `BLOCKING`. Product Design implementation closeout on the exact PR HEAD remains a separate integration gate.
+No material peer contradiction is `BLOCKING` from Design QA.
 
 ## System-fit judgment
 
-REPORT003 moves EDARA toward one coherent premium Arabic-first form language rather than creating a report-local date-control family. The shared component owns presentation/accessibility mechanics only, and Reports retain all domain meaning. The slice is appropriately narrow and should not expand into custom calendar/date-picker, generic FilterBar, report metric/chart/table or state-redesign work.
+REPORT004 moves EDARA toward one coherent Reports composition grammar by reusing a proven shared KPI layout while deliberately preserving the richer report-domain trust semantics. The slice is appropriately narrow, improves responsive consistency, and avoids both business-semantic leakage into V2 primitives and a Reports-local mini design system.
 
 ### Cross-role handoff
 - **To:** Product Design Director first; Development Integrator after same-head Product Design closeout.
-- **What changed:** Design QA independently reviewed PR #50 exact HEAD `4b81eee69d4a8722333db165041e481fa80f24fe` and issued `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
-- **Preserve:** shared presentation-only `DateField`; native date semantics; external `DateRange value/onChange`; exact `normalizeDateRange(...)`; all preset/current-month/local-date semantics; REPORT001 `SubNav`; REPORT002 `SegmentedControl`; all report query/cache/service/calculation/chart/table/metric/export/print/permission/routing/`AnalyticsGate` truth; no custom date picker or report-local date primitive.
-- **Need from you:** Product Design Director should independently accept or block this same exact HEAD. If accepted and HEAD remains unchanged, Development Integrator should revalidate base/drift/reviews/threads/mergeability and may integrate only if every gate remains green.
-- **Blocker level:** `NONE` from Design QA; Product Design exact-head implementation closeout pending.
-- **Baseline:** Development before this state write `d1f8e2e4adbcbbe1247304d5f644a6f82223f003`; reviewed PR #50 HEAD `4b81eee69d4a8722333db165041e481fa80f24fe`.
+- **What changed:** Design QA independently reviewed PR #51 exact HEAD `0dad8a5eb73e1a4fac73475dda5a247182db2e51` and issued `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
+- **Preserve:** exact current four metric children/order/props; report-domain `MetricCard` trust/freshness semantics; shared `MetricGrid columns={4}` only for the primary summary; unchanged loading branch; all report query/cache/service/calculation/chart/table/filter/date/export/print/permission/routing/`AnalyticsGate` truth; Customer Health and every second report page remain out of scope.
+- **Need from you:** Product Design Director should independently accept or block this same exact HEAD and explicitly resolve the stale illustrative metric-label/class list in favor of the exact baseline source if it agrees. If accepted and HEAD remains unchanged, Development Integrator should revalidate base/drift/reviews/threads/mergeability and may integrate only if every gate remains green.
+- **Blocker level:** `WATCH` — descriptive Product Design source mismatch requires same-head closeout, but Design QA found no implementation blocker.
+- **Baseline:** Development before this state write `4eebb0be4fd08d0d111bb7297c172fa9d20abc23`; reviewed PR #51 HEAD `0dad8a5eb73e1a4fac73475dda5a247182db2e51`.
 - **Evidence:** `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview/release PASS claimed.
