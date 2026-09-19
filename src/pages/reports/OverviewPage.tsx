@@ -1,10 +1,11 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useSystemTrustState, useTrustForComponent } from '@/hooks/useSystemTrustState'
 import { useSalesSummary } from '@/hooks/useSalesGrain'
 import { useTreasurySummary } from '@/hooks/useTreasuryCashflow'
 import { useARSummary } from '@/hooks/useARCollections'
 import { useCustomerHealthSummary } from '@/hooks/useCustomerHealth'
 import MetricCard from '@/components/reports/MetricCard'
+import MetricGrid from '@/components/patterns/MetricGrid'
 import SkeletonCard from '@/components/reports/SkeletonCard'
 import SystemHealthBar from '@/components/reports/SystemHealthBar'
 import ReportFilterBar, { type DateRange } from '@/components/reports/ReportFilterBar'
@@ -57,7 +58,7 @@ export default function OverviewPage() {
         <h2 style={{ fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 var(--space-3)' }}>
           المؤشرات الرئيسية
         </h2>
-        <div className="report-grid">
+        <MetricGrid columns={4}>
           {salesLoading || trsLoading || arLoading ? (
             [1, 2, 3, 4].map(i => <SkeletonCard key={i} height={160} />)
           ) : (
@@ -108,7 +109,7 @@ export default function OverviewPage() {
               />
             </>
           )}
-        </div>
+        </MetricGrid>
       </div>
 
       {/* Customer health strip */}
