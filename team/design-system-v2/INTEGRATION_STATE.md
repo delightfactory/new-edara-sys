@@ -4,66 +4,66 @@
 
 - Review date: `2026-09-19`.
 - Development branch: `design-system-v2-development`.
-- Development HEAD immediately before this state write: `113683620cfc1446ea8f6cb96e390a72c74fa0b0`.
-- Active slice: `DS2-REPORT-006 — Product Performance responsive detail-collection convergence`.
-- Active PR: `#53 — DS2-REPORT-006: converge Product Performance details`.
-- PR base: `design-system-v2-development`.
-- Exact current PR HEAD: `dafd5d36f2b360b1fd93b60d6573b4b717aec635`.
-- PR state at final recheck: `OPEN / DRAFT / mergeable=true`.
-- Integration disposition: `NO_MERGE_WAITING_FRESH_PRODUCT_DESIGN_CLOSEOUT`.
-- QA disposition on exact current HEAD: `AGENT-REVIEW: GREEN-DEV`.
+- Development HEAD immediately before post-merge governance write: `ffda5aeb23684ea981c341761d1dde2cef7c3283`.
+- Completed slice: `DS2-REPORT-006 — Product Performance responsive detail-collection convergence`.
+- Merged PR: `#53 — DS2-REPORT-006: converge Product Performance details`.
+- Exact reviewed PR HEAD: `dafd5d36f2b360b1fd93b60d6573b4b717aec635`.
+- Squash merge commit: `ffda5aeb23684ea981c341761d1dde2cef7c3283`.
+- Integration disposition: `MERGED_REPORT006_ADVANCED_REPORT007`.
+- QA disposition on exact merged HEAD: `AGENT-REVIEW: GREEN-DEV`.
 - QA evidence: `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`.
-- Product Design exact-head acceptance on `dafd5d36f2b360b1fd93b60d6573b4b717aec635`: not yet recorded.
+- Product Design on the same exact HEAD: `PASS — NO DESIGN-SYSTEM BLOCKER`.
 - Runtime/build/lint/preview/release PASS: not claimed.
 
 ## Integrator decision
 
-**NO MERGE in this run.**
+**MERGED.**
 
-PR #53 is technically clean enough to remain in the integration queue, but the current shared handoff still requires a fresh independent Product Design acceptance/block decision on the same exact PR HEAD before Integration acts.
+PR #53 satisfied the complete Development integration gate on unchanged exact HEAD `dafd5d36f2b360b1fd93b60d6573b4b717aec635`.
 
-Final revalidation found:
-- base is exactly `design-system-v2-development`;
-- exact PR HEAD remains `dafd5d36f2b360b1fd93b60d6573b4b717aec635`;
-- Design QA issued same-head `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` with honest `TESTS_AUTHORED_NOT_EXECUTED` evidence;
-- no known source-visible build/type failure is outstanding;
-- inline review threads are empty and no material QA blocker remains;
-- exact PR diff is three UI/Test/Governance files only: `ProductPerformancePage.tsx`, focused `ProductPerformancePage.test.tsx`, and UI Production's owned state;
-- Development drift since feature-branch creation is governance-only: current Development is one QA-state commit ahead of the feature baseline and does not overlap product/shared implementation source;
-- no DB/migration/RPC/service/query-cache/RBAC/RLS/permission/route-guard/business-calculation/validation/workflow/export/print change is present;
-- no workflow/deployment-enabling change is present;
-- Product Design's current Development state is the pre-implementation REPORT006 boundary/authorization and therefore is not exact-head implementation acceptance;
-- UI Production and Design QA both explicitly hand the current exact HEAD to Product Design for independent closeout before Integration.
+Final revalidation before merge confirmed:
+- base exactly `design-system-v2-development`;
+- PR HEAD unchanged from QA and Product Design acceptance;
+- Design QA same-head `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` with honest `TESTS_AUTHORED_NOT_EXECUTED`;
+- Product Design same-head `PASS — NO DESIGN-SYSTEM BLOCKER`;
+- no known source-visible build/type failure outstanding;
+- zero inline review threads and no unresolved material review blocker;
+- no current role-state `BLOCKING` contradiction;
+- three changed files only: Product Performance page, focused Product Performance test, and UI Production's owned state;
+- Development drift from the feature baseline to pre-merge HEAD was governance-only across Design Director, Design QA and Integration state files;
+- no DB/migration/RPC/service/query-cache/RBAC/RLS/permission/route-guard/business-calculation/validation/workflow/export/print change;
+- no workflow/deployment-enabling change.
 
-There is no current BLOCKING cross-role contradiction. The missing item is a normal lifecycle gate, not a defect in the implementation.
+The PR was moved from Draft to Ready without changing its HEAD, then squash-merged with expected-head protection as `ffda5aeb23684ea981c341761d1dde2cef7c3283`.
 
-## Current slice assessment
+## Integrated result
 
-Source review supports the bounded REPORT006 intent:
-- only `تفاصيل المنتجات — أعلى 50 حسب الإيراد` is migrated;
-- Desktop keeps the semantic seven-column table and adds `scope="col"` to touched headers;
-- Tablet/Mobile reuse shared `ResponsiveCollection + Card + KeyValueList` with one renderer mounted at a time;
-- all seven source fields remain represented;
-- row source/order/top-50 contract, formatting/units and return-rate thresholds remain unchanged;
-- the explicit five-row loading state and exact `لا توجد بيانات` empty copy remain caller-owned;
-- chart/KPI/filter/category/header and every second report surface remain untouched;
-- report query/filter/date/category/calculation/trust/permission/routing/`AnalyticsGate`/export/print/business truth remains domain-owned.
+REPORT006 now establishes one representative dense report collection using the proven shared responsive grammar:
+- Desktop keeps the semantic seven-column table and all source field order/density;
+- Tablet and Mobile use `ResponsiveCollection + Card + KeyValueList` detail composition;
+- only one device renderer mounts at a time;
+- long Arabic identity/category text remains wrap-capable and quantitative values remain explicitly labeled;
+- return-rate thresholds and visible percentage meaning remain unchanged;
+- five-row loading state and exact `لا توجد بيانات` empty copy remain caller-owned;
+- all report queries, filters, dates, category, calculations, trust, permissions, routing, `AnalyticsGate`, export/print and business truth remain unchanged.
+
+Evidence remains source-level only. No executed build/test/lint/runtime/preview/release PASS is claimed.
 
 ## Queue continuity
 
-- `DS2-REPORT-001` through `DS2-REPORT-005` remain `DONE`.
-- `DS2-REPORT-006` remains the single active slice in `REVIEW`; the queue must not advance yet.
-- Workstream and Team Memory are not changed in this run because no merge occurred.
-- `DECISION_LOG.md` remains unchanged because no durable rule changed or was superseded.
-- No issue #27 comment is added because implementation/review progression is normal and there is no persistent blocker or coordination problem to duplicate.
+- `DS2-REPORT-001` through `DS2-REPORT-006` are `DONE`.
+- Exactly one next dependency-safe item is now `READY`: `DS2-REPORT-007 — Next bounded Reports metrics/charts/tables/responsive-composition convergence`.
+- Product Design Director owns the next action and must inspect the exact latest Development baseline, then bound one smallest presentation-only concern before UI Production starts.
+- Settings/Admin, Global convergence, remaining Work and Field debt, and shared component-depth work remain preserved in the roadmap.
+- `DECISION_LOG.md` is unchanged because REPORT006 applied existing durable rules and did not create or supersede a durable decision.
 
-No feature/product code was implemented by Integration. No GitHub Actions or hosted CI were triggered or rerun, no Vercel/preview branch was touched, and `main` was not touched.
+No feature/product code was implemented by Integration. No GitHub Actions or hosted CI were triggered/rerun, no Vercel/preview branch was touched, and `main` was not touched.
 
 ### Cross-role handoff
-- **To:** Product Design Director first; Development Integrator after exact-head Product Design closeout.
-- **What changed:** QA is GREEN-DEV on exact PR #53 HEAD `dafd5d36f2b360b1fd93b60d6573b4b717aec635`; Integration independently revalidated scope, drift, threads, mergeability and functional isolation and is holding merge only for fresh Product Design exact-head acceptance/block.
-- **Preserve:** one Product Performance detail collection only; Desktop semantic table; Tablet/Mobile shared responsive-card composition; seven fields/order/formatting/thresholds; five-row loading state; exact empty copy; all report query/filter/calculation/trust/permission/routing/export/business semantics; no second report/table; no generic DataTable/MobileDataCard widening.
-- **Need from you:** Product Design independently accept or block exact PR HEAD `dafd5d36f2b360b1fd93b60d6573b4b717aec635`. If accepted and the PR HEAD remains unchanged, Integration should revalidate the same normal gates and may merge into `design-system-v2-development`.
-- **Blocker level:** `NONE` from Integration; merge lifecycle gate remains pending Product Design exact-head closeout.
-- **Baseline:** Development pre-state-write `113683620cfc1446ea8f6cb96e390a72c74fa0b0`; exact PR #53 HEAD `dafd5d36f2b360b1fd93b60d6573b4b717aec635`.
-- **Evidence:** `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview/release PASS claimed.
+- **To:** Product Design Director first; UI Production Engineer only after an exact REPORT007 boundary is recorded.
+- **What changed:** PR #53 / REPORT006 merged as `ffda5aeb23684ea981c341761d1dde2cef7c3283`; one Reports dense responsive collection is now integrated and REPORT007 is the sole READY item.
+- **Preserve:** REPORT001-006 contracts; Desktop dense semantic report tables where appropriate; deliberate Tablet/Mobile composition; one mounted renderer; caller/domain ownership of query/filter/calculation/trust/permission/routing/export/business meaning; full Settings/Admin, Global, Work, Field and shared-component roadmap.
+- **Need from you:** Product Design should inspect the exact latest Development HEAD and record exactly one smallest dependency-safe REPORT007 presentation concern with representative surface/file and explicit acceptance boundary. UI Production must not implement REPORT007 before that boundary exists.
+- **Blocker level:** `NONE`.
+- **Baseline:** integrated product HEAD `ffda5aeb23684ea981c341761d1dde2cef7c3283`.
+- **Evidence:** `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`; Product Design `PASS — NO DESIGN-SYSTEM BLOCKER`; no executed runtime/build evidence claimed.

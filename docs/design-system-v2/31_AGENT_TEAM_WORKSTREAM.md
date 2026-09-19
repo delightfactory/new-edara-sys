@@ -38,17 +38,17 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-005`.
+Product UI is integrated through `DS2-REPORT-006`.
 
 Latest product integration:
-- PR: `#52 — DS2-REPORT-005: converge Sales revenue chart panel`
-- Exact reviewed PR HEAD: `eec9f05772babd40be61803b39d90bd9b859b28d`
-- Squash merge commit: `3776e7defc83a1376a571dd38256c6a7bbf87e17`
+- PR: `#53 — DS2-REPORT-006: converge Product Performance details`
+- Exact reviewed PR HEAD: `dafd5d36f2b360b1fd93b60d6573b4b717aec635`
+- Squash merge commit: `ffda5aeb23684ea981c341761d1dde2cef7c3283`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact HEAD
 - Runtime/preview/release evidence: not claimed
 
-The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, Supervisor Work shared KPI summary convergence, Reports shared route-level sub-navigation convergence, Reports shared date-preset selector convergence with hardened `SegmentedControl` geometry, Reports shared native `DateField` convergence for the custom date pair, Reports Overview primary KPI-summary layout convergence onto shared `MetricGrid` while preserving report-domain `MetricCard` trust/freshness semantics, and a shared domain-agnostic `ChartPanel` proven on the primary Sales revenue chart while chart/domain semantics remain caller-owned.
+The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, Supervisor Work shared KPI summary convergence, Reports shared route-level sub-navigation convergence, Reports shared date-preset selector convergence with hardened `SegmentedControl` geometry, Reports shared native `DateField` convergence for the custom date pair, Reports Overview primary KPI-summary layout convergence onto shared `MetricGrid` while preserving report-domain `MetricCard` trust/freshness semantics, shared domain-agnostic `ChartPanel` proven on the primary Sales revenue chart, and Product Performance responsive detail-collection convergence using shared `ResponsiveCollection + Card + KeyValueList` while preserving the dense Desktop table.
 
 ## Completed slices
 
@@ -81,11 +81,9 @@ Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER`
 Runtime/preview/release evidence: not claimed
 
 System result:
-- the common `ReportsLayout` route navigation uses shared V2 `SubNav` instead of the report-local route-navigation mini-system;
-- all 14 report destinations, order, Arabic labels/icons and permission arrays remain unchanged;
-- permission eligibility and `AnalyticsGate` ownership remain caller/domain-owned;
-- shared `SubNav` owns route-link semantics, active/focus treatment, horizontal containment, RTL-safe layout and touch geometry;
-- child report filters, queries, calculations, export/print, routing and business semantics remain untouched.
+- common `ReportsLayout` route navigation uses shared V2 `SubNav`;
+- all 14 destinations/order/Arabic labels/icons/permission arrays remain unchanged;
+- eligibility, `AnalyticsGate`, routing, filters, queries, calculations and export/print remain domain-owned.
 
 ### DS2-REPORT-002 — Report date-preset selector convergence
 Status: `DONE`
@@ -97,11 +95,9 @@ Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER`
 Runtime/preview/release evidence: not claimed
 
 System result:
-- the four report date presets now use shared V2 `SegmentedControl` inside domain-local `ReportFilterBar`;
-- exact preset labels/order/range outputs, external `DateRange value/onChange`, both custom date inputs and all date normalization/current-month semantics remain unchanged;
-- all report query/cache/service/calculation/chart/table/metric/export/print/permission/routing/`AnalyticsGate` truth remains domain-owned and unchanged;
-- shared default/non-block segmented items retain intrinsic width through `flex: 0 0 auto`, while `--block` preserves equal-width `flex: 1 1 0` and Mobile containment remains `overflow-x: auto` in the shared layer;
-- focused behavior and CSS-contract tests are authored but were not executed.
+- four report date presets use shared V2 `SegmentedControl` inside domain-local `ReportFilterBar`;
+- preset labels/order/range outputs and all date/query/business semantics remain unchanged;
+- default/non-block segmented items retain intrinsic width while block mode and Mobile containment remain shared-layer contracts.
 
 ### DS2-REPORT-003 — Report custom-date field convergence
 Status: `DONE`
@@ -113,12 +109,9 @@ Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER`
 Runtime/preview/release evidence: not claimed
 
 System result:
-- one shared domain-agnostic V2 `DateField` now composes the existing `Input -> Field` grammar and fixes native `type="date"` only;
-- only the two custom date editors in `ReportFilterBar` migrated to the shared control;
-- Arabic accessible names `من تاريخ` / `إلى تاريخ`, a named date-pair group and wrap-capable constrained-width composition are present;
-- report-local raw date-input surface/focus styling was retired in favor of shared form styling and touch geometry;
-- external `DateRange value/onChange`, `normalizeDateRange(...)`, local-date/current-month/preset semantics, REPORT001/002 contracts and all report query/cache/service/calculation/chart/table/metric/export/print/permission/routing/`AnalyticsGate` truth remain unchanged;
-- focused `DateField` and `ReportFilterBar` tests are authored but were not executed.
+- shared V2 `DateField` composes `Input -> Field` and owns native date-input presentation/accessibility only;
+- only the two custom date editors in `ReportFilterBar` migrated;
+- range normalization, local-date/preset/query/business semantics remain caller-owned.
 
 ### DS2-REPORT-004 — Reports Overview summary metric-grid convergence
 Status: `DONE`
@@ -130,14 +123,9 @@ Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER`
 Runtime/preview/release evidence: not claimed
 
 System result:
-- only the primary Reports Overview KPI-summary wrapper migrated from local `report-grid` to shared `MetricGrid columns={4}`;
-- the exact existing `MetricCard` children remain in source order: `صافي الإيراد`, `إجمالي المبيعات`, `صافي التحصيل الخزيني`, `تحصيل AR المنسوب`;
-- every existing child prop/value/formatter/status/freshness/domain/subtitle/icon/secondary value and the four-skeleton loading branch remain unchanged;
-- report-domain `MetricCard` remains the owner of trust/freshness plus COMPLETE/warning/RUNNING/BLOCKED presentation semantics and was not replaced by generic `StatCard`;
-- shared `MetricGrid` now owns the summary layout grammar: four columns on Desktop, two on Tablet and one on Mobile under the existing V2 contract;
-- Customer Health, navigation cards, charts, tables, filters and every second report page remain out of scope;
-- all report queries, cache/service/hook contracts, calculations, metric/chart/table data, permissions, routing, `AnalyticsGate`, export/print and business truth remain caller/domain-owned and unchanged;
-- the prior stale illustrative wrapper/metric-label governance wording is superseded by this exact source truth.
+- only the primary Reports Overview KPI wrapper migrated to shared `MetricGrid columns={4}`;
+- report-domain `MetricCard` retains trust/freshness/status semantics;
+- all values, formatting, loading and report business/query semantics remain unchanged.
 
 ### DS2-REPORT-005 — Shared ChartPanel foundation + Sales primary revenue-chart migration
 Status: `DONE`
@@ -149,61 +137,42 @@ Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER`
 Runtime/preview/release evidence: not claimed
 
 System result:
-- shared V2 `ChartPanel` now provides a thin domain-agnostic analytical surface composed from existing `Card + SectionHeader`;
-- `ChartPanel` owns neutral frame/padding, semantic section hierarchy and `min-width: 0` body containment only, with semantic `h2` as the default and explicit `2 | 3 | 4` override for genuinely nested consumers;
-- only SalesPage's first chart `تطور الإيراد اليومي` migrated to the shared panel;
-- exact Arabic title/description, caller-owned trust/freshness action content, blocked/loading/empty/data-present decision tree and the existing 240px responsive chart body remain preserved;
-- all Recharts data/series/axes/gradients/tooltip/colors, hooks, date/filter semantics, calculations, permissions, routing, `AnalyticsGate`, export/print and business truth remain caller/domain-owned and unchanged;
-- the second Sales chart and every second report page remain untouched;
-- focused shared-pattern and Sales migration tests are authored but were not executed.
+- shared V2 `ChartPanel` provides a thin domain-agnostic analytical surface over `Card + SectionHeader`;
+- default semantic heading is `h2`, with explicit `2 | 3 | 4` override for genuine nesting;
+- only SalesPage's first chart migrated; Recharts/trust/state/query/business semantics remain caller-owned.
+
+### DS2-REPORT-006 — Product Performance responsive detail-collection convergence
+Status: `DONE`
+Merged PR: `#53`
+Reviewed HEAD: `dafd5d36f2b360b1fd93b60d6573b4b717aec635`
+Squash merge: `ffda5aeb23684ea981c341761d1dde2cef7c3283`
+Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
+Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER`
+Runtime/preview/release evidence: not claimed
+
+System result:
+- only `ProductPerformancePage` section `تفاصيل المنتجات — أعلى 50 حسب الإيراد` migrated to shared `ResponsiveCollection<ProductPerformanceRow>`;
+- Desktop preserves the semantic seven-column table and now uses `scope="col"` on touched headers;
+- Tablet/Mobile use existing V2 `Card + KeyValueList` detail composition, with only one device renderer mounted at a time;
+- all seven source fields, row source/order/top-50 contract, formatting/units, return-rate thresholds/colors, five-row loading skeleton and exact `لا توجد بيانات` remain preserved;
+- chart/KPI/filter/category/header and all query/cache/service/calculation/trust/permission/routing/`AnalyticsGate`/export/print/business semantics remain caller/domain-owned and unchanged.
 
 ## Current single READY slice
 
-### DS2-REPORT-006 — Product Performance responsive detail-collection convergence
+### DS2-REPORT-007 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
 Status: `READY`
-Owner role for next action: UI Production Engineer
-Dependency baseline: exact inspected Development HEAD `19eed8c9f1c8794cf309ed67c40084c085345004`; `DS2-REPORT-005` product integration remains `3776e7defc83a1376a571dd38256c6a7bbf87e17`.
-Representative surface: `src/pages/reports/ProductPerformancePage.tsx`, section `تفاصيل المنتجات — أعلى 50 حسب الإيراد` only.
+Owner role for next action: Product Design Director
+Dependency baseline: exact integrated product HEAD `ffda5aeb23684ea981c341761d1dde2cef7c3283`.
 
 System-pattern intent:
-- converge one real dense report collection onto the already-proven shared `ResponsiveCollection` device-composition contract instead of preserving a Desktop table as the only composition at every width;
-- keep the current semantic table as the Desktop renderer, and provide deliberate Tablet/Mobile detail-card composition from the same `ProductPerformanceRow[]` using existing V2 `Card` + `KeyValueList` building blocks;
-- use a single mounted renderer at a time through `ResponsiveCollection`; do not hide duplicate Desktop/Mobile interactive DOM with CSS;
-- prove the Reports dense-data responsive grammar on one representative surface before any second table/report is migrated.
+- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline;
+- select exactly one smallest dependency-safe presentation-only concern and name its representative file/surface plus explicit acceptance boundary before implementation;
+- prefer reuse of existing shared V2 primitives/patterns and strengthen a shared contract only when a real consumer proves the need;
+- preserve REPORT001-006 contracts and all report query/cache/service/calculation/trust/permission/routing/`AnalyticsGate`/export/print/business truth;
+- preserve Settings/Admin, Global convergence, remaining Work and Field debt, and shared component-depth work in the roadmap;
+- do not turn REPORT007 into a broad Reports beautification pass.
 
-Required preservation:
-- keep the section title `تفاصيل المنتجات — أعلى 50 حسب الإيراد` unchanged;
-- Desktop keeps the existing seven fields and order: `المنتج`, `التصنيف`, `الإيراد`, `الكمية`, `نسبة المرتجع`, `عملاء`, `الحصة%`;
-- preserve exact row source/order/count, `ProductPerformanceRow` values, `fmt`/`fmtCur`/`fmtPct` outputs, currency/unit copy and return-rate semantic thresholds/colors (`>10` danger, `>5` warning, otherwise success);
-- preserve the current five-row skeleton loading presentation and exact empty copy `لا توجد بيانات` by passing caller-owned `loadingState` / `emptyState` rather than accepting changed generic state copy/count;
-- preserve all report trust/freshness ownership and every upstream query/filter/category/date/chart/metric calculation contract.
-
-Device and Arabic/RTL acceptance:
-- Desktop: native table remains the high-density composition with all seven columns, readable RTL ordering and contained overflow region; add `scope="col"` to column headers if touched so the table remains semantically explicit;
-- Tablet: deliberately use the detail-card composition rather than compressing seven table columns; no horizontal page overflow; metadata can use the shared multi-column key/value grammar;
-- Mobile: one-column stacked cards, no table-width dependency and no horizontal page overflow; product identity remains the first visual anchor, category remains secondary context, and the five quantitative fields remain directly readable without opening another surface;
-- long Arabic product/category content must wrap or remain legible without clipping essential meaning; LTR numeric values may retain explicit numeric direction while labels remain RTL;
-- dark mode uses existing semantic V2 surface/text/border/status tokens only; no report-local light-only colors are introduced.
-
-Accessibility / state acceptance:
-- Desktop remains a real semantic `<table>` / `<thead>` / `<tbody>` with column headers;
-- Tablet/Mobile detail compositions must preserve explicit text labels for every numeric field through `KeyValueList` and must not encode the return-rate condition by color alone: the percentage text itself remains present alongside its semantic color;
-- no fake clickable-card semantics are added because rows currently have no row navigation/action;
-- loading and empty states remain single, named states owned by the caller; only one device renderer is mounted when data is ready.
-
-Explicit exclusions:
-- do not create a generic DataTable V2 or a new MobileDataCard abstraction in REPORT006;
-- do not adopt the legacy `DataCard` component for this proof; use current V2 `Card` + `KeyValueList` composition inside `ResponsiveCollection`;
-- do not migrate the Product Performance chart, metric cards/grid, category selector, page header, `ReportFilterBar`, or any second report page/table;
-- do not change sorting/order, pagination behavior, row count, filters, hooks, Supabase/RPC/service/query-cache contracts, calculations, trust/freshness semantics, permissions, routing, `AnalyticsGate`, export/print or business truth;
-- do not broaden the slice into generic Reports styling cleanup.
-
-Focused implementation evidence expected:
-- tests prove Desktop renders the existing table field contract, Mobile mounts only the mobile detail composition, Tablet deliberately follows the detail composition, and the preserved loading/empty branches remain single and unchanged;
-- source review must confirm no functional/business/backend drift and no hidden duplicate renderer DOM;
-- hosted CI remains forbidden; honest local/non-executed evidence follows `33_TEST_AND_VALIDATION_POLICY.md`.
-
-Implementation is authorized for this exact boundary only. Any need to change functional semantics or build a broader table abstraction moves the slice to `BLOCKED` for Product Design re-bounding.
+Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
 
 ## Product migration roadmap
 
@@ -268,8 +237,9 @@ Open only when a real migrated screen proves the recurring gap:
 - `DS2-REPORT-003` Report custom-date field convergence — `DONE` / PR #50 / merge `cec34dcdc2fec5ac7b3cd4821d942f224f9f52f2`
 - `DS2-REPORT-004` Reports Overview summary metric-grid convergence — `DONE` / PR #51 / merge `38b53912c1b3ff8c933ec0d5cfc9d3dc69488f85`
 - `DS2-REPORT-005` Shared ChartPanel foundation + Sales primary revenue-chart migration — `DONE` / PR #52 / merge `3776e7defc83a1376a571dd38256c6a7bbf87e17`
-- `DS2-REPORT-006` Product Performance responsive detail-collection convergence — `READY` / implementation authorized only for the bounded `ProductPerformancePage` detail section above
-- further report metrics/charts/tables/responsive composition beyond REPORT006 — `BACKLOG` / each concern must be bounded separately
+- `DS2-REPORT-006` Product Performance responsive detail-collection convergence — `DONE` / PR #53 / merge `ffda5aeb23684ea981c341761d1dde2cef7c3283`
+- `DS2-REPORT-007` Next bounded Reports metrics/charts/tables/responsive-composition convergence — `READY` / Product Design must bound exactly one concern before implementation
+- further Reports/Analytics convergence beyond REPORT007 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
