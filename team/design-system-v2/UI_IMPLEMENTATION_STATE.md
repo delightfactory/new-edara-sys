@@ -2,94 +2,97 @@
 
 ## Reviewed baseline
 
-- Run date: `2026-09-19`
-- Development branch: `design-system-v2-development`
-- Exact Development branch-creation baseline: `efa2e959ab994da3b81a9c28d937cf7acc570da7`
-- Latest Development HEAD rechecked during repair: `4ec29444c799ab5f7ead7a55e084cfb29f86ac76`
-- Development drift since branch creation: governance-only (`DESIGN_QA_STATE.md` + `INTEGRATION_STATE.md`); no product/shared-source drift affecting this slice.
-- Feature branch: `design-system-v2/report-005-chart-panel`
-- Draft PR: `#52 — DS2-REPORT-005: converge Sales revenue chart panel`
-- QA-blocked HEAD: `7d63904e50197e76167205c6d6f52af4d2884257`
-- Product/test repair HEAD before this owned-state write: `6e020083498dbaeadf8324f19d6c539a27b93245`
-- Active slice: `DS2-REPORT-005 — Shared ChartPanel foundation + Sales primary revenue-chart migration`
-- Representative surface: `src/pages/reports/SalesPage.tsx` first revenue chart panel (`تطور الإيراد اليومي`)
-- Disposition: `REVIEW — QA P2 HIERARCHY BLOCKER REPAIRED; FRESH EXACT-HEAD PRODUCT DESIGN + DESIGN QA REQUIRED`
-- Evidence: `TESTS_AUTHORED_NOT_EXECUTED`
+- Run date: `2026-09-19`.
+- Development branch: `design-system-v2-development`.
+- Exact Development branch-creation baseline: `c0465e040bec196a33e51df1ce1194c2c669b933`.
+- Feature branch: `design-system-v2/report-006-product-performance-responsive`.
+- Draft PR: `#53 — DS2-REPORT-006: converge Product Performance details`.
+- Product/test HEAD before this owned-state write: `4619c600fb9e5dd5065d90641b4c7fa3eb4d6017`.
+- Active slice: `DS2-REPORT-006 — Product Performance responsive detail-collection convergence`.
+- Representative surface: `src/pages/reports/ProductPerformancePage.tsx`, section `تفاصيل المنتجات — أعلى 50 حسب الإيراد` only.
+- Disposition: `REVIEW — IMPLEMENTATION COMPLETE; FRESH EXACT-HEAD PRODUCT DESIGN + DESIGN QA REQUIRED`.
+- Evidence: `TESTS_AUTHORED_NOT_EXECUTED`.
 
 ## Independent implementation judgment
 
-Design QA correctly identified a material shared-semantic mismatch on the prior HEAD: `ChartPanel` defaulted to `headingLevel = 3`, while the Product Design boundary explicitly requires the first Sales chart title to be semantic `h2` beneath the page `h1`, matching the established `SectionHeader` default.
+The bounded Product Design direction is implementable without widening functional scope or inventing a new table/card abstraction. The existing shared `ResponsiveCollection` already owns single-renderer device composition, while current V2 `Card`, `KeyValueList`, and responsive-card-grid classes provide the required narrow-screen anatomy.
 
-The correct repair is intentionally narrow: restore the shared `ChartPanel` default to `2` while retaining the explicit `headingLevel?: 2 | 3 | 4` override for genuinely nested consumers, and update only the focused tests that had locked the incorrect `h3` assumption. No chart, page, report or business semantics need to change.
+The correct implementation therefore keeps the existing dense seven-column table as the Desktop renderer and changes only Tablet/Mobile composition to labeled detail cards. This improves report usability at narrow widths while preserving the same row source, values, ordering, formatting and semantic thresholds.
 
 ## Material implementation progress
 
-- Kept PR #52 as the single active implementation PR; no second slice was started.
-- Repaired shared `src/components/patterns/ChartPanel.tsx` default from `headingLevel = 3` to `headingLevel = 2`.
-- Updated `src/components/patterns/ChartPanel.test.tsx` to protect the shared default semantic `h2` contract.
-- Updated both heading lookups in `src/pages/reports/SalesPage.test.tsx` from level `3` to level `2`.
-- The repair commit from blocked HEAD `7d63904e...` to product/test HEAD `6e020083...` changes exactly three files with four assertion/default-line replacements only.
-- No product implementation beyond the requested hierarchy repair changed.
+- Created the feature branch from exact Development HEAD `c0465e040bec196a33e51df1ce1194c2c669b933` after confirming no implementation PR targeted Development.
+- Migrated only the Product Performance detail collection to `ResponsiveCollection<ProductPerformanceRow>`.
+- Preserved the existing Desktop table and added `scope="col"` to its seven headers.
+- Added Tablet/Mobile presentation using existing V2 `Card + KeyValueList` only; no new generic DataTable, MobileDataCard or page-local component system was introduced.
+- Tablet deliberately uses the detail-card renderer with a two-card grid and two-column labeled metadata; Mobile uses stacked cards and one-column metadata.
+- Product name remains primary identity, category remains secondary context, and revenue/quantity/return rate/customers/share remain explicitly labeled details.
+- Kept long Arabic product/category text wrap-capable with no essential-text clipping.
+- Extracted only a local `returnRateColor` presentation helper that preserves the exact existing thresholds: `>10` danger, `>5` warning, otherwise success.
+- Kept the exact five-row custom loading state and exact empty copy `لا توجد بيانات` through explicit `loadingState` / `emptyState` props.
+- Opened Draft PR #53 targeting `design-system-v2-development`.
 
-Files touched by the repair:
-- `src/components/patterns/ChartPanel.tsx`
-- `src/components/patterns/ChartPanel.test.tsx`
-- `src/pages/reports/SalesPage.test.tsx`
+Files touched:
+- `src/pages/reports/ProductPerformancePage.tsx`
+- `src/pages/reports/ProductPerformancePage.test.tsx`
+- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
-Existing slice files retained unchanged by the repair:
-- `src/styles/design-system-v2-surfaces.css`
-- `src/pages/reports/SalesPage.tsx`
+No shared component or shared CSS change was necessary because the existing V2 contracts were sufficient.
 
 ## Preserve / verified boundaries
 
-- `ChartPanel` remains a presentation-only shared composition over existing `Card + SectionHeader`.
-- `headingLevel` remains explicitly overrideable for nested chart sections; only the default is corrected to shared/product-design `h2` hierarchy.
-- Exact Arabic title `تطور الإيراد اليومي` and description remain unchanged.
-- Existing `TrustStateBadge` and `FreshnessIndicator` remain caller-owned with unchanged props.
-- Existing blocked/loading/empty/data-present decision tree remains caller-owned and unchanged.
-- Existing 240px `ResponsiveContainer` chart body remains unchanged.
-- Revenue chart Recharts data/series/axes/gradient/tooltip/color/dimension semantics remain unchanged.
-- `useSystemTrustState`, `useTrustForComponent`, `useSalesDailyTotals`, `useSalesSummary`, filters/date semantics, calculations and formatting remain unchanged.
-- The second Sales bar chart and every other Reports surface remain untouched.
-- No DB/migration/RPC/service/RBAC/RLS/route guard/business calculation/workflow/query-cache/validation/export/print change.
-- No hosted CI/GitHub Actions, Vercel, preview branch or `main` activity.
+- Exact section title `تفاصيل المنتجات — أعلى 50 حسب الإيراد` is unchanged.
+- Row source, row order and top-50 query contract are unchanged.
+- Desktop field order remains exactly: `المنتج`, `التصنيف`, `الإيراد`, `الكمية`, `نسبة المرتجع`, `عملاء`, `الحصة%`.
+- All seven source fields remain represented on Tablet/Mobile: product name, category plus five labeled quantitative details.
+- Existing `fmt`, `fmtCur`, `fmtPct`, currency/unit copy and return-rate semantic colors retain their meaning.
+- Chart, KPI cards/grid, category selector, page header and `ReportFilterBar` remain untouched.
+- No query/hook/service/cache/Supabase/RPC/DB/RBAC/RLS/permission/routing/`AnalyticsGate`/calculation/validation/workflow/export/print/business semantics changed.
+- No second report/table surface was touched.
+- No GitHub Actions/hosted CI, Vercel, preview branch or `main` activity.
 
 ## Device / state / accessibility coverage
 
-- **Desktop:** full-width analytical density and existing chart dimensions are unchanged.
-- **Tablet/Mobile:** shared `Card`/`SectionHeader` wrapping and `min-width: 0` chart-body containment remain unchanged; no new breakpoint behavior was introduced.
-- **Arabic/RTL:** exact Arabic copy and logical spacing remain unchanged.
-- **Accessibility / hierarchy:** the default shared chart heading is now semantic `h2`, so the migrated Sales chart correctly nests beneath the existing page `h1`; explicit nested levels remain available through the prop.
-- **Blocked / loading / empty / data-present:** no branch or meaning changed.
-- **Interaction/focus:** no new interactive behavior was introduced.
+- **Desktop:** only the semantic table renderer mounts; existing contained horizontal overflow remains and all touched column headers now have `scope="col"`.
+- **Tablet:** only the card renderer mounts; two cards per row use existing shared responsive-grid grammar and each card exposes two-column labeled metadata where space permits.
+- **Mobile:** only the card renderer mounts; one-column stacked cards remove table-width dependency and ordinary page-level horizontal overflow from this collection.
+- **Arabic/RTL:** product/category text may wrap naturally; logical block spacing is used; numeric values use explicit LTR direction while labels/content remain RTL-first.
+- **Dark mode:** narrow-screen surfaces use existing semantic V2 Card/KeyValue tokens; no report-local light-only color surface was added.
+- **Loading:** explicit caller-owned five-row skeleton state remains single and precedes device rendering.
+- **Empty:** exact caller-owned `لا توجد بيانات` remains single and precedes device rendering.
+- **Interaction/focus:** no row action or clickable-card semantics were introduced; there is no new interactive control.
 
 ## Test / execution evidence
 
 Evidence: **`TESTS_AUTHORED_NOT_EXECUTED`**.
 
-Focused authored coverage after repair:
-- `ChartPanel.test.tsx` now asserts the default chart title is `h2` while preserving Card/SectionHeader/action/body composition checks.
-- `SalesPage.test.tsx` now asserts `تطور الإيراد اليومي` as `h2` in both normal/empty and blocked-state coverage, while continuing to verify exactly one shared `ChartPanel` and no second-chart migration.
+Focused `ProductPerformancePage.test.tsx` coverage protects:
+- Desktop semantic table, exact seven-column header order and `scope="col"`.
+- Mobile card-only rendering with no mounted table/Tablet renderer and all source information represented.
+- Tablet deliberate detail-card rendering with no mounted table/Mobile renderer and denser two-column `KeyValueList` metadata.
+- Existing custom five-skeleton loading branch and exact empty copy.
+- No hidden duplicate device renderer DOM through explicit negative assertions.
+- Preserved return-rate danger presentation on the representative row.
 
-No executable repository checkout/package runtime is available in the sandbox. `npm test`, `npm run build` and `npm run lint` were not executed. No local/build/test/lint/runtime/preview PASS is claimed. GitHub Actions/hosted CI and Vercel were not used.
+No approved executable repository checkout/package runtime was available in this run, so `npm test`, `npm run build` and `npm run lint` were not executed. No local/build/test/lint/runtime/preview PASS is claimed.
 
-Static exact-diff review of the repair found no new TypeScript/API risk: the prop union already accepts `2`, `SectionHeader` already accepts/uses that level, and the Sales caller relies on the corrected default without changing any product data/state wiring.
+Static source/diff review found no known TypeScript/API blocker: the implementation uses existing typed `ResponsiveCollection<ProductPerformanceRow>`, existing Card/KeyValueList APIs, and existing device-grid classes without changing their contracts.
 
 ## Peer-state comparison / current risk
 
-- **Product Design Director:** explicit REPORT005 acceptance requires semantic `h2`; the repaired shared default is now aligned with that requirement. Fresh exact-head Product Design closeout is still required because the PR HEAD moved.
-- **Design QA:** prior exact HEAD `7d63904e...` is correctly `P2 / BLOCKING`; the specific blocker has been repaired on a new HEAD, so prior QA evidence cannot be reused. Fresh exact-head review is required.
-- **Development Integrator:** current `NO_MERGE_BLOCKED_P2_REPORT005_HEADING_HIERARCHY` state is lifecycle-stale with respect to the repaired PR HEAD and must remain `NO_MERGE` until new QA + Product Design gates exist on one stable exact HEAD.
-- **Development drift:** only peer governance state files changed since branch creation, so the repair does not require product rebase or scope expansion.
-- Residual risk is independent exact-head source/design review plus unexecuted runtime/test evidence; no implementation blocker is known after this repair.
+- **Product Design Director:** fresh REPORT006 state explicitly authorizes this exact one-section boundary and this implementation follows that boundary without scope expansion.
+- **Design QA:** current state is lifecycle-stale from REPORT005; no REPORT006 QA evidence exists yet.
+- **Development Integrator:** current state is lifecycle-stale from the completed REPORT005 merge; Integration must remain `NO_MERGE` until fresh REPORT006 exact-head gates exist.
+- **Team Memory:** still describes REPORT006 as awaiting Product Design bounding, but the newer Product Design state/workstream boundary supersedes that lifecycle wording; durable invariants remain aligned.
+- Residual risk is independent exact-head source/design review plus unexecuted runtime/test evidence. No implementation blocker is currently known.
 
 ### Cross-role handoff
-- **To:** Design QA + Product Design Director for fresh exact-head review; Development Integrator remains `NO_MERGE` until both gates are current on the final stable HEAD.
-- **What changed:** the QA-requested hierarchy repair restores shared `ChartPanel` default heading to semantic `h2` and updates focused tests that previously asserted `h3`.
-- **Preserve:** one-chart-only scope; shared `Card + SectionHeader` composition; exact Arabic title/description; caller-owned trust/freshness and blocked/loading/empty/data branches; 240px chart body; all Recharts/query/filter/calculation/permission/routing/business semantics; second chart and all other report pages remain out of scope.
-- **Need from you:** review the exact current PR #52 HEAD after this state write. QA should confirm the P2 hierarchy blocker is closed and issue `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` only if the exact stable HEAD passes; Product Design should independently accept the same exact stable HEAD before Integration acts.
-- **Blocker level:** `NONE` from implementation; merge remains gated on fresh independent review.
-- **Baseline:** branch-creation Development `efa2e959ab994da3b81a9c28d937cf7acc570da7`; latest Development recheck `4ec29444c799ab5f7ead7a55e084cfb29f86ac76`.
-- **Product/test repair HEAD before owned-state write:** `6e020083498dbaeadf8324f19d6c539a27b93245`.
-- **PR:** `#52` / `design-system-v2/report-005-chart-panel` -> `design-system-v2-development`.
+- **To:** Design QA + Product Design Director for fresh exact-head review; Development Integrator after both gates are current on one stable HEAD.
+- **What changed:** Product Performance's single detail collection now uses shared `ResponsiveCollection` with preserved Desktop table and deliberate Tablet/Mobile `Card + KeyValueList` composition; Draft PR #53 is open.
+- **Preserve:** exact section title; seven fields and Desktop order; row source/order/top-50 contract; formatters/units; return-rate thresholds/colors; five-row loading skeleton; exact `لا توجد بيانات`; every query/filter/date/category/calculation/trust/permission/routing/`AnalyticsGate`/export/print/business contract; no second report surface.
+- **Need from you:** review the exact current PR #53 HEAD after this state write. QA should issue `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` only if the exact stable HEAD passes; Product Design should independently accept/block that same exact HEAD before Integration acts.
+- **Blocker level:** `NONE` from implementation.
+- **Baseline:** branch-creation Development `c0465e040bec196a33e51df1ce1194c2c669b933`.
+- **Product/test HEAD before owned-state write:** `4619c600fb9e5dd5065d90641b4c7fa3eb4d6017`.
+- **PR:** `#53` / `design-system-v2/report-006-product-performance-responsive` -> `design-system-v2-development`.
 - **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`.
