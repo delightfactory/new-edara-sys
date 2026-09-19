@@ -4,6 +4,7 @@ import { useARDailyTotals, useARSummary } from '@/hooks/useARCollections'
 import MetricCard from '@/components/reports/MetricCard'
 import SkeletonCard from '@/components/reports/SkeletonCard'
 import SystemHealthBar from '@/components/reports/SystemHealthBar'
+import ChartPanel from '@/components/patterns/ChartPanel'
 import ReportFilterBar, { type DateRange } from '@/components/reports/ReportFilterBar'
 import TrustStateBadge from '@/components/reports/TrustStateBadge'
 import FreshnessIndicator from '@/components/reports/FreshnessIndicator'
@@ -88,17 +89,16 @@ export default function ReceivablesPage() {
         )}
       </div>
 
-      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-primary)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', boxShadow: 'var(--shadow-sm)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--text-primary)' }}>تحصيلات AR مجمّعة بتاريخ البيع الأصلي</div>
-            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: '2px' }}>مجمّع في قاعدة البيانات — إيصالات، مردودات، صافي</div>
-          </div>
-          <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
+      <ChartPanel
+        title="تحصيلات AR مجمّعة بتاريخ البيع الأصلي"
+        description="مجمّع في قاعدة البيانات — إيصالات، مردودات، صافي"
+        action={(
+          <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', flexWrap: 'wrap' }}>
             {arTrust && <TrustStateBadge status={arTrust.status} domain="ar" size="sm" />}
             {arTrust && <FreshnessIndicator lastCompletedAt={arTrust.last_completed_at} isStale={arTrust.is_stale} />}
           </div>
-        </div>
+        )}
+      >
         {isBlocked ? (
           <div style={{ height: '260px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-danger-light)', borderRadius: 'var(--radius-md)', flexDirection: 'column', gap: 'var(--space-2)' }}>
             <div style={{ fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--color-danger)' }}>بيانات AR محجوبة</div>
@@ -119,7 +119,7 @@ export default function ReceivablesPage() {
             </BarChart>
           </ResponsiveContainer>
         )}
-      </div>
+      </ChartPanel>
     </div>
   )
 }
