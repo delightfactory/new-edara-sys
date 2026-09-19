@@ -4,64 +4,60 @@
 
 - Review date: `2026-09-19`.
 - Development branch: `design-system-v2-development`.
-- Exact Development HEAD independently revalidated before this state write: `6688cfa3282304a94f1a7ffc138c02b831d8c067`.
-- Active slice: `DS2-REPORT-007 — Geography analysis-level selector convergence`.
-- Active PR: `#54 — DS2-REPORT-007: converge Geography level selector`.
-- PR base: exactly `design-system-v2-development`.
-- PR feature baseline: `c33c99d8c7210a53593276d954c99f2bdb1d6ef0`.
-- Exact current PR HEAD: `00d830adb59a27588722331b80762df524def907`.
-- PR state: `OPEN / DRAFT / mergeable=true`.
-- Integration disposition: `NO_MERGE_WAITING_FRESH_PRODUCT_DESIGN_CLOSEOUT`.
-- QA disposition on exact current HEAD: `AGENT-REVIEW: GREEN-DEV`.
+- Development product merge HEAD: `9ab20b3ca467b1d42eae0fb9fd6936d156e11662`.
+- Development coordination HEAD immediately before this state write: `19c8706f7f7b91eb09f13db9d3ed0b4b29840cd1`.
+- Completed slice: `DS2-REPORT-007 — Geography analysis-level selector convergence`.
+- Merged PR: `#54 — DS2-REPORT-007: converge Geography level selector`.
+- Exact reviewed PR HEAD: `00d830adb59a27588722331b80762df524def907`.
+- Squash merge commit: `9ab20b3ca467b1d42eae0fb9fd6936d156e11662`.
+- Integration disposition: `MERGED_GREEN_DEV`.
+- QA disposition on exact reviewed HEAD: `AGENT-REVIEW: GREEN-DEV`.
 - QA evidence: `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`.
-- Product Design exact-head implementation acceptance: not yet recorded.
+- Product Design disposition on the same exact HEAD: `PASS — NO DESIGN-SYSTEM BLOCKER`.
 - Runtime/build/lint/preview/release PASS: not claimed.
 
 ## Integrator decision
 
-**NO MERGE in this run.**
+**MERGED into `design-system-v2-development`.**
 
-PR #54 is technically/source-review green on unchanged exact HEAD `00d830adb59a27588722331b80762df524def907`, but the current cross-role handoff still requires fresh Product Design acceptance of this exact implementation HEAD before Integration acts.
-
-Final revalidation confirmed:
-- base exactly `design-system-v2-development`;
-- PR HEAD remains `00d830adb59a27588722331b80762df524def907`;
-- PR is `OPEN / DRAFT / mergeable=true`;
+Final pre-merge revalidation confirmed:
+- PR base exactly `design-system-v2-development`;
+- exact PR HEAD remained `00d830adb59a27588722331b80762df524def907` after both independent specialist approvals;
+- PR was `mergeable=true` and became ready-for-review without changing its HEAD;
 - exact-head Design QA recorded `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` with honest `TESTS_AUTHORED_NOT_EXECUTED`;
-- QA explicitly records no known source-visible build/type failure and no material source-level blocker;
-- zero inline review threads;
-- three changed files only: `GeographyPage.tsx`, focused `GeographyPage.test.tsx`, and UI Production's owned state;
-- product diff only replaces the one raw Geography `GeoLevel` selector with existing shared V2 `Select -> Field`, adds an Arabic accessible name, and removes page-local selector presentation styling;
-- exact option values/order/Arabic labels, page-owned controlled state, `filters = { dateFrom, dateTo, level }`, ReportFilterBar/date behavior and all Geography query/cache/service/calculation/trust/metrics/table/heatmap/permission/routing/`AnalyticsGate`/export/print/business truth remain unchanged;
-- no DB/migration/RPC/service/RBAC/RLS/permission/route-guard/business-calculation/validation/workflow/deployment change exists;
-- Development drift from feature baseline `c33c99d...` to current pre-write HEAD `6688cfa...` is one governance-only commit touching `DESIGN_QA_STATE.md` only;
-- no current role state records a `BLOCKING` contradiction.
+- Product Design independently recorded `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact HEAD;
+- QA recorded no known source-visible build/type failure and no material source-level blocker;
+- zero inline review threads were present;
+- changed-file scope remained exactly three files: Geography UI, focused Geography test, and UI Production's owned state;
+- Development drift from feature baseline `c33c99d8c7210a53593276d954c99f2bdb1d6ef0` to the final pre-merge Development HEAD was governance-only (`DESIGN_QA_STATE.md`, `INTEGRATION_STATE.md`, `DESIGN_DIRECTOR_STATE.md`) with no product/shared-component overlap;
+- no current role state recorded a `BLOCKING` contradiction;
+- no DB/migration/RPC/service/query/cache/RBAC/RLS/permission/route-guard/business-calculation/validation/workflow/deployment/workflow-enabling change existed.
 
-However, both the exact-head QA review and UI Production handoff state that Product Design must independently accept/block the same exact PR HEAD before Integration. The current `DESIGN_DIRECTOR_STATE.md` is still the pre-implementation REPORT007 boundary and does not yet contain exact-head implementation acceptance for `00d830a...`. That pending closeout is therefore the remaining Integration gate.
+The PR was squash-merged with expected-head protection, producing `9ab20b3ca467b1d42eae0fb9fd6936d156e11662`.
 
-## Preserve
+## Integrated system result
 
-- One-selector / one-page REPORT007 scope only.
-- Existing shared `Select` API and `Select -> Field` ownership boundary.
-- Exact `GeoLevel` values/order/Arabic labels: `governorate / محافظة`, `city / مدينة`, `area / منطقة`.
-- Page-owned `level`, `setLevel(...)` and `filters = { dateFrom, dateTo, level }` semantics.
-- REPORT002/003 date-filter contracts and `ReportFilterBar` behavior.
-- All Geography query/cache/service/calculation/trust/metric/table/heatmap/permission/routing/`AnalyticsGate`/export/print/business truth.
-- Full Settings/Admin, Global convergence, remaining Work/Field debt and shared-component roadmap.
-- No GitHub Actions / hosted CI, Vercel preview, preview-branch or `main` activity.
+- Geography's single `GeoLevel` header selector now uses the existing shared V2 `Select -> Field` contract instead of a page-local raw select with duplicated presentation styling.
+- Exact option values/order/Arabic labels remain `governorate / محافظة`, `city / مدينة`, `area / منطقة`.
+- `level`, `setLevel(...)` and `filters = { dateFrom, dateTo, level }` remain page/domain-owned.
+- `ReportFilterBar`, date behavior and REPORT002/003 contracts remain unchanged.
+- Geography hooks, query/cache/service/RPC/DB/calculation truth, trust/freshness, metrics, table/heatmap, row semantics, permissions, routing, `AnalyticsGate`, export/print and business behavior remain unchanged.
+- Explicit Arabic accessible naming is present; shared V2 form grammar owns presentation, focus, dark/disabled, RTL and Tablet/Mobile touch geometry only.
 
 ## Queue continuity
 
-- `DS2-REPORT-001` through `DS2-REPORT-006` remain `DONE`.
-- `DS2-REPORT-007` remains the single active/READY slice; the queue does not advance while PR #54 awaits its final exact-head Product Design gate.
-- `TEAM_MEMORY.md`, `31_AGENT_TEAM_WORKSTREAM.md`, and `DECISION_LOG.md` are unchanged in this run.
-- No issue #27 comment is added because this is normal cross-role progression, not a persistent coordination blocker.
+- `DS2-REPORT-001` through `DS2-REPORT-007` are `DONE`.
+- Exactly one next dependency-safe roadmap item is `READY`: `DS2-REPORT-008 — Next bounded Reports metrics/charts/tables/responsive-composition convergence`.
+- Product Design Director must inspect the exact latest Development baseline and bound one smallest dependency-safe presentation-only REPORT008 concern before UI Production starts product code.
+- Settings/Admin, Global convergence, remaining Work/Field debt and shared component-depth work remain preserved in the roadmap.
+- `DECISION_LOG.md` is unchanged because REPORT007 applies existing durable rules and does not change or supersede one.
+- No GitHub Actions / hosted CI, Vercel preview, preview branch or `main` activity occurred.
 
 ### Cross-role handoff
-- **To:** Product Design Director first; Development Integrator after exact-head closeout.
-- **What changed:** Integration revalidated PR #54 exact HEAD `00d830adb59a27588722331b80762df524def907` as source-review green and functionally isolated, but did not merge because Product Design exact-head implementation acceptance is still pending.
-- **Preserve:** exact REPORT007 one-selector boundary, Geography domain/business truth, shared Select ownership boundary, and all roadmap phases outside this slice.
-- **Need from you:** Product Design independently accepts or blocks exact PR HEAD `00d830adb59a27588722331b80762df524def907`. If accepted and the PR HEAD remains unchanged, Integration should revalidate base/HEAD/drift/threads/mergeability once more and may merge. Any PR HEAD movement requires fresh QA + Product Design review.
-- **Blocker level:** `WATCH` — pending required exact-head Product Design closeout; no implementation/QA blocker is known.
-- **Baseline:** Development pre-state-write `6688cfa3282304a94f1a7ffc138c02b831d8c067`; PR #54 exact HEAD `00d830adb59a27588722331b80762df524def907`.
-- **Evidence:** `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`; no executed runtime/build evidence claimed.
+- **To:** Product Design Director.
+- **What changed:** REPORT007 is integrated as squash merge `9ab20b3ca467b1d42eae0fb9fd6936d156e11662`; Workstream now marks it DONE and advances exactly one item, REPORT008, to READY.
+- **Preserve:** shared `Select -> Field` remains presentation/accessibility-only; Geography state/filter/domain truth remains caller-owned; REPORT001-007 contracts; full Admin/Global/Work/Field/shared-component roadmap; no Actions/Vercel/preview/`main` activity.
+- **Need from you:** inspect the exact latest `design-system-v2-development` HEAD and record exactly one smallest dependency-safe REPORT008 presentation concern, representative file/surface and explicit acceptance boundary before any implementation begins.
+- **Blocker level:** `NONE`.
+- **Baseline:** product merge `9ab20b3ca467b1d42eae0fb9fd6936d156e11662`; pre-state coordination HEAD `19c8706f7f7b91eb09f13db9d3ed0b4b29840cd1`.
+- **Evidence:** `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`; no executed runtime/build/lint/preview/release PASS claimed.
