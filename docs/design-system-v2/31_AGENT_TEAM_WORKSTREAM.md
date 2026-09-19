@@ -88,20 +88,44 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-009 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
+### DS2-REPORT-009 — Sales secondary revenue/tax chart-panel convergence
 Status: `READY`
-Owner role for immediate next action: Product Design Director
-Selection baseline: product-integrated Development HEAD `cdacc180e1e163b6dcb3d16cb80ff0beee1e701f` before governance synchronization.
+Owner role for immediate next action: UI Production Engineer
+Selection baseline: exact Development HEAD `e893339de9c43b9b3a3006a743a100dcb09ea0e7`.
+Representative surface: `src/pages/reports/SalesPage.tsx` → second chart section `توزيع الإيرادات اليومي (إيراد + ضريبة)` only.
 
-Intent:
-- inspect representative remaining Reports/Analytics surfaces on the exact latest `design-system-v2-development` baseline;
-- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance boundary;
-- prefer already-proven V2 primitives/patterns, strengthening a shared contract only when a real consumer proves the gap;
-- preserve REPORT001-008 contracts and all analytics/query/calculation/trust/permission/routing/export/print/business semantics;
-- do not turn REPORT009 into broad multi-page report beautification;
-- preserve Settings/Admin, Global convergence, remaining Work/Field debt and the shared component-depth roadmap.
+System-pattern intent:
+- retire the remaining page-local analytical card/header shell on the second Sales chart by composing it through the already-proven shared V2 `ChartPanel`;
+- keep `ChartPanel` presentation-only and do not widen its API/CSS contract;
+- create one coherent analytical hierarchy on the Sales report without altering chart/report truth.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+Acceptance boundary:
+- replace only the second chart's local outer surface/title shell with `ChartPanel`;
+- preserve the exact Arabic title `توزيع الإيرادات اليومي (إيراد + ضريبة)`;
+- do not invent a description, trust/freshness action or new report semantics for this panel;
+- preserve the current branch exactly: `dailyLoading ? <SkeletonCard height={200} /> : <ResponsiveContainer ... height={200}>`;
+- preserve the current absence of additional blocked/empty gating on this second chart; adding such semantics is not part of this presentation slice;
+- preserve `chartData`, `BarChart` margin `{ top: 4, left: -10, right: 4, bottom: 0 }`, grid, axes, tick formatting, `CustomTooltip`, and both Bars unchanged: `revenue / الإيراد / #2563eb` and `tax / الضريبة / #0284c7`, each `radius={[3,3,0,0]}` and `maxBarSize={24}`;
+- preserve the first `ChartPanel` (`تطور الإيراد اليومي`), all four `MetricCard`s, `ReportFilterBar`, `SystemHealthBar`, hooks, range/filter state, trust calculations, `chartData` mapping and all query/cache/service/permission/routing/`AnalyticsGate`/export/print/business semantics;
+- focused tests should update `SalesPage.test.tsx` to prove both analytical sections use shared `ChartPanel`, the second panel has semantic `h2` with the exact title, the first panel's existing title/description/trust/blocked/empty contracts remain intact, and the second chart's 200px/two-series configuration remains unchanged.
+
+Device/state/accessibility acceptance:
+- **Desktop:** preserve compact report density and 200px comparison-chart body; no decorative height inflation;
+- **Tablet:** shared panel/header must fit deliberately without introducing fixed-width pressure or ordinary horizontal overflow;
+- **Mobile:** title must wrap safely in the shared panel, chart containment remains `min-width: 0`, and no duplicate interaction/render tree is introduced;
+- **RTL / Arabic:** exact Arabic title is retained and shared logical layout/tokens own the surface;
+- **Dark mode:** surface/border/title styling must come through the existing V2 semantic-token path;
+- **Accessibility:** page hierarchy remains `h1 -> h2`; this chart introduces no new interactive control, so focus/touch behavior must not be fabricated;
+- evidence remains source/test-artifact based unless an approved execution environment actually runs tests.
+
+Explicit exclusions:
+- no change to the first Sales chart beyond tests needed to prove it remains unchanged;
+- no `ChartPanel` API/CSS redesign, no shared chart/recharts abstraction, no new legend/tooltip primitive;
+- no MetricCard/report-grid/filter/header/system-health cleanup;
+- no new trust/freshness/blocked/empty semantics for the second chart;
+- no second page/report and no backend/business/query/calculation/permission/routing/export/print/deployment/workflow change.
+
+Escalation rule: if the existing `ChartPanel` contract proves materially insufficient, if exact current Sales semantics cannot be preserved, or if completing the slice would require new trust/business behavior, mark REPORT009 `BLOCKED` and return to Product Design rather than widening the PR.
 
 ## Product migration roadmap
 
@@ -169,7 +193,7 @@ Open only when a real migrated screen proves the recurring gap:
 - `DS2-REPORT-006` Product Performance responsive detail-collection convergence — `DONE` / PR #53 / merge `ffda5aeb23684ea981c341761d1dde2cef7c3283`
 - `DS2-REPORT-007` Geography analysis-level selector convergence — `DONE` / PR #54 / merge `9ab20b3ca467b1d42eae0fb9fd6936d156e11662`
 - `DS2-REPORT-008` Receivables AR chart-panel convergence — `DONE` / PR #55 / merge `cdacc180e1e163b6dcb3d16cb80ff0beee1e701f`
-- `DS2-REPORT-009` Next bounded Reports metrics/charts/tables/responsive-composition convergence — `READY` / Product Design must bound exactly one concern before implementation
+- `DS2-REPORT-009` Sales secondary revenue/tax chart-panel convergence — `READY` / bounded to the second Sales chart only
 - further Reports/Analytics convergence beyond REPORT009 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
