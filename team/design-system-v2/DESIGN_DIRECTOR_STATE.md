@@ -4,93 +4,108 @@
 
 - Review date: `2026-09-19`.
 - Authoritative branch: `design-system-v2-development`.
-- Exact Development HEAD independently inspected before REPORT007 selection: `14dc8d3947b4a39ce4a8c9dc11c6b4d9712bc98d`.
-- Development HEAD after the Workstream boundary write and before this owned-state write: `3b9a51f9c93a4e015f51e04291833b68bac1bc7f`.
+- Exact Development HEAD independently inspected before this closeout: `bc46aac49326cdd03a88bb8174dcce4e770a793d`.
 - Product UI is integrated through `DS2-REPORT-006` / PR #53 / product merge `ffda5aeb23684ea981c341761d1dde2cef7c3283`.
-- Open implementation PRs targeting Development at selection time: `0`.
-- Active single READY slice: `DS2-REPORT-007 — Geography analysis-level selector convergence`.
-- Representative surface: `src/pages/reports/GeographyPage.tsx`, header control that selects `GeoLevel`.
-- Current Product Design disposition: `READY — BOUNDED / IMPLEMENTATION AUTHORIZED WITHIN EXACT SCOPE`.
+- Active implementation PR targeting Development: `#54 — DS2-REPORT-007: converge Geography level selector`.
+- Feature baseline: `c33c99d8c7210a53593276d954c99f2bdb1d6ef0`.
+- Exact PR HEAD independently reviewed: `00d830adb59a27588722331b80762df524def907`.
+- PR state at review: `OPEN / DRAFT / mergeable=true`.
+- Current Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER` on exact PR HEAD `00d830adb59a27588722331b80762df524def907`.
+- Design QA disposition on the same exact HEAD: `AGENT-REVIEW: GREEN-DEV` with `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`.
 - Exact-head build/test/lint/runtime/preview/release PASS: not claimed.
 
 ## What changed since the previous state
 
-REPORT006 is now merged and its Product Design acceptance has been consumed by Integration. The queue advanced one slot to REPORT007 with no implementation PR active.
+REPORT007 moved from a bounded READY direction into implementation review on Draft PR #54. The implementation HEAD is stable at `00d830adb59a27588722331b80762df524def907`, Design QA has independently issued `GREEN-DEV` on that exact HEAD, and Integration has already revalidated the slice but correctly withheld merge pending this Product Design closeout.
 
-This run independently inspected the remaining Reports surfaces and existing V2 component contracts, then converted the generic REPORT007 placeholder into one concrete, dependency-safe implementation boundary. The Workstream now authorizes only the Geography analysis-level selector convergence.
+This run independently reviewed the exact product diff, shared `Select -> Field` contract, report source, focused tests, Development drift and current PR/role-state evidence. The implementation satisfies the previously declared REPORT007 boundary without widening system or business scope.
 
 ## Independent Product Design judgment
 
-**REPORT007 should converge the Geography analysis-level selector onto the existing shared V2 `Select -> Field` contract, and nothing else.**
+**PASS — NO DESIGN-SYSTEM BLOCKER on exact PR HEAD `00d830adb59a27588722331b80762df524def907`.**
 
-The current Geography report still creates the `GeoLevel` control as a raw `<select>` with page-local inline padding, radius, border, surface, typography and focus behavior. That is a direct system-coherence gap: the V2 component system already defines `Select` as a primitive/form composite path, the Component Decision Matrix explicitly directs `Input / Select` into the Field system, and the shared `Select` already composes `Field` while preserving native select semantics.
+The implementation makes the intended system-level improvement and stops at the correct boundary: Geography's one page-local raw `GeoLevel` `<select>` is replaced by the existing V2 `Select`, which composes through `Field`, while the page continues to own the selected `GeoLevel`, `setLevel(...)` and every geographic/report-domain meaning.
 
-This is the smallest useful next slice because it removes a genuine local primitive rather than cosmetically restyling a page. It advances Reports filter/control grammar, shared control sizing, focus, dark-mode and accessibility behavior without introducing a new abstraction or touching analytics semantics.
+This is a meaningful convergence rather than page beautification. It removes duplicated local padding/border/radius/surface/font/focus styling and routes a recurring native form control through the established V2 form grammar. It does not create a Geography-specific primitive, custom combobox, new selector abstraction or shared API expansion.
 
-I also inspected representative remaining chart/table debt (`ReceivablesPage`, `RepPerformancePage`, Geography's table). Those remain valid later convergence targets, but widening REPORT007 to a chart/table or a broader FilterBar redesign would combine independent concerns. The raw Geography selector is the narrower dependency-safe boundary now.
+The implementation preserves the exact native select interaction model and adds an explicit Arabic accessible name `مستوى التحليل الجغرافي`. The shared component remains domain-agnostic and retains native `SelectHTMLAttributes<HTMLSelectElement>` behavior; report meaning stays caller-owned.
 
-## REPORT007 exact boundary
+## Exact-head Product Design findings
 
-### In scope
+### System fit / visual grammar — PASS
 
-- `src/pages/reports/GeographyPage.tsx` only, plus focused test coverage and UI Production's owned state.
-- Replace only the raw `<select>` that edits `level` with the existing shared V2 `Select` from `src/components/ui/Select.tsx`.
-- Preserve controlled state ownership in `GeographyPage`: `level` remains `GeoLevel` and the selected existing value continues to drive `setLevel(...)`.
-- Preserve option values, order and Arabic labels exactly:
-  - `governorate` — `محافظة`
-  - `city` — `مدينة`
-  - `area` — `منطقة`
-- Give the native select a clear Arabic accessible name such as `مستوى التحليل الجغرافي`; its meaning must not depend only on visual position.
-- Use the existing shared control/Field geometry, semantic surfaces, focus and disabled behavior instead of recreating those styles inline.
-- Keep the existing header/filter cluster wrap-capable alongside `ReportFilterBar`.
+- Only the Geography analysis-level control migrates to shared V2 `Select -> Field`.
+- Shared form geometry, semantic border/surface/focus/disabled treatment and existing RTL chevron spacing now replace the page-local selector mini-system.
+- Existing header composition remains wrap-capable beside `ReportFilterBar`; no second report control or table/chart surface is pulled into this slice.
+- No shared `Select`, `Field` or CSS API change was required, confirming the existing system contract is sufficient for this real consumer.
 
-### Explicit exclusions / preserve
+### Functional isolation — PASS
 
-Do not change:
-- `ReportFilterBar`, date presets, custom dates or REPORT002/003 contracts;
-- `filters = { dateFrom, dateTo, level }` or the meaning of `GeoLevel`;
-- `useGeographySummary`, `useGeographyTable`, query/cache/service/RPC/DB behavior or calculation truth;
-- `LEVEL_LABELS`, summary values, `MetricCard`, trust/freshness, heatmap table, row colors, parent-column behavior or empty/loading copy;
-- permissions, routing, `AnalyticsGate`, export/print or business semantics;
-- Geography's table responsive strategy, any chart/table on another report, or any second selector/page;
-- the shared `Select` API itself unless implementation proves a material contract gap. If the current shared contract cannot support this consumer without a material shared/API or functional change, REPORT007 becomes `BLOCKED` and returns to Product Design rather than widening the PR.
+Preserved exactly:
+- `level` remains page-owned `GeoLevel` state;
+- `setLevel(e.target.value as GeoLevel)` remains the change path;
+- `filters = { dateFrom: range.from, dateTo: range.to, level }` remains unchanged;
+- option values/order/Arabic labels remain `governorate / محافظة`, `city / مدينة`, `area / منطقة`;
+- `ReportFilterBar`, date presets/custom-date behavior and REPORT002/003 contracts remain unchanged;
+- `useGeographySummary`, `useGeographyTable`, query/cache/service/RPC/DB/calculation truth remain unchanged;
+- `LEVEL_LABELS`, metrics, trust/freshness, heatmap table, row colors, parent-column behavior and loading/empty copy remain unchanged;
+- permissions, routing, `AnalyticsGate`, export/print and business semantics remain unchanged.
 
-## Device / Arabic / state / accessibility acceptance
+Changed-file scope is limited to:
+- `src/pages/reports/GeographyPage.tsx`;
+- `src/pages/reports/GeographyPage.test.tsx`;
+- UI Production's owned state file.
 
-- **Desktop:** shared standard-height control, semantic focus treatment and stable header hierarchy; no unnecessary density inflation.
-- **Tablet:** V2 touch-height contract applies through the existing Field boundary; selector/date controls may wrap cleanly without clipping or ordinary page-level horizontal overflow.
-- **Mobile:** native select remains touch-usable and readable; the header/filter cluster must wrap rather than compress Arabic labels.
-- **Arabic / RTL:** Arabic options stay unchanged; native chevron/padding behavior remains correct for RTL; no essential text truncation is introduced.
-- **Dark mode:** surface, text, border, hover/focus and disabled visuals remain token-driven through the shared control contract.
-- **Accessibility:** explicit Arabic accessible name, native keyboard/select semantics retained, no custom combobox behavior added.
-- **State:** changing the level must continue to drive the same existing report filter/domain behavior. No new loading/empty/error semantics are introduced in this slice.
+### Device / Arabic / interaction quality — PASS at source level
 
-Focused tests should protect option order/labels, accessible naming, controlled selection and preservation of current report/filter semantics. Hosted GitHub Actions remain forbidden; execution evidence must stay honest under the existing validation policy.
+- **Desktop:** the selector adopts the shared standard form-control hierarchy and focus treatment without inflating the report header into a larger form surface.
+- **Tablet:** the existing V2 Field/control contract remains the intended touch-first path through the Tablet breakpoint; the unchanged parent flex cluster can wrap rather than forcing a compressed row.
+- **Mobile:** native select behavior is retained, no duplicate interaction tree is introduced, and the control remains compatible with the shared touch geometry instead of the former compact inline styling.
+- **Arabic / RTL:** exact Arabic option copy is unchanged; the shared `form-select` contract owns the left-positioned chevron/padding treatment already used by the RTL-first V2 form grammar.
+- **Dark mode:** the selector now derives surface/text/border/focus/disabled presentation from the shared semantic control tokens instead of Geography-local light/dark assumptions.
+- **Accessibility:** explicit Arabic accessible naming is present; native keyboard/select/assistive semantics remain intact. No custom ARIA combobox behavior is invented.
 
-## Peer-state synthesis / contradiction handling
+No `RUNTIME_VISUAL_PASS` is claimed; runtime/device visual inspection remains a later milestone gate under the current validation policy.
 
-This selection was formed from source and current Design System contracts before peer-state synthesis.
+### Test-artifact / evidence honesty — PASS
 
-- **Development Integrator:** current and aligned. It records REPORT006 merged and explicitly hands REPORT007 to Product Design for one smallest bounded concern.
-- **Design QA:** its latest role state is lifecycle-stale at REPORT006 exact-head review. It contains no contradiction with this new boundary and supplies no REPORT007 approval yet.
-- **UI Production Engineer:** its latest role state is lifecycle-stale at REPORT006 implementation. It must bootstrap from the new Workstream/Director boundary before starting REPORT007.
-- **Team Memory:** still describes REPORT007 as an unbounded placeholder. That lifecycle line is now superseded by the newer Workstream and this Director state; durable invariants remain aligned, so no Team Memory rewrite is justified by this routine slice selection.
-- **Decision Log / North Star:** aligned. REPORT007 applies existing form ownership, Arabic-first, touch, RTL/dark and functional-isolation rules; it creates no new durable system decision.
+Focused tests protect the material risks introduced by the migration:
+- shared `form-select` / `.ds-field` composition and removal of inline selector style ownership;
+- explicit Arabic accessible name;
+- exact option values/order/Arabic labels;
+- initial controlled `governorate` value;
+- transition to `city` through the same page-owned state;
+- unchanged `dateFrom` / `dateTo` / `level` propagation to both Geography hooks;
+- dependent visible geography-level copy updating from the same state;
+- continued presence of `ReportFilterBar`.
+
+Evidence remains correctly labeled `TESTS_AUTHORED_NOT_EXECUTED`. No source-visible build/type blocker is known, but no executed build/test/lint/runtime/preview/release PASS is claimed.
+
+## Development drift / peer-state synthesis
+
+This Product Design judgment was formed from the exact current PR source and current shared contracts, then reconciled with peer states.
+
+- **Design QA:** fresh and aligned. It independently issued `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` on the same exact PR HEAD `00d830adb59a27588722331b80762df524def907` with no material source-level blocker.
+- **Development Integrator:** fresh and aligned. It revalidated the same HEAD/base/three-file scope/functional isolation and correctly stopped only because Product Design exact-head acceptance was still pending. That pending gate is now closed from this role.
+- **UI Production Engineer:** the Development copy of its role state is lifecycle-stale at REPORT006, but PR #54's owned-state diff records the REPORT007 implementation and matches the exact product diff. This staleness is not a blocker because the implementation evidence is present on the active feature HEAD and no contradictory durable claim exists.
+- **Team Memory:** lifecycle text still describes REPORT007 as awaiting Product Design bounding, but newer Workstream/Director/PR/QA/Integration evidence supersedes that progress line. Durable invariants remain aligned, so no Team Memory rewrite is justified before Integration completes the slice.
+- **Decision Log / North Star / Component Decision Matrix:** aligned. REPORT007 applies the existing shared-system-first, UI-only isolation, Arabic-first, device and Field-system rules; it creates no new durable decision.
+- **Development drift:** feature baseline `c33c99d...` to pre-closeout Development HEAD `bc46aac...` is two governance-only commits touching `DESIGN_QA_STATE.md` and `INTEGRATION_STATE.md` only. There is no product/shared-component overlap with PR #54.
 
 Current contradiction classification: **NONE**.
 
 ## Repository actions this run
 
 - Completed the mandatory shared-memory bootstrap in the required order.
-- Inspected issue #27, exact Development HEAD, open Development-targeting PRs, representative remaining Reports source and relevant Component System, Page Pattern, Migration Matrix, Roadmap, Source Audit and Component Decision Matrix documents.
-- Bounded REPORT007 in `31_AGENT_TEAM_WORKSTREAM.md` as the single Geography analysis-level selector convergence.
-- Did not update Team Memory or Decision Log because no overall design direction or durable rule changed.
+- Inspected issue #27, exact Development HEAD, the only active Development-targeting PR, exact PR metadata/diff/comments, Development drift, Geography source, shared `Select`/`Field` contracts, and relevant Component System / Page Pattern / Migration Matrix / Source Audit / Component Decision Matrix documents.
+- Recorded Product Design exact-head acceptance for PR #54.
+- Did not update `TEAM_MEMORY.md`, `DECISION_LOG.md` or the Workstream because no overall design direction/durable decision changed and the active slice must not advance before Integration.
 - Did not implement product code, modify peer specialist states, merge a PR, touch `main`, trigger/rerun GitHub Actions, use hosted CI, deploy Vercel or modify preview branches.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer; Design QA after a stable implementation PR exists.
-- **What changed:** REPORT007 is now concretely bounded and implementation-authorized as the single raw Geography `GeoLevel` selector migration to the existing shared V2 `Select -> Field` contract.
-- **Preserve:** exact `GeoLevel` values/order/Arabic labels and controlled state; `filters = { dateFrom, dateTo, level }`; all Geography queries/calculations/trust/metrics/table/heatmap/parent-column/permission/routing/`AnalyticsGate`/export/print/business truth; REPORT002/003 filter/date contracts; one-selector/one-page scope; existing shared `Select` API unless a real blocker is escalated.
-- **Need from you:** UI Production should branch from the latest Development HEAD and open exactly one REPORT007 implementation PR for this control only, with focused tests for labels/order, accessible naming and controlled selection. If the existing shared Select contract cannot satisfy the boundary without material API/functional change, mark the slice `BLOCKED` instead of widening it. Design QA should wait for one stable exact PR HEAD before review.
+- **To:** Development Integrator.
+- **What changed:** Product Design independently accepted PR #54 exact HEAD `00d830adb59a27588722331b80762df524def907` with `PASS — NO DESIGN-SYSTEM BLOCKER`; the previously pending Product Design merge gate is closed.
+- **Preserve:** one-selector/one-page REPORT007 scope; existing shared `Select -> Field` ownership boundary; exact `GeoLevel` values/order/Arabic labels; page-owned `level` / `setLevel(...)` / `filters = { dateFrom, dateTo, level }`; REPORT002/003 date/filter behavior; all Geography query/cache/service/calculation/trust/metrics/table/heatmap/permission/routing/`AnalyticsGate`/export/print/business truth; no Actions/Vercel/preview/`main` activity.
+- **Need from you:** revalidate that PR #54 HEAD is still exactly `00d830adb59a27588722331b80762df524def907`, base remains `design-system-v2-development`, Development drift is non-overlapping, review/threads/mergeability remain clean and functional isolation still passes; if so, Integration may merge REPORT007 into Development. Any PR HEAD movement invalidates both QA and Product Design acceptance and requires fresh reviews.
 - **Blocker level:** `NONE`.
-- **Baseline:** selection baseline `14dc8d3947b4a39ce4a8c9dc11c6b4d9712bc98d`; Workstream-bound Development HEAD before this state write `3b9a51f9c93a4e015f51e04291833b68bac1bc7f`.
+- **Baseline:** Development pre-closeout HEAD `bc46aac49326cdd03a88bb8174dcce4e770a793d`; accepted PR #54 HEAD `00d830adb59a27588722331b80762df524def907`.
