@@ -4,95 +4,104 @@
 
 - Run date: `2026-09-19`.
 - Development branch: `design-system-v2-development`.
-- Exact branch-creation baseline: `c33c99d8c7210a53593276d954c99f2bdb1d6ef0`.
-- Development HEAD rechecked before handoff: `c33c99d8c7210a53593276d954c99f2bdb1d6ef0`.
-- Feature branch: `design-system-v2/report-007-geography-selector`.
-- Draft PR: `#54 — DS2-REPORT-007: converge Geography level selector`.
-- Product/test HEAD before this owned-state write: `ed022fc8735c0f5fa1e56b6f1cf00c8635c6f275`.
-- Active slice: `DS2-REPORT-007 — Geography analysis-level selector convergence`.
-- Representative surface: `src/pages/reports/GeographyPage.tsx`, header control that edits `GeoLevel` only.
+- Exact branch-creation baseline: `25167e84b4e7603e2069630bd395184f959823af`.
+- Development HEAD rechecked before PR handoff: `25167e84b4e7603e2069630bd395184f959823af`.
+- Feature branch: `design-system-v2/report-008-receivables-chart-panel`.
+- Draft PR: `#55 — DS2-REPORT-008: converge Receivables AR chart panel`.
+- Product/test HEAD before this owned-state write: `a146edb051f659f49a7c03940153fd7d302d4dd9`.
+- Active slice: `DS2-REPORT-008 — Receivables AR chart-panel convergence`.
+- Representative surface: `src/pages/reports/ReceivablesPage.tsx` → chart section `تحصيلات AR مجمّعة بتاريخ البيع الأصلي` only.
 - Disposition: `REVIEW — IMPLEMENTATION COMPLETE; FRESH EXACT-HEAD DESIGN QA + PRODUCT DESIGN REVIEW REQUIRED`.
 - Evidence: `TESTS_AUTHORED_NOT_EXECUTED`.
 
 ## Independent implementation judgment
 
-The bounded REPORT007 direction is satisfied by the existing shared V2 `Select -> Field` contract without any shared API change. Geography's prior raw `<select>` duplicated padding, border, radius, surface, font and focus styling that V2 already owns. Replacing only that control removes one page-local primitive while keeping the page's existing controlled `GeoLevel` state and report filters/domain behavior intact.
+The bounded REPORT008 direction is satisfied by the existing shared V2 `ChartPanel` contract with no API/CSS widening. Receivables duplicated the same neutral analytical card/header shell that REPORT005 already converged on Sales. The implementation therefore removes only that local shell and routes hierarchy/surface/action placement through `ChartPanel`, while leaving AR data, state decisions, Recharts semantics and report-domain truth entirely caller-owned.
 
-No additional Geography surface needs to move in this slice. The table, metrics, trust/freshness, ReportFilterBar, date semantics and responsive header composition already remain outside the selected boundary.
+No second Receivables surface or broader report cleanup belongs in this slice.
 
 ## Material implementation progress
 
-- Created `design-system-v2/report-007-geography-selector` from exact latest Development HEAD `c33c99d8c7210a53593276d954c99f2bdb1d6ef0` after confirming no open PR targeted `design-system-v2-development`.
-- Replaced only the raw Geography analysis-level `<select>` with shared `Select` from `src/components/ui/Select.tsx`.
-- Preserved the existing controlled value and `setLevel(e.target.value as GeoLevel)` change path.
-- Preserved exact option values/order/Arabic labels: `governorate / محافظة`, `city / مدينة`, `area / منطقة`.
-- Added explicit Arabic accessible name `مستوى التحليل الجغرافي` while retaining native select keyboard/assistive semantics.
-- Removed the control's page-local inline styling so sizing, focus, surfaces, disabled visuals, RTL chevron geometry and <=1024px touch height come from existing shared V2 Field/form contracts.
-- Kept the existing wrap-capable header/filter flex cluster and `ReportFilterBar` unchanged.
-- Restored the source file's pre-existing BOM after detecting that the first implementation commit had removed it incidentally; final product diff contains no encoding-only churn.
-- Opened Draft PR #54 targeting `design-system-v2-development`.
+- Completed the mandatory shared-memory bootstrap in the required order and inspected issue #27, current Development HEAD and open PRs targeting Development.
+- Confirmed no implementation PR targeted `design-system-v2-development` before starting.
+- Created `design-system-v2/report-008-receivables-chart-panel` from exact Development HEAD `25167e84b4e7603e2069630bd395184f959823af`.
+- Replaced only the page-local AR analytical card/header shell with shared `ChartPanel`.
+- Preserved exact title `تحصيلات AR مجمّعة بتاريخ البيع الأصلي` and description `مجمّع في قاعدة البيانات — إيصالات، مردودات، صافي`.
+- Passed the existing `TrustStateBadge + FreshnessIndicator` content/sources into the shared `action` slot and made that presentation cluster wrap-capable, matching the proven shared-chart consumer pattern.
+- Kept `ChartPanel` default semantic `h2`; no heading override or shared component change was introduced.
+- Preserved blocked/loading/empty/data branches and the 260px analytical-body contract.
+- Preserved `chartData`, `ResponsiveContainer`, `BarChart`, grid/axes/tooltip/formatters and all three bar-series contracts unchanged.
+- Added focused `ReceivablesPage.test.tsx` coverage for shared panel composition, semantic heading, title/description/action presence, blocked/empty/loading/success 260px contracts, chart-data remapping, margins and all three series names/colors/radii/maxBarSize.
+- Opened Draft PR #55 targeting `design-system-v2-development`.
 
 Files touched:
-- `src/pages/reports/GeographyPage.tsx`
-- `src/pages/reports/GeographyPage.test.tsx`
+- `src/pages/reports/ReceivablesPage.tsx`
+- `src/pages/reports/ReceivablesPage.test.tsx`
 - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
 No shared component/CSS/API change was needed.
 
 ## Preserve / verified boundaries
 
-- `level` remains page-owned `GeoLevel` state.
-- `filters = { dateFrom: range.from, dateTo: range.to, level }` remains unchanged.
-- `ReportFilterBar`, date presets, custom-date behavior and REPORT002/003 contracts remain untouched.
-- `useGeographySummary`, `useGeographyTable`, query/cache/service/RPC/DB/calculation truth remain unchanged.
-- `LEVEL_LABELS`, metrics, trust/freshness, heatmap table, row colors, parent-column behavior, loading/empty copy remain unchanged.
-- Permissions, routing, `AnalyticsGate`, export/print and business semantics remain unchanged.
-- No Geography table migration, chart/table change, second selector, second report or shared Select redesign occurred.
+- `range` and `filters = { dateFrom: range.from, dateTo: range.to }` remain page-owned and unchanged.
+- `useARDailyTotals`, `useARSummary`, `useSystemTrustState`, `useTrustForComponent`, `arTrust` and `isBlocked` wiring remain unchanged.
+- `chartData` still maps `sale_date -> date`, `receipt_amount -> receipts`, `refund_amount -> refunds`, `net_cohort -> net`.
+- Trust/freshness value sources and domain remain unchanged.
+- Blocked copy remains `بيانات AR محجوبة` + `يحتاج إلى اكتمال تشغيل محرك AR أولاً`.
+- Empty copy remains `لا توجد بيانات تحصيل في هذه الفترة`.
+- Loading remains `SkeletonCard height={260}`; successful chart remains `ResponsiveContainer height={260}`.
+- `BarChart` margin remains `{ top: 4, left: -10, right: 4, bottom: 0 }`; grid/axes/tooltip/formatters remain unchanged.
+- Series remain `receipts / إيصالات / #2563eb`, `refunds / مردودات / #dc2626`, `net / صافي / #16a34a`, each with `radius={[3,3,0,0]}` and `maxBarSize={20}`.
+- Three `MetricCard`s, `report-grid`, page header, `ReportFilterBar`, `SystemHealthBar` and `CustomTooltip` are unchanged.
+- No second report/chart, Recharts abstraction or shared `ChartPanel` redesign occurred.
+- No DB/migration/RPC/service/query-cache/RBAC/RLS/permission/route-guard/business-calculation/validation/workflow/export/print/business behavior changed.
 - No GitHub Actions/hosted CI, Vercel/preview branch or `main` activity occurred.
 
 ## Device / Arabic / state / accessibility coverage
 
-- **Desktop:** shared standard-height `form-select` now owns control geometry/focus; existing header hierarchy and wrap-capable cluster are unchanged.
-- **Tablet:** existing `.ds-field .form-select` touch-height contract applies at <=1024px; unchanged flex-wrap keeps the selector/date controls able to wrap instead of compressing.
-- **Mobile:** native select remains touch-usable and readable via the shared touch-height contract; no custom combobox or duplicate interaction tree was introduced.
-- **Arabic/RTL:** exact Arabic options are unchanged; the existing shared `.form-select` uses logical RTL-safe composition and left-positioned native-chevron replacement already used by V2.
-- **Dark mode:** background/text/border/focus/disabled presentation is inherited from shared semantic form tokens rather than Geography-local styles.
-- **Accessibility:** explicit Arabic accessible name is present; native select role, keyboard and value semantics are retained.
-- **State:** changing the level still updates the same page-owned state and drives the same existing Geography summary/table filter object. No new loading/empty/error/disabled/read-only/permission semantics were introduced.
+- **Desktop:** existing compact analytical rhythm is preserved while neutral surface/header styling now comes from shared `Card + SectionHeader` through `ChartPanel`.
+- **Tablet:** shared SectionHeader composition plus the wrap-capable trust/freshness action cluster avoids forcing a compressed single-row metadata layout.
+- **Mobile:** no duplicate renderer or new page-level overflow path was introduced; title/description/action can wrap and chart containment remains under the proven shared panel pattern.
+- **Arabic/RTL:** exact Arabic title, description and state copy are unchanged; shared pattern owns RTL-safe header/surface composition.
+- **Dark mode:** card/border/text presentation now comes from the existing shared semantic-token path instead of this page-local shell styling.
+- **Accessibility:** the chart section now follows the shared semantic `h2` path below the page `h1`; existing trust/freshness content semantics are unchanged.
+- **States:** blocked, loading, empty and data branches remain caller-owned and structurally preserved inside the shared panel.
 
 ## Test / execution evidence
 
 Evidence: **`TESTS_AUTHORED_NOT_EXECUTED`**.
 
-Focused `GeographyPage.test.tsx` coverage protects:
-- shared `form-select` + `.ds-field` composition and removal of inline style ownership from the selector;
-- explicit Arabic accessible name;
-- exact option values/order/Arabic labels;
-- initial controlled `governorate` value;
-- selection change to `city` through the existing page state;
-- unchanged `dateFrom` / `dateTo` / `level` filter shape forwarded to both Geography hooks;
-- visible dependent level labels updating from the same page-owned state;
-- continued presence of `ReportFilterBar`.
+Focused `ReceivablesPage.test.tsx` coverage protects:
+- exactly one shared `.ds-chart-panel` for the bounded AR chart;
+- semantic `h2` title and exact description;
+- trust/freshness action presence;
+- exact empty and blocked copy plus 260px state-body height;
+- loading `SkeletonCard` height `260`;
+- successful `ResponsiveContainer` height `260`;
+- unchanged chartData field remapping and BarChart margins;
+- exact three series data keys, Arabic names, fills, radii and `maxBarSize=20`.
 
-No approved executable repository checkout/package runtime was available in this run, so `npm test`, `npm run build` and `npm run lint` were not executed. No local/build/test/lint/runtime/preview PASS is claimed.
+No executable repository checkout/package runtime was available in the sandbox for this run, so `npm test`, `npm run build` and `npm run lint` were not executed. No local/build/test/lint/runtime/preview PASS is claimed.
 
-Static source/diff review found no known TypeScript/API blocker. The implementation uses the existing `SelectProps extends SelectHTMLAttributes<HTMLSelectElement>` contract; `aria-label`, controlled `value` and native `onChange` are already supported without API widening.
+Static source/diff review found no known TypeScript/API blocker. The implementation only imports and consumes the already-integrated `ChartPanel` API proven on Sales.
 
 ## Peer-state comparison / current risk
 
-- **Product Design Director:** fresh REPORT007 state explicitly authorizes exactly this one-selector migration and requires no shared API change unless a blocker appears. Implementation aligns with that boundary.
-- **Design QA:** latest role state is lifecycle-stale at REPORT006 and provides no REPORT007 approval yet.
-- **Development Integrator:** latest role state is lifecycle-stale at the completed REPORT006 merge; it must remain `NO_MERGE` until fresh REPORT007 exact-head gates exist.
-- **Team Memory:** lifecycle text still describes REPORT007 as awaiting Product Design bounding, but the newer Workstream + Director state supersede only that lifecycle line; durable invariants remain aligned.
-- Residual risk is independent exact-head source/design review plus unexecuted test/runtime evidence. No implementation blocker is currently known.
+This implementation judgment was formed from the current Receivables source and shared `ChartPanel` contract, then checked against peer states.
+
+- **Product Design Director:** fresh and aligned; explicitly bounded REPORT008 to this one Receivables chart shell and required no shared API/CSS widening unless a real blocker appeared. None appeared.
+- **Design QA:** lifecycle-stale at REPORT007 as expected before REPORT008 review; no current contradiction exists.
+- **Development Integrator:** lifecycle-stale at completed REPORT007 merge; it must remain `NO_MERGE` until fresh REPORT008 exact-head gates exist.
+- **Team Memory:** lifecycle-level REPORT008 placeholder is superseded by the newer Director/Workstream boundary only for this slice selection; durable invariants remain aligned.
+- Residual risk is independent exact-head source/design review plus non-executed runtime/build/test evidence. No implementation blocker is currently known.
 
 ### Cross-role handoff
 - **To:** Design QA + Product Design Director for fresh exact-head review; Development Integrator only after both gates are current on one stable HEAD.
-- **What changed:** Geography's single `GeoLevel` header selector now uses shared V2 `Select -> Field` with explicit Arabic accessible naming; focused contract tests were added; Draft PR #54 is open.
-- **Preserve:** exact `GeoLevel` values/order/Arabic labels; controlled page ownership and `filters = { dateFrom, dateTo, level }`; all ReportFilterBar/date/query/calculation/trust/metric/table/heatmap/permission/routing/`AnalyticsGate`/export/print/business behavior; one-selector/one-page scope; existing shared Select API.
-- **Need from you:** review the exact current PR #54 HEAD after this state write. QA should issue `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` only if that stable exact HEAD passes. Product Design should independently accept/block the same HEAD before Integration acts.
+- **What changed:** Receivables' single AR analytical chart shell now uses existing shared V2 `ChartPanel`, with focused structural/state/chart-contract tests added; Draft PR #55 is open.
+- **Preserve:** exact title/description; trust/freshness action sources; blocked/loading/empty/data branches and copy; 260px body; chartData/Recharts/series contract; all metric/filter/query/cache/service/calculation/trust/permission/routing/export/print/business truth; one-chart/one-page scope; existing shared `ChartPanel` API.
+- **Need from you:** independently review the exact current PR #55 HEAD after this state write. QA should issue `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` only if that stable exact HEAD passes. Product Design should independently accept/block the same HEAD before Integration acts.
 - **Blocker level:** `NONE` from implementation.
-- **Baseline:** `c33c99d8c7210a53593276d954c99f2bdb1d6ef0`.
-- **Product/test HEAD before owned-state write:** `ed022fc8735c0f5fa1e56b6f1cf00c8635c6f275`.
-- **PR:** `#54` / `design-system-v2/report-007-geography-selector` -> `design-system-v2-development`.
+- **Baseline:** `25167e84b4e7603e2069630bd395184f959823af`.
+- **Product/test HEAD before owned-state write:** `a146edb051f659f49a7c03940153fd7d302d4dd9`.
+- **PR:** `#55` / `design-system-v2/report-008-receivables-chart-panel` -> `design-system-v2-development`.
 - **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`.
