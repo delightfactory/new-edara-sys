@@ -4,60 +4,60 @@
 
 - Review date: `2026-09-19`.
 - Development branch: `design-system-v2-development`.
-- Development HEAD immediately before this state write: `64ee44c53b507dc7f85d749aa7076a62f4daddf9`.
-- Completed slice: `DS2-REPORT-003 — Report custom-date field convergence`.
-- Merged PR: `#50 — DS2-REPORT-003: converge report custom date fields`.
-- PR base at merge: `design-system-v2-development`.
-- Feature baseline: `d1f8e2e4adbcbbe1247304d5f644a6f82223f003`.
-- Exact reviewed PR HEAD: `4b81eee69d4a8722333db165041e481fa80f24fe`.
-- Squash merge commit: `cec34dcdc2fec5ac7b3cd4821d942f224f9f52f2`.
-- Integration disposition: `MERGED_GREEN_DEV`.
-- QA evidence: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` on the exact merged HEAD.
-- Product Design evidence: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact merged HEAD.
+- Development HEAD immediately before this state write: `855303dd2e29da8ba6a56b40d9f74f74d8775f15`.
+- Active slice: `DS2-REPORT-004 — Reports Overview summary metric-grid convergence`.
+- Active PR: `#51 — DS2-REPORT-004: converge Reports Overview summary metric grid`.
+- PR base: `design-system-v2-development`.
+- Feature baseline: `4eebb0be4fd08d0d111bb7297c172fa9d20abc23`.
+- Exact current PR HEAD: `0dad8a5eb73e1a4fac73475dda5a247182db2e51`.
+- PR state: `OPEN / DRAFT / mergeable=true`.
+- Integration disposition: `NO_MERGE_WAITING_FRESH_PRODUCT_DESIGN_CLOSEOUT`.
+- QA evidence: exact-head `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
 - Runtime/build/lint/preview/release PASS: not claimed.
 
 ## Integrator decision
 
-**MERGED in this run.**
+**NO MERGE in this run.**
 
-Final integration revalidation established all required gates before merge:
-- PR base was exactly `design-system-v2-development`;
-- exact current PR HEAD remained `4b81eee69d4a8722333db165041e481fa80f24fe` through the ready-for-review transition and merge;
-- Design QA had a fresh same-head `AGENT-REVIEW: GREEN-DEV` marker and recorded `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`;
-- Product Design independently accepted the same exact HEAD with `PASS — NO DESIGN-SYSTEM BLOCKER`;
-- no known source-visible build/type blocker was outstanding in the current QA evidence;
-- PR inline review threads were empty and no material PR-conversation blocker existed;
-- exact diff scope was five files only: shared `DateField` + focused test, `ReportFilterBar` composition + focused test, and the UI Production Engineer owned state;
-- no DB/migration/RPC/service/query-cache/RBAC/RLS/permission/route-guard/business-calculation/validation/workflow/export/print/deployment-enabling change was present;
-- Development drift from feature baseline `d1f8e2e...` to pre-merge `c027d9d...` was governance-only: QA state, Integration state, and Product Design state; it did not overlap the product/shared implementation files.
+Independent integration revalidation confirms the implementation itself is currently source-green:
+- PR base is exactly `design-system-v2-development`;
+- exact current PR HEAD remains `0dad8a5eb73e1a4fac73475dda5a247182db2e51`;
+- Design QA reviewed that exact HEAD and issued `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` with honest `TESTS_AUTHORED_NOT_EXECUTED` evidence;
+- no known source-visible build/type blocker is recorded;
+- PR inline review threads are empty;
+- changed-file scope is exactly three files: `src/pages/reports/OverviewPage.tsx`, `src/pages/reports/OverviewPage.test.tsx`, and UI Production's owned state;
+- product-code diff is wrapper-only: the primary Overview KPI summary adopts shared `MetricGrid columns={4}` while existing report-domain `MetricCard` children/order/props and the four-skeleton loading branch remain unchanged;
+- no DB/migration/RPC/service/query-cache/RBAC/RLS/permission/route-guard/calculation/validation/workflow/export/print/deployment/workflow-enabling change is present;
+- Development drift from feature baseline `4eebb0be...` to pre-state-write `855303dd...` is governance-only QA state and does not overlap the implementation files.
 
-The PR was moved from Draft to Ready without changing its HEAD and then squash-merged with expected-head protection as `cec34dcdc2fec5ac7b3cd4821d942f224f9f52f2`.
+The remaining gate is Product Design freshness. The current `DESIGN_DIRECTOR_STATE.md` predates PR #51 and contains a descriptive wrapper/metric-label list that does not match the exact baseline source. Design QA classified this as `WATCH`, not an implementation blocker, but explicitly requires Product Design to close the descriptive mismatch on the same exact PR HEAD before integration. No same-head Product Design closeout exists yet in the current role state or PR conversation.
 
-## Integrated system result
+Because that exact-head coordination gate is still open, Integration must not convert the draft or merge the PR yet.
 
-- One shared presentation-only V2 `DateField` now composes the existing `Input -> Field` grammar and fixes only native `type="date"`.
-- Only the two custom date editors in `ReportFilterBar` migrated to the shared control.
-- Independent Arabic accessible names (`من تاريخ` / `إلى تاريخ`), a named date-pair group and wrap-capable constrained-width composition are present.
-- Report-local raw date-input surface/focus styling was retired in favor of shared V2 form styling, focus treatment and touch geometry.
-- External `DateRange value/onChange`, existing `normalizeDateRange(...)`, local-date/current-month/preset semantics, REPORT001 `SubNav`, REPORT002 `SegmentedControl`, and all report query/cache/service/calculation/chart/table/metric/export/print/permission/routing/`AnalyticsGate` truth remain unchanged at source-review level.
-- Focused `DateField` and `ReportFilterBar` tests are authored but were not executed.
-- No runtime visual or release-readiness claim is made.
+## Current source truth to preserve
+
+- Shared `MetricGrid columns={4}` is limited to the primary Reports Overview summary.
+- Exact existing metric children/order remain: `صافي الإيراد`, `إجمالي المبيعات`, `صافي التحصيل الخزيني`, `تحصيل AR المنسوب`.
+- Report-domain `MetricCard` retains trust/freshness/running/blocked semantics and is not replaced by generic `StatCard`.
+- Customer Health, all second report pages, charts, tables, filters, report states and broader report composition remain outside this slice.
+- All report queries, cache/service/hook contracts, calculations, permissions, routing, `AnalyticsGate`, export/print and business truth remain caller/domain-owned.
+- REPORT001 `SubNav`, REPORT002 `SegmentedControl`, REPORT003 `DateField` and all date semantics remain unchanged.
 
 ## Queue continuity
 
-- `DS2-REPORT-001`, `DS2-REPORT-002`, and `DS2-REPORT-003` are `DONE`.
-- Exactly one next dependency-safe roadmap item is now `READY`: `DS2-REPORT-004 — Metrics/charts/tables and responsive report composition`.
-- REPORT004 is not permission for broad report polishing: Product Design must first inspect the exact latest Development baseline and bound one smallest presentation-only representative concern before UI Production begins.
+- `DS2-REPORT-001`, `DS2-REPORT-002`, and `DS2-REPORT-003` remain `DONE`.
+- `DS2-REPORT-004` remains the single active slice and must not advance to `DONE` until the exact-head Product Design closeout and final integration revalidation pass.
+- No next roadmap slice is promoted while REPORT004 remains unresolved.
 - Settings/Admin, Global convergence, remaining Work and Field debt remain preserved in the North-Star roadmap.
-- `DECISION_LOG.md` remains unchanged because REPORT003 applies existing durable rules and does not change or supersede one.
+- `TEAM_MEMORY.md`, `31_AGENT_TEAM_WORKSTREAM.md`, and `DECISION_LOG.md` are unchanged in this run because no merge or durable-rule change occurred.
 
 No feature/product code was implemented by Integration. No GitHub Actions or hosted CI were triggered or rerun, no Vercel/preview branch was touched, and `main` was not touched.
 
 ### Cross-role handoff
-- **To:** Product Design Director first; UI Production Engineer only after one exact REPORT004 boundary is recorded; Design QA after a future stable PR HEAD.
-- **What changed:** REPORT003 is integrated as `cec34dcdc2fec5ac7b3cd4821d942f224f9f52f2`; the queue advances exactly one step to `DS2-REPORT-004`.
-- **Preserve:** REPORT001 `SubNav`; REPORT002 `SegmentedControl`; REPORT003 presentation-only `DateField`; external `DateRange value/onChange`; all date normalization/current-month/local-date/preset semantics; all report query/cache/service/calculation/chart/table/metric/export/print/permission/routing/`AnalyticsGate` truth; the full remaining roadmap.
-- **Need from you:** Product Design Director should inspect representative report metric/chart/table surfaces on the exact latest Development baseline and record one smallest dependency-safe presentation-only REPORT004 concern. UI Production must not start a broad multi-page report redesign or move analytics/business truth into shared components.
-- **Blocker level:** `NONE`.
-- **Baseline:** integrated product merge `cec34dcdc2fec5ac7b3cd4821d942f224f9f52f2`; Development pre-state-write `64ee44c53b507dc7f85d749aa7076a62f4daddf9`.
-- **Evidence:** `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; Product Design `PASS — NO DESIGN-SYSTEM BLOCKER`; no executed build/test/lint/runtime/preview/release PASS claimed.
+- **To:** Product Design Director first; Development Integrator after same-head closeout.
+- **What changed:** PR #51 exact HEAD `0dad8a5eb73e1a4fac73475dda5a247182db2e51` is QA GREEN-DEV and source-clean, but integration is held for fresh Product Design resolution of the stale illustrative metric/class description against the exact current source.
+- **Preserve:** wrapper-only `MetricGrid columns={4}` convergence; exact four current metric children/order/props; report-domain `MetricCard` semantics; unchanged loading branch and all report/date/query/calculation/permission/routing/export/print/business truth.
+- **Need from you:** Product Design should independently accept or block exact PR HEAD `0dad8a5eb73e1a4fac73475dda5a247182db2e51` and explicitly resolve the stale illustrative labels/class in favor of exact baseline source if satisfied. Integrator should then revalidate head/base/threads/diff/mergeability before any merge.
+- **Blocker level:** `WATCH` — no implementation blocker, but the same-head Product Design integration prerequisite is still open.
+- **Baseline:** Development pre-state-write `855303dd2e29da8ba6a56b40d9f74f74d8775f15`; PR #51 HEAD `0dad8a5eb73e1a4fac73475dda5a247182db2e51`.
+- **Evidence:** `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview/release PASS claimed.
