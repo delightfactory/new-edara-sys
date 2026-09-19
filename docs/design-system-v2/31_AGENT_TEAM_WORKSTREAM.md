@@ -141,36 +141,46 @@ System result:
 
 ## Current single READY slice
 
-### DS2-REPORT-005 — Next bounded report chart/table/responsive-composition convergence
+### DS2-REPORT-005 — Shared ChartPanel foundation + Sales primary revenue-chart migration
 Status: `READY`
-Owner role for first step: Product Design Director
+Owner role for implementation: UI Production Engineer
 Dependency baseline: `DS2-REPORT-004` integrated at `38b53912c1b3ff8c933ec0d5cfc9d3dc69488f85`
-System-pattern intent: continue Reports/Analytics convergence by selecting exactly one smallest dependency-safe presentation-only concern from real chart, table, metric or responsive-composition consumers; do not start a broad multi-page report polish pass.
+Product Design bounding baseline: `design-system-v2-development` HEAD `42c9a11fab10c1570d283159acac7d172f8e2ea3`
+Representative consumer: `src/pages/reports/SalesPage.tsx`, the first chart surface titled `تطور الإيراد اليومي`.
+System-pattern intent: establish the missing shared, domain-agnostic V2 `ChartPanel` presentation pattern proven by recurring report chart framing, then migrate exactly one representative Sales chart surface onto it. Do not broaden this slice into chart semantics, a second chart, a second report page or a general Reports polish pass.
 
-Bounding requirement before UI Production code:
-- inspect representative report chart/table/metric/responsive surfaces on the exact latest `design-system-v2-development` baseline;
-- choose one coherent concern with a proven recurring presentation need and record the exact representative file/surface and acceptance boundary;
-- prefer an existing shared V2 primitive/pattern; strengthen a shared contract only when the real consumer proves the gap;
-- keep all report-domain data meaning, query/service/cache/hook contracts, calculations, series/legend semantics, row/value meaning, permissions, routing, `AnalyticsGate`, export/print and business truth caller-owned;
-- preserve REPORT001 `SubNav`, REPORT002 `SegmentedControl`, REPORT003 `DateField`, REPORT004 `MetricGrid` adoption and report-domain `MetricCard` trust/freshness semantics;
-- no second concern or second report family may be added to the future implementation PR merely because it looks similar.
+Exact implementation boundary:
+- add one shared `ChartPanel` under the V2 patterns layer, composed from existing shared `Card` + `SectionHeader` rather than inventing another independent surface/header mini-system;
+- keep the shared contract intentionally small: title, optional description, optional caller-owned action/meta slot, heading level, children and ordinary class/HTML passthrough only as needed for a neutral presentation pattern;
+- `ChartPanel` owns neutral surface/frame, standard shared padding/spacing, semantic section hierarchy and a `min-width: 0` chart-body containment boundary; it must not know about Reports, Recharts, trust/freshness, loading, empty, blocked, series, colors, data keys or business vocabulary;
+- migrate only SalesPage's first `تطور الإيراد اليومي` chart outer surface/header onto `ChartPanel`;
+- preserve the exact Arabic title `تطور الإيراد اليومي`, description `صافي إيراد + قيمة مرتجعات — مجمّع يومياً في قاعدة البيانات`, and the existing caller-owned trust badge + freshness indicator action content;
+- preserve the exact body decision tree and dimensions: blocked state, loading skeleton, empty state and the existing 240px `ResponsiveContainer` chart branch;
+- preserve `chartData`, gradients, axes, margins, tooltip, series names/data keys/colors/stroke/fill/dot behavior and every report hook/calculation/trust decision exactly.
 
-Device / system acceptance for the bounded concern:
-- Mobile must remain operational and contained without ordinary viewport-level horizontal overflow;
-- Tablet must receive deliberate touch-first intermediate composition rather than compressed Desktop;
-- Desktop must preserve useful report comparison/density;
-- Arabic/RTL, long labels, large numeric values, focus/accessibility, dark mode and relevant loading/empty/error/permission states must be considered for the selected concern;
-- any shared component must remain presentation-focused and domain-agnostic.
+Device / state / accessibility acceptance:
+- Desktop keeps useful full-width analysis density and the existing 240px visualization height; the shared frame must not squeeze or reorder the chart body;
+- Tablet keeps the chart full-width with deliberate shared spacing and readable Arabic header/action composition rather than a compressed Desktop-only header;
+- Mobile must contain the panel without ordinary viewport-level horizontal overflow; shared heading/description/action composition may wrap, while the visualization remains inside its existing responsive container;
+- use semantic `h2` section hierarchy through `SectionHeader` under the page `h1`; do not introduce decorative headings or duplicate accessible names;
+- retain current non-color-only blocked copy and all loading/empty text; no state may disappear merely because the frame becomes shared;
+- dark mode, RTL and Arabic wrapping must come from shared semantic surface/header contracts; no new page-specific color/padding/breakpoint variant is allowed;
+- no new interactive control is introduced. Existing trust/freshness content remains caller-owned and any focus behavior it already has must remain intact.
 
 Explicit exclusions / BLOCK rule:
-- no query/cache/service/RPC/DB, permissions/RBAC/RLS, routing, `AnalyticsGate`, calculation, aggregation, chart-series/data, table-data, export/print or business-rule change;
+- do not migrate the second Sales bar-chart surface in this PR;
+- do not migrate Receivables, Product Performance or any second report page even though their framing demonstrates recurrence;
+- do not change the Sales summary `report-grid`/MetricCards, `ReportFilterBar`, `SystemHealthBar`, `CustomTooltip`, chart library, legend/axis/series/data semantics or chart colors;
+- do not create a report-domain `ReportChartCard` wrapper in parallel with shared `ChartPanel`;
+- no query/cache/service/RPC/DB, permissions/RBAC/RLS, routing, `AnalyticsGate`, calculation, aggregation, export/print or business-rule change;
 - no hosted CI, preview/deploy or `main` work;
-- if the next improvement requires changing report truth or merging multiple unrelated report concerns, Product Design must mark it `BLOCKED` or narrow it before UI implementation.
+- if implementation discovers that chart framing requires changing chart truth, data semantics, trust logic or multiple unrelated report concerns, mark the slice `BLOCKED` and return to Product Design instead of expanding scope.
 
-Focused evidence expected after Product Design bounds the concern:
-- one feature branch from the then-current Development HEAD;
-- one coherent presentation concern and focused test artifacts for the material risk;
-- exact-head Design QA `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` with honest execution evidence before integration.
+Focused evidence expected:
+- one feature branch from the then-current Development HEAD and one implementation PR targeting `design-system-v2-development`;
+- focused shared-pattern tests for `ChartPanel` hierarchy/slots/neutral contract plus a SalesPage test protecting use of the shared panel and preservation of the first chart's title/state boundary;
+- exact-head Design QA `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` with honest execution evidence before integration;
+- Product Design exact-head review after a stable implementation PR exists. Runtime/build/preview PASS must not be implied unless separately evidenced.
 
 ## Product migration roadmap
 
@@ -234,7 +244,7 @@ Open only when a real migrated screen proves the recurring gap:
 - `DS2-REPORT-002` Report date-preset selector convergence — `DONE` / PR #49 / merge `cc91792263d9fc606b9c2f28a531daa826997c75`
 - `DS2-REPORT-003` Report custom-date field convergence — `DONE` / PR #50 / merge `cec34dcdc2fec5ac7b3cd4821d942f224f9f52f2`
 - `DS2-REPORT-004` Reports Overview summary metric-grid convergence — `DONE` / PR #51 / merge `38b53912c1b3ff8c933ec0d5cfc9d3dc69488f85`
-- `DS2-REPORT-005` next bounded report chart/table/responsive-composition concern — `READY` / Product Design must bound exactly one presentation-only concern before implementation
+- `DS2-REPORT-005` Shared ChartPanel foundation + Sales primary revenue-chart migration — `READY` / bounded by Product Design; UI Production may implement exactly this one concern
 - further report metrics/charts/tables/responsive composition beyond REPORT005 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
