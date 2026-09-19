@@ -169,25 +169,40 @@ Runtime/preview/release evidence: not claimed
 System result:
 - only Geography's `GeoLevel` header selector migrated from a raw page-local `<select>` to shared V2 `Select -> Field`;
 - exact values/order/Arabic labels remain `governorate / محافظة`, `city / مدينة`, `area / منطقة`;
-- page-owned `level`, `setLevel(...)` and `filters = { dateFrom, dateTo, level }` remain unchanged;
+- page-owned `level`, `setLevel(...)` and `filters = { dateFrom: range.from, dateTo: range.to, level }` remain unchanged;
 - `ReportFilterBar`, date behavior and all Geography query/cache/service/calculation/trust/metrics/table/heatmap/permission/routing/`AnalyticsGate`/export/print/business truth remain unchanged;
 - explicit Arabic accessible naming is present, while shared V2 form grammar owns presentation, focus, dark/disabled, RTL and Tablet/Mobile touch geometry.
 
 ## Current single READY slice
 
-### DS2-REPORT-008 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
+### DS2-REPORT-008 — Receivables AR chart-panel convergence
 Status: `READY`
-Owner role for immediate next action: Product Design Director
-Selection baseline: product integration merge `9ab20b3ca467b1d42eae0fb9fd6936d156e11662`; Product Design must inspect the exact latest Development HEAD before bounding implementation.
+Owner role for immediate next action: UI Production Engineer
+Selection baseline: exact Development HEAD inspected by Product Design before bounding: `4cb9a7b1132606498de6c9170735f681556a93a2`.
+Representative surface: `src/pages/reports/ReceivablesPage.tsx` → chart section titled `تحصيلات AR مجمّعة بتاريخ البيع الأصلي` only.
 
 System-pattern intent:
-- inspect representative remaining Reports/Analytics surfaces and select exactly one smallest dependency-safe presentation-only concern;
-- prefer existing shared V2 primitives/patterns, or strengthen one shared contract only when a real report consumer proves the need;
-- preserve REPORT001-007 contracts and every analytics/query/calculation/trust/permission/routing/export/print/business semantic boundary;
-- preserve Settings/Admin, Global convergence, remaining Work and Field debt, and the shared component-depth program in the roadmap;
-- do not turn REPORT008 into broad multi-page report beautification.
+- replace only this chart's page-local card/header wrapper with existing shared V2 `ChartPanel`;
+- use `ChartPanel` title/description/action slots and its default semantic `h2` hierarchy; no shared API/CSS change is expected;
+- keep chart data, trust/freshness, state branching and all AR/report meaning caller-owned exactly as established by REPORT005.
 
-Implementation is not authorized until Product Design records the exact representative surface/file and explicit acceptance boundary from the then-current `design-system-v2-development` HEAD.
+Acceptance boundary:
+- preserve exact title `تحصيلات AR مجمّعة بتاريخ البيع الأصلي` and description `مجمّع في قاعدة البيانات — إيصالات، مردودات، صافي`;
+- preserve the existing `TrustStateBadge` + `FreshnessIndicator` action cluster and every trust/freshness value source;
+- preserve exact blocked/loading/empty/data branching and copy, including the 260px body height;
+- preserve `chartData`, `ResponsiveContainer`, `BarChart`, axes, grid, tooltip, margins, three bar series/names/colors/radii/maxBarSize and all formatters without visual-semantic reinterpretation;
+- Desktop must keep the current dense analytical rhythm; Tablet/Mobile must allow the shared section header/action composition to wrap without introducing ordinary page horizontal overflow; RTL, dark-mode tokens and long Arabic copy remain first-class;
+- accessibility must improve structurally through the shared `SectionHeader`/default `h2` path while existing badge/freshness semantics remain unchanged;
+- author focused test artifacts for shared `ChartPanel` adoption, exact copy/action/state preservation and unchanged 260px chart contract; label execution evidence honestly.
+
+Explicit exclusions:
+- no changes to the three `MetricCard`s or their `report-grid` wrapper;
+- no page-header, `ReportFilterBar`, `SystemHealthBar`, custom tooltip, filter/date or second report/chart migration;
+- no `ChartPanel` redesign/API widening, chart legend redesign or Recharts abstraction in this slice;
+- no hook/query/cache/service/RPC/DB/calculation/trust-status/permission/routing/`AnalyticsGate`/export/print/business-semantic change;
+- if the existing `ChartPanel` contract proves materially insufficient or any functional semantic change is required, mark `BLOCKED` and return to Product Design instead of widening the PR.
+
+Implementation is authorized only for this exact bounded concern from a fresh branch based on the latest `design-system-v2-development` HEAD.
 
 ## Product migration roadmap
 
@@ -254,7 +269,7 @@ Open only when a real migrated screen proves the recurring gap:
 - `DS2-REPORT-005` Shared ChartPanel foundation + Sales primary revenue-chart migration — `DONE` / PR #52 / merge `3776e7defc83a1376a571dd38256c6a7bbf87e17`
 - `DS2-REPORT-006` Product Performance responsive detail-collection convergence — `DONE` / PR #53 / merge `ffda5aeb23684ea981c341761d1dde2cef7c3283`
 - `DS2-REPORT-007` Geography analysis-level selector convergence — `DONE` / PR #54 / merge `9ab20b3ca467b1d42eae0fb9fd6936d156e11662`
-- `DS2-REPORT-008` Next bounded Reports metrics/charts/tables/responsive-composition convergence — `READY` / Product Design must bound one smallest concern before implementation
+- `DS2-REPORT-008` Receivables AR chart-panel convergence — `READY` / bounded to one chart shell in `ReceivablesPage.tsx`
 - further Reports/Analytics convergence beyond REPORT008 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
