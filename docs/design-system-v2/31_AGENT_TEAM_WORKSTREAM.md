@@ -38,17 +38,17 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-003`.
+Product UI is integrated through `DS2-REPORT-004`.
 
 Latest product integration:
-- PR: `#50 — DS2-REPORT-003: converge report custom date fields`
-- Exact reviewed PR HEAD: `4b81eee69d4a8722333db165041e481fa80f24fe`
-- Squash merge commit: `cec34dcdc2fec5ac7b3cd4821d942f224f9f52f2`
+- PR: `#51 — DS2-REPORT-004: converge Reports Overview summary metric grid`
+- Exact reviewed PR HEAD: `0dad8a5eb73e1a4fac73475dda5a247182db2e51`
+- Squash merge commit: `38b53912c1b3ff8c933ec0d5cfc9d3dc69488f85`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact HEAD
 - Runtime/preview/release evidence: not claimed
 
-The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, Supervisor Work shared KPI summary convergence, Reports shared route-level sub-navigation convergence, Reports shared date-preset selector convergence with hardened `SegmentedControl` geometry, and Reports shared native `DateField` convergence for the custom date pair.
+The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, Supervisor Work shared KPI summary convergence, Reports shared route-level sub-navigation convergence, Reports shared date-preset selector convergence with hardened `SegmentedControl` geometry, Reports shared native `DateField` convergence for the custom date pair, and Reports Overview primary KPI-summary layout convergence onto shared `MetricGrid` while preserving report-domain `MetricCard` trust/freshness semantics.
 
 ## Completed slices
 
@@ -120,49 +120,57 @@ System result:
 - external `DateRange value/onChange`, `normalizeDateRange(...)`, local-date/current-month/preset semantics, REPORT001/002 contracts and all report query/cache/service/calculation/chart/table/metric/export/print/permission/routing/`AnalyticsGate` truth remain unchanged;
 - focused `DateField` and `ReportFilterBar` tests are authored but were not executed.
 
+### DS2-REPORT-004 — Reports Overview summary metric-grid convergence
+Status: `DONE`
+Merged PR: `#51`
+Reviewed HEAD: `0dad8a5eb73e1a4fac73475dda5a247182db2e51`
+Squash merge: `38b53912c1b3ff8c933ec0d5cfc9d3dc69488f85`
+Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
+Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER`
+Runtime/preview/release evidence: not claimed
+
+System result:
+- only the primary Reports Overview KPI-summary wrapper migrated from local `report-grid` to shared `MetricGrid columns={4}`;
+- the exact existing `MetricCard` children remain in source order: `صافي الإيراد`, `إجمالي المبيعات`, `صافي التحصيل الخزيني`, `تحصيل AR المنسوب`;
+- every existing child prop/value/formatter/status/freshness/domain/subtitle/icon/secondary value and the four-skeleton loading branch remain unchanged;
+- report-domain `MetricCard` remains the owner of trust/freshness plus COMPLETE/warning/RUNNING/BLOCKED presentation semantics and was not replaced by generic `StatCard`;
+- shared `MetricGrid` now owns the summary layout grammar: four columns on Desktop, two on Tablet and one on Mobile under the existing V2 contract;
+- Customer Health, navigation cards, charts, tables, filters and every second report page remain out of scope;
+- all report queries, cache/service/hook contracts, calculations, metric/chart/table data, permissions, routing, `AnalyticsGate`, export/print and business truth remain caller/domain-owned and unchanged;
+- the prior stale illustrative wrapper/metric-label governance wording is superseded by this exact source truth.
+
 ## Current single READY slice
 
-### DS2-REPORT-004 — Reports Overview summary metric-grid convergence
+### DS2-REPORT-005 — Next bounded report chart/table/responsive-composition convergence
 Status: `READY`
-Owner role: UI Production Engineer
-Dependency baseline: `DS2-REPORT-003` integrated at `cec34dcdc2fec5ac7b3cd4821d942f224f9f52f2`
-Representative surface: `src/pages/reports/OverviewPage.tsx` summary metrics immediately after `ReportFilterBar`
-System-pattern intent: converge report summary composition onto the proven shared `MetricGrid` while preserving the report-domain `MetricCard` trust/freshness semantics intact.
+Owner role for first step: Product Design Director
+Dependency baseline: `DS2-REPORT-004` integrated at `38b53912c1b3ff8c933ec0d5cfc9d3dc69488f85`
+System-pattern intent: continue Reports/Analytics convergence by selecting exactly one smallest dependency-safe presentation-only concern from real chart, table, metric or responsive-composition consumers; do not start a broad multi-page report polish pass.
 
-Exact implementation boundary:
-- replace only the local `report-grid report-grid-12` wrapper around the four Overview summary `MetricCard` children with shared `MetricGrid` using the four-column contract;
-- preserve the four existing `MetricCard` children exactly in current order: `صافي الإيراد`, `هامش الربح`, `رصيد الذمم`, `زيارات اليوم`;
-- preserve every existing child prop and caller-owned value/status/freshness/domain/formatter/icon/subtitle/trend input exactly;
-- do not replace report `MetricCard` with generic `StatCard`: the report component owns domain trust/freshness/running/blocked presentation semantics that are not equivalent to generic KPI presentation;
-- do not migrate Sales or any second report page in this slice. Recurrence there is evidence for a later bounded slice, not permission to broaden REPORT004.
+Bounding requirement before UI Production code:
+- inspect representative report chart/table/metric/responsive surfaces on the exact latest `design-system-v2-development` baseline;
+- choose one coherent concern with a proven recurring presentation need and record the exact representative file/surface and acceptance boundary;
+- prefer an existing shared V2 primitive/pattern; strengthen a shared contract only when the real consumer proves the gap;
+- keep all report-domain data meaning, query/service/cache/hook contracts, calculations, series/legend semantics, row/value meaning, permissions, routing, `AnalyticsGate`, export/print and business truth caller-owned;
+- preserve REPORT001 `SubNav`, REPORT002 `SegmentedControl`, REPORT003 `DateField`, REPORT004 `MetricGrid` adoption and report-domain `MetricCard` trust/freshness semantics;
+- no second concern or second report family may be added to the future implementation PR merely because it looks similar.
 
-Device / state / accessibility acceptance:
-- use the existing shared `MetricGrid` responsive contract with no Reports-only breakpoint or width override;
-- Desktop must preserve useful four-metric comparison density; Tablet/Mobile must remain readable and contained under the shared grid contract without ordinary viewport-level horizontal overflow;
-- long Arabic labels and large numeric values must remain readable without clipping or false truncation introduced by the wrapper migration;
-- existing `MetricCard` trust/freshness/status text, icons and non-color-only meaning must remain intact across COMPLETE, warning/reconciled, RUNNING and blocked/failed presentation paths;
-- RTL, dark-mode token behavior and shared focus/accessibility semantics must not regress.
-
-Preserve exactly:
-- all report queries, cache/service/hook contracts and input parameters;
-- every calculation and each metric value/formatter/status/freshness/domain mapping;
-- every chart series/data mapping, table row/value meaning, risk section and aggregation rule;
-- permissions, routing, `AnalyticsGate`, export/print and business truth;
-- REPORT001 `SubNav`, REPORT002 `SegmentedControl`, REPORT003 `DateField`, external `DateRange value/onChange`, normalization/current-month/local-date/preset semantics;
-- report-domain `MetricCard` state ownership and trust semantics remain caller/domain-owned.
+Device / system acceptance for the bounded concern:
+- Mobile must remain operational and contained without ordinary viewport-level horizontal overflow;
+- Tablet must receive deliberate touch-first intermediate composition rather than compressed Desktop;
+- Desktop must preserve useful report comparison/density;
+- Arabic/RTL, long labels, large numeric values, focus/accessibility, dark mode and relevant loading/empty/error/permission states must be considered for the selected concern;
+- any shared component must remain presentation-focused and domain-agnostic.
 
 Explicit exclusions / BLOCK rule:
-- no `MetricCard` redesign or replacement with `StatCard` in this slice;
-- no chart, table, risk-section, filter, loading/empty/error/offline/sync or multi-page report redesign;
-- no Sales/second-page migration;
-- no query/cache/service/RPC/DB, permissions/RBAC/RLS, routing, `AnalyticsGate`, calculation, aggregation, metric-data, chart-data, table-data, export/print or business-rule change;
-- no preview/deploy, hosted CI or `main` work;
-- if implementation requires altering report truth or domain `MetricCard` semantics rather than only the summary layout wrapper, mark the slice `BLOCKED` instead of widening scope.
+- no query/cache/service/RPC/DB, permissions/RBAC/RLS, routing, `AnalyticsGate`, calculation, aggregation, chart-series/data, table-data, export/print or business-rule change;
+- no hosted CI, preview/deploy or `main` work;
+- if the next improvement requires changing report truth or merging multiple unrelated report concerns, Product Design must mark it `BLOCKED` or narrow it before UI implementation.
 
-Focused evidence expected:
-- source review proving only the Overview summary layout wrapper changed plus necessary import/test coverage;
-- focused test/contract evidence that the four `MetricCard` children remain present in the same order and the shared `MetricGrid` is used;
-- honest execution label under the current test policy; no runtime/preview PASS may be claimed without evidence.
+Focused evidence expected after Product Design bounds the concern:
+- one feature branch from the then-current Development HEAD;
+- one coherent presentation concern and focused test artifacts for the material risk;
+- exact-head Design QA `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` with honest execution evidence before integration.
 
 ## Product migration roadmap
 
@@ -225,8 +233,9 @@ Open only when a real migrated screen proves the recurring gap:
 - `DS2-REPORT-001` Report route sub-navigation convergence — `DONE` / PR #48 / merge `5d2c57d9a502a4bbb2d355d94634bcf8b53075d2`
 - `DS2-REPORT-002` Report date-preset selector convergence — `DONE` / PR #49 / merge `cc91792263d9fc606b9c2f28a531daa826997c75`
 - `DS2-REPORT-003` Report custom-date field convergence — `DONE` / PR #50 / merge `cec34dcdc2fec5ac7b3cd4821d942f224f9f52f2`
-- `DS2-REPORT-004` Reports Overview summary metric-grid convergence — `READY` / bounded to the four-metric Overview summary wrapper only
-- later report metrics/charts/tables/responsive composition — `BACKLOG` / each concern must be bounded separately after REPORT004
+- `DS2-REPORT-004` Reports Overview summary metric-grid convergence — `DONE` / PR #51 / merge `38b53912c1b3ff8c933ec0d5cfc9d3dc69488f85`
+- `DS2-REPORT-005` next bounded report chart/table/responsive-composition concern — `READY` / Product Design must bound exactly one presentation-only concern before implementation
+- further report metrics/charts/tables/responsive composition beyond REPORT005 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
