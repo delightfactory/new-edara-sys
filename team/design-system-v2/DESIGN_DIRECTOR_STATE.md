@@ -4,87 +4,103 @@
 
 - Review date: `2026-09-19`.
 - Authoritative branch: `design-system-v2-development`.
-- Development HEAD immediately before this Director-state write: `804e7d26e72736f9e55fbd3bb43af86cf5659440`.
-- Latest integrated product slice: `DS2-REPORT-003 — Report custom-date field convergence`, PR #50, squash merge `cec34dcdc2fec5ac7b3cd4821d942f224f9f52f2`.
-- Active implementation slice: `DS2-REPORT-004 — Reports Overview summary metric-grid convergence`.
-- Active PR: `#51 — DS2-REPORT-004: converge Reports Overview summary metric grid`.
-- Feature baseline: `4eebb0be4fd08d0d111bb7297c172fa9d20abc23`.
-- Exact PR HEAD independently reviewed: `0dad8a5eb73e1a4fac73475dda5a247182db2e51`.
-- PR state at review: `OPEN / DRAFT / mergeable=true`.
-- Design QA: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` on the same exact HEAD, with `TESTS_AUTHORED_NOT_EXECUTED`.
-- Development Integration: `NO_MERGE_WAITING_FRESH_PRODUCT_DESIGN_CLOSEOUT` before this state update.
+- Exact Development HEAD independently inspected before bounding REPORT005: `42c9a11fab10c1570d283159acac7d172f8e2ea3`.
+- Workstream scope commit created this run: `19376d74eb6dc431847cc0fbfee6c6b22fda75e2`.
+- Latest integrated product slice: `DS2-REPORT-004 — Reports Overview summary metric-grid convergence`, PR #51, squash merge `38b53912c1b3ff8c933ec0d5cfc9d3dc69488f85`.
+- Open implementation PRs targeting Development at final pre-state recheck: none.
+- Current single READY slice: `DS2-REPORT-005 — Shared ChartPanel foundation + Sales primary revenue-chart migration`.
 - No runtime/build/test/lint/preview/release PASS is claimed in this Director run.
+
+## What changed since the previous state
+
+REPORT004 is integrated and the prior Director acceptance state is stale. The broad roadmap placeholder for REPORT005 has now been decomposed into one dependency-safe implementation slice with one representative consumer and explicit system/device/state/accessibility boundaries.
 
 ## Independent Product Design judgment
 
-**PASS — NO DESIGN-SYSTEM BLOCKER on exact PR HEAD `0dad8a5eb73e1a4fac73475dda5a247182db2e51`.**
+**READY — implementation is now correctly bounded.**
 
-I independently re-read the exact baseline source, exact PR implementation, shared `MetricGrid` contract/CSS, report-domain `MetricCard`, focused test artifact, current PR metadata/reviews/threads, and the relevant component/page/migration blueprints before comparing peer conclusions.
+I formed the architectural judgment from current source before comparing peer states. Reports already prove a recurring chart-frame need: Sales, Receivables and Product Performance independently rebuild a neutral card surface, section title/description and trust/freshness/meta area around visualizations. Meanwhile the V2 blueprint explicitly names `ChartPanel` as a missing shared application pattern and the Reports audit target calls for `ChartPanel`, while shared `Card` and `SectionHeader` already provide the correct lower-level surface and hierarchy contracts.
 
-The implementation is the intended architecture-first convergence: only the primary Reports Overview KPI summary layout moves from the report-local wrapper to shared `MetricGrid columns={4}`. The report-domain `MetricCard` remains intentionally untouched because it owns trust/freshness plus COMPLETE/warning/RUNNING/BLOCKED presentation semantics that are richer than generic `StatCard` presentation. No business, query or report-state meaning moves into the Design System.
+The right next move is therefore not another page-only cosmetic wrapper, not another MetricGrid repetition, and not a broad charts/tables cleanup. The smallest system-advancing proof is to formalize a thin shared, domain-agnostic `ChartPanel` from existing V2 primitives and migrate exactly one real chart: the first Sales chart titled `تطور الإيراد اليومي`.
 
-## Source-truth correction / contradiction synthesis
+## System-pattern intent and exact scope
 
-The prior Director scope note and the current Workstream contain a **descriptive source mismatch**, not a product-scope disagreement:
+REPORT005 must:
 
-- the exact feature baseline uses `<div className="report-grid">`, not `report-grid report-grid-12`;
-- the exact existing primary four `MetricCard` labels are, in order: `صافي الإيراد`, `إجمالي المبيعات`, `صافي التحصيل الخزيني`, `تحصيل AR المنسوب`;
-- the earlier illustrative list `صافي الإيراد / هامش الربح / رصيد الذمم / زيارات اليوم` was stale and is superseded by the exact baseline source.
+- introduce one shared `ChartPanel` in the patterns layer, composed from existing shared `Card` + `SectionHeader`;
+- keep the pattern presentation-only and intentionally small: title, optional description, optional caller-owned action/meta slot, heading level, children and only ordinary neutral passthrough needed by a reusable surface;
+- let `ChartPanel` own neutral card/frame treatment, shared spacing/padding, semantic section hierarchy and a `min-width: 0` body containment boundary;
+- migrate only `src/pages/reports/SalesPage.tsx` first visualization surface, `تطور الإيراد اليومي`, onto that shared pattern;
+- preserve the exact existing Arabic title, description and caller-owned `TrustStateBadge` + `FreshnessIndicator` content;
+- preserve the exact blocked/loading/empty/chart decision tree and the existing 240px responsive chart body;
+- preserve every chart data/series/axis/gradient/tooltip/color/dimension and every report-domain hook/calculation/trust decision.
 
-The governing Product Design intent was always to preserve the **existing four children verbatim** and change only their layout wrapper. PR #51 follows that stronger invariant exactly. Therefore this mismatch is now explicitly resolved in favor of exact source truth, does not authorize any scope expansion, and is **not blocking** integration.
+`ChartPanel` must not import or understand Recharts, Reports, trust/freshness status, loading/empty/blocked logic, series/data keys or business vocabulary. The page remains the owner of report truth and state orchestration.
 
-The Workstream's stale illustrative class/label text should be treated as superseded for REPORT004 by this exact-head synthesis and may be normalized when the slice is marked DONE; no feature-branch change is required merely to reconcile governance wording.
+## Why this slice is preferable
 
-## Exact-head acceptance
+REPORT004 already proved `MetricGrid`; immediately repeating only metric-wrapper convergence would add less system depth. In contrast, the source shows the same chart framing grammar repeated across multiple report pages, and the blueprint already identifies `ChartPanel` as a formal V2 gap. One shared pattern plus one proof consumer advances the system without prematurely sweeping multiple pages or inventing a report-specific wrapper.
 
-On PR HEAD `0dad8a5eb73e1a4fac73475dda5a247182db2e51`:
+This is also intentionally **not** a table migration. Product Performance's raw table has additional responsive, semantic and status-presentation questions that deserve their own bounded slice rather than being hidden inside REPORT005.
 
-- the only product-code change is importing shared `MetricGrid` and replacing the opening/closing wrapper around the existing primary four-card summary;
-- the four existing `MetricCard` children remain in exact source order with the same values, formatters, statuses, freshness fields, domains, subtitles, icons and secondary values;
-- the existing four-skeleton loading branch remains in the same summary position inside the shared grid;
-- Customer Health, the report navigation-card grid, Sales and every second report page remain untouched;
-- REPORT001 `SubNav`, REPORT002 `SegmentedControl`, REPORT003 `DateField` and all date-range semantics remain unchanged;
-- all report queries, cache/service/hook contracts, calculations, chart/table data, permissions, routing, `AnalyticsGate`, export/print and business truth remain caller/domain-owned and unchanged.
+## Device / hierarchy / accessibility acceptance
 
-## Device / hierarchy / accessibility judgment
+- **Desktop:** retain full-width analysis density and the current 240px first-chart visualization height; shared framing must not squeeze/reorder chart content.
+- **Tablet:** retain a full-width chart with readable touch-first intermediate header/meta composition rather than a compressed Desktop-only header.
+- **Mobile:** panel and header/meta must wrap/contain without ordinary viewport-level horizontal overflow; visualization remains inside its existing `ResponsiveContainer`.
+- **Arabic / RTL:** exact Arabic copy is preserved; heading/description/action composition must remain RTL-safe and long-copy tolerant.
+- **Hierarchy:** the chart title becomes a semantic `h2` through shared `SectionHeader`, correctly nested beneath the page `h1`.
+- **Dark mode:** surface/header treatment must come from existing semantic V2 Card/SectionHeader contracts, not new page-local colors.
+- **States:** blocked, loading, empty and data-present branches all remain visible and unchanged in meaning; the existing blocked text remains non-color-only.
+- **Focus / touch:** no new interactive control is introduced. Existing caller-owned meta content must retain its current behavior; no visual wrapper may consume or fake interaction semantics.
 
-- Shared `MetricGrid columns={4}` provides the correct system grammar: four columns on Desktop, two on Tablet and one on Mobile.
-- The shared grid uses `minmax(0, 1fr)` and `min-width: 0`; existing report `MetricCard` also has `minWidth: 0` and wraps large values, so the wrapper change does not introduce ordinary viewport-level horizontal overflow or false truncation at source level.
-- Desktop retains useful four-metric comparison density; Tablet gains an intentional intermediate two-column composition; Mobile becomes one-column and scan-safe.
-- Existing Arabic labels, RTL composition, dark-mode token behavior, trust/freshness/status copy and non-color-only blocked/running/warning meaning remain intact.
-- The summary cards are non-interactive; no focus, keyboard or touch-action contract is weakened by this slice.
-- No `RUNTIME_VISUAL_PASS` is claimed; milestone runtime inspection remains separate under the test policy.
+## Explicit exclusions / blocker boundary
 
-## Test / evidence judgment
+REPORT005 must not:
 
-Focused `OverviewPage.test.tsx` coverage is appropriate for the material risk introduced by this wrapper-only slice: it protects shared four-column `MetricGrid` adoption, exact existing metric order/representative values and the four-skeleton loading branch.
+- migrate the second Sales bar chart;
+- migrate Receivables, Product Performance or any other report page;
+- touch Sales summary MetricCards/`report-grid`, `ReportFilterBar`, `SystemHealthBar` or `CustomTooltip`;
+- change Recharts library usage, chart series, data keys, legends, axes, gradients, colors, values, calculations or dimensions;
+- create a parallel report-domain `ReportChartCard` abstraction;
+- alter queries/cache/services/RPC/DB, permissions/RBAC/RLS, routing, `AnalyticsGate`, export/print or business rules;
+- use hosted CI, deploy/preview, touch `main` or modify preview branches.
 
-Evidence remains honestly labeled `TESTS_AUTHORED_NOT_EXECUTED`. No GitHub Actions/hosted CI, Vercel preview, local build/test/lint execution or release evidence is claimed.
+If implementation discovers that the shared frame cannot be introduced without changing chart truth, trust logic or multiple unrelated report concerns, the slice becomes `BLOCKING` and returns to Product Design rather than expanding scope.
+
+## Expected implementation / evidence
+
+- UI Production Engineer creates one feature branch from the then-current Development HEAD and one PR targeting `design-system-v2-development`.
+- Focused tests should cover the shared `ChartPanel` hierarchy/slots/neutral contract and Sales adoption/preservation of the first chart's title/state boundary.
+- Tests may be authored without execution under the current policy; evidence must be honestly labeled.
+- Design QA independently reviews a stable exact PR HEAD and records `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` only if the source and scope pass.
+- Product Design then reviews the same exact stable PR HEAD before integration.
 
 ## Peer-state synthesis
 
-After forming the independent judgment:
+After the independent judgment:
 
-- **Design QA:** aligned and current on the same exact PR HEAD with `GREEN-DEV`; its `WATCH` was solely the stale Director descriptive class/label list, which this state now resolves explicitly.
-- **UI Production Engineer:** aligned with the exact source truth and wrapper-only implementation; its source-truth `WATCH` is resolved by this Product Design synthesis.
-- **Development Integrator:** correctly held `NO_MERGE` only for this fresh Product Design closeout. With this state update, the Product Design prerequisite is satisfied if the PR HEAD remains unchanged; Integrator must still perform its own final base/drift/threads/mergeability revalidation.
-- **Team Memory / Workstream:** system direction is aligned. The only stale detail is the illustrative REPORT004 wrapper/class and metric-label text identified above; it is bounded and superseded by exact source truth for this slice.
-- **Decision Log / North Star:** no durable rule changed. REPORT004 applies existing shared-system-first, caller-owned business truth, responsive/Arabic/RTL and one-slice rules.
+- **Integration State / Team Memory:** aligned with REPORT004 being integrated and Product Design needing to bound exactly one REPORT005 concern. This run completes that handoff.
+- **UI Production State:** still describes the completed REPORT004 implementation and is stale for the newly bounded slice; no contradiction exists because no REPORT005 implementation PR is open.
+- **Design QA State:** still describes REPORT004 exact-head QA and is likewise stale for REPORT005; no contradiction exists yet.
+- **Workstream:** now contains the exact executable REPORT005 boundary and is the current slice-level source of truth.
+- **Decision Log / North Star:** no durable decision changed. This slice applies existing shared-system-first, caller-owned business truth, Arabic/RTL, device and one-slice rules.
 
-There is no material cross-role contradiction remaining and no Design-System blocker on the reviewed exact HEAD.
+No material cross-role contradiction is currently blocking implementation.
 
 ## Repository actions this run
 
 - Completed the mandatory shared-memory bootstrap in the required order.
-- Inspected issue #27, current Development HEAD, the only open PR targeting Development, exact PR/base source, shared `MetricGrid` and CSS contract, report `MetricCard`, focused diff/test artifact, review submissions/threads and relevant component/page/migration blueprints.
-- Formed an independent design judgment first, then compared peer states and explicitly resolved the stale illustrative source mismatch in favor of the exact Development baseline.
+- Inspected issue #27, exact Development HEAD and confirmed no open PR targeting Development before and after scope bounding.
+- Inspected representative current report surfaces in Overview, Sales, Receivables and Product Performance plus shared `Card`, `SectionHeader`, `MetricGrid`, surface CSS and relevant component/page/module/migration blueprints.
+- Updated `31_AGENT_TEAM_WORKSTREAM.md` to replace the broad REPORT005 placeholder with one executable shared-ChartPanel + Sales-first-chart slice.
 - Did not implement product code, modify peer specialist states, merge, touch `main`, trigger/rerun GitHub Actions, use hosted CI, deploy Vercel or modify preview branches.
-- Did not update Team Memory or Decision Log because overall design direction and durable policy did not change.
+- Did not update Team Memory or Decision Log because overall design direction and durable policy did not change; this is normal slice decomposition/progress.
 
 ### Cross-role handoff
-- **To:** Development Integrator.
-- **What changed:** Product Design independently accepted PR #51 exact HEAD `0dad8a5eb73e1a4fac73475dda5a247182db2e51` with `PASS — NO DESIGN-SYSTEM BLOCKER` and resolved the stale illustrative wrapper/class + metric-label mismatch in favor of exact baseline source truth.
-- **Preserve:** wrapper-only `MetricGrid columns={4}` convergence; exact existing four metric children/order/props (`صافي الإيراد`, `إجمالي المبيعات`, `صافي التحصيل الخزيني`, `تحصيل AR المنسوب`); report-domain `MetricCard` trust/freshness semantics; unchanged loading branch; all report/date/query/calculation/chart/table/permission/routing/`AnalyticsGate`/export/print/business truth; no second report page.
-- **Need from you:** revalidate exact current PR HEAD/base, Development drift, reviews/threads, changed-file scope and mergeability; if HEAD remains `0dad8a5eb73e1a4fac73475dda5a247182db2e51` and all gates remain green, integrate REPORT004 into `design-system-v2-development` and normalize the stale REPORT004 governance wording while marking the slice DONE.
+- **To:** UI Production Engineer; Design QA and Product Design after a stable PR exists.
+- **What changed:** REPORT005 is now `READY` and bounded to a shared domain-agnostic `ChartPanel` foundation plus migration of only SalesPage's first `تطور الإيراد اليومي` chart surface.
+- **Preserve:** exact first-chart Arabic title/description; trust/freshness caller ownership; blocked/loading/empty/data branches; 240px responsive chart body; all chart data/series/axis/gradient/tooltip/color semantics; REPORT001–004 contracts; all query/calculation/permission/routing/`AnalyticsGate`/export/print/business truth; no second chart or report page.
+- **Need from you:** start one feature branch from the latest Development HEAD, implement only the bounded `ChartPanel` + first Sales chart adoption, author focused shared-pattern/Sales tests, open one PR to `design-system-v2-development`, and stop for exact-head QA/Product Design review.
 - **Blocker level:** `NONE`.
-- **Baseline:** Development pre-write `804e7d26e72736f9e55fbd3bb43af86cf5659440`; accepted PR #51 HEAD `0dad8a5eb73e1a4fac73475dda5a247182db2e51`.
+- **Baseline:** Development pre-state-write `19376d74eb6dc431847cc0fbfee6c6b22fda75e2`; Product Design source-inspection baseline `42c9a11fab10c1570d283159acac7d172f8e2ea3`.
