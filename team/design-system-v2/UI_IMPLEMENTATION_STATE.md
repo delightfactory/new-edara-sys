@@ -2,94 +2,93 @@
 
 ## Reviewed baseline
 
-- Run date: `2026-09-18`
+- Run date: `2026-09-19`
 - Development branch: `design-system-v2-development`
-- Exact Development branch-creation baseline: `41cdbf9dba7fa5301777a2f461ce3de40bae168a`
-- Current Development HEAD observed during this run: `6f009031e86e0bb4f0062637f8608d3daf687681`
-- Feature branch: `ds2/report-002-date-presets`
-- Draft PR: `#49 — DS2-REPORT-002: converge report date preset selector`
-- Reviewer-blocked exact PR HEAD: `c71a486562bb6a9c3066cc4e074a23adacd51efe`
-- Shared-geometry repair product/test HEAD: `78deb60bec73b6d6a7d4382fe6494d4cb49e3da6`
-- Active slice: `DS2-REPORT-002 — Report date-preset selector convergence`
-- Representative surface: `src/components/reports/ReportFilterBar.tsx` inherited by Reports consumers
-- Disposition: `REVIEW — REVIEWER-REQUESTED FIX APPLIED; FRESH EXACT-HEAD PRODUCT DESIGN + DESIGN QA REQUIRED`
+- Exact Development branch-creation baseline: `d1f8e2e4adbcbbe1247304d5f644a6f82223f003`
+- Development HEAD observed before implementation: `d1f8e2e4adbcbbe1247304d5f644a6f82223f003`
+- Feature branch: `ds2/report-003-date-field`
+- Draft PR: `#50 — DS2-REPORT-003: converge report custom date fields`
+- Product/test HEAD before this owned-state write: `f0b4f2a3e066d12274adf276256b2b3e39ffb308`
+- Active slice: `DS2-REPORT-003 — Report custom-date field convergence`
+- Representative surface: `src/components/reports/ReportFilterBar.tsx`
+- Disposition: `REVIEW — IMPLEMENTATION COMPLETE; FRESH EXACT-HEAD PRODUCT DESIGN + DESIGN QA REQUIRED`
 - Evidence: `TESTS_AUTHORED_NOT_EXECUTED`
 
 ## Independent implementation judgment
 
-The REPORT002 composition remains correct: `ReportFilterBar` owns the four report date-range meanings and external `DateRange` callback contract, while shared V2 `SegmentedControl` owns only single-choice presentation/interaction.
+REPORT003 is correctly bounded as a shared presentation concern. The remaining two report custom-date editors were raw inline-styled native date inputs even though V2 already has a Field/Input anatomy and the blueprint explicitly calls for a shared `DateField` composite. The implementation therefore adds a thin domain-agnostic `DateField` over the existing `Input`, fixes its control type to native `date`, and leaves all parsing, normalization, range ordering and report meaning in the caller.
 
-Fresh Product Design and Design QA review of exact HEAD `c71a486...` proved one shared presentation defect in that primitive contract: default segmented items could flex-shrink under constrained Mobile width while their Arabic labels remained `white-space: nowrap`. The correct fix is therefore shared and narrowly bounded, not a Reports-local workaround.
-
-The repair now gives default/non-block segmented items intrinsic non-shrinking flex geometry while preserving the existing block/equal-width contract and the existing Mobile horizontal-scroll containment.
+The report surface now consumes that shared control only. `ReportFilterBar` still owns the exact from/to callbacks and `normalizeDateRange(...)` calls; the four REPORT002 presets and all downstream analytics/query/business contracts remain unchanged.
 
 ## Material implementation progress
 
-- Kept the REPORT002 migration of the four report date presets onto shared `SegmentedControl` unchanged.
-- Applied the reviewer-requested shared hardening in `src/styles/design-system-v2-navigation.css`:
-  - default `.ds-segmented-control__item` now uses `flex: 0 0 auto`;
-  - `.ds-segmented-control--block .ds-segmented-control__item` remains `flex: 1 1 0`;
-  - Mobile `.ds-segmented-control { overflow-x: auto; }` remains the containment/scroll owner.
-- Added focused Vitest source-contract coverage in `NavigationPatterns.test.tsx` that protects all three geometry invariants above.
-- Did not add any `ReportFilterBar`-specific CSS escape hatch, new SegmentedControl variant, or unrelated navigation cleanup.
-- Existing REPORT002 Testing Library coverage remains in place for exact Arabic preset order/copy, all four emitted range outputs, callback ownership, matching `aria-pressed` state, and custom-range no-selection.
+- Added `src/components/ui/DateField.tsx` as a shared V2 form composite built directly on `Input` / `Field`.
+- `DateField` fixes the native control to `type="date"` while forwarding normal `InputProps` except `type`; it adds no date parser, formatter, range logic or business validation.
+- Replaced only the two raw custom `<input type="date">` controls in `ReportFilterBar` with shared `DateField`.
+- Removed the duplicated report-local input surface/border/radius/typography/focus styling that is now owned by shared `.form-input` + `.ds-field` contracts.
+- Added independent Arabic accessible names: `من تاريخ` and `إلى تاريخ`.
+- Kept the calendar icon and separator presentation-only with `aria-hidden`; the custom-date pair has a named group and may wrap under constrained width through local composition only.
+- Preserved the existing shared `SegmentedControl` preset implementation unchanged.
+- Opened Draft PR #50 targeting `design-system-v2-development`.
 - No second slice was started.
 
-Files/patterns touched in the active PR after the repair:
+Files touched in the active PR:
+- `src/components/ui/DateField.tsx`
+- `src/components/ui/DateField.test.tsx`
 - `src/components/reports/ReportFilterBar.tsx`
 - `src/components/reports/ReportFilterBar.test.tsx`
-- `src/styles/design-system-v2-navigation.css`
-- `src/components/patterns/NavigationPatterns.test.tsx`
 - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
 ## Preserve / verified boundaries
 
-- Exact external contract remains `value: DateRange` + `onChange(DateRange)`.
-- Exact preset labels/order remain: `آخر 7 أيام`, `آخر 30 يوماً`, `آخر 90 يوماً`, `هذا الشهر`.
-- Existing `applyPreset(...)`, local-date conversion, `normalizeDateRange(...)`, and current-month first/last-day meaning remain unchanged.
-- Both custom `<input type="date">` controls and their normalization behavior remain unchanged.
-- Shared `SegmentedControl` remains presentation-only; no report date/business/query meaning moved into it.
-- Existing `--block` equal-width behavior is explicitly preserved.
-- No query/cache/service/hook/calculation/chart/table/metric/export/print/permission/routing/`AnalyticsGate` behavior changed.
-- No DB/migration/RPC, RBAC/RLS, route guard, workflow, validation, deployment, preview-branch or business-semantic change.
+- `ReportFilterBar` external contract remains exactly `value: DateRange` + `onChange(DateRange)`.
+- Existing `normalizeDateRange(...)` calls remain caller-owned and unchanged in meaning.
+- Local-date/current-month/preset calculations remain unchanged.
+- Exact four REPORT002 preset labels/order/meaning remain unchanged.
+- REPORT001 `SubNav` and REPORT002 `SegmentedControl` behavior/geometry remain untouched.
+- Native browser date-input semantics are retained; there is no custom calendar/date-picker implementation.
+- No timezone reinterpretation, locale parser, new validation rule, date comparison or range business rule was introduced.
+- No report query/cache/service/hook/calculation/metric/chart/table/export/print/permission/routing/`AnalyticsGate` behavior changed.
+- No DB/migration/RPC, RBAC/RLS, route guard, workflow, business-calculation, validation-semantic, deployment, preview-branch or `main` change.
 
-## Device / state coverage
+## Device / state / accessibility coverage
 
-- **Mobile (`<=768px`)**: default segmented items now retain intrinsic width instead of shrinking; existing shared horizontal scrolling remains responsible for reachability of all four long Arabic labels while touch-height stays unchanged.
-- **Tablet (`769–1024px`)**: surrounding ReportFilterBar wrapping and shared 44px-class touch geometry remain unchanged.
-- **Desktop (`>=1025px`)**: compact single-choice hierarchy remains beside the existing custom-date controls with no domain behavior change.
-- **RTL/Arabic**: exact Arabic copy/order and logical shared layout remain unchanged; long labels no longer rely on shrunken target boxes in constrained Mobile geometry.
-- **Accessibility**: named `role="group"`, native `type="button"`, `aria-pressed`, shared focus-visible treatment, and active-surface semantics remain unchanged.
-- **Custom range state**: unmatched ranges still leave every preset unselected while native date inputs remain the editor.
-- **Other report states**: loading/empty/error/disabled/read-only/permission/query/export semantics are outside this primitive-only repair and remain untouched.
+- **Mobile (`<=768px`)**: both date editors inherit shared V2 touch control height; the custom-date pair now wraps rather than relying on one rigid no-wrap row, with `maxWidth: 100%` containment at the local composition boundary.
+- **Tablet (`769–1024px`)**: shared touch-height Field/Input geometry remains first-class; the pair can wrap without introducing a separate tablet implementation.
+- **Desktop (`>=1025px`)**: native date controls remain compact flex items beside the preset selector and use the standard shared form surface/focus treatment rather than a page-local input style.
+- **RTL/Arabic**: each editor has an independent Arabic accessible name and layout uses logical flex flow; meaning no longer depends on icon position or the decorative separator.
+- **Dark mode**: controls consume the existing shared input tokens through `.form-input`; report-local hard-coded light input styling is removed.
+- **Focus/keyboard**: native date input focusability remains intact and shared `.form-input:focus` styling applies.
+- **Disabled/read-only/error plumbing**: shared DateField forwards existing Input/Field semantics only; the report slice does not invent new validation or state meaning.
+- **Custom range behavior**: editing either date still emits the same normalized parent `DateRange`; custom ranges continue to leave all preset buttons unselected.
 
 ## Test / execution evidence
 
 Evidence: **`TESTS_AUTHORED_NOT_EXECUTED`**.
 
-Authored/retained focused coverage now protects both layers relevant to the slice:
-- Reports composition/behavior via Testing Library: preset order/copy, all four outputs, callback ownership, selected `aria-pressed`, custom-range no-selection.
-- Shared geometry source contract via Vitest: default `flex: 0 0 auto`, block override `flex: 1 1 0`, and Mobile `overflow-x: auto` containment.
+Focused authored coverage:
+- `DateField.test.tsx`: native `type="date"`, accessible/native prop forwarding, change callback forwarding, and inherited Field error/disabled/read-only plumbing.
+- `ReportFilterBar.test.tsx`: existing preset order/output/pressed-state coverage retained; new coverage verifies independent Arabic custom-date names, native date types and the exact normalized parent callbacks for both from/to edits.
 
-No approved executable repository checkout/package runtime was available in the sandbox. A filesystem inspection found no mounted checkout to run against, so `npm test`, `npm run build`, and `npm run lint` were not executed. No local/build/test/lint/runtime/preview PASS is claimed. Hosted GitHub Actions/CI and Vercel were not used.
+No executable repository checkout/package runtime was mounted in the sandbox, so `npm test`, `npm run build`, and `npm run lint` were not executed. No local/build/test/lint/runtime/preview PASS is claimed. Hosted GitHub Actions/CI and Vercel were not used.
 
-No source-visible TypeScript/API mismatch is introduced by this repair; it changes shared CSS plus test coverage only.
+No source-visible TypeScript/API mismatch is known from static inspection: `DateFieldProps` is `Omit<InputProps, 'type'>`, `InputProps` already forwards native input props, and the report consumer preserves the existing controlled-value/onChange shape.
 
 ## Peer-state comparison / current risk
 
-- **Product Design Director:** current and blocking on `c71a486...`; explicitly authorized only this shared non-shrinking default-item repair, preservation of block stretching, and focused geometry evidence. The new repair follows that boundary exactly.
-- **Design QA:** current and blocking on the same `c71a486...`; requested the same shared CSS contract hardening and focused source/CSS artifact. The new repair addresses the stated blocker without widening scope.
-- **Development Integrator:** remains `NO_MERGE` until fresh Product Design + Design QA gates exist on one stable exact PR HEAD.
-- **Team Memory / Decision Log / Workstream:** shared-system-first, Mobile/RTL/touch, functional-isolation, and evidence-honesty rules remain aligned; no mutation outside this owned state is warranted.
-- Residual risk is review/runtime evidence only: the reviewer-requested source fix is applied, but tests/build/lint were not executable in this run and fresh exact-head specialist gates are still required.
+- **Product Design Director:** current and aligned; it explicitly activated REPORT003 with the same shared DateField + two-input adoption boundary and required independent Arabic names while preserving report/date/query semantics.
+- **Design QA:** lifecycle-stale on merged REPORT002 and has no current REPORT003 blocker; fresh exact-head review is required.
+- **Development Integrator:** lifecycle-stale on REPORT002 integration and must remain `NO_MERGE` until fresh Product Design + QA gates exist on the same stable PR #50 HEAD.
+- **Team Memory / Decision Log / Workstream:** shared-system-first, Mobile/touch, RTL/Arabic, Field-composition, functional-isolation and evidence-honesty rules are satisfied; no durable rule changed.
+- Residual risk is review/runtime evidence only. Tests/build/lint were not executable in this run, and PR mergeability must be re-read after GitHub finishes computing the draft PR state.
 
 ### Cross-role handoff
-- **To:** Product Design Director + Design QA for fresh exact-head review; Development Integrator remains `NO_MERGE` until both gates are current on the same head.
-- **What changed:** the shared default/non-block `SegmentedControl` item contract now prevents flex shrinking (`flex: 0 0 auto`), while block equal-width behavior (`flex: 1 1 0`) and Mobile shared horizontal scrolling remain intact; focused CSS-contract coverage was added.
-- **Preserve:** exact four preset labels/order/range calculations; external `DateRange` API; custom date inputs; all report query/cache/service/calculation/chart/table/metric/export/print/permission/routing/`AnalyticsGate` truth; no page-local segmented-control fork.
-- **Need from you:** independently review the final exact PR #49 HEAD after this owned-state write. QA should issue `SOURCE_REVIEW_PASS + AGENT-REVIEW: GREEN-DEV` only on that same stable head if satisfied; Product Design should independently close the same head. Integrator must not merge before both are fresh.
-- **Blocker level:** `NONE` from UI implementation after the bounded repair; specialist gates remain pending.
-- **Baseline:** branch creation `41cdbf9dba7fa5301777a2f461ce3de40bae168a`; current Development observed `6f009031e86e0bb4f0062637f8608d3daf687681`.
-- **Repair product/test HEAD before owned-state write:** `78deb60bec73b6d6a7d4382fe6494d4cb49e3da6`.
-- **PR:** `#49` / `ds2/report-002-date-presets` -> `design-system-v2-development`.
+- **To:** Product Design Director + Design QA for fresh exact-head review; Development Integrator remains `NO_MERGE` until both gates are current on one stable head.
+- **What changed:** shared V2 `DateField` now owns native date-input presentation/accessibility plumbing, and `ReportFilterBar` uses it for only the two custom from/to controls with independent Arabic names and wrap-capable composition.
+- **Preserve:** external `DateRange value/onChange`; exact `normalizeDateRange(...)` behavior; all preset/current-month/local-date semantics; REPORT001 SubNav; REPORT002 SegmentedControl; native date semantics; all report query/cache/service/calculation/chart/table/metric/export/print/permission/routing/`AnalyticsGate` truth.
+- **Need from you:** independently review the final exact PR #50 HEAD after this owned-state write. QA should issue `SOURCE_REVIEW_PASS + AGENT-REVIEW: GREEN-DEV` only on that exact stable head if satisfied; Product Design should independently accept/block the same head. Integrator must revalidate base/drift/threads/mergeability and not merge before both are current.
+- **Blocker level:** `NONE` from UI implementation; specialist exact-head gates remain pending.
+- **Baseline:** branch creation `d1f8e2e4adbcbbe1247304d5f644a6f82223f003`.
+- **Product/test HEAD before owned-state write:** `f0b4f2a3e066d12274adf276256b2b3e39ffb308`.
+- **PR:** `#50` / `ds2/report-003-date-field` -> `design-system-v2-development`.
 - **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`.
