@@ -159,20 +159,41 @@ System result:
 
 ## Current single READY slice
 
-### DS2-REPORT-007 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
+### DS2-REPORT-007 — Geography analysis-level selector convergence
 Status: `READY`
-Owner role for next action: Product Design Director
-Dependency baseline: exact integrated product HEAD `ffda5aeb23684ea981c341761d1dde2cef7c3283`.
+Owner role for implementation: UI Production Engineer
+Selection baseline: exact Development HEAD `14dc8d3947b4a39ce4a8c9dc11c6b4d9712bc98d` before this Product Design governance write.
+Representative surface: `src/pages/reports/GeographyPage.tsx`, the header control that selects `GeoLevel` (`governorate` / `city` / `area`).
 
 System-pattern intent:
-- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline;
-- select exactly one smallest dependency-safe presentation-only concern and name its representative file/surface plus explicit acceptance boundary before implementation;
-- prefer reuse of existing shared V2 primitives/patterns and strengthen a shared contract only when a real consumer proves the need;
-- preserve REPORT001-006 contracts and all report query/cache/service/calculation/trust/permission/routing/`AnalyticsGate`/export/print/business truth;
-- preserve Settings/Admin, Global convergence, remaining Work and Field debt, and shared component-depth work in the roadmap;
-- do not turn REPORT007 into a broad Reports beautification pass.
+- remove one report-local raw form primitive and adopt the existing shared V2 `Select -> Field` contract;
+- advance Reports filter/control grammar without redesigning `ReportFilterBar` or inventing a Geography-specific visual component;
+- keep geographic level state and domain meaning caller-owned; the Design System owns only native select presentation, Field anatomy, focus, sizing and accessibility wiring.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+Implementation scope:
+- replace only the raw `<select>` that edits `level` with the existing shared `Select` from `src/components/ui/Select.tsx`;
+- preserve the exact controlled value/change contract: `level` remains `GeoLevel` and selection still calls `setLevel(...)` with the selected existing enum value;
+- preserve option values, order and Arabic labels exactly: `governorate / محافظة`, `city / مدينة`, `area / منطقة`;
+- provide a clear Arabic accessible name for the control (for example `مستوى التحليل الجغرافي`) without relying on position alone;
+- use the shared V2 control styling/geometry rather than recreating padding, border, radius, background, typography or focus styles inline;
+- preserve the existing header's wrap-capable composition with `ReportFilterBar`.
+
+Device / state / accessibility acceptance:
+- **Desktop:** shared standard control geometry, clear focus state, no regression in header hierarchy or date-filter alignment;
+- **Tablet:** shared touch control height applies at the V2 breakpoint and the level selector/date filters may wrap without clipping or page-level horizontal overflow;
+- **Mobile:** control remains touch-usable, Arabic option text is readable, and the header/filter cluster remains wrap-capable rather than compressed;
+- **RTL / Arabic:** option labels remain Arabic-first and the native select/chevron treatment must remain correct in RTL;
+- **Dark mode:** surface, text, border, hover/focus and disabled styling remain semantic-token driven through the existing shared control contract;
+- **Accessibility:** the select has an explicit accessible Arabic name and retains native keyboard/select semantics; no custom combobox behavior is introduced.
+
+Preserve / explicit exclusions:
+- do not change `ReportFilterBar`, date preset/date-range behavior or REPORT002/003 contracts;
+- do not change `filters = { dateFrom, dateTo, level }`, any hook/query/cache/service/RPC/DB contract, level semantics, summary/table derivation, `LEVEL_LABELS`, parent-column behavior, trust/freshness, metrics, heatmap table, row colors, permissions, routing, `AnalyticsGate`, export/print or business truth;
+- do not migrate the Geography table, KPI grid, any other report selector, chart, table or page in this slice;
+- do not redesign/decompose the shared `Select` API. If the existing shared contract cannot support this exact consumer without a material shared/API or functional change, mark REPORT007 `BLOCKED` and return the evidence to Product Design instead of widening the PR;
+- focused tests should protect option order/labels, controlled level selection, accessible naming and preservation of the existing report/filter semantics. Hosted CI remains forbidden; execution evidence must stay honest.
+
+Implementation is authorized for this exact boundary only, in one implementation PR based on the latest `design-system-v2-development` HEAD. No competing slice may start while it is active.
 
 ## Product migration roadmap
 
@@ -238,7 +259,7 @@ Open only when a real migrated screen proves the recurring gap:
 - `DS2-REPORT-004` Reports Overview summary metric-grid convergence — `DONE` / PR #51 / merge `38b53912c1b3ff8c933ec0d5cfc9d3dc69488f85`
 - `DS2-REPORT-005` Shared ChartPanel foundation + Sales primary revenue-chart migration — `DONE` / PR #52 / merge `3776e7defc83a1376a571dd38256c6a7bbf87e17`
 - `DS2-REPORT-006` Product Performance responsive detail-collection convergence — `DONE` / PR #53 / merge `ffda5aeb23684ea981c341761d1dde2cef7c3283`
-- `DS2-REPORT-007` Next bounded Reports metrics/charts/tables/responsive-composition convergence — `READY` / Product Design must bound exactly one concern before implementation
+- `DS2-REPORT-007` Geography analysis-level selector convergence — `READY` / exact one-control boundary authorized for UI Production
 - further Reports/Analytics convergence beyond REPORT007 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
