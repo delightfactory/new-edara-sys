@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useSystemTrustState, useTrustForComponent } from '@/hooks/useSystemTrustState'
 import { useSalesDailyTotals, useSalesSummary } from '@/hooks/useSalesGrain'
 import MetricCard from '@/components/reports/MetricCard'
