@@ -4,65 +4,87 @@
 
 - Review date: `2026-09-19`.
 - Authoritative branch: `design-system-v2-development`.
-- Development HEAD immediately before this Director-state write: `7137169dde7c1ee671cf12d9e58134b6a6cbc73a`.
+- Development HEAD immediately before this Director-state write: `804e7d26e72736f9e55fbd3bb43af86cf5659440`.
 - Latest integrated product slice: `DS2-REPORT-003 — Report custom-date field convergence`, PR #50, squash merge `cec34dcdc2fec5ac7b3cd4821d942f224f9f52f2`.
-- Open implementation PRs targeting Development at bootstrap: none.
-- Active READY slice: `DS2-REPORT-004 — Reports Overview summary metric-grid convergence`.
+- Active implementation slice: `DS2-REPORT-004 — Reports Overview summary metric-grid convergence`.
+- Active PR: `#51 — DS2-REPORT-004: converge Reports Overview summary metric grid`.
+- Feature baseline: `4eebb0be4fd08d0d111bb7297c172fa9d20abc23`.
+- Exact PR HEAD independently reviewed: `0dad8a5eb73e1a4fac73475dda5a247182db2e51`.
+- PR state at review: `OPEN / DRAFT / mergeable=true`.
+- Design QA: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` on the same exact HEAD, with `TESTS_AUTHORED_NOT_EXECUTED`.
+- Development Integration: `NO_MERGE_WAITING_FRESH_PRODUCT_DESIGN_CLOSEOUT` before this state update.
 - No runtime/build/test/lint/preview/release PASS is claimed in this Director run.
 
 ## Independent Product Design judgment
 
-**READY — REPORT004 is now bounded to one smallest dependency-safe presentation concern: the four-metric summary layout on `Reports Overview`.**
+**PASS — NO DESIGN-SYSTEM BLOCKER on exact PR HEAD `0dad8a5eb73e1a4fac73475dda5a247182db2e51`.**
 
-I formed this judgment from the current Development source before comparing peer states. The current report summary already has correct domain-aware metric presentation, but its composition still uses a report-local `report-grid report-grid-12` wrapper. Shared V2 `MetricGrid` already exists and has a proven consumer in Supervisor Work, so the smallest architecture-first next step is to converge only the layout primitive.
+I independently re-read the exact baseline source, exact PR implementation, shared `MetricGrid` contract/CSS, report-domain `MetricCard`, focused test artifact, current PR metadata/reviews/threads, and the relevant component/page/migration blueprints before comparing peer conclusions.
 
-The report-domain `MetricCard` is deliberately preserved. It is not equivalent to generic `StatCard`: it owns trust/freshness and blocked/running/reconciled presentation semantics. Replacing it in the same slice would cross a semantic boundary and risk converting a layout migration into a report-state redesign.
+The implementation is the intended architecture-first convergence: only the primary Reports Overview KPI summary layout moves from the report-local wrapper to shared `MetricGrid columns={4}`. The report-domain `MetricCard` remains intentionally untouched because it owns trust/freshness plus COMPLETE/warning/RUNNING/BLOCKED presentation semantics that are richer than generic `StatCard` presentation. No business, query or report-state meaning moves into the Design System.
 
-## Exact REPORT004 boundary
+## Source-truth correction / contradiction synthesis
 
-Implementation is limited to the four Overview summary metrics immediately after `ReportFilterBar` in `src/pages/reports/OverviewPage.tsx`:
+The prior Director scope note and the current Workstream contain a **descriptive source mismatch**, not a product-scope disagreement:
 
-- replace only the local `report-grid report-grid-12` wrapper with shared `MetricGrid` using its four-column contract;
-- preserve the existing four `MetricCard` children in exact order: `صافي الإيراد`, `هامش الربح`, `رصيد الذمم`, `زيارات اليوم`;
-- preserve every existing value, formatter, status, freshness, domain, subtitle, icon and trend input;
-- preserve all query/cache/service/hook/calculation/chart/table/risk/export/print/permission/routing/`AnalyticsGate` truth;
-- preserve REPORT001 `SubNav`, REPORT002 `SegmentedControl`, REPORT003 `DateField` and all date semantics;
-- do not touch Sales or any second report page in this slice;
-- do not redesign or replace report `MetricCard`, charts, tables, filters or generic report states.
+- the exact feature baseline uses `<div className="report-grid">`, not `report-grid report-grid-12`;
+- the exact existing primary four `MetricCard` labels are, in order: `صافي الإيراد`, `إجمالي المبيعات`, `صافي التحصيل الخزيني`, `تحصيل AR المنسوب`;
+- the earlier illustrative list `صافي الإيراد / هامش الربح / رصيد الذمم / زيارات اليوم` was stale and is superseded by the exact baseline source.
 
-If this wrapper-only migration proves impossible without changing report truth or `MetricCard` semantics, the slice becomes `BLOCKED` rather than expanding.
+The governing Product Design intent was always to preserve the **existing four children verbatim** and change only their layout wrapper. PR #51 follows that stronger invariant exactly. Therefore this mismatch is now explicitly resolved in favor of exact source truth, does not authorize any scope expansion, and is **not blocking** integration.
 
-## Device / state / accessibility acceptance
+The Workstream's stale illustrative class/label text should be treated as superseded for REPORT004 by this exact-head synthesis and may be normalized when the slice is marked DONE; no feature-branch change is required merely to reconcile governance wording.
 
-- Use the existing shared `MetricGrid` responsive contract with no Reports-only breakpoint/width override.
-- Desktop preserves useful four-metric comparison density; Tablet/Mobile remain readable and contained without ordinary viewport-level horizontal overflow.
-- Long Arabic labels and large numeric values remain readable without wrapper-induced clipping or false truncation.
-- Existing trust/freshness/status text, icons and non-color-only meaning remain intact for complete, warning/reconciled, running and blocked/failed paths.
-- RTL, dark-mode token behavior and shared accessibility/focus semantics must not regress.
+## Exact-head acceptance
+
+On PR HEAD `0dad8a5eb73e1a4fac73475dda5a247182db2e51`:
+
+- the only product-code change is importing shared `MetricGrid` and replacing the opening/closing wrapper around the existing primary four-card summary;
+- the four existing `MetricCard` children remain in exact source order with the same values, formatters, statuses, freshness fields, domains, subtitles, icons and secondary values;
+- the existing four-skeleton loading branch remains in the same summary position inside the shared grid;
+- Customer Health, the report navigation-card grid, Sales and every second report page remain untouched;
+- REPORT001 `SubNav`, REPORT002 `SegmentedControl`, REPORT003 `DateField` and all date-range semantics remain unchanged;
+- all report queries, cache/service/hook contracts, calculations, chart/table data, permissions, routing, `AnalyticsGate`, export/print and business truth remain caller/domain-owned and unchanged.
+
+## Device / hierarchy / accessibility judgment
+
+- Shared `MetricGrid columns={4}` provides the correct system grammar: four columns on Desktop, two on Tablet and one on Mobile.
+- The shared grid uses `minmax(0, 1fr)` and `min-width: 0`; existing report `MetricCard` also has `minWidth: 0` and wraps large values, so the wrapper change does not introduce ordinary viewport-level horizontal overflow or false truncation at source level.
+- Desktop retains useful four-metric comparison density; Tablet gains an intentional intermediate two-column composition; Mobile becomes one-column and scan-safe.
+- Existing Arabic labels, RTL composition, dark-mode token behavior, trust/freshness/status copy and non-color-only blocked/running/warning meaning remain intact.
+- The summary cards are non-interactive; no focus, keyboard or touch-action contract is weakened by this slice.
+- No `RUNTIME_VISUAL_PASS` is claimed; milestone runtime inspection remains separate under the test policy.
+
+## Test / evidence judgment
+
+Focused `OverviewPage.test.tsx` coverage is appropriate for the material risk introduced by this wrapper-only slice: it protects shared four-column `MetricGrid` adoption, exact existing metric order/representative values and the four-skeleton loading branch.
+
+Evidence remains honestly labeled `TESTS_AUTHORED_NOT_EXECUTED`. No GitHub Actions/hosted CI, Vercel preview, local build/test/lint execution or release evidence is claimed.
 
 ## Peer-state synthesis
 
 After forming the independent judgment:
 
-- **Development Integrator:** current and aligned; REPORT003 is integrated and it explicitly hands the queue to Product Design to bound one smallest REPORT004 concern.
-- **Team Memory / Workstream:** aligned on one-READY-slice discipline and on Reports metrics/charts/tables being the next area, with Product Design responsible for narrowing scope before implementation.
-- **UI Production Engineer / Design QA:** their specialist states are lifecycle-stale from REPORT003 but contain no competing active slice or contradiction; this is expected after integration and is non-blocking.
-- **Decision Log / North Star:** no durable rule changed. This slice applies existing shared-system-first, caller-owned business truth, responsive/Arabic/RTL and one-slice rules.
+- **Design QA:** aligned and current on the same exact PR HEAD with `GREEN-DEV`; its `WATCH` was solely the stale Director descriptive class/label list, which this state now resolves explicitly.
+- **UI Production Engineer:** aligned with the exact source truth and wrapper-only implementation; its source-truth `WATCH` is resolved by this Product Design synthesis.
+- **Development Integrator:** correctly held `NO_MERGE` only for this fresh Product Design closeout. With this state update, the Product Design prerequisite is satisfied if the PR HEAD remains unchanged; Integrator must still perform its own final base/drift/threads/mergeability revalidation.
+- **Team Memory / Workstream:** system direction is aligned. The only stale detail is the illustrative REPORT004 wrapper/class and metric-label text identified above; it is bounded and superseded by exact source truth for this slice.
+- **Decision Log / North Star:** no durable rule changed. REPORT004 applies existing shared-system-first, caller-owned business truth, responsive/Arabic/RTL and one-slice rules.
 
-There is no material cross-role contradiction and no blocker to implementation of the bounded layout-only slice.
+There is no material cross-role contradiction remaining and no Design-System blocker on the reviewed exact HEAD.
 
 ## Repository actions this run
 
 - Completed the mandatory shared-memory bootstrap in the required order.
-- Inspected issue #27, current Development HEAD, open PRs targeting Development, representative Reports source and relevant component/migration blueprints.
-- Verified there was no active implementation PR, then narrowed the single broad READY roadmap item instead of creating a competing concern.
-- Updated `31_AGENT_TEAM_WORKSTREAM.md` to make REPORT004 implementation-ready with exact scope, exclusions, device/state/accessibility acceptance and system-pattern intent.
+- Inspected issue #27, current Development HEAD, the only open PR targeting Development, exact PR/base source, shared `MetricGrid` and CSS contract, report `MetricCard`, focused diff/test artifact, review submissions/threads and relevant component/page/migration blueprints.
+- Formed an independent design judgment first, then compared peer states and explicitly resolved the stale illustrative source mismatch in favor of the exact Development baseline.
 - Did not implement product code, modify peer specialist states, merge, touch `main`, trigger/rerun GitHub Actions, use hosted CI, deploy Vercel or modify preview branches.
-- Did not update Team Memory or Decision Log because overall system direction and durable policy did not change.
+- Did not update Team Memory or Decision Log because overall design direction and durable policy did not change.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer; Design QA and Product Design after a stable implementation PR HEAD exists.
-- **What changed:** `DS2-REPORT-004` is now an exact READY slice limited to replacing the Reports Overview four-metric summary layout wrapper with shared `MetricGrid` while retaining the existing domain `MetricCard` children and semantics.
-- **Preserve:** exact four metric order/labels/values/formatters/status/freshness/domain/icons; report-domain `MetricCard` trust semantics; all queries/calculations/charts/tables/risk/filter/date/permission/routing/`AnalyticsGate`/export/print truth; no Sales or second-page migration.
-- **Need from you:** open one implementation PR from the latest `design-system-v2-development` HEAD and perform only the wrapper convergence with focused source/test evidence; do not substitute `StatCard` or widen into charts/tables/other report pages.
+- **To:** Development Integrator.
+- **What changed:** Product Design independently accepted PR #51 exact HEAD `0dad8a5eb73e1a4fac73475dda5a247182db2e51` with `PASS — NO DESIGN-SYSTEM BLOCKER` and resolved the stale illustrative wrapper/class + metric-label mismatch in favor of exact baseline source truth.
+- **Preserve:** wrapper-only `MetricGrid columns={4}` convergence; exact existing four metric children/order/props (`صافي الإيراد`, `إجمالي المبيعات`, `صافي التحصيل الخزيني`, `تحصيل AR المنسوب`); report-domain `MetricCard` trust/freshness semantics; unchanged loading branch; all report/date/query/calculation/chart/table/permission/routing/`AnalyticsGate`/export/print/business truth; no second report page.
+- **Need from you:** revalidate exact current PR HEAD/base, Development drift, reviews/threads, changed-file scope and mergeability; if HEAD remains `0dad8a5eb73e1a4fac73475dda5a247182db2e51` and all gates remain green, integrate REPORT004 into `design-system-v2-development` and normalize the stale REPORT004 governance wording while marking the slice DONE.
 - **Blocker level:** `NONE`.
+- **Baseline:** Development pre-write `804e7d26e72736f9e55fbd3bb43af86cf5659440`; accepted PR #51 HEAD `0dad8a5eb73e1a4fac73475dda5a247182db2e51`.
