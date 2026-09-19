@@ -4,95 +4,95 @@
 
 - Run date: `2026-09-19`.
 - Development branch: `design-system-v2-development`.
-- Exact Development branch-creation baseline: `c0465e040bec196a33e51df1ce1194c2c669b933`.
-- Feature branch: `design-system-v2/report-006-product-performance-responsive`.
-- Draft PR: `#53 — DS2-REPORT-006: converge Product Performance details`.
-- Product/test HEAD before this owned-state write: `4619c600fb9e5dd5065d90641b4c7fa3eb4d6017`.
-- Active slice: `DS2-REPORT-006 — Product Performance responsive detail-collection convergence`.
-- Representative surface: `src/pages/reports/ProductPerformancePage.tsx`, section `تفاصيل المنتجات — أعلى 50 حسب الإيراد` only.
-- Disposition: `REVIEW — IMPLEMENTATION COMPLETE; FRESH EXACT-HEAD PRODUCT DESIGN + DESIGN QA REQUIRED`.
+- Exact branch-creation baseline: `c33c99d8c7210a53593276d954c99f2bdb1d6ef0`.
+- Development HEAD rechecked before handoff: `c33c99d8c7210a53593276d954c99f2bdb1d6ef0`.
+- Feature branch: `design-system-v2/report-007-geography-selector`.
+- Draft PR: `#54 — DS2-REPORT-007: converge Geography level selector`.
+- Product/test HEAD before this owned-state write: `ed022fc8735c0f5fa1e56b6f1cf00c8635c6f275`.
+- Active slice: `DS2-REPORT-007 — Geography analysis-level selector convergence`.
+- Representative surface: `src/pages/reports/GeographyPage.tsx`, header control that edits `GeoLevel` only.
+- Disposition: `REVIEW — IMPLEMENTATION COMPLETE; FRESH EXACT-HEAD DESIGN QA + PRODUCT DESIGN REVIEW REQUIRED`.
 - Evidence: `TESTS_AUTHORED_NOT_EXECUTED`.
 
 ## Independent implementation judgment
 
-The bounded Product Design direction is implementable without widening functional scope or inventing a new table/card abstraction. The existing shared `ResponsiveCollection` already owns single-renderer device composition, while current V2 `Card`, `KeyValueList`, and responsive-card-grid classes provide the required narrow-screen anatomy.
+The bounded REPORT007 direction is satisfied by the existing shared V2 `Select -> Field` contract without any shared API change. Geography's prior raw `<select>` duplicated padding, border, radius, surface, font and focus styling that V2 already owns. Replacing only that control removes one page-local primitive while keeping the page's existing controlled `GeoLevel` state and report filters/domain behavior intact.
 
-The correct implementation therefore keeps the existing dense seven-column table as the Desktop renderer and changes only Tablet/Mobile composition to labeled detail cards. This improves report usability at narrow widths while preserving the same row source, values, ordering, formatting and semantic thresholds.
+No additional Geography surface needs to move in this slice. The table, metrics, trust/freshness, ReportFilterBar, date semantics and responsive header composition already remain outside the selected boundary.
 
 ## Material implementation progress
 
-- Created the feature branch from exact Development HEAD `c0465e040bec196a33e51df1ce1194c2c669b933` after confirming no implementation PR targeted Development.
-- Migrated only the Product Performance detail collection to `ResponsiveCollection<ProductPerformanceRow>`.
-- Preserved the existing Desktop table and added `scope="col"` to its seven headers.
-- Added Tablet/Mobile presentation using existing V2 `Card + KeyValueList` only; no new generic DataTable, MobileDataCard or page-local component system was introduced.
-- Tablet deliberately uses the detail-card renderer with a two-card grid and two-column labeled metadata; Mobile uses stacked cards and one-column metadata.
-- Product name remains primary identity, category remains secondary context, and revenue/quantity/return rate/customers/share remain explicitly labeled details.
-- Kept long Arabic product/category text wrap-capable with no essential-text clipping.
-- Extracted only a local `returnRateColor` presentation helper that preserves the exact existing thresholds: `>10` danger, `>5` warning, otherwise success.
-- Kept the exact five-row custom loading state and exact empty copy `لا توجد بيانات` through explicit `loadingState` / `emptyState` props.
-- Opened Draft PR #53 targeting `design-system-v2-development`.
+- Created `design-system-v2/report-007-geography-selector` from exact latest Development HEAD `c33c99d8c7210a53593276d954c99f2bdb1d6ef0` after confirming no open PR targeted `design-system-v2-development`.
+- Replaced only the raw Geography analysis-level `<select>` with shared `Select` from `src/components/ui/Select.tsx`.
+- Preserved the existing controlled value and `setLevel(e.target.value as GeoLevel)` change path.
+- Preserved exact option values/order/Arabic labels: `governorate / محافظة`, `city / مدينة`, `area / منطقة`.
+- Added explicit Arabic accessible name `مستوى التحليل الجغرافي` while retaining native select keyboard/assistive semantics.
+- Removed the control's page-local inline styling so sizing, focus, surfaces, disabled visuals, RTL chevron geometry and <=1024px touch height come from existing shared V2 Field/form contracts.
+- Kept the existing wrap-capable header/filter flex cluster and `ReportFilterBar` unchanged.
+- Restored the source file's pre-existing BOM after detecting that the first implementation commit had removed it incidentally; final product diff contains no encoding-only churn.
+- Opened Draft PR #54 targeting `design-system-v2-development`.
 
 Files touched:
-- `src/pages/reports/ProductPerformancePage.tsx`
-- `src/pages/reports/ProductPerformancePage.test.tsx`
+- `src/pages/reports/GeographyPage.tsx`
+- `src/pages/reports/GeographyPage.test.tsx`
 - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
-No shared component or shared CSS change was necessary because the existing V2 contracts were sufficient.
+No shared component/CSS/API change was needed.
 
 ## Preserve / verified boundaries
 
-- Exact section title `تفاصيل المنتجات — أعلى 50 حسب الإيراد` is unchanged.
-- Row source, row order and top-50 query contract are unchanged.
-- Desktop field order remains exactly: `المنتج`, `التصنيف`, `الإيراد`, `الكمية`, `نسبة المرتجع`, `عملاء`, `الحصة%`.
-- All seven source fields remain represented on Tablet/Mobile: product name, category plus five labeled quantitative details.
-- Existing `fmt`, `fmtCur`, `fmtPct`, currency/unit copy and return-rate semantic colors retain their meaning.
-- Chart, KPI cards/grid, category selector, page header and `ReportFilterBar` remain untouched.
-- No query/hook/service/cache/Supabase/RPC/DB/RBAC/RLS/permission/routing/`AnalyticsGate`/calculation/validation/workflow/export/print/business semantics changed.
-- No second report/table surface was touched.
-- No GitHub Actions/hosted CI, Vercel, preview branch or `main` activity.
+- `level` remains page-owned `GeoLevel` state.
+- `filters = { dateFrom: range.from, dateTo: range.to, level }` remains unchanged.
+- `ReportFilterBar`, date presets, custom-date behavior and REPORT002/003 contracts remain untouched.
+- `useGeographySummary`, `useGeographyTable`, query/cache/service/RPC/DB/calculation truth remain unchanged.
+- `LEVEL_LABELS`, metrics, trust/freshness, heatmap table, row colors, parent-column behavior, loading/empty copy remain unchanged.
+- Permissions, routing, `AnalyticsGate`, export/print and business semantics remain unchanged.
+- No Geography table migration, chart/table change, second selector, second report or shared Select redesign occurred.
+- No GitHub Actions/hosted CI, Vercel/preview branch or `main` activity occurred.
 
-## Device / state / accessibility coverage
+## Device / Arabic / state / accessibility coverage
 
-- **Desktop:** only the semantic table renderer mounts; existing contained horizontal overflow remains and all touched column headers now have `scope="col"`.
-- **Tablet:** only the card renderer mounts; two cards per row use existing shared responsive-grid grammar and each card exposes two-column labeled metadata where space permits.
-- **Mobile:** only the card renderer mounts; one-column stacked cards remove table-width dependency and ordinary page-level horizontal overflow from this collection.
-- **Arabic/RTL:** product/category text may wrap naturally; logical block spacing is used; numeric values use explicit LTR direction while labels/content remain RTL-first.
-- **Dark mode:** narrow-screen surfaces use existing semantic V2 Card/KeyValue tokens; no report-local light-only color surface was added.
-- **Loading:** explicit caller-owned five-row skeleton state remains single and precedes device rendering.
-- **Empty:** exact caller-owned `لا توجد بيانات` remains single and precedes device rendering.
-- **Interaction/focus:** no row action or clickable-card semantics were introduced; there is no new interactive control.
+- **Desktop:** shared standard-height `form-select` now owns control geometry/focus; existing header hierarchy and wrap-capable cluster are unchanged.
+- **Tablet:** existing `.ds-field .form-select` touch-height contract applies at <=1024px; unchanged flex-wrap keeps the selector/date controls able to wrap instead of compressing.
+- **Mobile:** native select remains touch-usable and readable via the shared touch-height contract; no custom combobox or duplicate interaction tree was introduced.
+- **Arabic/RTL:** exact Arabic options are unchanged; the existing shared `.form-select` uses logical RTL-safe composition and left-positioned native-chevron replacement already used by V2.
+- **Dark mode:** background/text/border/focus/disabled presentation is inherited from shared semantic form tokens rather than Geography-local styles.
+- **Accessibility:** explicit Arabic accessible name is present; native select role, keyboard and value semantics are retained.
+- **State:** changing the level still updates the same page-owned state and drives the same existing Geography summary/table filter object. No new loading/empty/error/disabled/read-only/permission semantics were introduced.
 
 ## Test / execution evidence
 
 Evidence: **`TESTS_AUTHORED_NOT_EXECUTED`**.
 
-Focused `ProductPerformancePage.test.tsx` coverage protects:
-- Desktop semantic table, exact seven-column header order and `scope="col"`.
-- Mobile card-only rendering with no mounted table/Tablet renderer and all source information represented.
-- Tablet deliberate detail-card rendering with no mounted table/Mobile renderer and denser two-column `KeyValueList` metadata.
-- Existing custom five-skeleton loading branch and exact empty copy.
-- No hidden duplicate device renderer DOM through explicit negative assertions.
-- Preserved return-rate danger presentation on the representative row.
+Focused `GeographyPage.test.tsx` coverage protects:
+- shared `form-select` + `.ds-field` composition and removal of inline style ownership from the selector;
+- explicit Arabic accessible name;
+- exact option values/order/Arabic labels;
+- initial controlled `governorate` value;
+- selection change to `city` through the existing page state;
+- unchanged `dateFrom` / `dateTo` / `level` filter shape forwarded to both Geography hooks;
+- visible dependent level labels updating from the same page-owned state;
+- continued presence of `ReportFilterBar`.
 
 No approved executable repository checkout/package runtime was available in this run, so `npm test`, `npm run build` and `npm run lint` were not executed. No local/build/test/lint/runtime/preview PASS is claimed.
 
-Static source/diff review found no known TypeScript/API blocker: the implementation uses existing typed `ResponsiveCollection<ProductPerformanceRow>`, existing Card/KeyValueList APIs, and existing device-grid classes without changing their contracts.
+Static source/diff review found no known TypeScript/API blocker. The implementation uses the existing `SelectProps extends SelectHTMLAttributes<HTMLSelectElement>` contract; `aria-label`, controlled `value` and native `onChange` are already supported without API widening.
 
 ## Peer-state comparison / current risk
 
-- **Product Design Director:** fresh REPORT006 state explicitly authorizes this exact one-section boundary and this implementation follows that boundary without scope expansion.
-- **Design QA:** current state is lifecycle-stale from REPORT005; no REPORT006 QA evidence exists yet.
-- **Development Integrator:** current state is lifecycle-stale from the completed REPORT005 merge; Integration must remain `NO_MERGE` until fresh REPORT006 exact-head gates exist.
-- **Team Memory:** still describes REPORT006 as awaiting Product Design bounding, but the newer Product Design state/workstream boundary supersedes that lifecycle wording; durable invariants remain aligned.
-- Residual risk is independent exact-head source/design review plus unexecuted runtime/test evidence. No implementation blocker is currently known.
+- **Product Design Director:** fresh REPORT007 state explicitly authorizes exactly this one-selector migration and requires no shared API change unless a blocker appears. Implementation aligns with that boundary.
+- **Design QA:** latest role state is lifecycle-stale at REPORT006 and provides no REPORT007 approval yet.
+- **Development Integrator:** latest role state is lifecycle-stale at the completed REPORT006 merge; it must remain `NO_MERGE` until fresh REPORT007 exact-head gates exist.
+- **Team Memory:** lifecycle text still describes REPORT007 as awaiting Product Design bounding, but the newer Workstream + Director state supersede only that lifecycle line; durable invariants remain aligned.
+- Residual risk is independent exact-head source/design review plus unexecuted test/runtime evidence. No implementation blocker is currently known.
 
 ### Cross-role handoff
-- **To:** Design QA + Product Design Director for fresh exact-head review; Development Integrator after both gates are current on one stable HEAD.
-- **What changed:** Product Performance's single detail collection now uses shared `ResponsiveCollection` with preserved Desktop table and deliberate Tablet/Mobile `Card + KeyValueList` composition; Draft PR #53 is open.
-- **Preserve:** exact section title; seven fields and Desktop order; row source/order/top-50 contract; formatters/units; return-rate thresholds/colors; five-row loading skeleton; exact `لا توجد بيانات`; every query/filter/date/category/calculation/trust/permission/routing/`AnalyticsGate`/export/print/business contract; no second report surface.
-- **Need from you:** review the exact current PR #53 HEAD after this state write. QA should issue `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` only if the exact stable HEAD passes; Product Design should independently accept/block that same exact HEAD before Integration acts.
+- **To:** Design QA + Product Design Director for fresh exact-head review; Development Integrator only after both gates are current on one stable HEAD.
+- **What changed:** Geography's single `GeoLevel` header selector now uses shared V2 `Select -> Field` with explicit Arabic accessible naming; focused contract tests were added; Draft PR #54 is open.
+- **Preserve:** exact `GeoLevel` values/order/Arabic labels; controlled page ownership and `filters = { dateFrom, dateTo, level }`; all ReportFilterBar/date/query/calculation/trust/metric/table/heatmap/permission/routing/`AnalyticsGate`/export/print/business behavior; one-selector/one-page scope; existing shared Select API.
+- **Need from you:** review the exact current PR #54 HEAD after this state write. QA should issue `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` only if that stable exact HEAD passes. Product Design should independently accept/block the same HEAD before Integration acts.
 - **Blocker level:** `NONE` from implementation.
-- **Baseline:** branch-creation Development `c0465e040bec196a33e51df1ce1194c2c669b933`.
-- **Product/test HEAD before owned-state write:** `4619c600fb9e5dd5065d90641b4c7fa3eb4d6017`.
-- **PR:** `#53` / `design-system-v2/report-006-product-performance-responsive` -> `design-system-v2-development`.
+- **Baseline:** `c33c99d8c7210a53593276d954c99f2bdb1d6ef0`.
+- **Product/test HEAD before owned-state write:** `ed022fc8735c0f5fa1e56b6f1cf00c8635c6f275`.
+- **PR:** `#54` / `design-system-v2/report-007-geography-selector` -> `design-system-v2-development`.
 - **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`.
