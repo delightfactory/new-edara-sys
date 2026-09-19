@@ -5,10 +5,10 @@
 - Run date: `2026-09-20`.
 - Development branch: `design-system-v2-development`.
 - Exact branch-creation baseline: `c770fcfe24adc0455346938357291ccb1e9b51c0`.
-- Development HEAD rechecked before branch creation: `c770fcfe24adc0455346938357291ccb1e9b51c0`.
+- Development HEAD rechecked before branch creation and before final handoff: `c770fcfe24adc0455346938357291ccb1e9b51c0`.
 - Feature branch: `design-system-v2/report-009-sales-secondary-chart-panel`.
 - Draft PR: `#56 — DS2-REPORT-009: converge Sales secondary chart panel`.
-- Product/test HEAD before this owned-state write: `9ed4724546b85bc5e3717183c615a1426b230ac3`.
+- Product/test HEAD before this owned-state write: `e6a861a9c94e32839fec387b4b33ceed9e100ece`.
 - Active slice: `DS2-REPORT-009 — Sales secondary revenue/tax chart-panel convergence`.
 - Representative surface: `src/pages/reports/SalesPage.tsx` → second chart `توزيع الإيرادات اليومي (إيراد + ضريبة)` only.
 - Disposition: `REVIEW — IMPLEMENTATION COMPLETE; FRESH EXACT-HEAD DESIGN QA + PRODUCT DESIGN REVIEW REQUIRED`.
@@ -33,6 +33,7 @@ No broader Sales report cleanup, chart abstraction or new trust/state meaning be
 - Preserved `chartData`, `BarChart` margin, grid, axes, tick formatting, tooltip and both Bar series unchanged.
 - Updated focused `SalesPage.test.tsx` from the stale one-panel assertion to the new two-panel contract and added structural/state/chart-contract coverage for the bounded risk.
 - Opened Draft PR #56 targeting `design-system-v2-development`.
+- Final static diff review detected that the first product commit had incidentally removed the pre-existing UTF-8 BOM from `SalesPage.tsx`; restored that source encoding marker so the product diff remains strictly limited to the intended chart-shell replacement. No runtime or semantic code changed in that correction.
 
 Files touched:
 - `src/pages/reports/SalesPage.tsx`
@@ -101,6 +102,6 @@ This implementation judgment was formed from current Sales/shared source first, 
 - **Need from you:** independently review the exact current PR #56 HEAD after this state write. QA should issue `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` only if that stable exact HEAD passes. Product Design should independently accept/block the same exact HEAD before Integration acts.
 - **Blocker level:** `NONE` from implementation.
 - **Baseline:** `c770fcfe24adc0455346938357291ccb1e9b51c0`.
-- **Product/test HEAD before owned-state write:** `9ed4724546b85bc5e3717183c615a1426b230ac3`.
+- **Product/test HEAD before owned-state write:** `e6a861a9c94e32839fec387b4b33ceed9e100ece`.
 - **PR:** `#56` / `design-system-v2/report-009-sales-secondary-chart-panel` -> `design-system-v2-development`.
 - **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`.
