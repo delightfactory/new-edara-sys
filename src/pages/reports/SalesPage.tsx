@@ -4,6 +4,7 @@ import { useSalesDailyTotals, useSalesSummary } from '@/hooks/useSalesGrain'
 import MetricCard from '@/components/reports/MetricCard'
 import SkeletonCard from '@/components/reports/SkeletonCard'
 import SystemHealthBar from '@/components/reports/SystemHealthBar'
+import ChartPanel from '@/components/patterns/ChartPanel'
 import ReportFilterBar, { type DateRange } from '@/components/reports/ReportFilterBar'
 import TrustStateBadge from '@/components/reports/TrustStateBadge'
 import FreshnessIndicator from '@/components/reports/FreshnessIndicator'
@@ -100,17 +101,16 @@ export default function SalesPage() {
       </div>
 
       {/* Revenue Chart */}
-      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-primary)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', boxShadow: 'var(--shadow-sm)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--text-primary)' }}>تطور الإيراد اليومي</div>
-            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: '2px' }}>صافي إيراد + قيمة مرتجعات — مجمّع يومياً في قاعدة البيانات</div>
-          </div>
+      <ChartPanel
+        title="تطور الإيراد اليومي"
+        description="صافي إيراد + قيمة مرتجعات — مجمّع يومياً في قاعدة البيانات"
+        action={(
           <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', flexWrap: 'wrap' }}>
             {revTrust && <TrustStateBadge status={revTrust.status} domain="sales" size="sm" />}
             {salesTrust && <FreshnessIndicator lastCompletedAt={salesTrust.last_completed_at} isStale={salesTrust.is_stale} />}
           </div>
-        </div>
+        )}
+      >
         {isBlocked ? (
           <div style={{ height: '240px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-danger-light)', borderRadius: 'var(--radius-md)', flexDirection: 'column', gap: 'var(--space-2)' }}>
             <div style={{ fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--color-danger)' }}>المخطط محجوب</div>
@@ -138,7 +138,7 @@ export default function SalesPage() {
             </AreaChart>
           </ResponsiveContainer>
         )}
-      </div>
+      </ChartPanel>
 
       {/* Bar chart */}
       <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-primary)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', boxShadow: 'var(--shadow-sm)' }}>
