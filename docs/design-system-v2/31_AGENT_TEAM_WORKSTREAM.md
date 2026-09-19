@@ -38,17 +38,17 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-006`.
+Product UI is integrated through `DS2-REPORT-007`.
 
 Latest product integration:
-- PR: `#53 — DS2-REPORT-006: converge Product Performance details`
-- Exact reviewed PR HEAD: `dafd5d36f2b360b1fd93b60d6573b4b717aec635`
-- Squash merge commit: `ffda5aeb23684ea981c341761d1dde2cef7c3283`
+- PR: `#54 — DS2-REPORT-007: converge Geography level selector`
+- Exact reviewed PR HEAD: `00d830adb59a27588722331b80762df524def907`
+- Squash merge commit: `9ab20b3ca467b1d42eae0fb9fd6936d156e11662`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact HEAD
 - Runtime/preview/release evidence: not claimed
 
-The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, Supervisor Work shared KPI summary convergence, Reports shared route-level sub-navigation convergence, Reports shared date-preset selector convergence with hardened `SegmentedControl` geometry, Reports shared native `DateField` convergence for the custom date pair, Reports Overview primary KPI-summary layout convergence onto shared `MetricGrid` while preserving report-domain `MetricCard` trust/freshness semantics, shared domain-agnostic `ChartPanel` proven on the primary Sales revenue chart, and Product Performance responsive detail-collection convergence using shared `ResponsiveCollection + Card + KeyValueList` while preserving the dense Desktop table.
+The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, Supervisor Work shared KPI summary convergence, Reports shared route-level sub-navigation convergence, Reports shared date-preset selector convergence with hardened `SegmentedControl` geometry, Reports shared native `DateField` convergence for the custom date pair, Reports Overview primary KPI-summary layout convergence onto shared `MetricGrid` while preserving report-domain `MetricCard` trust/freshness semantics, shared domain-agnostic `ChartPanel` proven on the primary Sales revenue chart, Product Performance responsive detail-collection convergence using shared `ResponsiveCollection + Card + KeyValueList` while preserving the dense Desktop table, and Geography analysis-level control convergence onto shared `Select -> Field` while retaining report-domain state/filter ownership.
 
 ## Completed slices
 
@@ -157,43 +157,37 @@ System result:
 - all seven source fields, row source/order/top-50 contract, formatting/units, return-rate thresholds/colors, five-row loading skeleton and exact `لا توجد بيانات` remain preserved;
 - chart/KPI/filter/category/header and all query/cache/service/calculation/trust/permission/routing/`AnalyticsGate`/export/print/business semantics remain caller/domain-owned and unchanged.
 
+### DS2-REPORT-007 — Geography analysis-level selector convergence
+Status: `DONE`
+Merged PR: `#54`
+Reviewed HEAD: `00d830adb59a27588722331b80762df524def907`
+Squash merge: `9ab20b3ca467b1d42eae0fb9fd6936d156e11662`
+Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
+Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER`
+Runtime/preview/release evidence: not claimed
+
+System result:
+- only Geography's `GeoLevel` header selector migrated from a raw page-local `<select>` to shared V2 `Select -> Field`;
+- exact values/order/Arabic labels remain `governorate / محافظة`, `city / مدينة`, `area / منطقة`;
+- page-owned `level`, `setLevel(...)` and `filters = { dateFrom, dateTo, level }` remain unchanged;
+- `ReportFilterBar`, date behavior and all Geography query/cache/service/calculation/trust/metrics/table/heatmap/permission/routing/`AnalyticsGate`/export/print/business truth remain unchanged;
+- explicit Arabic accessible naming is present, while shared V2 form grammar owns presentation, focus, dark/disabled, RTL and Tablet/Mobile touch geometry.
+
 ## Current single READY slice
 
-### DS2-REPORT-007 — Geography analysis-level selector convergence
+### DS2-REPORT-008 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
 Status: `READY`
-Owner role for implementation: UI Production Engineer
-Selection baseline: exact Development HEAD `14dc8d3947b4a39ce4a8c9dc11c6b4d9712bc98d` before this Product Design governance write.
-Representative surface: `src/pages/reports/GeographyPage.tsx`, the header control that selects `GeoLevel` (`governorate` / `city` / `area`).
+Owner role for immediate next action: Product Design Director
+Selection baseline: product integration merge `9ab20b3ca467b1d42eae0fb9fd6936d156e11662`; Product Design must inspect the exact latest Development HEAD before bounding implementation.
 
 System-pattern intent:
-- remove one report-local raw form primitive and adopt the existing shared V2 `Select -> Field` contract;
-- advance Reports filter/control grammar without redesigning `ReportFilterBar` or inventing a Geography-specific visual component;
-- keep geographic level state and domain meaning caller-owned; the Design System owns only native select presentation, Field anatomy, focus, sizing and accessibility wiring.
+- inspect representative remaining Reports/Analytics surfaces and select exactly one smallest dependency-safe presentation-only concern;
+- prefer existing shared V2 primitives/patterns, or strengthen one shared contract only when a real report consumer proves the need;
+- preserve REPORT001-007 contracts and every analytics/query/calculation/trust/permission/routing/export/print/business semantic boundary;
+- preserve Settings/Admin, Global convergence, remaining Work and Field debt, and the shared component-depth program in the roadmap;
+- do not turn REPORT008 into broad multi-page report beautification.
 
-Implementation scope:
-- replace only the raw `<select>` that edits `level` with the existing shared `Select` from `src/components/ui/Select.tsx`;
-- preserve the exact controlled value/change contract: `level` remains `GeoLevel` and selection still calls `setLevel(...)` with the selected existing enum value;
-- preserve option values, order and Arabic labels exactly: `governorate / محافظة`, `city / مدينة`, `area / منطقة`;
-- provide a clear Arabic accessible name for the control (for example `مستوى التحليل الجغرافي`) without relying on position alone;
-- use the shared V2 control styling/geometry rather than recreating padding, border, radius, background, typography or focus styles inline;
-- preserve the existing header's wrap-capable composition with `ReportFilterBar`.
-
-Device / state / accessibility acceptance:
-- **Desktop:** shared standard control geometry, clear focus state, no regression in header hierarchy or date-filter alignment;
-- **Tablet:** shared touch control height applies at the V2 breakpoint and the level selector/date filters may wrap without clipping or page-level horizontal overflow;
-- **Mobile:** control remains touch-usable, Arabic option text is readable, and the header/filter cluster remains wrap-capable rather than compressed;
-- **RTL / Arabic:** option labels remain Arabic-first and the native select/chevron treatment must remain correct in RTL;
-- **Dark mode:** surface, text, border, hover/focus and disabled styling remain semantic-token driven through the existing shared control contract;
-- **Accessibility:** the select has an explicit accessible Arabic name and retains native keyboard/select semantics; no custom combobox behavior is introduced.
-
-Preserve / explicit exclusions:
-- do not change `ReportFilterBar`, date preset/date-range behavior or REPORT002/003 contracts;
-- do not change `filters = { dateFrom, dateTo, level }`, any hook/query/cache/service/RPC/DB contract, level semantics, summary/table derivation, `LEVEL_LABELS`, parent-column behavior, trust/freshness, metrics, heatmap table, row colors, permissions, routing, `AnalyticsGate`, export/print or business truth;
-- do not migrate the Geography table, KPI grid, any other report selector, chart, table or page in this slice;
-- do not redesign/decompose the shared `Select` API. If the existing shared contract cannot support this exact consumer without a material shared/API or functional change, mark REPORT007 `BLOCKED` and return the evidence to Product Design instead of widening the PR;
-- focused tests should protect option order/labels, controlled level selection, accessible naming and preservation of the existing report/filter semantics. Hosted CI remains forbidden; execution evidence must stay honest.
-
-Implementation is authorized for this exact boundary only, in one implementation PR based on the latest `design-system-v2-development` HEAD. No competing slice may start while it is active.
+Implementation is not authorized until Product Design records the exact representative surface/file and explicit acceptance boundary from the then-current `design-system-v2-development` HEAD.
 
 ## Product migration roadmap
 
@@ -259,8 +253,9 @@ Open only when a real migrated screen proves the recurring gap:
 - `DS2-REPORT-004` Reports Overview summary metric-grid convergence — `DONE` / PR #51 / merge `38b53912c1b3ff8c933ec0d5cfc9d3dc69488f85`
 - `DS2-REPORT-005` Shared ChartPanel foundation + Sales primary revenue-chart migration — `DONE` / PR #52 / merge `3776e7defc83a1376a571dd38256c6a7bbf87e17`
 - `DS2-REPORT-006` Product Performance responsive detail-collection convergence — `DONE` / PR #53 / merge `ffda5aeb23684ea981c341761d1dde2cef7c3283`
-- `DS2-REPORT-007` Geography analysis-level selector convergence — `READY` / exact one-control boundary authorized for UI Production
-- further Reports/Analytics convergence beyond REPORT007 — `BACKLOG` / each concern must be bounded separately
+- `DS2-REPORT-007` Geography analysis-level selector convergence — `DONE` / PR #54 / merge `9ab20b3ca467b1d42eae0fb9fd6936d156e11662`
+- `DS2-REPORT-008` Next bounded Reports metrics/charts/tables/responsive-composition convergence — `READY` / Product Design must bound one smallest concern before implementation
+- further Reports/Analytics convergence beyond REPORT008 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
