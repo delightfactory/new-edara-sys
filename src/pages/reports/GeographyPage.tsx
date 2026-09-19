@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useSystemTrustState, useTrustForComponent, type TrustStatus } from '@/hooks/useSystemTrustState'
 import { useGeographySummary, useGeographyTable, type GeographyRow, type GeoLevel } from '@/hooks/useGeographyPerformance'
 import MetricCard from '@/components/reports/MetricCard'
