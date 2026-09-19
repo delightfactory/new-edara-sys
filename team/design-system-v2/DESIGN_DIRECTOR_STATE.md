@@ -4,105 +4,128 @@
 
 - Review date: `2026-09-19`.
 - Authoritative branch: `design-system-v2-development`.
-- Exact Development HEAD independently inspected before this state write: `9f3301b5273b41c484c87b83bf96afa55f0d7e28`.
-- Active slice: `DS2-REPORT-005 — Shared ChartPanel foundation + Sales primary revenue-chart migration`.
-- Active PR: `#52 — DS2-REPORT-005: converge Sales revenue chart panel`.
-- PR base: `design-system-v2-development`; feature-branch creation baseline `efa2e959ab994da3b81a9c28d937cf7acc570da7`.
-- Superseded QA-blocked PR HEAD: `7d63904e50197e76167205c6d6f52af4d2884257`.
-- Exact current PR HEAD independently reviewed: `eec9f05772babd40be61803b39d90bd9b859b28d`.
-- PR state at final pre-state review: `OPEN / DRAFT`; the latest connector mergeability snapshot requires Integration revalidation and is not treated as Product Design approval evidence.
-- Current Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER` on exact HEAD `eec9f05772babd40be61803b39d90bd9b859b28d`.
-- Design QA on the same exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
-- Evidence remains `TESTS_AUTHORED_NOT_EXECUTED`; no exact-head build/test/lint/runtime/preview/release PASS is claimed.
+- Exact Development HEAD independently inspected before REPORT006 governance write: `19eed8c9f1c8794cf309ed67c40084c085345004`.
+- REPORT005 is integrated: PR `#52`, reviewed HEAD `eec9f05772babd40be61803b39d90bd9b859b28d`, squash merge `3776e7defc83a1376a571dd38256c6a7bbf87e17`.
+- Open PRs targeting Development at final pre-state recheck: none.
+- Current single READY slice: `DS2-REPORT-006 — Product Performance responsive detail-collection convergence`.
+- Representative surface: `src/pages/reports/ProductPerformancePage.tsx`, section `تفاصيل المنتجات — أعلى 50 حسب الإيراد` only.
+- Workstream boundary commit created this run: `2ca3a41fd02067f4230924145e1773d9c7a650e1`.
+- Current Product Design disposition: `READY — IMPLEMENTATION AUTHORIZED WITHIN BOUNDED PRESENTATION-ONLY SCOPE`.
 
 ## What changed since the previous state
 
-REPORT005 moved from a pre-implementation READY boundary into exact-head review. The first implementation HEAD incorrectly defaulted shared `ChartPanel` headings to `h3`; Design QA correctly raised a P2/BLOCKING hierarchy defect. UI Production repaired that specific shared contract to default `headingLevel = 2` and updated focused tests. Design QA then issued `GREEN-DEV + SOURCE_REVIEW_PASS` on the repaired exact HEAD `eec9f05772babd40be61803b39d90bd9b859b28d`.
+REPORT005 completed its lifecycle and is now integrated. Integration explicitly handed REPORT006 back to Product Design for exact-source bounding before any implementation.
 
-This run independently re-reviewed the repaired exact HEAD against the North Star and the declared REPORT005 boundary. The prior Product Design READY state is now superseded by exact-head acceptance.
+This run inspected the current report surfaces and the existing shared responsive grammar. `ProductPerformancePage` contains a real dense seven-column product-detail table that is currently the same table composition at every device width, with horizontal overflow as the only narrow-screen adaptation. The repository already has a shared `ResponsiveCollection` contract designed to mount exactly one deliberate Desktop/Tablet/Mobile renderer at a time, plus current V2 `Card` and `KeyValueList` building blocks for labeled detail composition.
+
+That makes the Product Performance detail section the smallest useful REPORT006 proof: one collection, one page, no query or business change, and a direct system-level improvement to responsive dense-data presentation rather than another page-local beautification pass.
 
 ## Independent Product Design judgment
 
-**PASS — NO DESIGN-SYSTEM BLOCKER on exact PR HEAD `eec9f05772babd40be61803b39d90bd9b859b28d`.**
+**READY — IMPLEMENTATION AUTHORIZED only for the bounded REPORT006 concern recorded below.**
 
-I formed this judgment from the exact PR diff/source and shared V2 contracts before peer-state synthesis.
+I formed the boundary from exact current source and shared-component contracts before comparing peer states. No implementation PR exists, so there is no competing active slice.
 
-The repaired implementation now does what REPORT005 was intended to prove: it formalizes a thin, reusable, domain-agnostic `ChartPanel` over the existing `Card + SectionHeader` grammar and adopts it on exactly one real analytical surface. It reduces a page-local inline chart-frame mini-system without absorbing report truth, chart semantics or state orchestration into the Design System.
+The design decision is deliberately not to create a generic DataTable V2 in this slice and not to adopt the legacy `DataCard`. REPORT006 should prove the already-existing shared responsive-composition contract first, using current V2 primitives, before the broader DataTable/MobileDataCard component-depth backlog is opened.
 
-The earlier hierarchy defect is materially closed. `ChartPanel` now defaults to semantic `h2`, matching the established `SectionHeader` default and producing the correct Sales page `h1` -> chart `h2` hierarchy while preserving an explicit `2 | 3 | 4` override for genuinely nested future consumers.
+## REPORT006 implementation boundary
 
-## Exact-head design acceptance
+### System intent
 
-### Shared-system fit / ownership — PASS
+Use shared `ResponsiveCollection<ProductPerformanceRow>` for the existing `تفاصيل المنتجات — أعلى 50 حسب الإيراد` collection so one data capability receives deliberate device composition:
 
-- `ChartPanel` is presentation-only and composed from approved shared `Card + SectionHeader`.
-- Its contract remains intentionally small: title, optional description, caller-owned action/meta slot, heading level, body class, children and ordinary neutral HTML passthrough.
-- The shared layer owns neutral surface/frame, semantic section hierarchy, spacing and a `min-width: 0` body containment boundary.
-- It does not import or understand Reports, Recharts, trust/freshness state, loading/empty/blocked logic, series/data keys, calculations or business vocabulary.
-- No parallel report-local `ReportChartCard` abstraction was introduced.
+- **Desktop renderer:** preserve the current semantic seven-column table and its dense information hierarchy.
+- **Tablet renderer:** use the same detail-card composition as Mobile rather than compressing seven table columns or relying on page-level horizontal scrolling.
+- **Mobile renderer:** stacked detail cards composed from existing V2 `Card` + `KeyValueList` building blocks.
+- Only one renderer may be mounted at a time; no CSS-hidden duplicate Desktop/Mobile DOM.
 
-### Representative Sales adoption — PASS
+No new generic table/card abstraction is authorized by this slice.
 
-Only the first `SalesPage` visualization surface, `تطور الإيراد اليومي`, migrates to `ChartPanel`.
+### Content / business-truth preservation
 
-Preserved exactly:
-- Arabic title `تطور الإيراد اليومي`;
-- description `صافي إيراد + قيمة مرتجعات — مجمّع يومياً في قاعدة البيانات`;
-- caller-owned `TrustStateBadge` and `FreshnessIndicator` content;
-- blocked, loading, empty and data-present decision branches;
-- existing 240px responsive chart body;
-- `chartData`, gradients, axes, margins, tooltip, series names/data keys/colors/stroke/fill/dot behavior;
-- all hooks, date/filter semantics, calculations, formatters and trust decisions.
+Preserve exactly:
+- section title `تفاصيل المنتجات — أعلى 50 حسب الإيراد`;
+- row source, row order and current top-50 result contract;
+- the seven existing data fields and Desktop order: `المنتج`, `التصنيف`, `الإيراد`, `الكمية`, `نسبة المرتجع`, `عملاء`, `الحصة%`;
+- `ProductPerformanceRow` values and current `fmt` / `fmtCur` / `fmtPct` formatting meaning;
+- currency/unit copy;
+- return-rate semantic thresholds/colors: `>10` danger, `>5` warning, otherwise success;
+- current five-row skeleton loading presentation;
+- exact empty copy `لا توجد بيانات`;
+- all existing trust/freshness ownership and every upstream report calculation/query/filter/date/category contract.
 
-The second Sales bar chart remains untouched, which is important: REPORT005 proves one shared pattern without turning into a broad Reports beautification pass.
+For Tablet/Mobile the information hierarchy should be:
+- product name = primary identity;
+- category = secondary context;
+- revenue, quantity, return rate, customers and share = explicitly labeled `KeyValueList` details.
 
-### Hierarchy / Arabic / RTL / device quality — PASS at source level
+All seven source fields therefore remain represented; the narrow-screen composition changes hierarchy, not meaning.
 
-- **Hierarchy:** the page remains `h1` and the migrated analytical section is now a real `h2`; this is the correct semantic level for a top-level report visualization section.
-- **Arabic / RTL:** exact Arabic copy is preserved; the new shared spacing uses logical `margin-block-start`; shared copy containers remain shrinkable and long-content tolerant; no new physical LTR-only positioning was added.
-- **Desktop:** full-width analytical density and the current 240px chart height are retained.
-- **Tablet:** no new Desktop-only fixed geometry is introduced; shared header/main copy can shrink/wrap while caller-owned status/freshness content remains separately composed. The implementation does not create a compressed page-local tablet exception.
-- **Mobile:** existing shared `Card`/`SectionHeader` contracts reduce large padding and allow header wrapping at the canonical Mobile breakpoint; the chart body retains `min-width: 0` containment and stays inside the existing `ResponsiveContainer`.
-- **Dark mode:** the new frame inherits existing semantic V2 Card/SectionHeader tokens instead of introducing report-local colors.
+### Device / RTL / long Arabic acceptance
 
-No `RUNTIME_VISUAL_PASS` is claimed; representative runtime/device validation remains a later milestone gate.
+- **Desktop:** native table remains the dense high-information surface. Preserve contained overflow behavior and add `scope="col"` to touched column headers so table semantics stay explicit.
+- **Tablet:** deliberate detail-card layout, no page horizontal overflow, readable multi-column metadata where space permits.
+- **Mobile:** one-column stacked cards, no table-width dependency or horizontal page overflow, product identity immediately readable before numeric detail.
+- Arabic product/category text must remain legible under long-content stress; do not introduce essential-text clipping merely to preserve a one-line card.
+- Numeric values may retain LTR numeric direction while Arabic labels/content remain RTL-first.
+- Dark mode must inherit semantic V2 Card/KeyValue/status tokens; no report-local light-only surface/color patch is allowed.
 
-### States / accessibility — PASS
+### Accessibility / state acceptance
 
-- Blocked, loading, empty and data-present branches remain caller-owned and unchanged in meaning.
-- The blocked state retains explicit text and therefore does not rely on color alone.
-- No new interactive control is introduced, so no new keyboard/focus/touch semantics are fabricated by the wrapper.
-- The semantic heading repair is a net accessibility improvement over the former local non-heading chart title.
+- Desktop remains a true `<table>` with `<thead>`, `<tbody>` and column headers.
+- Tablet/Mobile use explicit labels for every quantitative value through `KeyValueList`.
+- Return-rate state is never color-only because the percentage text remains visible with the semantic color.
+- Do not invent clickable-card semantics or row navigation: the current rows have no row action.
+- Preserve one caller-owned loading state and one caller-owned empty state by passing explicit `loadingState` / `emptyState` to `ResponsiveCollection`; do not silently change skeleton count or empty copy to the pattern defaults.
+- Focus/touch behavior must not regress, but this slice introduces no new action control.
 
-### Functional isolation — PASS
+### Explicit exclusions
 
-No DB/migration/RPC/service/query-cache/RBAC/RLS/permission/route-guard/business-calculation/validation/workflow/export/print contract is changed. Recharts data/series meaning and all report-domain business truth remain page/domain-owned.
+Do not:
+- create or broaden a generic DataTable V2;
+- create a new MobileDataCard abstraction;
+- adopt legacy `DataCard` for this proof;
+- migrate the Product Performance chart, metric cards/grid, category selector, page header or `ReportFilterBar`;
+- touch any second report/table;
+- change sorting/order, pagination/result count, filters, hooks, Supabase/RPC/service/query-cache contracts, calculations, trust/freshness semantics, permissions, routing, `AnalyticsGate`, export/print or business truth;
+- perform generic report CSS cleanup.
+
+If implementation discovers that the desired result requires functional semantics to change or a broader generic-table contract, stop and mark REPORT006 `BLOCKED` for Product Design re-bounding rather than expanding the PR.
+
+### Evidence expected from UI Production
+
+Author focused tests that demonstrate:
+- Desktop renders the preserved table field contract;
+- Mobile mounts only the detail-card renderer;
+- Tablet deliberately follows the detail-card composition;
+- preserved custom loading and empty branches remain single and unchanged;
+- no hidden duplicate renderer DOM exists.
+
+Hosted CI remains forbidden; evidence labels must remain honest per `33_TEST_AND_VALIDATION_POLICY.md`.
 
 ## Peer-state synthesis / contradiction handling
 
-After the independent review:
+- **Development Integrator:** current and aligned. REPORT005 is recorded `MERGED_GREEN_DEV_REPORT005`, and its handoff explicitly asks Product Design to bound REPORT006 before implementation. That request is now satisfied.
+- **UI Production Engineer / Design QA:** no active REPORT006 PR exists at the final recheck, so any REPORT005 lifecycle wording in specialist states is stale context rather than a material contradiction.
+- **Workstream:** updated this run so REPORT006 is no longer a placeholder owned by Product Design; it now records the exact Product Performance surface, acceptance boundary and UI Production as next owner.
+- **North Star / Decision Log:** aligned. This slice applies existing durable rules: shared-system-first, deliberate device composition, Arabic/RTL quality, semantic accessibility and caller-owned business truth. No new durable rule was created.
 
-- **Design QA:** current and aligned. QA issued `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` on the same exact HEAD `eec9f05772babd40be61803b39d90bd9b859b28d` after verifying the `h2` repair.
-- **UI Production Engineer:** the feature-branch state correctly records the narrow hierarchy repair and no product-semantic change. Its wording that fresh review is required is lifecycle-stale now that QA and Product Design have completed those reviews; there is no substantive contradiction.
-- **Development Integrator:** the checked-in Integration State still records `BLOCKING` against superseded HEAD `7d63904e...`. That conclusion is lifecycle-stale, not a current contradiction: the exact defect it names was repaired on `eec9f057...` and QA independently cleared it. Integration must nevertheless perform its own final current-head/base/drift/thread/mergeability revalidation before merge.
-- **Development drift:** the branch has advanced from the feature baseline only through Design-System governance/state updates relevant to the review lifecycle; no product/shared-source overlap was found that invalidates REPORT005 source acceptance.
-- **North Star / Decision Log:** aligned. No durable rule changed; this slice applies the existing shared-system-first, semantic hierarchy, Arabic/RTL, multi-device and caller-owned-business-truth rules.
-
-There is **no current BLOCKING Product Design contradiction** on the reviewed exact PR HEAD.
+There is **no current BLOCKING cross-role contradiction** and exactly one implementation slice is READY.
 
 ## Repository actions this run
 
 - Completed the mandatory shared-memory bootstrap in the required order.
-- Inspected issue #27, exact current Development HEAD, the only open PR targeting Development, PR reviews/threads, exact PR diff and representative shared/product source.
-- Re-read relevant component/page/migration guidance before exact-head acceptance.
-- Independently accepted PR #52 exact HEAD `eec9f05772babd40be61803b39d90bd9b859b28d` after the hierarchy repair.
-- Did not update Team Memory or Decision Log because no overall direction or durable decision changed.
-- Did not implement product code, modify peer specialist states, merge, touch `main`, trigger/rerun GitHub Actions, use hosted CI, deploy Vercel or modify preview branches.
+- Inspected issue #27, exact current Development HEAD, open PRs targeting Development and relevant component/page/migration guidance.
+- Inspected representative report consumers and exact `ProductPerformancePage` table source.
+- Inspected shared `ResponsiveCollection`, its focused tests, current V2 `Card` and `KeyValueList`; also checked legacy `DataCard` and intentionally excluded it from this proof.
+- Updated `31_AGENT_TEAM_WORKSTREAM.md` in commit `2ca3a41fd02067f4230924145e1773d9c7a650e1` with the exact REPORT006 scope and implementation authorization.
+- Did not update Team Memory or Decision Log because overall system direction and durable rules did not change.
+- Did not implement product code, modify peer specialist states, merge any PR, touch `main`, trigger/rerun GitHub Actions, use hosted CI, deploy Vercel or modify preview branches.
 
 ### Cross-role handoff
-- **To:** Development Integrator.
-- **What changed:** Product Design independently accepted PR #52 exact HEAD `eec9f05772babd40be61803b39d90bd9b859b28d` with `PASS — NO DESIGN-SYSTEM BLOCKER`; Design QA is already `GREEN-DEV + SOURCE_REVIEW_PASS` on the same HEAD and the prior `h3` blocker is resolved.
-- **Preserve:** one-chart-only scope; shared domain-agnostic `Card + SectionHeader` composition; default semantic `h2`; exact Arabic title/description; caller-owned trust/freshness; blocked/loading/empty/data branches; 240px responsive chart body; all Recharts/query/filter/calculation/permission/routing/`AnalyticsGate`/export/print/business semantics; second chart and all other report pages out of scope.
-- **Need from you:** revalidate that PR HEAD remains exactly `eec9f05772babd40be61803b39d90bd9b859b28d`, then recheck base/drift/reviews/threads/mergeability and functional isolation; merge to `design-system-v2-development` only if all normal Integration gates are clean. Any PR HEAD movement requires fresh Design QA + Product Design review.
-- **Blocker level:** `NONE` from Product Design.
-- **Baseline:** Development pre-state-write `9f3301b5273b41c484c87b83bf96afa55f0d7e28`; exact accepted PR #52 HEAD `eec9f05772babd40be61803b39d90bd9b859b28d`.
+- **To:** UI Production Engineer.
+- **What changed:** REPORT006 is now fully bounded and implementation-authorized on the Product Performance detail collection only; Workstream commit `2ca3a41fd02067f4230924145e1773d9c7a650e1` replaces the prior placeholder boundary.
+- **Preserve:** exact `تفاصيل المنتجات — أعلى 50 حسب الإيراد` title; seven fields and Desktop order; row source/order/count; all formatters/units; return-rate thresholds/colors; five-row loading skeleton; exact `لا توجد بيانات`; every query/filter/date/category/calculation/trust/permission/routing/`AnalyticsGate`/export/print/business contract; no second report surface.
+- **Need from you:** branch from the latest `design-system-v2-development`, open one REPORT006 implementation PR, migrate only this collection to shared `ResponsiveCollection` with Desktop semantic table plus Tablet/Mobile V2 `Card + KeyValueList` detail composition, author focused contract tests, and stop rather than broadening scope if functional semantics or a generic DataTable abstraction becomes necessary.
+- **Blocker level:** `NONE`.
+- **Baseline:** exact independently inspected pre-governance Development HEAD `19eed8c9f1c8794cf309ed67c40084c085345004`; REPORT006 boundary commit `2ca3a41fd02067f4230924145e1773d9c7a650e1`.
