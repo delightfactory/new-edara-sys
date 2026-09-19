@@ -7,6 +7,7 @@ import SystemHealthBar from '@/components/reports/SystemHealthBar'
 import ReportFilterBar, { type DateRange } from '@/components/reports/ReportFilterBar'
 import TrustStateBadge from '@/components/reports/TrustStateBadge'
 import FreshnessIndicator from '@/components/reports/FreshnessIndicator'
+import Select from '@/components/ui/Select'
 import { TrendingUp, MapPin } from 'lucide-react'
 
 function toISO(d: Date) { return d.toISOString().split('T')[0] }
@@ -49,12 +50,15 @@ export default function GeographyPage() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', flexWrap: 'wrap' }}>
-          <select value={level} onChange={e => setLevel(e.target.value as GeoLevel)}
-            style={{ padding: '5px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-primary)', background: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', outline: 'none' }}>
+          <Select
+            aria-label="مستوى التحليل الجغرافي"
+            value={level}
+            onChange={e => setLevel(e.target.value as GeoLevel)}
+          >
             <option value="governorate">محافظة</option>
             <option value="city">مدينة</option>
             <option value="area">منطقة</option>
-          </select>
+          </Select>
           <ReportFilterBar value={range} onChange={setRange} />
         </div>
       </div>
