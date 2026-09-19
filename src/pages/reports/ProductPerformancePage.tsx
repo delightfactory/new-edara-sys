@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useSystemTrustState, useTrustForComponent, type TrustStatus } from '@/hooks/useSystemTrustState'
 import { useProductPerformanceSummary, useProductPerformanceTable, type ProductPerformanceRow } from '@/hooks/useProductPerformance'
 import MetricCard from '@/components/reports/MetricCard'
@@ -7,6 +7,9 @@ import SystemHealthBar from '@/components/reports/SystemHealthBar'
 import ReportFilterBar, { type DateRange } from '@/components/reports/ReportFilterBar'
 import TrustStateBadge from '@/components/reports/TrustStateBadge'
 import FreshnessIndicator from '@/components/reports/FreshnessIndicator'
+import ResponsiveCollection from '@/components/patterns/ResponsiveCollection'
+import Card from '@/components/patterns/Card'
+import KeyValueList from '@/components/patterns/KeyValueList'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 import { TrendingUp, TrendingDown, Package, BarChart3 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
@@ -19,6 +22,37 @@ const FMT = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
 const fmt = (n: number | undefined | null) => n != null ? FMT.format(n) : '—'
 const fmtCur = (n: number | undefined | null) => n != null ? fmt(n) + ' ج.م' : '—'
 const fmtPct = (n: number | undefined | null) => n != null ? FMT.format(n) + '%' : '—'
+const returnRateColor = (rate: number) => rate > 10 ? 'var(--color-danger)' : rate > 5 ? 'var(--color-warning)' : 'var(--color-success)'
+
+function ProductDetailCards({ items, device }: { items: ProductPerformanceRow[]; device: 'mobile' | 'tablet' }) {
+  return (
+    <div className={`ds-responsive-card-grid ds-responsive-card-grid--${device}`}>
+      {items.map(row => (
+        <Card key={row.product_id} padding="md">
+          <div style={{ marginBlockEnd: 'var(--space-4)', minWidth: 0 }}>
+            <div style={{ color: 'var(--ds-text-primary)', fontWeight: 700, overflowWrap: 'anywhere' }}>{row.product_name}</div>
+            <div style={{ color: 'var(--ds-text-secondary)', fontSize: 'var(--ds-type-caption-size)', marginBlockStart: 'var(--space-1)', overflowWrap: 'anywhere' }}>{row.category_name}</div>
+          </div>
+          <KeyValueList
+            columns={device === 'tablet' ? 2 : 1}
+            compact
+            items={[
+              { key: 'revenue', label: 'الإيراد', value: <span dir="ltr">{fmtCur(row.net_revenue)}</span>, emphasis: 'strong' },
+              { key: 'quantity', label: 'الكمية', value: <span dir="ltr">{fmt(row.net_qty)}</span> },
+              {
+                key: 'return-rate',
+                label: 'نسبة المرتجع',
+                value: <span dir="ltr" style={{ color: returnRateColor(row.return_rate_pct), fontWeight: 600 }}>{fmtPct(row.return_rate_pct)}</span>,
+              },
+              { key: 'customers', label: 'عملاء', value: <span dir="ltr">{row.distinct_customers}</span> },
+              { key: 'share', label: 'الحصة%', value: <span dir="ltr">{fmtPct(row.revenue_share_pct)}</span>, emphasis: 'muted' },
+            ]}
+          />
+        </Card>
+      ))}
+    </div>
+  )
+}
 
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null
@@ -142,46 +176,54 @@ export default function ProductPerformancePage() {
         )}
       </div>
 
-      {/* Table */}
+      {/* Product details */}
       <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-primary)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
         <div style={{ padding: 'var(--space-4) var(--space-5)', borderBottom: '1px solid var(--border-primary)', fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--text-primary)' }}>
           تفاصيل المنتجات — أعلى 50 حسب الإيراد
         </div>
-        {tableLoading ? (
-          <div style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-            {[1, 2, 3, 4, 5].map(i => <SkeletonCard key={i} height={44} />)}
-          </div>
-        ) : rows.length === 0 ? (
-          <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>لا توجد بيانات</div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
-              <thead>
-                <tr style={{ background: 'var(--bg-surface-2)' }}>
-                  {['المنتج', 'التصنيف', 'الإيراد', 'الكمية', 'نسبة المرتجع', 'عملاء', 'الحصة%'].map(h => (
-                    <th key={h} style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 600, color: 'var(--text-secondary)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-primary)', whiteSpace: 'nowrap' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row: ProductPerformanceRow) => (
-                  <tr key={row.product_id}
-                    style={{ borderBottom: '1px solid var(--divider)', transition: 'background 0.1s' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = '')}>
-                    <td style={{ padding: '10px 14px', color: 'var(--text-primary)', fontWeight: 600, fontSize: 'var(--text-xs)' }}>{row.product_name}</td>
-                    <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 'var(--text-xs)' }}>{row.category_name}</td>
-                    <td style={{ padding: '10px 14px', color: 'var(--text-primary)', direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{fmt(row.net_revenue)} ج.م</td>
-                    <td style={{ padding: '10px 14px', color: 'var(--text-primary)', direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{fmt(row.net_qty)}</td>
-                    <td style={{ padding: '10px 14px', color: row.return_rate_pct > 10 ? 'var(--color-danger)' : row.return_rate_pct > 5 ? 'var(--color-warning)' : 'var(--color-success)', fontWeight: 600, direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{fmtPct(row.return_rate_pct)}</td>
-                    <td style={{ padding: '10px 14px', color: 'var(--text-primary)', direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{row.distinct_customers}</td>
-                    <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{fmtPct(row.revenue_share_pct)}</td>
+        <ResponsiveCollection<ProductPerformanceRow>
+          items={rows}
+          loading={tableLoading}
+          loadingState={(
+            <div style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+              {[1, 2, 3, 4, 5].map(i => <SkeletonCard key={i} height={44} />)}
+            </div>
+          )}
+          emptyState={(
+            <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>لا توجد بيانات</div>
+          )}
+          renderDesktop={desktopRows => (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
+                <thead>
+                  <tr style={{ background: 'var(--bg-surface-2)' }}>
+                    {['المنتج', 'التصنيف', 'الإيراد', 'الكمية', 'نسبة المرتجع', 'عملاء', 'الحصة%'].map(h => (
+                      <th scope="col" key={h} style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 600, color: 'var(--text-secondary)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-primary)', whiteSpace: 'nowrap' }}>{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody>
+                  {desktopRows.map(row => (
+                    <tr key={row.product_id}
+                      style={{ borderBottom: '1px solid var(--divider)', transition: 'background 0.1s' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = '')}>
+                      <td style={{ padding: '10px 14px', color: 'var(--text-primary)', fontWeight: 600, fontSize: 'var(--text-xs)' }}>{row.product_name}</td>
+                      <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 'var(--text-xs)' }}>{row.category_name}</td>
+                      <td style={{ padding: '10px 14px', color: 'var(--text-primary)', direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{fmt(row.net_revenue)} ج.م</td>
+                      <td style={{ padding: '10px 14px', color: 'var(--text-primary)', direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{fmt(row.net_qty)}</td>
+                      <td style={{ padding: '10px 14px', color: returnRateColor(row.return_rate_pct), fontWeight: 600, direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{fmtPct(row.return_rate_pct)}</td>
+                      <td style={{ padding: '10px 14px', color: 'var(--text-primary)', direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{row.distinct_customers}</td>
+                      <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{fmtPct(row.revenue_share_pct)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          renderTablet={tabletRows => <ProductDetailCards items={tabletRows} device="tablet" />}
+          renderMobile={mobileRows => <ProductDetailCards items={mobileRows} device="mobile" />}
+        />
       </div>
     </div>
   )
