@@ -14,7 +14,7 @@ describe('ChartPanel', () => {
       </ChartPanel>,
     )
 
-    const heading = screen.getByRole('heading', { level: 3, name: 'تطور الإيراد اليومي' })
+    const heading = screen.getByRole('heading', { level: 2, name: 'تطور الإيراد اليومي' })
     const card = heading.closest('.ds-card')
 
     expect(card?.className).toContain('ds-chart-panel')

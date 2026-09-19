@@ -22,7 +22,7 @@ export default function ChartPanel({
   title,
   description,
   action,
-  headingLevel = 3,
+  headingLevel = 2,
   bodyClassName,
   className,
   children,

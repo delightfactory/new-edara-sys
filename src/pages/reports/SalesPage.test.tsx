@@ -83,7 +83,7 @@ describe('Sales report revenue chart composition', () => {
   it('uses exactly one shared ChartPanel for the first chart while preserving its title, description, trust action and empty state', () => {
     const { container } = render(<SalesPage />)
 
-    const heading = screen.getByRole('heading', { level: 3, name: 'تطور الإيراد اليومي' })
+    const heading = screen.getByRole('heading', { level: 2, name: 'تطور الإيراد اليومي' })
     const panel = heading.closest('.ds-chart-panel') as HTMLElement
 
     expect(panel).not.toBeNull()
@@ -105,7 +105,7 @@ describe('Sales report revenue chart composition', () => {
 
     render(<SalesPage />)
 
-    const panel = screen.getByRole('heading', { level: 3, name: 'تطور الإيراد اليومي' }).closest('.ds-chart-panel') as HTMLElement
+    const panel = screen.getByRole('heading', { level: 2, name: 'تطور الإيراد اليومي' }).closest('.ds-chart-panel') as HTMLElement
     expect(within(panel).getByText('المخطط محجوب')).not.toBeNull()
     expect(within(panel).getByText('لا يمكن عرض بيانات الإيراد حتى اكتمال المطابقة المحاسبية')).not.toBeNull()
   })
