@@ -5,6 +5,7 @@ import SkeletonCard from '@/components/reports/SkeletonCard'
 import SystemHealthBar from '@/components/reports/SystemHealthBar'
 import TrustStateBadge from '@/components/reports/TrustStateBadge'
 import FreshnessIndicator from '@/components/reports/FreshnessIndicator'
+import ChartPanel from '@/components/patterns/ChartPanel'
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts'
 
 function toISO(d: Date) { return d.toISOString().split('T')[0] }
@@ -108,14 +109,15 @@ export default function ChurnRiskPage() {
 
       {/* Pie Chart */}
       {!statsLoading && pieData.length > 0 && (
-        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-primary)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', boxShadow: 'var(--shadow-sm)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
-            <div style={{ fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--text-primary)' }}>توزيع تصنيف العملاء</div>
+        <ChartPanel
+          title="توزيع تصنيف العملاء"
+          action={riskTrust ? (
             <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
-              {riskTrust && <TrustStateBadge status={riskTrust.status as TrustStatus} domain="customers" size="sm" />}
-              {riskTrust && <FreshnessIndicator lastCompletedAt={riskTrust.last_completed_at} isStale={riskTrust.is_stale} />}
+              <TrustStateBadge status={riskTrust.status as TrustStatus} domain="customers" size="sm" />
+              <FreshnessIndicator lastCompletedAt={riskTrust.last_completed_at} isStale={riskTrust.is_stale} />
             </div>
-          </div>
+          ) : undefined}
+        >
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
               <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={2}>
@@ -125,7 +127,7 @@ export default function ChurnRiskPage() {
               <Legend />
             </PieChart>
           </ResponsiveContainer>
-        </div>
+        </ChartPanel>
       )}
 
       {/* Table */}
