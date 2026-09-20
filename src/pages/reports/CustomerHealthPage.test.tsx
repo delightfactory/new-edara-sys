@@ -37,10 +37,12 @@ vi.mock('@/components/reports/FreshnessIndicator', () => ({
   default: () => <span data-testid="freshness-indicator" />,
 }))
 
+const longCustomerName = 'شركة العميل ذات الاسم العربي الطويل جداً لاختبار الالتفاف داخل البطاقة بدون تجاوز'
+
 const rows = [
   {
     customer_id: 'customer-1',
-    customer_name: 'شركة العميل ذات الاسم العربي الطويل جداً لاختبار الالتفاف داخل البطاقة بدون تجاوز',
+    customer_name: longCustomerName,
     as_of_date: '2026-09-20',
     recency_days: 12,
     frequency_l90d: 3,
@@ -115,7 +117,7 @@ describe('Customer Health responsive detail collection', () => {
       'الحالة',
     ])
     headers.forEach(header => expect(header.getAttribute('scope')).toBe('col'))
-    expect(within(table).getByText(rows[0].customer_name)).toBeTruthy()
+    expect(within(table).getByText(longCustomerName)).toBeTruthy()
     expect(within(table).getByText('12 يوم')).toBeTruthy()
     expect(within(table).getByText('3×')).toBeTruthy()
     expect(within(table).getByText('1,234 ج.م')).toBeTruthy()
@@ -132,7 +134,7 @@ describe('Customer Health responsive detail collection', () => {
     expect(section.querySelector('.ds-responsive-card-grid--tablet')).toBeNull()
     expect(section.querySelector('.ds-key-value-list--cols-1')).not.toBeNull()
 
-    const longName = within(section).getByText(rows[0].customer_name)
+    const longName = within(section).getByText(longCustomerName)
     expect(longName.style.overflowWrap).toBe('anywhere')
     expect(within(section).getByText('deadbeef…')).toBeTruthy()
 
@@ -157,7 +159,7 @@ describe('Customer Health responsive detail collection', () => {
     expect(section.querySelector('.ds-responsive-card-grid--tablet')).not.toBeNull()
     expect(section.querySelector('.ds-responsive-card-grid--mobile')).toBeNull()
     expect(section.querySelector('.ds-key-value-list--cols-2')).not.toBeNull()
-    expect(within(section).getByText(rows[0].customer_name)).toBeTruthy()
+    expect(within(section).getByText(longCustomerName)).toBeTruthy()
   })
 
   it('keeps the blocked state higher priority than collection loading, empty, or ready renderers', () => {
