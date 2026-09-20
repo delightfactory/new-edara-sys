@@ -4,106 +4,103 @@
 
 - Review date: `2026-09-20`.
 - Development branch: `design-system-v2-development`.
-- Exact Development HEAD independently inspected before this state write: `c770fcfe24adc0455346938357291ccb1e9b51c0`.
-- Active slice: `DS2-REPORT-009 — Sales secondary revenue/tax chart-panel convergence`.
-- Representative surface: `src/pages/reports/SalesPage.tsx` → second chart `توزيع الإيرادات اليومي (إيراد + ضريبة)` only.
-- Active implementation PR: `#56 — DS2-REPORT-009: converge Sales secondary chart panel`.
-- Feature-branch base: `c770fcfe24adc0455346938357291ccb1e9b51c0` on `design-system-v2-development`.
-- Exact current PR HEAD independently reviewed: `9f07979508c8139f579afbde0397672437eef992`.
-- PR state at final pre-review recheck: `OPEN / DRAFT / mergeable=true`.
-- Changed-file scope: 3 files — Sales page, focused Sales test, and UI Production Engineer owned state.
+- Exact Development HEAD independently inspected before this state write: `cc1f2582744f416348c3bb4e46fd471886d66b7a`.
+- Active slice: `DS2-REPORT-010 — Churn Risk pie-chart ChartPanel convergence`.
+- Representative surface: `src/pages/reports/ChurnRiskPage.tsx` → Pie Chart section `توزيع تصنيف العملاء` only.
+- Active implementation PR: `#57 — DS2-REPORT-010: converge Churn Risk pie chart panel`.
+- Feature-branch base: `cc1f2582744f416348c3bb4e46fd471886d66b7a` on `design-system-v2-development`.
+- Exact current PR HEAD independently reviewed: `d5ac5becd8a9a64080022365407d60febaefe96e`.
+- PR state at final pre-review recheck: `OPEN / DRAFT / mergeable=true / mergeable_state=clean`.
+- Changed-file scope: 3 files — Churn Risk page, focused Churn Risk test, and UI Production Engineer owned state.
 - Current disposition: `AGENT-REVIEW: GREEN-DEV`.
 - Evidence: `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`.
 - Exact-head build/test/lint/runtime/preview/release PASS: not claimed.
 
 ## Independent QA disposition
 
-**GREEN-DEV on exact PR HEAD `9f07979508c8139f579afbde0397672437eef992`.**
+**GREEN-DEV on exact PR HEAD `d5ac5becd8a9a64080022365407d60febaefe96e`.**
 
-REPORT009 follows the bounded Product Design direction without widening functional or system scope. Only the second Sales analytical shell now uses the already-integrated shared V2 `ChartPanel`; chart data, loading behavior, Recharts configuration and report-domain truth remain caller-owned.
+REPORT010 stays inside the Product Design boundary. Only the existing Churn Risk pie-chart analytical shell moves from its page-local card/header composition to the established V2 `ChartPanel`; report data, risk classification, render/state behavior and Recharts semantics remain caller-owned and unchanged.
 
-No material source-level blocker was found. The slice removes the last local analytical shell on the Sales report and converges both chart sections onto one shared presentation grammar while preserving existing product behavior.
+No material source-level blocker was found. The slice reduces local visual-system duplication while preserving product behavior.
 
 ## Exact-head findings
 
 ### Scope / functional isolation — PASS
 
 The exact PR diff contains only:
-- `src/pages/reports/SalesPage.tsx`
-- `src/pages/reports/SalesPage.test.tsx`
+- `src/pages/reports/ChurnRiskPage.tsx`
+- `src/pages/reports/ChurnRiskPage.test.tsx`
 - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
-The implementation preserves:
-- page-owned `range`, filters, hooks and trust calculations;
-- the first Sales `ChartPanel` product code, exact title/description, trust/freshness action, blocked/loading/empty/data branches and 240px body;
-- second-chart title `توزيع الإيرادات اليومي (إيراد + ضريبة)`;
-- second-chart `dailyLoading ? SkeletonCard height={200} : ResponsiveContainer height={200}` behavior;
-- existing absence of additional blocked/empty/trust/freshness semantics on the second chart;
-- `chartData` mapping (`sale_date`, `net_revenue`, `returns_value`, `tax_amount`);
-- second `BarChart` margin, grid, axes, tick formatting, `CustomTooltip` and both Bar series contracts;
-- all four `MetricCard`s, `report-grid`, page header, `ReportFilterBar` and `SystemHealthBar`.
+The implementation preserves exactly:
+- outer chart render gate `!statsLoading && pieData.length > 0`;
+- Arabic title `توزيع تصنيف العملاء`;
+- conditional risk-trust badge/freshness presence rule;
+- `ResponsiveContainer width="100%" height={260}`;
+- `pieData` derivation and zero-value filtering;
+- Pie segment order/colors and existing `PIE_COLORS` contract;
+- `dataKey="value"`, `nameKey="name"`, `cx/cy`, `innerRadius=60`, `outerRadius=100`, `paddingAngle=2`;
+- tooltip formatter and Legend behavior;
+- page header, filters/date control, KPI grid, table, RiskBadge/RecencyCell, hooks and trust calculations.
 
-No DB/migration/RPC/service/query-cache/RBAC/RLS/permission/route-guard/business-calculation/validation/workflow/export/print/deployment contract changed.
+No DB/migration/RPC/service/query-cache/RBAC/RLS/permission/route/business-calculation/validation/workflow/export/print/deployment contract changed.
 
 ### Shared-system fit / hierarchy — PASS
 
-The page-local second-chart card/title shell is replaced by the established `ChartPanel -> Card + SectionHeader` grammar. `ChartPanel` remains unchanged, presentation-only and defaults to semantic `h2`; no shared API/CSS widening, chart abstraction or page-local mini design system was introduced.
+The local analytical surface/header is replaced by the unchanged shared `ChartPanel -> Card + SectionHeader` grammar. `ChartPanel` remains presentation-only and defaults to semantic `h2`; no shared API/CSS widening or chart abstraction was introduced.
 
-This establishes a coherent `h1 -> h2` hierarchy across both Sales analytical sections and advances the North Star through reuse rather than local invention.
+This produces the intended page `h1` -> chart-section `h2` hierarchy and removes a page-local mini-system rather than creating another one.
 
 ### Device / RTL / density / containment — PASS at source level
 
-- **Desktop:** the 200px chart body remains unchanged, preserving useful compact report density.
-- **Tablet:** shared Card/SectionHeader composition is min-width-safe and introduces no fixed-width pressure or new ordinary horizontal-overflow path.
-- **Mobile:** shared Card reduces large padding at `<=768px`, SectionHeader wraps, and `.ds-chart-panel__body` retains `min-width: 0`; the Arabic title can wrap without creating a duplicate renderer or new interaction tree.
-- **Arabic / RTL:** exact Arabic title is retained and inherits existing logical shared spacing/surface rules.
-- **Dark mode:** surface/border/title presentation now follows the shared semantic-token path through `ChartPanel` rather than the removed inline shell.
+- **Desktop:** the compact 260px analytical body and existing Pie geometry remain unchanged.
+- **Tablet:** shared `SectionHeader` provides wrap-capable composition without introducing new fixed-width pressure.
+- **Mobile:** shared Card padding reduces at the mobile breakpoint, SectionHeader wraps, and `.ds-chart-panel__body` retains `min-width: 0`; no new ordinary page-level horizontal-overflow path or duplicate renderer was introduced.
+- **Arabic / RTL:** exact Arabic title is preserved; shared logical layout and semantic-token surface path are used.
+- **Dark mode:** surface/border/title behavior now follows the existing shared V2 token path instead of the removed inline shell.
 
-No `RUNTIME_VISUAL_PASS` is claimed; runtime/device validation remains a separate milestone gate.
+No `RUNTIME_VISUAL_PASS` is claimed; runtime/device validation remains a separate release gate.
 
 ### Accessibility / states — PASS
 
-The second analytical section now receives the same semantic `h2` section-heading path as the first chart below the page `h1`. No new interactive control is introduced, so no synthetic keyboard/focus/touch semantics were added.
+The chart section now receives the Product Design-required semantic `h2` under the page `h1`. No new interactive control was introduced, so no new keyboard/focus/touch behavior needs invention in this slice.
 
-The second chart deliberately retains its pre-existing loading/data-only behavior. No blocked, empty, permission, read-only or trust state was fabricated in this presentation slice. First-chart blocked/loading/empty/data behavior remains unchanged.
+The current omission semantics are preserved exactly: the chart remains absent while stats are loading or when all pie segments are zero. No loading/empty/blocked/error state was fabricated. When `riskTrust` is unavailable, the chart remains present but trust/freshness controls remain absent as before.
 
 ### Test Artifact Gate / evidence honesty — PASS
 
-Focused `SalesPage.test.tsx` coverage protects the material risks:
-- exactly two shared `.ds-chart-panel` surfaces;
-- semantic `h2` headings and exact second-panel title;
-- first-panel description, trust/freshness and empty-state contract;
-- first-chart blocked copy while proving no blocked semantics were introduced into the second chart;
-- first-chart 240px and second-chart 200px loading bodies;
-- second-chart `ResponsiveContainer` width/200px height;
-- unchanged chart-data field remapping and `BarChart` margins;
-- exact revenue/tax Bar names, fills, radii and `maxBarSize=24`.
+Focused `ChurnRiskPage.test.tsx` coverage protects the material risks:
+- one shared `.ds-chart-panel` and exact `h2` title;
+- trust/freshness presence and absence rules;
+- complete chart omission during stats loading and zero-data conditions;
+- 260px ResponsiveContainer contract;
+- exact filtered Pie data, geometry, segment colors, tooltip and Legend behavior.
 
-Tests were **not executed** in an approved project runtime. Evidence is therefore `TESTS_AUTHORED_NOT_EXECUTED`; no build/test/lint/runtime/preview PASS is claimed. No known source-visible build/type failure is outstanding.
+Tests were **not executed** in an approved project runtime. Evidence is therefore `TESTS_AUTHORED_NOT_EXECUTED`; no build/test/lint/runtime/preview PASS is claimed. No known source-visible build/type failure is outstanding. PR reviews, inline review comments and review threads were empty at review time.
 
 ## Peer-state comparison / contradiction handling
 
-This QA judgment was formed from the exact current PR diff and current product/shared contracts before peer-state synthesis.
+This QA judgment was formed from the exact current PR diff and shared/product contracts before peer-state synthesis.
 
-- **Product Design Director:** fresh REPORT009 boundary explicitly authorizes only this second Sales chart-shell migration onto existing `ChartPanel`, requires semantic `h2`, preserved 200px/chart-series truth and no shared API/CSS widening. Current source aligns. Fresh Product Design acceptance on this exact implementation HEAD remains an Integration gate, not a QA blocker.
-- **UI Production Engineer:** current feature-branch state records the same bounded implementation, restoration of the pre-existing UTF-8 BOM and honest non-executed evidence; it aligns with the exact diff. The current PR HEAD is one owned-state commit ahead of product/test HEAD `e6a861a9c94e32839fec387b4b33ceed9e100ece`; compare evidence confirms that last commit changes only `UI_IMPLEMENTATION_STATE.md`.
-- **Development Integrator:** lifecycle-stale at completed REPORT008 merge and contains no conflicting durable rule. It must remain `NO_MERGE` until fresh REPORT009 same-head Product Design acceptance exists.
-- **Team Memory:** lifecycle-level generic REPORT009 handoff is superseded for slice selection by the newer Product Design/Workstream boundary; durable invariants remain aligned.
-- **Decision Log / North Star:** aligned; no durable decision changed.
+- **Product Design Director:** current REPORT010 READY boundary explicitly authorizes this exact Pie Chart shell migration to existing `ChartPanel`, requires default `h2`, preserved render gate/trust action/260px/Pie behavior, and forbids shared API/CSS widening. Current source aligns.
+- **UI Production Engineer:** current state records the same bounded implementation and honest non-executed evidence; aligned.
+- **Development Integrator:** lifecycle-stale at completed REPORT009 integration; it contains no conflicting durable rule and must wait for fresh same-head Product Design acceptance.
+- **Team Memory / Decision Log / North Star:** durable invariants align; no design-system rule changed.
 
 Current contradiction classification: **NONE / no QA BLOCKING contradiction**.
 
 ## System-fit judgment
 
-REPORT009 is a clean convergence slice. It completes the Sales chart-shell migration onto the already-proven `ChartPanel` grammar without absorbing report state, Recharts or analytics semantics into the Design System. It improves semantic hierarchy and visual consistency while preserving the Arabic-first, multi-device and behavior-isolation contracts.
+REPORT010 is a clean convergence slice. It extends the already-established analytical `ChartPanel` language from Area/Bar usage to the Churn Risk Pie visualization without absorbing chart or customer-risk semantics into the Design System. The result is more coherent, semantic and maintainable while preserving behavior and Arabic-first multi-device contracts.
 
 Release/runtime gates remain separate from this development approval.
 
 ### Cross-role handoff
 - **To:** Product Design Director for fresh exact-head acceptance; Development Integrator after that acceptance.
-- **What changed:** Design QA independently reviewed PR #56 and issued `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` on exact HEAD `9f07979508c8139f579afbde0397672437eef992`.
-- **Preserve:** exact second-chart title; no invented description/action/trust/blocked/empty semantics; 200px loading/data branch; chartData/BarChart/two-series contract; first Sales ChartPanel and all metric/filter/trust/query/cache/service/calculation/permission/routing/`AnalyticsGate`/export/print/business truth; existing shared `ChartPanel` API/CSS; one-chart/one-page scope.
+- **What changed:** Design QA independently reviewed PR #57 and issued `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` on exact HEAD `d5ac5becd8a9a64080022365407d60febaefe96e`.
+- **Preserve:** exact render gate, Arabic title, trust/freshness presence rules, 260px body, pieData/PIE_COLORS/Pie/Tooltip/Legend semantics, all page filter/KPI/table/query/trust/calculation/permission/routing/export/print/business truth, existing shared `ChartPanel` API/CSS, and one-page/one-chart scope.
 - **Need from you:** Product Design independently accepts or blocks this same exact HEAD. If accepted and the PR HEAD remains unchanged, Integrator should revalidate Development drift, reviews/threads, mergeability and functional isolation before any merge into `design-system-v2-development`.
 - **Blocker level:** `NONE` from Design QA.
-- **Baseline:** Development pre-state-write `c770fcfe24adc0455346938357291ccb1e9b51c0`; exact reviewed PR #56 HEAD `9f07979508c8139f579afbde0397672437eef992`.
+- **Baseline:** Development pre-state-write `cc1f2582744f416348c3bb4e46fd471886d66b7a`; exact reviewed PR #57 HEAD `d5ac5becd8a9a64080022365407d60febaefe96e`.
 - **Evidence:** `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview/release PASS claimed.
