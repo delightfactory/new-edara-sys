@@ -8,6 +8,7 @@ import ReportFilterBar, { type DateRange } from '@/components/reports/ReportFilt
 import TrustStateBadge from '@/components/reports/TrustStateBadge'
 import FreshnessIndicator from '@/components/reports/FreshnessIndicator'
 import ResponsiveCollection from '@/components/patterns/ResponsiveCollection'
+import ChartPanel from '@/components/patterns/ChartPanel'
 import Card from '@/components/patterns/Card'
 import KeyValueList from '@/components/patterns/KeyValueList'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
@@ -150,17 +151,16 @@ export default function ProductPerformancePage() {
       </div>
 
       {/* Chart */}
-      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-primary)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', boxShadow: 'var(--shadow-sm)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--text-primary)' }}>أعلى 15 منتجاً بالإيراد</div>
-            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: '2px' }}>مرتب تنازلياً حسب صافى الإيراد</div>
-          </div>
-          <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
+      <ChartPanel
+        title="أعلى 15 منتجاً بالإيراد"
+        description="مرتب تنازلياً حسب صافى الإيراد"
+        action={(
+          <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', flexWrap: 'wrap' }}>
             {salesTrust && <TrustStateBadge status={salesTrust.status as TrustStatus} domain="sales" size="sm" />}
             {salesTrust && <FreshnessIndicator lastCompletedAt={salesTrust.last_completed_at} isStale={salesTrust.is_stale} />}
           </div>
-        </div>
+        )}
+      >
         {tableLoading ? <SkeletonCard height={240} /> : chartData.length === 0 ? (
           <div style={{ height: 240, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>لا توجد بيانات</div>
         ) : (
@@ -174,7 +174,7 @@ export default function ProductPerformancePage() {
             </BarChart>
           </ResponsiveContainer>
         )}
-      </div>
+      </ChartPanel>
 
       {/* Product details */}
       <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-primary)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
