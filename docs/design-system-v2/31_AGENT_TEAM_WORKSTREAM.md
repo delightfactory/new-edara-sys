@@ -98,53 +98,54 @@ Owner role for immediate next action: UI Production Engineer
 
 Representative surface:
 - `src/pages/reports/ChurnRiskPage.tsx`
-- section `قائمة العملاء حسب خطر التسرب` only.
+- section `تفاصيل العملاء — مرتب: معرض للخطر أولاً` only.
 
 System-pattern intent:
-- deepen the already-proven Reports responsive collection grammar on a distinct six-fact churn-risk row shape rather than continue low-value chart-shell repetition;
+- deepen the already-proven Reports responsive collection grammar on the actual current six-fact RFM row contract, rather than invent a second data shape or continue low-value chart-shell repetition;
 - Desktop preserves the current dense semantic comparison table while Tablet/Mobile deliberately compose the same caller-owned row truth with the existing presentation-only `ResponsiveCollection + Card + KeyValueList` grammar;
 - exactly one renderer is mounted for the active device; hidden duplicate Desktop/Mobile surfaces are not acceptable;
-- shared components remain presentation-only and must not absorb churn classification, recency, monetary, customer-identity, query or trust semantics.
+- shared components remain presentation-only and must not absorb risk classification, RFM score, recency, frequency, monetary, customer identity, query or trust semantics.
 
 In scope:
-- migrate only the ready-state customer detail collection under `قائمة العملاء حسب خطر التسرب`;
-- **Desktop:** retain the existing six columns in the existing order: `العميل`, `آخر تعامل`, `عدد الفواتير`, `إجمالي الإنفاق`, `متوسط الفاتورة`, `حالة الخطر`, with existing compact density and values; add/retain proper column-header semantics (`th scope="col"`) without changing content;
-- **Tablet/Mobile:** render the same six facts through `ResponsiveCollection + Card + KeyValueList`; customer identity remains the card lead and preserves both the resolved customer name/fallback and visible customer ID; Arabic identity text must wrap safely without horizontal page drift;
-- preserve `RecencyCell` exactly for `آخر تعامل`, `formatNumber` for invoice count, `formatCurrency` for spend, the existing `row.invoice_count ? formatCurrency(row.spend_90d / row.invoice_count) : '—'` average-order calculation, and `RiskBadge` exactly for risk status;
-- preserve current loading and empty copy/precedence exactly; preserve existing page-level SystemHealth/trust/freshness behavior exactly and do not invent a new table-level blocked/failed semantic branch;
-- preserve explicit LTR treatment/formatting already required by numeric/date values while keeping the surrounding Arabic-first RTL composition;
-- rely on shared semantic Card/KeyValueList styling for dark mode; no page-local palette fork.
+- migrate only the blocked/loading/empty/ready customer detail collection under `تفاصيل العملاء — مرتب: معرض للخطر أولاً` into the established responsive orchestration while preserving the section shell/header and Trust/Freshness cluster;
+- **Desktop:** retain the existing six columns in the existing order: `العميل`, `التصنيف`, `RFM Score`, `أيام منذ آخر شراء`, `تكرار (90 يوم)`, `قيمة (90 يوم)`, with existing compact density, values and row order; add proper column-header semantics (`th scope="col"`) without changing content;
+- **Tablet/Mobile:** render exactly the same six facts through `ResponsiveCollection + Card + KeyValueList`; customer identity remains the card lead and preserves the current display rule: resolved `customer_name` when present, otherwise the existing truncated `customer_id` fallback only; do not invent an additional visible ID or new content;
+- preserve `RiskBadge` exactly for `risk_label`, the exact `rfm_score` value, `RecencyCell` exactly for `recency_days`, the exact `frequency_l90d` value with `×`, and `fmtCur(row.monetary_l90d)` exactly for 90-day monetary value;
+- preserve current blocked precedence and exact blocked copy (`بيانات الخطر محجوبة` / `snapshot_customer_risk يحتاج تشغيل ناجح أولاً`), the five `SkeletonCard` rows at height 44 for loading, and exact empty copy `لا توجد بيانات — شغّل watermark sweep أولاً`;
+- preserve current page-level SystemHealth/trust/freshness behavior exactly; no new table-level state semantics, calculation, sorting or customer-risk interpretation;
+- preserve existing LTR treatment for RFM/frequency/monetary/recency facts inside the Arabic-first RTL composition;
+- rely on shared semantic Card/KeyValueList styling for dark mode; long Arabic customer names must wrap safely with `min-width: 0`/safe wrapping rather than introduce page-level horizontal drift.
 
 Device/state/accessibility acceptance:
-- **Desktop:** dense semantic table remains the management comparison surface and does not regress into cards;
-- **Tablet:** intentional shared card/key-value composition with safe Arabic wrapping and no page-level horizontal drift;
+- **Desktop:** dense semantic table remains the management comparison surface and does not regress into cards; local table overflow remains contained to the table region;
+- **Tablet:** intentional shared card/key-value composition, with the five non-identity facts suitable for a compact two-column `KeyValueList` and safe Arabic wrapping;
 - **Mobile:** single-column shared cards with no horizontal table dependency;
-- exactly one device renderer is mounted at a time;
-- loading and empty states remain single and exact; no duplicate state surfaces by breakpoint;
+- exactly one device renderer is mounted at a time through `ResponsiveCollection`;
+- blocked/loading/empty states remain singular and exact; ready-state content is not duplicated in the accessibility tree;
 - Desktop headers expose column-header scope; Tablet/Mobile fact anatomy keeps shared `dl/dt/dd` semantics through `KeyValueList`;
-- no new interactive control, focus path or touch target is introduced.
+- no new interactive control, focus path, keyboard behavior, hover dependency or touch target is introduced.
 
 Focused test intent:
-- Desktop/Tablet/Mobile renderer selection and single-renderer behavior;
-- exact loading/empty precedence and copy;
-- six-field row/card mapping and order;
-- customer resolved-name/fallback plus visible customer ID;
-- unchanged average-order calculation/fallback;
-- unchanged `RecencyCell` and `RiskBadge` semantics;
-- semantic Desktop column headers and responsive Arabic containment.
+- Desktop/Tablet/Mobile renderer selection and exactly-one-renderer behavior;
+- exact blocked/loading/empty precedence and copy, including five 44px loading skeletons;
+- exact six-field Desktop header order and row/card fact mapping;
+- current customer-name versus truncated-ID fallback behavior, with no invented extra identity field;
+- unchanged `RiskBadge`, `rfm_score`, `RecencyCell`, `frequency_l90d` and `fmtCur(monetary_l90d)` semantics;
+- semantic Desktop `scope="col"`, Tablet/Mobile `KeyValueList` anatomy, LTR numeric treatment and long-Arabic containment.
 
 Explicit exclusions:
 - REPORT010 pie `ChartPanel` and all chart behavior;
 - KPI grid and all report filter/date controls;
 - SystemHealthBar/trust/freshness redesign or new state semantics;
 - `RiskBadge` / `RecencyCell` semantic redesign;
-- query hooks, calculations, churn classification, sorting/order, backend/schema/RPC/cache, permissions/RBAC/RLS, routing/export/print/business behavior;
+- `CustomerRiskRow` type, query hooks, RPC/service contracts, calculations, RFM/churn classification, sorting/order, backend/schema/cache, permissions/RBAC/RLS, routing/export/print/business behavior;
+- any invoice-count, total-spend, average-invoice or other facts not present in the current `CustomerRiskRow` contract;
 - any other Reports/Analytics page or second responsive collection;
 - any material API/CSS change to `ResponsiveCollection`, `Card` or `KeyValueList`;
 - Settings/Admin, remaining Work/Field debt, Global convergence and deployment/workflow changes.
 
 Stop condition:
-- if implementation requires material shared API/CSS widening, simultaneous hidden duplicate device surfaces, or any functional/data/trust semantic change, mark `DS2-REPORT-013` `BLOCKED` and return to Product Design rather than expanding the PR.
+- if implementation requires material shared API/CSS widening, simultaneous hidden duplicate device surfaces, a new data field/calculation, or any functional/data/trust semantic change, mark `DS2-REPORT-013` `BLOCKED` and return to Product Design rather than expanding the PR.
 
 ## Product migration roadmap
 
