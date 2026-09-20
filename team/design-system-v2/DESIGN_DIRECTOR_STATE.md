@@ -4,98 +4,103 @@
 
 - Review date: `2026-09-20`.
 - Authoritative branch: `design-system-v2-development`.
-- Exact Development HEAD immediately before this state write: `4a8152ad7aac09237366fe6ca892f9f795fe2ac0`.
+- Exact Development HEAD immediately before this state write: `13e237277fb2f56bc074bf94a86e0d620d65b4c0`.
 - Current integrated product HEAD: `9433ec1623a812d1b47d93bffad7e1c537caaa91` from completed `DS2-REPORT-011` / PR #58.
 - Active slice: `DS2-REPORT-012 — Customer Health responsive detail-collection convergence`.
-- Slice state: `READY`.
-- Active implementation PR: none at final Product Design recheck before the boundary was recorded.
+- Active implementation PR: `#59 — DS2-REPORT-012: converge Customer Health responsive collection`.
+- Exact PR HEAD independently reviewed: `f92e25a4ad6afa0303235d8971c20e028fe8a9c5`.
+- PR state at final Product Design recheck: `OPEN / DRAFT / mergeable=true`.
 - Representative surface: `src/pages/reports/CustomerHealthPage.tsx`, section `تفاصيل العملاء — أعلى 50 حسب القيمة` only.
-- Product Design disposition: `READY — IMPLEMENTATION BOUNDARY AUTHORIZED`.
+- Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER` on exact HEAD `f92e25a4ad6afa0303235d8971c20e028fe8a9c5`.
+- Design QA on the same exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` with `TESTS_AUTHORED_NOT_EXECUTED`.
 - Build/test/lint/runtime/preview/release PASS: not claimed.
 
 ## What changed since the previous state
 
-REPORT011 is now integrated. With no implementation PR active, I inspected the exact latest Development baseline and bounded the previously generic REPORT012 queue item to one concrete dependency-safe presentation concern: Customer Health's desktop-only top-50 detail table.
+REPORT012 moved from a pre-implementation READY boundary to an exact-head implementation closeout. I independently inspected the feature source/diff and shared collection contracts before comparing peer states.
 
-The workstream now authorizes UI Production to migrate only that collection to the existing `ResponsiveCollection + Card + KeyValueList` device-composition grammar while preserving all customer-health data, trust, status and snapshot semantics.
+The implemented result matches the authorized design-system intent: Desktop retains the compact Customer Health comparison table, while Tablet and Mobile now receive deliberate shared card composition from the same unchanged row truth through the existing presentation-only `ResponsiveCollection + Card + KeyValueList` grammar.
 
 ## Independent Product Design judgment
 
-**READY — Customer Health responsive detail-collection convergence is the correct next system slice.**
+**PASS — NO DESIGN-SYSTEM BLOCKER on exact PR HEAD `f92e25a4ad6afa0303235d8971c20e028fe8a9c5`.**
 
-The Reports workstream has now proved `ChartPanel` across four analytical pages. Repeating another chart-shell migration would add less system depth than addressing an obvious cross-device collection gap: `CustomerHealthPage` still exposes a dense desktop table behind horizontal overflow with no deliberate Tablet/Mobile composition.
+This is the correct system-level evolution, not page-local beautification. The slice proves the responsive collection grammar on a second Reports row shape and removes a genuine Mobile/Tablet weakness without sacrificing Desktop management density or moving Customer Health semantics into the shared layer.
 
-REPORT006 already proved the correct domain-agnostic mechanism: `ResponsiveCollection` mounts exactly one device renderer while callers retain their data/state/business truth. Reusing that contract on a different row shape advances the North Star at the shared grammar level rather than beautifying a page in isolation.
+The implementation does not require any shared API/CSS widening and does not create a competing responsive pattern.
 
-No shared component change is required by source inspection. If implementation proves otherwise, the slice must stop as `BLOCKED` instead of widening scope.
+## Exact-head Product Design findings
 
-## Exact REPORT012 boundary
+### System coherence / hierarchy — PASS
 
-### In scope
+- The section remains one Customer Health capability with one data truth and one mounted device renderer.
+- Desktop preserves the existing five-column comparison order and information density.
+- Tablet/Mobile reuse shared `Card + KeyValueList` rather than inventing page-local responsive primitives.
+- Customer identity remains the visual lead in cards; recency, frequency, 90-day monetary value and active/dormant status remain supporting labelled facts.
+- No unrelated page shell, KPI, filter, date-control or report redesign entered the slice.
 
-Only the section `تفاصيل العملاء — أعلى 50 حسب القيمة` in `src/pages/reports/CustomerHealthPage.tsx`:
+### Device composition / Arabic / containment — PASS at source level
 
-- preserve the current outer section title and Trust/Freshness cluster;
-- keep `isBlocked` as the higher-priority branch with the exact current blocked semantics/copy;
-- put the non-blocked loading/empty/ready collection path behind `ResponsiveCollection<CustomerHealthRow>` using the existing `rows` and `isLoading` truth;
-- keep the existing loading skeleton and exact empty-state copy;
-- Desktop keeps the current five-column order/value semantics and `RecencyCell`, with proper `th scope="col"` semantics;
-- Tablet/Mobile use shared `Card + KeyValueList` composition for the same row truth: customer identity, recency, frequency, 90-day monetary value and active/dormant status;
-- preserve current customer-name fallback behavior and all numeric/currency/status formatting/meaning;
-- preserve the `stats.total > 50` informational footer and exact count/copy meaning without per-device duplication;
-- add focused source-level tests covering device selection, single-renderer behavior, blocked/loading/empty precedence, row mapping and footer behavior.
+- **Desktop:** semantic five-column table is retained, including local overflow containment where needed; `th scope="col"` improves table semantics without changing content.
+- **Tablet:** deliberate two-column card/key-value composition uses the established shared responsive grid.
+- **Mobile:** single-column cards replace the Desktop table; the table is not mounted concurrently.
+- Long Arabic customer names and fallback identifiers are explicitly contained with `minWidth: 0` / `overflowWrap: anywhere` at the card lead.
+- Frequency and monetary values retain explicit LTR direction; `RecencyCell` keeps its prior LTR treatment.
+- Dark-mode presentation continues through existing shared semantic Card/KeyValueList surfaces; no page-local palette was introduced.
 
-### Device / RTL / dark / accessibility acceptance
+### State / trust / accessibility — PASS
 
-- **Desktop:** retain the compact five-column comparison density and all values; local table overflow only when necessary.
-- **Tablet:** shared two-column card grid is acceptable; no page-level horizontal scrolling; identity remains primary and supporting facts remain scan-friendly.
-- **Mobile:** single-column card stack; desktop table is not mounted; long Arabic customer names/fallback IDs remain contained and readable.
-- **RTL/Arabic:** logical RTL labels/layout; long names wrap; existing LTR number/currency semantics remain explicit.
-- **Dark mode:** mobile/tablet cards and key/value composition use existing shared semantic V2 tokens only.
-- **Accessibility:** one renderer in the DOM; semantic desktop column headers; explicit card label/value pairs; singular blocked/loading/empty states; no new interactive or touch target is introduced.
+- `BLOCKED` / `FAILED` remains the higher-priority branch with the exact existing blocked copy.
+- Loading keeps the existing five `SkeletonCard height={44}` contract; empty copy remains exact; ready-state renderer selection is delegated to the existing `ResponsiveCollection` contract.
+- Trust/Freshness remain in the same outer section header and keep the same caller-owned presence rules.
+- The `stats.total > 50` informational footer remains caller-owned, renders once after ready data, and is not duplicated by device renderer.
+- Desktop headers are semantic; Tablet/Mobile fact anatomy inherits shared `dl/dt/dd` semantics from `KeyValueList`.
+- No new interactive control, focus path, keyboard behavior or touch target was introduced.
 
-### Explicit exclusions
+### Functional isolation — PASS
 
-REPORT012 must not change:
-- page header or raw `asOfDate` date control;
-- `SystemHealthBar`, KPI cards, Trust/Freshness rules, `RecencyCell` thresholds/colors or active/dormant meaning;
-- outer detail-section shell/header;
-- snapshot/date selection, hooks, row order/top-50 logic, query/cache/calculation/trust/permission/RBAC/RLS/routing/export/print/business semantics;
-- `ResponsiveCollection`, `Card`, `KeyValueList` APIs/CSS or any other shared component;
-- any second Reports page;
-- backend/schema/RPC/deployment/workflow behavior.
+The implementation preserves the existing hooks, `rows`, `stats`, top-50/order truth, snapshot/date selection, `RecencyCell` thresholds/colors, active/dormant meaning, formatting, query/cache/calculation/trust/permission/RBAC/RLS/routing/export/print/business semantics.
+
+No shared component API/CSS, backend/schema/RPC/service, workflow, deployment, Vercel, GitHub Actions or `main` change is part of the implementation slice.
+
+### Test artifact / evidence honesty — PASS
+
+Focused tests protect the material design-system risks: Desktop/Tablet/Mobile renderer isolation, semantic Desktop headers, row-fact fidelity, long-name/fallback containment, LTR numeric presentation, blocked/loading/empty precedence, Trust/Freshness presence and the `>50` footer contract.
+
+Evidence remains correctly labelled `TESTS_AUTHORED_NOT_EXECUTED`. Product Design does not claim build, lint, test execution, runtime visual validation, preview or release readiness from source review.
 
 ## Peer-state synthesis / contradiction handling
 
-Independent judgment was formed from the exact Customer Health source, existing Product Performance responsive-collection proof, shared `ResponsiveCollection` contract, component-system guidance and migration roadmap, then compared with peer states.
+Independent Product Design judgment was formed first from the exact feature source/diff, baseline Customer Health source, shared `ResponsiveCollection` / `KeyValueList` contracts and the North Star/device/component/migration guidance, then compared with peer states.
 
-- **Development Integrator:** fresh and aligned; REPORT011 is merged and REPORT012 is the sole next READY queue item.
-- **Team Memory:** correct on REPORT011 integration and overall direction; its generic REPORT012 wording is lifecycle-stale after this exact boundary but not contradictory. It does not need a direction-level rewrite for this routine slice selection.
-- **UI Production Engineer / Design QA:** prior-slice states are expectedly stale because no REPORT012 implementation exists yet; neither records a conflicting active implementation or blocker.
-- **Decision Log / North Star / component and migration docs:** aligned; no durable design rule changed.
+- **Design QA:** fresh and aligned; issued `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` on the same exact PR HEAD.
+- **Development Integrator:** fresh and aligned; all integration checks were otherwise clear and it explicitly paused only for this exact-head Product Design closeout.
+- **UI Production Engineer:** Development-branch copy is lifecycle-stale from REPORT011, but the PR's implementation evidence and changed-file scope are consistent with the bounded slice; no conflicting blocker is recorded.
+- **Team Memory:** lifecycle-level integrated truth remains REPORT011 until merge; its generic REPORT012 wording is superseded by the active workstream/Director boundary but contains no conflicting durable rule.
+- **Decision Log / North Star / component and migration docs:** aligned; no durable rule changed.
 
 Current contradiction classification: **NONE**.
 
-## Risks / stop conditions
+## Residual risks / stop conditions
 
-- The current Customer Health blocked state sits outside loading/empty/ready presentation and must remain higher priority; do not force it into `ResponsiveCollection` by changing that shared API.
-- The top-50 informational footer is part of report meaning and must remain visible under the same ready-data condition without being duplicated across renderers.
-- Do not turn the slice into a Customer Health page redesign, DateField migration, DataTable abstraction effort, state-grammar rewrite or cross-report cleanup.
-- If exact preservation requires shared API/CSS widening or functional/data/business semantic change, mark `BLOCKED` and return to Product Design.
+- Runtime visual/device validation is still unproven and remains a later controlled milestone gate; no `RUNTIME_VISUAL_PASS` is claimed.
+- Any movement of PR #59 HEAD invalidates this Product Design acceptance and the current QA exact-head approval.
+- Integration must still revalidate current Development drift from the feature baseline, review threads, mergeability, changed-file scope and functional isolation before merging.
+- REPORT012 must not expand into Customer Health date-field/KPI/filter/state redesign or broader Reports cleanup before this PR is integrated.
 
 ## Repository actions this run
 
 - Completed the mandatory shared-memory bootstrap in the required order.
-- Inspected issue #27, current Development HEAD, open PRs targeting Development, REPORT011 integration state, current Reports workstream, component/migration guidance, `CustomerHealthPage`, the prior Product Performance collection proof and shared `ResponsiveCollection` contract.
-- Confirmed there was no active implementation PR and no blocking cross-role contradiction before selecting the exact REPORT012 concern.
-- Updated `31_AGENT_TEAM_WORKSTREAM.md` with the exact representative surface, system-pattern intent, device/state/accessibility acceptance, exclusions and block condition.
-- Did not update `TEAM_MEMORY.md` or `DECISION_LOG.md` because no overall design direction or durable rule changed.
-- Did not implement product code, modify peer states, merge a PR, touch `main`, trigger/rerun GitHub Actions, use hosted CI, deploy Vercel or modify preview branches.
+- Inspected issue #27, current Development HEAD, all open PRs targeting Development, PR #59 exact HEAD/diff/review status, baseline and implemented Customer Health source, focused test artifact, shared `ResponsiveCollection` / `KeyValueList` contracts, and relevant component/page/device/migration guidance.
+- Confirmed PR #59 remains the single active implementation slice and has no review threads.
+- Recorded Product Design PASS on exact PR HEAD `f92e25a4ad6afa0303235d8971c20e028fe8a9c5`.
+- Did not update `TEAM_MEMORY.md`, `DECISION_LOG.md` or the workstream because no overall system direction, durable rule or queue boundary changed.
+- Did not implement product code, modify peer states, merge the PR, touch `main`, trigger/rerun GitHub Actions, use hosted CI, deploy Vercel or modify preview branches.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer.
-- **What changed:** REPORT012 is now exactly bounded and implementation-authorized as Customer Health responsive detail-collection convergence on `src/pages/reports/CustomerHealthPage.tsx` section `تفاصيل العملاء — أعلى 50 حسب القيمة` only.
-- **Preserve:** blocked/loading/empty/ready precedence and exact copy; five existing row facts/order/formatting/status meaning; Trust/Freshness and >50 footer semantics; one mounted renderer per device; all snapshot/query/cache/trust/permission/routing/export/print/business truth; unchanged shared component APIs/CSS; no Actions/Vercel/preview/`main` activity.
-- **Need from you:** branch from the latest Development HEAD after this state write, implement only the bounded collection migration plus focused tests, open one PR targeting `design-system-v2-development`, and mark BLOCKED rather than widening scope if shared/API or functional semantics would need to change.
+- **To:** Development Integrator.
+- **What changed:** Product Design independently accepted PR #59 exact HEAD `f92e25a4ad6afa0303235d8971c20e028fe8a9c5` with `PASS — NO DESIGN-SYSTEM BLOCKER`; QA is already GREEN-DEV on the same exact HEAD.
+- **Preserve:** one-section Customer Health scope; exact blocked/loading/empty/ready and footer semantics; dense semantic Desktop table; deliberate Tablet/Mobile shared-card composition; one mounted renderer; Arabic/RTL containment and explicit LTR numeric treatment; all snapshot/top-50/query/cache/calculation/trust/permission/routing/export/print/business truth; unchanged shared APIs/CSS; no Actions/Vercel/preview/`main` activity.
+- **Need from you:** revalidate unchanged PR HEAD/base, current Development drift, review threads, mergeability, changed-file scope and functional isolation; if all normal gates remain valid, integrate PR #59 into `design-system-v2-development`. Any PR HEAD movement requires fresh Product Design + QA review.
 - **Blocker level:** `NONE`.
-- **Baseline:** Development boundary commit `4a8152ad7aac09237366fe6ca892f9f795fe2ac0`; integrated product merge `9433ec1623a812d1b47d93bffad7e1c537caaa91`.
+- **Baseline:** Development HEAD before this state write `13e237277fb2f56bc074bf94a86e0d620d65b4c0`; exact accepted PR #59 HEAD `f92e25a4ad6afa0303235d8971c20e028fe8a9c5`; integrated product merge `9433ec1623a812d1b47d93bffad7e1c537caaa91`.
