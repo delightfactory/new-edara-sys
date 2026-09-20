@@ -4,109 +4,90 @@
 
 - Run date: `2026-09-20`.
 - Development branch: `design-system-v2-development`.
-- Exact branch-creation baseline: `5da2a58d1f5df46b91bc32b969736b42d4cb434b`.
-- Development HEAD rechecked immediately before branch creation: `5da2a58d1f5df46b91bc32b969736b42d4cb434b`.
-- Feature branch: `design-system-v2/report-012-customer-health-responsive-collection`.
-- Draft PR: `#59 — DS2-REPORT-012: converge Customer Health responsive collection`.
-- Product/test HEAD before this owned-state handoff write: `ebf507a91b9a0c8dec9d5260500526af59e3b707`.
-- Active slice: `DS2-REPORT-012 — Customer Health responsive detail-collection convergence`.
-- Representative surface: `src/pages/reports/CustomerHealthPage.tsx` → `تفاصيل العملاء — أعلى 50 حسب القيمة` only.
-- Disposition: `REVIEW — IMPLEMENTATION COMPLETE; FRESH EXACT-HEAD DESIGN QA + PRODUCT DESIGN REVIEW REQUIRED`.
-- Evidence: `TESTS_AUTHORED_NOT_EXECUTED`.
+- Exact Development HEAD inspected before this owned-state write: `2f7649c6e528a756c00cc52878fa98d62e82bf82`.
+- Active slice: `DS2-REPORT-013 — Churn Risk responsive detail-collection convergence`.
+- Representative surface: `src/pages/reports/ChurnRiskPage.tsx` → customer detail collection only.
+- Active implementation PR targeting Development: none.
+- Disposition: `BLOCKED — PRODUCT DESIGN BOUNDARY DOES NOT MATCH CURRENT SOURCE/DATA CONTRACT`.
+- Product code/test branch: not created.
+- Test/build/lint/runtime/preview/release PASS: not claimed.
 
 ## Independent implementation judgment
 
-The bounded Customer Health concern is a direct fit for the already-integrated shared `ResponsiveCollection` + `Card` + `KeyValueList` pattern. The previous fixed table was useful on Desktop but not a coherent Tablet/Mobile operational reading surface. The correct production change is therefore to keep the compact semantic five-column Desktop table while adding deliberate Tablet/Mobile card renderers from the same row data, without changing any RFM, trust, query, ordering, cap, permission or workflow meaning.
+REPORT013 cannot be implemented safely from the current Development baseline without violating the UI-only isolation contract.
 
-No shared primitive API/CSS widening is required. Blocked/loading/empty remain page-owned states, and the existing informational `>50` footer remains a single ready-data footer outside device renderers.
+On exact Development HEAD `2f7649c6e528a756c00cc52878fa98d62e82bf82`, the live Churn Risk table and `CustomerRiskRow` contract do not contain the six facts Product Design bounded for REPORT013.
+
+Current source truth in `ChurnRiskPage.tsx` is six columns in this order:
+- `العميل`
+- `التصنيف`
+- `RFM Score`
+- `أيام منذ آخر شراء`
+- `تكرار (90 يوم)`
+- `قيمة (90 يوم)`
+
+Current `CustomerRiskRow` fields exposed by `src/lib/services/analyticsClient.ts` are:
+- `customer_id`
+- `customer_name`
+- `risk_label`
+- `rfm_score`
+- `recency_days`
+- `frequency_l90d`
+- `monetary_l90d`
+
+By contrast, the current Product Design boundary/workstream requires preserving a different six-fact shape:
+- `العميل`
+- `آخر تعامل`
+- `عدد الفواتير`
+- `إجمالي الإنفاق`
+- `متوسط الفاتورة`
+- `حالة الخطر`
+
+It also requires preserving the expression `row.invoice_count ? formatCurrency(row.spend_90d / row.invoice_count) : '—'`, but neither `invoice_count` nor `spend_90d` exists on the current `CustomerRiskRow`, and that expression is not present in the current Churn Risk page.
+
+Therefore implementing the recorded boundary would require inventing new row semantics or changing query/service/data behavior, which is explicitly forbidden for this UI workstream. The safe action is to stop before branch creation and return the slice to Product Design for corrected bounding against the exact current source.
 
 ## Material implementation progress
 
-- Completed the mandatory shared-memory bootstrap in the required order, then inspected issue #27, exact Development HEAD and all open PRs targeting Development.
-- Confirmed no implementation PR targeted `design-system-v2-development` before starting.
-- Formed the implementation judgment from current Customer Health source and existing shared responsive collection contracts before comparing peer states; Product Design bounding and peer constraints are aligned with that judgment.
-- Created `design-system-v2/report-012-customer-health-responsive-collection` from exact Development HEAD `5da2a58d1f5df46b91bc32b969736b42d4cb434b`.
-- Kept the Desktop five-column table and added `scope="col"` to each column header.
-- Replaced device-independent fixed-table presentation with shared `ResponsiveCollection<CustomerHealthRow>` and retained Desktop table density through `renderDesktop`.
-- Added Tablet/Mobile cards with shared `Card` + `KeyValueList`: two value columns on Tablet and one on Mobile.
-- Preserved customer identity as the card lead, added long-Arabic-name containment, retained fallback customer ID, and made frequency/monetary values explicit LTR without changing displayed facts.
-- Preserved `RecencyCell`, active/dormant state labels/colors and all original row semantics.
-- Preserved blocked trust-state precedence outside the responsive collection.
-- Preserved the existing custom loading state of five `SkeletonCard height={44}` rows and exact empty-state copy.
-- Preserved the `stats.total > 50` informational footer once, outside device renderers, and only when ready rows exist.
-- Authored focused `CustomerHealthPage.test.tsx` coverage for Desktop/Tablet/Mobile renderer isolation, semantic Desktop headers, responsive field/status fidelity, long-name containment, explicit LTR values, blocked/loading/empty precedence, trust actions and footer semantics.
-- Opened Draft PR #59 targeting `design-system-v2-development`.
-- Exact baseline-to-feature comparison before this state write showed only `CustomerHealthPage.tsx` and the new `CustomerHealthPage.test.tsx` in the product/test diff: 3 commits ahead, 0 behind.
-
-Files touched in this slice:
-- `src/pages/reports/CustomerHealthPage.tsx`
-- `src/pages/reports/CustomerHealthPage.test.tsx`
-- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
-
-No shared component/CSS/API change was needed.
+- Completed the mandatory shared-memory bootstrap in the required order.
+- Inspected issue #27, current Development HEAD, all open PRs targeting Development, current Churn Risk page source and the actual `CustomerRiskRow` service type.
+- Confirmed no implementation PR targets `design-system-v2-development`.
+- Formed implementation judgment from current source/data contracts, then compared it with Product Design/workstream handoff.
+- Detected a material cross-role/source contradiction before creating a feature branch.
+- Did **not** create a branch, PR, product-code change or test artifact because the current bounded acceptance contract cannot be satisfied without crossing the functional boundary.
 
 ## Preserve / verified boundaries
 
-- Page header, date input, `SystemHealthBar` and all KPI `MetricCard`s remain unchanged.
-- `useSystemTrustState('customers')`, `useTrustForComponent(..., 'snapshot_customer_health')` and `useCustomerHealthSummary({ asOfDate })` calls remain unchanged.
-- `BLOCKED` / `FAILED` still exclusively controls the existing blocked detail state.
-- Desktop row identity, recency, frequency, monetary and active/dormant meaning remain unchanged.
-- Existing top-50 order/cap and `stats.total` meaning remain unchanged.
-- Exact empty copy remains `لا توجد بيانات snapshot لهذا التاريخ — شغّل watermark sweep أولاً`.
-- Exact informational footer meaning/copy remains `يعرض أعلى 50 عميلاً حسب القيمة — {stats.total} إجمالاً (مُجمَّعة في قاعدة البيانات)`.
-- No DB/migration/RPC/service/RBAC/RLS/route-guard/workflow-state/query-cache/validation/calculation/permission/business-semantic change occurred.
-- No GitHub Actions/hosted CI, Vercel/preview branch or `main` activity occurred.
+- Do not modify DB/migrations/RPC/services/query contracts to manufacture the Product Design facts.
+- Do not reinterpret `rfm_score`, `frequency_l90d` or `monetary_l90d` as invoice-count/spend/average-order semantics.
+- Do not alter churn classification, recency, monetary calculations, row ordering, SystemHealth/trust/freshness, filters, REPORT010 pie chart, KPI grid, permissions/RBAC/RLS/routing/export/print/business behavior.
+- Keep `ResponsiveCollection`, `Card` and `KeyValueList` APIs/CSS unchanged unless a future corrected Product Design boundary explicitly proves a legitimate shared need.
+- No GitHub Actions, hosted CI, Vercel, preview branch or `main` activity.
 
-## Device / Arabic / state / accessibility coverage
+## Evidence / blocker
 
-- **Desktop:** compact five-column table retained; horizontal overflow remains local to the table; all headers now have semantic `scope="col"`.
-- **Tablet:** shared responsive collection renders cards using a deliberate two-column `KeyValueList`, preserving information density without forcing the Desktop table.
-- **Mobile:** shared responsive collection renders one-column key/value cards; long Arabic customer names can wrap with `overflow-wrap:anywhere`; no ordinary page-level horizontal scroll is introduced.
-- **Arabic/RTL:** card hierarchy is Arabic-first and inherits the shared V2 RTL-safe card/key-value grammar; numeric frequency/monetary values explicitly use LTR direction where needed.
-- **Dark mode:** new responsive surfaces use the existing shared `Card`/`KeyValueList` semantic token path; no page-local palette was introduced.
-- **Accessibility:** Desktop column headers now expose `scope="col"`; no new interactive control or invented action/state was introduced.
-- **States:** blocked remains highest priority; custom loading and exact empty states are preserved; ready data mounts exactly one device renderer; footer is not duplicated per renderer.
+Source evidence only; no implementation exists yet.
 
-## Test / execution evidence
+Known blocking contradiction:
+- Product Design/workstream REPORT013 acceptance criteria describe fields and an average-order expression that are absent from the exact current Churn Risk source and `CustomerRiskRow` contract.
+- Proceeding would force forbidden functional/data-contract invention rather than presentation-only convergence.
 
-Evidence: **`TESTS_AUTHORED_NOT_EXECUTED`**.
-
-Focused `CustomerHealthPage.test.tsx` coverage protects:
-- Desktop five-column table/header order, `scope="col"`, row facts and absence of responsive cards;
-- Mobile one-column cards, absence of table/Tablet renderer, customer identity/fallback, long-name containment, all four detail facts and explicit LTR frequency/monetary values;
-- Tablet two-column cards and renderer isolation;
-- blocked-state precedence over responsive collection/loading/ready renderers;
-- existing five-row `44px` loading state;
-- exact empty-state copy;
-- trust badge/freshness presence;
-- `>50` informational footer exactly once on ready data and omission when total is not greater than 50.
-
-Approved sandbox probe executed:
-`pwd; find /mnt/data /home/oai/share -maxdepth 3 \( -name package.json -o -name .git \) 2>/dev/null | head -50`
-Result: only `/home/oai/share` was returned; no repository, `.git` directory or `package.json` was available for execution.
-
-Therefore `npm test`, `npm run build` and `npm run lint` were not executed. No test/build/lint/runtime/preview/release PASS is claimed.
-
-Static source review found no known TypeScript/API blocker after hardening the test fixture to avoid a `string | undefined` matcher inference risk. The implementation consumes existing shared primitives without changing their contracts.
+No test artifact was authored because product implementation did not start. No `SOURCE_REVIEW_PASS`, `TESTS_AUTHORED_NOT_EXECUTED`, local execution, runtime, preview or release PASS is claimed for REPORT013.
 
 ## Peer-state comparison / current risk
 
-This implementation judgment was formed from current source/shared contracts first, then compared against peer states.
+- **Product Design Director:** current and implementation-authorizing, but its REPORT013 source assumptions conflict materially with the exact Development source/data contract.
+- **Design QA:** lifecycle-stale at completed REPORT012; no REPORT013 approval exists.
+- **Development Integrator:** lifecycle-stale at completed REPORT012; must remain `NO_MERGE` because no REPORT013 implementation PR exists.
+- **Team Memory:** still carries the generic REPORT013 placeholder and does not resolve the source mismatch.
+- **Decision Log / North Star:** aligned with stopping here; UI-only isolation and caller-owned business truth prohibit inventing the missing facts.
 
-- **Product Design Director:** current and aligned; explicitly bounded REPORT012 to Customer Health detail presentation, with Desktop semantic table retention, Tablet/Mobile shared cards, exact state/footer preservation and no shared API/CSS widening.
-- **Team Memory:** durable constraints aligned; newer Product Design/workstream/issue handoff supplied the concrete REPORT012 boundary.
-- **Design QA:** no REPORT012 exact-head approval is assumed; fresh source review is required.
-- **Development Integrator:** must remain `NO_MERGE` until Design QA and Product Design both close the same stable exact PR head.
-- **Decision Log / North Star:** aligned; no durable design-system decision changed.
-- Residual risk is fresh exact-head independent review plus non-executed test/build/runtime evidence. No implementation blocker is currently known.
+Current contradiction classification: **BLOCKING**.
 
 ### Cross-role handoff
-- **To:** Design QA + Product Design Director for fresh exact-head review; Development Integrator only after both gates are current on one stable HEAD.
-- **What changed:** Customer Health detail presentation now uses shared responsive collection semantics: dense semantic Desktop table plus Tablet/Mobile `Card + KeyValueList` renderers; focused tests protect renderer isolation, state precedence and footer semantics; Draft PR #59 is open.
-- **Preserve:** one-page detail-collection scope; exact RFM/customer facts, trust/freshness controls, blocked/loading/empty priority/copy, top-50 order/cap, `>50` footer meaning/copy, page header/date/KPIs, all query/cache/calculation/permission/routing/business truth, and unchanged shared primitive APIs/CSS.
-- **Need from you:** independently review the exact current PR #59 HEAD after this state write. Design QA should issue `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` only if that stable exact HEAD passes; Product Design should independently accept/block that same HEAD before Integration acts.
-- **Blocker level:** `NONE` from implementation.
-- **Baseline:** `5da2a58d1f5df46b91bc32b969736b42d4cb434b`.
-- **Product/test HEAD before owned-state write:** `ebf507a91b9a0c8dec9d5260500526af59e3b707`.
-- **PR:** `#59` / `design-system-v2/report-012-customer-health-responsive-collection` -> `design-system-v2-development`.
-- **Evidence:** `TESTS_AUTHORED_NOT_EXECUTED`.
+- **To:** Product Design Director.
+- **What changed:** UI Production found that the authorized REPORT013 six-fact contract does not match the exact current `ChurnRiskPage.tsx` / `CustomerRiskRow` source truth, so implementation was stopped before branch creation.
+- **Preserve:** exact current Churn Risk data/query/calculation/trust semantics; UI-only functional boundary; no shared API/CSS widening; no Actions/Vercel/preview/`main` activity.
+- **Need from you:** re-inspect exact latest Development source and either (a) re-bound REPORT013 around the actual existing six-column RFM row shape for presentation-only responsive convergence, or (b) explicitly move any desired data-shape change into a separate approved functional workstream. Do not ask UI Production to synthesize `invoice_count`, `spend_90d` or average-order semantics from unrelated RFM fields.
+- **Blocker level:** `BLOCKING`.
+- **Baseline:** `2f7649c6e528a756c00cc52878fa98d62e82bf82`.
