@@ -6,6 +6,9 @@ import SkeletonCard from '@/components/reports/SkeletonCard'
 import SystemHealthBar from '@/components/reports/SystemHealthBar'
 import TrustStateBadge from '@/components/reports/TrustStateBadge'
 import FreshnessIndicator from '@/components/reports/FreshnessIndicator'
+import ResponsiveCollection from '@/components/patterns/ResponsiveCollection'
+import Card from '@/components/patterns/Card'
+import KeyValueList from '@/components/patterns/KeyValueList'
 import { Users2, UserX, ActivitySquare } from 'lucide-react'
 
 function toISO(d: Date) { return d.toISOString().split('T')[0] }
@@ -23,6 +26,40 @@ function RecencyCell({ days }: { days: number | null }) {
     <span style={{ color, fontWeight: 600, fontSize: 'var(--text-xs)', direction: 'ltr', display: 'inline-block' }}>
       {days} يوم
     </span>
+  )
+}
+
+function CustomerHealthDetailCards({ items, device }: { items: CustomerHealthRow[]; device: 'mobile' | 'tablet' }) {
+  return (
+    <div className={`ds-responsive-card-grid ds-responsive-card-grid--${device}`}>
+      {items.map(row => (
+        <Card key={row.customer_id} padding="md">
+          <div style={{ marginBlockEnd: 'var(--space-4)', minWidth: 0 }}>
+            <div style={{ color: 'var(--ds-text-primary)', fontWeight: row.customer_name ? 700 : 400, overflowWrap: 'anywhere', minWidth: 0 }}>
+              {row.customer_name
+                ? row.customer_name
+                : <span style={{ fontFamily: 'monospace', color: 'var(--text-muted)', overflowWrap: 'anywhere' }}>{row.customer_id.slice(0, 8)}…</span>}
+            </div>
+          </div>
+          <KeyValueList
+            columns={device === 'tablet' ? 2 : 1}
+            compact
+            items={[
+              { key: 'recency', label: 'أيام منذ آخر بيع', value: <RecencyCell days={row.recency_days} /> },
+              { key: 'frequency', label: 'تكرار (90 يوم)', value: <span dir="ltr">{row.frequency_l90d}×</span> },
+              { key: 'monetary', label: 'قيمة (90 يوم)', value: <span dir="ltr">{fmt(row.monetary_l90d)} ج.م</span> },
+              {
+                key: 'status',
+                label: 'الحالة',
+                value: row.is_dormant
+                  ? <span style={{ color: 'var(--color-danger)', fontSize: '11px', fontWeight: 600 }}>خامد</span>
+                  : <span style={{ color: 'var(--color-success)', fontSize: '11px', fontWeight: 600 }}>نشط</span>,
+              },
+            ]}
+          />
+        </Card>
+      ))}
+    </div>
   )
 }
 
@@ -100,50 +137,62 @@ export default function CustomerHealthPage() {
             <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--color-danger)' }}>بيانات العملاء محجوبة</div>
             <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: 'var(--space-2)' }}>snapshot_customer_health يحتاج إلى تشغيل ناجح أولاً</div>
           </div>
-        ) : isLoading ? (
-          <div style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-            {[1,2,3,4,5].map(i => <SkeletonCard key={i} height={44} />)}
-          </div>
-        ) : rows.length === 0 ? (
-          <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
-            لا توجد بيانات snapshot لهذا التاريخ — شغّل watermark sweep أولاً
-          </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
-              <thead>
-                <tr style={{ background: 'var(--bg-surface-2)' }}>
-                  {['العميل', 'أيام منذ آخر بيع', 'تكرار (90 يوم)', 'قيمة (90 يوم)', 'الحالة'].map(h => (
-                    <th key={h} style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 600, color: 'var(--text-secondary)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-primary)', whiteSpace: 'nowrap' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row: CustomerHealthRow) => (
-                  <tr key={row.customer_id} style={{ borderBottom: '1px solid var(--divider)', transition: 'background 0.1s' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = '')}>
-                    <td style={{ padding: '10px 14px', color: 'var(--text-primary)', fontWeight: row.customer_name ? 600 : 400, fontSize: 'var(--text-xs)' }}>
-                      {row.customer_name ? row.customer_name : <span style={{ fontFamily: 'monospace', color: 'var(--text-muted)' }}>{row.customer_id.slice(0, 8)}…</span>}
-                    </td>
-                    <td style={{ padding: '10px 14px' }}><RecencyCell days={row.recency_days} /></td>
-                    <td style={{ padding: '10px 14px', color: 'var(--text-primary)', fontWeight: 600, direction: 'ltr', textAlign: 'right' }}>{row.frequency_l90d}×</td>
-                    <td style={{ padding: '10px 14px', color: 'var(--text-primary)', direction: 'ltr', textAlign: 'right' }}>{fmt(row.monetary_l90d)} ج.م</td>
-                    <td style={{ padding: '10px 14px' }}>
-                      {row.is_dormant
-                        ? <span style={{ color: 'var(--color-danger)', fontSize: '11px', fontWeight: 600 }}>خامد</span>
-                        : <span style={{ color: 'var(--color-success)', fontSize: '11px', fontWeight: 600 }}>نشط</span>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {stats && stats.total > 50 && (
+          <>
+            <ResponsiveCollection<CustomerHealthRow>
+              items={rows}
+              loading={isLoading}
+              loadingState={(
+                <div style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                  {[1,2,3,4,5].map(i => <SkeletonCard key={i} height={44} />)}
+                </div>
+              )}
+              emptyState={(
+                <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
+                  لا توجد بيانات snapshot لهذا التاريخ — شغّل watermark sweep أولاً
+                </div>
+              )}
+              renderDesktop={desktopRows => (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
+                    <thead>
+                      <tr style={{ background: 'var(--bg-surface-2)' }}>
+                        {['العميل', 'أيام منذ آخر بيع', 'تكرار (90 يوم)', 'قيمة (90 يوم)', 'الحالة'].map(h => (
+                          <th scope="col" key={h} style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 600, color: 'var(--text-secondary)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-primary)', whiteSpace: 'nowrap' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {desktopRows.map(row => (
+                        <tr key={row.customer_id} style={{ borderBottom: '1px solid var(--divider)', transition: 'background 0.1s' }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = '')}>
+                          <td style={{ padding: '10px 14px', color: 'var(--text-primary)', fontWeight: row.customer_name ? 600 : 400, fontSize: 'var(--text-xs)' }}>
+                            {row.customer_name ? row.customer_name : <span style={{ fontFamily: 'monospace', color: 'var(--text-muted)' }}>{row.customer_id.slice(0, 8)}…</span>}
+                          </td>
+                          <td style={{ padding: '10px 14px' }}><RecencyCell days={row.recency_days} /></td>
+                          <td style={{ padding: '10px 14px', color: 'var(--text-primary)', fontWeight: 600, direction: 'ltr', textAlign: 'right' }}>{row.frequency_l90d}×</td>
+                          <td style={{ padding: '10px 14px', color: 'var(--text-primary)', direction: 'ltr', textAlign: 'right' }}>{fmt(row.monetary_l90d)} ج.م</td>
+                          <td style={{ padding: '10px 14px' }}>
+                            {row.is_dormant
+                              ? <span style={{ color: 'var(--color-danger)', fontSize: '11px', fontWeight: 600 }}>خامد</span>
+                              : <span style={{ color: 'var(--color-success)', fontSize: '11px', fontWeight: 600 }}>نشط</span>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              renderTablet={tabletRows => <CustomerHealthDetailCards items={tabletRows} device="tablet" />}
+              renderMobile={mobileRows => <CustomerHealthDetailCards items={mobileRows} device="mobile" />}
+            />
+            {!isLoading && rows.length > 0 && stats && stats.total > 50 && (
               <div style={{ padding: 'var(--space-3) var(--space-5)', fontSize: 'var(--text-xs)', color: 'var(--text-muted)', borderTop: '1px solid var(--divider)' }}>
                 يعرض أعلى 50 عميلاً حسب القيمة — {stats.total} إجمالاً (مُجمَّعة في قاعدة البيانات)
               </div>
             )}
-          </div>
+          </>
         )}
       </div>
     </div>
