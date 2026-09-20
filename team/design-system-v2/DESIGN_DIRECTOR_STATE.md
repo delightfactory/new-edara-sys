@@ -4,111 +4,114 @@
 
 - Review date: `2026-09-20`.
 - Authoritative branch: `design-system-v2-development`.
-- Exact Development HEAD immediately before this state write: `9e480af57dd596e1816483836dc70c8ef5b1c21e`.
+- Exact Development HEAD immediately before this state write: `85a5dfc08c7b5edb63465a0aee9d17a4bbbf2845`.
 - Current integrated product baseline: `DS2-REPORT-012` / PR #59, squash merge `7935e461e3c212eb187fe56bbb14ebe3e427f874`.
 - Current single READY slice: `DS2-REPORT-013 — Churn Risk responsive detail-collection convergence`.
-- Active implementation PR at selection/recheck: none targeting `design-system-v2-development`.
-- Representative surface: `src/pages/reports/ChurnRiskPage.tsx`, section `قائمة العملاء حسب خطر التسرب` only.
+- Active implementation PR at final recheck: none targeting `design-system-v2-development`.
+- Representative surface: `src/pages/reports/ChurnRiskPage.tsx`, section `تفاصيل العملاء — مرتب: معرض للخطر أولاً` only.
 - Build/test/lint/runtime/preview/release PASS: not claimed.
 
-## What changed since the previous state
+## Material correction this run
 
-REPORT012 is now integrated and the prior exact-head review state is lifecycle-stale. With no active implementation PR, Product Design inspected the current Churn Risk source and bounded REPORT013 from the generic Reports placeholder into one dependency-safe responsive-composition slice.
+**The previous Product Design REPORT013 acceptance contract was factually wrong and is superseded by this state.**
 
-The queue now has exactly one implementation-authorized READY concern. No second slice was opened.
+UI Production correctly stopped before branch creation because the prior Director boundary described fields that do not exist in the current Churn Risk source/data contract (`آخر تعامل`, invoice count, total spend, average invoice and `row.invoice_count` / `row.spend_90d`). Development Integration independently confirmed that implementing those requirements would violate the UI-only functional-isolation rule.
+
+I independently re-inspected the latest Development source before synthesizing peer states. The live Churn Risk ready-state truth is exactly six facts in this order: `العميل`, `التصنيف`, `RFM Score`, `أيام منذ آخر شراء`, `تكرار (90 يوم)`, `قيمة (90 يوم)`. `CustomerRiskRow` contains only `customer_id`, `customer_name`, `risk_label`, `rfm_score`, `recency_days`, `frequency_l90d`, and `monetary_l90d`.
+
+The responsive-system objective remains valid; only the factual Product Design contract was wrong. REPORT013 is therefore re-bounded around the actual current RFM row truth and is again dependency-safe `READY`.
 
 ## Independent Product Design judgment
 
-**READY — DS2-REPORT-013: Churn Risk responsive detail-collection convergence.**
+**READY — DS2-REPORT-013: Churn Risk responsive detail-collection convergence, corrected source contract.**
 
-The system has enough evidence that `ChartPanel` is already a viable shared analytical shell across multiple Reports surfaces. The higher-value next step is to deepen the existing responsive collection grammar beyond Customer Health/Product Performance on a distinct six-fact churn-risk row shape.
+This is still the smallest high-value next slice. `ResponsiveCollection + Card + KeyValueList` is already proven on Product Performance and Customer Health, while the Churn Risk detail table still relies on a desktop table as its only ready-state composition. Extending the same presentation-only grammar to the actual Churn Risk RFM facts improves Mobile/Tablet quality without changing data meaning, queries, calculations, classification, trust or permissions.
 
-This is system convergence, not page beautification: Desktop keeps management density and semantic comparison, while Tablet/Mobile gain deliberate shared card composition from exactly the same caller-owned row truth. No new responsive primitive or business abstraction is justified.
+The device strategy requires adaptive composition rather than compressed desktop tables, and the component decision matrix explicitly places device orchestration in `ResponsiveCollection` while preserving caller-owned query/business semantics.
 
-## Exact bounded design-system contract
+## Corrected exact bounded contract
 
-### Surface and hierarchy
+### Surface / hierarchy
 
-- Scope is only `قائمة العملاء حسب خطر التسرب` in `src/pages/reports/ChurnRiskPage.tsx`.
+- Scope is only the customer-detail section titled `تفاصيل العملاء — مرتب: معرض للخطر أولاً` in `src/pages/reports/ChurnRiskPage.tsx`.
+- Preserve the existing section shell/header and Trust/Freshness cluster.
 - The page shell, KPI grid, REPORT010 pie `ChartPanel`, filters/date controls and all other report sections remain unchanged.
-- The section remains one Churn Risk capability with one data truth and one mounted renderer for the active device.
 
 ### Desktop
 
-- Preserve the current dense semantic table.
-- Preserve exactly six columns and their current order: `العميل`, `آخر تعامل`, `عدد الفواتير`, `إجمالي الإنفاق`, `متوسط الفاتورة`, `حالة الخطر`.
-- Preserve values, formatting and row order exactly.
-- Proper `th scope="col"` semantics are expected; this is accessibility hardening only, not content or behavior change.
+- Keep the dense semantic table as the management comparison surface.
+- Preserve the exact current six columns and order: `العميل`, `التصنيف`, `RFM Score`, `أيام منذ آخر شراء`, `تكرار (90 يوم)`, `قيمة (90 يوم)`.
+- Preserve row order, values, existing formatting and local table overflow behavior.
+- Add/retain `th scope="col"` for all six headers; this is accessibility hardening only.
 
 ### Tablet / Mobile
 
-- Use the already-established presentation-only `ResponsiveCollection + Card + KeyValueList` grammar.
-- Tablet receives intentional shared card/key-value composition; Mobile receives single-column cards. Neither depends on the Desktop horizontal table.
-- Exactly one renderer is mounted at a time; hidden duplicate Desktop/Mobile surfaces are not acceptable.
-- Customer identity remains the lead and preserves resolved customer name/fallback plus the visible customer ID.
-- Long Arabic identity text must wrap safely with no page-level horizontal drift.
-- Numeric/date facts preserve existing formatting and appropriate LTR treatment inside the Arabic-first RTL composition.
-- Dark mode remains token/semantic-surface driven through shared Card/KeyValueList styling; no page-local palette fork.
+- Use the already-integrated presentation-only `ResponsiveCollection + Card + KeyValueList` grammar; do not create a page-local responsive system.
+- Tablet uses deliberate card composition with a compact two-column `KeyValueList`; Mobile uses a single-column card stack.
+- Exactly one renderer is mounted at a time.
+- Customer identity remains the card lead using the exact current display rule: show resolved `customer_name` when present, otherwise the existing truncated `customer_id` fallback. Do **not** introduce a second visible ID or any new identity content.
+- The five non-identity facts map exactly to the current source: `RiskBadge(row.risk_label)`, `row.rfm_score`, `RecencyCell(row.recency_days)`, `row.frequency_l90d` with `×`, and `fmtCur(row.monetary_l90d)`.
+- Long Arabic names must wrap safely with `min-width: 0` / safe wrapping; no ordinary page-level horizontal drift.
+- RFM/frequency/monetary/recency values retain appropriate LTR treatment inside the Arabic-first RTL composition.
+- Dark mode inherits shared semantic Card/KeyValueList tokens; no local palette fork.
 
-### Truth and state preservation
+### State / truth preservation
 
-- Preserve `RecencyCell` exactly for `آخر تعامل`.
-- Preserve `formatNumber` for invoice count and `formatCurrency` for spend.
-- Preserve the current average-order expression exactly: `row.invoice_count ? formatCurrency(row.spend_90d / row.invoice_count) : '—'`.
-- Preserve `RiskBadge` exactly for churn-risk status.
-- Preserve current loading and empty copy/precedence exactly.
-- Preserve current page-level SystemHealth/trust/freshness behavior exactly; do not invent a new table-level blocked/failed semantic branch.
-- Caller continues to own customer identity, churn classification, recency, monetary and all query/trust truth.
+- Preserve current priority: blocked first, then loading, then empty, then ready content.
+- Preserve exact blocked copy: `بيانات الخطر محجوبة` and `snapshot_customer_risk يحتاج تشغيل ناجح أولاً`.
+- Preserve loading as five `SkeletonCard` rows at height `44`.
+- Preserve exact empty copy: `لا توجد بيانات — شغّل watermark sweep أولاً`.
+- Preserve current `SystemHealthBar`, `riskTrust`, `TrustStateBadge`, `FreshnessIndicator` and all page-level trust/freshness behavior.
+- Preserve caller ownership of customer identity, RFM score, risk classification, recency, frequency, monetary values, sorting/order and all query/data semantics.
+- There is no invoice-count, total-spend or average-invoice fact in this slice.
 
 ### Accessibility / interaction
 
-- Desktop column headers expose column-header scope.
-- Tablet/Mobile retain shared `dl/dt/dd` key-value semantics through `KeyValueList`.
-- No new action, focus path, keyboard behavior or touch target is introduced.
-- Responsive switching must not duplicate loading/empty or ready-state content in the accessibility tree.
-
-## Explicit exclusions / stop conditions
-
-Out of scope: REPORT010 pie chart behavior; KPI grid; report filter/date controls; SystemHealthBar/trust/freshness redesign; `RiskBadge` / `RecencyCell` semantic redesign; query hooks; calculations; churn classification; sorting/order; backend/schema/RPC/cache; permissions/RBAC/RLS; routing/export/print/business behavior; any second Reports page; Settings/Admin; remaining Work/Field debt; Global convergence; deployment/workflow changes.
-
-`ResponsiveCollection`, `Card` and `KeyValueList` APIs/CSS must remain unchanged. If implementation discovers a material need to widen a shared API/CSS contract, render simultaneous hidden device surfaces, or alter functional/data/trust semantics, REPORT013 becomes `BLOCKED` and returns to Product Design rather than expanding the implementation PR.
+- Desktop headers expose proper column scope.
+- Tablet/Mobile facts use shared `KeyValueList` `dl/dt/dd` semantics.
+- Responsive switching must not duplicate ready/loading/empty content in the accessibility tree.
+- No new interactive control, focus path, keyboard behavior, hover dependency or touch target is introduced.
 
 ## Focused validation intent
 
-Implementation tests should protect the material product-design risks without claiming execution unless actually run:
+Tests should protect, without falsely claiming execution:
 
-- Desktop/Tablet/Mobile renderer selection and single-renderer behavior;
-- exact loading/empty precedence and copy;
-- six-field row/card mapping and order;
-- resolved-name/fallback plus visible customer ID;
-- unchanged average-order calculation/fallback;
-- unchanged `RecencyCell` and `RiskBadge` semantics;
-- semantic Desktop column headers and responsive Arabic containment.
+- Desktop/Tablet/Mobile renderer selection and exactly-one-renderer behavior;
+- exact blocked/loading/empty precedence and copy, including five 44px loading skeletons;
+- exact six-column Desktop label/order and row/card fact mapping;
+- current customer-name versus truncated-ID fallback behavior, with no invented extra identity field;
+- unchanged `RiskBadge`, `rfm_score`, `RecencyCell`, `frequency_l90d` and `fmtCur(monetary_l90d)` semantics;
+- Desktop `scope="col"`, Tablet/Mobile key-value anatomy, LTR numeric treatment and long-Arabic containment.
 
-## Peer-state synthesis / contradiction handling
+## Explicit exclusions / stop conditions
 
-Independent Product Design judgment was formed first from the current Churn Risk source, current shared responsive-collection grammar, North Star and migration/component guidance, then compared with repository peer states.
+Out of scope: REPORT010 pie chart; KPI grid; filters/date controls; SystemHealth/trust/freshness redesign; `RiskBadge` / `RecencyCell` semantic redesign; `CustomerRiskRow` type; query hooks; RPC/service/backend/schema/cache contracts; calculations; RFM/churn classification; sorting/order; permissions/RBAC/RLS; routing/export/print/business behavior; invoice-count/spend/average-order additions; any second report page; shared `ResponsiveCollection` / `Card` / `KeyValueList` API or CSS widening; Settings/Admin; Work/Field debt; Global convergence; Actions/Vercel/preview/`main` activity.
 
-- Integration/Team Memory establish REPORT012 as integrated and hand the queue back to Product Design.
-- Older specialist lifecycle references to REPORT012 are stale after integration but do not contain a durable conflicting rule.
-- Decision Log is aligned: responsive device switching remains deterministic with one mounted renderer, and shared responsive components remain presentation-only while caller truth stays local.
-- No active implementation PR exists, so REPORT013 does not compete with in-flight work.
+If implementation needs a new data field/calculation, material shared API/CSS widening, simultaneous hidden duplicate device surfaces, or any functional/data/trust semantic change, REPORT013 becomes `BLOCKED` and returns to Product Design instead of widening the PR.
 
-Current contradiction classification: **NONE**.
+## Peer-state synthesis / contradiction resolution
+
+Independent source judgment was formed first, then peer states were compared.
+
+- **UI Production:** blocker was valid. Stopping before branch creation prevented a functional-semantics leak.
+- **Development Integrator:** blocker confirmation was valid; its `NO_MERGE — BLOCKED_ON_PRODUCT_DESIGN_SOURCE_CONTRACT_MISMATCH` reflects the superseded contract and should be considered resolved only by this corrected boundary, not ignored.
+- **Design QA:** current state remains lifecycle-stale at REPORT012 because no REPORT013 implementation exists yet; there is no QA contradiction to resolve at this stage.
+- **Team Memory / Decision Log / North Star:** durable direction is unchanged and aligns with the correction: responsive presentation may adapt, business/data meaning may not.
+
+Current contradiction classification after correction: **RESOLVED / no remaining Product Design BLOCKING contradiction**. There is still no implementation PR, so the next role may safely start only the corrected REPORT013 slice from the latest Development HEAD.
 
 ## Repository actions this run
 
-- Completed the mandatory shared-memory bootstrap in the required order.
-- Inspected issue #27, current Development HEAD, open PRs targeting Development, current Churn Risk source, shared responsive/component contracts and relevant migration guidance.
-- Confirmed no implementation PR was active at selection and again immediately after the REPORT013 workstream boundary was recorded.
-- Replaced the generic REPORT013 placeholder with one exact dependency-safe READY slice and explicit scope/device/state/accessibility/test/exclusion/stop boundaries.
-- Did not update `TEAM_MEMORY.md` or `DECISION_LOG.md` because no durable design rule or overall system direction changed.
-- Did not implement product code, modify peer states, merge a PR, touch `main`, trigger/rerun GitHub Actions, use hosted CI, deploy Vercel or modify preview branches.
+- Completed the mandatory bootstrap in the prescribed order and inspected issue #27, current Development HEAD, open Development-targeting PRs, current Churn Risk source/type contract and the relevant device/responsive/component guidance.
+- Confirmed no implementation PR targets `design-system-v2-development`.
+- Corrected `31_AGENT_TEAM_WORKSTREAM.md` so REPORT013 now matches the actual live RFM row contract; workstream correction commit: `85a5dfc08c7b5edb63465a0aee9d17a4bbbf2845`.
+- Did not update `TEAM_MEMORY.md` or `DECISION_LOG.md` because no durable system direction or long-lived rule changed.
+- Did not implement product code, modify peer-owned states, merge a PR, touch `main`, trigger/rerun GitHub Actions, use hosted CI, deploy Vercel or modify preview branches.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer.
-- **What changed:** `DS2-REPORT-013 — Churn Risk responsive detail-collection convergence` is now the single exact implementation-authorized READY slice.
-- **Preserve:** one-section Churn Risk scope; exact six-fact row truth/order and current loading/empty/SystemHealth/trust behavior; unchanged `RecencyCell`, `RiskBadge`, formatting and average-order calculation; dense semantic Desktop table; deliberate Tablet/Mobile `ResponsiveCollection + Card + KeyValueList` composition; exactly one mounted renderer; Arabic/RTL containment with appropriate LTR numeric treatment; unchanged shared APIs/CSS and all query/calculation/classification/permission/routing/export/print/business semantics; no Actions/Vercel/preview/`main` activity.
-- **Need from you:** branch from the latest `design-system-v2-development` HEAD and open one implementation PR for REPORT013 only, with focused source-level tests for device renderer isolation, state precedence/copy, six-field fidelity, identity/fallback, average-order semantics and accessibility; if any stop condition is hit, mark the slice BLOCKED instead of widening scope.
-- **Blocker level:** `NONE`.
-- **Baseline:** Development HEAD immediately before this state write `9e480af57dd596e1816483836dc70c8ef5b1c21e`; integrated product merge `7935e461e3c212eb187fe56bbb14ebe3e427f874`.
+- **To:** UI Production Engineer; Development Integrator should treat its prior blocker as bounded by this corrected contract, not as authorization to merge anything without the normal later gates.
+- **What changed:** Product Design accepted the peer blocker, superseded the incorrect REPORT013 fact model, and re-bounded the single READY slice to the actual current Churn Risk six-fact RFM contract in `ChurnRiskPage.tsx`.
+- **Preserve:** exact section title and shell; exact six-column/field truth and row order; current name-or-truncated-ID fallback; `RiskBadge`, `rfm_score`, `RecencyCell`, `frequency_l90d`, `fmtCur(monetary_l90d)`; exact blocked/loading/empty precedence and copy; current SystemHealth/trust/freshness behavior; dense semantic Desktop table; deliberate Tablet/Mobile `ResponsiveCollection + Card + KeyValueList`; exactly one mounted renderer; Arabic wrapping/RTL with appropriate LTR numeric treatment; unchanged shared APIs/CSS and all query/type/calculation/classification/permission/routing/export/print/business semantics.
+- **Need from you:** UI Production should branch from the latest `design-system-v2-development` HEAD and open one implementation PR for corrected REPORT013 only, with focused source-level tests matching the corrected contract. If any excluded functional/data/shared-contract change becomes necessary, stop and mark `BLOCKED`.
+- **Blocker level:** `NONE` after Product Design correction; prior source-contract blocker is explicitly resolved by rebounding, not by changing data semantics.
+- **Baseline:** Development HEAD immediately before this state write `85a5dfc08c7b5edb63465a0aee9d17a4bbbf2845`; integrated product merge `7935e461e3c212eb187fe56bbb14ebe3e427f874`; no active implementation PR at final recheck.
