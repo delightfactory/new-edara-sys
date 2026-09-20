@@ -91,19 +91,46 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-012 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
+### DS2-REPORT-012 — Customer Health responsive detail-collection convergence
 Status: `READY`
-Owner role for immediate next action: Product Design Director
+Owner role for immediate next action: UI Production Engineer
+Representative surface: `src/pages/reports/CustomerHealthPage.tsx` — section `تفاصيل العملاء — أعلى 50 حسب القيمة` only.
 
-Intent:
-- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline;
-- bound exactly one smallest dependency-safe presentation-only concern before UI Production implementation begins;
-- prefer existing shared V2 primitives/patterns and strengthen a shared contract only when a real consumer proves the need;
-- preserve REPORT001-011 contracts and all analytics/query/calculation/trust/permission/routing/export/print/business semantics;
-- keep Settings/Admin, Global convergence, remaining Work/Field debt and shared component-depth work in the roadmap;
-- do not turn REPORT012 into broad multi-page report polishing.
+System-pattern intent:
+- converge the existing desktop-only Customer Health detail table onto the already-proven `ResponsiveCollection + Card + KeyValueList` device-composition contract;
+- keep one data capability and exactly one mounted renderer per device rather than preserving horizontal-table overflow as the Mobile/Tablet experience;
+- extend the existing Reports collection grammar proven in Product Performance to a customer-health/RFM row shape without changing the shared component APIs;
+- remove page-local device composition debt, not redesign the report page.
 
-Implementation is not authorized until Product Design records the exact representative surface/file, device/state/accessibility acceptance and explicit exclusions from the then-current Development HEAD.
+Implementation scope:
+- preserve the outer detail-section title `تفاصيل العملاء — أعلى 50 حسب القيمة` and the current Trust/Freshness action cluster;
+- preserve the current `isBlocked` branch and its exact blocked semantics/copy outside `ResponsiveCollection`;
+- for the non-blocked path, use `ResponsiveCollection<CustomerHealthRow>` with the existing `rows` and `isLoading` truth;
+- preserve the current loading skeleton contract and exact empty-state copy `لا توجد بيانات snapshot لهذا التاريخ — شغّل watermark sweep أولاً`;
+- desktop renderer keeps the existing five columns, order and values: `العميل`, `أيام منذ آخر بيع`, `تكرار (90 يوم)`, `قيمة (90 يوم)`, `الحالة`; keep `RecencyCell`, dormant/active meaning, numeric formatting, customer-name fallback and row data unchanged; use proper column-header semantics (`th scope="col"`);
+- tablet and mobile render the same row truth as shared `Card + KeyValueList` compositions: customer identity as the card lead, then recency, frequency, monetary value and status as labelled values; tablet may use the existing shared two-column responsive card grid while mobile uses a one-column stack;
+- long Arabic customer names and fallback identifiers must wrap/contain without page-level horizontal overflow; numeric/count/currency values that are currently LTR remain LTR inside cards;
+- preserve the existing `stats.total > 50` informational footer, exact copy/count meaning and ready-data visibility without duplicating it per device renderer;
+- add focused source-level tests for Desktop/Tablet/Mobile renderer selection, one-renderer-only behavior, blocked/loading/empty precedence, exact row/value mapping, long-name containment hooks/structure, and the >50 footer contract; evidence must remain honestly labelled if tests are not executed.
+
+Device/state/accessibility acceptance:
+- **Desktop:** retain the compact five-column comparison table and its existing information density; no loss/reordering of values; horizontal containment remains local to the table surface if needed.
+- **Tablet:** render readable cards in the shared tablet grid, with customer identity visually primary and all four supporting facts scannable without horizontal page scrolling.
+- **Mobile:** render a single-column card stack with no desktop table mounted, no page-level horizontal scrolling, no clipped Arabic names and no duplicated state/content trees.
+- **RTL / Arabic:** logical RTL composition, wrapping customer names, Arabic labels preserved; existing LTR numeric semantics remain explicit where appropriate.
+- **Dark mode:** card/key-value surfaces must use existing shared semantic V2 tokens; do not introduce page-specific colors.
+- **Accessibility:** only one device renderer in the DOM; desktop column headers are semantic; card label/value relationships remain explicit via `KeyValueList`; blocked/loading/empty branches remain singular and understandable; no new interactive/touch target is introduced.
+
+Explicit exclusions:
+- do not change the page header or raw `asOfDate` date control in REPORT012;
+- do not change `SystemHealthBar`, KPI cards, `RecencyCell` thresholds/colors, customer status meaning, Trust/Freshness rules, the outer detail-section shell/header, or any other report surface;
+- do not change hooks, snapshot selection, row ordering/top-50 logic, query/cache/calculation/trust/permission/RBAC/RLS/routing/export/print/business semantics;
+- do not modify `ResponsiveCollection`, `Card`, `KeyValueList` APIs/CSS or create a new shared component in this slice;
+- do not touch Customer Re-engagement, Rep Credit Commitment, Geography, Churn Risk, Sales, Receivables, Product Performance or Overview pages;
+- no backend/schema/RPC/deployment/workflow change.
+
+Block condition:
+- if exact preservation requires a material shared-component API/CSS change or any functional/data/business semantic change, stop and mark REPORT012 `BLOCKED` for Product Design instead of widening the PR.
 
 ## Product migration roadmap
 
@@ -153,7 +180,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-011` — `DONE`
-- `DS2-REPORT-012 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY` / Product Design must bound one exact concern before implementation
+- `DS2-REPORT-012 — Customer Health responsive detail-collection convergence` — `READY`
 - further Reports/Analytics convergence beyond REPORT012 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
