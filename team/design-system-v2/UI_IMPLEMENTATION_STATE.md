@@ -2,92 +2,107 @@
 
 ## Reviewed baseline
 
-- Run date: `2026-09-20`.
+- Run date: `2026-09-21`.
 - Development branch: `design-system-v2-development`.
-- Exact Development HEAD inspected before this owned-state write: `2f7649c6e528a756c00cc52878fa98d62e82bf82`.
+- Exact feature baseline: `78bba4c2a6ece53150327c0be8cd29594c1c2ab6`.
 - Active slice: `DS2-REPORT-013 — Churn Risk responsive detail-collection convergence`.
-- Representative surface: `src/pages/reports/ChurnRiskPage.tsx` → customer detail collection only.
-- Active implementation PR targeting Development: none.
-- Disposition: `BLOCKED — PRODUCT DESIGN BOUNDARY DOES NOT MATCH CURRENT SOURCE/DATA CONTRACT`.
-- Product code/test branch: not created.
-- Test/build/lint/runtime/preview/release PASS: not claimed.
+- Representative surface: `src/pages/reports/ChurnRiskPage.tsx` → section `تفاصيل العملاء — مرتب: معرض للخطر أولاً` only.
+- Feature branch: `ds2-report-013-churn-risk-responsive-collection`.
+- Draft PR: `#61 — DS2-REPORT-013: converge Churn Risk responsive collection`, base `design-system-v2-development`.
+- Exact code/test HEAD at PR creation and before this owned-state write: `298b57c33c49dc35d315fb5ab63ca9699d726c38`.
+- Disposition: `REVIEW — IMPLEMENTATION COMPLETE / FRESH DESIGN QA + PRODUCT DESIGN EXACT-HEAD REVIEW REQUIRED`.
+- Evidence: `TESTS_AUTHORED_NOT_EXECUTED`.
+- Build/test/lint/runtime/preview/release PASS: not claimed.
 
 ## Independent implementation judgment
 
-REPORT013 cannot be implemented safely from the current Development baseline without violating the UI-only isolation contract.
+The corrected Product Design boundary is implementable safely on the latest Development baseline without crossing the UI-only functional-isolation contract.
 
-On exact Development HEAD `2f7649c6e528a756c00cc52878fa98d62e82bf82`, the live Churn Risk table and `CustomerRiskRow` contract do not contain the six facts Product Design bounded for REPORT013.
+REPORT013 now deepens the already-proven Reports responsive collection grammar on the actual current Churn Risk RFM row truth. Desktop retains the dense comparison table; Tablet/Mobile adapt the same unchanged caller-owned rows into shared `ResponsiveCollection + Card + KeyValueList` composition. No new data field, calculation, risk meaning, trust behavior or shared component contract is introduced.
 
-Current source truth in `ChurnRiskPage.tsx` is six columns in this order:
-- `العميل`
-- `التصنيف`
-- `RFM Score`
-- `أيام منذ آخر شراء`
-- `تكرار (90 يوم)`
-- `قيمة (90 يوم)`
-
-Current `CustomerRiskRow` fields exposed by `src/lib/services/analyticsClient.ts` are:
-- `customer_id`
-- `customer_name`
-- `risk_label`
-- `rfm_score`
-- `recency_days`
-- `frequency_l90d`
-- `monetary_l90d`
-
-By contrast, the current Product Design boundary/workstream requires preserving a different six-fact shape:
-- `العميل`
-- `آخر تعامل`
-- `عدد الفواتير`
-- `إجمالي الإنفاق`
-- `متوسط الفاتورة`
-- `حالة الخطر`
-
-It also requires preserving the expression `row.invoice_count ? formatCurrency(row.spend_90d / row.invoice_count) : '—'`, but neither `invoice_count` nor `spend_90d` exists on the current `CustomerRiskRow`, and that expression is not present in the current Churn Risk page.
-
-Therefore implementing the recorded boundary would require inventing new row semantics or changing query/service/data behavior, which is explicitly forbidden for this UI workstream. The safe action is to stop before branch creation and return the slice to Product Design for corrected bounding against the exact current source.
+Development drift between the Product Design corrected boundary baseline and the exact feature baseline affected only `CustomerHealthPage.test.tsx`, `ProductPerformancePage.test.tsx`, and `INTEGRATION_STATE.md`; it did not overlap `ChurnRiskPage`, its test, or the shared responsive patterns. The corrected source contract therefore remained fresh at feature start.
 
 ## Material implementation progress
 
-- Completed the mandatory shared-memory bootstrap in the required order.
-- Inspected issue #27, current Development HEAD, all open PRs targeting Development, current Churn Risk page source and the actual `CustomerRiskRow` service type.
-- Confirmed no implementation PR targets `design-system-v2-development`.
-- Formed implementation judgment from current source/data contracts, then compared it with Product Design/workstream handoff.
-- Detected a material cross-role/source contradiction before creating a feature branch.
-- Did **not** create a branch, PR, product-code change or test artifact because the current bounded acceptance contract cannot be satisfied without crossing the functional boundary.
+- Created the feature branch from exact Development HEAD `78bba4c2a6ece53150327c0be8cd29594c1c2ab6`.
+- Updated `src/pages/reports/ChurnRiskPage.tsx` only within the customer-detail collection presentation boundary plus imports/helper composition required by that section.
+- Added shared `ResponsiveCollection<CustomerRiskRow>` orchestration with caller-owned custom loading/empty states.
+- Preserved the exact Desktop six-column order and values, adding `scope="col"` to each column header.
+- Added deliberate Tablet two-column and Mobile one-column `Card + KeyValueList` renderers with exactly one device renderer mounted.
+- Preserved customer resolved-name-or-truncated-ID fallback with no second visible ID; long Arabic identity wraps safely.
+- Preserved `RiskBadge(row.risk_label)`, exact `rfm_score`, `RecencyCell(row.recency_days)`, `frequency_l90d ×`, and `fmtCur(row.monetary_l90d)`; numeric/recency presentation remains LTR where appropriate.
+- Preserved blocked-first precedence and exact blocked copy, five 44px loading skeletons, exact empty copy, section Trust/Freshness cluster and page-level SystemHealth behavior.
+- Extended `src/pages/reports/ChurnRiskPage.test.tsx` with focused Desktop/Tablet/Mobile renderer-isolation, six-fact mapping, fallback identity, Arabic wrapping, LTR treatment, blocked/loading/empty, header-scope and trust/freshness assertions while retaining REPORT010 pie-chart tests.
+- Opened Draft PR #61 targeting `design-system-v2-development`.
 
-## Preserve / verified boundaries
+## Scope / files / shared patterns touched
 
-- Do not modify DB/migrations/RPC/services/query contracts to manufacture the Product Design facts.
-- Do not reinterpret `rfm_score`, `frequency_l90d` or `monetary_l90d` as invoice-count/spend/average-order semantics.
-- Do not alter churn classification, recency, monetary calculations, row ordering, SystemHealth/trust/freshness, filters, REPORT010 pie chart, KPI grid, permissions/RBAC/RLS/routing/export/print/business behavior.
-- Keep `ResponsiveCollection`, `Card` and `KeyValueList` APIs/CSS unchanged unless a future corrected Product Design boundary explicitly proves a legitimate shared need.
-- No GitHub Actions, hosted CI, Vercel, preview branch or `main` activity.
+Product/test files:
+- `src/pages/reports/ChurnRiskPage.tsx`
+- `src/pages/reports/ChurnRiskPage.test.tsx`
 
-## Evidence / blocker
+Governance:
+- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md` (owned file only)
 
-Source evidence only; no implementation exists yet.
+Shared patterns consumed unchanged:
+- `ResponsiveCollection`
+- `Card`
+- `KeyValueList`
+- existing `ChartPanel` remains unchanged
 
-Known blocking contradiction:
-- Product Design/workstream REPORT013 acceptance criteria describe fields and an average-order expression that are absent from the exact current Churn Risk source and `CustomerRiskRow` contract.
-- Proceeding would force forbidden functional/data-contract invention rather than presentation-only convergence.
+No shared API/CSS file was modified.
 
-No test artifact was authored because product implementation did not start. No `SOURCE_REVIEW_PASS`, `TESTS_AUTHORED_NOT_EXECUTED`, local execution, runtime, preview or release PASS is claimed for REPORT013.
+## Device / state / accessibility coverage
 
-## Peer-state comparison / current risk
+- **Desktop >=1025px:** exact compact six-column semantic table retained; all headers use `scope="col"`; local horizontal overflow remains table-local.
+- **Tablet 769–1024px:** two-column responsive card grid; `KeyValueList columns={2}`; touch-first shared card composition.
+- **Mobile <=768px:** one-column responsive card stack; `KeyValueList columns={1}`; no Desktop table mounted.
+- **RTL / Arabic:** customer identity remains Arabic-first and uses safe wrapping/min-width containment; no page-level horizontal-drift path added.
+- **LTR facts:** RFM score, recency, frequency and monetary values retain deliberate LTR presentation.
+- **Blocked:** remains higher priority than ResponsiveCollection loading/empty/ready.
+- **Loading:** exactly five `SkeletonCard height={44}` rows preserved.
+- **Empty:** exact copy `لا توجد بيانات — شغّل watermark sweep أولاً` preserved.
+- **Ready:** exactly one renderer mounts for the current device; no hidden duplicate ready surface is introduced.
+- **Interaction:** no new interactive control, focus path, hover dependency or touch target was introduced.
 
-- **Product Design Director:** current and implementation-authorizing, but its REPORT013 source assumptions conflict materially with the exact Development source/data contract.
-- **Design QA:** lifecycle-stale at completed REPORT012; no REPORT013 approval exists.
-- **Development Integrator:** lifecycle-stale at completed REPORT012; must remain `NO_MERGE` because no REPORT013 implementation PR exists.
-- **Team Memory:** still carries the generic REPORT013 placeholder and does not resolve the source mismatch.
-- **Decision Log / North Star:** aligned with stopping here; UI-only isolation and caller-owned business truth prohibit inventing the missing facts.
+## Evidence / execution honesty
 
-Current contradiction classification: **BLOCKING**.
+Focused tests are authored but not executed: `TESTS_AUTHORED_NOT_EXECUTED`.
+
+Sandbox inspection found no mounted repository/package runtime. A local `git ls-remote https://github.com/delightfactory/new-edara-sys.git HEAD` attempt failed with `Could not resolve host: github.com`, so `npm test`, `npm run build`, and `npm run lint` could not be executed here.
+
+No `SOURCE_REVIEW_PASS`, `LOCAL_EXECUTION_PASS`, `RUNTIME_VISUAL_PASS`, preview or release PASS is claimed by UI Production. No known source-visible TypeScript/build blocker was found during implementation self-review.
+
+## Preserve / risks
+
+Preserve exactly:
+- `CustomerRiskRow` data contract and caller ownership;
+- current row order and risk/RFM/recency/frequency/monetary meaning;
+- current customer-name versus truncated-ID fallback;
+- blocked/loading/empty precedence and copy;
+- SystemHealth / Trust / Freshness behavior;
+- REPORT010 pie ChartPanel and all filters/KPIs/date controls;
+- all query/RPC/service/cache/calculation/classification/permission/RBAC/RLS/routing/export/print/business semantics;
+- unchanged shared ResponsiveCollection/Card/KeyValueList APIs/CSS.
+
+Remaining risk is review/runtime only: tests were not executed and no runtime visual pass exists. Reviewers should inspect the exact current PR HEAD, not reuse REPORT012 approval.
+
+## Peer-state comparison
+
+Independent implementation judgment was formed from exact baseline/source first, then compared with peer states.
+
+- **Product Design Director:** corrected REPORT013 boundary is current and aligned with this implementation; its prior incorrect invoice/spend contract is explicitly superseded.
+- **Development Integrator:** source-contract blocker is resolved and it is correctly waiting for implementation/review evidence.
+- **Design QA:** lifecycle-stale at REPORT012; fresh exact-head REPORT013 review is required.
+- **Team Memory:** generic REPORT013 placeholder is older than the corrected Director/workstream boundary but contains no conflicting durable rule.
+- **Decision Log / North Star:** aligned with responsive presentation adaptation while preserving caller-owned business truth.
+
+Current contradiction classification: `NONE`.
 
 ### Cross-role handoff
-- **To:** Product Design Director.
-- **What changed:** UI Production found that the authorized REPORT013 six-fact contract does not match the exact current `ChurnRiskPage.tsx` / `CustomerRiskRow` source truth, so implementation was stopped before branch creation.
-- **Preserve:** exact current Churn Risk data/query/calculation/trust semantics; UI-only functional boundary; no shared API/CSS widening; no Actions/Vercel/preview/`main` activity.
-- **Need from you:** re-inspect exact latest Development source and either (a) re-bound REPORT013 around the actual existing six-column RFM row shape for presentation-only responsive convergence, or (b) explicitly move any desired data-shape change into a separate approved functional workstream. Do not ask UI Production to synthesize `invoice_count`, `spend_90d` or average-order semantics from unrelated RFM fields.
-- **Blocker level:** `BLOCKING`.
-- **Baseline:** `2f7649c6e528a756c00cc52878fa98d62e82bf82`.
+- **To:** Design QA and Product Design Director; Development Integrator only after fresh exact-head approvals.
+- **What changed:** corrected REPORT013 is implemented on Draft PR #61 using shared ResponsiveCollection/Card/KeyValueList for Tablet/Mobile while preserving the exact dense Desktop RFM table and all caller-owned truth.
+- **Preserve:** exact six-fact RFM contract/order; name-or-truncated-ID fallback; RiskBadge/RFM/Recency/frequency/monetary semantics; exact blocked/loading/empty behavior; Trust/Freshness/SystemHealth; one mounted renderer; Arabic wrapping + LTR numeric treatment; unchanged shared APIs/CSS and all functional semantics.
+- **Need from you:** independently review the exact current PR #61 HEAD after this governance commit. QA should issue or withhold `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` with honest evidence; Product Design should independently accept or block the same exact HEAD. Any subsequent PR-head movement invalidates those approvals.
+- **Blocker level:** `NONE` from UI Production.
+- **Baseline:** feature baseline `78bba4c2a6ece53150327c0be8cd29594c1c2ab6`; code/test HEAD before owned-state write `298b57c33c49dc35d315fb5ab63ca9699d726c38`; authoritative current exact review HEAD is the PR #61 head after this state commit.
