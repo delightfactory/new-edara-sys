@@ -38,17 +38,17 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-009`.
+Product UI is integrated through `DS2-REPORT-010`.
 
 Latest product integration:
-- PR: `#56 — DS2-REPORT-009: converge Sales secondary chart panel`
-- Exact reviewed PR HEAD: `9f07979508c8139f579afbde0397672437eef992`
-- Squash merge commit: `5df49a61722daaeedd4c0b3f9434628b07f74c29`
+- PR: `#57 — DS2-REPORT-010: converge Churn Risk pie chart panel`
+- Exact reviewed PR HEAD: `d5ac5becd8a9a64080022365407d60febaefe96e`
+- Squash merge commit: `5d6ee46bc716f6da39367c87e87608f30929c734`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact HEAD
 - Runtime/preview/release evidence: not claimed
 
-The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, Supervisor Work shared KPI summary convergence, Reports shared route-level sub-navigation convergence, Reports shared date-preset selector convergence with hardened `SegmentedControl` geometry, Reports shared native `DateField` convergence for the custom date pair, Reports Overview primary KPI-summary layout convergence onto shared `MetricGrid` while preserving report-domain `MetricCard` trust/freshness semantics, shared domain-agnostic `ChartPanel` proven across both Sales analytical sections and Receivables, Product Performance responsive detail-collection convergence using shared `ResponsiveCollection + Card + KeyValueList` while preserving the dense Desktop table, and Geography analysis-level control convergence onto shared `Select -> Field` while retaining report-domain state/filter ownership.
+The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, Supervisor Work shared KPI summary convergence, Reports shared route-level sub-navigation convergence, Reports shared date-preset selector convergence with hardened `SegmentedControl` geometry, Reports shared native `DateField` convergence for the custom date pair, Reports Overview primary KPI-summary layout convergence onto shared `MetricGrid` while preserving report-domain `MetricCard` trust/freshness semantics, shared domain-agnostic `ChartPanel` proven across Sales, Receivables and Churn Risk analytical sections, Product Performance responsive detail-collection convergence using shared `ResponsiveCollection + Card + KeyValueList` while preserving the dense Desktop table, and Geography analysis-level control convergence onto shared `Select -> Field` while retaining report-domain state/filter ownership.
 
 ## Completed slices
 
@@ -79,58 +79,37 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - `DS2-REPORT-007 — Geography analysis-level selector convergence` — `DONE` — PR #54 — merge `9ab20b3ca467b1d42eae0fb9fd6936d156e11662` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-008 — Receivables AR chart-panel convergence` — `DONE` — PR #55 — reviewed HEAD `3248057b52188d821f6e87f7b4624a8c14f00c3d` — merge `cdacc180e1e163b6dcb3d16cb80ff0beee1e701f` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-009 — Sales secondary revenue/tax chart-panel convergence` — `DONE` — PR #56 — reviewed HEAD `9f07979508c8139f579afbde0397672437eef992` — merge `5df49a61722daaeedd4c0b3f9434628b07f74c29` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
+- `DS2-REPORT-010 — Churn Risk pie-chart ChartPanel convergence` — `DONE` — PR #57 — reviewed HEAD `d5ac5becd8a9a64080022365407d60febaefe96e` — merge `5d6ee46bc716f6da39367c87e87608f30929c734` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 
-### REPORT009 system result
+### REPORT010 system result
 
-- only the second Sales chart `توزيع الإيرادات اليومي (إيراد + ضريبة)` moved from its page-local analytical surface/title shell to the existing shared V2 `ChartPanel`;
-- exact Arabic title, semantic `h2`, 200px loading/data body, `chartData`, BarChart margins/grid/axes/tooltip and revenue/tax series contracts remain unchanged;
-- the first Sales `ChartPanel`, its trust/freshness and blocked/loading/empty/data contracts, all MetricCards, filters, hooks, queries, permissions, routing, AnalyticsGate, export/print and business semantics remain unchanged;
+- only Churn Risk's Pie Chart section `توزيع تصنيف العملاء` moved from its page-local analytical surface/title shell to the existing shared V2 `ChartPanel`;
+- exact outer render gate, conditional trust/freshness action, semantic `h2`, 260px body, `pieData`, `PIE_COLORS`, Pie geometry, Tooltip and Legend contracts remain unchanged;
+- page header, filters/date control, KPI grid/cards, customer-detail table, `RiskBadge`, `RecencyCell`, hooks, trust calculations, risk classification, queries, permissions, routing, export/print and business semantics remain unchanged;
 - no shared `ChartPanel` API/CSS widening, Recharts abstraction, second page/report, backend/business/query/permission/deployment/workflow change entered the slice.
 
 ## Current single READY slice
 
-### DS2-REPORT-010 — Churn Risk pie-chart ChartPanel convergence
+### DS2-REPORT-011 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
 Status: `READY`
-Owner role for immediate next action: UI Production Engineer
-Product Design selection baseline: exact Development HEAD `3365b4223d5f37d56f3d3af9bb698340935bb95d`.
-Representative surface: `src/pages/reports/ChurnRiskPage.tsx` → Pie Chart section `توزيع تصنيف العملاء` only.
+Owner role for immediate next action: Product Design Director
+Integration baseline: product merge `5d6ee46bc716f6da39367c87e87608f30929c734`; Product Design must inspect the exact latest Development HEAD before selecting implementation scope.
 
 System-pattern intent:
-- reuse the already-proven presentation-only V2 `ChartPanel` for a different visualization family (`PieChart`), proving the shared analytical surface remains chart-library/domain neutral;
-- retire one more page-local report card/header shell without moving chart data, trust/freshness, state decisions or customer-risk semantics into the Design System;
-- preserve the exact chart behavior and use shared `Card + SectionHeader` hierarchy rather than inventing a Churn Risk-specific visual pattern.
+- continue the Reports/Analytics convergence program without turning it into broad page polishing;
+- select exactly one smallest dependency-safe presentation-only concern from representative remaining Reports/Analytics surfaces;
+- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer proves the need;
+- preserve all report/query/calculation/trust/permission/routing/export/print/business semantics as caller/domain-owned.
 
-Required implementation boundary:
-- replace only the Pie Chart section's local outer surface/header wrapper with existing shared `ChartPanel`;
-- keep the title exactly `توزيع تصنيف العملاء` and use the default semantic `h2` path;
-- pass the existing conditional `riskTrust` badge/freshness cluster through `ChartPanel.action` without changing when either item appears;
-- preserve the outer render gate exactly: the chart section remains absent while `statsLoading` is true or `pieData.length === 0`;
-- preserve `ResponsiveContainer width="100%" height={260}` and the existing `PieChart`, `Pie`, `Cell`, `Tooltip`, `Legend`, `pieData`, `PIE_COLORS`, inner/outer radius and `paddingAngle` contracts;
-- add/update focused test artifacts for this exact presentation migration and preserved chart/state contract;
-- no shared `ChartPanel` API/CSS change is expected or authorized.
-
-Explicit exclusions:
-- page header and subtitle;
-- raw `riskLabel` select and `asOfDate` date input;
-- KPI grid/cards and `RISK_CONFIG` semantics;
-- customer detail table, `RiskBadge`, `RecencyCell` and any responsive-table/card migration;
-- `useCustomerRiskSummary`, `useCustomerRiskList`, system-trust hooks, query/cache semantics, calculations, risk classification logic, permissions, routing, export/print or any backend/business behavior;
-- no new Recharts abstraction, legend/tooltip primitive, report FilterBar work, MetricGrid/StatCard convergence or second report/page.
-
-Device / state / accessibility acceptance:
-- **Desktop:** preserve the current compact 260px analytical body and management density; no decorative enlargement.
-- **Tablet:** shared SectionHeader/action composition must wrap safely and remain touch-friendly without fixed-width pressure.
-- **Mobile:** exact Arabic title and trust/freshness action may wrap through shared header composition; chart body remains width-contained with no new ordinary page-level horizontal overflow or duplicate renderer.
-- **RTL / dark mode:** presentation comes through existing semantic `ChartPanel -> Card + SectionHeader`; do not add page-local color/surface overrides.
-- **States:** preserve the current omission semantics exactly—no new loading, empty, blocked, error or trust interpretation for the chart itself.
-- **Accessibility:** establish coherent page `h1 -> h2` section hierarchy; do not add synthetic interaction/focus behavior or alter existing Recharts tooltip/legend semantics.
-- **Evidence:** focused source tests should protect shared-panel adoption, exact title/action presence rules, the no-data/loading omission contract, 260px container and unchanged pie-series configuration; execution evidence must remain honestly labeled per policy.
-
-Stop / block rule:
-- if this migration requires a material `ChartPanel` API/CSS redesign, changes the chart's render/state meaning, or exposes a functional/query/business dependency, mark REPORT010 `BLOCKED` and return to Product Design rather than widening the PR.
+Required Product Design bounding before implementation:
+- name one representative surface/file and one coherent concern only;
+- record explicit acceptance criteria for Mobile/Tablet/Desktop, Arabic/RTL, state preservation and accessibility relevant to that concern;
+- state explicit exclusions and functional-isolation boundaries;
+- confirm whether the slice reuses an existing shared pattern or demonstrates a bounded shared-contract need;
+- do not authorize UI Production until the exact then-current Development baseline and bounded concern are recorded.
 
 Roadmap guardrail:
-- REPORT010 is one chart on one page only; Customer Health/Churn Risk tables, report filter grammar, broader responsive-table convergence, remaining Reports, Settings/Admin, Work/Field debt, shared component-depth work and Global cleanup remain future separately bounded concerns.
+- Customer Health/Churn Risk tables, report filter grammar, broader responsive-table convergence, remaining report charts/metrics/states, Settings/Admin, Work/Field debt, shared component-depth work and Global cleanup remain separately bounded future concerns unless Product Design selects exactly one of them for REPORT011.
 
 ## Product migration roadmap
 
@@ -199,8 +178,9 @@ Open only when a real migrated screen proves the recurring gap:
 - `DS2-REPORT-007` Geography analysis-level selector convergence — `DONE` / PR #54 / merge `9ab20b3ca467b1d42eae0fb9fd6936d156e11662`
 - `DS2-REPORT-008` Receivables AR chart-panel convergence — `DONE` / PR #55 / merge `cdacc180e1e163b6dcb3d16cb80ff0beee1e701f`
 - `DS2-REPORT-009` Sales secondary revenue/tax chart-panel convergence — `DONE` / PR #56 / merge `5df49a61722daaeedd4c0b3f9434628b07f74c29`
-- `DS2-REPORT-010` Churn Risk pie-chart ChartPanel convergence — `READY` / one chart on `ChurnRiskPage.tsx`; exact Product Design boundary above
-- further Reports/Analytics convergence beyond REPORT010 — `BACKLOG` / each concern must be bounded separately
+- `DS2-REPORT-010` Churn Risk pie-chart ChartPanel convergence — `DONE` / PR #57 / merge `5d6ee46bc716f6da39367c87e87608f30929c734`
+- `DS2-REPORT-011` Next bounded Reports metrics/charts/tables/responsive-composition convergence — `READY` / Product Design must bound exactly one concern before implementation
+- further Reports/Analytics convergence beyond REPORT011 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
