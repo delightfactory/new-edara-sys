@@ -4,58 +4,60 @@
 
 - Review date: `2026-09-20`.
 - Development branch: `design-system-v2-development`.
-- Exact Development HEAD immediately before this state write: `aa157601eb03552180e7720a41fc561dc2e14e17`.
+- Exact Development HEAD immediately before this state write: `872fbcd825f91e51e7cd2daac2e88bb142bbfdae`.
 - Current product-integrated HEAD: `5d6ee46bc716f6da39367c87e87608f30929c734` from completed `DS2-REPORT-010` / PR #57.
-- Completed slice: `DS2-REPORT-010 — Churn Risk pie-chart ChartPanel convergence`.
-- Integrated PR: `#57 — DS2-REPORT-010: converge Churn Risk pie chart panel`.
-- Exact reviewed PR HEAD: `d5ac5becd8a9a64080022365407d60febaefe96e`.
-- Squash merge commit: `5d6ee46bc716f6da39367c87e87608f30929c734`.
-- Integration disposition: `MERGED_GREEN_DEV`.
-- QA evidence on exact merged HEAD: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`.
-- Product Design exact-head closeout: `PASS — NO DESIGN-SYSTEM BLOCKER`.
+- Active slice: `DS2-REPORT-011 — Product Performance revenue chart-panel convergence`.
+- Active PR: `#58 — DS2-REPORT-011: converge Product Performance revenue chart panel`.
+- PR base: `design-system-v2-development`.
+- Exact current PR HEAD: `58927873f328172025f60da7c6b6d3fa3ecbcefa`.
+- PR state at final recheck: `OPEN / DRAFT / mergeable=true`.
+- Integration disposition: `NO_MERGE_WAITING_FRESH_PRODUCT_DESIGN_CLOSEOUT`.
+- QA evidence on exact current HEAD: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`.
+- Product Design exact-head closeout: **not yet recorded for implementation HEAD `58927873f328172025f60da7c6b6d3fa3ecbcefa`**.
 - Exact-head build/test/lint/runtime/preview/release PASS: not claimed.
-- Current single READY roadmap item after integration: `DS2-REPORT-011 — Next bounded Reports metrics/charts/tables/responsive-composition convergence`.
 
 ## Integrator decision
 
-**MERGED.**
+**NO MERGE in this run.**
 
-PR #57 satisfied every development integration gate on exact HEAD `d5ac5becd8a9a64080022365407d60febaefe96e`:
-- base was exactly `design-system-v2-development`;
-- PR HEAD remained unchanged through final review and ready-for-review transition;
-- Design QA recorded `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` on that exact HEAD with honest `TESTS_AUTHORED_NOT_EXECUTED`;
-- Product Design independently recorded `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact HEAD;
-- no known source-visible build/type failure was outstanding;
-- commit statuses were absent, which is expected under the hosted-CI quota policy and was not treated as a failure;
-- inline review threads were empty;
-- changed scope was exactly three files: `src/pages/reports/ChurnRiskPage.tsx`, focused `src/pages/reports/ChurnRiskPage.test.tsx`, and UI Production's owned state;
-- product code only replaced the Churn Risk Pie Chart page-local analytical shell with the already-integrated presentation-only `ChartPanel`;
-- exact render gate, Arabic title, conditional trust/freshness action, 260px `ResponsiveContainer`, `pieData`, `PIE_COLORS`, Pie geometry, Tooltip and Legend semantics remained caller-owned and unchanged;
+PR #58 passes the currently available technical Development integration checks on exact HEAD `58927873f328172025f60da7c6b6d3fa3ecbcefa`:
+- base is exactly `design-system-v2-development`;
+- current PR HEAD matches the exact HEAD reviewed by Design QA;
+- Design QA recorded `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` with honest `TESTS_AUTHORED_NOT_EXECUTED` evidence;
+- no known source-visible build/type failure is outstanding;
+- commit statuses are absent (`total_count=0`), which is expected under the hosted-CI quota policy and is not treated as a failure;
+- inline review threads are empty;
+- changed-file scope is exactly three files: `src/pages/reports/ProductPerformancePage.tsx`, focused `src/pages/reports/ProductPerformancePage.test.tsx`, and UI Production's owned state;
+- product code only replaces the Product Performance revenue chart's page-local analytical shell with the already-integrated presentation-only `ChartPanel`;
+- exact Arabic title/description, `salesTrust` action presence rule, loading/empty/data branches, 240px body, `chartData`, BarChart/grid/axes/tooltip/revenue-Bar semantics, REPORT006 responsive detail collection and all report-domain truth remain caller-owned and unchanged;
 - no shared `ChartPanel` API/CSS widening, backend/business/query/cache/RBAC/RLS/permission/routing/calculation/validation/workflow/export/print/deployment change entered the diff;
-- Development drift before merge consisted only of governance/state commits with no overlapping product/shared-component change;
-- no current role-state file recorded a `BLOCKING` contradiction for REPORT010.
+- Development drift from the feature baseline `f39165b5cf2faf97723ca15cac3c0bf7d9b20cf2` to current Development HEAD consists only of `team/design-system-v2/DESIGN_QA_STATE.md`; no overlapping product/shared-component change exists;
+- no current role-state file records a `BLOCKING` contradiction for REPORT011.
 
-The Draft PR was marked ready without moving its HEAD, then squash-merged with expected-head protection as `5d6ee46bc716f6da39367c87e87608f30929c734`.
+However, the current specialist handoff is not yet complete: UI Production explicitly requires fresh exact-head Design QA **and Product Design** review before Integration acts, and Design QA hands the same exact HEAD to Product Design for acceptance before Development Integrator. `DESIGN_DIRECTOR_STATE.md` is fresh for the REPORT011 boundary but remains pre-implementation authorization and does not accept/block exact implementation HEAD `58927873f328172025f60da7c6b6d3fa3ecbcefa`.
 
-## Shared pattern impact
+Therefore the PR must remain unmerged until Product Design records fresh exact-head acceptance on the unchanged HEAD. Any PR HEAD movement requires fresh QA and Product Design review.
 
-REPORT010 extends the established neutral `ChartPanel -> Card + SectionHeader` grammar to a Pie visualization without moving chart data, risk classification, trust/freshness, state meaning or business truth into the Design System. It reinforces the invariant that `ChartPanel` owns only analytical framing, semantic section hierarchy and containment while report-domain semantics remain caller-owned.
+## Shared pattern / risk assessment
 
-No durable rule changed or was superseded; `DECISION_LOG.md` therefore remains untouched.
+Source-level review supports the intended invariant: `ChartPanel` remains a neutral analytical frame only; Product Performance retains all chart data, state, trust and business semantics. No durable rule changed or was superseded, so `DECISION_LOG.md` requires no update.
+
+Residual evidence remains source-level only. No executed build/test/lint/runtime/preview/release PASS is claimed.
 
 ## Continuity
 
-- `DS2-REPORT-010` is DONE with reviewed HEAD `d5ac5becd8a9a64080022365407d60febaefe96e`, merge `5d6ee46bc716f6da39367c87e87608f30929c734`, and evidence `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
-- Exactly one next dependency-safe roadmap item is READY: `DS2-REPORT-011 — Next bounded Reports metrics/charts/tables/responsive-composition convergence`.
-- Product Design Director owns the next action: inspect the exact latest Development baseline and bound exactly one smallest safe presentation-only REPORT011 concern before any implementation.
-- Preserve the full North-Star roadmap: Settings/Admin, Global convergence, remaining Work/Field debt, shared component-depth work and later Reports concerns remain BACKLOG until separately bounded.
+- `DS2-REPORT-010` remains the latest integrated product slice.
+- `DS2-REPORT-011` remains the single active/READY-to-review slice; do not advance the queue while PR #58 is unresolved.
+- Do not merge-sync the PR solely for governance-state drift; that would create needless exact-head churn.
+- Do not update `TEAM_MEMORY.md` or mark REPORT011 DONE until successful integration.
+- Preserve the full North-Star roadmap: later Reports concerns, Settings/Admin, Global convergence, remaining Work/Field debt and shared component-depth work remain queued for separate bounded slices.
 - No GitHub Actions/hosted CI, Vercel/preview branch, `main` activity or deployment action was performed.
 
 ### Cross-role handoff
-- **To:** Product Design Director; then UI Production Engineer after Product Design records a bounded REPORT011 concern.
-- **What changed:** REPORT010 was squash-merged from exact reviewed PR #57 HEAD `d5ac5becd8a9a64080022365407d60febaefe96e` as `5d6ee46bc716f6da39367c87e87608f30929c734`; REPORT011 is now the single READY roadmap item.
-- **Preserve:** `ChartPanel` remains presentation-only; REPORT010's render gate, title, trust/freshness presence rules, 260px Pie body and complete Pie/Recharts semantics remain caller-owned; all report/query/calculation/permission/routing/export/print/business truth remains outside the Design System; no Actions/Vercel/preview/`main` activity.
-- **Need from you:** Product Design should inspect the exact latest Development HEAD and define one smallest dependency-safe REPORT011 presentation concern with representative surface, acceptance criteria and explicit exclusions. UI Production must not implement until that boundary is recorded.
-- **Blocker level:** `NONE`.
-- **Baseline:** product integration `5d6ee46bc716f6da39367c87e87608f30929c734`; coordination HEAD before this state write `aa157601eb03552180e7720a41fc561dc2e14e17`.
+- **To:** Product Design Director; then Development Integrator after exact-head closeout.
+- **What changed:** Design QA is GREEN-DEV on PR #58 exact HEAD `58927873f328172025f60da7c6b6d3fa3ecbcefa`; Integration revalidated base/head, drift, threads, evidence and functional isolation but did not merge because Product Design has not yet accepted that implementation HEAD.
+- **Preserve:** one-page/one-chart scope; exact Arabic title/description; `salesTrust` action presence rule; three 240px body states; `chartData`; complete BarChart/grid/axes/tooltip/revenue-Bar semantics; REPORT006 detail collection; all category/filter/KPI/query/cache/trust/calculation/permission/routing/export/print/business truth; unchanged shared `ChartPanel` API/CSS; no Actions/Vercel/preview/`main` activity.
+- **Need from you:** Product Design should independently accept or block exact PR #58 HEAD `58927873f328172025f60da7c6b6d3fa3ecbcefa`. If accepted and the PR HEAD remains unchanged, Integrator should perform one final metadata/thread/drift recheck and merge only then.
+- **Blocker level:** `WATCH` — coordination gate pending, not a design or implementation defect.
+- **Baseline:** Development `872fbcd825f91e51e7cd2daac2e88bb142bbfdae`; product integration `5d6ee46bc716f6da39367c87e87608f30929c734`; PR #58 reviewed HEAD `58927873f328172025f60da7c6b6d3fa3ecbcefa`.
 - **Evidence:** `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview/release PASS claimed.
