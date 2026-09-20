@@ -92,19 +92,59 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-013 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
+### DS2-REPORT-013 — Churn Risk responsive detail-collection convergence
 Status: `READY`
-Owner role for immediate next action: Product Design Director
+Owner role for immediate next action: UI Production Engineer
 
-Intent:
-- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline before implementation;
-- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance boundary;
-- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
-- preserve REPORT001-012 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/business semantics;
-- preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
-- do not turn REPORT013 into broad multi-page report beautification.
+Representative surface:
+- `src/pages/reports/ChurnRiskPage.tsx`
+- section `قائمة العملاء حسب خطر التسرب` only.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+System-pattern intent:
+- deepen the already-proven Reports responsive collection grammar on a distinct six-fact churn-risk row shape rather than continue low-value chart-shell repetition;
+- Desktop preserves the current dense semantic comparison table while Tablet/Mobile deliberately compose the same caller-owned row truth with the existing presentation-only `ResponsiveCollection + Card + KeyValueList` grammar;
+- exactly one renderer is mounted for the active device; hidden duplicate Desktop/Mobile surfaces are not acceptable;
+- shared components remain presentation-only and must not absorb churn classification, recency, monetary, customer-identity, query or trust semantics.
+
+In scope:
+- migrate only the ready-state customer detail collection under `قائمة العملاء حسب خطر التسرب`;
+- **Desktop:** retain the existing six columns in the existing order: `العميل`, `آخر تعامل`, `عدد الفواتير`, `إجمالي الإنفاق`, `متوسط الفاتورة`, `حالة الخطر`, with existing compact density and values; add/retain proper column-header semantics (`th scope="col"`) without changing content;
+- **Tablet/Mobile:** render the same six facts through `ResponsiveCollection + Card + KeyValueList`; customer identity remains the card lead and preserves both the resolved customer name/fallback and visible customer ID; Arabic identity text must wrap safely without horizontal page drift;
+- preserve `RecencyCell` exactly for `آخر تعامل`, `formatNumber` for invoice count, `formatCurrency` for spend, the existing `row.invoice_count ? formatCurrency(row.spend_90d / row.invoice_count) : '—'` average-order calculation, and `RiskBadge` exactly for risk status;
+- preserve current loading and empty copy/precedence exactly; preserve existing page-level SystemHealth/trust/freshness behavior exactly and do not invent a new table-level blocked/failed semantic branch;
+- preserve explicit LTR treatment/formatting already required by numeric/date values while keeping the surrounding Arabic-first RTL composition;
+- rely on shared semantic Card/KeyValueList styling for dark mode; no page-local palette fork.
+
+Device/state/accessibility acceptance:
+- **Desktop:** dense semantic table remains the management comparison surface and does not regress into cards;
+- **Tablet:** intentional shared card/key-value composition with safe Arabic wrapping and no page-level horizontal drift;
+- **Mobile:** single-column shared cards with no horizontal table dependency;
+- exactly one device renderer is mounted at a time;
+- loading and empty states remain single and exact; no duplicate state surfaces by breakpoint;
+- Desktop headers expose column-header scope; Tablet/Mobile fact anatomy keeps shared `dl/dt/dd` semantics through `KeyValueList`;
+- no new interactive control, focus path or touch target is introduced.
+
+Focused test intent:
+- Desktop/Tablet/Mobile renderer selection and single-renderer behavior;
+- exact loading/empty precedence and copy;
+- six-field row/card mapping and order;
+- customer resolved-name/fallback plus visible customer ID;
+- unchanged average-order calculation/fallback;
+- unchanged `RecencyCell` and `RiskBadge` semantics;
+- semantic Desktop column headers and responsive Arabic containment.
+
+Explicit exclusions:
+- REPORT010 pie `ChartPanel` and all chart behavior;
+- KPI grid and all report filter/date controls;
+- SystemHealthBar/trust/freshness redesign or new state semantics;
+- `RiskBadge` / `RecencyCell` semantic redesign;
+- query hooks, calculations, churn classification, sorting/order, backend/schema/RPC/cache, permissions/RBAC/RLS, routing/export/print/business behavior;
+- any other Reports/Analytics page or second responsive collection;
+- any material API/CSS change to `ResponsiveCollection`, `Card` or `KeyValueList`;
+- Settings/Admin, remaining Work/Field debt, Global convergence and deployment/workflow changes.
+
+Stop condition:
+- if implementation requires material shared API/CSS widening, simultaneous hidden duplicate device surfaces, or any functional/data/trust semantic change, mark `DS2-REPORT-013` `BLOCKED` and return to Product Design rather than expanding the PR.
 
 ## Product migration roadmap
 
@@ -154,7 +194,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-012` — `DONE`
-- `DS2-REPORT-013 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY`
+- `DS2-REPORT-013 — Churn Risk responsive detail-collection convergence` — `READY`
 - further Reports/Analytics convergence beyond REPORT013 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
