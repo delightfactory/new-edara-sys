@@ -18,7 +18,7 @@ Authorities:
 |---|---|---|---:|---:|---:|
 | Product Design Director | System identity, architecture, next slice, design quality | every 2 hours | No | No | No |
 | UI Production Engineer | Implement/repair the single active UI slice | hourly | UI-only | No | No |
-| Design QA | Independent exact-head review | hourly | No | No | No |
+| Design QA | Independent exact-head review | hourly | No | No |
 | Development Integrator | Merge GREEN-DEV PR and advance queue | hourly | No feature work | Development only | No |
 
 `BACKLOG -> READY -> IN_PROGRESS -> REVIEW -> GREEN-DEV -> DONE`
@@ -38,17 +38,17 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-008`.
+Product UI is integrated through `DS2-REPORT-009`.
 
 Latest product integration:
-- PR: `#55 — DS2-REPORT-008: converge Receivables AR chart panel`
-- Exact reviewed PR HEAD: `3248057b52188d821f6e87f7b4624a8c14f00c3d`
-- Squash merge commit: `cdacc180e1e163b6dcb3d16cb80ff0beee1e701f`
+- PR: `#56 — DS2-REPORT-009: converge Sales secondary chart panel`
+- Exact reviewed PR HEAD: `9f07979508c8139f579afbde0397672437eef992`
+- Squash merge commit: `5df49a61722daaeedd4c0b3f9434628b07f74c29`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact HEAD
 - Runtime/preview/release evidence: not claimed
 
-The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, Supervisor Work shared KPI summary convergence, Reports shared route-level sub-navigation convergence, Reports shared date-preset selector convergence with hardened `SegmentedControl` geometry, Reports shared native `DateField` convergence for the custom date pair, Reports Overview primary KPI-summary layout convergence onto shared `MetricGrid` while preserving report-domain `MetricCard` trust/freshness semantics, shared domain-agnostic `ChartPanel` proven on Sales and Receivables, Product Performance responsive detail-collection convergence using shared `ResponsiveCollection + Card + KeyValueList` while preserving the dense Desktop table, and Geography analysis-level control convergence onto shared `Select -> Field` while retaining report-domain state/filter ownership.
+The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, Supervisor Work shared KPI summary convergence, Reports shared route-level sub-navigation convergence, Reports shared date-preset selector convergence with hardened `SegmentedControl` geometry, Reports shared native `DateField` convergence for the custom date pair, Reports Overview primary KPI-summary layout convergence onto shared `MetricGrid` while preserving report-domain `MetricCard` trust/freshness semantics, shared domain-agnostic `ChartPanel` proven across both Sales analytical sections and Receivables, Product Performance responsive detail-collection convergence using shared `ResponsiveCollection + Card + KeyValueList` while preserving the dense Desktop table, and Geography analysis-level control convergence onto shared `Select -> Field` while retaining report-domain state/filter ownership.
 
 ## Completed slices
 
@@ -78,54 +78,38 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - `DS2-REPORT-006 — Product Performance responsive detail-collection convergence` — `DONE` — PR #53 — merge `ffda5aeb23684ea981c341761d1dde2cef7c3283` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-007 — Geography analysis-level selector convergence` — `DONE` — PR #54 — merge `9ab20b3ca467b1d42eae0fb9fd6936d156e11662` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-008 — Receivables AR chart-panel convergence` — `DONE` — PR #55 — reviewed HEAD `3248057b52188d821f6e87f7b4624a8c14f00c3d` — merge `cdacc180e1e163b6dcb3d16cb80ff0beee1e701f` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
+- `DS2-REPORT-009 — Sales secondary revenue/tax chart-panel convergence` — `DONE` — PR #56 — reviewed HEAD `9f07979508c8139f579afbde0397672437eef992` — merge `5df49a61722daaeedd4c0b3f9434628b07f74c29` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 
-### REPORT008 system result
+### REPORT009 system result
 
-- only the Receivables chart section `تحصيلات AR مجمّعة بتاريخ البيع الأصلي` moved from a page-local analytical shell to existing shared V2 `ChartPanel`;
-- exact Arabic title/description, `TrustStateBadge + FreshnessIndicator` sources/content, blocked/loading/empty/data branches and the 260px body contract remain unchanged;
-- chart-data mapping, Recharts axes/grid/tooltip/margins/formatters and all three series contracts remain caller-owned and unchanged;
-- no shared `ChartPanel` API/CSS widening, second chart/report, backend/business/query/permission/routing/export/print or deployment/workflow change entered the slice.
+- only the second Sales chart `توزيع الإيرادات اليومي (إيراد + ضريبة)` moved from its page-local analytical surface/title shell to the existing shared V2 `ChartPanel`;
+- exact Arabic title, semantic `h2`, 200px loading/data body, `chartData`, BarChart margins/grid/axes/tooltip and revenue/tax series contracts remain unchanged;
+- the first Sales `ChartPanel`, its trust/freshness and blocked/loading/empty/data contracts, all MetricCards, filters, hooks, queries, permissions, routing, AnalyticsGate, export/print and business semantics remain unchanged;
+- no shared `ChartPanel` API/CSS widening, Recharts abstraction, second page/report, backend/business/query/permission/deployment/workflow change entered the slice.
 
 ## Current single READY slice
 
-### DS2-REPORT-009 — Sales secondary revenue/tax chart-panel convergence
+### DS2-REPORT-010 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
 Status: `READY`
-Owner role for immediate next action: UI Production Engineer
-Selection baseline: exact Development HEAD `e893339de9c43b9b3a3006a743a100dcb09ea0e7`.
-Representative surface: `src/pages/reports/SalesPage.tsx` → second chart section `توزيع الإيرادات اليومي (إيراد + ضريبة)` only.
+Owner role for immediate next action: Product Design Director
+Selection baseline: exact integrated Development HEAD `5df49a61722daaeedd4c0b3f9434628b07f74c29`.
 
 System-pattern intent:
-- retire the remaining page-local analytical card/header shell on the second Sales chart by composing it through the already-proven shared V2 `ChartPanel`;
-- keep `ChartPanel` presentation-only and do not widen its API/CSS contract;
-- create one coherent analytical hierarchy on the Sales report without altering chart/report truth.
+- inspect the remaining Reports/Analytics surfaces on the exact latest Development baseline;
+- select exactly one smallest dependency-safe presentation-only concern that advances the shared report grammar;
+- prefer already-proven V2 primitives/patterns and strengthen a shared contract only when a real consumer proves the need;
+- keep all report analytics/query/calculation/trust/permission/routing/export/print/business semantics caller/domain-owned.
 
-Acceptance boundary:
-- replace only the second chart's local outer surface/title shell with `ChartPanel`;
-- preserve the exact Arabic title `توزيع الإيرادات اليومي (إيراد + ضريبة)`;
-- do not invent a description, trust/freshness action or new report semantics for this panel;
-- preserve the current branch exactly: `dailyLoading ? <SkeletonCard height={200} /> : <ResponsiveContainer ... height={200}>`;
-- preserve the current absence of additional blocked/empty gating on this second chart; adding such semantics is not part of this presentation slice;
-- preserve `chartData`, `BarChart` margin `{ top: 4, left: -10, right: 4, bottom: 0 }`, grid, axes, tick formatting, `CustomTooltip`, and both Bars unchanged: `revenue / الإيراد / #2563eb` and `tax / الضريبة / #0284c7`, each `radius={[3,3,0,0]}` and `maxBarSize={24}`;
-- preserve the first `ChartPanel` (`تطور الإيراد اليومي`), all four `MetricCard`s, `ReportFilterBar`, `SystemHealthBar`, hooks, range/filter state, trust calculations, `chartData` mapping and all query/cache/service/permission/routing/`AnalyticsGate`/export/print/business semantics;
-- focused tests should update `SalesPage.test.tsx` to prove both analytical sections use shared `ChartPanel`, the second panel has semantic `h2` with the exact title, the first panel's existing title/description/trust/blocked/empty contracts remain intact, and the second chart's 200px/two-series configuration remains unchanged.
+Acceptance boundary before implementation may begin:
+- Product Design must name one representative page/surface/file and one coherent concern;
+- record explicit preserve/exclusion/device/state/accessibility requirements from the exact current Development source;
+- preserve REPORT001-009 contracts and avoid broad multi-page beautification;
+- do not start UI Production code until that boundary is recorded from the then-current Development HEAD;
+- if the next concern requires functional/backend/business change, mark it `BLOCKED` or choose another dependency-safe presentation concern rather than widening scope.
 
-Device/state/accessibility acceptance:
-- **Desktop:** preserve compact report density and 200px comparison-chart body; no decorative height inflation;
-- **Tablet:** shared panel/header must fit deliberately without introducing fixed-width pressure or ordinary horizontal overflow;
-- **Mobile:** title must wrap safely in the shared panel, chart containment remains `min-width: 0`, and no duplicate interaction/render tree is introduced;
-- **RTL / Arabic:** exact Arabic title is retained and shared logical layout/tokens own the surface;
-- **Dark mode:** surface/border/title styling must come through the existing V2 semantic-token path;
-- **Accessibility:** page hierarchy remains `h1 -> h2`; this chart introduces no new interactive control, so focus/touch behavior must not be fabricated;
-- evidence remains source/test-artifact based unless an approved execution environment actually runs tests.
-
-Explicit exclusions:
-- no change to the first Sales chart beyond tests needed to prove it remains unchanged;
-- no `ChartPanel` API/CSS redesign, no shared chart/recharts abstraction, no new legend/tooltip primitive;
-- no MetricCard/report-grid/filter/header/system-health cleanup;
-- no new trust/freshness/blocked/empty semantics for the second chart;
-- no second page/report and no backend/business/query/calculation/permission/routing/export/print/deployment/workflow change.
-
-Escalation rule: if the existing `ChartPanel` contract proves materially insufficient, if exact current Sales semantics cannot be preserved, or if completing the slice would require new trust/business behavior, mark REPORT009 `BLOCKED` and return to Product Design rather than widening the PR.
+Roadmap guardrail:
+- Reports remains the current phase, but Settings/Admin, remaining Work and Field convergence, shared component-depth work and Global cleanup remain preserved below;
+- advancing REPORT010 must not collapse the North-Star roadmap into ad-hoc report polishing.
 
 ## Product migration roadmap
 
@@ -193,8 +177,9 @@ Open only when a real migrated screen proves the recurring gap:
 - `DS2-REPORT-006` Product Performance responsive detail-collection convergence — `DONE` / PR #53 / merge `ffda5aeb23684ea981c341761d1dde2cef7c3283`
 - `DS2-REPORT-007` Geography analysis-level selector convergence — `DONE` / PR #54 / merge `9ab20b3ca467b1d42eae0fb9fd6936d156e11662`
 - `DS2-REPORT-008` Receivables AR chart-panel convergence — `DONE` / PR #55 / merge `cdacc180e1e163b6dcb3d16cb80ff0beee1e701f`
-- `DS2-REPORT-009` Sales secondary revenue/tax chart-panel convergence — `READY` / bounded to the second Sales chart only
-- further Reports/Analytics convergence beyond REPORT009 — `BACKLOG` / each concern must be bounded separately
+- `DS2-REPORT-009` Sales secondary revenue/tax chart-panel convergence — `DONE` / PR #56 / merge `5df49a61722daaeedd4c0b3f9434628b07f74c29`
+- `DS2-REPORT-010` Next bounded Reports metrics/charts/tables/responsive-composition convergence — `READY` / Product Design must bound one smallest presentation concern before implementation
+- further Reports/Analytics convergence beyond REPORT010 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
