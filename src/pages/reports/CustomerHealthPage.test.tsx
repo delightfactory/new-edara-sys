@@ -1,5 +1,5 @@
-import { act, beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { act, render, screen, within } from '@testing-library/react'
 import CustomerHealthPage from './CustomerHealthPage'
 
 const mocks = vi.hoisted(() => ({
