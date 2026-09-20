@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
-import { act, beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { act, render, screen, within } from '@testing-library/react'
 import ProductPerformancePage from './ProductPerformancePage'
 
 const mocks = vi.hoisted(() => ({
