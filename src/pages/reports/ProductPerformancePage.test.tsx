@@ -9,6 +9,13 @@ const mocks = vi.hoisted(() => ({
   useProductPerformanceSummary: vi.fn(),
   useProductPerformanceTable: vi.fn(),
   rpc: vi.fn(),
+  responsiveContainer: vi.fn(),
+  barChart: vi.fn(),
+  bar: vi.fn(),
+  xAxis: vi.fn(),
+  yAxis: vi.fn(),
+  tooltip: vi.fn(),
+  cartesianGrid: vi.fn(),
 }))
 
 vi.mock('@/hooks/useSystemTrustState', () => ({
@@ -50,13 +57,34 @@ vi.mock('@/components/reports/FreshnessIndicator', () => ({
 }))
 
 vi.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  BarChart: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  Bar: () => null,
-  XAxis: () => null,
-  YAxis: () => null,
-  Tooltip: () => null,
-  CartesianGrid: () => null,
+  ResponsiveContainer: ({ children, ...props }: { children: ReactNode } & Record<string, unknown>) => {
+    mocks.responsiveContainer(props)
+    return <div data-testid="responsive-container">{children}</div>
+  },
+  BarChart: ({ children, ...props }: { children: ReactNode } & Record<string, unknown>) => {
+    mocks.barChart(props)
+    return <div data-testid="bar-chart">{children}</div>
+  },
+  Bar: (props: Record<string, unknown>) => {
+    mocks.bar(props)
+    return null
+  },
+  XAxis: (props: Record<string, unknown>) => {
+    mocks.xAxis(props)
+    return null
+  },
+  YAxis: (props: Record<string, unknown>) => {
+    mocks.yAxis(props)
+    return null
+  },
+  Tooltip: (props: Record<string, unknown>) => {
+    mocks.tooltip(props)
+    return null
+  },
+  CartesianGrid: (props: Record<string, unknown>) => {
+    mocks.cartesianGrid(props)
+    return null
+  },
 }))
 
 const rows = [
@@ -85,6 +113,11 @@ function getDetailSection() {
   return screen.getByText('تفاصيل المنتجات — أعلى 50 حسب الإيراد').parentElement as HTMLElement
 }
 
+function getChartPanel() {
+  const heading = screen.getByRole('heading', { level: 2, name: 'أعلى 15 منتجاً بالإيراد' })
+  return heading.closest('.ds-chart-panel') as HTMLElement
+}
+
 describe('Product Performance responsive detail collection', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -96,6 +129,82 @@ describe('Product Performance responsive detail collection', () => {
       isLoading: false,
     })
     mocks.useProductPerformanceTable.mockReturnValue({ data: rows, isLoading: false })
+  })
+
+  it('uses the shared ChartPanel with semantic hierarchy, exact copy, and the existing trust action', () => {
+    render(<ProductPerformancePage />)
+
+    const panel = getChartPanel()
+    expect(document.querySelectorAll('.ds-chart-panel')).toHaveLength(1)
+    expect(within(panel).getByText('مرتب تنازلياً حسب صافى الإيراد')).toBeTruthy()
+    expect(within(panel).getByTestId('trust-state-badge')).toBeTruthy()
+    expect(within(panel).getByTestId('freshness-indicator')).toBeTruthy()
+  })
+
+  it('preserves the salesTrust action presence rule when trust is unavailable', () => {
+    mocks.useTrustForComponent.mockReturnValue(null)
+    render(<ProductPerformancePage />)
+
+    const panel = getChartPanel()
+    expect(within(panel).queryByTestId('trust-state-badge')).toBeNull()
+    expect(within(panel).queryByTestId('freshness-indicator')).toBeNull()
+  })
+
+  it('preserves the exact 240px chart loading and empty states', () => {
+    mocks.useProductPerformanceTable.mockReturnValue({ data: rows, isLoading: true })
+    const { rerender } = render(<ProductPerformancePage />)
+
+    let panel = getChartPanel()
+    expect(within(panel).getByTestId('skeleton-card').getAttribute('data-height')).toBe('240')
+
+    mocks.useProductPerformanceTable.mockReturnValue({ data: [], isLoading: false })
+    rerender(<ProductPerformancePage />)
+
+    panel = getChartPanel()
+    const empty = within(panel).getByText('لا توجد بيانات')
+    expect(empty.style.height).toBe('240px')
+  })
+
+  it('preserves the 240px responsive BarChart data, axes, grid, tooltip, and revenue-series contract', () => {
+    render(<ProductPerformancePage />)
+
+    expect(mocks.responsiveContainer).toHaveBeenCalledTimes(1)
+    expect(mocks.responsiveContainer.mock.calls[0][0]).toMatchObject({ width: '100%', height: 240 })
+
+    const expectedChartData = [{
+      name: rows[0].product_name.slice(0, 20) + '…',
+      revenue: 1234,
+    }]
+    expect(mocks.barChart.mock.calls[0][0]).toMatchObject({
+      data: expectedChartData,
+      margin: { top: 4, left: -10, right: 4, bottom: 60 },
+    })
+    expect(mocks.cartesianGrid.mock.calls[0][0]).toMatchObject({
+      strokeDasharray: '3 3',
+      stroke: 'var(--border-primary)',
+      vertical: false,
+    })
+    expect(mocks.xAxis.mock.calls[0][0]).toMatchObject({
+      dataKey: 'name',
+      tickLine: false,
+      axisLine: false,
+      angle: -30,
+      textAnchor: 'end',
+      interval: 0,
+    })
+    expect(mocks.yAxis.mock.calls[0][0]).toMatchObject({
+      tickLine: false,
+      axisLine: false,
+    })
+    expect(mocks.yAxis.mock.calls[0][0].tickFormatter(1234)).toBe('1,234')
+    expect(mocks.tooltip.mock.calls[0][0].content).toBeTruthy()
+    expect(mocks.bar.mock.calls[0][0]).toMatchObject({
+      dataKey: 'revenue',
+      name: 'الإيراد',
+      fill: '#2563eb',
+      radius: [3, 3, 0, 0],
+      maxBarSize: 32,
+    })
   })
 
   it('preserves the semantic seven-column desktop table and mounts no detail-card renderer', () => {
