@@ -32,7 +32,7 @@ Before material action every role reads Team Memory, all four role states, the D
 
 ## GitHub Actions / preview policy
 
-Hosted GitHub Actions remain forbidden while quota protection is active. Focused tests are still authored. Normal development evidence is exact-head `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + an honest execution label. A known real build/type failure blocks integration.
+Hosted GitHub Actions remain forbidden while quota protection is active. Focused tests are still authored. Normal development evidence is exact-head `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + an honest execution label. A known build/type failure blocks integration.
 
 Vercel preview remains owner-requested only. Scheduled agents never merge to `main`.
 
@@ -89,27 +89,48 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-010 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
+### DS2-REPORT-010 — Churn Risk pie-chart ChartPanel convergence
 Status: `READY`
-Owner role for immediate next action: Product Design Director
-Selection baseline: exact integrated Development HEAD `5df49a61722daaeedd4c0b3f9434628b07f74c29`.
+Owner role for immediate next action: UI Production Engineer
+Product Design selection baseline: exact Development HEAD `3365b4223d5f37d56f3d3af9bb698340935bb95d`.
+Representative surface: `src/pages/reports/ChurnRiskPage.tsx` → Pie Chart section `توزيع تصنيف العملاء` only.
 
 System-pattern intent:
-- inspect the remaining Reports/Analytics surfaces on the exact latest Development baseline;
-- select exactly one smallest dependency-safe presentation-only concern that advances the shared report grammar;
-- prefer already-proven V2 primitives/patterns and strengthen a shared contract only when a real consumer proves the need;
-- keep all report analytics/query/calculation/trust/permission/routing/export/print/business semantics caller/domain-owned.
+- reuse the already-proven presentation-only V2 `ChartPanel` for a different visualization family (`PieChart`), proving the shared analytical surface remains chart-library/domain neutral;
+- retire one more page-local report card/header shell without moving chart data, trust/freshness, state decisions or customer-risk semantics into the Design System;
+- preserve the exact chart behavior and use shared `Card + SectionHeader` hierarchy rather than inventing a Churn Risk-specific visual pattern.
 
-Acceptance boundary before implementation may begin:
-- Product Design must name one representative page/surface/file and one coherent concern;
-- record explicit preserve/exclusion/device/state/accessibility requirements from the exact current Development source;
-- preserve REPORT001-009 contracts and avoid broad multi-page beautification;
-- do not start UI Production code until that boundary is recorded from the then-current Development HEAD;
-- if the next concern requires functional/backend/business change, mark it `BLOCKED` or choose another dependency-safe presentation concern rather than widening scope.
+Required implementation boundary:
+- replace only the Pie Chart section's local outer surface/header wrapper with existing shared `ChartPanel`;
+- keep the title exactly `توزيع تصنيف العملاء` and use the default semantic `h2` path;
+- pass the existing conditional `riskTrust` badge/freshness cluster through `ChartPanel.action` without changing when either item appears;
+- preserve the outer render gate exactly: the chart section remains absent while `statsLoading` is true or `pieData.length === 0`;
+- preserve `ResponsiveContainer width="100%" height={260}` and the existing `PieChart`, `Pie`, `Cell`, `Tooltip`, `Legend`, `pieData`, `PIE_COLORS`, inner/outer radius and `paddingAngle` contracts;
+- add/update focused test artifacts for this exact presentation migration and preserved chart/state contract;
+- no shared `ChartPanel` API/CSS change is expected or authorized.
+
+Explicit exclusions:
+- page header and subtitle;
+- raw `riskLabel` select and `asOfDate` date input;
+- KPI grid/cards and `RISK_CONFIG` semantics;
+- customer detail table, `RiskBadge`, `RecencyCell` and any responsive-table/card migration;
+- `useCustomerRiskSummary`, `useCustomerRiskList`, system-trust hooks, query/cache semantics, calculations, risk classification logic, permissions, routing, export/print or any backend/business behavior;
+- no new Recharts abstraction, legend/tooltip primitive, report FilterBar work, MetricGrid/StatCard convergence or second report/page.
+
+Device / state / accessibility acceptance:
+- **Desktop:** preserve the current compact 260px analytical body and management density; no decorative enlargement.
+- **Tablet:** shared SectionHeader/action composition must wrap safely and remain touch-friendly without fixed-width pressure.
+- **Mobile:** exact Arabic title and trust/freshness action may wrap through shared header composition; chart body remains width-contained with no new ordinary page-level horizontal overflow or duplicate renderer.
+- **RTL / dark mode:** presentation comes through existing semantic `ChartPanel -> Card + SectionHeader`; do not add page-local color/surface overrides.
+- **States:** preserve the current omission semantics exactly—no new loading, empty, blocked, error or trust interpretation for the chart itself.
+- **Accessibility:** establish coherent page `h1 -> h2` section hierarchy; do not add synthetic interaction/focus behavior or alter existing Recharts tooltip/legend semantics.
+- **Evidence:** focused source tests should protect shared-panel adoption, exact title/action presence rules, the no-data/loading omission contract, 260px container and unchanged pie-series configuration; execution evidence must remain honestly labeled per policy.
+
+Stop / block rule:
+- if this migration requires a material `ChartPanel` API/CSS redesign, changes the chart's render/state meaning, or exposes a functional/query/business dependency, mark REPORT010 `BLOCKED` and return to Product Design rather than widening the PR.
 
 Roadmap guardrail:
-- Reports remains the current phase, but Settings/Admin, remaining Work and Field convergence, shared component-depth work and Global cleanup remain preserved below;
-- advancing REPORT010 must not collapse the North-Star roadmap into ad-hoc report polishing.
+- REPORT010 is one chart on one page only; Customer Health/Churn Risk tables, report filter grammar, broader responsive-table convergence, remaining Reports, Settings/Admin, Work/Field debt, shared component-depth work and Global cleanup remain future separately bounded concerns.
 
 ## Product migration roadmap
 
@@ -178,7 +199,7 @@ Open only when a real migrated screen proves the recurring gap:
 - `DS2-REPORT-007` Geography analysis-level selector convergence — `DONE` / PR #54 / merge `9ab20b3ca467b1d42eae0fb9fd6936d156e11662`
 - `DS2-REPORT-008` Receivables AR chart-panel convergence — `DONE` / PR #55 / merge `cdacc180e1e163b6dcb3d16cb80ff0beee1e701f`
 - `DS2-REPORT-009` Sales secondary revenue/tax chart-panel convergence — `DONE` / PR #56 / merge `5df49a61722daaeedd4c0b3f9434628b07f74c29`
-- `DS2-REPORT-010` Next bounded Reports metrics/charts/tables/responsive-composition convergence — `READY` / Product Design must bound one smallest presentation concern before implementation
+- `DS2-REPORT-010` Churn Risk pie-chart ChartPanel convergence — `READY` / one chart on `ChurnRiskPage.tsx`; exact Product Design boundary above
 - further Reports/Analytics convergence beyond REPORT010 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
