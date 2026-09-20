@@ -90,26 +90,42 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-011 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
+### DS2-REPORT-011 — Product Performance revenue chart-panel convergence
 Status: `READY`
-Owner role for immediate next action: Product Design Director
-Integration baseline: product merge `5d6ee46bc716f6da39367c87e87608f30929c734`; Product Design must inspect the exact latest Development HEAD before selecting implementation scope.
+Owner role for immediate next action: UI Production Engineer
+Exact Product Design baseline: `80ec9ed679ed8f2bf7f96fb98c84a1df4f2224ee`
+Representative surface: `src/pages/reports/ProductPerformancePage.tsx` → chart section `أعلى 15 منتجاً بالإيراد` only.
 
 System-pattern intent:
-- continue the Reports/Analytics convergence program without turning it into broad page polishing;
-- select exactly one smallest dependency-safe presentation-only concern from representative remaining Reports/Analytics surfaces;
-- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer proves the need;
-- preserve all report/query/calculation/trust/permission/routing/export/print/business semantics as caller/domain-owned.
+- retire one remaining page-local analytical card/header shell by reusing the already-proven presentation-only V2 `ChartPanel -> Card + SectionHeader` grammar;
+- keep chart data, state decisions, trust/freshness meaning, Recharts configuration and report/business truth caller-owned;
+- strengthen cross-report consistency without widening `ChartPanel` or turning REPORT011 into broad Product Performance cleanup.
 
-Required Product Design bounding before implementation:
-- name one representative surface/file and one coherent concern only;
-- record explicit acceptance criteria for Mobile/Tablet/Desktop, Arabic/RTL, state preservation and accessibility relevant to that concern;
-- state explicit exclusions and functional-isolation boundaries;
-- confirm whether the slice reuses an existing shared pattern or demonstrates a bounded shared-contract need;
-- do not authorize UI Production until the exact then-current Development baseline and bounded concern are recorded.
+Required implementation boundary:
+- import and use existing shared `ChartPanel` for this one chart section only;
+- preserve exact title `أعلى 15 منتجاً بالإيراد` and exact description `مرتب تنازلياً حسب صافى الإيراد`;
+- preserve the current `salesTrust` presence rule for the `TrustStateBadge + FreshnessIndicator` action cluster;
+- preserve the three body states exactly: `tableLoading` → `SkeletonCard height={240}`; `chartData.length === 0` → exact `لا توجد بيانات` copy in a 240px centered body; otherwise `ResponsiveContainer width="100%" height={240}`;
+- preserve `chartData`, BarChart margins, grid, X/Y axes, tick/angle/text-anchor behavior, `CustomTooltip`, and `Bar dataKey="revenue" name="الإيراد" fill="#2563eb" radius={[3,3,0,0]} maxBarSize={32}`;
+- use the shared default semantic `h2` so the chart participates in page `h1 -> h2` hierarchy;
+- update/add focused `ProductPerformancePage.test.tsx` coverage for shared-panel adoption and the preserved title/description/action/state/240px/chart contract; evidence remains honestly labeled until executed in an approved environment.
+
+Device / Arabic / accessibility acceptance:
+- **Desktop:** retain the current compact 240px analytical density and all comparative chart information;
+- **Tablet:** shared `SectionHeader` must wrap title/description/action deliberately without fixed-width pressure;
+- **Mobile:** no new ordinary page-level horizontal overflow, no duplicate renderer, and the chart body must remain width-contained through the shared panel contract;
+- **Arabic/RTL:** preserve exact Arabic copy and logical shared layout; long title/action content must wrap safely;
+- **Dark mode:** chart shell must follow existing semantic shared V2 surface/border/text tokens with no new page-local color contract;
+- **Accessibility:** establish semantic `h2` section hierarchy; do not invent new interaction semantics for Recharts or trust controls.
+
+Explicit exclusions / functional isolation:
+- no change to Product Performance page header, category select, `ReportFilterBar`, `SystemHealthBar`, KPI `MetricCard`s, `ResponsiveCollection` detail section, Desktop table, Tablet/Mobile detail cards or REPORT006 contracts;
+- no shared `ChartPanel` API/CSS change, no Recharts abstraction and no second report/page;
+- no change to category RPC, hooks, query/cache semantics, sorting/top-15 derivation, calculations, trust status meaning, permissions, routing, export/print, validation, backend or business semantics;
+- if exact implementation requires material shared-contract or functional-semantic change, mark REPORT011 `BLOCKED` instead of widening the PR.
 
 Roadmap guardrail:
-- Customer Health/Churn Risk tables, report filter grammar, broader responsive-table convergence, remaining report charts/metrics/states, Settings/Admin, Work/Field debt, shared component-depth work and Global cleanup remain separately bounded future concerns unless Product Design selects exactly one of them for REPORT011.
+- Customer Health/Churn Risk tables, report filter grammar, broader responsive-table convergence, remaining report charts/metrics/states, Settings/Admin, Work/Field debt, shared component-depth work and Global cleanup remain separately bounded future concerns.
 
 ## Product migration roadmap
 
@@ -179,7 +195,7 @@ Open only when a real migrated screen proves the recurring gap:
 - `DS2-REPORT-008` Receivables AR chart-panel convergence — `DONE` / PR #55 / merge `cdacc180e1e163b6dcb3d16cb80ff0beee1e701f`
 - `DS2-REPORT-009` Sales secondary revenue/tax chart-panel convergence — `DONE` / PR #56 / merge `5df49a61722daaeedd4c0b3f9434628b07f74c29`
 - `DS2-REPORT-010` Churn Risk pie-chart ChartPanel convergence — `DONE` / PR #57 / merge `5d6ee46bc716f6da39367c87e87608f30929c734`
-- `DS2-REPORT-011` Next bounded Reports metrics/charts/tables/responsive-composition convergence — `READY` / Product Design must bound exactly one concern before implementation
+- `DS2-REPORT-011` Product Performance revenue chart-panel convergence — `READY` / bounded by Product Design on baseline `80ec9ed679ed8f2bf7f96fb98c84a1df4f2224ee`
 - further Reports/Analytics convergence beyond REPORT011 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
