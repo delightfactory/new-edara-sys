@@ -17,8 +17,8 @@ Authorities:
 | Role | Responsibility | Cadence | Product code | Merge | Deploy |
 |---|---|---|---:|---:|---:|
 | Product Design Director | System identity, architecture, next slice, design quality | every 2 hours | No | No | No |
-| UI Production Engineer | Implement/repair the single active UI slice | hourly | UI-only | No | No |
-| Design QA | Independent exact-head review | hourly | No | No |
+| UI Production Engineer | Implement/repair the single active UI slice | hourly | UI-only | No | No | No |
+| Design QA | Independent exact-head review | hourly | No | No | No |
 | Development Integrator | Merge GREEN-DEV PR and advance queue | hourly | No feature work | Development only | No |
 
 `BACKLOG -> READY -> IN_PROGRESS -> REVIEW -> GREEN-DEV -> DONE`
