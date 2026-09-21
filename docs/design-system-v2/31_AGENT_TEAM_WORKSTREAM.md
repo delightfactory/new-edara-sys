@@ -38,17 +38,17 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-018`.
+Product UI is integrated through `DS2-REPORT-019`.
 
 Latest product integration:
-- PR: `#66 — DS2-REPORT-018: converge Treasury daily cashflow chart panel`
-- Exact reviewed PR HEAD: `1e9b2ad87d00a99a7db18f70bbcb1d881c5953e2`
-- Squash merge commit: `aa11853c351aac3a9da3203af1a0208fc49fd6f3`
+- PR: `#67 — DS2-REPORT-019: converge Overview customer health metric grid`
+- Exact reviewed PR HEAD: `a03724562f461c0072c736f6091ff7bcc158bda6`
+- Squash merge commit: `5184c06021d2162e4c1feb5170e92e300bd846d9`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact HEAD
 - Runtime/preview/release evidence: not claimed
 
-The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, Supervisor Work shared KPI summary convergence, Reports shared route-level sub-navigation convergence, Reports date-preset and native custom-date convergence, Reports Overview KPI-summary convergence, shared `ChartPanel` proofs across Sales/Receivables/Churn/Product Performance/Rep Performance/Treasury analytical surfaces, and responsive detail-collection proofs across Product Performance, Customer Health, Churn Risk, Geography, Rep Performance and Target Attainment using `ResponsiveCollection + Card + KeyValueList` while preserving dense Desktop comparison.
+The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, Supervisor Work shared KPI summary convergence, Reports shared route-level sub-navigation convergence, Reports date-preset and native custom-date convergence, Reports Overview KPI-summary and customer-health summary convergence, shared `ChartPanel` proofs across Sales/Receivables/Churn/Product Performance/Rep Performance/Treasury analytical surfaces, and responsive detail-collection proofs across Product Performance, Customer Health, Churn Risk, Geography, Rep Performance and Target Attainment using `ResponsiveCollection + Card + KeyValueList` while preserving dense Desktop comparison.
 
 ## Completed slices
 
@@ -88,6 +88,7 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - `DS2-REPORT-016 — Rep Performance responsive detail-collection convergence` — `DONE` — PR #64 — reviewed HEAD `d6f257c4060aa25a2c4ce46abe621fe76f031826` — merge `ce3db886a3eaaae15025998186cc62e1e841410e` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-017 — Target Attainment responsive detail-collection convergence` — `DONE` — PR #65 — reviewed HEAD `ccaaa6ede829f4d81017779c99cd76c1bf719918` — merge `3474748541068600e1deae061bf68fca23b346ef` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-018 — Treasury daily cashflow chart-panel convergence` — `DONE` — PR #66 — reviewed HEAD `1e9b2ad87d00a99a7db18f70bbcb1d881c5953e2` — merge `aa11853c351aac3a9da3203af1a0208fc49fd6f3` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
+- `DS2-REPORT-019 — Overview customer-health metric-grid convergence` — `DONE` — PR #67 — reviewed HEAD `a03724562f461c0072c736f6091ff7bcc158bda6` — merge `5184c06021d2162e4c1feb5170e92e300bd846d9` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 
 ### REPORT017 system result
 
@@ -105,40 +106,29 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - Mobile/Tablet/Desktop retain 100% chart containment; compact trust/freshness wrapping is safe and informational rather than interactive.
 - No query/cache/calculation/trust/permission/RBAC/RLS/routing/backend/validation/export/print/workflow/business semantics changed.
 
+### REPORT019 system result
+
+- Reports Overview `صحة قاعدة العملاء` ready state now uses the established shared `MetricGrid columns={2}` instead of the remaining page-local `report-grid` wrapper.
+- The two existing `MetricCard`s remain unchanged in order/content/formatting, including active/dormant values, average monetary value, 90-day subtitle, average-recency secondary fact/fallback, trust/freshness/stale/domain wiring and the existing details link.
+- The loading branch remains one `SkeletonCard height={120}` and does not mount the customer-health ready-state grid while loading.
+- Mobile uses the shared one-column stack; Tablet and Desktop preserve the deliberate two-column comparison with no shared API/CSS/token widening.
+- No query/cache/calculation/trust/permission/RBAC/RLS/routing/backend/validation/export/print/workflow/business semantics changed.
+
 ## Current single READY slice
 
-### DS2-REPORT-019 — Overview customer-health metric-grid convergence
+### DS2-REPORT-020 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
 Status: `READY`
-Owner role for immediate next action: UI Production Engineer
-
-Representative surface:
-- `src/pages/reports/OverviewPage.tsx` → `صحة قاعدة العملاء` ready-state metric pair only.
+Owner role for immediate next action: Product Design Director
 
 System intent:
-- close the remaining page-local `report-grid` layout residue inside the already-migrated Reports Overview by reusing the established shared `MetricGrid` contract;
-- replace only the ready-state wrapper around the two existing `MetricCard` children with `MetricGrid columns={2}`;
-- preserve `MetricGrid` as layout-only: business values, labels, trust/freshness/status semantics and calculation remain caller-/`MetricCard`-owned;
-- use the canonical responsive composition already declared by `MetricGrid`: one column on Mobile, two columns on Tablet, and two columns on Desktop for this two-card section;
-- keep the section title and `عرض التفاصيل ←` route link exactly where they are, with Arabic-first wrapping and no new interaction semantics.
+- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline and select exactly one smallest dependency-safe presentation-only concern;
+- name one representative file/surface and explicit acceptance/exclusion boundary before UI Production begins;
+- prefer established shared V2 primitives/patterns and strengthen a shared contract only when a real consumer proves the need;
+- preserve REPORT001-019 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/business semantics;
+- keep remaining Reports debt, Settings/Admin, further Work/Field convergence, shared component-depth work and Global Dark/RTL/accessibility/legacy cleanup in the active roadmap;
+- do not turn REPORT020 into broad multi-page report beautification.
 
-Acceptance boundary:
-- preserve both cards, their order and all current content exactly: `إجمالي العملاء النشطين` then `متوسط قيمة العميل`;
-- preserve active/dormant, average monetary, 90-day subtitle and average-recency values/fallbacks/formatting exactly;
-- preserve `custTrust` status, freshness timestamps/stale state and `domain="customers"` wiring exactly;
-- preserve the existing `custLoading` branch and single `SkeletonCard height={120}` exactly; REPORT019 does not redesign loading-state cardinality;
-- Mobile must not introduce horizontal overflow; Tablet must deliberately use two columns; Desktop remains a dense two-card comparison;
-- dark mode/RTL/long Arabic/mixed numeric presentation continue through existing semantic shared surfaces and unchanged MetricCards;
-- focused tests must prove there are now two shared metric grids on ready state, the customer-health grid declares `data-columns="2"`, contains exactly the two existing cards in order, and loading still preserves the current single 120px skeleton behavior.
-
-Explicit exclusions:
-- the four-card `المؤشرات الرئيسية` MetricGrid already completed in REPORT004;
-- page header, `ReportFilterBar`, `SystemHealthBar`, customer-health heading/link, navigation grid and every other Overview surface;
-- `MetricCard`, `MetricGrid`, shared CSS/tokens/APIs or new variants;
-- hooks, queries/cache, calculations, trust/freshness resolution, permissions/RBAC/RLS, routing targets, backend/services, validation, export/print, workflow and all business semantics;
-- Customer Reengagement, Visit Reports, Rep Credit Commitment and every other report page.
-
-Stop rule:
-- if implementation requires any shared API/CSS/token change or any functional/data/business semantic change, mark REPORT019 `BLOCKED` rather than widen the slice.
+Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
 
 ## Product migration roadmap
 
@@ -187,9 +177,9 @@ Open only when a real migrated screen proves the recurring gap:
 - further Work detail/feedback/management convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
 
 ### I. Reports / Analytics
-- `DS2-REPORT-001` through `DS2-REPORT-018` — `DONE`
-- `DS2-REPORT-019 — Overview customer-health metric-grid convergence` — `READY`
-- further Reports/Analytics convergence beyond REPORT019 — `BACKLOG` / each concern must be bounded separately
+- `DS2-REPORT-001` through `DS2-REPORT-019` — `DONE`
+- `DS2-REPORT-020 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY`
+- further Reports/Analytics convergence beyond REPORT020 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
