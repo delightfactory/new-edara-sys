@@ -94,19 +94,42 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-015 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
+### DS2-REPORT-015 — Geography responsive detail-collection convergence
 Status: `READY`
-Owner role for immediate next action: Product Design Director
+Owner role for immediate next action: UI Production Engineer
+Representative surface: `src/pages/reports/GeographyPage.tsx` → `التوزيع حسب {LEVEL_LABELS[level]}` collection only.
 
-Intent:
-- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline;
-- select exactly one smallest dependency-safe presentation-only concern and record its representative surface/file plus explicit acceptance boundary;
-- prefer existing shared V2 primitives/patterns; strengthen a shared contract only when a real consumer proves the need;
-- preserve REPORT001-014 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/business semantics;
-- preserve Settings/Admin, remaining Work and Field debt, shared component-depth work and the Global convergence program in the roadmap;
-- do not turn REPORT015 into broad multi-page report beautification.
+System-pattern intent:
+- converge the Geography report's current Desktop-only wide table onto the already-proven `ResponsiveCollection + Card + KeyValueList` grammar;
+- preserve Desktop as the dense comparative heatmap table while giving Tablet/Mobile deliberate card composition from the exact same caller-owned `GeographyRow[]` data;
+- mount exactly one device renderer at a time; do not duplicate the table and cards behind CSS hiding;
+- consume existing shared patterns unchanged unless the implementation proves a real blocker. Any shared API/CSS widening requires Product Design re-bounding before implementation continues.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+Required preservation / acceptance boundary:
+- **Data/source truth:** keep `useGeographyTable(filters)`, row ordering, `geo_id`, `geo_name`, `parent_name`, `net_revenue`, `customer_count`, `transaction_count`, `revenue_share_pct`, and `maxRev` semantics unchanged.
+- **Level semantics:** preserve the existing `governorate | city | area` controlled state/filter meaning from REPORT007; Desktop keeps the conditional `الأم` column only when `level !== 'governorate'`; Tablet/Mobile must represent the same parent field conditionally with the current `parent_name ?? '—'` fallback.
+- **Desktop:** preserve the current table shell, dynamic heading, Trust/Freshness cluster, six/conditional-five column order, heatmap opacity/background calculation, zero-row treatment, hover affordance, exact numeric formatting/direction and row ordering. Add semantic `scope="col"` to Desktop headers while keeping their labels unchanged.
+- **Tablet:** use the same Geography identity/data in touch-first cards, with `geo_name` as the card identity and a two-column compact `KeyValueList` for conditional parent, net revenue, customers, transactions and revenue share. No ordinary horizontal scrolling.
+- **Mobile:** use the same card anatomy in a one-column compact `KeyValueList`; long Arabic geography names/parent names must wrap without overflow, while money/count/share values retain readable LTR numeric treatment where already applicable. No ordinary horizontal scrolling.
+- **States:** preserve `tableLoading` precedence and the exact five `SkeletonCard height={44}` loading composition; preserve the exact empty condition/copy `لا توجد بيانات — شغّل watermark sweep أولاً`; do not invent blocked/error/business-state semantics not present in the current collection.
+- **Accessibility / interaction:** only one renderer mounted per device; semantic Desktop column headers; no new click target, hover dependency, keyboard path or business action; Card remains non-interactive presentation.
+- **RTL / dark mode:** use existing semantic Card/KeyValueList surfaces and Arabic-first wrapping; do not add a page-local palette or mirrored-LTR assumptions.
+
+Explicit exclusions:
+- page header, analysis-level `Select`, `ReportFilterBar`, KPI `report-grid`, `MetricCard`, `SystemHealthBar`, collection outer shell/header, Trust/Freshness behavior, and all other report pages;
+- any change to `ResponsiveCollection`, `Card`, `KeyValueList` APIs/CSS unless Product Design explicitly re-bounds the slice after a demonstrated blocker;
+- all hooks, queries, cache behavior, calculations, geography aggregation, ranking/order, permissions/RBAC/RLS, routes, export/print, backend, deployment or business semantics.
+
+Focused test-artifact expectation:
+- Desktop preserves exact dynamic columns/labels/order, `scope="col"`, row facts and no card renderer;
+- Mobile mounts only the one-column card renderer with all current source fields represented and conditional parent behavior;
+- Tablet mounts only the two-column card renderer with the same data truth;
+- loading and exact empty-copy branches preserve precedence and suppress ready renderers;
+- level change continues to preserve REPORT007 controlled filter semantics and changes the parent-field presence only through existing level truth.
+
+Evidence must remain honestly labeled under `33_TEST_AND_VALIDATION_POLICY.md`; no executed build/test/runtime claim without an approved execution environment.
+
+If implementation requires functional/data-semantic change or shared-contract widening, mark REPORT015 `BLOCKED` rather than broadening the PR.
 
 ## Product migration roadmap
 
@@ -156,7 +179,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-014` — `DONE`
-- `DS2-REPORT-015 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY`
+- `DS2-REPORT-015 — Geography responsive detail-collection convergence` — `READY`
 - further Reports/Analytics convergence beyond REPORT015 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
