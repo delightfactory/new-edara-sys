@@ -71,7 +71,7 @@ function RepPerformanceDetailCards({ items, device }: { items: RepPerformanceRow
               columns={device === 'tablet' ? 2 : 1}
               compact
               items={[
-                { key: 'revenue', label: 'صافى الإيراد', value: <span dir="ltr" style={{ color: rowColor }}>{fmt(row.net_revenue)} ج.م</span> },
+                { key: 'revenue', label: 'صافى الإيراد', value: <span dir="ltr">{fmt(row.net_revenue)} ج.م</span> },
                 { key: 'returns', label: 'المرتجعات', value: <span dir="ltr" style={{ color: returnsColor }}>{fmt(row.returns_value)} ج.م</span> },
                 { key: 'return-rate', label: 'نسبة المرتجع', value: <span dir="ltr" style={{ color: returnRateColor, fontWeight: 600 }}>{fmtPct(row.return_rate_pct)}</span> },
                 { key: 'customers', label: 'عملاء', value: <span dir="ltr">{row.distinct_customers}</span> },
