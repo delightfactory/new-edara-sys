@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useSystemTrustState, useTrustForComponent, type TrustStatus } from '@/hooks/useSystemTrustState'
 import { useTargetAttainmentSummary, useTargetAttainmentTable, type TargetAttainmentRow } from '@/hooks/useTargetAttainment'
 import MetricCard from '@/components/reports/MetricCard'
@@ -6,6 +6,9 @@ import SkeletonCard from '@/components/reports/SkeletonCard'
 import SystemHealthBar from '@/components/reports/SystemHealthBar'
 import TrustStateBadge from '@/components/reports/TrustStateBadge'
 import FreshnessIndicator from '@/components/reports/FreshnessIndicator'
+import ResponsiveCollection from '@/components/patterns/ResponsiveCollection'
+import Card from '@/components/patterns/Card'
+import KeyValueList from '@/components/patterns/KeyValueList'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine, Cell } from 'recharts'
 import { CheckCircle2, Circle, AlertTriangle, XCircle } from 'lucide-react'
 
@@ -31,6 +34,70 @@ function TrendBadge({ trend }: { trend: string }) {
     <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '999px', background: cfg.bg, color: cfg.color, fontWeight: 700, fontSize: '11px' }}>
       {cfg.label}
     </span>
+  )
+}
+
+function achievementColor(pct: number | undefined | null) {
+  const value = pct ?? 0
+  if (value >= 100) return 'var(--color-success)'
+  if (value >= 80) return 'var(--color-warning)'
+  return 'var(--color-danger)'
+}
+
+function TargetAttainmentDetailCards({ items, device }: { items: TargetAttainmentRow[]; device: 'mobile' | 'tablet' }) {
+  return (
+    <div className={`ds-responsive-card-grid ds-responsive-card-grid--${device}`}>
+      {items.map(row => (
+        <Card key={row.target_id} padding="md">
+          <KeyValueList
+            columns={device === 'tablet' ? 2 : 1}
+            compact
+            items={[
+              {
+                key: 'target-name',
+                label: 'الهدف',
+                value: <span style={{ fontWeight: 600, overflowWrap: 'anywhere', minWidth: 0 }}>{row.target_name}</span>,
+              },
+              {
+                key: 'type',
+                label: 'النوع',
+                value: <span style={{ overflowWrap: 'anywhere', minWidth: 0 }}>{row.type_code}</span>,
+              },
+              {
+                key: 'responsible',
+                label: 'المسؤول',
+                value: <span style={{ overflowWrap: 'anywhere', minWidth: 0 }}>{row.rep_name ?? '—'}</span>,
+              },
+              {
+                key: 'branch',
+                label: 'الفرع',
+                value: <span style={{ overflowWrap: 'anywhere', minWidth: 0 }}>{row.branch_name ?? '—'}</span>,
+              },
+              {
+                key: 'target-value',
+                label: 'المستهدف',
+                value: <span dir="ltr">{fmtCur(row.target_value)}</span>,
+              },
+              {
+                key: 'achieved-value',
+                label: 'المحقق',
+                value: <span dir="ltr">{fmtCur(row.achieved_value)}</span>,
+              },
+              {
+                key: 'achievement',
+                label: 'إنجاز%',
+                value: <span dir="ltr" style={{ color: achievementColor(row.achievement_pct), fontWeight: 700 }}>{fmtPct(row.achievement_pct)}</span>,
+              },
+              {
+                key: 'trend',
+                label: 'الاتجاه',
+                value: <TrendBadge trend={row.trend} />,
+              },
+            ]}
+          />
+        </Card>
+      ))}
+    </div>
   )
 }
 
@@ -158,46 +225,55 @@ export default function TargetAttainmentPage() {
             <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--color-danger)' }}>بيانات الأهداف محجوبة</div>
             <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: 'var(--space-2)' }}>snapshot_target_attainment يحتاج تشغيل ناجح أولاً</div>
           </div>
-        ) : tableLoading ? (
-          <div style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-            {[1,2,3,4,5].map(i => <SkeletonCard key={i} height={44} />)}
-          </div>
-        ) : rows.length === 0 ? (
-          <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
-            لا توجد بيانات — شغّل watermark sweep أولاً
-          </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
-              <thead>
-                <tr style={{ background: 'var(--bg-surface-2)' }}>
-                  {['الهدف', 'النوع', 'المسؤول', 'الفرع', 'المستهدف', 'المحقق', 'إنجاز%', 'الاتجاه'].map(h => (
-                    <th key={h} style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 600, color: 'var(--text-secondary)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-primary)', whiteSpace: 'nowrap' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row: TargetAttainmentRow) => (
-                  <tr key={row.target_id}
-                    style={{ borderBottom: '1px solid var(--divider)', transition: 'background 0.1s' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = '')}>
-                    <td style={{ padding: '10px 14px', color: 'var(--text-primary)', fontWeight: 600, fontSize: 'var(--text-xs)' }}>{row.target_name}</td>
-                    <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 'var(--text-xs)' }}>{row.type_code}</td>
-                    <td style={{ padding: '10px 14px', color: 'var(--text-primary)', fontSize: 'var(--text-xs)' }}>{row.rep_name ?? '—'}</td>
-                    <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 'var(--text-xs)' }}>{row.branch_name ?? '—'}</td>
-                    <td style={{ padding: '10px 14px', color: 'var(--text-primary)', direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{fmtCur(row.target_value)}</td>
-                    <td style={{ padding: '10px 14px', color: 'var(--text-primary)', direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{fmtCur(row.achieved_value)}</td>
-                    <td style={{ padding: '10px 14px', fontWeight: 700, direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)',
-                        color: (row.achievement_pct ?? 0) >= 100 ? 'var(--color-success)' : (row.achievement_pct ?? 0) >= 80 ? 'var(--color-warning)' : 'var(--color-danger)' }}>
-                      {fmtPct(row.achievement_pct)}
-                    </td>
-                    <td style={{ padding: '10px 14px' }}><TrendBadge trend={row.trend} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ResponsiveCollection<TargetAttainmentRow>
+            items={rows}
+            loading={tableLoading}
+            loadingState={(
+              <div style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                {[1,2,3,4,5].map(i => <SkeletonCard key={i} height={44} />)}
+              </div>
+            )}
+            emptyState={(
+              <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
+                لا توجد بيانات — شغّل watermark sweep أولاً
+              </div>
+            )}
+            renderDesktop={desktopRows => (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
+                  <thead>
+                    <tr style={{ background: 'var(--bg-surface-2)' }}>
+                      {['الهدف', 'النوع', 'المسؤول', 'الفرع', 'المستهدف', 'المحقق', 'إنجاز%', 'الاتجاه'].map(h => (
+                        <th scope="col" key={h} style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 600, color: 'var(--text-secondary)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-primary)', whiteSpace: 'nowrap' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {desktopRows.map((row: TargetAttainmentRow) => (
+                      <tr key={row.target_id}
+                        style={{ borderBottom: '1px solid var(--divider)', transition: 'background 0.1s' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = '')}>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-primary)', fontWeight: 600, fontSize: 'var(--text-xs)' }}>{row.target_name}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 'var(--text-xs)' }}>{row.type_code}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-primary)', fontSize: 'var(--text-xs)' }}>{row.rep_name ?? '—'}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 'var(--text-xs)' }}>{row.branch_name ?? '—'}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-primary)', direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{fmtCur(row.target_value)}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-primary)', direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{fmtCur(row.achieved_value)}</td>
+                        <td style={{ padding: '10px 14px', fontWeight: 700, direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)', color: achievementColor(row.achievement_pct) }}>
+                          {fmtPct(row.achievement_pct)}
+                        </td>
+                        <td style={{ padding: '10px 14px' }}><TrendBadge trend={row.trend} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            renderTablet={tabletRows => <TargetAttainmentDetailCards items={tabletRows} device="tablet" />}
+            renderMobile={mobileRows => <TargetAttainmentDetailCards items={mobileRows} device="mobile" />}
+          />
         )}
       </div>
     </div>
