@@ -97,19 +97,50 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-016 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
+### DS2-REPORT-016 — Rep Performance responsive detail-collection convergence
 Status: `READY`
-Owner role for immediate next action: Product Design Director
+Owner role for immediate next action: UI Production Engineer
+Representative surface: `src/pages/reports/RepPerformancePage.tsx` → `تفصيل الأداء — جميع المندوبين` collection only.
 
-Intent:
-- inspect representative remaining Reports/Analytics surfaces from the exact latest `design-system-v2-development` baseline;
-- select exactly one smallest dependency-safe presentation-only concern and record its representative surface/file plus explicit acceptance boundary before UI Production starts;
-- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
-- preserve REPORT001-015 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/business semantics;
-- preserve Settings/Admin, remaining Work/Field debt, shared component-depth work and Global convergence in the roadmap;
-- do not turn REPORT016 into broad multi-page report beautification.
+System intent:
+- extend the already-proven `ResponsiveCollection + Card + KeyValueList` report grammar to the remaining Rep Performance detail collection rather than leaving Tablet/Mobile on a horizontally scrolling Desktop table;
+- preserve Desktop comparison density and all caller-owned ranking/business truth;
+- strengthen the same cross-report pattern already proven by Product Performance, Customer Health, Churn Risk and Geography without widening shared APIs/CSS.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+Implementation boundary:
+- keep the existing outer collection surface/title `تفصيل الأداء — جميع المندوبين` and change only the loading/empty/ready collection composition required for this slice;
+- preserve `useRepPerformanceTable(filters)`, row source/order and exact row facts: `rank`, `rep_name`, `branch_name`, `net_revenue`, `returns_value`, `return_rate_pct`, `distinct_customers`;
+- preserve the current Desktop seven-column order `# / المندوب / الفرع / صافى الإيراد / المرتجعات / نسبة المرتجع / عملاء`, dense row geometry, hover treatment and existing first-row success / last-row danger identity emphasis; add only semantic `scope="col"` to Desktop headers;
+- preserve returns-value tone (`danger` when positive, otherwise muted) and return-rate thresholds (`>10` danger, `>5` warning, otherwise success) exactly; explicit numeric values remain visible, so color is never the only information carrier;
+- Tablet must use shared non-interactive `Card + KeyValueList` composition with a deliberate two-column detail layout; Mobile must use the same shared grammar with one column and no ordinary horizontal table overflow;
+- exactly one Desktop/Tablet/Mobile renderer may mount through `ResponsiveCollection`; no CSS-hidden duplicate interaction/data trees;
+- Tablet/Mobile must expose every current row fact, keep `rep_name` as the primary identity, keep `rank` and `branch_name` visible context, preserve ranking order, and retain first/last semantic emphasis only on relevant identity/rank text rather than inventing colored card surfaces or new business labels;
+- long Arabic representative/branch names must wrap safely; rank, currency, percentage and customer-count values keep intentional LTR presentation where appropriate inside RTL composition;
+- preserve loading precedence and exact five `SkeletonCard height={44}` rows; preserve the exact empty copy `لا توجد بيانات فى النطاق الزمني المحدد`; neither state may mount a ready device renderer;
+- cards remain passive information surfaces: no new click/navigation/hover/focus semantics; dark mode uses existing shared semantic surfaces/tokens.
+
+Explicit exclusions:
+- do not modify the REPORT014 `ChartPanel`, chart data/top-15 mapping, axes/tooltip/series/height or chart trust/freshness behavior;
+- do not modify page KPIs, `ReportFilterBar`, date range, `SystemHealthBar`, trust lookup, summary logic or `CustomTooltip`;
+- do not change hooks, queries, cache semantics, ranking/calculations, rep/branch meaning, permissions/RBAC/RLS, routes, backend contracts, validation, export/print or any business behavior;
+- do not modify shared component APIs/CSS/tokens for this slice. If the current shared contracts prove insufficient, mark REPORT016 `BLOCKED` and return the exact gap to Product Design instead of widening scope.
+
+Device / state / accessibility acceptance:
+- **Desktop:** one semantic dense table only; all seven facts and current visual thresholds preserved; every column header has `scope="col"`.
+- **Tablet:** one two-column shared card/key-value renderer only; all seven facts visible, touch/readability first-class, no horizontal table overflow.
+- **Mobile:** one one-column shared card/key-value renderer only; complete facts, safe Arabic wrapping and no horizontal table overflow.
+- **RTL / numeric direction:** Arabic identity/context remains RTL; numeric/currency/percentage values use intentional LTR treatment.
+- **Accessibility:** compact renderers inherit `dl/dt/dd` semantics from `KeyValueList`; generic Cards remain non-interactive; no color-only status/rank meaning is introduced.
+- **Loading / empty:** preserve current precedence, five × 44px loading rows and exact empty copy before device renderer selection.
+- **Dark mode:** reuse existing semantic Card/KeyValueList surfaces; no new hard-coded visual palette.
+
+Focused test artifact expectations:
+- preserve all REPORT014 chart-panel tests unchanged;
+- cover Desktop/Tablet/Mobile single-renderer behavior and absence of the wrong renderer;
+- cover all seven row facts, row order/rank preservation, first/last identity emphasis and exact returns/return-rate tone thresholds;
+- cover long Arabic identity/branch wrapping and LTR numeric presentation;
+- cover Desktop `scope="col"` headers and exact loading/empty precedence/copy;
+- label evidence honestly as `TESTS_AUTHORED_NOT_EXECUTED` unless an approved execution environment actually runs it.
 
 ## Product migration roadmap
 
@@ -159,7 +190,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-015` — `DONE`
-- `DS2-REPORT-016 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY`
+- `DS2-REPORT-016 — Rep Performance responsive detail-collection convergence` — `READY`
 - further Reports/Analytics convergence beyond REPORT016 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
