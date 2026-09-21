@@ -38,17 +38,17 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-016`.
+Product UI is integrated through `DS2-REPORT-017`.
 
 Latest product integration:
-- PR: `#64 — DS2-REPORT-016: converge Rep Performance responsive detail collection`
-- Exact reviewed PR HEAD: `d6f257c4060aa25a2c4ce46abe621fe76f031826`
-- Squash merge commit: `ce3db886a3eaaae15025998186cc62e1e841410e`
+- PR: `#65 — DS2-REPORT-017: converge Target Attainment responsive detail collection`
+- Exact reviewed PR HEAD: `ccaaa6ede829f4d81017779c99cd76c1bf719918`
+- Squash merge commit: `3474748541068600e1deae061bf68fca23b346ef`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact HEAD
 - Runtime/preview/release evidence: not claimed
 
-The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, Supervisor Work shared KPI summary convergence, Reports shared route-level sub-navigation convergence, Reports date-preset and native custom-date convergence, Reports Overview KPI-summary convergence, shared `ChartPanel` proofs across multiple analytical surfaces, and responsive detail-collection proofs across Product Performance, Customer Health, Churn Risk, Geography and Rep Performance using `ResponsiveCollection + Card + KeyValueList` while preserving dense Desktop comparison.
+The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, Supervisor Work shared KPI summary convergence, Reports shared route-level sub-navigation convergence, Reports date-preset and native custom-date convergence, Reports Overview KPI-summary convergence, shared `ChartPanel` proofs across multiple analytical surfaces, and responsive detail-collection proofs across Product Performance, Customer Health, Churn Risk, Geography, Rep Performance and Target Attainment using `ResponsiveCollection + Card + KeyValueList` while preserving dense Desktop comparison.
 
 ## Completed slices
 
@@ -86,59 +86,35 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - `DS2-REPORT-014 — Rep Performance comparison chart-panel convergence` — `DONE` — PR #62 — reviewed HEAD `6f77f2b5aab911c9fa18afd3c78268255456a0ad` — merge `a7096cdc86fb9fa55205556a10c8a5c13a6235d4` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-015 — Geography responsive detail-collection convergence` — `DONE` — PR #63 — reviewed HEAD `b3667bb27f1cc2a37805f7f2fef4a8276230cf59` — merge `fae25c2962f01aefc988b3e3ec8e0532e1c491f8` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-016 — Rep Performance responsive detail-collection convergence` — `DONE` — PR #64 — reviewed HEAD `d6f257c4060aa25a2c4ce46abe621fe76f031826` — merge `ce3db886a3eaaae15025998186cc62e1e841410e` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
+- `DS2-REPORT-017 — Target Attainment responsive detail-collection convergence` — `DONE` — PR #65 — reviewed HEAD `ccaaa6ede829f4d81017779c99cd76c1bf719918` — merge `3474748541068600e1deae061bf68fca23b346ef` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 
-### REPORT016 system result
+### REPORT017 system result
 
-- Rep Performance now uses the established `ResponsiveCollection + Card + KeyValueList` grammar for the selected detail collection while preserving caller-owned `RepPerformanceRow[]` truth and ordering.
-- Desktop keeps the dense semantic seven-column table, comparison density, hover behavior, accepted ranking identity treatment, returns/return-rate tones and `scope="col"` headers.
-- Tablet uses two-column and Mobile one-column shared card/key-value composition, with exactly one renderer mounted per device and no ordinary compact-device horizontal table overflow.
-- Compact ranking emphasis is intentionally confined to representative identity and `#rank`; `صافى الإيراد` stays neutral/default, preventing rank color from becoming financial/status semantics.
-- Long Arabic representative/branch values are wrap-safe; rank/money/percentage/count values retain intentional LTR presentation inside RTL composition.
-- `useRepPerformanceTable(filters)`, all seven row facts, REPORT014 `ChartPanel`, KPIs, filters/date range, trust/SystemHealth, five × 44px loading rows, exact empty copy, queries, calculations, permissions, routing, export/print and all business semantics remain unchanged.
+- Target Attainment `تفاصيل الأهداف` now uses the established `ResponsiveCollection + Card + KeyValueList` grammar for Tablet/Mobile while preserving caller-owned `TargetAttainmentRow[]` truth, fallbacks and ordering.
+- Desktop keeps the dense semantic eight-column table, exact comparison order, hover behavior and achievement/trend presentation, with `scope="col"` headers.
+- Tablet uses two-column and Mobile one-column passive shared card/key-value composition, with exactly one ready renderer mounted per device and no ordinary compact-device horizontal-table dependency.
+- All eight facts remain unchanged: target, type, responsible, branch, target value, achieved value, achievement percentage and trend; responsible/branch fallbacks remain `—`.
+- Achievement thresholds remain `>=100` success, `>=80` warning, otherwise danger; `TrendBadge` labels/colors and unknown fallback remain caller-owned and unchanged.
+- Long Arabic target/type/responsible/branch values are wrap-safe; money/percentage values retain intentional LTR presentation inside RTL composition.
+- Trust/Freshness and `BLOCKED/FAILED -> loading -> empty -> ready` precedence remain unchanged, including exact blocked/empty copy and five × 44px loading rows.
+- Header/date/scope controls, KPI summary, individual-rep chart, hooks/queries/calculations, permissions, routing, export/print and all business semantics remain unchanged.
 - No shared API/CSS/token widening occurred.
 
 ## Current single READY slice
 
-### DS2-REPORT-017 — Target Attainment responsive detail-collection convergence
+### DS2-REPORT-018 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
 Status: `READY`
-Owner role for immediate next action: UI Production Engineer
-Representative surface: `src/pages/reports/TargetAttainmentPage.tsx` → `تفاصيل الأهداف` collection only.
+Owner role for immediate next action: Product Design Director
 
-System-pattern intent:
-- converge the remaining wide Target Attainment detail table onto the established `ResponsiveCollection + Card + KeyValueList` grammar on compact devices while preserving the dense Desktop comparison surface;
-- close a real Tablet/Mobile horizontal-overflow gap instead of adding another page-local responsive mini-system;
-- keep this slice presentation-only and consumer-side; no shared component/API/CSS/token widening is authorized.
+Intent:
+- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline before implementation;
+- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance boundary;
+- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
+- preserve REPORT001-017 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/business semantics;
+- preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
+- do not turn REPORT018 into broad multi-page report beautification.
 
-Implementation boundary / acceptance:
-- Desktop keeps the existing dense semantic eight-column table, row order, hover treatment and exact facts in the existing order: `الهدف / النوع / المسؤول / الفرع / المستهدف / المحقق / إنجاز% / الاتجاه`; add/retain `scope="col"` on column headers as semantic-only accessibility hardening.
-- Tablet uses the shared Card/KeyValueList composition with a deliberate two-column detail layout; Mobile uses the same shared grammar with a one-column detail layout and no ordinary horizontal table overflow.
-- Exactly one ready-state renderer may be mounted for the active device class; do not keep the Desktop table mounted behind compact layouts.
-- Compact cards are passive information surfaces only; do not invent row navigation, click, keyboard or focus behavior.
-- Preserve `target_name`, `type_code`, `rep_name ?? '—'`, `branch_name ?? '—'`, `fmtCur(target_value)`, `fmtCur(achieved_value)`, `fmtPct(achievement_pct)` and `TrendBadge(row.trend)` exactly as the current data/presentation truth.
-- Preserve achievement semantic color thresholds exactly: `>= 100` success, `>= 80` warning, otherwise danger. Preserve `TrendBadge` mapping/labels/colors and its unknown-trend fallback exactly; do not reinterpret trend or achievement semantics.
-- Preserve Arabic/RTL wrapping for target/type/responsible/branch text and intentional LTR presentation for money/percentage values.
-- Preserve trust/freshness header treatment and the exact state precedence `BLOCKED/FAILED -> loading -> empty -> ready`; blocked copy, five × `SkeletonCard height={44}` loading rows and exact empty copy `لا توجد بيانات — شغّل watermark sweep أولاً` remain unchanged.
-- Preserve existing `useTargetAttainmentSummary`, `useTargetAttainmentTable`, `scope`, `asOfDate`, caller-owned row order, target/chart calculations, trust/SystemHealth semantics and all query/cache/permission/RBAC/RLS/routing/backend/validation/export/print/workflow/business behavior.
-
-Explicit exclusions:
-- page title/header controls, scope select and date input;
-- KPI/MetricCard summary area;
-- `نسبة الإنجاز — المندوبون الفرديون` chart, its data mapping, axes, tooltip, reference line, bar colors or chart shell;
-- any Target Attainment hooks, query/calculation/ranking/status semantics or backend contract;
-- shared `ResponsiveCollection`, `Card`, `KeyValueList`, token or global CSS changes;
-- any other Reports page or broad reports beautification.
-
-Focused validation artifact must protect:
-- Desktop eight-column order and semantic `scope="col"` headers;
-- Tablet two-column and Mobile one-column compact compositions with exactly one renderer mounted per device and no compact horizontal table dependence;
-- all eight facts plus responsible/branch fallbacks and current row ordering;
-- exact achievement threshold colors and exact TrendBadge semantics/fallback;
-- money/percentage formatting and LTR presentation plus long Arabic wrap safety;
-- blocked/loading/empty precedence, five × 44px loading rows and exact blocked/empty copy;
-- passive/non-interactive Card semantics and unchanged trust/freshness context.
-
-Stop rule:
-- if implementation requires any data-semantic, business, query, permission, shared API/token/global-CSS change, or another report surface, mark `BLOCKED` and return the architectural dependency instead of widening REPORT017.
+Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
 
 ## Product migration roadmap
 
@@ -187,9 +163,9 @@ Open only when a real migrated screen proves the recurring gap:
 - further Work detail/feedback/management convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
 
 ### I. Reports / Analytics
-- `DS2-REPORT-001` through `DS2-REPORT-016` — `DONE`
-- `DS2-REPORT-017 — Target Attainment responsive detail-collection convergence` — `READY`
-- further Reports/Analytics convergence beyond REPORT017 — `BACKLOG` / each concern must be bounded separately
+- `DS2-REPORT-001` through `DS2-REPORT-017` — `DONE`
+- `DS2-REPORT-018 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY`
+- further Reports/Analytics convergence beyond REPORT018 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
