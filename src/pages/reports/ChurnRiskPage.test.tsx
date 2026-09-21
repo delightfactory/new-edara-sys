@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import ChurnRiskPage from './ChurnRiskPage'
 
 const mocks = vi.hoisted(() => ({
@@ -90,20 +90,64 @@ const riskTrust = {
 }
 
 const populatedStats = {
+  total: 5,
   vip: 5,
   loyal: 4,
   engaged: 3,
   at_risk: 2,
   dormant: 1,
+  avg_rfm_score: 300,
+}
+
+const longCustomerName = 'شركة العميل ذات الاسم العربي الطويل جداً لاختبار الالتفاف داخل البطاقة بدون تجاوز'
+
+const riskRows = [
+  {
+    customer_id: 'customer-1',
+    customer_name: longCustomerName,
+    risk_label: 'AT_RISK',
+    rfm_score: 532,
+    recency_days: 45,
+    frequency_l90d: 3,
+    monetary_l90d: 1234,
+  },
+  {
+    customer_id: 'deadbeef-1234-5678-9012',
+    customer_name: null,
+    risk_label: 'DORMANT',
+    rfm_score: 111,
+    recency_days: null,
+    frequency_l90d: 1,
+    monetary_l90d: 500,
+  },
+]
+
+function setViewport(width: number) {
+  Object.defineProperty(window, 'innerWidth', {
+    configurable: true,
+    writable: true,
+    value: width,
+  })
+  act(() => window.dispatchEvent(new Event('resize')))
+}
+
+function getDetailSection() {
+  const title = screen.getByText('تفاصيل العملاء — مرتب: معرض للخطر أولاً')
+  return title.parentElement?.parentElement as HTMLElement
+}
+
+function setDefaultMocks() {
+  mocks.useSystemTrustState.mockReturnValue({ data: [], isLoading: false, error: null })
+  mocks.useTrustForComponent.mockReturnValue(riskTrust)
+  mocks.useCustomerRiskSummary.mockReturnValue({ data: populatedStats, isLoading: false })
+  mocks.useCustomerRiskList.mockReturnValue({ data: [], isLoading: false })
 }
 
 describe('ChurnRisk pie chart composition', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.useSystemTrustState.mockReturnValue({ data: [], isLoading: false, error: null })
-    mocks.useTrustForComponent.mockReturnValue(riskTrust)
-    mocks.useCustomerRiskSummary.mockReturnValue({ data: populatedStats, isLoading: false })
-    mocks.useCustomerRiskList.mockReturnValue({ data: [], isLoading: false })
+    setViewport(1440)
+    setDefaultMocks()
   })
 
   it('uses the shared ChartPanel with the exact h2 title and existing trust action', () => {
@@ -176,5 +220,131 @@ describe('ChurnRisk pie chart composition', () => {
     ])
     expect(within(panel).getByTestId('tooltip').getAttribute('data-format')).toBe(JSON.stringify(['7', 'عملاء']))
     expect(within(panel).getByTestId('legend')).not.toBeNull()
+  })
+})
+
+describe('ChurnRisk responsive detail collection', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setViewport(1440)
+    setDefaultMocks()
+    mocks.useCustomerRiskList.mockReturnValue({ data: riskRows, isLoading: false })
+  })
+
+  it('preserves the compact semantic six-column Desktop table with exact row facts and no card renderer mounted', () => {
+    render(<ChurnRiskPage />)
+
+    const section = getDetailSection()
+    const table = within(section).getByRole('table')
+    const headers = within(table).getAllByRole('columnheader')
+
+    expect(headers.map(header => header.textContent)).toEqual([
+      'العميل',
+      'التصنيف',
+      'RFM Score',
+      'أيام منذ آخر شراء',
+      'تكرار (90 يوم)',
+      'قيمة (90 يوم)',
+    ])
+    headers.forEach(header => expect(header.getAttribute('scope')).toBe('col'))
+    expect(within(table).getByText(longCustomerName)).toBeTruthy()
+    expect(within(table).getByText('معرض للخطر')).toBeTruthy()
+    expect(within(table).getByText('532')).toBeTruthy()
+    expect(within(table).getByText('45 يوم')).toBeTruthy()
+    expect(within(table).getByText('3×')).toBeTruthy()
+    expect(within(table).getByText('1,234 ج.م')).toBeTruthy()
+    expect(section.querySelector('.ds-responsive-card-grid')).toBeNull()
+  })
+
+  it('mounts only one-column Mobile cards with exact RFM facts, fallback identity, wrapping and LTR numeric treatment', () => {
+    setViewport(390)
+    render(<ChurnRiskPage />)
+
+    const section = getDetailSection()
+    expect(within(section).queryByRole('table')).toBeNull()
+    expect(section.querySelector('.ds-responsive-card-grid--mobile')).not.toBeNull()
+    expect(section.querySelector('.ds-responsive-card-grid--tablet')).toBeNull()
+    expect(section.querySelector('.ds-key-value-list--cols-1')).not.toBeNull()
+
+    const longName = within(section).getByText(longCustomerName)
+    expect(longName.style.overflowWrap).toBe('anywhere')
+    expect(within(section).getByText('deadbeef…')).toBeTruthy()
+    expect(within(section).queryByText('deadbeef-1234-5678-9012')).toBeNull()
+
+    ;['التصنيف', 'RFM Score', 'أيام منذ آخر شراء', 'تكرار (90 يوم)', 'قيمة (90 يوم)'].forEach(label => {
+      expect(within(section).getAllByText(label).length).toBeGreaterThan(0)
+    })
+
+    expect(within(section).getByText('معرض للخطر')).toBeTruthy()
+    expect(within(section).getByText('خامد')).toBeTruthy()
+    expect(within(section).getByText('532').getAttribute('dir')).toBe('ltr')
+    expect(within(section).getByText('45 يوم').style.direction).toBe('ltr')
+    expect(within(section).getByText('3×').getAttribute('dir')).toBe('ltr')
+    expect(within(section).getByText('1,234 ج.م').getAttribute('dir')).toBe('ltr')
+    expect(within(section).getByText('لا توجد مبيعات')).toBeTruthy()
+  })
+
+  it('uses the deliberate two-column Tablet card composition and mounts no Desktop table or Mobile renderer', () => {
+    setViewport(900)
+    render(<ChurnRiskPage />)
+
+    const section = getDetailSection()
+    expect(within(section).queryByRole('table')).toBeNull()
+    expect(section.querySelector('.ds-responsive-card-grid--tablet')).not.toBeNull()
+    expect(section.querySelector('.ds-responsive-card-grid--mobile')).toBeNull()
+    expect(section.querySelector('.ds-key-value-list--cols-2')).not.toBeNull()
+    expect(within(section).getByText(longCustomerName)).toBeTruthy()
+  })
+
+  it('keeps the blocked state higher priority than collection loading, empty, or ready renderers', () => {
+    setViewport(390)
+    mocks.useTrustForComponent.mockReturnValue({
+      status: 'BLOCKED',
+      last_completed_at: null,
+      is_stale: true,
+    })
+    mocks.useCustomerRiskList.mockReturnValue({ data: riskRows, isLoading: true })
+
+    render(<ChurnRiskPage />)
+
+    const section = getDetailSection()
+    expect(within(section).getByText('بيانات الخطر محجوبة')).toBeTruthy()
+    expect(within(section).getByText('snapshot_customer_risk يحتاج تشغيل ناجح أولاً')).toBeTruthy()
+    expect(section.querySelector('.ds-responsive-collection')).toBeNull()
+    expect(section.querySelector('.ds-responsive-card-grid')).toBeNull()
+    expect(within(section).queryByRole('table')).toBeNull()
+  })
+
+  it('preserves the five-row 44px loading state and exact empty copy without mounting a ready renderer', () => {
+    setViewport(390)
+    mocks.useCustomerRiskList.mockReturnValue({ data: [], isLoading: true })
+    const { rerender } = render(<ChurnRiskPage />)
+
+    let section = getDetailSection()
+    const loadingCollection = section.querySelector('[data-collection-state="loading"]') as HTMLElement
+    expect(loadingCollection).not.toBeNull()
+    const loadingRows = within(loadingCollection).getAllByTestId('skeleton-card')
+    expect(loadingRows).toHaveLength(5)
+    loadingRows.forEach(row => expect(row.getAttribute('data-height')).toBe('44'))
+    expect(section.querySelector('.ds-responsive-card-grid')).toBeNull()
+    expect(within(section).queryByRole('table')).toBeNull()
+
+    mocks.useCustomerRiskList.mockReturnValue({ data: [], isLoading: false })
+    rerender(<ChurnRiskPage />)
+
+    section = getDetailSection()
+    expect(section.querySelector('[data-collection-state="empty"]')).not.toBeNull()
+    expect(within(section).getByText('لا توجد بيانات — شغّل watermark sweep أولاً')).toBeTruthy()
+    expect(section.querySelector('.ds-responsive-card-grid')).toBeNull()
+    expect(within(section).queryByRole('table')).toBeNull()
+  })
+
+  it('preserves the detail-section trust and freshness actions', () => {
+    setViewport(390)
+    render(<ChurnRiskPage />)
+
+    const section = getDetailSection()
+    expect(within(section).getByTestId('trust-state-badge').textContent).toBe('OK')
+    expect(within(section).getByTestId('freshness-indicator')).toBeTruthy()
   })
 })

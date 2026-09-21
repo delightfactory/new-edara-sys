@@ -6,6 +6,9 @@ import SystemHealthBar from '@/components/reports/SystemHealthBar'
 import TrustStateBadge from '@/components/reports/TrustStateBadge'
 import FreshnessIndicator from '@/components/reports/FreshnessIndicator'
 import ChartPanel from '@/components/patterns/ChartPanel'
+import ResponsiveCollection from '@/components/patterns/ResponsiveCollection'
+import Card from '@/components/patterns/Card'
+import KeyValueList from '@/components/patterns/KeyValueList'
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts'
 
 function toISO(d: Date) { return d.toISOString().split('T')[0] }
@@ -36,6 +39,35 @@ function RecencyCell({ days }: { days: number | null }) {
   if (days === null) return <span style={{ color: 'var(--text-muted)', fontSize: 'var(--text-xs)' }}>لا توجد مبيعات</span>
   const color = days > 90 ? 'var(--color-danger)' : days > 30 ? 'var(--color-warning)' : 'var(--color-success)'
   return <span style={{ color, fontWeight: 600, fontSize: 'var(--text-xs)', direction: 'ltr', display: 'inline-block' }}>{days} يوم</span>
+}
+
+function ChurnRiskDetailCards({ items, device }: { items: CustomerRiskRow[]; device: 'mobile' | 'tablet' }) {
+  return (
+    <div className={`ds-responsive-card-grid ds-responsive-card-grid--${device}`}>
+      {items.map(row => (
+        <Card key={row.customer_id} padding="md">
+          <div style={{ marginBlockEnd: 'var(--space-4)', minWidth: 0 }}>
+            <div style={{ color: 'var(--ds-text-primary)', fontWeight: row.customer_name ? 700 : 400, overflowWrap: 'anywhere', minWidth: 0 }}>
+              {row.customer_name
+                ? row.customer_name
+                : <span style={{ fontFamily: 'monospace', color: 'var(--text-muted)', overflowWrap: 'anywhere' }}>{row.customer_id.slice(0, 8)}…</span>}
+            </div>
+          </div>
+          <KeyValueList
+            columns={device === 'tablet' ? 2 : 1}
+            compact
+            items={[
+              { key: 'risk', label: 'التصنيف', value: <RiskBadge label={row.risk_label} /> },
+              { key: 'rfm', label: 'RFM Score', value: <span dir="ltr">{row.rfm_score}</span> },
+              { key: 'recency', label: 'أيام منذ آخر شراء', value: <RecencyCell days={row.recency_days} /> },
+              { key: 'frequency', label: 'تكرار (90 يوم)', value: <span dir="ltr">{row.frequency_l90d}×</span> },
+              { key: 'monetary', label: 'قيمة (90 يوم)', value: <span dir="ltr">{fmtCur(row.monetary_l90d)}</span> },
+            ]}
+          />
+        </Card>
+      ))}
+    </div>
+  )
 }
 
 export default function ChurnRiskPage() {
@@ -130,7 +162,7 @@ export default function ChurnRiskPage() {
         </ChartPanel>
       )}
 
-      {/* Table */}
+      {/* Customer details */}
       <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-primary)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
         <div style={{ padding: 'var(--space-4) var(--space-5)', borderBottom: '1px solid var(--border-primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
           <div style={{ fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--text-primary)' }}>
@@ -147,43 +179,53 @@ export default function ChurnRiskPage() {
             <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--color-danger)' }}>بيانات الخطر محجوبة</div>
             <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: 'var(--space-2)' }}>snapshot_customer_risk يحتاج تشغيل ناجح أولاً</div>
           </div>
-        ) : listLoading ? (
-          <div style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-            {[1,2,3,4,5].map(i => <SkeletonCard key={i} height={44} />)}
-          </div>
-        ) : rows.length === 0 ? (
-          <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
-            لا توجد بيانات — شغّل watermark sweep أولاً
-          </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
-              <thead>
-                <tr style={{ background: 'var(--bg-surface-2)' }}>
-                  {['العميل', 'التصنيف', 'RFM Score', 'أيام منذ آخر شراء', 'تكرار (90 يوم)', 'قيمة (90 يوم)'].map(h => (
-                    <th key={h} style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 600, color: 'var(--text-secondary)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-primary)', whiteSpace: 'nowrap' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row: CustomerRiskRow) => (
-                  <tr key={row.customer_id}
-                    style={{ borderBottom: '1px solid var(--divider)', transition: 'background 0.1s' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = '')}>
-                    <td style={{ padding: '10px 14px', color: 'var(--text-primary)', fontWeight: row.customer_name ? 600 : 400, fontSize: 'var(--text-xs)' }}>
-                      {row.customer_name ?? <span style={{ fontFamily: 'monospace', color: 'var(--text-muted)' }}>{row.customer_id.slice(0, 8)}…</span>}
-                    </td>
-                    <td style={{ padding: '10px 14px' }}><RiskBadge label={row.risk_label} /></td>
-                    <td style={{ padding: '10px 14px', color: 'var(--text-primary)', fontWeight: 600, direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{row.rfm_score}</td>
-                    <td style={{ padding: '10px 14px' }}><RecencyCell days={row.recency_days} /></td>
-                    <td style={{ padding: '10px 14px', color: 'var(--text-primary)', fontWeight: 600, direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{row.frequency_l90d}×</td>
-                    <td style={{ padding: '10px 14px', color: 'var(--text-primary)', direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{fmtCur(row.monetary_l90d)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ResponsiveCollection<CustomerRiskRow>
+            items={rows}
+            loading={listLoading}
+            loadingState={(
+              <div style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                {[1,2,3,4,5].map(i => <SkeletonCard key={i} height={44} />)}
+              </div>
+            )}
+            emptyState={(
+              <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
+                لا توجد بيانات — شغّل watermark sweep أولاً
+              </div>
+            )}
+            renderDesktop={desktopRows => (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
+                  <thead>
+                    <tr style={{ background: 'var(--bg-surface-2)' }}>
+                      {['العميل', 'التصنيف', 'RFM Score', 'أيام منذ آخر شراء', 'تكرار (90 يوم)', 'قيمة (90 يوم)'].map(h => (
+                        <th scope="col" key={h} style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 600, color: 'var(--text-secondary)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-primary)', whiteSpace: 'nowrap' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {desktopRows.map(row => (
+                      <tr key={row.customer_id}
+                        style={{ borderBottom: '1px solid var(--divider)', transition: 'background 0.1s' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = '')}>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-primary)', fontWeight: row.customer_name ? 600 : 400, fontSize: 'var(--text-xs)' }}>
+                          {row.customer_name ?? <span style={{ fontFamily: 'monospace', color: 'var(--text-muted)' }}>{row.customer_id.slice(0, 8)}…</span>}
+                        </td>
+                        <td style={{ padding: '10px 14px' }}><RiskBadge label={row.risk_label} /></td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-primary)', fontWeight: 600, direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{row.rfm_score}</td>
+                        <td style={{ padding: '10px 14px' }}><RecencyCell days={row.recency_days} /></td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-primary)', fontWeight: 600, direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{row.frequency_l90d}×</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-primary)', direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{fmtCur(row.monetary_l90d)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            renderTablet={tabletRows => <ChurnRiskDetailCards items={tabletRows} device="tablet" />}
+            renderMobile={mobileRows => <ChurnRiskDetailCards items={mobileRows} device="mobile" />}
+          />
         )}
       </div>
     </div>
