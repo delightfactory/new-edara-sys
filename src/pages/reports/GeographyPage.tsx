@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useSystemTrustState, useTrustForComponent, type TrustStatus } from '@/hooks/useSystemTrustState'
 import { useGeographySummary, useGeographyTable, type GeographyRow, type GeoLevel } from '@/hooks/useGeographyPerformance'
 import MetricCard from '@/components/reports/MetricCard'
@@ -7,6 +7,9 @@ import SystemHealthBar from '@/components/reports/SystemHealthBar'
 import ReportFilterBar, { type DateRange } from '@/components/reports/ReportFilterBar'
 import TrustStateBadge from '@/components/reports/TrustStateBadge'
 import FreshnessIndicator from '@/components/reports/FreshnessIndicator'
+import ResponsiveCollection from '@/components/patterns/ResponsiveCollection'
+import Card from '@/components/patterns/Card'
+import KeyValueList from '@/components/patterns/KeyValueList'
 import Select from '@/components/ui/Select'
 import { TrendingUp, MapPin } from 'lucide-react'
 
@@ -23,6 +26,39 @@ const LEVEL_LABELS: Record<GeoLevel, string> = {
   governorate: 'محافظة',
   city: 'مدينة',
   area: 'منطقة',
+}
+
+function GeographyDetailCards({ items, device, level }: { items: GeographyRow[]; device: 'mobile' | 'tablet'; level: GeoLevel }) {
+  return (
+    <div className={`ds-responsive-card-grid ds-responsive-card-grid--${device}`}>
+      {items.map(row => (
+        <Card key={row.geo_id} padding="md">
+          <div style={{ marginBlockEnd: 'var(--space-4)', minWidth: 0 }}>
+            <div style={{ color: 'var(--ds-text-primary)', fontWeight: 700, overflowWrap: 'anywhere', minWidth: 0 }}>
+              {row.geo_name}
+            </div>
+          </div>
+          <KeyValueList
+            columns={device === 'tablet' ? 2 : 1}
+            compact
+            items={[
+              ...(level !== 'governorate'
+                ? [{
+                    key: 'parent',
+                    label: 'الأم',
+                    value: <span style={{ overflowWrap: 'anywhere', minWidth: 0 }}>{row.parent_name ?? '—'}</span>,
+                  }]
+                : []),
+              { key: 'revenue', label: 'صافى الإيراد', value: <span dir="ltr">{fmt(row.net_revenue)} ج.م</span> },
+              { key: 'customers', label: 'عملاء', value: <span dir="ltr">{row.customer_count}</span> },
+              { key: 'transactions', label: 'صفقات', value: <span dir="ltr">{row.transaction_count}</span> },
+              { key: 'share', label: 'الحصة%', value: <span dir="ltr">{fmtPct(row.revenue_share_pct)}</span> },
+            ]}
+          />
+        </Card>
+      ))}
+    </div>
+  )
 }
 
 export default function GeographyPage() {
@@ -94,49 +130,57 @@ export default function GeographyPage() {
           </div>
         </div>
 
-        {tableLoading ? (
-          <div style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-            {[1, 2, 3, 4, 5].map(i => <SkeletonCard key={i} height={44} />)}
-          </div>
-        ) : rows.length === 0 ? (
-          <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
-            لا توجد بيانات — شغّل watermark sweep أولاً
-          </div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
-              <thead>
-                <tr style={{ background: 'var(--bg-surface-2)' }}>
-                  {[LEVEL_LABELS[level], level !== 'governorate' ? 'الأم' : null, 'صافى الإيراد', 'عملاء', 'صفقات', 'الحصة%'].filter(Boolean).map(h => (
-                    <th key={h!} style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 600, color: 'var(--text-secondary)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-primary)', whiteSpace: 'nowrap' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row: GeographyRow) => {
-                  const isZero = row.net_revenue === 0
-                  const opacity = isZero ? 0 : Math.min(row.net_revenue / maxRev, 1)
-                  const rowBg = isZero ? 'var(--bg-surface-2)' : `rgba(37,99,235,${opacity * 0.12})`
-                  return (
-                    <tr key={row.geo_id}
-                      style={{ borderBottom: '1px solid var(--divider)', background: rowBg, transition: 'background 0.1s' }}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-                      onMouseLeave={e => (e.currentTarget.style.background = rowBg)}>
-                      <td style={{ padding: '10px 14px', color: isZero ? 'var(--text-muted)' : 'var(--text-primary)', fontWeight: isZero ? 400 : 600, fontSize: 'var(--text-xs)' }}>{row.geo_name}</td>
-                      {level !== 'governorate' && (
-                        <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 'var(--text-xs)' }}>{row.parent_name ?? '—'}</td>
-                      )}
-                      <td style={{ padding: '10px 14px', color: isZero ? 'var(--text-muted)' : 'var(--text-primary)', direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{fmt(row.net_revenue)} ج.م</td>
-                      <td style={{ padding: '10px 14px', color: 'var(--text-primary)', direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{row.customer_count}</td>
-                      <td style={{ padding: '10px 14px', color: 'var(--text-primary)', direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{row.transaction_count}</td>
-                      <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{fmtPct(row.revenue_share_pct)}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <ResponsiveCollection<GeographyRow>
+          items={rows}
+          loading={tableLoading}
+          loadingState={(
+            <div style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+              {[1, 2, 3, 4, 5].map(i => <SkeletonCard key={i} height={44} />)}
+            </div>
+          )}
+          emptyState={(
+            <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
+              لا توجد بيانات — شغّل watermark sweep أولاً
+            </div>
+          )}
+          renderDesktop={desktopRows => (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
+                <thead>
+                  <tr style={{ background: 'var(--bg-surface-2)' }}>
+                    {[LEVEL_LABELS[level], level !== 'governorate' ? 'الأم' : null, 'صافى الإيراد', 'عملاء', 'صفقات', 'الحصة%'].filter(Boolean).map(h => (
+                      <th scope="col" key={h!} style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 600, color: 'var(--text-secondary)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-primary)', whiteSpace: 'nowrap' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {desktopRows.map((row: GeographyRow) => {
+                    const isZero = row.net_revenue === 0
+                    const opacity = isZero ? 0 : Math.min(row.net_revenue / maxRev, 1)
+                    const rowBg = isZero ? 'var(--bg-surface-2)' : `rgba(37,99,235,${opacity * 0.12})`
+                    return (
+                      <tr key={row.geo_id}
+                        style={{ borderBottom: '1px solid var(--divider)', background: rowBg, transition: 'background 0.1s' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = rowBg)}>
+                        <td style={{ padding: '10px 14px', color: isZero ? 'var(--text-muted)' : 'var(--text-primary)', fontWeight: isZero ? 400 : 600, fontSize: 'var(--text-xs)' }}>{row.geo_name}</td>
+                        {level !== 'governorate' && (
+                          <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 'var(--text-xs)' }}>{row.parent_name ?? '—'}</td>
+                        )}
+                        <td style={{ padding: '10px 14px', color: isZero ? 'var(--text-muted)' : 'var(--text-primary)', direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{fmt(row.net_revenue)} ج.م</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-primary)', direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{row.customer_count}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-primary)', direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{row.transaction_count}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{fmtPct(row.revenue_share_pct)}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+          renderTablet={tabletRows => <GeographyDetailCards items={tabletRows} device="tablet" level={level} />}
+          renderMobile={mobileRows => <GeographyDetailCards items={mobileRows} device="mobile" level={level} />}
+        />
       </div>
     </div>
   )
