@@ -4,155 +4,134 @@
 
 - Review date: `2026-09-21`.
 - Authoritative branch: `design-system-v2-development`.
-- Exact Development HEAD independently inspected before REPORT016 governance writes: `0598553517f0e9ee37f55a85c62d8fba4a189070`.
+- Exact Development HEAD independently inspected before this owned-state write: `a9d24a91a104f91d35af70638b3588670fd8186b`.
 - Latest integrated product baseline: `DS2-REPORT-015` / PR #63, squash merge `fae25c2962f01aefc988b3e3ec8e0532e1c491f8`.
-- Product Design boundary commit written before this owned-state update: `cc3551e8c6342bc2aa957e706cd4697db1b66d8b`.
-- Open implementation PRs targeting Development at inspection time: none.
-- Active single READY slice: `DS2-REPORT-016 — Rep Performance responsive detail-collection convergence`.
+- Active single implementation slice: `DS2-REPORT-016 — Rep Performance responsive detail-collection convergence`.
 - Representative surface: `src/pages/reports/RepPerformancePage.tsx` → `تفصيل الأداء — جميع المندوبين` collection only.
-- Implementation PR: none yet.
-- Product Design disposition: `READY — BOUNDED / UI PRODUCTION MAY IMPLEMENT ONE SLICE`.
-- Exact-head build/test/lint/runtime/preview/release PASS: not claimed or required at this design-bounding stage.
+- Active implementation PR: `#64 — DS2-REPORT-016: converge Rep Performance responsive detail collection`.
+- Exact PR HEAD independently reviewed: `d6f257c4060aa25a2c4ce46abe621fe76f031826`.
+- PR state at final pre-write recheck: `OPEN / DRAFT / mergeable=true`; base `design-system-v2-development`.
+- Changed-file scope: exactly 3 files — Rep Performance page, focused Rep Performance test, and UI Production Engineer owned state.
+- Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER` on exact HEAD `d6f257c4060aa25a2c4ce46abe621fe76f031826`.
+- Design QA on the same exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
+- Evidence remains `TESTS_AUTHORED_NOT_EXECUTED`; no exact-head build/test/lint/runtime/preview/release PASS is claimed.
 
 ## Independent Product Design judgment
 
-**READY — REPORT016 is bounded to one presentation-only Rep Performance collection concern.**
+**PASS — REPORT016 exact HEAD `d6f257c4060aa25a2c4ce46abe621fe76f031826` satisfies the bounded system intent with no current Product Design blocker.**
 
-I independently inspected the latest Development baseline and representative remaining Reports surfaces before comparing peer role states. `RepPerformancePage.tsx` contains a particularly clean next system gap: REPORT014 already converged its comparison chart to shared `ChartPanel`, but the adjacent `تفصيل الأداء — جميع المندوبين` section still presents a wide Desktop table with ordinary horizontal overflow on smaller devices.
+I independently re-inspected the moved implementation HEAD after the prior semantic-color blocker was repaired, before relying on peer conclusions. The repaired compact composition now applies first/last ranking emphasis only to representative identity and `#rank`; `صافى الإيراد` returns to the normal shared/default value tone on Tablet/Mobile. This removes the accidental financial/status meaning that previously violated the North Star's semantic-consistency rule.
 
-This is a better next slice than opening a new chart-only migration or a multi-concern legacy report page because:
-- the system already has a proven `ResponsiveCollection + Card + KeyValueList` grammar across Product Performance, Customer Health, Churn Risk and Geography;
-- the Rep Performance row already exposes all facts required for compact device composition, so no data/query/business widening is needed;
-- Desktop comparison density remains valuable and should be preserved rather than replaced;
-- Tablet/Mobile currently inherit an avoidable wide-table experience, which is directly contrary to the Mobile/Tablet device strategy;
-- the neighboring REPORT014 chart can remain untouched, making the slice dependency-safe and independently reviewable.
+The slice now advances the established Reports collection grammar rather than creating a local responsive mini-system:
+- Desktop preserves the dense seven-column comparison table and its existing accepted ranking/returns/return-rate treatment;
+- Tablet uses a deliberate two-column `ResponsiveCollection + Card + KeyValueList` composition;
+- Mobile uses a one-column version with no ordinary horizontal table scrolling;
+- `ResponsiveCollection` continues to mount exactly one device renderer;
+- `Card` remains a neutral non-interactive surface and `KeyValueList` preserves `dl/dt/dd` semantics;
+- long Arabic representative/branch names are wrap-safe and numeric/money/percentage/count values retain intentional LTR presentation.
 
-I also inspected `TargetAttainmentPage.tsx` and `TreasuryPage.tsx`. Both have legitimate future convergence debt, but Target Attainment combines raw controls, chart-shell and wide-table concerns, while Treasury is mainly another already-proven chart-shell candidate. Neither is a better smallest next system step than completing Rep Performance's responsive detail collection.
+No shared API/CSS/token widening is present. The implementation remains a presentation-only consumer of the existing shared grammar.
 
-## REPORT016 exact design boundary
+## Exact acceptance findings
 
-### System intent
+### Scope / functional isolation — PASS
 
-Converge only the Rep Performance detail collection onto the established responsive collection grammar while preserving the existing caller-owned ranking and performance truth.
+Preserved exactly:
+- `useRepPerformanceTable(filters)` and existing caller-owned row order/ranking;
+- all seven row facts: `rank`, `rep_name`, `branch_name`, `net_revenue`, `returns_value`, `return_rate_pct`, `distinct_customers`;
+- REPORT014 `ChartPanel`, title/description/trust/freshness, top-15 mapping, axes, tooltip, series and dynamic height;
+- page KPIs, `ReportFilterBar`, date range, `SystemHealthBar`, trust lookup and `CustomTooltip`;
+- all query/cache/calculation/permission/RBAC/RLS/routing/backend/validation/export/print/workflow/business semantics.
 
-The slice must reduce local device fragmentation, not redesign the page.
+The exact PR changes only:
+- `src/pages/reports/RepPerformancePage.tsx`;
+- `src/pages/reports/RepPerformancePage.test.tsx`;
+- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`.
 
-### Data / business truth to preserve
+No database, migration, RPC, service contract, query/cache behavior, permission model, route, calculation, workflow, validation, deployment or business responsibility changed.
 
-Preserve exactly:
-- `useRepPerformanceTable(filters)` and existing row order;
-- `rank`;
-- `rep_name`;
-- `branch_name`;
-- `net_revenue`;
-- `returns_value`;
-- `return_rate_pct`;
-- `distinct_customers`;
-- all existing formatting and ranking/calculation semantics.
+### Desktop — PASS
 
-No new labels may reinterpret business ranking, and no data may be dropped on compact devices.
+Desktop keeps the dense seven-column table in the existing order:
+`# / المندوب / الفرع / صافى الإيراد / المرتجعات / نسبة المرتجع / عملاء`.
 
-### Desktop acceptance
+Current comparison density, row hover, first/last ranking emphasis, positive-return danger tone, muted zero-return tone and return-rate thresholds remain unchanged. Column headers now add semantic `scope="col"` without otherwise redesigning the table.
 
-Desktop keeps one dense semantic seven-column table in the existing order:
-1. `#`
-2. `المندوب`
-3. `الفرع`
-4. `صافى الإيراد`
-5. `المرتجعات`
-6. `نسبة المرتجع`
-7. `عملاء`
+### Tablet / Mobile — PASS
 
-Preserve current row density, row hover, first-row success emphasis, last-row danger emphasis, positive-return danger tone, muted zero-return tone, and exact return-rate thresholds (`>10` danger, `>5` warning, otherwise success).
+- Tablet renders the shared two-column Card/KeyValueList composition only.
+- Mobile renders the shared one-column composition only.
+- No Desktop table remains mounted behind compact layouts.
+- Every Desktop row fact remains visible through identity/context plus KeyValueList values.
+- Cards are passive information surfaces; no fabricated navigation, click, keyboard or focus contract was introduced.
+- Long Arabic representative and branch names use safe wrapping.
+- Rank, revenue, returns, return-rate and customer-count values remain intentionally LTR.
 
-Add semantic `scope="col"` to table headers. Do not otherwise redesign the Desktop table.
+### Semantic color — PASS after repair
 
-### Tablet acceptance
+Compact-device color meaning is now correctly bounded:
+- rank-derived success/danger emphasis: `rep_name` + `#rank` only;
+- `صافى الإيراد`: neutral/default shared value tone;
+- `returns_value > 0`: danger; zero: muted;
+- `return_rate_pct > 10`: danger; `> 5`: warning; otherwise success.
 
-Tablet uses the existing shared `ResponsiveCollection` with a deliberate two-column `Card + KeyValueList` renderer.
+This keeps ranking emphasis distinct from financial/status semantics and aligns with the North Star's requirement that the same semantic colors not be repurposed ambiguously.
 
-Every Desktop row fact remains visible. `rep_name` is the primary identity; rank and branch remain visible context. The current first/last ranking emphasis may remain on relevant rank/identity text, but must not become a colored whole-card treatment or a newly invented business status.
+### States / accessibility / dark mode — PASS at source level
 
-### Mobile acceptance
+- Loading remains higher priority than ready composition with exactly five `SkeletonCard height={44}` rows.
+- Empty remains higher priority than ready composition with exact copy `لا توجد بيانات فى النطاق الزمني المحدد`.
+- Neither loading nor empty mounts a ready device renderer.
+- Desktop headers expose semantic column-header scope.
+- Compact details inherit `dl/dt/dd` semantics from `KeyValueList`.
+- Explicit text/numeric values remain present, so color is not the sole information carrier.
+- Shared Card/KeyValueList semantic surfaces/tokens are reused; no page-local dark-mode palette was introduced.
 
-Mobile uses the same shared grammar with one-column `Card + KeyValueList` composition and no ordinary horizontal table scrolling.
+No `RUNTIME_VISUAL_PASS` is claimed. Runtime/device visual validation remains a later controlled milestone gate.
 
-Every row fact remains visible. Long Arabic representative and branch names must wrap safely. Compact cards remain passive information surfaces with no fabricated navigation or click semantics.
+### Test artifact / evidence honesty — PASS with non-executed evidence
 
-### RTL / numeric direction / accessibility / dark mode
-
-- Arabic identity/context remains RTL-first and wrap-safe.
-- Rank, currency, percentage and customer-count values retain intentional LTR presentation where appropriate.
-- Compact renderers inherit `dl/dt/dd` semantics from `KeyValueList`.
-- Generic Cards remain non-interactive; no keyboard/focus contract is invented.
-- Explicit numeric/text values remain visible, so existing semantic tones are never the sole information carrier.
-- Reuse existing semantic Card/KeyValueList surfaces and tokens for dark mode; no new page-local palette.
-- Exactly one device renderer mounts through `ResponsiveCollection`; no CSS-hidden duplicate table/card tree.
-
-### State acceptance
-
-Preserve exact state precedence and content:
-- loading before ready composition;
-- exactly five `SkeletonCard height={44}` rows;
-- exact empty copy `لا توجد بيانات فى النطاق الزمني المحدد`;
-- neither loading nor empty state mounts a ready device renderer.
-
-### Explicit exclusions
-
-Do not modify:
-- the REPORT014 `ChartPanel` or its title/description/trust/freshness/chart body;
-- chart top-15 mapping, axes, tooltip, series or dynamic height;
-- KPIs or summary calculation;
-- `ReportFilterBar` / date range;
-- `SystemHealthBar` or trust lookup;
-- `CustomTooltip`;
-- hooks, queries, cache semantics, rankings or calculations;
-- permissions/RBAC/RLS, routing, backend contracts, validation, export/print or business workflow;
-- shared component APIs, CSS or tokens.
-
-If the implementation discovers that a shared API/CSS change or functional semantic change is required, REPORT016 becomes `BLOCKED` and returns the exact gap to Product Design rather than widening the PR.
-
-### Focused test expectations
-
-Preserve all existing REPORT014 chart-panel tests and add focused REPORT016 coverage for:
+Focused tests protect:
 - Desktop/Tablet/Mobile single-renderer behavior;
-- all seven row facts and row/rank ordering;
-- first/last identity emphasis and current returns/return-rate tone thresholds;
-- long Arabic rep/branch wrapping;
-- LTR numeric/currency/percentage presentation;
+- all seven facts/order;
+- first/last identity and rank emphasis;
+- neutral/default compact revenue for both first and last rows;
+- returns and return-rate thresholds;
+- long Arabic wrapping and LTR numeric presentation;
 - Desktop `scope="col"` headers;
-- exact five × 44px loading state and exact empty copy/precedence.
+- exact loading/empty precedence, five × 44px loading rows and empty copy.
 
-Evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved runtime actually executes the tests. Hosted GitHub Actions remain forbidden.
+Tests were not executed in an approved project runtime. Evidence is correctly labeled `TESTS_AUTHORED_NOT_EXECUTED`; no build/test/lint/runtime/preview/release PASS is claimed.
 
 ## Peer-state synthesis / contradiction status
 
-This design judgment was formed independently first, then compared with shared memory and peer states.
+This Product Design judgment was formed independently from the exact PR source/test/shared-pattern evidence, then compared with peer states.
 
-- **Team Memory:** current and aligned; explicitly hands REPORT016 to Product Design for exact bounding after REPORT015 integration.
-- **Development Integrator:** current and aligned; REPORT015 is merged and REPORT016 is `READY_FOR_PRODUCT_DESIGN_BOUNDING`.
-- **UI Production:** lifecycle-stale at REPORT015, as expected after integration; it contains no contradictory current implementation claim.
-- **Design QA:** lifecycle-stale at REPORT015, as expected; fresh exact-head review will be required only after a REPORT016 implementation PR exists.
-- **Prior Design Director state:** lifecycle-stale after REPORT015 merge and superseded by this state.
-- **Decision Log / North Star / device and component guidance:** aligned with shared-system reuse, one renderer per device, Arabic-first composition and UI-only functional isolation.
+- **Design QA:** current and aligned on exact PR HEAD `d6f257c4060aa25a2c4ce46abe621fe76f031826`; prior blocker on `4b1a0c8...` is explicitly resolved and QA now records `GREEN-DEV + SOURCE_REVIEW_PASS`.
+- **UI Production:** feature-branch state is aligned with the repaired exact HEAD; it records the same narrow semantic-color repair and honest non-executed evidence.
+- **Development Integrator:** current Development state is lifecycle-stale because it is anchored to old blocked HEAD `4b1a0c8...`; its NO_MERGE decision was correct for that old HEAD but does not constitute a current contradiction after the moved HEAD received fresh QA and Product Design acceptance.
+- **Team Memory:** lifecycle-stale at the pre-implementation REPORT016 placeholder; not contradictory.
+- **Workstream / Decision Log / North Star / device and component guidance:** aligned with one active slice, presentation-only reuse, Arabic-first responsive composition, semantic consistency and functional isolation.
+- **Development drift from feature base:** governance-only (`DESIGN_QA_STATE.md` / `INTEGRATION_STATE.md` updates); no overlapping product/shared-component drift was found.
 
-Current contradiction classification: **NONE**.
+Current contradiction classification: **NONE on exact PR HEAD `d6f257c4060aa25a2c4ce46abe621fe76f031826`.**
 
 ## Repository actions this run
 
 - Completed the mandatory shared-memory bootstrap in the prescribed order.
-- Inspected issue #27, exact latest Development HEAD, open PRs targeting Development, Reports page inventory, current Rep Performance source/test surface, representative Target Attainment and Treasury alternatives, `ResponsiveCollection`, `Card`, `KeyValueList`, device strategy and component decision guidance.
-- Confirmed there was no active implementation PR before bounding a new slice.
-- Updated `31_AGENT_TEAM_WORKSTREAM.md` to make REPORT016 one exact READY implementation concern.
-- Updated only this owned specialist state file; did not overwrite peer states.
-- Did not update Team Memory because the overall system direction did not change; this is a bounded continuation of the existing Reports roadmap.
+- Inspected issue #27, current Development HEAD, open PRs targeting Development, active PR #64 metadata/diff/reviews/threads, exact repaired Rep Performance source/test, shared `ResponsiveCollection`, `Card`, `KeyValueList`, device strategy, component decision matrix and relevant migration/page-pattern guidance.
+- Confirmed exactly one active implementation PR targets Development and did not create a competing slice.
+- Independently accepted PR #64 exact HEAD `d6f257c4060aa25a2c4ce46abe621fe76f031826` with `PASS — NO DESIGN-SYSTEM BLOCKER`.
+- Updated only this owned specialist state file.
+- Did not update `31_AGENT_TEAM_WORKSTREAM.md` because an implementation PR is active and the current slice remains the single pipeline concern.
+- Did not update Team Memory because the overall system direction did not change and no merge occurred.
 - Did not update Decision Log because no durable rule changed.
 - Did not modify product code, merge any PR, touch `main`, trigger/rerun GitHub Actions, use hosted CI, deploy Vercel or modify preview branches.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer; Design QA after implementation PR opens.
-- **What changed:** REPORT016 is now exactly bounded as the Rep Performance `تفصيل الأداء — جميع المندوبين` responsive detail-collection convergence and is READY for one implementation PR.
-- **Preserve:** REPORT014 chart untouched; exact seven Rep Performance facts/order/ranking and existing tone thresholds; Desktop dense table; Tablet two-column and Mobile one-column shared Card/KeyValueList composition; one renderer per device; exact five × 44px loading state and exact empty copy; Arabic wrapping/LTR numeric direction; unchanged shared APIs/CSS and all query/calculation/trust/permission/routing/export/print/business semantics.
-- **Need from you:** start from the latest `design-system-v2-development` HEAD, implement REPORT016 only, author focused device/state/semantic tests, open one Draft PR targeting Development, and hand the exact stable PR HEAD to Design QA and Product Design. If shared-contract or functional widening is required, stop and mark the slice BLOCKED instead.
+- **To:** Development Integrator.
+- **What changed:** Product Design independently accepted repaired PR #64 exact HEAD `d6f257c4060aa25a2c4ce46abe621fe76f031826`; compact revenue is neutral/default, the prior semantic-color blocker is resolved, and the same exact HEAD already has Design QA `GREEN-DEV + SOURCE_REVIEW_PASS`.
+- **Preserve:** exact three-file scope; all seven row facts/order/ranking; compact rank emphasis only on identity/#rank; neutral compact revenue; existing returns/return-rate tones; Desktop dense table and REPORT014 chart unchanged; five × 44px loading state and exact empty copy; one renderer per device; Arabic wrapping/LTR numeric presentation; unchanged shared APIs/CSS/tokens and all functional/business contracts.
+- **Need from you:** revalidate unchanged PR HEAD/base, current Development drift, reviews/threads, mergeability, exact-head QA + Product Design gates, scope and functional isolation; if all remain clean, transition the Draft PR as appropriate and integrate REPORT016 into `design-system-v2-development`. Any PR-head movement requires fresh exact-head QA and Product Design review.
 - **Blocker level:** `NONE`.
-- **Baseline:** product/source baseline inspected `0598553517f0e9ee37f55a85c62d8fba4a189070`; Product Design boundary commit before this state write `cc3551e8c6342bc2aa957e706cd4697db1b66d8b`.
+- **Baseline:** Development pre-state-write `a9d24a91a104f91d35af70638b3588670fd8186b`; exact accepted PR #64 HEAD `d6f257c4060aa25a2c4ce46abe621fe76f031826`.
