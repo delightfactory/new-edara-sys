@@ -335,11 +335,15 @@ describe('Rep Performance responsive detail collection', () => {
 
     const firstIdentity = within(section).getByText(longRepName)
     const firstCard = firstIdentity.closest('.ds-card') as HTMLElement
+    const firstRank = within(firstCard).getByText('#1')
+    const firstRevenue = within(firstCard).getByText('12,500 ج.م')
     expect(firstIdentity.style.overflowWrap).toBe('anywhere')
     expect(firstIdentity.style.color).toBe('var(--color-success)')
     expect(within(firstCard).getByText(longBranchName).style.overflowWrap).toBe('anywhere')
-    expect(within(firstCard).getByText('#1').getAttribute('dir')).toBe('ltr')
-    expect(within(firstCard).getByText('12,500 ج.م').getAttribute('dir')).toBe('ltr')
+    expect(firstRank.getAttribute('dir')).toBe('ltr')
+    expect(firstRank.style.color).toBe('var(--color-success)')
+    expect(firstRevenue.getAttribute('dir')).toBe('ltr')
+    expect(firstRevenue.style.color).toBe('')
     expect(within(firstCard).getByText('0 ج.م').getAttribute('dir')).toBe('ltr')
     expect(within(firstCard).getByText('4%').getAttribute('dir')).toBe('ltr')
     expect(within(firstCard).getByText('21').getAttribute('dir')).toBe('ltr')
@@ -352,7 +356,12 @@ describe('Rep Performance responsive detail collection', () => {
 
     const lastIdentity = within(section).getByText('مندوب آخر الترتيب')
     const lastCard = lastIdentity.closest('.ds-card') as HTMLElement
+    const lastRank = within(lastCard).getByText('#3')
+    const lastRevenue = within(lastCard).getByText('7,000 ج.م')
     expect(lastIdentity.style.color).toBe('var(--color-danger)')
+    expect(lastRank.style.color).toBe('var(--color-danger)')
+    expect(lastRevenue.getAttribute('dir')).toBe('ltr')
+    expect(lastRevenue.style.color).toBe('')
     expect(within(lastCard).getByText('12%').style.color).toBe('var(--color-danger)')
   })
 
