@@ -38,17 +38,17 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-017`.
+Product UI is integrated through `DS2-REPORT-018`.
 
 Latest product integration:
-- PR: `#65 — DS2-REPORT-017: converge Target Attainment responsive detail collection`
-- Exact reviewed PR HEAD: `ccaaa6ede829f4d81017779c99cd76c1bf719918`
-- Squash merge commit: `3474748541068600e1deae061bf68fca23b346ef`
+- PR: `#66 — DS2-REPORT-018: converge Treasury daily cashflow chart panel`
+- Exact reviewed PR HEAD: `1e9b2ad87d00a99a7db18f70bbcb1d881c5953e2`
+- Squash merge commit: `aa11853c351aac3a9da3203af1a0208fc49fd6f3`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact HEAD
 - Runtime/preview/release evidence: not claimed
 
-The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, Supervisor Work shared KPI summary convergence, Reports shared route-level sub-navigation convergence, Reports date-preset and native custom-date convergence, Reports Overview KPI-summary convergence, shared `ChartPanel` proofs across multiple analytical surfaces, and responsive detail-collection proofs across Product Performance, Customer Health, Churn Risk, Geography, Rep Performance and Target Attainment using `ResponsiveCollection + Card + KeyValueList` while preserving dense Desktop comparison.
+The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, Supervisor Work shared KPI summary convergence, Reports shared route-level sub-navigation convergence, Reports date-preset and native custom-date convergence, Reports Overview KPI-summary convergence, shared `ChartPanel` proofs across Sales/Receivables/Churn/Product Performance/Rep Performance/Treasury analytical surfaces, and responsive detail-collection proofs across Product Performance, Customer Health, Churn Risk, Geography, Rep Performance and Target Attainment using `ResponsiveCollection + Card + KeyValueList` while preserving dense Desktop comparison.
 
 ## Completed slices
 
@@ -87,54 +87,39 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - `DS2-REPORT-015 — Geography responsive detail-collection convergence` — `DONE` — PR #63 — reviewed HEAD `b3667bb27f1cc2a37805f7f2fef4a8276230cf59` — merge `fae25c2962f01aefc988b3e3ec8e0532e1c491f8` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-016 — Rep Performance responsive detail-collection convergence` — `DONE` — PR #64 — reviewed HEAD `d6f257c4060aa25a2c4ce46abe621fe76f031826` — merge `ce3db886a3eaaae15025998186cc62e1e841410e` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-017 — Target Attainment responsive detail-collection convergence` — `DONE` — PR #65 — reviewed HEAD `ccaaa6ede829f4d81017779c99cd76c1bf719918` — merge `3474748541068600e1deae061bf68fca23b346ef` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
+- `DS2-REPORT-018 — Treasury daily cashflow chart-panel convergence` — `DONE` — PR #66 — reviewed HEAD `1e9b2ad87d00a99a7db18f70bbcb1d881c5953e2` — merge `aa11853c351aac3a9da3203af1a0208fc49fd6f3` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 
 ### REPORT017 system result
 
-- Target Attainment `تفاصيل الأهداف` now uses the established `ResponsiveCollection + Card + KeyValueList` grammar for Tablet/Mobile while preserving caller-owned `TargetAttainmentRow[]` truth, fallbacks and ordering.
+- Target Attainment `تفاصيل الأهداف` uses the established `ResponsiveCollection + Card + KeyValueList` grammar for Tablet/Mobile while preserving caller-owned `TargetAttainmentRow[]` truth, fallbacks and ordering.
 - Desktop keeps the dense semantic eight-column table, exact comparison order, hover behavior and achievement/trend presentation, with `scope="col"` headers.
 - Tablet uses two-column and Mobile one-column passive shared card/key-value composition, with exactly one ready renderer mounted per device and no ordinary compact-device horizontal-table dependency.
-- All eight facts remain unchanged: target, type, responsible, branch, target value, achieved value, achievement percentage and trend; responsible/branch fallbacks remain `—`.
-- Achievement thresholds remain `>=100` success, `>=80` warning, otherwise danger; `TrendBadge` labels/colors and unknown fallback remain caller-owned and unchanged.
-- Long Arabic target/type/responsible/branch values are wrap-safe; money/percentage values retain intentional LTR presentation inside RTL composition.
-- Trust/Freshness and `BLOCKED/FAILED -> loading -> empty -> ready` precedence remain unchanged, including exact blocked/empty copy and five × 44px loading rows.
-- Header/date/scope controls, KPI summary, individual-rep chart, hooks/queries/calculations, permissions, routing, export/print and all business semantics remain unchanged.
-- No shared API/CSS/token widening occurred.
+- All eight facts, achievement thresholds, `TrendBadge`, Trust/Freshness, state precedence, header/date/scope controls, KPI summary, chart, hooks/queries/calculations, permissions, routing, export/print and business semantics remain caller-owned.
+
+### REPORT018 system result
+
+- Treasury `التدفق النقدي اليومي` now uses the proven neutral shared `ChartPanel` instead of a page-local analytical Card/header shell.
+- Exact title/description, Trust/Freshness, semantic state precedence and all 280px state/chart contracts remain unchanged.
+- `chartData` mapping/order and the complete AreaChart geometry/gradients/grid/axes/tooltip/reference/series contracts remain caller-owned and unchanged.
+- Shared semantic hierarchy improves from page `h1` to shared section `h2` without widening `ChartPanel`, shared CSS or tokens.
+- Mobile/Tablet/Desktop retain 100% chart containment; compact trust/freshness wrapping is safe and informational rather than interactive.
+- No query/cache/calculation/trust/permission/RBAC/RLS/routing/backend/validation/export/print/workflow/business semantics changed.
 
 ## Current single READY slice
 
-### DS2-REPORT-018 — Treasury daily cashflow chart-panel convergence
+### DS2-REPORT-019 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
 Status: `READY`
-Owner role for immediate next action: UI Production Engineer
-Representative surface: `src/pages/reports/TreasuryPage.tsx` → `التدفق النقدي اليومي` chart section only.
+Owner role for immediate next action: Product Design Director
 
 System intent:
-- converge the remaining page-local analytical Card/header shell onto the already-proven shared `ChartPanel` presentation contract;
-- preserve Treasury data, trust/freshness, state precedence and chart semantics entirely in the caller;
-- make the section hierarchy semantic (`h1` page → shared `h2` chart section) while retaining Arabic-first wrapping, RTL composition and responsive containment;
-- prove the neutral shared chart-panel grammar on Treasury without widening shared APIs, CSS or tokens.
+- inspect representative remaining Reports/Analytics surfaces from the exact latest Development baseline;
+- select exactly one smallest dependency-safe presentation-only concern and name its representative file/surface plus explicit acceptance boundary;
+- prefer existing V2 primitives/patterns and strengthen a shared contract only when a real consumer proves the need;
+- preserve REPORT001-018 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/business semantics;
+- keep Settings/Admin, Global convergence, remaining Work/Field debt and shared component-depth work in the roadmap;
+- do not turn REPORT019 into broad multi-page report beautification.
 
-Acceptance boundary:
-- replace only the local surface/header composition around `التدفق النقدي اليومي` with `ChartPanel`;
-- preserve exact title `التدفق النقدي اليومي` and exact description `net_cashflow — مجمّع يومياً في قاعدة البيانات`;
-- preserve the existing TrustStateBadge + FreshnessIndicator action cluster and allow it to wrap safely on compact widths;
-- preserve state precedence and copy exactly: blocked/failed surface at `280px`, loading `SkeletonCard height={280}`, empty `لا توجد تدفقات خزينية في هذه الفترة`, then ready chart;
-- preserve `chartData` mapping (`date / inflow / outflow / net`), caller-owned ordering and all current `ResponsiveContainer`, `AreaChart`, margin, gradient ids/colors/opacities, grid, axes, tooltip, reference line and three Area-series names/strokes/fills/widths unchanged;
-- Mobile/Tablet/Desktop must retain 100% chart containment with no new page-level horizontal overflow; compact header/action wrapping must remain legible and touch-neutral because the badges are informational, not actions;
-- preserve dark-mode/RTL behavior through existing semantic surfaces/tokens; do not introduce a page-local palette or alter current chart-series colors;
-- focused tests must protect the shared `ChartPanel` adoption, semantic heading hierarchy, exact title/description/action presence, blocked/loading/empty/ready precedence and unchanged chart configuration/data mapping; evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved runtime actually executes them.
-
-Explicit exclusions:
-- Treasury page header and `ReportFilterBar`;
-- the semantic-contract notice;
-- `SystemHealthBar`;
-- all three `MetricCard` KPIs and summary loading behavior;
-- `CustomTooltip` behavior/content;
-- hook/query/cache/data mapping semantics beyond verifying they remain unchanged;
-- calculations, trust resolution, permissions/RBAC/RLS, routing, backend/service contracts, validation, export/print and workflow/business semantics;
-- `ChartPanel` API, shared CSS/tokens or any other report surface.
-
-Stop rule:
-If implementation requires any excluded shared-system widening or functional/data-semantic change, mark REPORT018 `BLOCKED` instead of broadening the PR.
+Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
 
 ## Product migration roadmap
 
@@ -183,9 +168,9 @@ Open only when a real migrated screen proves the recurring gap:
 - further Work detail/feedback/management convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
 
 ### I. Reports / Analytics
-- `DS2-REPORT-001` through `DS2-REPORT-017` — `DONE`
-- `DS2-REPORT-018 — Treasury daily cashflow chart-panel convergence` — `READY`
-- further Reports/Analytics convergence beyond REPORT018 — `BACKLOG` / each concern must be bounded separately
+- `DS2-REPORT-001` through `DS2-REPORT-018` — `DONE`
+- `DS2-REPORT-019 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY`
+- further Reports/Analytics convergence beyond REPORT019 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
