@@ -4,47 +4,56 @@
 
 - Review date: `2026-09-21`.
 - Development branch: `design-system-v2-development`.
-- Exact Development HEAD immediately before this owned-state write: `027940ca33a1493cde958f52296bef56567d09e6`.
+- Exact Development HEAD immediately before this owned-state write: `8234a2ba45e12a2cd3d98d700d9cf4653d991507`.
 - Latest integrated product baseline: `DS2-REPORT-017 — Target Attainment responsive detail-collection convergence`.
 - Latest product merge: PR #65, squash merge `3474748541068600e1deae061bf68fca23b346ef` from exact reviewed implementation HEAD `ccaaa6ede829f4d81017779c99cd76c1bf719918`.
-- Current single READY slice: `DS2-REPORT-018 — Treasury daily cashflow chart-panel convergence`.
-- REPORT018 Workstream bounding commit: `97741761ac37161103a3e944d40bc84de405bc42`.
-- Current Product Design disposition: `READY — BOUNDED / NO DESIGN-SYSTEM BLOCKER`.
-- Representative surface: `src/pages/reports/TreasuryPage.tsx` → `التدفق النقدي اليومي` chart section only.
-- Open PRs targeting `design-system-v2-development` at final pre-write recheck: none.
-- Integration disposition: `NO_MERGE — REPORT018 BOUNDED / WAITING_FOR_UI_IMPLEMENTATION`.
+- Current active slice: `DS2-REPORT-018 — Treasury daily cashflow chart-panel convergence`.
+- Active PR: `#66 — DS2-REPORT-018: converge Treasury daily cashflow chart panel`.
+- PR base: `design-system-v2-development`.
+- Exact current PR HEAD: `1e9b2ad87d00a99a7db18f70bbcb1d881c5953e2`.
+- PR state at final pre-write recheck: `OPEN / DRAFT / mergeable=true`.
+- Design QA disposition on exact current HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
+- Product Design exact-head closeout: pending; current Product Design state is the pre-implementation REPORT018 boundary and does not yet accept or block PR HEAD `1e9b2ad87d00a99a7db18f70bbcb1d881c5953e2`.
+- Integration disposition: `NO_MERGE — WAITING_FRESH_PRODUCT_DESIGN_EXACT_HEAD_CLOSEOUT`.
 
 ## Integrator decision
 
 **NO MERGE.**
 
-There is no active implementation PR targeting `design-system-v2-development`, so there is no exact implementation HEAD on which the Development merge gates can be evaluated.
+PR #66 is technically clean enough for Integration except for the still-pending fresh Product Design exact-head closeout recorded by the current QA/UI handoff chain.
 
-The integration disposition changed materially since the previous state: Product Design has now decomposed the generic REPORT018 placeholder into one dependency-safe Treasury presentation slice and handed it to UI Production. The current boundary is fresh against the latest integrated product baseline and records no Design-System blocker or peer-state contradiction.
+Integration revalidated the current PR metadata and exact HEAD `1e9b2ad87d00a99a7db18f70bbcb1d881c5953e2`. The base is exactly `design-system-v2-development`; the PR is mergeable; Design QA placed `AGENT-REVIEW: GREEN-DEV` on that exact HEAD with `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; there are no inline review threads; no known source-visible build/type failure is outstanding; and no current role-state file records a BLOCKING contradiction.
 
-REPORT018 is limited to replacing the page-local surface/header shell around Treasury `التدفق النقدي اليومي` with the existing shared `ChartPanel` contract. The following remain caller-owned and must not drift: chart data mapping/order/configuration/series semantics, trust/freshness, blocked/loading/empty/ready precedence and exact copy/heights, 280px chart density, Arabic/RTL/dark-mode behavior, page header/filter/notice/SystemHealth/KPIs/CustomTooltip, shared APIs/CSS/tokens, and every backend/query/cache/permission/RBAC/RLS/routing/validation/export/print/workflow/business contract.
+The exact diff remains isolated to three files only:
+- `src/pages/reports/TreasuryPage.tsx`
+- `src/pages/reports/TreasuryPage.test.tsx`
+- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
-No merge evidence exists yet for REPORT018. A future PR will require a stable exact HEAD, fresh Design QA `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`, an honest test evidence label, no known build/type failure, no unresolved material blocker, no current `BLOCKING` contradiction, clean functional isolation and no workflow/deployment enabling change before Integration can reconsider merge.
+The product change is presentation-only: the Treasury `التدفق النقدي اليومي` local Card/header shell now consumes existing shared `ChartPanel`. Chart data mapping/order/configuration/series semantics, Trust/Freshness, blocked/loading/empty/ready precedence and exact 280px contracts, header/filter/notice/SystemHealth/KPIs/CustomTooltip, hooks/query/cache/permissions/RBAC/RLS/routing/validation/export/print/workflow/business semantics remain unchanged. No workflow/deployment-enabling change exists.
+
+Development drift since the implementation branch baseline `3ebc36354be981cc98048fc753af486e566586e6` is governance-only: one commit updating `team/design-system-v2/DESIGN_QA_STATE.md`. That drift does not change product/shared-component code or invalidate the exact-head QA review.
+
+However, the fresh QA handoff explicitly routes this exact HEAD to Product Design for acceptance before Integration. Product Design's Development state still reflects only the pre-implementation REPORT018 boundary. Treating that pending professional closeout as complete would bypass the current cross-role handoff rather than resolve it. Integration therefore waits without changing the PR HEAD, merge-syncing governance-only drift, or weakening any gate.
 
 ## Queue continuity
 
-The Workstream already contains exactly one READY slice, REPORT018, and it is now ready for UI Production implementation. No queue movement is appropriate from Integration in this run.
-
-The full roadmap remains intact: later Reports/Analytics convergence, Settings/Admin, remaining Work/Field debt, shared component-depth work, and Global Dark/RTL/accessibility/legacy consistency work remain future bounded phases rather than being collapsed into Treasury page polishing.
+REPORT018 remains the single active slice. No Workstream or Team Memory movement is appropriate until the current PR is actually integrated. The full North-Star roadmap remains intact, including later Reports/Analytics convergence, Settings/Admin, remaining Work/Field debt, shared component-depth work and Global Dark/RTL/accessibility/legacy consistency work.
 
 ## Repository actions this run
 
-- Completed the mandatory shared-memory bootstrap and freshness recheck against the exact latest Development baseline.
-- Rechecked issue #27 and open PRs targeting Development; no active implementation PR exists.
-- Updated only this owned Integration state because the disposition materially changed from `REPORT018 ready for Product Design bounding` to `REPORT018 bounded / waiting for UI implementation`.
+- Completed the mandatory shared-memory bootstrap in the prescribed order.
+- Inspected issue #27 and the single active PR #66 targeting Development.
+- Revalidated exact PR metadata/head/base/mergeability, review marker/evidence, review threads, changed-file scope and per-file patches.
+- Compared PR baseline `3ebc36354be981cc98048fc753af486e566586e6` to current Development HEAD `8234a2ba45e12a2cd3d98d700d9cf4653d991507`; drift is only the Design QA state update.
+- Updated only this owned Integration state because the disposition materially changed from waiting for UI implementation to waiting for fresh Product Design exact-head closeout.
 - Did not modify Workstream, Team Memory, Decision Log, peer role states or product code.
-- Did not add an issue #27 note because this is normal forward progress with no persistent blocker or coordination failure.
+- Did not add an issue #27 note because this is normal forward progress rather than a persistent blocker or coordination failure.
 - Did not trigger/rerun GitHub Actions, use hosted CI, deploy Vercel, modify preview branches or touch `main`.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer; Design QA after a stable implementation PR exists.
-- **What changed:** REPORT018 is now fully bounded as the Treasury daily-cashflow `ChartPanel` convergence slice; no implementation PR exists yet.
-- **Preserve:** exact Treasury chart data mapping/order/configuration/series semantics; Trust/Freshness; blocked/loading/empty/ready precedence and exact copy/heights; 280px chart density; Arabic/RTL/dark-mode behavior; page header/filter/notice/SystemHealth/KPIs/CustomTooltip; unchanged shared APIs/CSS/tokens; all functional/business contracts; the full downstream roadmap.
-- **Need from you:** UI Production should start from the exact latest `design-system-v2-development` HEAD after this state write, implement only the bounded REPORT018 presentation concern, author focused contract tests and open one Draft PR targeting Development. If shared-contract widening or any functional/data-semantic change becomes necessary, mark REPORT018 `BLOCKED` instead of broadening scope.
-- **Blocker level:** `NONE`.
-- **Baseline:** Development pre-state-write `027940ca33a1493cde958f52296bef56567d09e6`; REPORT018 Workstream boundary `97741761ac37161103a3e944d40bc84de405bc42`; latest integrated product merge `3474748541068600e1deae061bf68fca23b346ef`.
+- **To:** Product Design Director; Development Integrator after that closeout.
+- **What changed:** PR #66 exact HEAD `1e9b2ad87d00a99a7db18f70bbcb1d881c5953e2` now has fresh Design QA `GREEN-DEV + SOURCE_REVIEW_PASS`; technical merge gates are otherwise clean, but Product Design exact-head acceptance is still pending.
+- **Preserve:** exact Treasury title/description; Trust/Freshness; blocked/loading/empty/ready precedence/copy/heights; `chartData` mapping/order; AreaChart geometry/gradients/grid/axes/tooltip/reference/series; 100% containment; Arabic/RTL/dark-mode semantics; unchanged header/filter/notice/SystemHealth/KPIs/CustomTooltip/shared APIs/CSS/tokens and every functional/business contract; do not merge-sync governance-only Development drift just to refresh the feature SHA.
+- **Need from you:** Product Design should independently accept or block the unchanged exact PR #66 HEAD `1e9b2ad87d00a99a7db18f70bbcb1d881c5953e2`. Integration may merge only if that closeout is non-blocking and the exact PR HEAD remains unchanged with all current gates still clean.
+- **Blocker level:** `WATCH` — coordination gate pending, not an implementation defect.
+- **Baseline:** Development pre-state-write `8234a2ba45e12a2cd3d98d700d9cf4653d991507`; exact PR #66 HEAD `1e9b2ad87d00a99a7db18f70bbcb1d881c5953e2`; evidence `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
