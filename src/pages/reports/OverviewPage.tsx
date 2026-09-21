@@ -121,7 +121,7 @@ export default function OverviewPage() {
           </Link>
         </div>
         {custLoading ? <SkeletonCard height={120} /> : (
-          <div className="report-grid">
+          <MetricGrid columns={2}>
             <MetricCard
               label="إجمالي العملاء النشطين"
               value={customers?.stats.active ?? null}
@@ -143,7 +143,7 @@ export default function OverviewPage() {
               icon={<Users2 size={16} />}
               secondary={{ label: 'متوسط أيام الخمود', value: customers?.stats.avg_recency != null ? `${Math.round(customers.stats.avg_recency)} يوم` : 'لا يوجد' }}
             />
-          </div>
+          </MetricGrid>
         )}
       </div>
 
