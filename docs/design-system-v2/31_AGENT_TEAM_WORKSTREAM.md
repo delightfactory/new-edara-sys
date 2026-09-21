@@ -17,7 +17,7 @@ Authorities:
 | Role | Responsibility | Cadence | Product code | Merge | Deploy |
 |---|---|---|---:|---:|---:|
 | Product Design Director | System identity, architecture, next slice, design quality | every 2 hours | No | No | No |
-| UI Production Engineer | Implement/repair the single active UI slice | hourly | UI-only | No | No | No |
+| UI Production Engineer | Implement/repair the single active UI slice | hourly | UI-only | No | No |
 | Design QA | Independent exact-head review | hourly | No | No | No |
 | Development Integrator | Merge GREEN-DEV PR and advance queue | hourly | No feature work | Development only | No |
 
@@ -38,17 +38,17 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-012`.
+Product UI is integrated through `DS2-REPORT-013`.
 
 Latest product integration:
-- PR: `#59 — DS2-REPORT-012: converge Customer Health responsive collection`
-- Exact reviewed PR HEAD: `f92e25a4ad6afa0303235d8971c20e028fe8a9c5`
-- Squash merge commit: `7935e461e3c212eb187fe56bbb14ebe3e427f874`
+- PR: `#61 — DS2-REPORT-013: converge Churn Risk responsive collection`
+- Exact reviewed PR HEAD: `eb6332a38c63935955c6057b3619cf86bfa284e8`
+- Squash merge commit: `a9c787f447780f72b7ac0a99b9b9ce0d1f636932`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact HEAD
 - Runtime/preview/release evidence: not claimed
 
-The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, Supervisor Work shared KPI summary convergence, Reports shared route-level sub-navigation convergence, Reports shared date-preset selector convergence with hardened `SegmentedControl` geometry, Reports shared native `DateField` convergence for custom dates, Reports Overview KPI-summary layout convergence onto shared `MetricGrid`, Product Performance and Customer Health responsive detail-collection convergence via `ResponsiveCollection + Card + KeyValueList`, Geography analysis-level convergence onto shared `Select -> Field`, and shared domain-agnostic `ChartPanel` proven across Sales, Receivables, Churn Risk and Product Performance analytical sections.
+The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, Supervisor Work shared KPI summary convergence, Reports shared route-level sub-navigation convergence, Reports shared date-preset selector convergence with hardened `SegmentedControl` geometry, Reports shared native `DateField` convergence for custom dates, Reports Overview KPI-summary layout convergence onto shared `MetricGrid`, Product Performance, Customer Health and Churn Risk responsive detail-collection convergence via `ResponsiveCollection + Card + KeyValueList`, Geography analysis-level convergence onto shared `Select -> Field`, and shared domain-agnostic `ChartPanel` proven across Sales, Receivables, Churn Risk and Product Performance analytical sections.
 
 ## Completed slices
 
@@ -82,70 +82,30 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - `DS2-REPORT-010 — Churn Risk pie-chart ChartPanel convergence` — `DONE` — PR #57 — reviewed HEAD `d5ac5becd8a9a64080022365407d60febaefe96e` — merge `5d6ee46bc716f6da39367c87e87608f30929c734` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-011 — Product Performance revenue chart-panel convergence` — `DONE` — PR #58 — reviewed HEAD `58927873f328172025f60da7c6b6d3fa3ecbcefa` — merge `9433ec1623a812d1b47d93bffad7e1c537caaa91` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-012 — Customer Health responsive detail-collection convergence` — `DONE` — PR #59 — reviewed HEAD `f92e25a4ad6afa0303235d8971c20e028fe8a9c5` — merge `7935e461e3c212eb187fe56bbb14ebe3e427f874` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
+- `DS2-REPORT-013 — Churn Risk responsive detail-collection convergence` — `DONE` — PR #61 — reviewed HEAD `eb6332a38c63935955c6057b3619cf86bfa284e8` — merge `a9c787f447780f72b7ac0a99b9b9ce0d1f636932` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 
-### REPORT012 system result
+### REPORT013 system result
 
-- Customer Health section `تفاصيل العملاء — أعلى 50 حسب القيمة` now uses the existing presentation-only `ResponsiveCollection + Card + KeyValueList` grammar for Tablet/Mobile while Desktop retains the dense semantic five-column table with `th scope="col"`;
-- exactly one renderer is mounted per device and the same unchanged Customer Health row truth is used across Desktop, Tablet and Mobile;
-- blocked/loading/empty/ready precedence and copy, Trust/Freshness behavior, customer identity/fallback, recency/frequency/90-day monetary/status meaning, top-50/order truth and the `stats.total > 50` informational footer remain caller-owned and unchanged;
-- no shared component API/CSS widening, second report/page, backend/schema/RPC/query/cache/calculation/permission/RBAC/RLS/routing/export/print/business/deployment/workflow change entered the slice.
+- Churn Risk section `تفاصيل العملاء — مرتب: معرض للخطر أولاً` now uses the established presentation-only `ResponsiveCollection + Card + KeyValueList` grammar for Tablet/Mobile while Desktop retains the exact dense semantic six-column RFM table with `th scope="col"`.
+- Exactly one ready-state renderer is mounted per device; the same unchanged `CustomerRiskRow` truth is used across Desktop, Tablet and Mobile.
+- Customer name-or-truncated-ID fallback, `RiskBadge`, `rfm_score`, `RecencyCell`, `frequency_l90d ×`, `fmtCur(monetary_l90d)`, row order, blocked/loading/empty precedence and exact copy, Trust/Freshness/SystemHealth and REPORT010 pie behavior remain caller-owned and unchanged.
+- No invoice/spend/average-order semantics, shared API/CSS widening, second report/page, backend/schema/RPC/query/cache/calculation/permission/RBAC/RLS/routing/export/print/business/deployment/workflow change entered the slice.
 
 ## Current single READY slice
 
-### DS2-REPORT-013 — Churn Risk responsive detail-collection convergence
+### DS2-REPORT-014 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
 Status: `READY`
-Owner role for immediate next action: UI Production Engineer
+Owner role for immediate next action: Product Design Director
 
-Representative surface:
-- `src/pages/reports/ChurnRiskPage.tsx`
-- section `تفاصيل العملاء — مرتب: معرض للخطر أولاً` only.
+Intent:
+- inspect representative remaining Reports/Analytics surfaces on the exact latest `design-system-v2-development` baseline;
+- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance boundary;
+- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer proves a recurring need;
+- preserve REPORT001-013 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/business semantics;
+- preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
+- do not turn REPORT014 into broad multi-page report beautification.
 
-System-pattern intent:
-- deepen the already-proven Reports responsive collection grammar on the actual current six-fact RFM row contract, rather than invent a second data shape or continue low-value chart-shell repetition;
-- Desktop preserves the current dense semantic comparison table while Tablet/Mobile deliberately compose the same caller-owned row truth with the existing presentation-only `ResponsiveCollection + Card + KeyValueList` grammar;
-- exactly one renderer is mounted for the active device; hidden duplicate Desktop/Mobile surfaces are not acceptable;
-- shared components remain presentation-only and must not absorb risk classification, RFM score, recency, frequency, monetary, customer identity, query or trust semantics.
-
-In scope:
-- migrate only the blocked/loading/empty/ready customer detail collection under `تفاصيل العملاء — مرتب: معرض للخطر أولاً` into the established responsive orchestration while preserving the section shell/header and Trust/Freshness cluster;
-- **Desktop:** retain the existing six columns in the existing order: `العميل`, `التصنيف`, `RFM Score`, `أيام منذ آخر شراء`, `تكرار (90 يوم)`, `قيمة (90 يوم)`, with existing compact density, values and row order; add proper column-header semantics (`th scope="col"`) without changing content;
-- **Tablet/Mobile:** render exactly the same six facts through `ResponsiveCollection + Card + KeyValueList`; customer identity remains the card lead and preserves the current display rule: resolved `customer_name` when present, otherwise the existing truncated `customer_id` fallback only; do not invent an additional visible ID or new content;
-- preserve `RiskBadge` exactly for `risk_label`, the exact `rfm_score` value, `RecencyCell` exactly for `recency_days`, the exact `frequency_l90d` value with `×`, and `fmtCur(row.monetary_l90d)` exactly for 90-day monetary value;
-- preserve current blocked precedence and exact blocked copy (`بيانات الخطر محجوبة` / `snapshot_customer_risk يحتاج تشغيل ناجح أولاً`), the five `SkeletonCard` rows at height 44 for loading, and exact empty copy `لا توجد بيانات — شغّل watermark sweep أولاً`;
-- preserve current page-level SystemHealth/trust/freshness behavior exactly; no new table-level state semantics, calculation, sorting or customer-risk interpretation;
-- preserve existing LTR treatment for RFM/frequency/monetary/recency facts inside the Arabic-first RTL composition;
-- rely on shared semantic Card/KeyValueList styling for dark mode; long Arabic customer names must wrap safely with `min-width: 0`/safe wrapping rather than introduce page-level horizontal drift.
-
-Device/state/accessibility acceptance:
-- **Desktop:** dense semantic table remains the management comparison surface and does not regress into cards; local table overflow remains contained to the table region;
-- **Tablet:** intentional shared card/key-value composition, with the five non-identity facts suitable for a compact two-column `KeyValueList` and safe Arabic wrapping;
-- **Mobile:** single-column shared cards with no horizontal table dependency;
-- exactly one device renderer is mounted at a time through `ResponsiveCollection`;
-- blocked/loading/empty states remain singular and exact; ready-state content is not duplicated in the accessibility tree;
-- Desktop headers expose column-header scope; Tablet/Mobile fact anatomy keeps shared `dl/dt/dd` semantics through `KeyValueList`;
-- no new interactive control, focus path, keyboard behavior, hover dependency or touch target is introduced.
-
-Focused test intent:
-- Desktop/Tablet/Mobile renderer selection and exactly-one-renderer behavior;
-- exact blocked/loading/empty precedence and copy, including five 44px loading skeletons;
-- exact six-field Desktop header order and row/card fact mapping;
-- current customer-name versus truncated-ID fallback behavior, with no invented extra identity field;
-- unchanged `RiskBadge`, `rfm_score`, `RecencyCell`, `frequency_l90d` and `fmtCur(monetary_l90d)` semantics;
-- semantic Desktop `scope="col"`, Tablet/Mobile `KeyValueList` anatomy, LTR numeric treatment and long-Arabic containment.
-
-Explicit exclusions:
-- REPORT010 pie `ChartPanel` and all chart behavior;
-- KPI grid and all report filter/date controls;
-- SystemHealthBar/trust/freshness redesign or new state semantics;
-- `RiskBadge` / `RecencyCell` semantic redesign;
-- `CustomerRiskRow` type, query hooks, RPC/service contracts, calculations, RFM/churn classification, sorting/order, backend/schema/cache, permissions/RBAC/RLS, routing/export/print/business behavior;
-- any invoice-count, total-spend, average-invoice or other facts not present in the current `CustomerRiskRow` contract;
-- any other Reports/Analytics page or second responsive collection;
-- any material API/CSS change to `ResponsiveCollection`, `Card` or `KeyValueList`;
-- Settings/Admin, remaining Work/Field debt, Global convergence and deployment/workflow changes.
-
-Stop condition:
-- if implementation requires material shared API/CSS widening, simultaneous hidden duplicate device surfaces, a new data field/calculation, or any functional/data/trust semantic change, mark `DS2-REPORT-013` `BLOCKED` and return to Product Design rather than expanding the PR.
+Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
 
 ## Product migration roadmap
 
@@ -194,9 +154,9 @@ Open only when a real migrated screen proves the recurring gap:
 - further Work detail/feedback/management convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
 
 ### I. Reports / Analytics
-- `DS2-REPORT-001` through `DS2-REPORT-012` — `DONE`
-- `DS2-REPORT-013 — Churn Risk responsive detail-collection convergence` — `READY`
-- further Reports/Analytics convergence beyond REPORT013 — `BACKLOG` / each concern must be bounded separately
+- `DS2-REPORT-001` through `DS2-REPORT-013` — `DONE`
+- `DS2-REPORT-014 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY`
+- further Reports/Analytics convergence beyond REPORT014 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
