@@ -38,17 +38,17 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-014`.
+Product UI is integrated through `DS2-REPORT-015`.
 
 Latest product integration:
-- PR: `#62 — DS2-REPORT-014: converge Rep Performance comparison chart panel`
-- Exact reviewed PR HEAD: `6f77f2b5aab911c9fa18afd3c78268255456a0ad`
-- Squash merge commit: `a7096cdc86fb9fa55205556a10c8a5c13a6235d4`
+- PR: `#63 — DS2-REPORT-015: converge Geography responsive detail collection`
+- Exact reviewed PR HEAD: `b3667bb27f1cc2a37805f7f2fef4a8276230cf59`
+- Squash merge commit: `fae25c2962f01aefc988b3e3ec8e0532e1c491f8`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact HEAD
 - Runtime/preview/release evidence: not claimed
 
-The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, Supervisor Work shared KPI summary convergence, Reports shared route-level sub-navigation convergence, Reports shared date-preset selector convergence with hardened `SegmentedControl` geometry, Reports shared native `DateField` convergence for custom dates, Reports Overview KPI-summary layout convergence onto shared `MetricGrid`, Product Performance, Customer Health and Churn Risk responsive detail-collection convergence via `ResponsiveCollection + Card + KeyValueList`, Geography analysis-level convergence onto shared `Select -> Field`, and shared domain-agnostic `ChartPanel` proven across Sales, Receivables, Churn Risk, Product Performance and Rep Performance analytical sections.
+The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, Supervisor Work shared KPI summary convergence, Reports shared route-level sub-navigation convergence, Reports date-preset and native custom-date convergence, Reports Overview KPI-summary convergence, shared `ChartPanel` proofs across multiple analytical surfaces, and responsive detail-collection proofs across Product Performance, Customer Health, Churn Risk and Geography using `ResponsiveCollection + Card + KeyValueList` while preserving dense Desktop comparison.
 
 ## Completed slices
 
@@ -84,52 +84,32 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - `DS2-REPORT-012 — Customer Health responsive detail-collection convergence` — `DONE` — PR #59 — reviewed HEAD `f92e25a4ad6afa0303235d8971c20e028fe8a9c5` — merge `7935e461e3c212eb187fe56bbb14ebe3e427f874` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-013 — Churn Risk responsive detail-collection convergence` — `DONE` — PR #61 — reviewed HEAD `eb6332a38c63935955c6057b3619cf86bfa284e8` — merge `a9c787f447780f72b7ac0a99b9b9ce0d1f636932` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-014 — Rep Performance comparison chart-panel convergence` — `DONE` — PR #62 — reviewed HEAD `6f77f2b5aab911c9fa18afd3c78268255456a0ad` — merge `a7096cdc86fb9fa55205556a10c8a5c13a6235d4` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
+- `DS2-REPORT-015 — Geography responsive detail-collection convergence` — `DONE` — PR #63 — reviewed HEAD `b3667bb27f1cc2a37805f7f2fef4a8276230cf59` — merge `fae25c2962f01aefc988b3e3ec8e0532e1c491f8` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 
-### REPORT014 system result
+### REPORT015 system result
 
-- Rep Performance chart `مقارنة المندوبين — أعلى 15` now consumes the existing presentation-only `ChartPanel` instead of a page-local Card/header shell.
-- Exact title/description, `salesTrust` Trust/Freshness presence and props, 300px loading/empty behavior and exact empty copy, `rows.slice(0, 15)` mapping/order, dynamic `Math.max(chartData.length * 40, 200)` height and complete BarChart/grid/axes/tooltip/revenue/returns configuration remain caller-owned and unchanged.
-- The shared shell now supplies the established semantic `h1 -> h2` hierarchy, Arabic/RTL containment, semantic dark-mode surfaces and shared Card/SectionHeader spacing without widening `ChartPanel` API/CSS.
-- The Rep Performance detail table, KPIs, filters/date controls, `SystemHealthBar`, `CustomTooltip`, hooks, queries, calculations, ranking, trust semantics, permissions/RBAC/RLS, routing, export/print and business behavior remain outside the slice and unchanged.
+- Geography now uses the established `ResponsiveCollection` grammar for the selected detail collection while preserving the same caller-owned `GeographyRow[]` truth.
+- Desktop keeps the dense dynamic semantic table, conditional parent column, heatmap/zero-row/hover behavior and useful comparison density; headers add `scope="col"`.
+- Tablet uses two-column `Card + KeyValueList` composition and Mobile uses one-column composition, with exactly one renderer mounted per device.
+- Long Arabic geography/parent values are wrap-safe and numeric values retain intentional LTR presentation inside RTL composition.
+- `useGeographyTable(filters)`, level/filter meaning, row ordering, Trust/Freshness, five × 44px loading rows, exact empty copy, formatting, queries, calculations, permissions, routing, export/print and all business semantics remain unchanged.
+- No shared API/CSS widening occurred.
 
 ## Current single READY slice
 
-### DS2-REPORT-015 — Geography responsive detail-collection convergence
+### DS2-REPORT-016 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
 Status: `READY`
-Owner role for immediate next action: UI Production Engineer
-Representative surface: `src/pages/reports/GeographyPage.tsx` → `التوزيع حسب {LEVEL_LABELS[level]}` collection only.
+Owner role for immediate next action: Product Design Director
 
-System-pattern intent:
-- converge the Geography report's current Desktop-only wide table onto the already-proven `ResponsiveCollection + Card + KeyValueList` grammar;
-- preserve Desktop as the dense comparative heatmap table while giving Tablet/Mobile deliberate card composition from the exact same caller-owned `GeographyRow[]` data;
-- mount exactly one device renderer at a time; do not duplicate the table and cards behind CSS hiding;
-- consume existing shared patterns unchanged unless the implementation proves a real blocker. Any shared API/CSS widening requires Product Design re-bounding before implementation continues.
+Intent:
+- inspect representative remaining Reports/Analytics surfaces from the exact latest `design-system-v2-development` baseline;
+- select exactly one smallest dependency-safe presentation-only concern and record its representative surface/file plus explicit acceptance boundary before UI Production starts;
+- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
+- preserve REPORT001-015 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/business semantics;
+- preserve Settings/Admin, remaining Work/Field debt, shared component-depth work and Global convergence in the roadmap;
+- do not turn REPORT016 into broad multi-page report beautification.
 
-Required preservation / acceptance boundary:
-- **Data/source truth:** keep `useGeographyTable(filters)`, row ordering, `geo_id`, `geo_name`, `parent_name`, `net_revenue`, `customer_count`, `transaction_count`, `revenue_share_pct`, and `maxRev` semantics unchanged.
-- **Level semantics:** preserve the existing `governorate | city | area` controlled state/filter meaning from REPORT007; Desktop keeps the conditional `الأم` column only when `level !== 'governorate'`; Tablet/Mobile must represent the same parent field conditionally with the current `parent_name ?? '—'` fallback.
-- **Desktop:** preserve the current table shell, dynamic heading, Trust/Freshness cluster, six/conditional-five column order, heatmap opacity/background calculation, zero-row treatment, hover affordance, exact numeric formatting/direction and row ordering. Add semantic `scope="col"` to Desktop headers while keeping their labels unchanged.
-- **Tablet:** use the same Geography identity/data in touch-first cards, with `geo_name` as the card identity and a two-column compact `KeyValueList` for conditional parent, net revenue, customers, transactions and revenue share. No ordinary horizontal scrolling.
-- **Mobile:** use the same card anatomy in a one-column compact `KeyValueList`; long Arabic geography names/parent names must wrap without overflow, while money/count/share values retain readable LTR numeric treatment where already applicable. No ordinary horizontal scrolling.
-- **States:** preserve `tableLoading` precedence and the exact five `SkeletonCard height={44}` loading composition; preserve the exact empty condition/copy `لا توجد بيانات — شغّل watermark sweep أولاً`; do not invent blocked/error/business-state semantics not present in the current collection.
-- **Accessibility / interaction:** only one renderer mounted per device; semantic Desktop column headers; no new click target, hover dependency, keyboard path or business action; Card remains non-interactive presentation.
-- **RTL / dark mode:** use existing semantic Card/KeyValueList surfaces and Arabic-first wrapping; do not add a page-local palette or mirrored-LTR assumptions.
-
-Explicit exclusions:
-- page header, analysis-level `Select`, `ReportFilterBar`, KPI `report-grid`, `MetricCard`, `SystemHealthBar`, collection outer shell/header, Trust/Freshness behavior, and all other report pages;
-- any change to `ResponsiveCollection`, `Card`, `KeyValueList` APIs/CSS unless Product Design explicitly re-bounds the slice after a demonstrated blocker;
-- all hooks, queries, cache behavior, calculations, geography aggregation, ranking/order, permissions/RBAC/RLS, routes, export/print, backend, deployment or business semantics.
-
-Focused test-artifact expectation:
-- Desktop preserves exact dynamic columns/labels/order, `scope="col"`, row facts and no card renderer;
-- Mobile mounts only the one-column card renderer with all current source fields represented and conditional parent behavior;
-- Tablet mounts only the two-column card renderer with the same data truth;
-- loading and exact empty-copy branches preserve precedence and suppress ready renderers;
-- level change continues to preserve REPORT007 controlled filter semantics and changes the parent-field presence only through existing level truth.
-
-Evidence must remain honestly labeled under `33_TEST_AND_VALIDATION_POLICY.md`; no executed build/test/runtime claim without an approved execution environment.
-
-If implementation requires functional/data-semantic change or shared-contract widening, mark REPORT015 `BLOCKED` rather than broadening the PR.
+Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
 
 ## Product migration roadmap
 
@@ -178,9 +158,9 @@ Open only when a real migrated screen proves the recurring gap:
 - further Work detail/feedback/management convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
 
 ### I. Reports / Analytics
-- `DS2-REPORT-001` through `DS2-REPORT-014` — `DONE`
-- `DS2-REPORT-015 — Geography responsive detail-collection convergence` — `READY`
-- further Reports/Analytics convergence beyond REPORT015 — `BACKLOG` / each concern must be bounded separately
+- `DS2-REPORT-001` through `DS2-REPORT-015` — `DONE`
+- `DS2-REPORT-016 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY`
+- further Reports/Analytics convergence beyond REPORT016 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
