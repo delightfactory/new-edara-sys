@@ -38,17 +38,17 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-013`.
+Product UI is integrated through `DS2-REPORT-014`.
 
 Latest product integration:
-- PR: `#61 — DS2-REPORT-013: converge Churn Risk responsive collection`
-- Exact reviewed PR HEAD: `eb6332a38c63935955c6057b3619cf86bfa284e8`
-- Squash merge commit: `a9c787f447780f72b7ac0a99b9b9ce0d1f636932`
+- PR: `#62 — DS2-REPORT-014: converge Rep Performance comparison chart panel`
+- Exact reviewed PR HEAD: `6f77f2b5aab911c9fa18afd3c78268255456a0ad`
+- Squash merge commit: `a7096cdc86fb9fa55205556a10c8a5c13a6235d4`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact HEAD
 - Runtime/preview/release evidence: not claimed
 
-The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, Supervisor Work shared KPI summary convergence, Reports shared route-level sub-navigation convergence, Reports shared date-preset selector convergence with hardened `SegmentedControl` geometry, Reports shared native `DateField` convergence for custom dates, Reports Overview KPI-summary layout convergence onto shared `MetricGrid`, Product Performance, Customer Health and Churn Risk responsive detail-collection convergence via `ResponsiveCollection + Card + KeyValueList`, Geography analysis-level convergence onto shared `Select -> Field`, and shared domain-agnostic `ChartPanel` proven across Sales, Receivables, Churn Risk and Product Performance analytical sections.
+The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, Supervisor Work shared KPI summary convergence, Reports shared route-level sub-navigation convergence, Reports shared date-preset selector convergence with hardened `SegmentedControl` geometry, Reports shared native `DateField` convergence for custom dates, Reports Overview KPI-summary layout convergence onto shared `MetricGrid`, Product Performance, Customer Health and Churn Risk responsive detail-collection convergence via `ResponsiveCollection + Card + KeyValueList`, Geography analysis-level convergence onto shared `Select -> Field`, and shared domain-agnostic `ChartPanel` proven across Sales, Receivables, Churn Risk, Product Performance and Rep Performance analytical sections.
 
 ## Completed slices
 
@@ -83,49 +83,30 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - `DS2-REPORT-011 — Product Performance revenue chart-panel convergence` — `DONE` — PR #58 — reviewed HEAD `58927873f328172025f60da7c6b6d3fa3ecbcefa` — merge `9433ec1623a812d1b47d93bffad7e1c537caaa91` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-012 — Customer Health responsive detail-collection convergence` — `DONE` — PR #59 — reviewed HEAD `f92e25a4ad6afa0303235d8971c20e028fe8a9c5` — merge `7935e461e3c212eb187fe56bbb14ebe3e427f874` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-013 — Churn Risk responsive detail-collection convergence` — `DONE` — PR #61 — reviewed HEAD `eb6332a38c63935955c6057b3619cf86bfa284e8` — merge `a9c787f447780f72b7ac0a99b9b9ce0d1f636932` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
+- `DS2-REPORT-014 — Rep Performance comparison chart-panel convergence` — `DONE` — PR #62 — reviewed HEAD `6f77f2b5aab911c9fa18afd3c78268255456a0ad` — merge `a7096cdc86fb9fa55205556a10c8a5c13a6235d4` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 
-### REPORT013 system result
+### REPORT014 system result
 
-- Churn Risk section `تفاصيل العملاء — مرتب: معرض للخطر أولاً` now uses the established presentation-only `ResponsiveCollection + Card + KeyValueList` grammar for Tablet/Mobile while Desktop retains the exact dense semantic six-column RFM table with `th scope="col"`.
-- Exactly one ready-state renderer is mounted per device; the same unchanged `CustomerRiskRow` truth is used across Desktop, Tablet and Mobile.
-- Customer name-or-truncated-ID fallback, `RiskBadge`, `rfm_score`, `RecencyCell`, `frequency_l90d ×`, `fmtCur(monetary_l90d)`, row order, blocked/loading/empty precedence and exact copy, Trust/Freshness/SystemHealth and REPORT010 pie behavior remain caller-owned and unchanged.
-- No invoice/spend/average-order semantics, shared API/CSS widening, second report/page, backend/schema/RPC/query/cache/calculation/permission/RBAC/RLS/routing/export/print/business/deployment/workflow change entered the slice.
+- Rep Performance chart `مقارنة المندوبين — أعلى 15` now consumes the existing presentation-only `ChartPanel` instead of a page-local Card/header shell.
+- Exact title/description, `salesTrust` Trust/Freshness presence and props, 300px loading/empty behavior and exact empty copy, `rows.slice(0, 15)` mapping/order, dynamic `Math.max(chartData.length * 40, 200)` height and complete BarChart/grid/axes/tooltip/revenue/returns configuration remain caller-owned and unchanged.
+- The shared shell now supplies the established semantic `h1 -> h2` hierarchy, Arabic/RTL containment, semantic dark-mode surfaces and shared Card/SectionHeader spacing without widening `ChartPanel` API/CSS.
+- The Rep Performance detail table, KPIs, filters/date controls, `SystemHealthBar`, `CustomTooltip`, hooks, queries, calculations, ranking, trust semantics, permissions/RBAC/RLS, routing, export/print and business behavior remain outside the slice and unchanged.
 
 ## Current single READY slice
 
-### DS2-REPORT-014 — Rep Performance comparison chart-panel convergence
+### DS2-REPORT-015 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
 Status: `READY`
-Owner role for immediate next action: UI Production Engineer
+Owner role for immediate next action: Product Design Director
 
-Representative surface:
-- `src/pages/reports/RepPerformancePage.tsx`
-- only the analytical chart titled `مقارنة المندوبين — أعلى 15`.
+Intent:
+- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline;
+- select exactly one smallest dependency-safe presentation-only concern and record its representative surface/file plus explicit acceptance boundary;
+- prefer existing shared V2 primitives/patterns; strengthen a shared contract only when a real consumer proves the need;
+- preserve REPORT001-014 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/business semantics;
+- preserve Settings/Admin, remaining Work and Field debt, shared component-depth work and the Global convergence program in the roadmap;
+- do not turn REPORT015 into broad multi-page report beautification.
 
-System-pattern intent:
-- replace only the chart's page-local Card/header shell with the already-proven presentation-only `ChartPanel` composition;
-- deepen one shared analytical grammar across another Reports domain without inventing a page-local wrapper or widening the shared component;
-- retain page `h1` -> chart `h2` semantic hierarchy through `ChartPanel`'s default heading level;
-- inherit shared Card/SectionHeader spacing, Arabic wrapping, semantic dark-mode surfaces and width containment on Mobile/Tablet/Desktop while leaving chart/data semantics caller-owned.
-
-Required preservation / acceptance:
-- preserve exact title `مقارنة المندوبين — أعلى 15` and description `صافى الإيراد مقابل المرتجعات`;
-- preserve the existing Trust/Freshness action cluster and its current `salesTrust` conditions/props;
-- preserve `tableLoading` -> `SkeletonCard height={300}`, empty `chartData.length === 0` copy/height, and ready-chart branch precedence exactly;
-- preserve `chartData = rows.slice(0, 15)` mapping/order and unchanged `rep_name`, `net_revenue`, `returns_value` truth;
-- preserve `ResponsiveContainer` dynamic height `Math.max(chartData.length * 40, 200)` and every current `BarChart`, grid, axis, tooltip, revenue-bar and returns-bar prop/label/value/color/geometry;
-- Desktop, Tablet and Mobile must keep chart containment without horizontal page escape; long Arabic names/action content must remain safely contained by the shared header/Panel grammar;
-- preserve current RTL Arabic presentation and LTR numeric/currency treatment; do not introduce hard-coded surface/text colors beyond the existing chart-series colors already present;
-- focused tests must protect ChartPanel title/description/action composition, loading/empty/ready branches, data mapping/order and current chart-series/configuration contract; test evidence must remain honestly labeled if not executed.
-
-Explicit exclusions:
-- do not migrate the `تفصيل الأداء — جميع المندوبين` table in this slice;
-- do not change KPI cards, page header, filters/date controls, `SystemHealthBar`, `CustomTooltip`, table rows/ranking styling or any second Reports page;
-- do not change `ChartPanel`, `Card`, `SectionHeader` or shared CSS/API contracts;
-- do not change hooks, analytics data sources, queries, caches, calculations, ranking/order, trust/freshness semantics, permissions/RBAC/RLS, routing, export/print, backend/schema/RPC, business rules, deployment or workflows.
-
-If exact implementation requires shared API/CSS widening, chart geometry/data change, new analytics semantics, or any functional/business change, REPORT014 becomes `BLOCKED` and returns to Product Design rather than expanding the PR.
-
-Implementation is authorized only for this exact one-chart boundary from the current Development baseline.
+Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
 
 ## Product migration roadmap
 
@@ -174,9 +155,9 @@ Open only when a real migrated screen proves the recurring gap:
 - further Work detail/feedback/management convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
 
 ### I. Reports / Analytics
-- `DS2-REPORT-001` through `DS2-REPORT-013` — `DONE`
-- `DS2-REPORT-014 — Rep Performance comparison chart-panel convergence` — `READY`
-- further Reports/Analytics convergence beyond REPORT014 — `BACKLOG` / each concern must be bounded separately
+- `DS2-REPORT-001` through `DS2-REPORT-014` — `DONE`
+- `DS2-REPORT-015 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY`
+- further Reports/Analytics convergence beyond REPORT015 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
