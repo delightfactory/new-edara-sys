@@ -8,6 +8,9 @@ import ReportFilterBar, { type DateRange } from '@/components/reports/ReportFilt
 import TrustStateBadge from '@/components/reports/TrustStateBadge'
 import FreshnessIndicator from '@/components/reports/FreshnessIndicator'
 import ChartPanel from '@/components/patterns/ChartPanel'
+import ResponsiveCollection from '@/components/patterns/ResponsiveCollection'
+import Card from '@/components/patterns/Card'
+import KeyValueList from '@/components/patterns/KeyValueList'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 import { TrendingUp, TrendingDown, Users2, Award } from 'lucide-react'
 
@@ -31,6 +34,52 @@ function CustomTooltip({ active, payload, label }: any) {
           <span style={{ fontWeight: 600, direction: 'ltr' }}>{fmt(p.value)} ج.م</span>
         </div>
       ))}
+    </div>
+  )
+}
+
+function RepPerformanceDetailCards({ items, device }: { items: RepPerformanceRow[]; device: 'mobile' | 'tablet' }) {
+  return (
+    <div className={`ds-responsive-card-grid ds-responsive-card-grid--${device}`}>
+      {items.map((row, idx) => {
+        const isFirst = idx === 0
+        const isLast = idx === items.length - 1
+        const rowColor = isFirst ? 'var(--color-success)' : isLast ? 'var(--color-danger)' : 'var(--text-primary)'
+        const returnsColor = row.returns_value > 0 ? 'var(--color-danger)' : 'var(--text-muted)'
+        const returnRateColor = row.return_rate_pct > 10
+          ? 'var(--color-danger)'
+          : row.return_rate_pct > 5
+            ? 'var(--color-warning)'
+            : 'var(--color-success)'
+
+        return (
+          <Card key={row.rep_id} padding="md">
+            <div style={{ marginBlockEnd: 'var(--space-4)', minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)', flexWrap: 'wrap', minWidth: 0 }}>
+                <div style={{ color: rowColor, fontWeight: isFirst ? 700 : 600, overflowWrap: 'anywhere', minWidth: 0 }}>
+                  {row.rep_name}
+                </div>
+                <span dir="ltr" style={{ color: rowColor, fontWeight: isFirst ? 700 : 600, fontSize: 'var(--text-xs)' }}>
+                  #{row.rank}
+                </span>
+              </div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-xs)', marginBlockStart: 'var(--space-1)', overflowWrap: 'anywhere', minWidth: 0 }}>
+                {row.branch_name}
+              </div>
+            </div>
+            <KeyValueList
+              columns={device === 'tablet' ? 2 : 1}
+              compact
+              items={[
+                { key: 'revenue', label: 'صافى الإيراد', value: <span dir="ltr" style={{ color: rowColor }}>{fmt(row.net_revenue)} ج.م</span> },
+                { key: 'returns', label: 'المرتجعات', value: <span dir="ltr" style={{ color: returnsColor }}>{fmt(row.returns_value)} ج.م</span> },
+                { key: 'return-rate', label: 'نسبة المرتجع', value: <span dir="ltr" style={{ color: returnRateColor, fontWeight: 600 }}>{fmtPct(row.return_rate_pct)}</span> },
+                { key: 'customers', label: 'عملاء', value: <span dir="ltr">{row.distinct_customers}</span> },
+              ]}
+            />
+          </Card>
+        )
+      })}
     </div>
   )
 }
@@ -126,48 +175,56 @@ export default function RepPerformancePage() {
         <div style={{ padding: 'var(--space-4) var(--space-5)', borderBottom: '1px solid var(--border-primary)', fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--text-primary)' }}>
           تفصيل الأداء — جميع المندوبين
         </div>
-        {tableLoading ? (
-          <div style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-            {[1,2,3,4,5].map(i => <SkeletonCard key={i} height={44} />)}
-          </div>
-        ) : rows.length === 0 ? (
-          <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
-            لا توجد بيانات فى النطاق الزمني المحدد
-          </div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
-              <thead>
-                <tr style={{ background: 'var(--bg-surface-2)' }}>
-                  {['#', 'المندوب', 'الفرع', 'صافى الإيراد', 'المرتجعات', 'نسبة المرتجع', 'عملاء'].map(h => (
-                    <th key={h} style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 600, color: 'var(--text-secondary)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-primary)', whiteSpace: 'nowrap' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row: RepPerformanceRow, idx) => {
-                  const isFirst = idx === 0
-                  const isLast  = idx === rows.length - 1
-                  const rowColor = isFirst ? 'var(--color-success)' : isLast ? 'var(--color-danger)' : 'var(--text-primary)'
-                  return (
-                    <tr key={row.rep_id}
-                      style={{ borderBottom: '1px solid var(--divider)', transition: 'background 0.1s' }}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-                      onMouseLeave={e => (e.currentTarget.style.background = '')}>
-                      <td style={{ padding: '10px 14px', color: rowColor, fontWeight: isFirst ? 700 : 400, fontSize: 'var(--text-xs)', direction: 'ltr', textAlign: 'center' }}>{row.rank}</td>
-                      <td style={{ padding: '10px 14px', color: rowColor, fontWeight: isFirst ? 700 : 600, fontSize: 'var(--text-xs)' }}>{row.rep_name}</td>
-                      <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 'var(--text-xs)' }}>{row.branch_name}</td>
-                      <td style={{ padding: '10px 14px', color: rowColor, fontWeight: 600, direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{fmt(row.net_revenue)} ج.م</td>
-                      <td style={{ padding: '10px 14px', color: row.returns_value > 0 ? 'var(--color-danger)' : 'var(--text-muted)', direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{fmt(row.returns_value)} ج.م</td>
-                      <td style={{ padding: '10px 14px', color: row.return_rate_pct > 10 ? 'var(--color-danger)' : row.return_rate_pct > 5 ? 'var(--color-warning)' : 'var(--color-success)', fontWeight: 600, direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{fmtPct(row.return_rate_pct)}</td>
-                      <td style={{ padding: '10px 14px', color: 'var(--text-primary)', direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{row.distinct_customers}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <ResponsiveCollection<RepPerformanceRow>
+          items={rows}
+          loading={tableLoading}
+          loadingState={(
+            <div style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+              {[1,2,3,4,5].map(i => <SkeletonCard key={i} height={44} />)}
+            </div>
+          )}
+          emptyState={(
+            <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
+              لا توجد بيانات فى النطاق الزمني المحدد
+            </div>
+          )}
+          renderDesktop={desktopRows => (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
+                <thead>
+                  <tr style={{ background: 'var(--bg-surface-2)' }}>
+                    {['#', 'المندوب', 'الفرع', 'صافى الإيراد', 'المرتجعات', 'نسبة المرتجع', 'عملاء'].map(h => (
+                      <th scope="col" key={h} style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 600, color: 'var(--text-secondary)', fontSize: 'var(--text-xs)', borderBottom: '1px solid var(--border-primary)', whiteSpace: 'nowrap' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {desktopRows.map((row: RepPerformanceRow, idx) => {
+                    const isFirst = idx === 0
+                    const isLast  = idx === desktopRows.length - 1
+                    const rowColor = isFirst ? 'var(--color-success)' : isLast ? 'var(--color-danger)' : 'var(--text-primary)'
+                    return (
+                      <tr key={row.rep_id}
+                        style={{ borderBottom: '1px solid var(--divider)', transition: 'background 0.1s' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = '')}>
+                        <td style={{ padding: '10px 14px', color: rowColor, fontWeight: isFirst ? 700 : 400, fontSize: 'var(--text-xs)', direction: 'ltr', textAlign: 'center' }}>{row.rank}</td>
+                        <td style={{ padding: '10px 14px', color: rowColor, fontWeight: isFirst ? 700 : 600, fontSize: 'var(--text-xs)' }}>{row.rep_name}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 'var(--text-xs)' }}>{row.branch_name}</td>
+                        <td style={{ padding: '10px 14px', color: rowColor, fontWeight: 600, direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{fmt(row.net_revenue)} ج.م</td>
+                        <td style={{ padding: '10px 14px', color: row.returns_value > 0 ? 'var(--color-danger)' : 'var(--text-muted)', direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{fmt(row.returns_value)} ج.م</td>
+                        <td style={{ padding: '10px 14px', color: row.return_rate_pct > 10 ? 'var(--color-danger)' : row.return_rate_pct > 5 ? 'var(--color-warning)' : 'var(--color-success)', fontWeight: 600, direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{fmtPct(row.return_rate_pct)}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-primary)', direction: 'ltr', textAlign: 'right', fontSize: 'var(--text-xs)' }}>{row.distinct_customers}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+          renderTablet={tabletRows => <RepPerformanceDetailCards items={tabletRows} device="tablet" />}
+          renderMobile={mobileRows => <RepPerformanceDetailCards items={mobileRows} device="mobile" />}
+        />
       </div>
     </div>
   )
