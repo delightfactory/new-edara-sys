@@ -4,118 +4,155 @@
 
 - Review date: `2026-09-21`.
 - Authoritative branch: `design-system-v2-development`.
-- Exact Development HEAD independently inspected before this state write: `cb48a172b6ded1d39cad132062365ef4e0791614`.
-- Latest integrated product baseline: `DS2-REPORT-014` / PR #62, squash merge `a7096cdc86fb9fa55205556a10c8a5c13a6235d4`.
-- Active slice: `DS2-REPORT-015 — Geography responsive detail-collection convergence`.
-- Representative surface: `src/pages/reports/GeographyPage.tsx` → `التوزيع حسب {LEVEL_LABELS[level]}` collection only.
-- Active implementation PR: `#63 — DS2-REPORT-015: converge Geography responsive detail collection`.
-- Feature baseline: `2c192e204ffecc0afdce952da7a59849abffde1f`.
-- Exact PR HEAD independently reviewed: `b3667bb27f1cc2a37805f7f2fef4a8276230cf59`.
-- PR state at Product Design recheck: `OPEN / DRAFT / mergeable=true`.
-- Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER` on exact PR HEAD `b3667bb27f1cc2a37805f7f2fef4a8276230cf59`.
-- Design QA on the same exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` with `TESTS_AUTHORED_NOT_EXECUTED`.
-- Exact-head build/test/lint/runtime/preview/release PASS: not claimed.
+- Exact Development HEAD independently inspected before REPORT016 governance writes: `0598553517f0e9ee37f55a85c62d8fba4a189070`.
+- Latest integrated product baseline: `DS2-REPORT-015` / PR #63, squash merge `fae25c2962f01aefc988b3e3ec8e0532e1c491f8`.
+- Product Design boundary commit written before this owned-state update: `cc3551e8c6342bc2aa957e706cd4697db1b66d8b`.
+- Open implementation PRs targeting Development at inspection time: none.
+- Active single READY slice: `DS2-REPORT-016 — Rep Performance responsive detail-collection convergence`.
+- Representative surface: `src/pages/reports/RepPerformancePage.tsx` → `تفصيل الأداء — جميع المندوبين` collection only.
+- Implementation PR: none yet.
+- Product Design disposition: `READY — BOUNDED / UI PRODUCTION MAY IMPLEMENT ONE SLICE`.
+- Exact-head build/test/lint/runtime/preview/release PASS: not claimed or required at this design-bounding stage.
 
 ## Independent Product Design judgment
 
-**PASS — NO DESIGN-SYSTEM BLOCKER** on PR #63 exact HEAD `b3667bb27f1cc2a37805f7f2fef4a8276230cf59`.
+**READY — REPORT016 is bounded to one presentation-only Rep Performance collection concern.**
 
-I independently reviewed the exact implementation against the REPORT015 boundary, the North Star, the current Geography source/data contract, the shared `ResponsiveCollection`, `Card` and `KeyValueList` contracts, prior responsive report consumers, and the device/component blueprint guidance before comparing peer states.
+I independently inspected the latest Development baseline and representative remaining Reports surfaces before comparing peer role states. `RepPerformancePage.tsx` contains a particularly clean next system gap: REPORT014 already converged its comparison chart to shared `ChartPanel`, but the adjacent `تفصيل الأداء — جميع المندوبين` section still presents a wide Desktop table with ordinary horizontal overflow on smaller devices.
 
-The implementation is directionally correct and sufficiently deep for this bounded slice:
-- Desktop retains the useful dense comparative geography table rather than flattening management information into cards.
-- Tablet and Mobile stop inheriting ordinary horizontal table scrolling and instead use the already-proven shared responsive collection grammar.
-- Exactly one device renderer mounts at a time, so the migration does not create duplicate hidden data/interaction trees.
-- The same caller-owned geography facts remain visible across devices; the presentation changes without moving domain meaning into the Design System.
-- Arabic identity/parent text is explicitly wrap-safe; numeric values retain intentional LTR presentation inside RTL composition.
-- Touch layouts remain passive/readable and do not fabricate navigation, hover, focus or click semantics.
-- Desktop heatmap and zero-row emphasis remain a wide-screen comparative-density affordance. Not reproducing that row-wide color treatment on compact cards is acceptable because all explicit values remain visible and no business/status meaning is lost.
-- No shared API/CSS widening or page-local responsive mini-system was introduced.
+This is a better next slice than opening a new chart-only migration or a multi-concern legacy report page because:
+- the system already has a proven `ResponsiveCollection + Card + KeyValueList` grammar across Product Performance, Customer Health, Churn Risk and Geography;
+- the Rep Performance row already exposes all facts required for compact device composition, so no data/query/business widening is needed;
+- Desktop comparison density remains valuable and should be preserved rather than replaced;
+- Tablet/Mobile currently inherit an avoidable wide-table experience, which is directly contrary to the Mobile/Tablet device strategy;
+- the neighboring REPORT014 chart can remain untouched, making the slice dependency-safe and independently reviewable.
 
-The implementation therefore strengthens one coherent system language instead of performing isolated Geography beautification.
+I also inspected `TargetAttainmentPage.tsx` and `TreasuryPage.tsx`. Both have legitimate future convergence debt, but Target Attainment combines raw controls, chart-shell and wide-table concerns, while Treasury is mainly another already-proven chart-shell candidate. Neither is a better smallest next system step than completing Rep Performance's responsive detail collection.
 
-## Exact-head acceptance findings
+## REPORT016 exact design boundary
 
-### Scope / functional isolation — PASS
+### System intent
 
-The PR remains exactly three files:
-- `src/pages/reports/GeographyPage.tsx`
-- `src/pages/reports/GeographyPage.test.tsx`
-- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
+Converge only the Rep Performance detail collection onto the established responsive collection grammar while preserving the existing caller-owned ranking and performance truth.
 
-No DB/migration/RPC/service/query-cache/RBAC/RLS/permission/route/validation/business-calculation/ranking/export/print/workflow/deployment change is present.
+The slice must reduce local device fragmentation, not redesign the page.
 
-Development drift from feature baseline `2c192e204ffecc0afdce952da7a59849abffde1f` to pre-write Development HEAD `cb48a172b6ded1d39cad132062365ef4e0791614` is governance-only (`DESIGN_QA_STATE.md`, `INTEGRATION_STATE.md`) and does not overlap product/test/shared-component code.
+### Data / business truth to preserve
 
-### System fit / shared grammar — PASS
+Preserve exactly:
+- `useRepPerformanceTable(filters)` and existing row order;
+- `rank`;
+- `rep_name`;
+- `branch_name`;
+- `net_revenue`;
+- `returns_value`;
+- `return_rate_pct`;
+- `distinct_customers`;
+- all existing formatting and ranking/calculation semantics.
 
-- `ResponsiveCollection` remains presentation/orchestration-only and mounts a single renderer for the active device.
-- Tablet/Mobile consume unchanged neutral `Card + KeyValueList` patterns.
-- Desktop retains the original table/heatmap composition and adds only `scope="col"` to semantic headers.
-- No new shared prop, variant, token, CSS rule or domain-aware component was introduced.
-- The implementation matches the proven Customer Health / Churn Risk / Product Performance responsive-detail grammar while preserving Geography-specific row truth.
+No new labels may reinterpret business ranking, and no data may be dropped on compact devices.
 
-### Device / hierarchy / density — PASS at source level
+### Desktop acceptance
 
-- **Desktop:** current dynamic column order, conditional parent column, heatmap/zero-row treatment, hover behavior, row density and all row facts remain intact.
-- **Tablet:** compact two-column key/value cards use available width deliberately while retaining touch-first readability.
-- **Mobile:** one-column cards expose the complete row truth without ordinary horizontal table overflow.
-- **Renderer isolation:** no CSS-hidden duplicate table/card tree.
-- **Collection hierarchy:** the existing outer report section/header and Trust/Freshness cluster remain unchanged; card identity is `geo_name`, with parent context only where the selected level requires it.
+Desktop keeps one dense semantic seven-column table in the existing order:
+1. `#`
+2. `المندوب`
+3. `الفرع`
+4. `صافى الإيراد`
+5. `المرتجعات`
+6. `نسبة المرتجع`
+7. `عملاء`
 
-### RTL / Arabic / dark mode / accessibility — PASS at source level
+Preserve current row density, row hover, first-row success emphasis, last-row danger emphasis, positive-return danger tone, muted zero-return tone, and exact return-rate thresholds (`>10` danger, `>5` warning, otherwise success).
 
-- Long Arabic geography and parent names are wrap-safe.
-- Revenue, counts and share values remain explicitly LTR where appropriate.
-- Shared Card/KeyValueList semantic surfaces are reused; no new palette or LTR-first assumption is introduced.
-- Desktop column headers now carry `scope="col"`.
-- Tablet/Mobile details inherit `dl/dt/dd` semantics through `KeyValueList`.
-- Cards remain non-interactive; no keyboard/touch action contract was invented.
+Add semantic `scope="col"` to table headers. Do not otherwise redesign the Desktop table.
 
-No `RUNTIME_VISUAL_PASS` is claimed; actual visual/runtime validation remains a later controlled gate.
+### Tablet acceptance
 
-### State / truth preservation — PASS
+Tablet uses the existing shared `ResponsiveCollection` with a deliberate two-column `Card + KeyValueList` renderer.
 
-Preserved exactly:
-- `useGeographyTable(filters)` and caller-owned row order;
-- `geo_id`, `geo_name`, `parent_name`, `net_revenue`, `customer_count`, `transaction_count`, `revenue_share_pct` truth;
-- REPORT007 `governorate | city | area` controlled level/filter semantics;
-- outer collection shell/header and Trust/Freshness presence/props;
-- `tableLoading` precedence, exact five `SkeletonCard height={44}` rows and exact empty copy `لا توجد بيانات — شغّل watermark sweep أولاً`;
-- Desktop parent-field condition and `parent_name ?? '—'` fallback;
-- Desktop `maxRev`, zero-row, opacity and row-background behavior;
-- current money/count/share formatting and value direction.
+Every Desktop row fact remains visible. `rep_name` is the primary identity; rank and branch remain visible context. The current first/last ranking emphasis may remain on relevant rank/identity text, but must not become a colored whole-card treatment or a newly invented business status.
 
-### Test artifact / evidence honesty — PASS
+### Mobile acceptance
 
-Focused tests cover the material migration risks: Desktop dynamic columns and semantic headers, controlled level/filter shape, Tablet/Mobile renderer isolation, row-field parity, conditional parent truth/fallback, Arabic wrapping, LTR numeric values and loading/empty precedence.
+Mobile uses the same shared grammar with one-column `Card + KeyValueList` composition and no ordinary horizontal table scrolling.
 
-Evidence remains honestly labeled `TESTS_AUTHORED_NOT_EXECUTED`. Product Design does not claim local build/test/lint execution, runtime visual validation, Vercel preview or release readiness.
+Every row fact remains visible. Long Arabic representative and branch names must wrap safely. Compact cards remain passive information surfaces with no fabricated navigation or click semantics.
+
+### RTL / numeric direction / accessibility / dark mode
+
+- Arabic identity/context remains RTL-first and wrap-safe.
+- Rank, currency, percentage and customer-count values retain intentional LTR presentation where appropriate.
+- Compact renderers inherit `dl/dt/dd` semantics from `KeyValueList`.
+- Generic Cards remain non-interactive; no keyboard/focus contract is invented.
+- Explicit numeric/text values remain visible, so existing semantic tones are never the sole information carrier.
+- Reuse existing semantic Card/KeyValueList surfaces and tokens for dark mode; no new page-local palette.
+- Exactly one device renderer mounts through `ResponsiveCollection`; no CSS-hidden duplicate table/card tree.
+
+### State acceptance
+
+Preserve exact state precedence and content:
+- loading before ready composition;
+- exactly five `SkeletonCard height={44}` rows;
+- exact empty copy `لا توجد بيانات فى النطاق الزمني المحدد`;
+- neither loading nor empty state mounts a ready device renderer.
+
+### Explicit exclusions
+
+Do not modify:
+- the REPORT014 `ChartPanel` or its title/description/trust/freshness/chart body;
+- chart top-15 mapping, axes, tooltip, series or dynamic height;
+- KPIs or summary calculation;
+- `ReportFilterBar` / date range;
+- `SystemHealthBar` or trust lookup;
+- `CustomTooltip`;
+- hooks, queries, cache semantics, rankings or calculations;
+- permissions/RBAC/RLS, routing, backend contracts, validation, export/print or business workflow;
+- shared component APIs, CSS or tokens.
+
+If the implementation discovers that a shared API/CSS change or functional semantic change is required, REPORT016 becomes `BLOCKED` and returns the exact gap to Product Design rather than widening the PR.
+
+### Focused test expectations
+
+Preserve all existing REPORT014 chart-panel tests and add focused REPORT016 coverage for:
+- Desktop/Tablet/Mobile single-renderer behavior;
+- all seven row facts and row/rank ordering;
+- first/last identity emphasis and current returns/return-rate tone thresholds;
+- long Arabic rep/branch wrapping;
+- LTR numeric/currency/percentage presentation;
+- Desktop `scope="col"` headers;
+- exact five × 44px loading state and exact empty copy/precedence.
+
+Evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved runtime actually executes the tests. Hosted GitHub Actions remain forbidden.
 
 ## Peer-state synthesis / contradiction status
 
-Independent Product Design judgment above was formed first, then compared with peer states.
+This design judgment was formed independently first, then compared with shared memory and peer states.
 
-- **Design QA:** current and aligned; exact same PR HEAD has `GREEN-DEV + SOURCE_REVIEW_PASS`, no material source blocker and no review threads.
-- **UI Production:** Development copy is lifecycle-stale at REPORT014, but the PR-branch owned state is current and aligned with REPORT015 implementation/evidence. This is not a contradiction.
-- **Development Integrator:** current and aligned; all integration gates currently pass except the Product Design exact-head closeout that this state now supplies.
-- **Team Memory:** lifecycle-stale at the generic REPORT015 pre-bounding handoff. The later Workstream + Product Design boundary and active PR states supersede that placeholder; no durable system-direction contradiction exists.
-- **Decision Log / North Star / component and device guidance:** aligned with UI-only isolation, shared-system reuse, deliberate Mobile/Tablet/Desktop composition and Arabic-first behavior.
+- **Team Memory:** current and aligned; explicitly hands REPORT016 to Product Design for exact bounding after REPORT015 integration.
+- **Development Integrator:** current and aligned; REPORT015 is merged and REPORT016 is `READY_FOR_PRODUCT_DESIGN_BOUNDING`.
+- **UI Production:** lifecycle-stale at REPORT015, as expected after integration; it contains no contradictory current implementation claim.
+- **Design QA:** lifecycle-stale at REPORT015, as expected; fresh exact-head review will be required only after a REPORT016 implementation PR exists.
+- **Prior Design Director state:** lifecycle-stale after REPORT015 merge and superseded by this state.
+- **Decision Log / North Star / device and component guidance:** aligned with shared-system reuse, one renderer per device, Arabic-first composition and UI-only functional isolation.
 
 Current contradiction classification: **NONE**.
 
 ## Repository actions this run
 
 - Completed the mandatory shared-memory bootstrap in the prescribed order.
-- Inspected issue #27, exact current Development HEAD, open PRs targeting Development, PR #63 metadata/diff/review state/threads, relevant Geography source/test contracts, shared responsive patterns and component/device blueprint guidance.
-- Independently accepted PR #63 exact HEAD `b3667bb27f1cc2a37805f7f2fef4a8276230cf59` with `PASS — NO DESIGN-SYSTEM BLOCKER`.
-- Did not modify product code, peer-owned specialist states, Team Memory, Decision Log or Workstream.
-- Did not merge, touch `main`, trigger/rerun GitHub Actions, use hosted CI, deploy Vercel or modify preview branches.
+- Inspected issue #27, exact latest Development HEAD, open PRs targeting Development, Reports page inventory, current Rep Performance source/test surface, representative Target Attainment and Treasury alternatives, `ResponsiveCollection`, `Card`, `KeyValueList`, device strategy and component decision guidance.
+- Confirmed there was no active implementation PR before bounding a new slice.
+- Updated `31_AGENT_TEAM_WORKSTREAM.md` to make REPORT016 one exact READY implementation concern.
+- Updated only this owned specialist state file; did not overwrite peer states.
+- Did not update Team Memory because the overall system direction did not change; this is a bounded continuation of the existing Reports roadmap.
+- Did not update Decision Log because no durable rule changed.
+- Did not modify product code, merge any PR, touch `main`, trigger/rerun GitHub Actions, use hosted CI, deploy Vercel or modify preview branches.
 
 ### Cross-role handoff
-- **To:** Development Integrator.
-- **What changed:** Product Design independently accepted PR #63 exact HEAD `b3667bb27f1cc2a37805f7f2fef4a8276230cf59` with `PASS — NO DESIGN-SYSTEM BLOCKER`; Design QA is already GREEN-DEV on the same exact HEAD.
-- **Preserve:** exact one-collection REPORT015 scope; Desktop dynamic table/heatmap/zero-row/conditional-parent semantics; Tablet two-column and Mobile one-column shared Card/KeyValueList composition; one renderer per device; level/filter/data/order/trust/loading/empty/formatting truth; no shared API/CSS widening; no query/calculation/permission/routing/export/print/business changes.
-- **Need from you:** revalidate unchanged PR HEAD/base, current Development drift, reviews/threads, mergeability, scope and functional isolation. If all remain clean, transition from Draft as appropriate and integrate REPORT015 into `design-system-v2-development` under normal expected-head protection. Any PR HEAD movement invalidates this Product Design acceptance and the existing QA approval.
+- **To:** UI Production Engineer; Design QA after implementation PR opens.
+- **What changed:** REPORT016 is now exactly bounded as the Rep Performance `تفصيل الأداء — جميع المندوبين` responsive detail-collection convergence and is READY for one implementation PR.
+- **Preserve:** REPORT014 chart untouched; exact seven Rep Performance facts/order/ranking and existing tone thresholds; Desktop dense table; Tablet two-column and Mobile one-column shared Card/KeyValueList composition; one renderer per device; exact five × 44px loading state and exact empty copy; Arabic wrapping/LTR numeric direction; unchanged shared APIs/CSS and all query/calculation/trust/permission/routing/export/print/business semantics.
+- **Need from you:** start from the latest `design-system-v2-development` HEAD, implement REPORT016 only, author focused device/state/semantic tests, open one Draft PR targeting Development, and hand the exact stable PR HEAD to Design QA and Product Design. If shared-contract or functional widening is required, stop and mark the slice BLOCKED instead.
 - **Blocker level:** `NONE`.
-- **Baseline:** Development pre-state-write `cb48a172b6ded1d39cad132062365ef4e0791614`; accepted PR #63 HEAD `b3667bb27f1cc2a37805f7f2fef4a8276230cf59`.
+- **Baseline:** product/source baseline inspected `0598553517f0e9ee37f55a85c62d8fba4a189070`; Product Design boundary commit before this state write `cc3551e8c6342bc2aa957e706cd4697db1b66d8b`.
