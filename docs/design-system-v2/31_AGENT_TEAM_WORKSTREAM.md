@@ -107,19 +107,38 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-019 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
+### DS2-REPORT-019 — Overview customer-health metric-grid convergence
 Status: `READY`
-Owner role for immediate next action: Product Design Director
+Owner role for immediate next action: UI Production Engineer
+
+Representative surface:
+- `src/pages/reports/OverviewPage.tsx` → `صحة قاعدة العملاء` ready-state metric pair only.
 
 System intent:
-- inspect representative remaining Reports/Analytics surfaces from the exact latest Development baseline;
-- select exactly one smallest dependency-safe presentation-only concern and name its representative file/surface plus explicit acceptance boundary;
-- prefer existing V2 primitives/patterns and strengthen a shared contract only when a real consumer proves the need;
-- preserve REPORT001-018 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/business semantics;
-- keep Settings/Admin, Global convergence, remaining Work/Field debt and shared component-depth work in the roadmap;
-- do not turn REPORT019 into broad multi-page report beautification.
+- close the remaining page-local `report-grid` layout residue inside the already-migrated Reports Overview by reusing the established shared `MetricGrid` contract;
+- replace only the ready-state wrapper around the two existing `MetricCard` children with `MetricGrid columns={2}`;
+- preserve `MetricGrid` as layout-only: business values, labels, trust/freshness/status semantics and calculation remain caller-/`MetricCard`-owned;
+- use the canonical responsive composition already declared by `MetricGrid`: one column on Mobile, two columns on Tablet, and two columns on Desktop for this two-card section;
+- keep the section title and `عرض التفاصيل ←` route link exactly where they are, with Arabic-first wrapping and no new interaction semantics.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+Acceptance boundary:
+- preserve both cards, their order and all current content exactly: `إجمالي العملاء النشطين` then `متوسط قيمة العميل`;
+- preserve active/dormant, average monetary, 90-day subtitle and average-recency values/fallbacks/formatting exactly;
+- preserve `custTrust` status, freshness timestamps/stale state and `domain="customers"` wiring exactly;
+- preserve the existing `custLoading` branch and single `SkeletonCard height={120}` exactly; REPORT019 does not redesign loading-state cardinality;
+- Mobile must not introduce horizontal overflow; Tablet must deliberately use two columns; Desktop remains a dense two-card comparison;
+- dark mode/RTL/long Arabic/mixed numeric presentation continue through existing semantic shared surfaces and unchanged MetricCards;
+- focused tests must prove there are now two shared metric grids on ready state, the customer-health grid declares `data-columns="2"`, contains exactly the two existing cards in order, and loading still preserves the current single 120px skeleton behavior.
+
+Explicit exclusions:
+- the four-card `المؤشرات الرئيسية` MetricGrid already completed in REPORT004;
+- page header, `ReportFilterBar`, `SystemHealthBar`, customer-health heading/link, navigation grid and every other Overview surface;
+- `MetricCard`, `MetricGrid`, shared CSS/tokens/APIs or new variants;
+- hooks, queries/cache, calculations, trust/freshness resolution, permissions/RBAC/RLS, routing targets, backend/services, validation, export/print, workflow and all business semantics;
+- Customer Reengagement, Visit Reports, Rep Credit Commitment and every other report page.
+
+Stop rule:
+- if implementation requires any shared API/CSS/token change or any functional/data/business semantic change, mark REPORT019 `BLOCKED` rather than widen the slice.
 
 ## Product migration roadmap
 
@@ -169,7 +188,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-018` — `DONE`
-- `DS2-REPORT-019 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY`
+- `DS2-REPORT-019 — Overview customer-health metric-grid convergence` — `READY`
 - further Reports/Analytics convergence beyond REPORT019 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
