@@ -2,105 +2,98 @@
 
 ## Reviewed baseline
 
-- Run date: `2026-09-21`.
+- Run date: `2026-09-22`.
 - Development branch: `design-system-v2-development`.
-- Exact feature baseline / latest Development HEAD at branch creation: `3ebc36354be981cc98048fc753af486e566586e6`.
-- Active slice: `DS2-REPORT-018 — Treasury daily cashflow chart-panel convergence`.
-- Representative surface: `src/pages/reports/TreasuryPage.tsx` → `التدفق النقدي اليومي` chart section only.
-- Feature branch: `ds2-report-018-treasury-chart-panel`.
-- Draft PR: `#66 — DS2-REPORT-018: converge Treasury daily cashflow chart panel`, base `design-system-v2-development`.
-- Exact code/test HEAD before this owned-state write: `6310cc0904911b5277f325c7ced893f62ced8b8a`.
+- Exact feature baseline / latest Development HEAD at branch creation: `03869ab755037463bf8f39cc4b438813f5c0c268`.
+- Active slice: `DS2-REPORT-019 — Overview customer-health metric-grid convergence`.
+- Representative surface: `src/pages/reports/OverviewPage.tsx` → `صحة قاعدة العملاء` ready-state metric pair only.
+- Feature branch: `ds2-report-019-overview-customer-health-metric-grid`.
+- Draft PR: `#67 — DS2-REPORT-019: converge Overview customer health metric grid`, base `design-system-v2-development`.
+- Exact code/test HEAD before this owned-state write: `027ef0ed79f241df3b7cb956b84fa82627f6b4ce`.
 - Disposition: `REVIEW — FRESH EXACT-HEAD DESIGN QA + PRODUCT DESIGN REVIEW REQUIRED`.
 - Evidence: `TESTS_AUTHORED_NOT_EXECUTED`.
 - Build/test/lint/runtime/preview/release PASS: not claimed.
 
 ## Independent implementation judgment
 
-REPORT018 is a clean presentation-only chart-shell convergence. The existing shared `ChartPanel` contract already owns the neutral analytical surface, semantic section hierarchy and chart-body containment required by Treasury, so no shared API, CSS or token widening is justified. The correct implementation replaces only the page-local Card/header shell and leaves Treasury chart data, trust/state precedence, visualization configuration and every business/data contract caller-owned.
+REPORT019 is a clean presentation-only convergence. The existing shared `MetricGrid` already owns the exact responsive layout contract required by the Overview customer-health pair, so no shared API/CSS/token widening is justified. The correct implementation changes only the ready-state wrapper and leaves both existing `MetricCard`s, their data/trust/freshness wiring, the section action, loading semantics and every business/data contract caller-owned.
 
-I formed this judgment from the current Treasury source, shared `ChartPanel` contract and an integrated Receivables `ChartPanel` precedent before comparing Product Design, Design QA, Integration and Team Memory. Product Design's REPORT018 boundary and Integration's waiting handoff align with this implementation. The Development copies of UI Production and Design QA remain lifecycle-stale from REPORT017 and create no competing implementation or blocker.
+I formed this implementation judgment from the exact latest Development baseline, current Overview source, existing `MetricGrid` contract and REPORT004 precedent before comparing peer states. Product Design's bounded REPORT019 contract is aligned; Integration is lifecycle-current through REPORT018; Design QA and the previous UI Production state are lifecycle-stale around the merged REPORT018 and introduce no current blocker.
 
 ## Material implementation progress
 
 - Completed the mandatory shared-memory bootstrap in the prescribed order and inspected issue #27, exact Development HEAD and all open PRs targeting Development before product-code changes.
-- Confirmed no implementation PR existed, then created `ds2-report-018-treasury-chart-panel` from exact Development HEAD `3ebc36354be981cc98048fc753af486e566586e6`.
-- Replaced only the Treasury `التدفق النقدي اليومي` page-local analytical surface/header wrapper with existing shared `ChartPanel`.
-- Preserved exact title `التدفق النقدي اليومي` and description `net_cashflow — مجمّع يومياً في قاعدة البيانات`.
-- Preserved `TrustStateBadge + FreshnessIndicator` as informational action content and added only compact-safe `flexWrap: 'wrap'` to that cluster.
-- Adopted the shared default `h2` section heading, preserving page `h1` → chart `h2` semantic hierarchy.
-- Preserved exact state precedence `BLOCKED/FAILED -> dailyLoading -> empty -> ready`, exact blocked/empty copy and all 280px state/chart heights.
-- Preserved `chartData` mapping exactly: `date <- treasury_date`, `inflow <- gross_inflow`, `outflow <- gross_outflow`, `net <- net_cashflow`, including caller-provided ordering.
-- Preserved `ResponsiveContainer width="100%" height={280}`, `AreaChart` margins, all three gradient ids/colors/opacities, grid, axes, tick formatting, `CustomTooltip`, zero `ReferenceLine`, and all three `داخل / مستردّ / صافي` Area series names/keys/colors/stroke widths/fills/dot behavior unchanged.
-- Left Treasury header/ReportFilterBar, semantic-contract notice, SystemHealthBar, all three MetricCards/summary loading, hooks/query/cache/calculation/trust logic, permissions/RBAC/RLS, routing, backend/services, validation, export/print, workflow and business semantics untouched.
-- Added focused `TreasuryPage.test.tsx` coverage for shared ChartPanel adoption, `h1 -> h2` hierarchy, exact title/description/trust context, blocked/loading/empty/ready precedence, 280px contracts, chart mapping/order, 100% containment, margins, grid/axes/reference/tooltip presence, three Area series and gradient color/opacity contracts.
-- During source self-review after opening the PR, hardened only the Recharts test harness so mocked `AreaChart` renders an SVG tree and the existing gradient assertions exercise real SVG attributes; no product code or acceptance contract changed.
-- Opened Draft PR #66 targeting only `design-system-v2-development`.
+- Confirmed no implementation PR existed, then created `ds2-report-019-overview-customer-health-metric-grid` from exact Development HEAD `03869ab755037463bf8f39cc4b438813f5c0c268`.
+- Replaced only the customer-health ready-state local `<div className="report-grid">` with existing shared `<MetricGrid columns={2}>`.
+- Preserved the section heading `صحة قاعدة العملاء`, link `عرض التفاصيل ←` and route `/reports/customers` unchanged.
+- Preserved exact customer card order: `إجمالي العملاء النشطين` then `متوسط قيمة العميل`.
+- Preserved active/dormant values, average monetary value, subtitle `آخر 90 يوماً`, average-recency text/fallback and all existing formatting.
+- Preserved `custTrust?.status`, `last_completed_at`, `is_stale`, and `domain="customers"` wiring on both cards.
+- Preserved the existing `custLoading` branch and its single `SkeletonCard height={120}` outside the ready-state grid.
+- Left the REPORT004 four-card KPI grid, header/filter/SystemHealth, navigation cards and every other Overview surface untouched.
+- Added focused `OverviewPage.test.tsx` coverage for two ready-state shared metric grids, the customer-health two-column grammar, exact two-card order/values/secondary facts, preserved trust/freshness/stale/domain wiring, and the unchanged single 120px loading skeleton without mounting the customer grid.
+- Opened Draft PR #67 targeting only `design-system-v2-development`.
 
 ## Scope / files / shared patterns touched
 
 Product/test files:
-- `src/pages/reports/TreasuryPage.tsx`
-- `src/pages/reports/TreasuryPage.test.tsx`
+- `src/pages/reports/OverviewPage.tsx`
+- `src/pages/reports/OverviewPage.test.tsx`
 
 Governance:
 - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md` (owned file only)
 
 Shared pattern consumed unchanged:
-- `ChartPanel`
+- `MetricGrid columns={2}`
 
 No shared component API, CSS, token, backend, service, workflow or permission file was modified.
 
 ## Device / state / accessibility coverage
 
-- **Mobile:** shared `ChartPanel` contains the existing 100%-width chart without introducing a page-level horizontal-scroll dependency; title/description/trust context inherit the shared wrap-safe header grammar.
-- **Tablet:** the same contained analytical surface preserves the 280px chart density while the informational trust/freshness cluster may wrap instead of crowding the heading.
-- **Desktop:** existing management-facing chart density, 100% width and 280px height remain unchanged.
-- **Blocked/failed:** exact two-line blocked copy remains first priority inside the shared panel at 280px.
-- **Loading:** exact `SkeletonCard height={280}` remains ahead of empty/ready.
-- **Empty:** exact `لا توجد تدفقات خزينية في هذه الفترة` copy remains at 280px before ready chart rendering.
-- **RTL / Arabic:** shared semantic header/surface composition owns wrapping; no chart-series color meaning or page direction changed.
-- **Accessibility:** chart section is now a semantic `h2` under the page `h1`; trust/freshness remain informational and no fabricated click/focus/keyboard semantics were added.
-- **Dark mode:** existing shared Card/SectionHeader/ChartPanel semantic surfaces/tokens are reused; no page-local palette expansion was introduced.
+- **Mobile:** shared `MetricGrid` canonical composition stacks the two customer-health cards in one column with no new ordinary horizontal-overflow dependency.
+- **Tablet:** shared two-column composition preserves deliberate touch-first side-by-side comparison.
+- **Desktop:** two-column compact comparison is preserved while removing the page-local grid grammar.
+- **Loading:** the existing customer-health single `SkeletonCard height={120}` remains unchanged and the customer `MetricGrid` is not mounted while loading.
+- **Ready:** exactly two existing `MetricCard`s remain in the same order with unchanged values, secondary facts and trust/freshness/domain wiring.
+- **RTL / Arabic:** all existing Arabic copy remains unchanged; no bidi workaround, truncation or local layout variant was introduced.
+- **Accessibility / interaction:** the metric pair remains informational; the existing details link remains the only section action. No fabricated click, focus or keyboard semantics were added.
+- **Dark mode:** existing shared `MetricCard`/`MetricGrid` semantic styling remains authoritative; no palette change occurred.
 
 ## Evidence / execution honesty
 
 Focused tests are authored but not executed: `TESTS_AUTHORED_NOT_EXECUTED`.
 
-The approved sandbox does not contain a mounted project/package runtime. A direct sandbox connectivity check was attempted with `git ls-remote https://github.com/delightfactory/new-edara-sys.git ds2-report-018-treasury-chart-panel` and failed with `Could not resolve host: github.com`, so `npm test`, `npm run build` and `npm run lint` could not be run from an exact checked-out project tree. No GitHub Actions/hosted CI was triggered or used as evidence. No Vercel preview or deployment was created.
+No approved exact-head local project runtime was used in this run, so `npm test`, `npm run build` and `npm run lint` were not executed. No GitHub Actions/hosted CI was triggered or used as evidence. No Vercel preview or deployment was created.
 
-No `SOURCE_REVIEW_PASS`, `LOCAL_EXECUTION_PASS`, `RUNTIME_VISUAL_PASS`, preview or release PASS is claimed by UI Production. Source self-review found no known TypeScript/build blocker, but fresh independent exact-head review remains required.
+No `SOURCE_REVIEW_PASS`, `LOCAL_EXECUTION_PASS`, `RUNTIME_VISUAL_PASS`, preview or release PASS is claimed by UI Production. Source self-review found no known TypeScript/build blocker; independent exact-head review remains required.
 
 ## Preserve / risks
 
 Preserve exactly:
-- `useSystemTrustState('treasury')`, both `useTrustForComponent` fallbacks and Treasury trust resolution;
-- `useTreasuryDailyTotals(filters)` / `useTreasurySummary(filters)` behavior and query/cache semantics;
-- date-range/filter behavior;
-- `chartData` field mapping and caller ordering;
-- all chart geometry, gradients, grid, axes, tick formatting, tooltip usage, zero reference line and Area series contracts;
-- Trust/Freshness and exact blocked/loading/empty/ready precedence/copy/heights;
-- page header/filter, semantic notice, SystemHealthBar, KPI cards and CustomTooltip unchanged;
-- Arabic/RTL/dark-mode semantics and 100% chart containment;
-- all calculation/permission/RBAC/RLS/routing/backend/service/validation/export/print/workflow/business semantics;
-- unchanged shared `ChartPanel` API/CSS/tokens.
+- the two customer-health cards, order, labels, values, subtitle, secondary facts, formatting and fallbacks;
+- `custTrust` status/freshness/stale wiring and `domain="customers"`;
+- customer-health section heading/link/route;
+- the single 120px customer loading skeleton;
+- the REPORT004 four-card KPI `MetricGrid` and all other Overview surfaces;
+- all hooks/query/cache/calculation/trust/permission/RBAC/RLS/routing/backend/service/validation/export/print/workflow/business semantics;
+- unchanged shared `MetricGrid` / `MetricCard` APIs, CSS and tokens.
 
-Remaining risks are review/runtime only: tests were not executed, no runtime visual pass exists, and the final PR HEAD after this owned-state commit requires fresh Product Design and Design QA exact-head inspection before Integration can reconsider merge.
+Remaining risks are review/runtime only: tests were not executed and no runtime visual pass exists. Any later PR-head movement invalidates future exact-head approvals.
 
 ## Peer-state comparison
 
-- **Product Design Director:** current and aligned; REPORT018 is explicitly bounded to this one Treasury chart shell with the same title/description, trust/state/chart/device/accessibility and exclusion contract.
-- **Development Integrator:** current and aligned; records `NO_MERGE — REPORT018 BOUNDED / WAITING_FOR_UI_IMPLEMENTATION` and requires a future stable exact HEAD plus fresh GREEN-DEV evidence.
-- **Design QA:** REPORT017 state is lifecycle-stale and supplies no REPORT018 approval or blocker.
-- **Previous UI Production state:** REPORT017 lifecycle state is superseded by this owned update.
-- **Team Memory:** integrated product truth through REPORT017 remains valid; its generic REPORT018 placeholder is superseded for exact scope by the newer Product Design/Workstream boundary.
-- **Decision Log / North Star / Workstream:** aligned with UI-only functional isolation, shared-system reuse, semantic hierarchy, Arabic-first responsive containment and no hosted CI/deployment activity.
+- **Product Design Director:** current and aligned; REPORT019 is explicitly bounded to this one Overview customer-health ready-state wrapper and forbids shared/functional widening.
+- **Development Integrator:** current through REPORT018 and aligned with one-slice-at-a-time / no-hosted-CI / no-`main` rules.
+- **Design QA:** lifecycle-stale around merged REPORT018 and supplies no REPORT019 approval or blocker.
+- **Previous UI Production state:** REPORT018 lifecycle state is superseded by this owned update.
+- **Team Memory / Decision Log / North Star / Workstream:** aligned with shared-system reuse, Arabic-first responsive composition and strict functional isolation.
 
 Current contradiction classification: `NONE` from UI Production. Review gates are pending, not implementation blockers.
 
 ### Cross-role handoff
 - **To:** Design QA and Product Design Director; Development Integrator only after fresh exact-head approvals.
-- **What changed:** REPORT018 Treasury `التدفق النقدي اليومي` now uses the existing shared `ChartPanel` shell with semantic `h1 -> h2` hierarchy and wrap-safe trust context while preserving all chart/state/data truth; focused contract tests were authored and Draft PR #66 opened.
-- **Preserve:** exact chart data mapping/order/configuration/series/gradients; Trust/Freshness; blocked/loading/empty/ready precedence and exact copy/heights; 280px chart density; Mobile/Tablet/Desktop 100% containment; Arabic/RTL/dark-mode semantics; unchanged header/filter/notice/SystemHealth/KPIs/CustomTooltip/shared API/CSS/tokens and all functional/business contracts.
-- **Need from you:** independently review the exact current PR #66 HEAD after this state commit. Design QA should issue or withhold fresh `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`; Product Design should independently accept or block the same exact HEAD. Any later PR-head movement invalidates those exact-head gates.
+- **What changed:** REPORT019 Overview `صحة قاعدة العملاء` ready state now uses existing shared `MetricGrid columns={2}` instead of local `report-grid`, with focused tests authored and Draft PR #67 opened.
+- **Preserve:** exact two cards/order/content/formatting/fallbacks; customer trust/freshness/stale/domain wiring; section heading/link; single 120px loading skeleton; REPORT004 KPI grid; Mobile one-column / Tablet two-column / Desktop two-column behavior; Arabic/RTL/dark/accessibility semantics; unchanged shared APIs/CSS/tokens and all functional/business contracts.
+- **Need from you:** independently review the exact current PR #67 HEAD after this state commit. Design QA should issue or withhold fresh `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`; Product Design should independently accept or block the same exact HEAD. Any later PR-head movement invalidates those exact-head gates.
 - **Blocker level:** `NONE` from UI Production; independent review pending.
-- **Baseline:** Development/feature baseline `3ebc36354be981cc98048fc753af486e566586e6`; code/test HEAD before this owned-state write `6310cc0904911b5277f325c7ced893f62ced8b8a`; Draft PR `#66`.
+- **Baseline:** Development/feature baseline `03869ab755037463bf8f39cc4b438813f5c0c268`; code/test HEAD before this owned-state write `027ef0ed79f241df3b7cb956b84fa82627f6b4ce`; Draft PR `#67`.
