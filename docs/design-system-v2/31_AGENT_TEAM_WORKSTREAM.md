@@ -93,19 +93,39 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-014 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
+### DS2-REPORT-014 — Rep Performance comparison chart-panel convergence
 Status: `READY`
-Owner role for immediate next action: Product Design Director
+Owner role for immediate next action: UI Production Engineer
 
-Intent:
-- inspect representative remaining Reports/Analytics surfaces on the exact latest `design-system-v2-development` baseline;
-- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance boundary;
-- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer proves a recurring need;
-- preserve REPORT001-013 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/business semantics;
-- preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
-- do not turn REPORT014 into broad multi-page report beautification.
+Representative surface:
+- `src/pages/reports/RepPerformancePage.tsx`
+- only the analytical chart titled `مقارنة المندوبين — أعلى 15`.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+System-pattern intent:
+- replace only the chart's page-local Card/header shell with the already-proven presentation-only `ChartPanel` composition;
+- deepen one shared analytical grammar across another Reports domain without inventing a page-local wrapper or widening the shared component;
+- retain page `h1` -> chart `h2` semantic hierarchy through `ChartPanel`'s default heading level;
+- inherit shared Card/SectionHeader spacing, Arabic wrapping, semantic dark-mode surfaces and width containment on Mobile/Tablet/Desktop while leaving chart/data semantics caller-owned.
+
+Required preservation / acceptance:
+- preserve exact title `مقارنة المندوبين — أعلى 15` and description `صافى الإيراد مقابل المرتجعات`;
+- preserve the existing Trust/Freshness action cluster and its current `salesTrust` conditions/props;
+- preserve `tableLoading` -> `SkeletonCard height={300}`, empty `chartData.length === 0` copy/height, and ready-chart branch precedence exactly;
+- preserve `chartData = rows.slice(0, 15)` mapping/order and unchanged `rep_name`, `net_revenue`, `returns_value` truth;
+- preserve `ResponsiveContainer` dynamic height `Math.max(chartData.length * 40, 200)` and every current `BarChart`, grid, axis, tooltip, revenue-bar and returns-bar prop/label/value/color/geometry;
+- Desktop, Tablet and Mobile must keep chart containment without horizontal page escape; long Arabic names/action content must remain safely contained by the shared header/Panel grammar;
+- preserve current RTL Arabic presentation and LTR numeric/currency treatment; do not introduce hard-coded surface/text colors beyond the existing chart-series colors already present;
+- focused tests must protect ChartPanel title/description/action composition, loading/empty/ready branches, data mapping/order and current chart-series/configuration contract; test evidence must remain honestly labeled if not executed.
+
+Explicit exclusions:
+- do not migrate the `تفصيل الأداء — جميع المندوبين` table in this slice;
+- do not change KPI cards, page header, filters/date controls, `SystemHealthBar`, `CustomTooltip`, table rows/ranking styling or any second Reports page;
+- do not change `ChartPanel`, `Card`, `SectionHeader` or shared CSS/API contracts;
+- do not change hooks, analytics data sources, queries, caches, calculations, ranking/order, trust/freshness semantics, permissions/RBAC/RLS, routing, export/print, backend/schema/RPC, business rules, deployment or workflows.
+
+If exact implementation requires shared API/CSS widening, chart geometry/data change, new analytics semantics, or any functional/business change, REPORT014 becomes `BLOCKED` and returns to Product Design rather than expanding the PR.
+
+Implementation is authorized only for this exact one-chart boundary from the current Development baseline.
 
 ## Product migration roadmap
 
@@ -155,7 +175,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-013` — `DONE`
-- `DS2-REPORT-014 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY`
+- `DS2-REPORT-014 — Rep Performance comparison chart-panel convergence` — `READY`
 - further Reports/Analytics convergence beyond REPORT014 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
