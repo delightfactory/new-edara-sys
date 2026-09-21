@@ -2,126 +2,126 @@
 
 ## Reviewed baseline
 
-- Review date: `2026-09-21`.
+- Review date: `2026-09-22`.
 - Authoritative branch: `design-system-v2-development`.
-- Exact Development HEAD independently inspected before REPORT018 bounding: `9b06a32dedd92527c79f8c74408b79c6f2b4211e`.
-- REPORT018 Workstream bounding commit: `97741761ac37161103a3e944d40bc84de405bc42`.
+- Exact Development HEAD independently inspected before this state write: `2490a653644834aad9acb432f705d10a66096c08`.
 - Latest integrated product baseline: `DS2-REPORT-017` / PR #65, squash merge `3474748541068600e1deae061bf68fca23b346ef`.
-- Current single READY slice: `DS2-REPORT-018 — Treasury daily cashflow chart-panel convergence`.
+- Active slice: `DS2-REPORT-018 — Treasury daily cashflow chart-panel convergence`.
 - Representative surface: `src/pages/reports/TreasuryPage.tsx` → `التدفق النقدي اليومي` chart section only.
-- Open implementation PRs targeting Development at final pre-state check: none.
-- Current Product Design disposition: `READY — BOUNDED / NO DESIGN-SYSTEM BLOCKER`.
-- No build/test/lint/runtime/preview/release PASS is claimed.
+- Active implementation PR: `#66 — DS2-REPORT-018: converge Treasury daily cashflow chart panel`.
+- Exact implementation HEAD independently reviewed: `1e9b2ad87d00a99a7db18f70bbcb1d881c5953e2`.
+- PR state at final pre-closeout inspection: `OPEN / DRAFT / mergeable=true`.
+- Design QA on the same exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
+- Evidence: `TESTS_AUTHORED_NOT_EXECUTED`; no build/test/lint/runtime/preview/release PASS is claimed.
+- Current Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER`.
 
 ## Independent Product Design judgment
 
-**READY — REPORT018 is dependency-safe and bounded to one presentation-only Treasury chart shell.**
+**PASS — REPORT018 exact PR HEAD `1e9b2ad87d00a99a7db18f70bbcb1d881c5953e2` fits the North Star and the declared design contract without scope widening.**
 
-I independently inspected the exact latest integrated Reports baseline, remaining Reports surfaces, the current Treasury composition, the shared `ChartPanel` contract and an already integrated `ChartPanel` consumer before comparing peer states. The smallest useful next concern is the page-local analytical surface around `التدفق النقدي اليومي`: it duplicates the neutral Card/header hierarchy already owned by `ChartPanel`, while all Treasury data, trust, state and chart behavior can remain unchanged.
+I independently reviewed the exact PR diff and final Treasury source, the shared `ChartPanel` / `SectionHeader` contracts, relevant component/page/device/migration guidance, issue #27 and the current Development drift before comparing peer states.
 
-This advances system coherence without creating another page-specific responsive pattern, without broad multi-page beautification, and without requiring backend/business changes.
+The implementation makes the correct system move: it removes one page-local analytical Card/header composition and reuses the established neutral `ChartPanel` without moving Treasury data, trust, state or chart semantics into the Design System. This increases cross-report coherence instead of creating another local variation.
 
-## REPORT018 design contract
+## Exact-head Product Design findings
 
-### Scope / system intent
+### System coherence / hierarchy — PASS
 
-- Replace only the local surface/header wrapper around Treasury `التدفق النقدي اليومي` with shared `ChartPanel`.
-- Preserve exact section title `التدفق النقدي اليومي` and description `net_cashflow — مجمّع يومياً في قاعدة البيانات`.
-- Preserve the existing `TrustStateBadge + FreshnessIndicator` cluster as the `ChartPanel` action content, with safe compact-width wrapping.
-- Use the shared default semantic section heading so page hierarchy becomes `h1` page → `h2` chart section.
-- Do not widen `ChartPanel`, shared CSS or tokens; the current shared contract is already sufficient.
+- Only the local shell around `التدفق النقدي اليومي` is replaced by shared `ChartPanel`.
+- Exact title remains `التدفق النقدي اليومي`.
+- Exact description remains `net_cashflow — مجمّع يومياً في قاعدة البيانات`.
+- The page retains its `h1` (`التدفق النقدي الخزيني`) and the shared `ChartPanel` default produces the correct section `h2` hierarchy.
+- `TrustStateBadge + FreshnessIndicator` remain informational action content; compact wrapping is limited to the existing cluster and no fabricated click/focus contract is introduced.
+- `ChartPanel`, `SectionHeader`, shared CSS and tokens are consumed unchanged.
 
-### Data / visualization truth to preserve
+### Data / visualization truth — PASS
 
-Preserve exactly:
-- `chartData` mapping: `date <- treasury_date`, `inflow <- gross_inflow`, `outflow <- gross_outflow`, `net <- net_cashflow`;
-- caller-owned ordering;
+Preserved exactly:
+- `chartData`: `date <- treasury_date`, `inflow <- gross_inflow`, `outflow <- gross_outflow`, `net <- net_cashflow`;
+- caller-owned row ordering;
 - `ResponsiveContainer width="100%" height={280}`;
-- `AreaChart` data and current margins;
-- all three gradient ids, colors and opacities;
-- Cartesian grid, X/Y axes, tick formatters and styling;
-- current `CustomTooltip` usage and behavior;
-- zero `ReferenceLine`;
-- Area series names `داخل / مستردّ / صافي`, data keys, colors, stroke widths, fills and dot behavior.
+- `AreaChart` margins;
+- all three gradient ids/colors/opacities;
+- grid, X/Y axes, tick formatting and zero reference line;
+- current `CustomTooltip` usage;
+- `داخل / مستردّ / صافي` series data keys, names, colors, stroke widths, fills and dot behavior.
 
-No data meaning or chart semantics move into the Design System.
+No chart/data/business meaning moved into the Design System.
 
-### State / trust truth to preserve
+### States / trust — PASS
 
-Preserve state precedence and exact presentation:
-- blocked/failed first: 280px blocked panel with current two-line copy;
-- then `dailyLoading`: `SkeletonCard height={280}`;
-- then empty: 280px surface with exact copy `لا توجد تدفقات خزينية في هذه الفترة`;
-- then ready chart.
+State precedence remains exactly:
+1. `BLOCKED/FAILED` → existing two-line blocked panel at 280px;
+2. `dailyLoading` → `SkeletonCard height={280}`;
+3. empty → exact `لا توجد تدفقات خزينية في هذه الفترة` at 280px;
+4. ready chart.
 
-Trust resolution, `SystemHealthBar`, freshness meaning and all hook/query/cache behavior remain caller-owned and unchanged.
+Trust resolution, `SystemHealthBar`, summary KPIs, date filtering, hooks/query/cache behavior and freshness semantics remain caller-owned and unchanged.
 
-### Device / RTL / accessibility acceptance
+### Device / RTL / accessibility — PASS at source level
 
-- **Mobile:** shared ChartPanel must contain the chart at 100% width with no new page-level horizontal overflow; title/description/action cluster remains legible under Arabic wrapping.
-- **Tablet:** deliberate contained analytical surface; action cluster may wrap without crowding the heading; no touch interaction is invented for informational trust/freshness badges.
-- **Desktop:** retain the same management-facing chart density and 280px chart height.
-- **RTL / Arabic:** preserve RTL composition and long Arabic wrapping through shared semantic surfaces; do not alter chart-series color meaning.
-- **Dark mode:** rely on current semantic Card/SectionHeader/ChartPanel surfaces and tokens; no local palette expansion.
-- **Accessibility:** semantic section heading improves hierarchy; no click/focus/keyboard affordance is added because the section remains informational.
+- **Mobile:** chart remains 100% contained with no new page-level horizontal-scroll dependency; title/description/trust context use the shared wrap-safe header grammar.
+- **Tablet:** the same neutral analytical surface remains deliberate and contained; trust/freshness may wrap rather than crowd the header.
+- **Desktop:** management chart density and 280px height are preserved.
+- **RTL / Arabic:** shared semantic header/surface composition is used; Arabic copy and mixed Latin metric description remain intact.
+- **Dark mode:** existing semantic Card/SectionHeader/ChartPanel surfaces remain authoritative; no local palette is introduced.
+- **Accessibility:** section semantics improve from local styled text to a real `h2`; informational content remains non-interactive.
 
-### Explicit exclusions
+No `RUNTIME_VISUAL_PASS` is claimed; device/runtime visual validation remains a later controlled gate.
 
-Do not change:
-- Treasury page header or `ReportFilterBar`;
-- semantic-contract notice;
-- `SystemHealthBar`;
-- the three KPI `MetricCard`s or summary loading behavior;
-- `CustomTooltip` content/behavior;
-- hooks, queries, cache/data semantics, calculations or trust resolution;
-- permissions/RBAC/RLS, routing, backend/service contracts, validation, export/print, workflow or business semantics;
-- `ChartPanel` API, shared CSS/tokens or any other report surface.
+### Scope / functional isolation — PASS
 
-If any excluded shared-system widening or functional/data-semantic change is required, REPORT018 becomes `BLOCKED` rather than expanding scope.
+Changed files are exactly:
+- `src/pages/reports/TreasuryPage.tsx`
+- `src/pages/reports/TreasuryPage.test.tsx`
+- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
-### Test artifact expectation
+Explicitly unchanged: page header, `ReportFilterBar`, semantic-contract notice, `SystemHealthBar`, KPI cards/summary loading, `CustomTooltip`, hooks, queries, cache semantics, calculations, permissions/RBAC/RLS, routing, backend/services, validation, export/print, workflow and business semantics.
 
-UI Production should add focused Treasury coverage protecting:
-- shared `ChartPanel` adoption and `h1 -> h2` hierarchy;
-- exact title/description and trust/freshness presence;
-- blocked/loading/empty/ready precedence and exact copy/heights;
-- unchanged `chartData` mapping and caller ordering;
-- unchanged core chart configuration/series semantics.
+Development drift from feature baseline `3ebc36354be981cc98048fc753af486e566586e6` to pre-write Development HEAD `2490a653644834aad9acb432f705d10a66096c08` is governance-only (`DESIGN_QA_STATE.md` and `INTEGRATION_STATE.md`); it does not invalidate this exact-head design review and should not cause merge-sync SHA churn.
 
-Normal evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved runtime actually executes the tests.
+### Test artifact / evidence honesty — PASS
+
+Focused Treasury tests protect:
+- one shared `ChartPanel` and semantic `h1 -> h2` hierarchy;
+- exact title/description and Trust/Freshness context;
+- blocked/loading/empty precedence and exact 280px contracts;
+- caller ordering and chart-data mapping;
+- 100% containment, margins, grid, axes, reference line and tooltip presence;
+- all three series plus gradient color/opacity contracts.
+
+Evidence remains honestly `TESTS_AUTHORED_NOT_EXECUTED`. No local build/test/lint, hosted CI, preview or runtime visual PASS is inferred from source review.
 
 ## Peer-state synthesis / contradiction status
 
-This judgment was formed independently first, then compared with repository memory and peer states.
+This judgment was formed independently first, then compared with peer states.
 
-- **Development Integrator:** current and aligned; REPORT017 is merged and Integrator explicitly handed REPORT018 to Product Design for one smallest safe boundary.
-- **Team Memory:** aligned; REPORT017 is integrated and the generic REPORT018 placeholder required exactly this decomposition before implementation.
-- **UI Production:** Development copy remains lifecycle-stale from REPORT017, not contradictory; it contains no active competing implementation.
-- **Design QA:** Development copy remains lifecycle-stale from REPORT017, not contradictory; fresh REPORT018 exact-head review will be required after implementation.
-- **Decision Log / North Star:** aligned with UI-only functional isolation, shared-system reuse, Arabic-first deliberate device behavior and no hosted CI/deployment activity.
+- **Design QA:** aligned and current; `GREEN-DEV + SOURCE_REVIEW_PASS` exists on the same exact PR HEAD `1e9b2ad87d00a99a7db18f70bbcb1d881c5953e2`.
+- **UI Production:** feature-branch state is aligned with the same scope, preserved contracts and honest non-executed evidence. The Development copy remains lifecycle-stale until integration, not contradictory.
+- **Development Integrator:** aligned and current; it explicitly waits for fresh Product Design exact-head closeout and otherwise found the merge gates technically clean.
+- **Team Memory / Workstream / Decision Log / North Star:** aligned with shared-system reuse, semantic hierarchy, Arabic-first multi-device containment, functional isolation and no hosted CI/deployment activity.
 
 Current contradiction classification: **NONE**.
 
 ## Repository actions this run
 
 - Completed the mandatory shared-memory bootstrap in the prescribed order.
-- Inspected issue #27, exact Development HEAD and open PRs targeting Development.
-- Inspected relevant component/page/device/migration guidance, representative remaining Reports surfaces, exact Treasury source, shared `ChartPanel`, and an integrated `ChartPanel` precedent.
-- Bound REPORT018 in `31_AGENT_TEAM_WORKSTREAM.md` as one Treasury chart-shell concern; Workstream commit `97741761ac37161103a3e944d40bc84de405bc42`.
+- Inspected issue #27, exact Development HEAD, the single open PR targeting Development, exact changed filenames/patches, PR review/comments/threads, current Treasury source and shared chart/header contracts.
+- Independently accepted PR #66 exact HEAD `1e9b2ad87d00a99a7db18f70bbcb1d881c5953e2` with `PASS — NO DESIGN-SYSTEM BLOCKER`.
 - Updated only this owned specialist state among role-state files.
-- Did not update Team Memory or Decision Log because no overall system direction or durable rule changed.
-- Did not modify product code, merge a PR, touch `main`, trigger/rerun GitHub Actions, use hosted CI, deploy Vercel or modify preview branches.
+- Did not update Team Memory, Workstream or Decision Log because no durable system direction changed and REPORT018 is not integrated yet.
+- Did not modify product code, merge, touch `main`, trigger/rerun GitHub Actions, use hosted CI, deploy Vercel or modify preview branches.
 
 ## What changed since previous state
 
-- REPORT017 is now integrated and its prior active-PR state is superseded.
-- The generic REPORT018 roadmap placeholder is now decomposed into one exact Treasury chart-panel migration with device/state/accessibility acceptance and explicit exclusions.
-- UI Production is now authorized to implement REPORT018 from the exact latest Development baseline; no competing implementation PR existed at selection/final pre-state check.
+- REPORT018 moved from Product Design `READY — BOUNDED` to exact-head Product Design acceptance.
+- Design QA and Product Design are now aligned on the same unchanged PR HEAD.
+- Integration is the only remaining lifecycle action, subject to its normal final revalidation.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer; Design QA after a stable implementation PR exists.
-- **What changed:** REPORT018 is now bounded as `Treasury daily cashflow chart-panel convergence`, limited to the `التدفق النقدي اليومي` local surface/header shell and reuse of existing shared `ChartPanel`.
-- **Preserve:** exact Treasury chart data mapping/order/configuration/series colors and labels; Trust/Freshness; blocked/loading/empty/ready precedence and exact copy/heights; 280px chart density; Arabic/RTL/dark-mode semantics; page header/filter/notice/SystemHealth/KPIs/CustomTooltip and all functional/business contracts; unchanged shared APIs/CSS/tokens.
-- **Need from you:** UI Production should start from the latest Development HEAD, implement only this slice and author focused contract tests in one Draft PR targeting `design-system-v2-development`. If shared-contract widening or any functional/data-semantic change is required, mark `BLOCKED`. Design QA should independently inspect the future exact stable PR HEAD.
+- **To:** Development Integrator.
+- **What changed:** Product Design independently reviewed PR #66 exact HEAD `1e9b2ad87d00a99a7db18f70bbcb1d881c5953e2` and accepts it with `PASS — NO DESIGN-SYSTEM BLOCKER`; Design QA is already GREEN-DEV on the same exact HEAD.
+- **Preserve:** exact Treasury title/description; Trust/Freshness; blocked/loading/empty/ready precedence/copy/heights; 280px chart density; `chartData` mapping/order; AreaChart geometry/gradients/grid/axes/tooltip/reference/series; 100% device containment; Arabic/RTL/dark-mode semantics; unchanged header/filter/notice/SystemHealth/KPIs/CustomTooltip/shared APIs/CSS/tokens and every functional/business contract.
+- **Need from you:** revalidate that PR #66 HEAD remains unchanged, base still targets `design-system-v2-development`, Development drift remains non-product, reviews/threads/mergeability/scope/functional isolation stay clean, then integrate only if all normal gates pass. Any PR-head movement requires fresh QA + Product Design review.
 - **Blocker level:** `NONE`.
-- **Baseline:** REPORT018 bounded on Development Workstream commit `97741761ac37161103a3e944d40bc84de405bc42`; latest integrated product merge `3474748541068600e1deae061bf68fca23b346ef`.
+- **Baseline:** pre-write Development HEAD `2490a653644834aad9acb432f705d10a66096c08`; exact accepted PR #66 HEAD `1e9b2ad87d00a99a7db18f70bbcb1d881c5953e2`; evidence `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
