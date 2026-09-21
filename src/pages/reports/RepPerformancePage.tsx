@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useSystemTrustState, useTrustForComponent, type TrustStatus } from '@/hooks/useSystemTrustState'
 import { useRepPerformanceSummary, useRepPerformanceTable, type RepPerformanceRow } from '@/hooks/useRepPerformance'
 import MetricCard from '@/components/reports/MetricCard'
@@ -7,6 +7,7 @@ import SystemHealthBar from '@/components/reports/SystemHealthBar'
 import ReportFilterBar, { type DateRange } from '@/components/reports/ReportFilterBar'
 import TrustStateBadge from '@/components/reports/TrustStateBadge'
 import FreshnessIndicator from '@/components/reports/FreshnessIndicator'
+import ChartPanel from '@/components/patterns/ChartPanel'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 import { TrendingUp, TrendingDown, Users2, Award } from 'lucide-react'
 
@@ -94,17 +95,16 @@ export default function RepPerformancePage() {
       </div>
 
       {/* Horizontal Bar Chart */}
-      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-primary)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', boxShadow: 'var(--shadow-sm)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--text-primary)' }}>مقارنة المندوبين — أعلى 15</div>
-            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: '2px' }}>صافى الإيراد مقابل المرتجعات</div>
-          </div>
-          <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
+      <ChartPanel
+        title="مقارنة المندوبين — أعلى 15"
+        description="صافى الإيراد مقابل المرتجعات"
+        action={(
+          <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', flexWrap: 'wrap' }}>
             {salesTrust && <TrustStateBadge status={salesTrust.status as TrustStatus} domain="sales" size="sm" />}
             {salesTrust && <FreshnessIndicator lastCompletedAt={salesTrust.last_completed_at} isStale={salesTrust.is_stale} />}
           </div>
-        </div>
+        )}
+      >
         {tableLoading ? <SkeletonCard height={300} /> : chartData.length === 0 ? (
           <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>لا توجد بيانات فى النطاق الزمني المحدد</div>
         ) : (
@@ -119,7 +119,7 @@ export default function RepPerformancePage() {
             </BarChart>
           </ResponsiveContainer>
         )}
-      </div>
+      </ChartPanel>
 
       {/* Table */}
       <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-primary)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
