@@ -4,55 +4,69 @@
 
 - Review date: `2026-09-21`.
 - Development branch: `design-system-v2-development`.
-- Exact Development HEAD before this owned-state write: `b31869f499c32c85e4ccdc95614fd1b4d2e59f47`.
-- Latest integrated product slice: `DS2-REPORT-016 — Rep Performance responsive detail-collection convergence`.
-- Latest product merge: PR #64 / squash `ce3db886a3eaaae15025998186cc62e1e841410e`.
-- Current single READY slice: `DS2-REPORT-017 — Target Attainment responsive detail-collection convergence`.
-- Representative surface: `src/pages/reports/TargetAttainmentPage.tsx` → `تفاصيل الأهداف` collection only.
-- Product Design bounding commits: Workstream `c39ba697a8c1ede820abf7d6d5c0fc2c7a913a23`; Design Director state `b31869f499c32c85e4ccdc95614fd1b4d2e59f47`.
-- Open PRs targeting `design-system-v2-development` at integration recheck: none.
-- Integration disposition: `NO_MERGE — REPORT017 BOUNDED / WAITING_FOR_UI_IMPLEMENTATION`.
+- Exact Development HEAD immediately before this owned-state write: `55c489e602928fd60925dc6f3716991a6ddfe91a`.
+- Completed slice: `DS2-REPORT-017 — Target Attainment responsive detail-collection convergence`.
+- Merged PR: `#65 — DS2-REPORT-017: converge Target Attainment responsive detail collection`.
+- Exact reviewed PR HEAD: `ccaaa6ede829f4d81017779c99cd76c1bf719918`.
+- Squash merge commit: `3474748541068600e1deae061bf68fca23b346ef`.
+- Evidence: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
+- Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact PR HEAD.
+- Current single READY slice: `DS2-REPORT-018 — Next bounded Reports metrics/charts/tables/responsive-composition convergence`.
+- Integration disposition: `MERGED — REPORT017 DONE / REPORT018 READY FOR PRODUCT DESIGN BOUNDING`.
 
 ## Integrator decision
 
-**NO MERGE.**
+**MERGED.**
 
-There is currently no implementation PR targeting `design-system-v2-development`, so there is no exact implementation HEAD, QA marker, review-thread set or diff eligible for integration evaluation.
+All required integration gates passed on exact PR #65 HEAD `ccaaa6ede829f4d81017779c99cd76c1bf719918`:
 
-Product Design has materially advanced the lifecycle since the previous Integrator state: REPORT017 is no longer a generic roadmap placeholder. It is now explicitly bounded to the Target Attainment `تفاصيل الأهداف` collection with a presentation-only acceptance contract and `Blocker level: NONE`.
+- base remained exactly `design-system-v2-development`;
+- current PR HEAD remained unchanged from both exact-head approvals;
+- Design QA recorded `AGENT-REVIEW: GREEN-DEV` with `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` on that exact SHA;
+- Product Design independently recorded `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact SHA;
+- no known build/type failure was outstanding and no executed build/test/lint/runtime/preview PASS was falsely claimed;
+- inline review thread set was empty and no material unresolved PR/issue blocker existed;
+- no current peer role-state contained a still-current `BLOCKING` contradiction for REPORT017;
+- changed-file scope was exactly three files: Target Attainment page, focused Target Attainment test, and UI Production's owned state file;
+- source diff contained no DB/RPC/service/query-cache/RBAC/RLS/permission/route/validation/export/print/workflow/business-calculation change and no workflow/deployment enabling change;
+- Development drift from the feature baseline was governance-only in Design QA and Product Design state updates, with no overlapping product/shared-component change.
 
-The current handoff is therefore normal pipeline progress, not a blocker:
+The PR was transitioned from Draft to Ready without moving its HEAD, then squash-merged with expected-head protection as `3474748541068600e1deae061bf68fca23b346ef`.
 
-- UI Production may implement exactly the bounded REPORT017 concern from the latest Development baseline.
-- Design QA must independently review the future exact stable PR HEAD and record `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` plus an honest test-evidence label before Integration can reconsider merge.
-- Any future PR-head movement invalidates prior exact-head review evidence.
+## Integrated system impact
 
-## Current bounded integration expectations for REPORT017
+REPORT017 extends the already proven Reports responsive-collection grammar to Target Attainment:
 
-Preserve the Product Design boundary exactly:
+- Desktop preserves the dense semantic eight-column `تفاصيل الأهداف` comparison table, exact fact order, hover behavior and achievement/trend presentation, with `scope="col"` headers.
+- Tablet uses deliberate two-column and Mobile one-column passive `Card + KeyValueList` composition through shared `ResponsiveCollection`.
+- Exactly one ready renderer mounts for the active device mode; compact layouts no longer depend on horizontal table scrolling.
+- All eight facts/fallbacks and caller-owned row ordering remain unchanged.
+- Achievement thresholds remain `>=100` success, `>=80` warning, otherwise danger; `TrendBadge` semantics/fallback remain unchanged.
+- Long Arabic content is wrap-safe and money/percentage values retain intentional LTR presentation inside RTL composition.
+- Trust/Freshness and `BLOCKED/FAILED -> loading -> empty -> ready` precedence remain unchanged, including exact state copy and five × 44px skeleton rows.
+- Header/date/scope controls, KPIs, individual-rep chart, hooks/queries/calculations, permissions, routing, export/print and all business semantics remain caller-owned and unchanged.
+- No shared API/CSS/token widening occurred.
 
-- Desktop keeps the dense semantic eight-column Target Attainment table and exact order `الهدف / النوع / المسؤول / الفرع / المستهدف / المحقق / إنجاز% / الاتجاه`, with `scope="col"` as accessibility hardening only.
-- Tablet uses shared passive `ResponsiveCollection + Card + KeyValueList` composition with two-column details; Mobile uses the same grammar with one-column details and no ordinary horizontal table overflow.
-- Exactly one ready-state renderer mounts for the active device class; compact Cards remain non-interactive.
-- Preserve all eight row facts/fallbacks, row ordering, money/percentage formatting, achievement thresholds (`>=100` success, `>=80` warning, otherwise danger), `TrendBadge` semantics/fallback, Arabic wrapping and intentional LTR numeric presentation.
-- Preserve Trust/Freshness and state precedence `BLOCKED/FAILED -> loading -> empty -> ready`, including five `SkeletonCard height={44}` rows and the exact current copy.
-- Do not touch header/filter/date controls, KPI summary, the individual-rep achievement chart, hooks/query/calculation/status/business semantics, backend/permissions/RBAC/RLS/routing/validation/export/print/workflow behavior, shared component APIs/tokens/global CSS, or other Reports surfaces.
-- If implementation requires any excluded change, REPORT017 must become `BLOCKED` rather than widen.
+This is the sixth distinct Reports row shape proving `ResponsiveCollection + Card + KeyValueList` can preserve dense Desktop comparison while providing deliberate compact-device composition without moving domain truth into the Design System.
 
-## Peer-state / freshness synthesis
+## Queue continuity
 
-- Product Design Director state is current for REPORT017 and records `READY — BOUNDED` with no blocking contradiction.
-- UI Production and Design QA states still describe REPORT016 and are lifecycle-stale after its merge; they are historically valid but provide no approval evidence for REPORT017 and create no current blocker.
-- Team Memory correctly records REPORT016 as the latest integrated product truth, but its generic REPORT017 placeholder is superseded for scope by the newer Workstream + Design Director boundary; overall North-Star direction remains unchanged.
-- Previous Integration state is superseded by this lifecycle update because Product Design bounding is complete.
-- `DECISION_LOG.md` remains unchanged because no durable rule changed or was superseded.
+Exactly one next dependency-safe roadmap item was advanced:
 
-No GitHub Actions, hosted CI, Vercel, preview branch, deployment or `main` activity occurred.
+`DS2-REPORT-018 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY` for Product Design Director bounding only.
+
+Product Design must inspect the exact latest Development baseline and name one smallest presentation-only Reports concern before UI Production may implement anything. The queue must continue to preserve Settings/Admin, remaining Work/Field debt, shared component-depth work and the Global convergence/cleanup phases; REPORT018 must not become broad multi-page report polishing.
+
+## Durable decisions
+
+No durable rule changed or was superseded by REPORT017, so `team/design-system-v2/DECISION_LOG.md` remains unchanged.
+
+No GitHub Actions or hosted CI were triggered or rerun. No Vercel/preview branch/deployment activity occurred. `main` was not touched.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer, then Design QA.
-- **What changed:** REPORT017 is now concretely bounded to Target Attainment `تفاصيل الأهداف`; there is still no active implementation PR, so Integration has nothing eligible to merge.
-- **Preserve:** REPORT001-016 contracts; REPORT017 exact eight-fact/table/state/semantic/device boundary; caller-owned analytics/query/calculation/trust/permission/routing/export/print/business truth; no shared API/CSS/token widening; full Settings/Admin, Work/Field, shared-component-depth and Global roadmap.
-- **Need from you:** UI Production should implement only REPORT017 from the latest Development HEAD in one PR with focused validation artifacts; Design QA should independently review the future exact stable PR HEAD. Integration should reconsider only after fresh exact-head `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` and all normal gates pass.
+- **To:** Product Design Director; UI Production Engineer only after Product Design bounds REPORT018.
+- **What changed:** REPORT017 was squash-merged as `3474748541068600e1deae061bf68fca23b346ef`; Workstream now marks REPORT017 DONE and exactly one next item, REPORT018, READY for Product Design bounding.
+- **Preserve:** REPORT001-017 contracts; caller-owned report/query/calculation/trust/permission/routing/export/print/business truth; semantic achievement/trend meanings; dense Desktop comparison plus deliberate Tablet/Mobile composition; no shared API/CSS/token widening; full Settings/Admin, Work/Field, shared-component-depth and Global roadmap.
+- **Need from you:** Product Design Director should inspect the exact latest Development baseline and bound exactly one smallest dependency-safe REPORT018 presentation concern with explicit acceptance/exclusion boundaries. UI Production must not start REPORT018 product code before that boundary exists.
 - **Blocker level:** `NONE`.
-- **Baseline:** Development pre-state-write `b31869f499c32c85e4ccdc95614fd1b4d2e59f47`; REPORT017 Workstream bounding `c39ba697a8c1ede820abf7d6d5c0fc2c7a913a23`; Design Director state `b31869f499c32c85e4ccdc95614fd1b4d2e59f47`.
+- **Baseline:** merged PR #65 exact reviewed HEAD `ccaaa6ede829f4d81017779c99cd76c1bf719918`; product merge `3474748541068600e1deae061bf68fca23b346ef`; Development pre-state-write `55c489e602928fd60925dc6f3716991a6ddfe91a`.
