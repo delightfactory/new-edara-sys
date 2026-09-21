@@ -49,7 +49,7 @@ vi.mock('recharts', () => ({
     <div data-testid="responsive-container" data-width={width} data-height={height}>{children}</div>
   ),
   AreaChart: ({ children, data, margin }: { children: ReactNode; data: unknown; margin: Record<string, number> }) => (
-    <div data-testid="area-chart" data-data={JSON.stringify(data)} data-margin={JSON.stringify(margin)}>{children}</div>
+    <svg data-testid="area-chart" data-data={JSON.stringify(data)} data-margin={JSON.stringify(margin)}>{children}</svg>
   ),
   Area: ({ dataKey, name, stroke, strokeWidth, fill, dot }: {
     dataKey: string
@@ -59,7 +59,7 @@ vi.mock('recharts', () => ({
     fill: string
     dot: boolean
   }) => (
-    <span
+    <g
       data-testid={`area-${dataKey}`}
       data-name={name}
       data-stroke={stroke}
@@ -69,17 +69,17 @@ vi.mock('recharts', () => ({
     />
   ),
   XAxis: ({ dataKey, tickLine, axisLine }: { dataKey: string; tickLine: boolean; axisLine: boolean }) => (
-    <span data-testid="x-axis" data-key={dataKey} data-tick-line={String(tickLine)} data-axis-line={String(axisLine)} />
+    <g data-testid="x-axis" data-key={dataKey} data-tick-line={String(tickLine)} data-axis-line={String(axisLine)} />
   ),
   YAxis: ({ tickFormatter, tickLine, axisLine }: { tickFormatter: (value: number) => string; tickLine: boolean; axisLine: boolean }) => (
-    <span data-testid="y-axis" data-formatted={tickFormatter(1234)} data-tick-line={String(tickLine)} data-axis-line={String(axisLine)} />
+    <g data-testid="y-axis" data-formatted={tickFormatter(1234)} data-tick-line={String(tickLine)} data-axis-line={String(axisLine)} />
   ),
-  Tooltip: () => <span data-testid="chart-tooltip" />,
+  Tooltip: () => <g data-testid="chart-tooltip" />,
   CartesianGrid: ({ strokeDasharray, stroke, vertical }: { strokeDasharray: string; stroke: string; vertical: boolean }) => (
-    <span data-testid="cartesian-grid" data-dash={strokeDasharray} data-stroke={stroke} data-vertical={String(vertical)} />
+    <g data-testid="cartesian-grid" data-dash={strokeDasharray} data-stroke={stroke} data-vertical={String(vertical)} />
   ),
   ReferenceLine: ({ y, stroke, strokeDasharray }: { y: number; stroke: string; strokeDasharray: string }) => (
-    <span data-testid="reference-line" data-y={y} data-stroke={stroke} data-dash={strokeDasharray} />
+    <g data-testid="reference-line" data-y={y} data-stroke={stroke} data-dash={strokeDasharray} />
   ),
 }))
 
