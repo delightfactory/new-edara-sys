@@ -9,7 +9,7 @@
 - Representative surface: `src/pages/reports/TreasuryPage.tsx` → `التدفق النقدي اليومي` chart section only.
 - Feature branch: `ds2-report-018-treasury-chart-panel`.
 - Draft PR: `#66 — DS2-REPORT-018: converge Treasury daily cashflow chart panel`, base `design-system-v2-development`.
-- Exact code/test HEAD before this owned-state write: `0644d53d4569e940eb1ce347ff25751889390f79`.
+- Exact code/test HEAD before this owned-state write: `6310cc0904911b5277f325c7ced893f62ced8b8a`.
 - Disposition: `REVIEW — FRESH EXACT-HEAD DESIGN QA + PRODUCT DESIGN REVIEW REQUIRED`.
 - Evidence: `TESTS_AUTHORED_NOT_EXECUTED`.
 - Build/test/lint/runtime/preview/release PASS: not claimed.
@@ -33,6 +33,7 @@ I formed this judgment from the current Treasury source, shared `ChartPanel` con
 - Preserved `ResponsiveContainer width="100%" height={280}`, `AreaChart` margins, all three gradient ids/colors/opacities, grid, axes, tick formatting, `CustomTooltip`, zero `ReferenceLine`, and all three `داخل / مستردّ / صافي` Area series names/keys/colors/stroke widths/fills/dot behavior unchanged.
 - Left Treasury header/ReportFilterBar, semantic-contract notice, SystemHealthBar, all three MetricCards/summary loading, hooks/query/cache/calculation/trust logic, permissions/RBAC/RLS, routing, backend/services, validation, export/print, workflow and business semantics untouched.
 - Added focused `TreasuryPage.test.tsx` coverage for shared ChartPanel adoption, `h1 -> h2` hierarchy, exact title/description/trust context, blocked/loading/empty/ready precedence, 280px contracts, chart mapping/order, 100% containment, margins, grid/axes/reference/tooltip presence, three Area series and gradient color/opacity contracts.
+- During source self-review after opening the PR, hardened only the Recharts test harness so mocked `AreaChart` renders an SVG tree and the existing gradient assertions exercise real SVG attributes; no product code or acceptance contract changed.
 - Opened Draft PR #66 targeting only `design-system-v2-development`.
 
 ## Scope / files / shared patterns touched
@@ -102,4 +103,4 @@ Current contradiction classification: `NONE` from UI Production. Review gates ar
 - **Preserve:** exact chart data mapping/order/configuration/series/gradients; Trust/Freshness; blocked/loading/empty/ready precedence and exact copy/heights; 280px chart density; Mobile/Tablet/Desktop 100% containment; Arabic/RTL/dark-mode semantics; unchanged header/filter/notice/SystemHealth/KPIs/CustomTooltip/shared API/CSS/tokens and all functional/business contracts.
 - **Need from you:** independently review the exact current PR #66 HEAD after this state commit. Design QA should issue or withhold fresh `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`; Product Design should independently accept or block the same exact HEAD. Any later PR-head movement invalidates those exact-head gates.
 - **Blocker level:** `NONE` from UI Production; independent review pending.
-- **Baseline:** Development/feature baseline `3ebc36354be981cc98048fc753af486e566586e6`; code/test HEAD before this owned-state write `0644d53d4569e940eb1ce347ff25751889390f79`; Draft PR `#66`.
+- **Baseline:** Development/feature baseline `3ebc36354be981cc98048fc753af486e566586e6`; code/test HEAD before this owned-state write `6310cc0904911b5277f325c7ced893f62ced8b8a`; Draft PR `#66`.
