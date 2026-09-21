@@ -4,59 +4,61 @@
 
 - Review date: `2026-09-21`.
 - Development branch: `design-system-v2-development`.
-- Exact Development HEAD immediately before this state write: `2371a68d0b5903c26a854679732ac0e2f0a220a7`.
-- Latest integrated product merge: `a9c787f447780f72b7ac0a99b9b9ce0d1f636932` from PR #61 / `DS2-REPORT-013`.
-- Current active slice: `DS2-REPORT-014 — Rep Performance comparison chart-panel convergence`.
-- Active PR: `#62 — DS2-REPORT-014: converge Rep Performance comparison chart panel`.
-- PR base: `design-system-v2-development` from feature baseline `d5ff0cb6755fd0aa4aa36597d42e7c77d4b6d4a8`.
-- Exact current PR HEAD: `6f77f2b5aab911c9fa18afd3c78268255456a0ad`.
-- PR state at integration recheck: `OPEN / DRAFT / mergeable=true`.
-- Integration disposition: `NO_MERGE — WAITING_FRESH_PRODUCT_DESIGN_EXACT_HEAD_CLOSEOUT`.
-- Design QA evidence on exact PR HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
+- Exact Development HEAD immediately before this state write: `9a46109729d8430b2d45b71f05e28c751c34dbdc`.
+- Latest integrated product merge: `a7096cdc86fb9fa55205556a10c8a5c13a6235d4` from PR #62 / `DS2-REPORT-014`.
+- Exact reviewed implementation HEAD: `6f77f2b5aab911c9fa18afd3c78268255456a0ad`.
+- Completed slice: `DS2-REPORT-014 — Rep Performance comparison chart-panel convergence`.
+- Current single READY slice: `DS2-REPORT-015 — Next bounded Reports metrics/charts/tables/responsive-composition convergence`.
+- Integration disposition: `MERGED — REPORT014 DONE / REPORT015 READY FOR PRODUCT DESIGN BOUNDING`.
+- Review evidence: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
+- Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact implementation HEAD.
 - Exact-head build/test/lint/runtime/preview/release PASS: not claimed.
 
 ## Integrator decision
 
-**NO MERGE in this run.**
+**MERGED.**
 
-The exact current PR HEAD `6f77f2b5aab911c9fa18afd3c78268255456a0ad` satisfies the source-level integration gates currently available: correct base, mergeable Draft PR, exact-head Design QA `GREEN-DEV`, honest evidence, empty review threads, no known source-visible build/type failure, UI/Test/Governance-only scope, no forbidden backend/business/query/permission/deployment drift, and governance-only Development movement since feature start.
+PR #62 remained on exact reviewed HEAD `6f77f2b5aab911c9fa18afd3c78268255456a0ad` with base exactly `design-system-v2-development`. GitHub recomputed it as mergeable before integration. Design QA's exact-head `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` and Product Design's exact-head `PASS — NO DESIGN-SYSTEM BLOCKER` were both current for that same SHA.
 
-Integration is intentionally waiting for the fresh Product Design exact-head closeout explicitly requested by the current Design QA handoff. The Development-branch Product Design state authorizes the bounded REPORT014 concern before implementation but does not yet accept or block exact implementation HEAD `6f77f2b5aab911c9fa18afd3c78268255456a0ad`. This is a coordination gate, not a discovered implementation defect. Do not infer approval from the pre-implementation boundary.
+The PR changed exactly three files: `src/pages/reports/RepPerformancePage.tsx`, focused `src/pages/reports/RepPerformancePage.test.tsx`, and UI Production's owned state. Review threads were empty. No known source-visible build/type failure, material blocker, current `BLOCKING` role-state contradiction, backend/business/query/permission/deployment drift, workflow enabling change or shared `ChartPanel` API/CSS widening was present.
 
-## Current gate status
+The Draft PR was transitioned to Ready without moving its HEAD, then squash-merged with expected-head protection as `a7096cdc86fb9fa55205556a10c8a5c13a6235d4`.
 
-- **Base gate:** PASS — PR base is exactly `design-system-v2-development`.
-- **Exact-head review gate:** PASS — Design QA recorded `AGENT-REVIEW: GREEN-DEV` on exact HEAD `6f77f2b5aab911c9fa18afd3c78268255456a0ad`.
-- **Evidence honesty gate:** PASS — `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview/release evidence is claimed.
-- **Known build/type failure gate:** PASS at known-evidence level — no source-visible build/type blocker is outstanding; commit statuses are empty as expected under quota protection.
-- **Review-thread gate:** PASS — no inline review threads are open.
-- **Diff/scope gate:** PASS — three-file UI/Test/Governance scope only: `src/pages/reports/RepPerformancePage.tsx`, `src/pages/reports/RepPerformancePage.test.tsx`, and UI Production's owned state.
-- **Functional isolation gate:** PASS — no DB/migration/RPC/service/query-cache/RBAC/RLS/permission/routing/validation/business-calculation/export/print/workflow/deployment change entered the PR; shared `ChartPanel` API/CSS remains unchanged.
-- **Workflow/deployment gate:** PASS — no workflow/deployment enabling change entered the PR.
-- **Development drift gate:** PASS — Development moved from feature baseline `d5ff0cb6755fd0aa4aa36597d42e7c77d4b6d4a8` to `2371a68d0b5903c26a854679732ac0e2f0a220a7` by one governance-only commit updating `DESIGN_QA_STATE.md`; no overlap with PR product/test/shared-component files.
-- **Role-state contradiction gate:** PASS — no current role state records a BLOCKING contradiction for REPORT014.
-- **Product Design exact-head closeout:** PENDING — current Product Design state is the pre-implementation authorization boundary and has not yet accepted or rejected exact PR HEAD `6f77f2b5aab911c9fa18afd3c78268255456a0ad`.
+## Gate record
 
-## Scope verified
+- **Base gate:** PASS — base exactly `design-system-v2-development`.
+- **Exact-head review gate:** PASS — QA `GREEN-DEV` on `6f77f2b5aab911c9fa18afd3c78268255456a0ad`.
+- **Product Design closeout:** PASS — exact same HEAD accepted with `PASS — NO DESIGN-SYSTEM BLOCKER`.
+- **Evidence honesty gate:** PASS — `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no executed PASS claimed.
+- **Known build/type failure gate:** PASS at known-evidence level — no known source-visible blocker; commit statuses contained no checks as expected under quota protection.
+- **Review-thread gate:** PASS — no inline review threads.
+- **Diff/scope gate:** PASS — UI/Test/owned-governance only.
+- **Functional isolation gate:** PASS — no DB/migration/RPC/service/query-cache/RBAC/RLS/permission/routing/validation/business-calculation/export/print/workflow/deployment change.
+- **Workflow/deployment gate:** PASS — no workflow/deployment enabling change.
+- **Development drift gate:** PASS — feature baseline `d5ff0cb6755fd0aa4aa36597d42e7c77d4b6d4a8` to pre-merge Development `fbf8ee5b3de560c8ec30956207c342820d896093` contained only the three role-state governance files (`DESIGN_QA_STATE.md`, `INTEGRATION_STATE.md`, `DESIGN_DIRECTOR_STATE.md`) and did not overlap product/test/shared-component scope.
+- **Role-state contradiction gate:** PASS — no current role state recorded a BLOCKING contradiction for REPORT014.
 
-REPORT014 remains the single bounded concern:
-- only chart `مقارنة المندوبين — أعلى 15` on `RepPerformancePage.tsx` moves from its page-local analytical shell to existing shared `ChartPanel`;
-- exact title/description, `salesTrust` Trust/Freshness presence/props, 300px loading/empty states and copy, `rows.slice(0, 15)` mapping/order, dynamic responsive height and complete BarChart/grid/axes/tooltip/revenue/returns configuration remain caller-owned and preserved;
-- Rep Performance detail table, KPIs, page header, filters/date controls, `SystemHealthBar`, `CustomTooltip`, shared component APIs/CSS and all query/calculation/ranking/trust/permission/routing/export/print/business semantics remain outside the diff.
+## Integrated system result
+
+REPORT014 remains exactly the bounded one-chart convergence:
+- chart `مقارنة المندوبين — أعلى 15` on `RepPerformancePage.tsx` now uses existing shared presentation-only `ChartPanel`;
+- exact title/description, `salesTrust` Trust/Freshness presence and props, 300px loading/empty behavior and copy, `rows.slice(0, 15)` mapping/order, dynamic responsive height and complete BarChart/grid/axes/tooltip/revenue/returns contract remain caller-owned and unchanged;
+- semantic page `h1 -> h2`, Arabic/RTL containment, semantic dark-mode surfaces and shared Card/SectionHeader spacing now come from the proven shared chart grammar;
+- Rep Performance detail table, KPIs, filters/date controls, `SystemHealthBar`, `CustomTooltip`, hooks, queries, calculations, ranking, trust semantics, permissions/RBAC/RLS, routing, export/print and business behavior remain unchanged.
 
 ## Continuity
 
-- Keep PR #62 unchanged while Product Design performs fresh exact-head acceptance or blocking judgment.
-- Any movement of PR HEAD invalidates the current Design QA approval and requires fresh exact-head review.
-- Do not mark REPORT014 DONE or advance the queue until the merge gate fully closes.
-- `TEAM_MEMORY.md`, `31_AGENT_TEAM_WORKSTREAM.md`, and `DECISION_LOG.md` remain unchanged in this run because no merge occurred and no durable rule changed.
-- No issue #27 comment is needed in this run: implementer/reviewer progression is normal and there is no persistent material blocker requiring coordination escalation.
-- No GitHub Actions, hosted CI, Vercel, preview branch or `main` action was performed.
+- `DS2-REPORT-014` is DONE with squash merge `a7096cdc86fb9fa55205556a10c8a5c13a6235d4`.
+- Exactly one next dependency-safe roadmap item moved to READY: `DS2-REPORT-015`.
+- Product Design must inspect the exact latest Development baseline and bound one smallest presentation-only REPORT015 concern before UI Production starts product code.
+- Settings/Admin, remaining Work/Field debt, shared component-depth work and Global Dark/RTL/accessibility/legacy cleanup remain preserved in the roadmap.
+- `DECISION_LOG.md` is unchanged because REPORT014 does not create or supersede a durable rule.
+- No GitHub Actions, hosted CI, Vercel, preview branch, deployment or `main` activity occurred.
 
 ### Cross-role handoff
-- **To:** Product Design Director; Development Integrator after Product Design closeout.
-- **What changed:** Integration independently revalidated PR #62 exact HEAD `6f77f2b5aab911c9fa18afd3c78268255456a0ad`; all currently available source/scope/isolation/review gates pass, but merge is waiting for Product Design's fresh exact-head closeout requested by Design QA.
-- **Preserve:** exact one-chart REPORT014 boundary; unchanged title/description/trust/state/data/chart configuration; unchanged shared `ChartPanel` API/CSS; no functional/backend/query/permission/routing/export/print/business semantics; no Actions/Vercel/preview/`main` activity.
-- **Need from you:** Product Design independently accept or block exact PR HEAD `6f77f2b5aab911c9fa18afd3c78268255456a0ad`. If accepted and the PR HEAD remains unchanged, Integrator should revalidate metadata/drift/threads/mergeability and may merge into `design-system-v2-development` if all normal gates remain valid.
-- **Blocker level:** `NONE` for implementation quality; coordination closeout pending.
-- **Baseline:** Development pre-state-write `2371a68d0b5903c26a854679732ac0e2f0a220a7`; exact PR #62 HEAD `6f77f2b5aab911c9fa18afd3c78268255456a0ad`.
+- **To:** Product Design Director.
+- **What changed:** PR #62 / REPORT014 was squash-merged as `a7096cdc86fb9fa55205556a10c8a5c13a6235d4`; Workstream now marks REPORT014 DONE and exactly one next item, REPORT015, READY.
+- **Preserve:** REPORT001-014 contracts; caller-owned analytics/query/calculation/trust/state/permission/routing/export/print/business semantics; `ChartPanel` remains presentation-only; full Settings/Admin, Work/Field, shared-component and Global roadmap remains intact.
+- **Need from you:** inspect the exact latest `design-system-v2-development` baseline and record one smallest dependency-safe REPORT015 presentation concern with representative file/surface and explicit acceptance boundary before implementation.
+- **Blocker level:** `NONE`.
+- **Baseline:** integrated product merge `a7096cdc86fb9fa55205556a10c8a5c13a6235d4`; pre-state-write Development HEAD `9a46109729d8430b2d45b71f05e28c751c34dbdc`.
