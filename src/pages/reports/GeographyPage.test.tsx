@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import GeographyPage from './GeographyPage'
 
 const mocks = vi.hoisted(() => ({
@@ -43,19 +43,62 @@ vi.mock('@/components/reports/FreshnessIndicator', () => ({
   default: () => <span data-testid="freshness-indicator" />,
 }))
 
-describe('Geography analysis-level selector convergence', () => {
+const longGeoName = 'منطقة جغرافية عربية ذات اسم طويل جداً لاختبار الالتفاف داخل بطاقة التقرير بدون تجاوز أفقي'
+const longParentName = 'مدينة أم ذات اسم عربي طويل جداً لاختبار التفاف سياق المستوى الأعلى داخل البطاقة'
+
+const geographyRows = [
+  {
+    geo_id: 'geo-1',
+    geo_name: longGeoName,
+    parent_name: longParentName,
+    net_revenue: 2500,
+    customer_count: 5,
+    transaction_count: 8,
+    revenue_share_pct: 62,
+  },
+  {
+    geo_id: 'geo-2',
+    geo_name: 'منطقة بلا مبيعات',
+    parent_name: null,
+    net_revenue: 0,
+    customer_count: 0,
+    transaction_count: 0,
+    revenue_share_pct: 0,
+  },
+]
+
+function setViewport(width: number) {
+  Object.defineProperty(window, 'innerWidth', {
+    configurable: true,
+    writable: true,
+    value: width,
+  })
+  act(() => window.dispatchEvent(new Event('resize')))
+}
+
+function getDistributionSection() {
+  const title = screen.getByText(/التوزيع حسب (محافظة|مدينة|منطقة)/)
+  return title.parentElement?.parentElement as HTMLElement
+}
+
+describe('Geography responsive detail collection', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    setViewport(1440)
     mocks.useSystemTrustState.mockReturnValue({ data: [], isLoading: false, error: null })
-    mocks.useTrustForComponent.mockReturnValue(null)
+    mocks.useTrustForComponent.mockReturnValue({
+      status: 'OK',
+      last_completed_at: '2026-09-21T00:00:00Z',
+      is_stale: false,
+    })
     mocks.useGeographySummary.mockReturnValue({
-      data: { total_revenue: 1200, covered_areas: 3 },
+      data: { total_revenue: 2500, covered_areas: 2 },
       isLoading: false,
     })
-    mocks.useGeographyTable.mockReturnValue({ data: [], isLoading: false })
+    mocks.useGeographyTable.mockReturnValue({ data: geographyRows, isLoading: false })
   })
 
-  it('uses the shared Select field contract with the exact accessible Arabic options', () => {
+  it('preserves the shared Select contract and exact controlled geography filter shape', () => {
     render(<GeographyPage />)
 
     const select = screen.getByRole('combobox', { name: 'مستوى التحليل الجغرافي' }) as HTMLSelectElement
@@ -71,12 +114,7 @@ describe('Geography analysis-level selector convergence', () => {
     ])
     expect(select.value).toBe('governorate')
     expect(screen.getByTestId('report-filter-bar')).toBeTruthy()
-  })
 
-  it('keeps GeoLevel controlled by the page and forwards the unchanged filter shape after selection', () => {
-    render(<GeographyPage />)
-
-    const select = screen.getByRole('combobox', { name: 'مستوى التحليل الجغرافي' }) as HTMLSelectElement
     fireEvent.change(select, { target: { value: 'city' } })
 
     expect(select.value).toBe('city')
@@ -92,5 +130,118 @@ describe('Geography analysis-level selector convergence', () => {
     }))
     expect(screen.getByText('مدينة مغطاة')).toBeTruthy()
     expect(screen.getByText('التوزيع حسب مدينة')).toBeTruthy()
+  })
+
+  it('preserves the dense governorate Desktop table, semantic headers, row facts, and no card renderer', () => {
+    render(<GeographyPage />)
+
+    const section = getDistributionSection()
+    const table = within(section).getByRole('table')
+    const headers = within(table).getAllByRole('columnheader')
+
+    expect(headers.map(header => header.textContent)).toEqual([
+      'محافظة',
+      'صافى الإيراد',
+      'عملاء',
+      'صفقات',
+      'الحصة%',
+    ])
+    headers.forEach(header => expect(header.getAttribute('scope')).toBe('col'))
+    expect(within(table).getByText(longGeoName)).toBeTruthy()
+    expect(within(table).getByText('2,500 ج.م')).toBeTruthy()
+    expect(within(table).getByText('5')).toBeTruthy()
+    expect(within(table).getByText('8')).toBeTruthy()
+    expect(within(table).getByText('62%')).toBeTruthy()
+    expect(section.querySelector('.ds-responsive-card-grid')).toBeNull()
+    expect(within(section).getByTestId('trust-state-badge')).toBeTruthy()
+    expect(within(section).getByTestId('freshness-indicator')).toBeTruthy()
+  })
+
+  it('keeps the conditional parent column and fallback in the Desktop city renderer', () => {
+    render(<GeographyPage />)
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'مستوى التحليل الجغرافي' }), { target: { value: 'city' } })
+
+    const section = getDistributionSection()
+    const table = within(section).getByRole('table')
+    const headers = within(table).getAllByRole('columnheader')
+
+    expect(headers.map(header => header.textContent)).toEqual([
+      'مدينة',
+      'الأم',
+      'صافى الإيراد',
+      'عملاء',
+      'صفقات',
+      'الحصة%',
+    ])
+    headers.forEach(header => expect(header.getAttribute('scope')).toBe('col'))
+    expect(within(table).getByText(longParentName)).toBeTruthy()
+    expect(within(table).getByText('—')).toBeTruthy()
+  })
+
+  it('mounts only one-column Mobile cards with complete row truth, wrapping, conditional parent omission, and LTR numeric values', () => {
+    setViewport(390)
+    render(<GeographyPage />)
+
+    const section = getDistributionSection()
+    expect(within(section).queryByRole('table')).toBeNull()
+    expect(section.querySelector('.ds-responsive-card-grid--mobile')).not.toBeNull()
+    expect(section.querySelector('.ds-responsive-card-grid--tablet')).toBeNull()
+    expect(section.querySelector('.ds-key-value-list--cols-1')).not.toBeNull()
+    expect(within(section).queryByText('الأم')).toBeNull()
+
+    const longName = within(section).getByText(longGeoName)
+    expect(longName.style.overflowWrap).toBe('anywhere')
+
+    ;['صافى الإيراد', 'عملاء', 'صفقات', 'الحصة%'].forEach(label => {
+      expect(within(section).getAllByText(label).length).toBeGreaterThan(0)
+    })
+
+    expect(within(section).getByText('2,500 ج.م').getAttribute('dir')).toBe('ltr')
+    expect(within(section).getByText('5').getAttribute('dir')).toBe('ltr')
+    expect(within(section).getByText('8').getAttribute('dir')).toBe('ltr')
+    expect(within(section).getByText('62%').getAttribute('dir')).toBe('ltr')
+  })
+
+  it('uses deliberate two-column Tablet cards and preserves conditional parent truth with wrapping and fallback', () => {
+    setViewport(900)
+    render(<GeographyPage />)
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'مستوى التحليل الجغرافي' }), { target: { value: 'city' } })
+
+    const section = getDistributionSection()
+    expect(within(section).queryByRole('table')).toBeNull()
+    expect(section.querySelector('.ds-responsive-card-grid--tablet')).not.toBeNull()
+    expect(section.querySelector('.ds-responsive-card-grid--mobile')).toBeNull()
+    expect(section.querySelector('.ds-key-value-list--cols-2')).not.toBeNull()
+    expect(within(section).getAllByText('الأم')).toHaveLength(2)
+
+    const parent = within(section).getByText(longParentName)
+    expect(parent.style.overflowWrap).toBe('anywhere')
+    expect(within(section).getByText('—')).toBeTruthy()
+  })
+
+  it('preserves the exact five-row loading state and exact empty copy before any ready renderer mounts', () => {
+    setViewport(390)
+    mocks.useGeographyTable.mockReturnValue({ data: geographyRows, isLoading: true })
+    const { rerender } = render(<GeographyPage />)
+
+    let section = getDistributionSection()
+    const loadingCollection = section.querySelector('[data-collection-state="loading"]') as HTMLElement
+    expect(loadingCollection).not.toBeNull()
+    const loadingSkeletons = within(loadingCollection).getAllByTestId('skeleton-card')
+    expect(loadingSkeletons).toHaveLength(5)
+    loadingSkeletons.forEach(skeleton => expect(skeleton.getAttribute('data-height')).toBe('44'))
+    expect(section.querySelector('.ds-responsive-card-grid')).toBeNull()
+    expect(within(section).queryByRole('table')).toBeNull()
+
+    mocks.useGeographyTable.mockReturnValue({ data: [], isLoading: false })
+    rerender(<GeographyPage />)
+
+    section = getDistributionSection()
+    expect(section.querySelector('[data-collection-state="empty"]')).not.toBeNull()
+    expect(within(section).getByText('لا توجد بيانات — شغّل watermark sweep أولاً')).toBeTruthy()
+    expect(section.querySelector('.ds-responsive-card-grid')).toBeNull()
+    expect(within(section).queryByRole('table')).toBeNull()
   })
 })
