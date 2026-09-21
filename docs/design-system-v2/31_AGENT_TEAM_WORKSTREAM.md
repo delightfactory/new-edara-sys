@@ -102,19 +102,39 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-018 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
+### DS2-REPORT-018 — Treasury daily cashflow chart-panel convergence
 Status: `READY`
-Owner role for immediate next action: Product Design Director
+Owner role for immediate next action: UI Production Engineer
+Representative surface: `src/pages/reports/TreasuryPage.tsx` → `التدفق النقدي اليومي` chart section only.
 
-Intent:
-- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline before implementation;
-- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance boundary;
-- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
-- preserve REPORT001-017 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/business semantics;
-- preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
-- do not turn REPORT018 into broad multi-page report beautification.
+System intent:
+- converge the remaining page-local analytical Card/header shell onto the already-proven shared `ChartPanel` presentation contract;
+- preserve Treasury data, trust/freshness, state precedence and chart semantics entirely in the caller;
+- make the section hierarchy semantic (`h1` page → shared `h2` chart section) while retaining Arabic-first wrapping, RTL composition and responsive containment;
+- prove the neutral shared chart-panel grammar on Treasury without widening shared APIs, CSS or tokens.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+Acceptance boundary:
+- replace only the local surface/header composition around `التدفق النقدي اليومي` with `ChartPanel`;
+- preserve exact title `التدفق النقدي اليومي` and exact description `net_cashflow — مجمّع يومياً في قاعدة البيانات`;
+- preserve the existing TrustStateBadge + FreshnessIndicator action cluster and allow it to wrap safely on compact widths;
+- preserve state precedence and copy exactly: blocked/failed surface at `280px`, loading `SkeletonCard height={280}`, empty `لا توجد تدفقات خزينية في هذه الفترة`, then ready chart;
+- preserve `chartData` mapping (`date / inflow / outflow / net`), caller-owned ordering and all current `ResponsiveContainer`, `AreaChart`, margin, gradient ids/colors/opacities, grid, axes, tooltip, reference line and three Area-series names/strokes/fills/widths unchanged;
+- Mobile/Tablet/Desktop must retain 100% chart containment with no new page-level horizontal overflow; compact header/action wrapping must remain legible and touch-neutral because the badges are informational, not actions;
+- preserve dark-mode/RTL behavior through existing semantic surfaces/tokens; do not introduce a page-local palette or alter current chart-series colors;
+- focused tests must protect the shared `ChartPanel` adoption, semantic heading hierarchy, exact title/description/action presence, blocked/loading/empty/ready precedence and unchanged chart configuration/data mapping; evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved runtime actually executes them.
+
+Explicit exclusions:
+- Treasury page header and `ReportFilterBar`;
+- the semantic-contract notice;
+- `SystemHealthBar`;
+- all three `MetricCard` KPIs and summary loading behavior;
+- `CustomTooltip` behavior/content;
+- hook/query/cache/data mapping semantics beyond verifying they remain unchanged;
+- calculations, trust resolution, permissions/RBAC/RLS, routing, backend/service contracts, validation, export/print and workflow/business semantics;
+- `ChartPanel` API, shared CSS/tokens or any other report surface.
+
+Stop rule:
+If implementation requires any excluded shared-system widening or functional/data-semantic change, mark REPORT018 `BLOCKED` instead of broadening the PR.
 
 ## Product migration roadmap
 
@@ -164,7 +184,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-017` — `DONE`
-- `DS2-REPORT-018 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY`
+- `DS2-REPORT-018 — Treasury daily cashflow chart-panel convergence` — `READY`
 - further Reports/Analytics convergence beyond REPORT018 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
