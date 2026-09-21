@@ -2,67 +2,65 @@
 
 ## Reviewed baseline
 
-- Review date: `2026-09-20`.
+- Review date: `2026-09-21`.
 - Development branch: `design-system-v2-development`.
-- Current Development HEAD immediately before this state write: `a8f03a9e5331661e70b07a08a77200478b8bc52e`.
+- Exact Development HEAD immediately before this state write: `a33970f4b4962731094e8f447a255eb9e7621e8b`.
 - Latest integrated product merge remains: `7935e461e3c212eb187fe56bbb14ebe3e427f874` from PR #59 / `DS2-REPORT-012`.
 - Current roadmap slice: `DS2-REPORT-013 — Churn Risk responsive detail-collection convergence`.
-- Active implementation PR targeting Development at final recheck: none.
-- Integration disposition: `NO_MERGE — SOURCE_CONTRACT_BLOCKER_RESOLVED / WAITING_FOR_UI_IMPLEMENTATION`.
-- Build/test/lint/runtime/preview/release PASS for REPORT013: not claimed.
+- Active implementation PR: `#61 — DS2-REPORT-013: converge Churn Risk responsive collection`.
+- Exact current PR HEAD: `eb6332a38c63935955c6057b3619cf86bfa284e8`.
+- PR state at final recheck: `OPEN / DRAFT / mergeable=true`, base exactly `design-system-v2-development`.
+- Integration disposition: `NO_MERGE — WAITING_FRESH_PRODUCT_DESIGN_EXACT_HEAD_CLOSEOUT`.
+- Review evidence: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` on the exact current PR HEAD.
+- Exact-head build/test/lint/runtime/preview/release PASS: not claimed.
 
 ## Integrator decision
 
-**NO MERGE.**
+**NO MERGE in this run.**
 
-There is no active implementation PR targeting `design-system-v2-development`, so the normal PR base/head/review/diff gates are not yet applicable.
+The implementation and Design QA gates are otherwise clean on exact PR HEAD `eb6332a38c63935955c6057b3619cf86bfa284e8`, but the current Product Design Director state is still the pre-implementation corrected REPORT013 boundary and has not independently accepted or blocked this exact implementation HEAD. Design QA's current cross-role handoff explicitly requests fresh Product Design exact-head acceptance before Integration acts. Because that professional closeout is still pending, Integration does not convert the Draft PR or merge it yet.
 
-The previously recorded Product Design source-contract blocker has materially changed and is now resolved. Product Design explicitly accepted the UI Production blocker, re-inspected the live Development source/data contract, and superseded the incorrect REPORT013 fact model with the actual current six-fact RFM contract.
-
-The corrected REPORT013 boundary now preserves the live Churn Risk source truth exactly:
-
-- section: `تفاصيل العملاء — مرتب: معرض للخطر أولاً`;
-- Desktop columns/order: `العميل`, `التصنيف`, `RFM Score`, `أيام منذ آخر شراء`, `تكرار (90 يوم)`, `قيمة (90 يوم)`;
-- `CustomerRiskRow` truth remains caller-owned: `customer_id`, `customer_name`, `risk_label`, `rfm_score`, `recency_days`, `frequency_l90d`, `monetary_l90d`;
-- Tablet/Mobile may use existing presentation-only `ResponsiveCollection + Card + KeyValueList` from the same unchanged row data, with exactly one mounted renderer;
-- no invoice-count, total-spend, average-invoice or other invented fact is part of the slice;
-- blocked/loading/empty/trust/freshness behavior and all query/type/calculation/classification/permission/routing/export/print/business semantics remain unchanged.
-
-UI Production's earlier `BLOCKING` state was valid against the superseded Product Design boundary, but its blocker premise is now stale because Product Design explicitly corrected that boundary on the later Development baseline. This is not permission to merge or bypass QA; it only clears the coordination blocker so UI Production may start the corrected slice.
+This is a normal in-flight coordination gate, not a functional blocker and not a request for hosted CI.
 
 ## Current gate status
 
-- Active PR gate: not applicable; no Development-targeting implementation PR exists.
-- Product Design/source-contract contradiction: **RESOLVED** by corrected Product Design state and workstream boundary.
-- Current Integration gate: **WAITING_FOR_IMPLEMENTATION**.
-- Design QA approval: none exists for REPORT013 yet; REPORT012 QA state is lifecycle-stale for this slice.
-- Exact-head `AGENT-REVIEW: GREEN-DEV`: not present because no REPORT013 PR exists.
-- `SOURCE_REVIEW_PASS` / test evidence label: not present because no REPORT013 PR exists.
-- Known build/type failure: none established for REPORT013; no execution evidence is claimed.
-- Hosted CI absence is expected and not a blocker; no Actions were triggered.
-- No Vercel, preview-branch, workflow/deployment or `main` action was performed.
+- **Base gate:** PASS — PR base is exactly `design-system-v2-development`.
+- **Exact-head review gate:** PASS — Design QA recorded `AGENT-REVIEW: GREEN-DEV` for exact HEAD `eb6332a38c63935955c6057b3619cf86bfa284e8`.
+- **Evidence honesty gate:** PASS — reviewer recorded `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview/release evidence is claimed.
+- **Known build/type failure gate:** PASS at known-evidence level — no source-visible build/type blocker is outstanding; commit status collection contains no statuses, which is expected under quota protection and is not treated as a failure.
+- **Review-thread gate:** PASS — no inline review threads are open.
+- **Diff/scope gate:** PASS — exactly three files: `src/pages/reports/ChurnRiskPage.tsx`, `src/pages/reports/ChurnRiskPage.test.tsx`, and UI Production's owned state.
+- **Functional isolation gate:** PASS — no DB/migration/RPC/service/query-cache/RBAC/RLS/permission/routing/validation/business-calculation/export/print/workflow/deployment change is present; shared `ResponsiveCollection`, `Card`, and `KeyValueList` contracts are consumed unchanged.
+- **Development drift gate:** PASS — the PR feature baseline is `78bba4c2a6ece53150327c0be8cd29594c1c2ab6`; current Development is only one governance commit ahead (`DESIGN_QA_STATE.md`), with no overlap in PR product/test/shared-pattern files.
+- **Role-state contradiction gate:** no current material BLOCKING contradiction remains. UI Production's Development-branch blocker is lifecycle-stale and explicitly superseded by Product Design's corrected source contract plus the feature-branch UI state and Design QA review.
+- **Product Design exact-head closeout:** PENDING — Director state predates PR #61 and exact HEAD `eb6332a3...`; QA explicitly handed the same-head implementation to Product Design before Integration.
 
-## Shared pattern / risk assessment
+## Scope / system-fit verification
 
-The corrected slice remains dependency-safe and aligned with the North Star: preserve dense semantic Desktop comparison while giving Tablet/Mobile a deliberate shared responsive collection composition from the same caller-owned RFM data.
+The PR stays inside the corrected REPORT013 presentation-only boundary:
 
-The critical invariant remains unchanged: shared components may own presentation/orchestration only. They must not synthesize missing business facts, reinterpret RFM/churn semantics, or alter trust/query/calculation behavior.
+- Desktop preserves the exact dense six-column RFM table/order and local overflow, with `scope="col"` hardening only.
+- Tablet/Mobile reuse existing `ResponsiveCollection + Card + KeyValueList` from the same unchanged `CustomerRiskRow` truth, with exactly one renderer mounted.
+- Customer name-or-truncated-ID fallback, `RiskBadge`, `rfm_score`, `RecencyCell`, `frequency_l90d ×`, `fmtCur(monetary_l90d)`, blocked/loading/empty precedence and exact copy, Trust/Freshness/SystemHealth and REPORT010 pie behavior remain caller-owned and unchanged.
+- No invoice-count/spend/average-order semantics were invented.
+- No shared API/CSS widening or deployment/workflow change entered the diff.
 
-`DECISION_LOG.md` remains unchanged because no durable rule changed or was superseded.
+Focused tests protect the intended device renderer isolation, exact six-fact mapping, Arabic wrapping, LTR numeric treatment, state precedence/copy, column semantics, trust/freshness and preservation of the prior pie-chart contract, but remain honestly unexecuted.
 
 ## Continuity
 
 - `DS2-REPORT-012` remains DONE.
-- `DS2-REPORT-013` remains the single READY slice, now on the corrected live RFM source contract.
-- UI Production may branch only from the latest `design-system-v2-development` HEAD and implement the corrected bounded concern.
-- Integration must remain `NO_MERGE` until a future exact PR HEAD receives fresh `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`, an honest test evidence label, no material blocker, and all normal functional-isolation/scope gates pass.
-- Preserve the full North-Star roadmap; no ad-hoc substitute slice is authorized.
-- `TEAM_MEMORY.md` is not modified by Integration because no merge occurred.
+- `DS2-REPORT-013` remains the single active slice; no queue advancement occurs before merge.
+- Do not mark the Draft PR ready or merge until Product Design independently closes out the exact unchanged PR HEAD, or explicitly records that no fresh design closeout is required.
+- Any PR HEAD movement invalidates the current QA approval and requires fresh exact-head review.
+- Preserve the full North-Star roadmap; no substitute slice is authorized.
+- `TEAM_MEMORY.md`, `31_AGENT_TEAM_WORKSTREAM.md`, and `DECISION_LOG.md` remain unchanged because no merge or durable-rule change occurred.
+- No GitHub Actions, hosted CI, Vercel, preview branch or `main` action was performed.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer; then Design QA on the future exact PR HEAD.
-- **What changed:** Product Design corrected and superseded the faulty REPORT013 data contract; the previous Integration blocker is resolved, but there is still no implementation PR to merge.
-- **Preserve:** exact current Churn Risk RFM row truth/order; current name-or-truncated-ID fallback; `RiskBadge`, `rfm_score`, `RecencyCell`, `frequency_l90d`, `fmtCur(monetary_l90d)`; exact blocked/loading/empty precedence and copy; current SystemHealth/trust/freshness behavior; dense semantic Desktop table; deliberate Tablet/Mobile `ResponsiveCollection + Card + KeyValueList`; exactly one mounted renderer; Arabic/RTL containment with appropriate LTR numeric treatment; unchanged shared APIs/CSS and all query/type/calculation/classification/permission/routing/export/print/business semantics; no Actions/Vercel/preview/`main` activity.
-- **Need from you:** UI Production should implement only the corrected REPORT013 boundary from the latest Development HEAD and open one PR targeting `design-system-v2-development`; Design QA must then review the exact stable PR HEAD independently before Integration can act.
-- **Blocker level:** `NONE` for the corrected Product Design source contract; Integration remains `NO_MERGE` pending implementation/review evidence.
-- **Baseline:** Development pre-write HEAD `a8f03a9e5331661e70b07a08a77200478b8bc52e`; latest product integration `7935e461e3c212eb187fe56bbb14ebe3e427f874`; no active implementation PR at final recheck.
+- **To:** Product Design Director; Development Integrator after fresh same-head closeout.
+- **What changed:** PR #61 now has exact-head Design QA `GREEN-DEV + SOURCE_REVIEW_PASS` with honest `TESTS_AUTHORED_NOT_EXECUTED`, clean scope/threads/drift/functional-isolation gates, and remains Draft/mergeable; Integration is waiting only for fresh Product Design acceptance or block on the same exact HEAD.
+- **Preserve:** one-section REPORT013 scope; exact six-fact RFM truth/order; name-or-truncated-ID fallback; RiskBadge/RFM/Recency/frequency/monetary semantics; exact blocked/loading/empty behavior; Trust/Freshness/SystemHealth; dense Desktop table; deliberate Tablet/Mobile shared-card composition with one mounted renderer; Arabic wrapping/RTL plus LTR numeric treatment; unchanged shared APIs/CSS and all query/type/calculation/classification/permission/routing/export/print/business semantics.
+- **Need from you:** Product Design independently inspect PR #61 exact HEAD `eb6332a38c63935955c6057b3619cf86bfa284e8` and record `PASS — NO DESIGN-SYSTEM BLOCKER` or a concrete blocker. If PASS and the PR HEAD remains unchanged, Integration may revalidate the final gates, mark the Draft ready, and squash-merge to `design-system-v2-development`.
+- **Blocker level:** `NONE` for implementation/QA; coordination gate pending Product Design exact-head closeout.
+- **Baseline:** Development pre-write HEAD `a33970f4b4962731094e8f447a255eb9e7621e8b`; exact PR #61 HEAD `eb6332a38c63935955c6057b3619cf86bfa284e8`.
