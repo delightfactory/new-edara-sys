@@ -34,15 +34,45 @@ vi.mock('@/hooks/useCustomerHealth', () => ({
 }))
 
 vi.mock('@/components/reports/MetricCard', () => ({
-  default: ({ label, value }: { label: string; value: string | number | null }) => (
-    <article data-testid="report-metric-card" data-label={label}>
+  default: ({
+    label,
+    value,
+    subtitle,
+    status,
+    lastCompletedAt,
+    isStale,
+    domain,
+    secondary,
+  }: {
+    label: string
+    value: string | number | null
+    subtitle?: string
+    status?: string | null
+    lastCompletedAt?: string | null
+    isStale?: boolean | null
+    domain?: string
+    secondary?: { label: string; value: string }
+  }) => (
+    <article
+      data-testid="report-metric-card"
+      data-label={label}
+      data-subtitle={subtitle}
+      data-status={status ?? undefined}
+      data-last-completed-at={lastCompletedAt ?? undefined}
+      data-is-stale={isStale == null ? undefined : String(isStale)}
+      data-domain={domain}
+      data-secondary-label={secondary?.label}
+      data-secondary-value={secondary?.value}
+    >
       {value ?? '—'}
     </article>
   ),
 }))
 
 vi.mock('@/components/reports/SkeletonCard', () => ({
-  default: () => <div data-testid="skeleton-card" />,
+  default: ({ height }: { height?: number }) => (
+    <div data-testid="skeleton-card" data-height={height == null ? undefined : String(height)} />
+  ),
 }))
 
 vi.mock('@/components/reports/SystemHealthBar', () => ({
@@ -100,7 +130,7 @@ describe('Reports Overview summary metric composition', () => {
     const { container } = renderPage()
 
     const metricGrids = container.querySelectorAll('[data-metric-grid]')
-    expect(metricGrids).toHaveLength(1)
+    expect(metricGrids).toHaveLength(2)
 
     const grid = metricGrids[0] as HTMLElement
     expect(grid.className).toContain('ds-metric-grid')
@@ -124,6 +154,51 @@ describe('Reports Overview summary metric composition', () => {
     ])
   })
 
+  it('uses a second shared two-column MetricGrid for customer health while preserving card order and values', () => {
+    const { container } = renderPage()
+
+    const metricGrids = container.querySelectorAll('[data-metric-grid]')
+    expect(metricGrids).toHaveLength(2)
+
+    const customerGrid = metricGrids[1] as HTMLElement
+    expect(customerGrid.className).toContain('ds-metric-grid')
+    expect(customerGrid.className).toContain('ds-metric-grid--cols-2')
+    expect(customerGrid.getAttribute('data-columns')).toBe('2')
+    expect(customerGrid.className).not.toContain('report-grid')
+
+    const cards = within(customerGrid).getAllByTestId('report-metric-card')
+    expect(cards).toHaveLength(2)
+    expect(cards.map(card => card.getAttribute('data-label'))).toEqual([
+      'إجمالي العملاء النشطين',
+      'متوسط قيمة العميل',
+    ])
+    expect(cards.map(card => card.textContent)).toEqual(['12', '250 ج.م'])
+    expect(cards[0]).toHaveAttribute('data-secondary-label', 'خامدون')
+    expect(cards[0]).toHaveAttribute('data-secondary-value', '3')
+    expect(cards[1]).toHaveAttribute('data-subtitle', 'آخر 90 يوماً')
+    expect(cards[1]).toHaveAttribute('data-secondary-label', 'متوسط أيام الخمود')
+    expect(cards[1]).toHaveAttribute('data-secondary-value', '18 يوم')
+  })
+
+  it('preserves customer trust, freshness, stale state and domain wiring on both customer-health cards', () => {
+    mocks.useTrustForComponent.mockImplementation((_rows, component: string) => (
+      component === 'snapshot_customer_health'
+        ? { status: 'SUCCESS', last_completed_at: '2026-09-21T12:00:00Z', is_stale: true }
+        : null
+    ))
+
+    const { container } = renderPage()
+    const customerGrid = container.querySelectorAll('[data-metric-grid]')[1] as HTMLElement
+    const cards = within(customerGrid).getAllByTestId('report-metric-card')
+
+    cards.forEach(card => {
+      expect(card).toHaveAttribute('data-status', 'SUCCESS')
+      expect(card).toHaveAttribute('data-last-completed-at', '2026-09-21T12:00:00Z')
+      expect(card).toHaveAttribute('data-is-stale', 'true')
+      expect(card).toHaveAttribute('data-domain', 'customers')
+    })
+  })
+
   it('keeps the existing four-card loading state inside the shared summary grid', () => {
     mocks.useSalesSummary.mockReturnValue({ data: null, isLoading: true })
 
@@ -132,5 +207,21 @@ describe('Reports Overview summary metric composition', () => {
 
     expect(within(grid).getAllByTestId('skeleton-card')).toHaveLength(4)
     expect(within(grid).queryByTestId('report-metric-card')).toBeNull()
+  })
+
+  it('keeps the customer-health loading branch as one 120px skeleton without mounting the customer grid', () => {
+    mocks.useCustomerHealthSummary.mockReturnValue({ data: null, isLoading: true })
+
+    const { container, getAllByTestId } = renderPage()
+    const metricGrids = container.querySelectorAll('[data-metric-grid]')
+    expect(metricGrids).toHaveLength(1)
+
+    const skeletons = getAllByTestId('skeleton-card')
+    expect(skeletons).toHaveLength(1)
+    expect(skeletons[0]).toHaveAttribute('data-height', '120')
+
+    const readyCards = within(metricGrids[0] as HTMLElement).getAllByTestId('report-metric-card')
+    expect(readyCards.map(card => card.getAttribute('data-label'))).not.toContain('إجمالي العملاء النشطين')
+    expect(readyCards.map(card => card.getAttribute('data-label'))).not.toContain('متوسط قيمة العميل')
   })
 })
