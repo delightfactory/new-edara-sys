@@ -175,19 +175,46 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-026 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
-Status: `READY`
-Owner role for immediate next action: Product Design Director
+### DS2-REPORT-026 — Product Performance summary metric-grid convergence
+Status: `READY — BOUNDED`
+Owner role for immediate next action: UI Production Engineer
+Representative surface: `src/pages/reports/ProductPerformancePage.tsx` — the four-card KPI summary only.
+Development source baseline inspected: `923081b585db5a09ca7a57d240adec14896cc3ad`.
 
 Intent:
-- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline before implementation;
-- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance/exclusion boundary;
-- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
-- preserve REPORT001-025 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
-- preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
-- do not turn REPORT026 into broad multi-page report beautification.
+- replace only the Product Performance KPI-summary outer `report-grid` wrapper with existing shared `MetricGrid columns={4}`;
+- keep `MetricGrid` layout-only: all metric values, calculations, trust/freshness/status and report/business meaning remain caller-owned;
+- preserve the existing summary gate exactly as `isLoading = summaryLoading || tableLoading`;
+- preserve exactly four `SkeletonCard height={160}` placeholders in loading;
+- preserve the exact ready-card order and contracts: `إجمالى الإيراد` → `منتجات نشطة` → `أعلى منتج` → `متوسط نسبة المرتجع`, including labels, subtitles, formatters, sales-trust status/freshness/stale wiring, `domain="sales"` and current icons;
+- use the unchanged shared device grammar: Desktop 4 columns, Tablet 2 columns, Mobile 1 column, with no ordinary summary-grid horizontal overflow;
+- preserve Arabic/RTL copy and caller-owned LTR numeric/currency/percentage treatment.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+Explicit exclusions:
+- no change to `avgReturnRate`, summary/table data shaping, hooks, Supabase category RPC, queries/cache, calculations or report/business semantics;
+- no change to page heading, category selector, `ReportFilterBar`, `SystemHealthBar`, trust-key selection or permissions;
+- no change to the REPORT011 Product Performance `ChartPanel`, its 240px loading/empty/chart geometry/data/axes/grid/tooltip/revenue-series contract or Trust/Freshness action;
+- no change to the REPORT006 Product Performance detail `ResponsiveCollection`, Desktop seven-column table, Tablet/Mobile cards, KeyValueList facts, return-rate semantics, loading/empty behavior or renderer isolation;
+- no conversion or redesign of the existing report-domain `MetricCard`s;
+- no shared `MetricGrid`/`MetricCard` API, CSS, token or breakpoint widening;
+- no routing, RBAC/RLS, validation, export/print, backend/service, workflow or business behavior change.
+
+Device / state / accessibility acceptance:
+- Desktop `>=1025px`: four KPI cards remain directly comparable in one row under the existing shared `columns={4}` contract;
+- Tablet `769–1024px`: two-column touch-friendly composition;
+- Mobile `<=768px`: one-column stack with Arabic labels and long numeric values contained safely;
+- summary remains passive informational UI; no keyboard/focus/touch/action semantics are added or removed;
+- loading remains exactly four 160px placeholders under the same combined loading gate;
+- existing chart/detail loading/empty and Trust/Freshness semantics remain isolated and unchanged.
+
+Focused evidence required:
+- assert shared `[data-metric-grid]` adoption with `data-columns="4"` / shared four-column class contract;
+- assert exact four ready-card labels/order;
+- assert exactly four `160px` summary skeletons inside MetricGrid when either summary or table loading drives `isLoading`;
+- assert the bounded summary no longer uses `.report-grid` while existing REPORT006/011 chart/detail tests remain intact;
+- evidence label remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved exact-head local execution occurs; hosted CI remains forbidden.
+
+If implementation requires shared-contract widening, changes any excluded functional/report concern, or cannot preserve the above contracts, mark REPORT026 `BLOCKED` rather than expanding the slice.
 
 ## Product migration roadmap
 
@@ -239,7 +266,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-025` — `DONE`
-- `DS2-REPORT-026 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY`
+- `DS2-REPORT-026 — Product Performance summary metric-grid convergence` — `READY — BOUNDED`
 - further Reports/Analytics convergence beyond REPORT026 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
