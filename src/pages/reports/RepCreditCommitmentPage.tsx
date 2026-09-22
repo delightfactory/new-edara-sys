@@ -21,6 +21,7 @@ import {
 } from '@/lib/services/rep-credit'
 import { DocumentActions } from '@/features/output/components/DocumentActions'
 import { computeCreditState } from '@/components/shared/CustomerCreditChip'
+import MetricGrid from '@/components/patterns/MetricGrid'
 
 // ─────────────────────────────────────────────────────────────
 // Helpers
@@ -254,11 +255,6 @@ const css = {
     color: 'var(--text-muted)',
     marginTop: 'var(--space-1)',
     margin: 'var(--space-1) 0 0',
-  },
-  kpiGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-    gap: 'var(--space-4)',
   },
   kpiCard: (accent: string) => ({
     background: 'var(--bg-surface)',
@@ -1371,7 +1367,7 @@ export default function RepCreditCommitmentPage() {
 
         {/* ── KPI Cards skeleton ── */}
         {isLoading && (
-          <div style={css.kpiGrid}>
+          <MetricGrid columns={4}>
             {[1, 2, 3, 4].map(i => (
               <div key={i} style={{
                 ...css.kpiCard('#e2e8f0'),
@@ -1380,13 +1376,13 @@ export default function RepCreditCommitmentPage() {
                 animation: 'shimmer 1.5s infinite',
               }} />
             ))}
-          </div>
+          </MetricGrid>
         )}
 
         {/* ── KPI Cards (مشتقة من الـ rows المفلترة) ── */}
         {!isLoading && rows.length > 0 && (
           <>
-            <div style={css.kpiGrid}>
+            <MetricGrid columns={4}>
               <div style={css.kpiCard('var(--color-primary)')}>
                 <span style={css.kpiLabel}>مسؤولو المحافظ</span>
                 <span style={css.kpiValue('var(--color-primary)')}>{summary.totalReps}</span>
@@ -1410,7 +1406,7 @@ export default function RepCreditCommitmentPage() {
                 <span style={css.kpiValue('var(--color-success)')}>{fmt(summary.totalConfirmedCollections)}</span>
                 <span style={css.kpiSub}>إيصالات confirmed فقط</span>
               </div>
-            </div>
+            </MetricGrid>
 
             {/* Unassigned warning */}
             {summary.hasUnassigned && (
