@@ -38,12 +38,12 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-027`.
+Product UI is integrated through `DS2-REPORT-028`.
 
 Latest product integration:
-- PR: `#75 — DS2-REPORT-027: Churn Risk filter-control field convergence`
-- Exact reviewed PR HEAD: `2beb65da6a2b46f3e1bf831471c55b9a5bbf8f5a`
-- Squash merge commit: `d9a1fb373142cac8c9f7f1b7545d340f99298f8a`
+- PR: `#76 — DS2-REPORT-028: Profitability summary metric-grid convergence`
+- Exact reviewed PR HEAD: `cd7ac87d0839a7e7706858afb4efbdea2025ff8e`
+- Squash merge commit: `337cf967ab1159968866811be194aec359c43f66`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact HEAD
 - Runtime/preview/release evidence: not claimed
@@ -73,50 +73,32 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - `DS2-REPORT-001` through `DS2-REPORT-025` — `DONE`; detailed reviewed/merge SHA evidence remains preserved in Git history and prior workstream revisions.
 - `DS2-REPORT-026 — Product Performance summary metric-grid convergence` — `DONE` — PR #74 — reviewed HEAD `f3b2386130924ee375f1912190a6ad82befe0065` — merge `9ac63ca20baaeefa6fe5cb3e87a9734f59847ac5` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-027 — Churn Risk filter-control field convergence` — `DONE` — PR #75 — reviewed HEAD `2beb65da6a2b46f3e1bf831471c55b9a5bbf8f5a` — merge `d9a1fb373142cac8c9f7f1b7545d340f99298f8a` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
+- `DS2-REPORT-028 — Profit Dashboard summary metric-grid convergence` — `DONE` — PR #76 — reviewed HEAD `cd7ac87d0839a7e7706858afb4efbdea2025ff8e` — merge `337cf967ab1159968866811be194aec359c43f66` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 
-## REPORT027 system result
+## REPORT028 system result
 
-- Churn Risk's page-header risk classifier now uses the existing shared V2 `Select` / `Field` grammar instead of page-local native styling.
-- Its single `بتاريخ:` as-of-date control now uses existing shared `DateField` / `Input` / `Field` grammar.
-- Exact `riskLabel ?? ''`, clearing to `undefined`, option order/values/copy, `asOfDate`, `max={today}`, date onChange and both customer-risk hook inputs remain caller-owned and unchanged.
-- Arabic/RTL composition and accessible naming/label association improve through the shared Field contract; existing wrapped header remains contained across Mobile/Tablet/Desktop and shared touch sizing remains authoritative through Tablet.
-- The five-card KPI summary, ChartPanel/pie/trust/SystemHealthBar, responsive detail collection, Desktop table, Tablet/Mobile cards, loading/blocked/empty behavior and all business/query/permission/backend semantics remain unchanged.
-- No shared API/CSS/token/breakpoint widening or deployment/workflow change occurred.
+- ProfitDashboard's four-card KPI summary now uses existing shared `MetricGrid columns={4}` instead of the local `report-grid` layout wrapper.
+- Exact KPI order and values remain caller-owned: net revenue, COGS, gross profit, and operating+payroll expenses; gross-margin secondary copy/value is unchanged.
+- Existing `isLoading ? '...'` representation, `overviewTrust` status/completion/stale wiring, `domain="profit_overview"`, icons and local PackageIcon remain unchanged.
+- Existing shared composition provides Desktop 4 columns, Tablet 2 and Mobile 1 with minmax-safe containment; Arabic/RTL copy and long numeric containment remain handled by the established `MetricGrid` + report `MetricCard` contracts.
+- `ReportFilterBar`, date/query inputs and the separate `report-grid-2` final-net-profit surface remain outside this convergence and unchanged.
+- No shared API/CSS/token/breakpoint widening, functional/backend change or deployment/workflow change occurred.
 
 ## Current single READY slice
 
-### DS2-REPORT-028 — Profit Dashboard summary metric-grid convergence
-Status: `READY — BOUNDED`
-Owner role for immediate next action: UI Production Engineer.
+### DS2-REPORT-029 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
+Status: `READY`
+Owner role for immediate next action: Product Design Director.
 
-Representative surface:
-- `src/pages/reports/profitability/ProfitDashboard.tsx` → only the four-card KPI summary currently wrapped by local `report-grid`.
+Intent:
+- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline before implementation;
+- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance/exclusion boundary;
+- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
+- preserve REPORT001-028 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
+- preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
+- do not turn REPORT029 into broad multi-page report beautification.
 
-System intent:
-- replace only that KPI-summary wrapper with existing shared `MetricGrid columns={4}`;
-- keep all four existing report-domain `MetricCard` instances caller-owned and unchanged in meaning, order and content;
-- use the already-proven canonical metric composition: Desktop `4` columns, Tablet `2`, Mobile `1`, with `minmax(0, 1fr)` containment and no ordinary horizontal overflow;
-- strengthen system coherence by removing one more local metric-layout implementation without moving profitability semantics into shared components.
-
-Acceptance boundary:
-- preserve exact KPI order: `صافي الإيراد بعد المرتجعات` → `المبيعات (تكلفة البضاعة)` → `إجمالي الربح (التشغيلي)` → `المصروفات التشغيلية والرواتب`;
-- preserve exact values and calculations, including `net_revenue`, `cogs`, `gross_profit`, the operating+payroll expense sum, and the existing gross-margin secondary value/copy;
-- preserve exact `isLoading ? '...'` behavior for all four metrics; do not invent a new skeleton/state contract in this slice;
-- preserve all existing `overviewTrust` status / last-completed / stale props, `domain="profit_overview"`, icons and the local `PackageIcon`;
-- preserve Arabic/RTL wrapping, mixed Arabic/Latin content and large numeric containment through the existing `MetricCard` + `MetricGrid` contracts;
-- no new interaction semantics are introduced; accessibility remains presentational and the grid must not create focus/keyboard behavior;
-- focused tests should protect `data-columns="4"`, exact KPI order and preservation of the existing loading/trust/secondary-value wiring; evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved execution route actually runs them.
-
-Explicit exclusions:
-- the separate `report-grid-2` / `صافي الربح النهائي` highlight card and its net-profit-margin presentation;
-- page title/header composition, `ReportFilterBar`, date-range state, `branchId`, `useProfitSummary` query inputs, `useSystemTrustState`, `useTrustForComponent`, or any data/query/cache/calculation semantics;
-- `MetricCard`, `MetricGrid`, shared CSS/tokens/breakpoints/APIs or any new five-column metric contract;
-- all other profitability/report pages, tables, charts, filters, drawers, export/print behavior and responsive-detail work;
-- DB/RPC/services/RBAC/RLS/permissions/routing/validation/workflows/backend/business semantics;
-- Vercel, preview branches, GitHub Actions, hosted CI and `main`.
-
-Stop rule:
-- if implementing this wrapper-only convergence requires any shared-contract widening or functional/business semantic change, mark REPORT028 `BLOCKED` rather than widening the PR.
+Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
 
 ## Product migration roadmap
 
@@ -167,9 +149,9 @@ Open only when a real migrated screen proves the recurring gap:
 - further Work detail/feedback/management convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
 
 ### I. Reports / Analytics
-- `DS2-REPORT-001` through `DS2-REPORT-027` — `DONE`
-- `DS2-REPORT-028 — Profit Dashboard summary metric-grid convergence` — `READY — BOUNDED`
-- further Reports/Analytics convergence beyond REPORT028 — `BACKLOG` / each concern must be bounded separately
+- `DS2-REPORT-001` through `DS2-REPORT-028` — `DONE`
+- `DS2-REPORT-029 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY`
+- further Reports/Analytics convergence beyond REPORT029 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
