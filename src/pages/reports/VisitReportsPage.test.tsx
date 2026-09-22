@@ -322,7 +322,7 @@ describe('VisitReportsPage', () => {
     const reasonCard = (await within(section).findByText('عميل يحتاج مراجعة')).closest('.ds-card') as HTMLElement
     expect(Array.from(reasonCard.querySelectorAll('dt')).map(label => label.textContent)[6]).toBe('الاستثناءات')
     expect(within(reasonCard).queryByText('المدة')).toBeNull()
-    expect(within(reasonCard).getByText('إغلاق إداري')).toBeTruthy()
+    expect(within(reasonCard).getAllByText('إغلاق إداري')).toHaveLength(2)
     expect(within(reasonCard).getByText('لا يوجد نشاط ميداني')).toBeTruthy()
     expect(within(reasonCard).getByText('الاستبيان الأساسي غير مكتمل')).toBeTruthy()
     expect(within(reasonCard).getByText('GPS ينتظر المراجعة')).toBeTruthy()
@@ -339,7 +339,7 @@ describe('VisitReportsPage', () => {
   })
 
   it('preserves caller-owned loading and error copy without mounting a ready renderer', async () => {
-    vi.mocked(getVisitReportRows).mockImplementationOnce(() => new Promise(() => {}))
+    vi.mocked(getVisitReportRows).mockImplementationOnce(() => new Promise<never>(() => {}))
     const first = renderPage()
     await openVisitTab()
     expect(await screen.findByText('جاري تحميل الزيارات…')).toBeTruthy()
