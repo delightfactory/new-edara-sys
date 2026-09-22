@@ -86,19 +86,45 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-029 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
-Status: `READY`
-Owner role for immediate next action: Product Design Director.
+### DS2-REPORT-029 — Geography summary metric-grid convergence
+Status: `READY — BOUNDED`.
+Owner role for immediate next action: UI Production Engineer.
 
-Intent:
-- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline before implementation;
-- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance/exclusion boundary;
-- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
-- preserve REPORT001-028 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
-- preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
-- do not turn REPORT029 into broad multi-page report beautification.
+Representative surface/file:
+- `src/pages/reports/GeographyPage.tsx`
+- focused coverage in `src/pages/reports/GeographyPage.test.tsx`
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+System-pattern intent:
+- retire the remaining page-local `report-grid` wrapper around the two Geography summary KPIs;
+- compose those same two caller-owned `MetricCard`s through existing shared `MetricGrid columns={2}`;
+- prove the established report metric grammar on a two-card geography summary without widening any shared component contract.
+
+Required implementation boundary:
+- import and use existing `MetricGrid` only for the summary KPI wrapper;
+- preserve `isLoading = summaryLoading || tableLoading` exactly;
+- preserve exactly two `SkeletonCard`s at `height={160}` while summary/table loading is true;
+- preserve KPI order and content exactly: `إجمالى الإيراد` then `${LEVEL_LABELS[level]} مغطاة`;
+- preserve `fmtCur(summary?.total_revenue)`, `summary?.covered_areas`, `salesTrust` status/completion/stale wiring, `domain="sales"`, subtitles and the existing `TrendingUp` / `MapPin` icons;
+- preserve the controlled geography `Select` values/order (`governorate`, `city`, `area`), `LEVEL_LABELS`, `ReportFilterBar`, System Health and all hook/filter propagation unchanged;
+- preserve the existing Geography detail surface completely: semantic Desktop heatmap table, conditional parent column, row hover/zero-revenue treatment, Trust/Freshness header, Tablet/Mobile `ResponsiveCollection + Card + KeyValueList`, five-row loading state and exact empty-state copy;
+- add focused source-level coverage proving one shared `MetricGrid` with `data-columns="2"`, exact two-card order and exact two × 160px summary loading skeletons while retaining the existing Geography filter/detail tests;
+- evidence label remains `TESTS_AUTHORED_NOT_EXECUTED` unless a permitted exact-head execution is separately produced.
+
+Device/state/accessibility acceptance:
+- Desktop: two equal summary columns using the established shared metric grid; detail remains the existing dense semantic table;
+- Tablet: two summary columns remain deliberate and touch-safe; detail remains the existing two-column responsive-card/key-value composition;
+- Mobile: summary collapses to one column without horizontal overflow; detail remains the existing one-column card/key-value composition;
+- Arabic/RTL labels and long metric values must remain contained/wrappable through established shared contracts; numeric/card truth remains unchanged;
+- no new interactive surface is introduced; existing accessible geography Select/Field and report filter behavior must remain unchanged.
+
+Explicit exclusions:
+- no changes to `MetricGrid`, `MetricCard`, `Select`, `Field`, `ReportFilterBar`, `ResponsiveCollection`, `Card`, `KeyValueList`, tokens, CSS or breakpoints;
+- no redesign/refactor of the Geography detail table/cards, heatmap semantics, hover behavior, Trust/Freshness header, loading/empty copy or System Health;
+- no chart introduction, no export/print change, no route/nav change;
+- no analytics hook/query/cache/calculation/date/filter/trust/permission/RBAC/RLS/backend/business semantics change;
+- no second report page and no five-card KPI-grid contract work.
+
+If implementing this exact wrapper-only convergence requires a shared API/CSS/breakpoint change or any functional/business semantic change, stop and mark the slice `BLOCKED` rather than widening REPORT029.
 
 ## Product migration roadmap
 
@@ -150,7 +176,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-028` — `DONE`
-- `DS2-REPORT-029 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY`
+- `DS2-REPORT-029 — Geography summary metric-grid convergence` — `READY — BOUNDED`
 - further Reports/Analytics convergence beyond REPORT029 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
