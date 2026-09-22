@@ -1,7 +1,8 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useSystemTrustState, useTrustForComponent } from '@/hooks/useSystemTrustState'
 import { useSalesDailyTotals, useSalesSummary } from '@/hooks/useSalesGrain'
 import MetricCard from '@/components/reports/MetricCard'
+import MetricGrid from '@/components/patterns/MetricGrid'
 import SkeletonCard from '@/components/reports/SkeletonCard'
 import SystemHealthBar from '@/components/reports/SystemHealthBar'
 import ChartPanel from '@/components/patterns/ChartPanel'
@@ -73,7 +74,7 @@ export default function SalesPage() {
 
       <SystemHealthBar trustRows={trustRows} isLoading={trustLoading} error={trustError} />
 
-      <div className="report-grid">
+      <MetricGrid columns={4}>
         {isLoading ? [1,2,3,4].map(i => <SkeletonCard key={i} height={160} />) : (
           <>
             <MetricCard label="صافي الإيراد" subtitle="ضريبة مستبعدة · مرتجعات مستبعدة"
@@ -98,7 +99,7 @@ export default function SalesPage() {
               domain="ar" />
           </>
         )}
-      </div>
+      </MetricGrid>
 
       {/* Revenue Chart */}
       <ChartPanel
