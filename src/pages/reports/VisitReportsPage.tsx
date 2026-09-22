@@ -308,7 +308,7 @@ function VisitModeSpecificFact({ row, qualityMode }: { row: VisitReportRow; qual
 
 function VisitDetailsLinks({ row, compact = false }: { row: VisitReportRow; compact?: boolean }) {
   const compactLinkStyle = compact
-    ? { display: 'inline-flex', alignItems: 'center', minHeight: '44px' }
+    ? ({ display: 'inline-flex', alignItems: 'center', minHeight: '44px' } as const)
     : undefined
 
   return (
