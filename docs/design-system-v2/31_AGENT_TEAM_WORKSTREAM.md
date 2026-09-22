@@ -85,19 +85,38 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-028 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
-Status: `READY`
-Owner role for immediate next action: Product Design Director.
+### DS2-REPORT-028 — Profit Dashboard summary metric-grid convergence
+Status: `READY — BOUNDED`
+Owner role for immediate next action: UI Production Engineer.
 
-Intent:
-- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline before implementation;
-- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance/exclusion boundary;
-- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
-- preserve REPORT001-027 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
-- preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
-- do not turn REPORT028 into broad multi-page report beautification.
+Representative surface:
+- `src/pages/reports/profitability/ProfitDashboard.tsx` → only the four-card KPI summary currently wrapped by local `report-grid`.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+System intent:
+- replace only that KPI-summary wrapper with existing shared `MetricGrid columns={4}`;
+- keep all four existing report-domain `MetricCard` instances caller-owned and unchanged in meaning, order and content;
+- use the already-proven canonical metric composition: Desktop `4` columns, Tablet `2`, Mobile `1`, with `minmax(0, 1fr)` containment and no ordinary horizontal overflow;
+- strengthen system coherence by removing one more local metric-layout implementation without moving profitability semantics into shared components.
+
+Acceptance boundary:
+- preserve exact KPI order: `صافي الإيراد بعد المرتجعات` → `المبيعات (تكلفة البضاعة)` → `إجمالي الربح (التشغيلي)` → `المصروفات التشغيلية والرواتب`;
+- preserve exact values and calculations, including `net_revenue`, `cogs`, `gross_profit`, the operating+payroll expense sum, and the existing gross-margin secondary value/copy;
+- preserve exact `isLoading ? '...'` behavior for all four metrics; do not invent a new skeleton/state contract in this slice;
+- preserve all existing `overviewTrust` status / last-completed / stale props, `domain="profit_overview"`, icons and the local `PackageIcon`;
+- preserve Arabic/RTL wrapping, mixed Arabic/Latin content and large numeric containment through the existing `MetricCard` + `MetricGrid` contracts;
+- no new interaction semantics are introduced; accessibility remains presentational and the grid must not create focus/keyboard behavior;
+- focused tests should protect `data-columns="4"`, exact KPI order and preservation of the existing loading/trust/secondary-value wiring; evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved execution route actually runs them.
+
+Explicit exclusions:
+- the separate `report-grid-2` / `صافي الربح النهائي` highlight card and its net-profit-margin presentation;
+- page title/header composition, `ReportFilterBar`, date-range state, `branchId`, `useProfitSummary` query inputs, `useSystemTrustState`, `useTrustForComponent`, or any data/query/cache/calculation semantics;
+- `MetricCard`, `MetricGrid`, shared CSS/tokens/breakpoints/APIs or any new five-column metric contract;
+- all other profitability/report pages, tables, charts, filters, drawers, export/print behavior and responsive-detail work;
+- DB/RPC/services/RBAC/RLS/permissions/routing/validation/workflows/backend/business semantics;
+- Vercel, preview branches, GitHub Actions, hosted CI and `main`.
+
+Stop rule:
+- if implementing this wrapper-only convergence requires any shared-contract widening or functional/business semantic change, mark REPORT028 `BLOCKED` rather than widening the PR.
 
 ## Product migration roadmap
 
@@ -149,7 +168,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-027` — `DONE`
-- `DS2-REPORT-028 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY`
+- `DS2-REPORT-028 — Profit Dashboard summary metric-grid convergence` — `READY — BOUNDED`
 - further Reports/Analytics convergence beyond REPORT028 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
