@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import ChurnRiskPage from './ChurnRiskPage'
 
 const mocks = vi.hoisted(() => ({
@@ -142,6 +142,61 @@ function setDefaultMocks() {
   mocks.useCustomerRiskSummary.mockReturnValue({ data: populatedStats, isLoading: false })
   mocks.useCustomerRiskList.mockReturnValue({ data: [], isLoading: false })
 }
+
+describe('ChurnRisk report-header filter controls', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setViewport(1440)
+    setDefaultMocks()
+  })
+
+  it('uses shared V2 Field controls with accessible names and preserves initial hook filters', () => {
+    render(<ChurnRiskPage />)
+
+    const riskControl = screen.getByRole('combobox', { name: 'تصنيف الخطر' }) as HTMLSelectElement
+    const dateControl = screen.getByLabelText('بتاريخ:') as HTMLInputElement
+
+    expect(riskControl.closest('.ds-field')).not.toBeNull()
+    expect(riskControl.classList.contains('form-select')).toBe(true)
+    expect(dateControl.closest('.ds-field')).not.toBeNull()
+    expect(dateControl.classList.contains('form-input')).toBe(true)
+    expect(dateControl.type).toBe('date')
+    expect(dateControl.max).toBe(dateControl.value)
+    expect(mocks.useCustomerRiskSummary).toHaveBeenLastCalledWith({ asOfDate: dateControl.value, riskLabel: undefined })
+    expect(mocks.useCustomerRiskList).toHaveBeenLastCalledWith({ asOfDate: dateControl.value, riskLabel: undefined })
+  })
+
+  it('preserves exact risk options and propagates risk/date changes to both customer-risk hooks', () => {
+    render(<ChurnRiskPage />)
+
+    const riskControl = screen.getByRole('combobox', { name: 'تصنيف الخطر' }) as HTMLSelectElement
+    const dateControl = screen.getByLabelText('بتاريخ:') as HTMLInputElement
+
+    expect(Array.from(riskControl.options).map(option => [option.value, option.textContent])).toEqual([
+      ['', 'كل التصنيفات'],
+      ['VIP', 'VIP'],
+      ['LOYAL', 'مخلص'],
+      ['ENGAGED', 'متفاعل'],
+      ['AT_RISK', 'معرض للخطر'],
+      ['DORMANT', 'خامد'],
+    ])
+
+    fireEvent.change(riskControl, { target: { value: 'AT_RISK' } })
+    expect(riskControl.value).toBe('AT_RISK')
+    expect(mocks.useCustomerRiskSummary).toHaveBeenLastCalledWith({ asOfDate: dateControl.value, riskLabel: 'AT_RISK' })
+    expect(mocks.useCustomerRiskList).toHaveBeenLastCalledWith({ asOfDate: dateControl.value, riskLabel: 'AT_RISK' })
+
+    fireEvent.change(dateControl, { target: { value: '2025-01-01' } })
+    expect(dateControl.value).toBe('2025-01-01')
+    expect(mocks.useCustomerRiskSummary).toHaveBeenLastCalledWith({ asOfDate: '2025-01-01', riskLabel: 'AT_RISK' })
+    expect(mocks.useCustomerRiskList).toHaveBeenLastCalledWith({ asOfDate: '2025-01-01', riskLabel: 'AT_RISK' })
+
+    fireEvent.change(riskControl, { target: { value: '' } })
+    expect(riskControl.value).toBe('')
+    expect(mocks.useCustomerRiskSummary).toHaveBeenLastCalledWith({ asOfDate: '2025-01-01', riskLabel: undefined })
+    expect(mocks.useCustomerRiskList).toHaveBeenLastCalledWith({ asOfDate: '2025-01-01', riskLabel: undefined })
+  })
+})
 
 describe('ChurnRisk pie chart composition', () => {
   beforeEach(() => {
