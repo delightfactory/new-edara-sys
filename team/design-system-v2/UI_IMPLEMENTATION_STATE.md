@@ -9,8 +9,7 @@
 - Representative surface: `src/pages/reports/VisitReportsPage.tsx` → `VisitRowsTable` only, covering both normal `سجل الزيارات` and quality `الزيارات التي تحتاج مراجعة` modes.
 - Feature branch: `ds2-report-020-visit-reports-responsive-collection`.
 - Draft PR: `#68 — DS2-REPORT-020: converge Visit Reports responsive detail collection`, base `design-system-v2-development`.
-- Exact code/test HEAD before owned-state writes: `d3e223bb439e04d66f6ba4579e864609589e66fb`.
-- Exact PR HEAD observed at Draft PR creation before this PR-record state write: `70f45d25cfc1d9bbd4b3656db8b09de4823287d2`.
+- Exact code/test HEAD before this owned-state write: `9d175455f095f6e22d14c8d3587663bcbcd284c4`.
 - Disposition: `REVIEW — FRESH EXACT-HEAD DESIGN QA + PRODUCT DESIGN REVIEW REQUIRED`.
 - Evidence: `TESTS_AUTHORED_NOT_EXECUTED`.
 - Build/test/lint/runtime/preview/release PASS: not claimed.
@@ -38,7 +37,8 @@ I formed that judgment from exact Development source and the existing V2 primiti
 - Preserved every tab/filter/query/cache/export/permission/business/data-shaping contract outside the bounded collection.
 - Added focused Vitest/testing-library coverage for Desktop/Tablet/Mobile composition, single-renderer isolation, exact ten-fact order, both normal and quality modes, secondary facts/fallbacks, helper/badge semantics, exact/conditional links, `scope="col"`, Arabic wrapping/LTR facts/touch targets, loading/error/empty and pagination contracts.
 - During source self-review, identified a likely TypeScript `CSSProperties` widening risk in the compact-link style variable and corrected it with literal-preserving `as const` before handoff.
-- Opened Draft PR #68 targeting only `design-system-v2-development`; no merge was performed.
+- During test self-review after Draft PR creation, corrected an ambiguous duplicate-text assertion for `إغلاق إداري` and made the intentionally unresolved loading promise type-safe with `Promise<never>`; this moved the PR HEAD and invalidates the earlier issue-comment exact-head handoff.
+- Draft PR #68 remains targeted only to `design-system-v2-development`; no merge was performed.
 
 ## Scope / files / shared patterns touched
 
@@ -77,7 +77,7 @@ Focused tests are authored but not executed: `TESTS_AUTHORED_NOT_EXECUTED`.
 
 An approved local sandbox exists, but no checked-out project runtime is available. A direct clone attempt for this exact repo failed with DNS resolution (`Could not resolve host: github.com`), while the connected GitHub API remained available. Therefore `npm test`, `npm run build` and `npm run lint` were not executed. No hosted GitHub Actions/CI was triggered or used as evidence. No Vercel preview or deployment was created.
 
-No `LOCAL_EXECUTION_PASS`, `RUNTIME_VISUAL_PASS`, preview or release PASS is claimed by UI Production. Source self-review found and fixed the one known TypeScript style-typing risk; no known remaining source-level TypeScript/build blocker is identified from the bounded diff, but independent exact-head review remains required.
+No `LOCAL_EXECUTION_PASS`, `RUNTIME_VISUAL_PASS`, preview or release PASS is claimed by UI Production. Source/test self-review found and fixed the identified typing/assertion risks; no known remaining source-level TypeScript/build blocker is identified from the bounded diff, but independent exact-head review remains required.
 
 ## Preserve / risks
 
@@ -105,8 +105,8 @@ Current contradiction classification: `NONE` from UI Production. Review gates ar
 
 ### Cross-role handoff
 - **To:** Design QA and Product Design Director; Development Integrator only after fresh exact-head approvals.
-- **What changed:** REPORT020 `VisitRowsTable` now preserves the dense Desktop table while using single-mounted Tablet/Mobile shared V2 cards (`ResponsiveCollection + Card + KeyValueList`) for both normal and quality modes, with focused tests authored and Draft PR #68 opened.
+- **What changed:** REPORT020 `VisitRowsTable` now preserves the dense Desktop table while using single-mounted Tablet/Mobile shared V2 cards (`ResponsiveCollection + Card + KeyValueList`) for both normal and quality modes, with focused tests authored and self-reviewed; Draft PR #68 is open.
 - **Preserve:** exact ten facts/order and helpers; normal duration/started-at; quality exception reasons/fallback; badge semantics; exact native plan/activity links and conditional activity behavior; caller loading/error/empty/pagination; Desktop density; Tablet 2-column and Mobile 1-column composition; RTL/LTR/touch/accessibility contracts; all functional/business/query/export/permission contracts and unchanged shared APIs/CSS/tokens.
-- **Need from you:** independently review the exact current PR #68 HEAD after this state commit. Design QA should issue or withhold fresh `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`; Product Design should independently accept or block the same exact HEAD. Any later PR-head movement invalidates those exact-head gates.
+- **Need from you:** independently review the exact current PR #68 HEAD produced by this owned-state write. Design QA should issue or withhold fresh `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`; Product Design should independently accept or block the same exact HEAD. Any later PR-head movement invalidates those exact-head gates.
 - **Blocker level:** `NONE` from UI Production; independent review pending.
-- **Baseline:** `5130f4719689a6527b4088156333dd9ccc589d0f`; code/test HEAD `d3e223bb439e04d66f6ba4579e864609589e66fb`; PR observed at creation on `70f45d25cfc1d9bbd4b3656db8b09de4823287d2`; Draft PR `#68`; feature branch `ds2-report-020-visit-reports-responsive-collection`.
+- **Baseline:** `5130f4719689a6527b4088156333dd9ccc589d0f`; code/test HEAD before this state write `9d175455f095f6e22d14c8d3587663bcbcd284c4`; Draft PR `#68`; feature branch `ds2-report-020-visit-reports-responsive-collection`.
