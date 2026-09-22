@@ -3,6 +3,7 @@ import { useProfitSummary } from '@/hooks/useProfitability'
 import { useSystemTrustState, useTrustForComponent } from '@/hooks/useSystemTrustState'
 import MetricCard from '@/components/reports/MetricCard'
 import ReportFilterBar, { DateRange } from '@/components/reports/ReportFilterBar'
+import MetricGrid from '@/components/patterns/MetricGrid'
 import { Wallet, TrendingUp, Building } from 'lucide-react'
 import { usePageTitle } from '@/components/layout/PageTitleContext'
 import { toLocalISODate } from '@/lib/utils/date'
@@ -40,7 +41,7 @@ export default function ProfitDashboard() {
         <ReportFilterBar value={dateRange} onChange={setDateRange} />
       </div>
 
-      <div className="report-grid">
+      <MetricGrid columns={4}>
         <MetricCard
           label="صافي الإيراد بعد المرتجعات"
           value={isLoading ? '...' : summary?.net_revenue ?? 0}
@@ -78,7 +79,7 @@ export default function ProfitDashboard() {
           domain="profit_overview"
           icon={<Building />}
         />
-      </div>
+      </MetricGrid>
 
       <div className="report-grid-2">
         <div style={{ background: 'var(--bg-surface)', padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--primary-light)'}}>
