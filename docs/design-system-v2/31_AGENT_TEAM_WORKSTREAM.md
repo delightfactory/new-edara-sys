@@ -88,19 +88,33 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-030 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
-Status: `READY — PRODUCT DESIGN BOUNDING REQUIRED`.
-Owner role for immediate next action: Product Design Director.
+### DS2-REPORT-030 — Rep Performance summary metric-grid convergence
+Status: `READY — BOUNDED`.
+Owner role for immediate next action: UI Production Engineer.
+Representative surface: `src/pages/reports/RepPerformancePage.tsx` → four-card KPI summary only.
 
-Intent:
-- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline;
-- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance/exclusion boundary before UI Production begins;
-- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
-- preserve all REPORT001-029 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
-- keep Settings/Admin, shared component-depth work, remaining Work/Field debt and Global convergence visibly in the roadmap;
-- do not turn REPORT030 into broad multi-page report beautification.
+System intent:
+- remove one remaining page-local report metric-layout implementation by replacing only the Rep Performance summary `report-grid` wrapper with existing shared `MetricGrid columns={4}`;
+- keep `MetricGrid` layout-only: all KPI calculation, value formatting, trust/freshness/status/domain/icon semantics remain caller-owned;
+- reuse the established report summary grammar already proven across Overview, Receivables, Rep Credit Commitment, Sales, Treasury, Customer Health, Product Performance, Profitability and Geography;
+- do not widen shared APIs, CSS, tokens or breakpoints for this slice.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+Acceptance:
+- preserve `isLoading = summaryLoading || tableLoading` exactly;
+- loading remains exactly four `SkeletonCard`s at `height={160}` inside the shared grid;
+- preserve exact KPI order and copy: `إجمالى الإيراد الصافى` → `مندوبون نشطون` → `متوسط إيراد المندوب` → `إجمالى المرتجعات`;
+- preserve exact values/formatters, `salesTrust` status/last-completed/stale wiring, `domain="sales"`, and existing `TrendingUp` / `Users2` / `Award` / `TrendingDown` icons;
+- Desktop uses four equal metric columns, Tablet two, Mobile one through the existing shared `MetricGrid` contract, with no ordinary grid-origin overflow and unchanged Arabic/RTL source order;
+- no new interaction is introduced, so existing focus/keyboard/touch semantics remain unchanged;
+- author focused regression coverage for the shared `data-columns="4"` contract, exact four-card order, preserved loading count/height and caller-owned metric/trust/domain wiring; evidence remains honestly labeled if not executed.
+
+Explicit exclusions:
+- the already-converged Rep Performance `ChartPanel` chart, chart data/top-15 order/axes/tooltip/series, trust/freshness chart actions and chart loading/empty states;
+- the already-converged Rep Performance `ResponsiveCollection + Card + KeyValueList` detail experience, dense Desktop seven-column table, ranking/return tones, Tablet/Mobile cards, detail loading/empty states and all detail semantics;
+- `ReportFilterBar`, date range, `SystemHealthBar`, hooks, queries, cache, calculations, formatting rules, trust resolution, permissions, routing, export/print, backend/RPC/DB/RBAC/RLS/workflow/business semantics;
+- any shared `MetricGrid`, `MetricCard`, CSS/token/breakpoint API change and every other report/page.
+
+Stop rule: if implementation requires any excluded shared-contract or functional/business change, mark REPORT030 `BLOCKED` rather than widen the PR.
 
 ## Product migration roadmap
 
@@ -152,7 +166,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-029` — `DONE`
-- `DS2-REPORT-030 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — PRODUCT DESIGN BOUNDING REQUIRED`
+- `DS2-REPORT-030 — Rep Performance summary metric-grid convergence` — `READY — BOUNDED`
 - further Reports/Analytics convergence beyond REPORT030 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
