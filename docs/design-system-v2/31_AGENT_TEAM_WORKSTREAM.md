@@ -38,17 +38,17 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-024`.
+Product UI is integrated through `DS2-REPORT-025`.
 
 Latest product integration:
-- PR: `#72 — DS2-REPORT-024: Treasury summary metric-grid convergence`
-- Exact reviewed PR HEAD: `4057daed728507cf7e2565569ebc8a1ab7e260cf`
-- Squash merge commit: `b77349f15039bea5aa92cb8dda3734c61882f583`
+- PR: `#73 — DS2-REPORT-025: Customer Health summary metric-grid convergence`
+- Exact reviewed PR HEAD: `a62d304eb2529d79ddde03a8f1bcf4b1aa81c13a`
+- Squash merge commit: `0e9696f7344da4bff9c2cd75e748472970a63fb2`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact HEAD
 - Runtime/preview/release evidence: not claimed
 
-The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, Supervisor Work shared KPI summary convergence, Reports shared route-level sub-navigation convergence, Reports date-preset and native custom-date convergence, Reports Overview KPI-summary and customer-health summary convergence, shared `ChartPanel` proofs across Sales/Receivables/Churn/Product Performance/Rep Performance/Treasury analytical surfaces, shared `MetricGrid` proofs across Overview, Receivables, Rep Credit Commitment, Sales and Treasury summary clusters, and responsive detail-collection proofs across Product Performance, Customer Health, Churn Risk, Geography, Rep Performance, Target Attainment and Visit Reports using `ResponsiveCollection + Card + KeyValueList` while preserving dense Desktop comparison.
+The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, Supervisor Work shared KPI summary convergence, Reports shared route-level sub-navigation convergence, Reports date-preset and native custom-date convergence, Reports Overview KPI-summary and customer-health summary convergence, shared `ChartPanel` proofs across Sales/Receivables/Churn/Product Performance/Rep Performance/Treasury analytical surfaces, shared `MetricGrid` proofs across Overview, Receivables, Rep Credit Commitment, Sales, Treasury and Customer Health summary clusters, and responsive detail-collection proofs across Product Performance, Customer Health, Churn Risk, Geography, Rep Performance, Target Attainment and Visit Reports using `ResponsiveCollection + Card + KeyValueList` while preserving dense Desktop comparison.
 
 ## Completed slices
 
@@ -94,6 +94,7 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - `DS2-REPORT-022 — Rep Credit Commitment summary metric-grid convergence` — `DONE` — PR #70 — reviewed HEAD `1647472738f0e0dd0cc21d502b24ab4460dc199b` — merge `5fed58e8ff7c572eecd7427854de83d4c95d759c` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-023 — Sales summary metric-grid convergence` — `DONE` — PR #71 — reviewed HEAD `f77a3e13ede1650acc52c8f7917ab88a9f48dbc0` — merge `407996fd63fe49e26ef9747618426d725d408c81` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-024 — Treasury summary metric-grid convergence` — `DONE` — PR #72 — reviewed HEAD `4057daed728507cf7e2565569ebc8a1ab7e260cf` — merge `b77349f15039bea5aa92cb8dda3734c61882f583` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
+- `DS2-REPORT-025 — Customer Health summary metric-grid convergence` — `DONE` — PR #73 — reviewed HEAD `a62d304eb2529d79ddde03a8f1bcf4b1aa81c13a` — merge `0e9696f7344da4bff9c2cd75e748472970a63fb2` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 
 ### REPORT017 system result
 
@@ -163,50 +164,30 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - The accepted REPORT018 Treasury `ChartPanel` and its blocked/loading/empty/ready precedence, 280px bodies, mapping, geometry, gradients, axes, tooltip, reference line and three series remain unchanged.
 - No shared `MetricGrid` API/CSS/token widening and no query/cache/calculation/trust/permission/RBAC/RLS/routing/backend/export/print/workflow/business semantic change occurred.
 
+### REPORT025 system result
+
+- Customer Health's three-card KPI summary now uses the established shared `MetricGrid columns={3}` instead of the page-local `report-grid` wrapper.
+- Desktop preserves a three-column management comparison; Tablet uses the shared two-column composition; Mobile uses the shared one-column stack.
+- Exact card order `نشطون` → `خامدون` → `متوسط القيمة (90 يوم)`, all labels/subtitles/values/status/freshness/stale/domain/icon wiring and the conditional `متوسط أيام الخمود` secondary fact remain unchanged.
+- `isLoading` remains the sole summary loading gate with exactly three `SkeletonCard height={150}` placeholders.
+- The complete REPORT012 Customer Health detail collection remains unchanged, including blocked priority, five-column Desktop table, Tablet/Mobile responsive cards, Trust/Freshness actions, five `44px` detail-loading rows, exact empty copy and >50 footer.
+- No shared `MetricGrid`/`MetricCard` API/CSS/token widening and no query/cache/calculation/trust/permission/RBAC/RLS/routing/backend/export/print/workflow/business semantic change occurred.
+
 ## Current single READY slice
 
-### DS2-REPORT-025 — Customer Health summary metric-grid convergence
-Status: `READY — BOUNDED`
-Owner role for immediate next action: UI Production Engineer
-Representative surface: `src/pages/reports/CustomerHealthPage.tsx` → three-card customer-health KPI summary only.
-Product Design source baseline inspected: `0fc85407e7ca107493a84bd808020af76e846778`.
+### DS2-REPORT-026 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
+Status: `READY`
+Owner role for immediate next action: Product Design Director
 
-System-pattern intent:
-- remove the remaining page-local responsive ownership from Customer Health's KPI summary by consuming the already-proven shared `MetricGrid` layout contract;
-- keep report/customer-health truth, trust/freshness/status semantics, formatting and business meaning caller-owned;
-- continue the same report-family grammar proven by REPORT019/021/022/023/024 without creating a new local mini system or widening a shared API.
+Intent:
+- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline before implementation;
+- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance/exclusion boundary;
+- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
+- preserve REPORT001-025 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
+- preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
+- do not turn REPORT026 into broad multi-page report beautification.
 
-Implementation contract:
-- add the existing `MetricGrid` import from `@/components/patterns/MetricGrid`;
-- replace only the summary `<div className="report-grid">` wrapper with `<MetricGrid columns={3}>`;
-- preserve `isLoading` as the existing summary gate and preserve exactly three `SkeletonCard height={150}` placeholders;
-- preserve ready-card DOM/business order exactly: `نشطون` → `خامدون` → `متوسط القيمة (90 يوم)`;
-- preserve every existing card prop and meaning: subtitles, `stats` values, `fmtCur`, `custTrust` status/`last_completed_at`/`is_stale`, `domain="customers"`, `ActivitySquare`/`UserX`/`Users2` icons, and the third card's conditional `secondary` average-recency fact;
-- use the unchanged shared device grammar: Desktop three columns, Tablet two columns, Mobile one column, with no ordinary summary-grid horizontal overflow.
-
-State / accessibility acceptance:
-- summary cards remain passive informational surfaces with no new focus, keyboard, touch, permission, destructive-action or navigation behavior;
-- preserve Arabic-first copy/order and existing MetricCard long-value containment/LTR numeric treatment;
-- preserve existing loading/ready semantics exactly; do not invent new blocked/empty/error semantics for the summary;
-- preserve dark/RTL presentation through existing semantic tokens and shared MetricGrid/MetricCard contracts.
-
-Explicit exclusions:
-- the page header/title/subtitle/date control and `SystemHealthBar`;
-- the complete REPORT012 Customer Health detail collection: blocked state, Trust/Freshness actions, five-column Desktop table, Tablet/Mobile `ResponsiveCollection + Card + KeyValueList` renderers, recency/status presentation, five-row loading state, exact empty copy and >50 informational footer;
-- `MetricCard` redesign or migration to another metric primitive;
-- shared `MetricGrid` API/CSS/tokens, global `report-grid` cleanup, date-field convergence, FilterBar work, table/DataTable changes, pagination or export/print work;
-- hooks/queries/cache/data shaping/calculations/trust-key logic, permissions/RBAC/RLS, routing, backend/services, validation, workflow and every business semantic.
-
-Focused test intent:
-- extend `CustomerHealthPage.test.tsx` to prove the summary mounts `[data-metric-grid]` with `data-columns="3"` in ready state;
-- prove exact three-card labels/order/contracts remain present;
-- in loading state, prove exactly three `150px` summary skeletons within the MetricGrid while retaining the existing REPORT012 detail-collection tests and their five `44px` loading rows;
-- evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless approved exact-head execution actually occurs.
-
-Escalation rule:
-- if exact current summary or REPORT012 detail semantics cannot be preserved without changing functional behavior or widening the shared MetricGrid/MetricCard contracts, mark REPORT025 `BLOCKED` rather than expand the PR.
-
-Implementation is authorized for exactly this bounded slice from the latest `design-system-v2-development` HEAD.
+Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
 
 ## Product migration roadmap
 
@@ -257,9 +238,9 @@ Open only when a real migrated screen proves the recurring gap:
 - further Work detail/feedback/management convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
 
 ### I. Reports / Analytics
-- `DS2-REPORT-001` through `DS2-REPORT-024` — `DONE`
-- `DS2-REPORT-025 — Customer Health summary metric-grid convergence` — `READY — BOUNDED`
-- further Reports/Analytics convergence beyond REPORT025 — `BACKLOG` / each concern must be bounded separately
+- `DS2-REPORT-001` through `DS2-REPORT-025` — `DONE`
+- `DS2-REPORT-026 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY`
+- further Reports/Analytics convergence beyond REPORT026 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
