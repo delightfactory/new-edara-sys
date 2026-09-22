@@ -87,9 +87,10 @@ describe('Rep Credit Commitment summary composition', () => {
     expect(within(cards[3]).getByText('إيصالات confirmed فقط')).not.toBeNull()
 
     const warningHeading = screen.getByText('أرصدة بدون مسؤول متابعة:')
+    const warningContent = warningHeading.parentElement as HTMLElement
     expect(grid.contains(warningHeading)).toBe(false)
-    expect(screen.getByText('300.00')).not.toBeNull()
-    expect(screen.getByText(/عملاء غير مسندين لأي مسؤول/)).not.toBeNull()
+    expect(within(warningContent).getByText('300.00')).not.toBeNull()
+    expect(within(warningContent).getByText(/عملاء غير مسندين لأي مسؤول/)).not.toBeNull()
   })
 
   it('keeps exactly four 6rem loading placeholders in the shared grid without replacing table loading', () => {
