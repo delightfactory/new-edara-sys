@@ -4,126 +4,113 @@
 
 - Review date: `2026-09-22`.
 - Authoritative branch: `design-system-v2-development`.
-- Exact Development HEAD independently inspected before REPORT021 bounding: `bea167f31a36ecde5caf82450e9cc30ed69b5857`.
+- Exact Development HEAD independently inspected before this state write: `d28433766d136718454b73726ad54ce3bac8c76f`.
 - Latest integrated product baseline: `DS2-REPORT-020 — Visit Reports responsive detail-collection convergence` / PR #68 / squash merge `92d0091fcd34980a4e91c6626135931a18a199b9`.
-- Exact merged implementation HEAD for REPORT020: `9e922249b905bc940534273d658ee817185f3c4a`.
-- Open PRs targeting `design-system-v2-development` at selection time: none.
-- Workstream boundary commit created this run: `5a870e3eb39f713fdc2aeb2b752f0dfdcb4b1309`.
-- Current single implementation-authorized slice: `DS2-REPORT-021 — Receivables summary metric-grid convergence`.
-- Disposition: `READY — BOUNDED`.
-- Immediate next owner: UI Production Engineer.
+- Active slice: `DS2-REPORT-021 — Receivables summary metric-grid convergence`.
+- Active implementation PR: `#69 — DS2-REPORT-021: converge Receivables summary metric grid`.
+- Exact PR HEAD independently reviewed and accepted: `54bbb151c54daf0f923e9bb6940de6ef353777fa`.
+- PR base: `design-system-v2-development`; feature baseline `b445ecd0f90a997ffd62dfa151bc9df9610f0d97`.
+- Open PRs targeting Development: exactly one, PR #69.
+- Design QA on the same exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` with `TESTS_AUTHORED_NOT_EXECUTED`.
+- Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER`.
+- Immediate next owner: Development Integrator, subject to unchanged-head/final-gate revalidation.
 
 ## Independent Product Design judgment
 
-REPORT021 should converge exactly one remaining report-summary layout rather than open another broad report page or a new shared abstraction.
+REPORT021 is correctly implemented as a narrow system-convergence slice rather than a page beautification exercise.
 
-The selected concern is `src/pages/reports/ReceivablesPage.tsx` → the three-card AR summary block immediately after `SystemHealthBar` and before the already-migrated AR `ChartPanel`. The current summary still uses the legacy page-local `report-grid` wrapper even though the existing shared `MetricGrid` already provides the correct domain-agnostic responsive metric layout contract.
+The product change removes one remaining page-local layout implementation in `src/pages/reports/ReceivablesPage.tsx`: the three-card AR summary wrapper moves from legacy `report-grid` to existing shared `MetricGrid columns={3}`. `MetricGrid` remains layout-only; report-domain `MetricCard` continues to own trust/freshness/status presentation and all AR meaning remains caller-owned.
 
-This is the smallest dependency-safe next step because:
-- it removes one remaining local layout implementation using an already-proven shared V2 pattern;
-- it does not require a new component, API or shared-style change;
-- it preserves report-domain `MetricCard` trust/freshness/status semantics exactly where they are today;
-- it deliberately improves Mobile/Tablet/Desktop composition without touching AR data truth or chart semantics;
-- broader remaining surfaces such as Customer Reengagement and Rep Credit Commitment combine tables, actions, filters and operational semantics and are therefore not appropriate as the next smallest slice.
+This is coherent with the North Star because it reduces visual implementation diversity while preserving business truth, dense Desktop comparison and deliberate compact-device composition. No new abstraction, palette, breakpoint or local mini design system was introduced.
 
-## REPORT021 bounded contract
+## Exact-head Product Design findings
 
-### Representative surface
+### System coherence — PASS
 
-`src/pages/reports/ReceivablesPage.tsx` → the AR summary metric block only.
+- Existing shared `MetricGrid` is consumed unchanged.
+- No `MetricGrid`, `MetricCard`, `ChartPanel`, `ReportFilterBar`, shared CSS or token API changed.
+- No second report or global `report-grid` cleanup entered scope.
+- The adjacent AR analytical surface remains on its already-proven shared `ChartPanel` contract.
 
-### System intent
+### Content and hierarchy — PASS
 
-Replace only the summary's page-local `report-grid` wrapper with existing shared `MetricGrid columns={3}`.
+The ready summary preserves exactly three cards in the existing order:
+1. `صافي التحصيل (Cohort)` — `منسوب لتاريخ البيع الأصلي` — `summary?.total_net_cohort` — `BarChart3`.
+2. `إجمالي الإيصالات` — `قيمة ما حُصِّل فعلياً` — `summary?.total_receipt_amount` — `ArrowDownToLine`.
+3. `إجمالي المردودات النقدية` — `مسترد من عمليات مرتجع` — `summary?.total_refunds` — `RotateCcw`.
 
-`MetricGrid` remains layout-only. `MetricCard` remains the report-domain component that owns the existing trust/freshness/status presentation. No report meaning may move into the shared grid.
+All three preserve `fmtCur`, `arTrust` status, last-completed/freshness/stale wiring and `domain="ar"`.
 
-### Exact content to preserve
+### Device / RTL / content resilience — PASS at source level
 
-The ready state keeps exactly three cards in the current order:
-1. `صافي التحصيل (Cohort)` — subtitle `منسوب لتاريخ البيع الأصلي` — value `summary?.total_net_cohort` — `BarChart3` icon.
-2. `إجمالي الإيصالات` — subtitle `قيمة ما حُصِّل فعلياً` — value `summary?.total_receipt_amount` — `ArrowDownToLine` icon.
-3. `إجمالي المردودات النقدية` — subtitle `مسترد من عمليات مرتجع` — value `summary?.total_refunds` — `RotateCcw` icon.
+- Desktop: shared three-column comparison preserves management density.
+- Tablet: shared two-column composition is deliberate rather than compressed Desktop.
+- Mobile: shared one-column stack removes dependency on a fixed multi-column wrapper and introduces no normal horizontal overflow.
+- Shared grid uses `minmax(0, 1fr)` / `min-width: 0`; existing `MetricCard` also uses `minWidth: 0` and `overflowWrap: anywhere` for the financial value.
+- Arabic labels/subtitles remain RTL-first; financial value remains deliberately LTR.
+- Existing semantic trust/status colors remain authoritative; no rank/status/color meaning was reinterpreted.
 
-All three retain the current formatter, `arTrust` status, last-completed/freshness/stale wiring and `domain="ar"`.
-
-### Loading/state acceptance
+### State / interaction — PASS
 
 - Summary loading remains exactly three `SkeletonCard height={160}` items.
-- Do not invent summary empty/error/blocked semantics that do not exist today.
-- Existing page/header/filter/SystemHealthBar behavior remains unchanged.
-- Existing AR ChartPanel remains entirely unchanged: title/description, Trust/Freshness action, blocked/loading/empty/ready precedence, exact 260px body contract, chart mapping, margins, axes, tooltip and `receipts / refunds / net` series semantics.
+- No summary empty/error/blocked semantics were invented where none exist today.
+- Summary remains passive/informational; no focus, keyboard, touch or action-hierarchy contract changed.
+- The AR `ChartPanel` remains unchanged: title/description/action, blocked/loading/empty/ready precedence, 260px body, data mapping, margins, axes, tooltip and `receipts / refunds / net` series semantics are preserved.
 
-### Device and content acceptance
+### Scope / functional isolation — PASS
 
-- Mobile: shared one-column metric stack; no ordinary horizontal overflow.
-- Tablet: shared two-column metric composition.
-- Desktop: shared three-column comparison.
-- Long Arabic labels/subtitles and large currency values must remain wrap-safe and readable.
-- Dark/RTL behavior comes from the current shared MetricGrid/MetricCard contracts; no local palette or breakpoint rule is added.
+Exact PR scope is three files:
+- `src/pages/reports/ReceivablesPage.tsx`
+- `src/pages/reports/ReceivablesPage.test.tsx`
+- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
-### Focused test intent
+No DB/migration/RPC/service/query-cache/RBAC/RLS/permission/route/validation/export/print/workflow/calculation/business semantics changed.
 
-Extend the existing Receivables report test artifact to protect:
+### Test/evidence honesty — PASS
+
+Focused tests protect:
 - shared `MetricGrid` adoption and `data-columns="3"`;
-- exact three-card order/content identity;
-- exact three loading skeletons at 160px;
-- continued isolation of the already-protected AR ChartPanel contract from this metric-layout change.
+- removal of the local `report-grid` wrapper;
+- exact three-card order/content/trust/freshness/domain wiring;
+- exactly three 160px loading skeletons;
+- isolation from the existing AR chart state.
 
-Execution evidence remains governed by `33_TEST_AND_VALIDATION_POLICY.md`; tests should be authored even if they remain `TESTS_AUTHORED_NOT_EXECUTED`.
-
-### Explicit exclusions
-
-Do not change:
-- Sales, Treasury, Overview or any second report;
-- `MetricCard`, `MetricGrid`, `ChartPanel`, `ReportFilterBar`, shared CSS or tokens;
-- AR chart presentation/data/state semantics;
-- page-header/filter grammar;
-- global `report-grid` cleanup;
-- query/cache/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/service/validation/workflow/business semantics.
-
-If the existing `MetricGrid columns={3}` contract cannot serve this consumer unchanged, or if functional/report semantics would need to change, REPORT021 becomes `BLOCKED` for Product Design re-bounding rather than widening the PR.
-
-## Evidence behind the decision
-
-- `MetricGrid` explicitly accepts `columns={2|3|4}` and owns only responsive KPI/summary layout; business meaning remains caller-owned.
-- Its current CSS gives three columns on Desktop, two on Tablet (`769–1024px`) and one on Mobile (`<=768px`), matching the established device strategy without shared changes.
-- Receivables currently has exactly one legacy `report-grid` around its three summary cards while its analytical chart is already on shared `ChartPanel`.
-- The existing Receivables focused tests already protect the chart contract, making it possible to add a narrow metric-grid regression guard without opening a second concern.
+Evidence remains `TESTS_AUTHORED_NOT_EXECUTED`. No exact-head build/test/lint/runtime/visual/preview/release PASS is claimed.
 
 ## Peer-state synthesis / contradiction status
 
-This Product Design judgment was formed from the current Development source and shared contracts before peer-state comparison.
+This Product Design judgment was formed from the exact PR patch, current shared component contracts and North Star before peer-state comparison.
 
-- **Development Integrator:** current and aligned; REPORT020 is merged and REPORT021 was explicitly handed to Product Design for one bounded concern.
-- **Design QA:** lifecycle-stale at the consumed REPORT020 exact-head approval; no REPORT021 decision or blocker exists yet.
-- **UI Production Engineer:** lifecycle-stale at REPORT020 implementation; no competing REPORT021 branch/PR existed when this boundary was selected.
-- **Team Memory:** current through REPORT020 but still contains the pre-bound REPORT021 placeholder. That is lifecycle-stale after this material Product Design boundary, not contradictory; overall system direction did not change, so Product Design did not rewrite Team Memory.
-- **Decision Log / North Star / device/component guidance:** aligned; no durable decision changed.
+- **Design QA:** fresh and aligned; GREEN-DEV + SOURCE_REVIEW_PASS on exact HEAD `54bbb151c54daf0f923e9bb6940de6ef353777fa`.
+- **UI Production Engineer:** feature-branch state is aligned with the bounded scope and honest execution evidence; Development copy is lifecycle-stale at REPORT020.
+- **Development Integrator:** lifecycle-current through integrated REPORT020 only; no REPORT021 integration decision yet.
+- **Team Memory:** still carries the pre-bound REPORT021 placeholder and is lifecycle-stale, not contradictory; overall system direction has not changed.
+- **Decision Log / North Star / Workstream:** aligned; no durable decision changed.
+- Development advanced from the feature baseline only by the Design QA state commit; compare shows no product/test overlap.
+- PR #69 has no inline review threads.
 
 Current contradiction classification: `NONE`.
 
 ## Repository actions this run
 
-- Completed the mandatory shared-memory bootstrap in the required order.
-- Inspected issue #27, exact latest Development HEAD and confirmed no open PR targeting Development.
-- Inspected representative remaining report surfaces and relevant blueprint/component/device guidance.
-- Inspected `MetricGrid` API/CSS and the exact Receivables page/test contracts.
-- Bounded REPORT021 as `Receivables summary metric-grid convergence` and updated the Workstream in commit `5a870e3eb39f713fdc2aeb2b752f0dfdcb4b1309`.
-- Updated only this owned specialist state among role-state files.
-- Did not modify Team Memory or Decision Log because no overall system direction or durable rule changed.
-- Did not modify product code, merge a PR, touch `main`, trigger/rerun GitHub Actions, use hosted CI, deploy Vercel or modify preview branches.
+- Completed the mandatory shared-memory bootstrap in the required order from `design-system-v2-development`.
+- Inspected issue #27, exact current Development HEAD, all open PRs targeting Development and relevant component/migration/device guidance.
+- Inspected PR #69 metadata, exact three changed filenames, product/test patches, current shared `MetricGrid` / responsive CSS / `MetricCard` contracts, QA review and empty review threads.
+- Independently accepted exact PR HEAD `54bbb151c54daf0f923e9bb6940de6ef353777fa` with `PASS — NO DESIGN-SYSTEM BLOCKER` and recorded the acceptance on PR #69.
+- Updated only this owned specialist state file.
+- Did not modify Team Memory, Decision Log or Workstream because no overall system direction, durable rule or slice boundary changed.
+- Did not modify product code, merge a PR, touch `main`, deploy Vercel, modify preview branches, trigger/rerun GitHub Actions or use hosted CI.
 
 ## What changed since previous state
 
-- REPORT020 moved from accepted implementation awaiting integration to integrated product baseline.
-- The placeholder REPORT021 has now been decomposed into exactly one implementation-authorized concern: Receivables AR summary `report-grid` → shared `MetricGrid columns={3}`.
-- No design-system blocker, functional change or durable architecture decision was introduced.
+- REPORT021 moved from `READY — BOUNDED` awaiting implementation to an implemented Draft PR with fresh Design QA GREEN-DEV.
+- Product Design independently accepted the same exact PR HEAD.
+- The slice is now ready for Development Integrator final revalidation; no design-system blocker remains.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer; Design QA waits for a stable exact PR HEAD.
-- **What changed:** `DS2-REPORT-021 — Receivables summary metric-grid convergence` is now `READY — BOUNDED`; only the three-card AR summary wrapper may migrate from legacy `report-grid` to existing `MetricGrid columns={3}`.
-- **Preserve:** exact three cards/order/content/icons/formatters/trust/freshness/domain wiring; three 160px loading skeletons; unchanged header/filter/SystemHealthBar and complete AR ChartPanel/state/data/series contract; Mobile 1-column, Tablet 2-column, Desktop 3-column shared metric composition; REPORT001-020 contracts and every query/calculation/permission/export/backend/business truth; no shared API/CSS/token widening and no second report.
-- **Need from you:** branch from the latest `design-system-v2-development`, implement REPORT021 only, add focused metric-grid/loading regression coverage alongside the existing chart tests, open exactly one Development-targeting Draft PR, and label execution evidence honestly. If current `MetricGrid` cannot serve unchanged, stop and mark `BLOCKED` rather than widening scope.
+- **To:** Development Integrator.
+- **What changed:** PR #69 exact HEAD `54bbb151c54daf0f923e9bb6940de6ef353777fa` now has both fresh Design QA `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` and Product Design `PASS — NO DESIGN-SYSTEM BLOCKER`.
+- **Preserve:** exact three AR summary cards/order/content/icons/formatter/trust/freshness/domain wiring; three 160px loading skeletons; Mobile 1-column / Tablet 2-column / Desktop 3-column shared MetricGrid composition; unchanged header/filter/SystemHealthBar and complete AR ChartPanel state/data/series contract; unchanged shared APIs/CSS/tokens and every query/calculation/permission/export/print/backend/business truth.
+- **Need from you:** revalidate unchanged PR HEAD/base, governance-only Development drift, reviews/threads, mergeability, changed-file scope and functional isolation; integrate REPORT021 only if every normal gate remains clean. Any PR-head movement invalidates both current exact-head approvals.
 - **Blocker level:** `NONE`.
-- **Baseline:** exact inspected Development HEAD `bea167f31a36ecde5caf82450e9cc30ed69b5857`; Workstream boundary commit / pre-state-write Development HEAD `5a870e3eb39f713fdc2aeb2b752f0dfdcb4b1309`.
+- **Baseline:** Development before this state write `d28433766d136718454b73726ad54ce3bac8c76f`; exact accepted PR #69 HEAD `54bbb151c54daf0f923e9bb6940de6ef353777fa`; evidence `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
