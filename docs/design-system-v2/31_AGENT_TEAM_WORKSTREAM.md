@@ -126,19 +126,35 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-021 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
-Status: `READY`
-Owner role for immediate next action: Product Design Director
+### DS2-REPORT-021 — Receivables summary metric-grid convergence
+Status: `READY — BOUNDED`
+Owner role for immediate next action: UI Production Engineer
 
-Intent:
-- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline before implementation;
-- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance boundary;
-- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
-- preserve REPORT001-020 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/business semantics;
-- preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
-- do not turn REPORT021 into broad multi-page report beautification.
+Representative surface:
+- `src/pages/reports/ReceivablesPage.tsx` → the three-card AR summary block immediately after `SystemHealthBar` and before the existing `ChartPanel` only.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+System intent:
+- replace the remaining page-local `report-grid` wrapper for this summary with the already-proven shared `MetricGrid columns={3}` layout contract;
+- keep `MetricCard` as the report-domain trust/freshness/status presentation component; do not move report semantics into `MetricGrid`;
+- strengthen cross-report visual grammar by proving the same shared KPI composition outside Overview without introducing a new component or widening a shared API.
+
+Acceptance:
+- preserve the exact three cards, order, labels, subtitles, icons, values, formatters, `arTrust` status/freshness/stale wiring and `domain="ar"`: `صافي التحصيل (Cohort)`, `إجمالي الإيصالات`, `إجمالي المردودات النقدية`;
+- preserve loading as exactly three `SkeletonCard height={160}` items and do not invent empty/error/blocked summary semantics that do not exist today;
+- Mobile must use the shared one-column metric stack, Tablet the shared two-column composition, and Desktop the shared three-column comparison; long Arabic labels and large currency values must remain wrap-safe with no ordinary horizontal overflow;
+- preserve the page header, `ReportFilterBar`, `SystemHealthBar`, the existing AR `ChartPanel`, its blocked/loading/empty/ready state order, 260px body contract, chart data mapping, axes/tooltip/series geometry and all trust/freshness behavior unchanged;
+- focused tests should assert shared `MetricGrid` adoption with `data-columns="3"`, exact card order, exact three loading skeletons at 160px, and guard the existing chart contract from incidental drift;
+- preserve all query/cache/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/service/validation/workflow/business semantics.
+
+Explicit exclusions:
+- no Sales/Treasury/Overview/other report metric-grid migration in this PR;
+- no `MetricCard`, `MetricGrid`, `ChartPanel`, `ReportFilterBar`, shared CSS or token API change;
+- no AR chart redesign, chart-state change, page-header/filter migration, global `report-grid` cleanup or second report concern.
+
+Escalation:
+- if this consumer cannot use current `MetricGrid columns={3}` unchanged, or if any functional/query/trust semantics must change, mark REPORT021 `BLOCKED` for Product Design re-bounding instead of widening the implementation PR.
+
+Implementation is authorized only for this bounded concern from Development baseline `bea167f31a36ecde5caf82450e9cc30ed69b5857` or a later governance-only non-overlapping Development HEAD.
 
 ## Product migration roadmap
 
@@ -188,7 +204,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-020` — `DONE`
-- `DS2-REPORT-021 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY`
+- `DS2-REPORT-021 — Receivables summary metric-grid convergence` — `READY — BOUNDED`
 - further Reports/Analytics convergence beyond REPORT021 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
