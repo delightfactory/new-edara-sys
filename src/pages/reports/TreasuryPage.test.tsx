@@ -21,7 +21,30 @@ vi.mock('@/hooks/useTreasuryCashflow', () => ({
 }))
 
 vi.mock('@/components/reports/MetricCard', () => ({
-  default: ({ label }: { label: string }) => <div data-testid="metric-card">{label}</div>,
+  default: ({ label, subtitle, value, status, lastCompletedAt, isStale, domain, icon }: {
+    label: string
+    subtitle?: string
+    value?: string | number | null
+    status?: string | null
+    lastCompletedAt?: string | null
+    isStale?: boolean
+    domain?: string
+    icon?: ReactNode
+  }) => (
+    <div
+      data-testid="metric-card"
+      data-label={label}
+      data-subtitle={subtitle ?? ''}
+      data-value={value == null ? '' : String(value)}
+      data-status={status ?? ''}
+      data-last-completed-at={lastCompletedAt ?? ''}
+      data-stale={String(Boolean(isStale))}
+      data-domain={domain ?? ''}
+      data-has-icon={String(Boolean(icon))}
+    >
+      {label}
+    </div>
+  ),
 }))
 
 vi.mock('@/components/reports/SkeletonCard', () => ({
@@ -103,6 +126,54 @@ describe('Treasury daily cashflow chart composition', () => {
       },
       isLoading: false,
     })
+  })
+
+  it('uses the shared three-column MetricGrid and preserves exact Treasury summary card order and contracts', () => {
+    const { container } = render(<TreasuryPage />)
+
+    const grid = container.querySelector('[data-metric-grid]') as HTMLElement
+    expect(grid).not.toBeNull()
+    expect(grid.getAttribute('data-columns')).toBe('3')
+    expect(grid.classList.contains('ds-metric-grid--cols-3')).toBe(true)
+    expect(container.querySelector('.report-grid')).toBeNull()
+
+    const cards = within(grid).getAllByTestId('metric-card')
+    expect(cards).toHaveLength(3)
+    expect(cards.map(card => card.getAttribute('data-label'))).toEqual([
+      'صافي التدفق الخزيني',
+      'إجمالي التحصيل الداخل',
+      'إجمالي المسترد',
+    ])
+    expect(cards.map(card => card.getAttribute('data-subtitle'))).toEqual([
+      'net_cashflow — مطابق لسجلات الخزينة والعُهد',
+      'نقد وعُهد مدفوعة فعلياً',
+      'مردودات نقدية للعملاء',
+    ])
+    expect(cards.map(card => card.getAttribute('data-value'))).toEqual(['100 ج.م', '120 ج.م', '20 ج.م'])
+    expect(cards.map(card => card.getAttribute('data-domain'))).toEqual(['treasury', 'treasury', 'treasury'])
+    expect(cards.map(card => card.getAttribute('data-has-icon'))).toEqual(['true', 'true', 'true'])
+
+    cards.forEach(card => {
+      expect(card.getAttribute('data-status')).toBe('OK')
+      expect(card.getAttribute('data-last-completed-at')).toBe('2026-09-20T00:00:00Z')
+      expect(card.getAttribute('data-stale')).toBe('false')
+    })
+  })
+
+  it('keeps exactly three 160px summary loading skeletons isolated from the existing chart state', () => {
+    mocks.useTreasurySummary.mockReturnValue({ data: undefined, isLoading: true })
+
+    const { container } = render(<TreasuryPage />)
+
+    const grid = container.querySelector('[data-metric-grid]') as HTMLElement
+    const skeletons = within(grid).getAllByTestId('skeleton-card')
+    expect(skeletons).toHaveLength(3)
+    expect(skeletons.map(skeleton => skeleton.getAttribute('data-height'))).toEqual(['160', '160', '160'])
+    expect(within(grid).queryAllByTestId('metric-card')).toHaveLength(0)
+
+    const panel = screen.getByRole('heading', { level: 2, name: 'التدفق النقدي اليومي' }).closest('.ds-chart-panel') as HTMLElement
+    expect(within(panel).queryByTestId('skeleton-card')).toBeNull()
+    expect(within(panel).getByText('لا توجد تدفقات خزينية في هذه الفترة')).not.toBeNull()
   })
 
   it('adopts the shared ChartPanel with semantic h1 to h2 hierarchy and exact trust context', () => {

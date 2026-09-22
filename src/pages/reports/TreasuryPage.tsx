@@ -1,10 +1,11 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useSystemTrustState, useTrustForComponent } from '@/hooks/useSystemTrustState'
 import { useTreasuryDailyTotals, useTreasurySummary } from '@/hooks/useTreasuryCashflow'
 import MetricCard from '@/components/reports/MetricCard'
 import SkeletonCard from '@/components/reports/SkeletonCard'
 import SystemHealthBar from '@/components/reports/SystemHealthBar'
 import ChartPanel from '@/components/patterns/ChartPanel'
+import MetricGrid from '@/components/patterns/MetricGrid'
 import ReportFilterBar, { type DateRange } from '@/components/reports/ReportFilterBar'
 import TrustStateBadge from '@/components/reports/TrustStateBadge'
 import FreshnessIndicator from '@/components/reports/FreshnessIndicator'
@@ -81,7 +82,7 @@ export default function TreasuryPage() {
 
       <SystemHealthBar trustRows={trustRows?.filter(r => r.component_name.includes('treasury'))} isLoading={trustLoading} error={trustError} />
 
-      <div className="report-grid">
+      <MetricGrid columns={3}>
         {summaryLoading ? [1,2,3].map(i => <SkeletonCard key={i} height={160} />) : (
           <>
             <MetricCard label="صافي التدفق الخزيني" subtitle="net_cashflow — مطابق لسجلات الخزينة والعُهد"
@@ -101,7 +102,7 @@ export default function TreasuryPage() {
               domain="treasury" icon={<ArrowUpFromLine size={16} />} />
           </>
         )}
-      </div>
+      </MetricGrid>
 
       <ChartPanel
         title="التدفق النقدي اليومي"
