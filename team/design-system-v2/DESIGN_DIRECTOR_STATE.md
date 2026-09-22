@@ -4,102 +4,100 @@
 
 - Review date: `2026-09-22`.
 - Authoritative branch: `design-system-v2-development`.
-- Exact Development HEAD at mandatory bootstrap / independent source inspection: `e26e06b34865aca0e65a1e816779e0c7bb7c416b`.
+- Exact Development HEAD at mandatory bootstrap / independent review: `48b4e127947b16c67a1411289660184146e8e636`.
 - Latest integrated product baseline: `DS2-REPORT-022 — Rep Credit Commitment summary metric-grid convergence` / PR #70 / squash merge `5fed58e8ff7c572eecd7427854de83d4c95d759c`.
-- Open implementation PRs targeting Development at selection time: `NONE`.
-- Current single implementation slice: `DS2-REPORT-023 — Sales summary metric-grid convergence`.
-- Current slice state: `READY — BOUNDED`.
-- Workstream bounding commit: `d96c745626d6b355baae9d818e92b782ef97722a`; historical-SHA correction/finalized workstream commit: `d63acc081912c32805be9cac1a6c712790d05928`.
-- Product Design blocker: `NONE`.
+- Active implementation PR: `#71 — DS2-REPORT-023: Sales summary metric-grid convergence`.
+- Exact implementation HEAD independently reviewed: `f77a3e13ede1650acc52c8f7917ab88a9f48dbc0`.
+- Current Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER`.
+- Design QA on the same exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
+- Evidence: `TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/visual/preview/release PASS is claimed.
 
 ## Independent Product Design judgment
 
-With REPORT022 integrated and no active implementation PR, the placeholder REPORT023 required a concrete dependency-safe boundary. I formed the selection from the current report source and shared-system contracts before comparing peer role states.
+REPORT023 remains correctly bounded and materially advances the Design System rather than beautifying Sales in isolation.
 
-The smallest useful next system convergence is the four-card Sales KPI summary in `src/pages/reports/SalesPage.tsx`. That surface still recreates responsive summary layout through the legacy page-level `report-grid`, while the existing `MetricGrid` already owns exactly this presentation responsibility and has a stable layout-only contract. The adjacent Sales analytical surfaces have already converged on shared `ChartPanel`, so isolating the KPI-summary wrapper advances system coherence without mixing chart, filter, query or business concerns.
+On exact PR HEAD `f77a3e13ede1650acc52c8f7917ab88a9f48dbc0`, the only product-code change is the Sales four-card KPI-summary wrapper moving from the legacy page-level `report-grid` to the existing shared `MetricGrid columns={4}`. This is the right ownership boundary: the Design System owns responsive layout while report/business truth stays caller-owned.
 
-I considered the analogous Treasury summary as another safe candidate. Sales is the stronger immediate proof because it exercises `MetricGrid columns={4}` with the report-domain `MetricCard` family: Receivables already proves `columns={3}` with `MetricCard`, while REPORT022 proves four-column layout with caller-local KPI shells. This therefore closes a real shared-pattern coverage gap rather than merely repeating a page cosmetic pass.
+The implementation preserves the strongest parts of the current report language instead of widening scope. The four `MetricCard`s, their order, labels, subtitles, values, Trust/Freshness/status fallback chains, domains and icon/no-icon contracts are unchanged. Loading remains exactly four `SkeletonCard height={160}` items under the existing combined loading gate. Both Sales `ChartPanel`s, filters, system-health, chart data/series/state behavior and all query/calculation/permission/backend/business semantics remain untouched.
 
-## REPORT023 bounded contract
+System fit is strong across the canonical device modes. The existing shared `MetricGrid` contract provides Desktop four-column comparison, Tablet two-column composition and Mobile one-column stacking using `minmax(0, 1fr)` / `min-width: 0`. The existing report `MetricCard` already protects large monetary values with `overflowWrap: anywhere` and LTR numeric presentation. No new breakpoint, local grid primitive, color language, token or page-specific variant was introduced.
 
-### Scope / system intent
+This is therefore a clean convergence slice: less duplicate layout ownership, no design-language fragmentation and no business-semantic migration into shared presentation code.
 
-Representative surface: `src/pages/reports/SalesPage.tsx` → four-card KPI summary only.
+## Exact-head acceptance findings
 
-Implementation may:
-- import and consume the existing `MetricGrid`;
-- replace only the current KPI-summary `<div className="report-grid">` wrapper with `<MetricGrid columns={4}>`;
-- extend the focused `SalesPage.test.tsx` source coverage needed to prove the bounded contract.
+### Scope / functional isolation — PASS
 
-The shared `MetricGrid` remains unchanged. It owns layout only: Desktop four columns for this caller, Tablet two columns, Mobile one column, with existing `min-width: 0` / `minmax(0, 1fr)` containment.
+PR #71 changed exactly three files:
+- `src/pages/reports/SalesPage.tsx`
+- `src/pages/reports/SalesPage.test.tsx`
+- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
-### Content / truth preservation
+Product change is wrapper-only: import `MetricGrid`, replace `<div className="report-grid">` with `<MetricGrid columns={4}>`, and close the matching wrapper.
 
-Loading must remain exactly four `SkeletonCard height={160}` items under the existing `isLoading = dailyLoading || summaryLoading` gate.
+No DB/migration/RPC/service/query/cache/RBAC/RLS/permission/route/validation/calculation/export/print/workflow/backend/business file changed. No shared `MetricGrid` API/CSS/token widening occurred.
 
-Ready state must preserve these exact four `MetricCard`s and DOM/business order:
-1. `صافي الإيراد` — `summary.total_revenue` — `revTrust?.status ?? salesTrust?.status ?? null` — domain `sales` — `TrendingUp`.
-2. `إجمالي الضريبة المحصلة` — `summary.total_tax` — `taxTrust?.status ?? salesTrust?.status ?? null` — domain `sales` — `ShoppingBag`.
-3. `قيمة المرتجعات` — `summary.total_returns_value` — `revTrust?.status ?? salesTrust?.status ?? null` — domain `sales` — `TrendingDown`.
-4. `ذمم عملاء منشأة` — `summary.total_ar_credit` — `arTrust?.status ?? salesTrust?.status ?? null` — domain `ar` — existing no-icon contract.
+### Device / RTL / hierarchy — PASS at source level
 
-All current labels, subtitles, `fmtCur` formatting, `lastCompletedAt`, `isStale`, Trust/Freshness semantics and caller-owned report truth remain unchanged.
+- Desktop: four metrics remain visible as a dense comparison row.
+- Tablet `769–1024px`: shared two-column composition.
+- Mobile `<=768px`: shared one-column stack with no ordinary KPI-grid horizontal overflow.
+- Arabic business/DOM order remains unchanged.
+- Long labels and large monetary values remain within the existing shared/card containment contracts.
+- Cards remain informational/non-interactive; no focus, keyboard, touch-target or action-priority contract changed.
+- Existing semantic surfaces/tokens continue to govern dark-mode behavior; this slice does not introduce a parallel visual language.
 
-### Device / RTL / accessibility acceptance
+### State / content preservation — PASS
 
-- Desktop: retain dense four-metric comparison in one canonical shared grid.
-- Tablet: shared two-column composition.
-- Mobile: shared one-column stack with no ordinary KPI-grid horizontal overflow.
-- Preserve Arabic-first RTL order, long-label wrapping and large currency-value containment.
-- Cards remain informational/non-interactive; no focus target, keyboard path, touch target or action semantics are added or removed.
-- No dark-mode/token behavior is changed by this slice; the existing shared grid and cards continue to inherit current semantic surfaces/tokens.
+Exact ready-state card order remains:
+1. `صافي الإيراد`
+2. `إجمالي الضريبة المحصلة`
+3. `قيمة المرتجعات`
+4. `ذمم عملاء منشأة`
 
-### Explicit exclusions / stop rule
+The existing `isLoading = dailyLoading || summaryLoading` gate and exactly four `160px` summary skeletons are preserved. Existing `MetricCard` blocked/running/warning/freshness behavior remains caller/component-owned. Both analytical panels preserve their current blocked/loading/empty/ready composition and dimensions.
 
-Out of scope:
-- both existing Sales `ChartPanel`s, including titles/descriptions/actions, blocked/loading/empty/ready behavior, body heights, chart data mapping, margins, axes, tooltip, gradients and series;
-- page header, `ReportFilterBar`, `SystemHealthBar`, Trust/Freshness components and date-range behavior;
-- formatting helpers, hooks, query/cache behavior, calculations, data mapping, trust lookup, permissions/RBAC/RLS, routing, backend/services, validation, export/print, workflow or business semantics;
-- any shared `MetricGrid` API/CSS/token change;
-- global `report-grid` cleanup, `MetricCard` redesign/conversion, or another report page.
+### Focused evidence — PASS with non-executed label
 
-If any excluded shared or functional change becomes necessary, REPORT023 becomes `BLOCKED`; the implementation PR must not widen.
+The focused Sales tests now protect:
+- shared `[data-metric-grid]` adoption with `data-columns="4"`;
+- exact four-card order/content/domain/icon and Trust/Freshness wiring;
+- exactly four `160px` loading placeholders;
+- preservation of both existing chart-panel state contracts.
 
-### Focused evidence contract
-
-Focused tests should prove:
-- the Sales summary adopts `[data-metric-grid]` with `data-columns="4"`;
-- exact four-card order/content remains intact;
-- loading remains exactly four `160px` placeholders;
-- existing Sales chart-panel tests remain intact and continue to guard both analytical sections against drift.
-
-Evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved exact-head local execution actually occurs. Hosted GitHub Actions/CI remain forbidden.
+The tests were authored but not executed in an approved exact-head runtime. Evidence remains `TESTS_AUTHORED_NOT_EXECUTED`. No source-visible build/type blocker was found during this review, but no build/test/lint/runtime/visual PASS is claimed.
 
 ## Peer-state synthesis / contradiction status
 
-After the independent selection:
-- **Integration State / Team Memory:** aligned on REPORT022 being integrated and REPORT023 being the sole placeholder requiring Product Design bounding.
-- **UI Production Engineer:** its specialist state is lifecycle-stale at REPORT022 REVIEW; it contains no current REPORT023 implementation and no contradictory system rule.
-- **Design QA:** its specialist state is lifecycle-stale at REPORT022 exact-head review; it contains no contradiction with the new boundary.
-- **North Star / Decision Log / component and device guidance:** aligned with shared-pattern reuse, Arabic-first responsive composition, Desktop density, Mobile containment and strict functional isolation.
-- **Issue #27:** latest lifecycle event confirms REPORT022 DONE and delegates REPORT023 bounding to Product Design.
+I formed the Product Design judgment from the exact PR diff/current Sales source, shared `MetricGrid` implementation/CSS, report `MetricCard`, focused tests and relevant Design System blueprint/device guidance before comparing peer role states.
+
+- **Design QA:** fresh and aligned on exact HEAD `f77a3e13ede1650acc52c8f7917ab88a9f48dbc0`; `GREEN-DEV + SOURCE_REVIEW_PASS` with the same evidence limits.
+- **UI Production Engineer:** Development copy of its role state is lifecycle-stale at REPORT022, but the PR-owned state/diff is current for REPORT023 and aligned with the bounded contract. This is stale lifecycle context, not a contradiction.
+- **Development Integrator:** lifecycle-stale at merged REPORT022; no REPORT023 blocker or conflicting durable rule.
+- **Team Memory:** lifecycle-current through REPORT022 and still describes REPORT023 as awaiting Product Design bounding; now stale after the already-recorded REPORT023 boundary and active PR, but not contradictory to the accepted design-system direction.
+- **North Star / Decision Log / component/page/device guidance:** aligned with shared-pattern reuse, Arabic-first responsive composition, Desktop density, Mobile containment and strict functional isolation.
+- **PR review threads:** none.
 
 Current contradiction classification: `NONE`.
+
+## What changed since previous state
+
+- REPORT023 moved from `READY — BOUNDED` to an active Draft PR in REVIEW.
+- Product Design independently reviewed exact PR HEAD `f77a3e13ede1650acc52c8f7917ab88a9f48dbc0` and accepts it with `PASS — NO DESIGN-SYSTEM BLOCKER`.
+- Design QA is independently GREEN on the same exact HEAD.
+- No system-direction or durable-rule change occurred, so `TEAM_MEMORY.md`, `DECISION_LOG.md` and the Workstream do not require Product Design mutation in this run.
 
 ## Repository actions this run
 
 - Completed the mandatory shared-memory bootstrap in the required order.
-- Inspected issue #27, current Development HEAD, open PRs targeting Development, current Sales and Treasury report source, Sales focused tests, `MetricGrid`, its responsive CSS, and relevant component/page/device guidance.
-- Independently selected and bounded REPORT023 as the Sales summary metric-grid convergence slice.
-- Updated `31_AGENT_TEAM_WORKSTREAM.md` to authorize exactly this one bounded implementation slice.
+- Inspected issue #27, current Development HEAD, all open PRs targeting Development, PR #71 metadata/diff/reviews/threads, Sales source, focused tests, `MetricGrid`, responsive CSS, report `MetricCard`, and relevant component/page/migration/device guidance.
 - Updated only this owned specialist state among role-state files.
-- Did not modify Team Memory or Decision Log because no overall design direction or durable rule changed.
 - Did not implement product code, merge any PR, touch `main`, deploy Vercel, modify preview branches, trigger/rerun GitHub Actions or use hosted CI.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer.
-- **What changed:** `DS2-REPORT-023 — Sales summary metric-grid convergence` is now the single `READY — BOUNDED` implementation slice from the inspected Development baseline `e26e06b34865aca0e65a1e816779e0c7bb7c416b`; the finalized workstream boundary is on Development commit `d63acc081912c32805be9cac1a6c712790d05928`.
-- **Preserve:** exact four Sales KPI cards/order/labels/subtitles/values/status fallback/Trust/Freshness/domain/icon contracts; exactly four `160px` loading placeholders and the existing combined loading gate; Mobile 1 / Tablet 2 / Desktop 4 shared MetricGrid composition; both Sales ChartPanels and all filter/header/system-health/query/calculation/permission/backend/business behavior unchanged.
-- **Need from you:** start from the latest Development HEAD, implement only the KPI-summary wrapper adoption with existing `MetricGrid columns={4}`, add focused tests for grid adoption/card order/loading preservation, keep existing chart tests intact, and open exactly one REPORT023 implementation PR. If any excluded shared or functional change is required, mark the slice `BLOCKED` instead of widening it.
+- **To:** Development Integrator.
+- **What changed:** Product Design accepts PR #71 exact HEAD `f77a3e13ede1650acc52c8f7917ab88a9f48dbc0` with `PASS — NO DESIGN-SYSTEM BLOCKER`; Design QA is already `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` on the same HEAD.
+- **Preserve:** exact four Sales KPI cards/order/labels/subtitles/values/status fallback/Trust/Freshness/domain/icon contracts; exactly four `160px` loading placeholders under the existing combined loading gate; Mobile 1 / Tablet 2 / Desktop 4 shared `MetricGrid` composition; both Sales ChartPanels and all filter/header/system-health/query/calculation/permission/backend/business behavior unchanged; no shared API/CSS/token widening.
+- **Need from you:** revalidate that PR #71 HEAD/base are unchanged, Development drift is governance-only/non-overlapping, no new review/thread blocker exists, mergeability remains clean, scope/functional isolation still pass, then integrate REPORT023 if every normal gate remains valid. Any PR-head movement invalidates both current Product Design and QA exact-head acceptance.
 - **Blocker level:** `NONE`.
-- **Baseline:** source-selection baseline `e26e06b34865aca0e65a1e816779e0c7bb7c416b`; finalized workstream HEAD before this state write `d63acc081912c32805be9cac1a6c712790d05928`; latest integrated product merge `5fed58e8ff7c572eecd7427854de83d4c95d759c`.
+- **Baseline:** Development bootstrap HEAD `48b4e127947b16c67a1411289660184146e8e636`; exact accepted PR #71 HEAD `f77a3e13ede1650acc52c8f7917ab88a9f48dbc0`; latest integrated product merge `5fed58e8ff7c572eecd7427854de83d4c95d759c`.
