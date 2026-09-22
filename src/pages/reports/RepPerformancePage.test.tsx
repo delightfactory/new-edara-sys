@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   useTrustForComponent: vi.fn(),
   useRepPerformanceSummary: vi.fn(),
   useRepPerformanceTable: vi.fn(),
+  metricCard: vi.fn(),
   responsiveContainer: vi.fn(),
   barChart: vi.fn(),
   bar: vi.fn(),
@@ -28,7 +29,28 @@ vi.mock('@/hooks/useRepPerformance', () => ({
 }))
 
 vi.mock('@/components/reports/MetricCard', () => ({
-  default: ({ label }: { label: string }) => <div data-testid="metric-card">{label}</div>,
+  default: ({ label, value, status, lastCompletedAt, isStale, domain }: {
+    label: string
+    value: ReactNode
+    status: string | null
+    lastCompletedAt?: string
+    isStale?: boolean
+    domain: string
+  }) => {
+    mocks.metricCard({ label, value, status, lastCompletedAt, isStale, domain })
+    return (
+      <div
+        data-testid="metric-card"
+        data-domain={domain}
+        data-status={status ?? ''}
+        data-last-completed-at={lastCompletedAt ?? ''}
+        data-stale={String(Boolean(isStale))}
+      >
+        <span data-testid="metric-label">{label}</span>
+        <span data-testid="metric-value">{value}</span>
+      </div>
+    )
+  },
 }))
 
 vi.mock('@/components/reports/SkeletonCard', () => ({
@@ -145,6 +167,86 @@ function setViewport(width: number) {
 function getDetailSection() {
   return screen.getByText('تفصيل الأداء — جميع المندوبين').parentElement as HTMLElement
 }
+
+describe('Rep Performance summary MetricGrid convergence', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mocks.useSystemTrustState.mockReturnValue({ data: [], isLoading: false, error: null })
+    mocks.useTrustForComponent.mockReturnValue({ status: 'OK', last_completed_at: '2026-09-22T00:00:00Z', is_stale: false })
+    mocks.useRepPerformanceSummary.mockReturnValue({
+      data: {
+        total_revenue: 100_000,
+        total_reps: 16,
+        avg_revenue_per_rep: 6_250,
+        total_returns_value: 8_000,
+      },
+      isLoading: false,
+    })
+    mocks.useRepPerformanceTable.mockReturnValue({ data: rows, isLoading: false })
+  })
+
+  it('uses the shared four-column MetricGrid with exact KPI order, values, and caller-owned trust/domain wiring', () => {
+    render(<RepPerformancePage />)
+
+    const grid = document.querySelector('[data-metric-grid]') as HTMLElement
+    expect(grid).not.toBeNull()
+    expect(grid.getAttribute('data-columns')).toBe('4')
+    expect(grid.classList.contains('ds-metric-grid--cols-4')).toBe(true)
+    expect(document.querySelector('.report-grid')).toBeNull()
+
+    const cards = within(grid).getAllByTestId('metric-card')
+    expect(cards).toHaveLength(4)
+    expect(cards.map(card => within(card).getByTestId('metric-label').textContent)).toEqual([
+      'إجمالى الإيراد الصافى',
+      'مندوبون نشطون',
+      'متوسط إيراد المندوب',
+      'إجمالى المرتجعات',
+    ])
+    expect(cards.map(card => within(card).getByTestId('metric-value').textContent)).toEqual([
+      '100,000 ج.م',
+      '16',
+      '6,250 ج.م',
+      '8,000 ج.م',
+    ])
+    cards.forEach(card => {
+      expect(card.getAttribute('data-domain')).toBe('sales')
+      expect(card.getAttribute('data-status')).toBe('OK')
+      expect(card.getAttribute('data-last-completed-at')).toBe('2026-09-22T00:00:00Z')
+      expect(card.getAttribute('data-stale')).toBe('false')
+    })
+    expect(screen.getByTestId('system-health-bar')).toBeTruthy()
+    expect(screen.getByTestId('report-filter-bar')).toBeTruthy()
+  })
+
+  it('preserves the combined summaryLoading/tableLoading gate with exactly four 160px summary skeletons', () => {
+    mocks.useRepPerformanceSummary.mockReturnValue({ data: null, isLoading: true })
+    const { rerender } = render(<RepPerformancePage />)
+
+    let grid = document.querySelector('[data-metric-grid]') as HTMLElement
+    let skeletons = within(grid).getAllByTestId('skeleton-card')
+    expect(skeletons).toHaveLength(4)
+    skeletons.forEach(skeleton => expect(skeleton.getAttribute('data-height')).toBe('160'))
+    expect(within(grid).queryByTestId('metric-card')).toBeNull()
+
+    mocks.useRepPerformanceSummary.mockReturnValue({
+      data: {
+        total_revenue: 100_000,
+        total_reps: 16,
+        avg_revenue_per_rep: 6_250,
+        total_returns_value: 8_000,
+      },
+      isLoading: false,
+    })
+    mocks.useRepPerformanceTable.mockReturnValue({ data: rows, isLoading: true })
+    rerender(<RepPerformancePage />)
+
+    grid = document.querySelector('[data-metric-grid]') as HTMLElement
+    skeletons = within(grid).getAllByTestId('skeleton-card')
+    expect(skeletons).toHaveLength(4)
+    skeletons.forEach(skeleton => expect(skeleton.getAttribute('data-height')).toBe('160'))
+    expect(within(grid).queryByTestId('metric-card')).toBeNull()
+  })
+})
 
 describe('Rep Performance comparison ChartPanel convergence', () => {
   beforeEach(() => {

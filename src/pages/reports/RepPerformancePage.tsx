@@ -7,6 +7,7 @@ import SystemHealthBar from '@/components/reports/SystemHealthBar'
 import ReportFilterBar, { type DateRange } from '@/components/reports/ReportFilterBar'
 import TrustStateBadge from '@/components/reports/TrustStateBadge'
 import FreshnessIndicator from '@/components/reports/FreshnessIndicator'
+import MetricGrid from '@/components/patterns/MetricGrid'
 import ChartPanel from '@/components/patterns/ChartPanel'
 import ResponsiveCollection from '@/components/patterns/ResponsiveCollection'
 import Card from '@/components/patterns/Card'
@@ -116,7 +117,7 @@ export default function RepPerformancePage() {
 
       <SystemHealthBar trustRows={trustRows} isLoading={trustLoading} error={trustError} />
 
-      <div className="report-grid">
+      <MetricGrid columns={4}>
         {isLoading ? [1,2,3,4].map(i => <SkeletonCard key={i} height={160} />) : (
           <>
             <MetricCard label="إجمالى الإيراد الصافى" subtitle="جميع المندوبين مجمّعاً"
@@ -141,7 +142,7 @@ export default function RepPerformancePage() {
               domain="sales" icon={<TrendingDown size={16} />} />
           </>
         )}
-      </div>
+      </MetricGrid>
 
       {/* Horizontal Bar Chart */}
       <ChartPanel
