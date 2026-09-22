@@ -6,6 +6,7 @@ import SkeletonCard from '@/components/reports/SkeletonCard'
 import SystemHealthBar from '@/components/reports/SystemHealthBar'
 import TrustStateBadge from '@/components/reports/TrustStateBadge'
 import FreshnessIndicator from '@/components/reports/FreshnessIndicator'
+import MetricGrid from '@/components/patterns/MetricGrid'
 import ResponsiveCollection from '@/components/patterns/ResponsiveCollection'
 import Card from '@/components/patterns/Card'
 import KeyValueList from '@/components/patterns/KeyValueList'
@@ -97,7 +98,7 @@ export default function CustomerHealthPage() {
 
       <SystemHealthBar trustRows={trustRows?.filter(r => r.component_name.includes('customer_health'))} isLoading={trustLoading} error={trustError} />
 
-      <div className="report-grid">
+      <MetricGrid columns={3}>
         {isLoading ? [1,2,3].map(i => <SkeletonCard key={i} height={150} />) : (
           <>
             <MetricCard label="نشطون" subtitle="تعاملوا خلال آخر 90 يوماً"
@@ -118,7 +119,7 @@ export default function CustomerHealthPage() {
               secondary={stats?.avg_recency != null ? { label: 'متوسط أيام الخمود', value: `${Math.round(stats.avg_recency)} يوم` } : undefined} />
           </>
         )}
-      </div>
+      </MetricGrid>
 
       {/* Customer table */}
       <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-primary)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>

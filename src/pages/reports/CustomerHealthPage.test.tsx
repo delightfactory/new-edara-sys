@@ -102,6 +102,41 @@ describe('Customer Health responsive detail collection', () => {
     })
   })
 
+  it('uses the shared three-column MetricGrid for the summary and preserves exact card order', () => {
+    render(<CustomerHealthPage />)
+
+    const grid = document.querySelector('[data-metric-grid]') as HTMLElement
+    expect(grid).not.toBeNull()
+    expect(grid.getAttribute('data-columns')).toBe('3')
+    expect(grid.classList.contains('ds-metric-grid--cols-3')).toBe(true)
+    expect(within(grid).getAllByTestId('metric-card').map(card => card.textContent)).toEqual([
+      'نشطون',
+      'خامدون',
+      'متوسط القيمة (90 يوم)',
+    ])
+    expect(document.querySelector('.report-grid')).toBeNull()
+  })
+
+  it('keeps exactly three 150px summary skeletons inside MetricGrid while detail loading stays five 44px rows', () => {
+    mocks.useCustomerHealthSummary.mockReturnValue({
+      data: { stats, rows },
+      isLoading: true,
+    })
+
+    render(<CustomerHealthPage />)
+
+    const grid = document.querySelector('[data-metric-grid]') as HTMLElement
+    const summarySkeletons = within(grid).getAllByTestId('skeleton-card')
+    expect(summarySkeletons).toHaveLength(3)
+    summarySkeletons.forEach(skeleton => expect(skeleton.getAttribute('data-height')).toBe('150'))
+
+    const detailSection = getDetailSection()
+    const loadingCollection = detailSection.querySelector('[data-collection-state="loading"]') as HTMLElement
+    const detailSkeletons = within(loadingCollection).getAllByTestId('skeleton-card')
+    expect(detailSkeletons).toHaveLength(5)
+    detailSkeletons.forEach(skeleton => expect(skeleton.getAttribute('data-height')).toBe('44'))
+  })
+
   it('preserves the compact semantic five-column Desktop table with no card renderer mounted', () => {
     render(<CustomerHealthPage />)
 
