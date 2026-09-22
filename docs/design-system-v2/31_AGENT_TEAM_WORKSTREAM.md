@@ -165,19 +165,48 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-025 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
-Status: `READY`
-Owner role for immediate next action: Product Design Director
+### DS2-REPORT-025 — Customer Health summary metric-grid convergence
+Status: `READY — BOUNDED`
+Owner role for immediate next action: UI Production Engineer
+Representative surface: `src/pages/reports/CustomerHealthPage.tsx` → three-card customer-health KPI summary only.
+Product Design source baseline inspected: `0fc85407e7ca107493a84bd808020af76e846778`.
 
-System intent:
-- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline;
-- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance/exclusion boundary;
-- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer proves the need;
-- preserve REPORT001-024 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
-- preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
-- do not turn REPORT025 into broad multi-page report beautification.
+System-pattern intent:
+- remove the remaining page-local responsive ownership from Customer Health's KPI summary by consuming the already-proven shared `MetricGrid` layout contract;
+- keep report/customer-health truth, trust/freshness/status semantics, formatting and business meaning caller-owned;
+- continue the same report-family grammar proven by REPORT019/021/022/023/024 without creating a new local mini system or widening a shared API.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+Implementation contract:
+- add the existing `MetricGrid` import from `@/components/patterns/MetricGrid`;
+- replace only the summary `<div className="report-grid">` wrapper with `<MetricGrid columns={3}>`;
+- preserve `isLoading` as the existing summary gate and preserve exactly three `SkeletonCard height={150}` placeholders;
+- preserve ready-card DOM/business order exactly: `نشطون` → `خامدون` → `متوسط القيمة (90 يوم)`;
+- preserve every existing card prop and meaning: subtitles, `stats` values, `fmtCur`, `custTrust` status/`last_completed_at`/`is_stale`, `domain="customers"`, `ActivitySquare`/`UserX`/`Users2` icons, and the third card's conditional `secondary` average-recency fact;
+- use the unchanged shared device grammar: Desktop three columns, Tablet two columns, Mobile one column, with no ordinary summary-grid horizontal overflow.
+
+State / accessibility acceptance:
+- summary cards remain passive informational surfaces with no new focus, keyboard, touch, permission, destructive-action or navigation behavior;
+- preserve Arabic-first copy/order and existing MetricCard long-value containment/LTR numeric treatment;
+- preserve existing loading/ready semantics exactly; do not invent new blocked/empty/error semantics for the summary;
+- preserve dark/RTL presentation through existing semantic tokens and shared MetricGrid/MetricCard contracts.
+
+Explicit exclusions:
+- the page header/title/subtitle/date control and `SystemHealthBar`;
+- the complete REPORT012 Customer Health detail collection: blocked state, Trust/Freshness actions, five-column Desktop table, Tablet/Mobile `ResponsiveCollection + Card + KeyValueList` renderers, recency/status presentation, five-row loading state, exact empty copy and >50 informational footer;
+- `MetricCard` redesign or migration to another metric primitive;
+- shared `MetricGrid` API/CSS/tokens, global `report-grid` cleanup, date-field convergence, FilterBar work, table/DataTable changes, pagination or export/print work;
+- hooks/queries/cache/data shaping/calculations/trust-key logic, permissions/RBAC/RLS, routing, backend/services, validation, workflow and every business semantic.
+
+Focused test intent:
+- extend `CustomerHealthPage.test.tsx` to prove the summary mounts `[data-metric-grid]` with `data-columns="3"` in ready state;
+- prove exact three-card labels/order/contracts remain present;
+- in loading state, prove exactly three `150px` summary skeletons within the MetricGrid while retaining the existing REPORT012 detail-collection tests and their five `44px` loading rows;
+- evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless approved exact-head execution actually occurs.
+
+Escalation rule:
+- if exact current summary or REPORT012 detail semantics cannot be preserved without changing functional behavior or widening the shared MetricGrid/MetricCard contracts, mark REPORT025 `BLOCKED` rather than expand the PR.
+
+Implementation is authorized for exactly this bounded slice from the latest `design-system-v2-development` HEAD.
 
 ## Product migration roadmap
 
@@ -229,7 +258,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-024` — `DONE`
-- `DS2-REPORT-025 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY`
+- `DS2-REPORT-025 — Customer Health summary metric-grid convergence` — `READY — BOUNDED`
 - further Reports/Analytics convergence beyond REPORT025 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
