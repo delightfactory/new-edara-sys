@@ -38,17 +38,17 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-026`.
+Product UI is integrated through `DS2-REPORT-027`.
 
 Latest product integration:
-- PR: `#74 — DS2-REPORT-026: Product Performance summary metric-grid convergence`
-- Exact reviewed PR HEAD: `f3b2386130924ee375f1912190a6ad82befe0065`
-- Squash merge commit: `9ac63ca20baaeefa6fe5cb3e87a9734f59847ac5`
+- PR: `#75 — DS2-REPORT-027: Churn Risk filter-control field convergence`
+- Exact reviewed PR HEAD: `2beb65da6a2b46f3e1bf831471c55b9a5bbf8f5a`
+- Squash merge commit: `d9a1fb373142cac8c9f7f1b7545d340f99298f8a`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact HEAD
 - Runtime/preview/release evidence: not claimed
 
-The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, representative Customers/Sales/Inventory/Procurement/Finance/HR/Field/Work migrations, Reports route/date/filter convergence, shared `ChartPanel`, shared `MetricGrid`, and responsive detail-collection proofs using `ResponsiveCollection + Card + KeyValueList` while preserving dense Desktop comparison and caller-owned business truth.
+The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, representative Customers/Sales/Inventory/Procurement/Finance/HR/Field/Work migrations, Reports route/date/filter convergence, shared `ChartPanel`, shared `MetricGrid`, shared V2 `Field` controls in representative report headers, and responsive detail-collection proofs using `ResponsiveCollection + Card + KeyValueList` while preserving dense Desktop comparison and caller-owned business truth.
 
 ## Completed slices
 
@@ -72,61 +72,32 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - `DS2-WORK-003 — Supervisor operational summary metric convergence` — `DONE` — PR #47 — merge `95a84a8109f45cf9ac32c92d5d950f64d38dbaa0` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-001` through `DS2-REPORT-025` — `DONE`; detailed reviewed/merge SHA evidence remains preserved in Git history and prior workstream revisions.
 - `DS2-REPORT-026 — Product Performance summary metric-grid convergence` — `DONE` — PR #74 — reviewed HEAD `f3b2386130924ee375f1912190a6ad82befe0065` — merge `9ac63ca20baaeefa6fe5cb3e87a9734f59847ac5` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
+- `DS2-REPORT-027 — Churn Risk filter-control field convergence` — `DONE` — PR #75 — reviewed HEAD `2beb65da6a2b46f3e1bf831471c55b9a5bbf8f5a` — merge `d9a1fb373142cac8c9f7f1b7545d340f99298f8a` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 
-## REPORT026 system result
+## REPORT027 system result
 
-- Product Performance's four-card KPI summary now uses the established shared `MetricGrid columns={4}` instead of the page-local `report-grid` wrapper.
-- Desktop preserves four-column management comparison; Tablet uses the shared two-column composition; Mobile uses the shared one-column stack.
-- Exact ready-card order `إجمالى الإيراد` → `منتجات نشطة` → `أعلى منتج` → `متوسط نسبة المرتجع`, labels, subtitles, values, `fmtCur` / `fmtPct`, `salesTrust` status/freshness/stale wiring, `domain="sales"`, icons and caller-owned `avgReturnRate` remain unchanged.
-- `isLoading = summaryLoading || tableLoading` remains unchanged with exactly four `SkeletonCard height={160}` placeholders.
-- REPORT011 Product Performance `ChartPanel` and REPORT006 responsive detail collection remain unchanged.
-- No shared API/CSS/token/breakpoint widening and no DB/RPC/service/query/cache/calculation/RBAC/RLS/permission/routing/validation/export/print/workflow/backend/business semantic change occurred.
+- Churn Risk's page-header risk classifier now uses the existing shared V2 `Select` / `Field` grammar instead of page-local native styling.
+- Its single `بتاريخ:` as-of-date control now uses existing shared `DateField` / `Input` / `Field` grammar.
+- Exact `riskLabel ?? ''`, clearing to `undefined`, option order/values/copy, `asOfDate`, `max={today}`, date onChange and both customer-risk hook inputs remain caller-owned and unchanged.
+- Arabic/RTL composition and accessible naming/label association improve through the shared Field contract; existing wrapped header remains contained across Mobile/Tablet/Desktop and shared touch sizing remains authoritative through Tablet.
+- The five-card KPI summary, ChartPanel/pie/trust/SystemHealthBar, responsive detail collection, Desktop table, Tablet/Mobile cards, loading/blocked/empty behavior and all business/query/permission/backend semantics remain unchanged.
+- No shared API/CSS/token/breakpoint widening or deployment/workflow change occurred.
 
 ## Current single READY slice
 
-### DS2-REPORT-027 — Churn Risk filter-control field convergence
-Status: `READY — BOUNDED`
-Owner role for immediate next action: UI Production Engineer.
+### DS2-REPORT-028 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
+Status: `READY`
+Owner role for immediate next action: Product Design Director.
 
-Representative surface:
-- `src/pages/reports/ChurnRiskPage.tsx` → page-header risk-classification select and single `بتاريخ` as-of-date control only.
+Intent:
+- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline before implementation;
+- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance/exclusion boundary;
+- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
+- preserve REPORT001-027 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
+- preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
+- do not turn REPORT028 into broad multi-page report beautification.
 
-System intent:
-- remove the remaining page-local native form-control styling in this report header by composing the existing V2 `Select` and `DateField` / `Field` grammar;
-- keep report filtering truth, date semantics and hook inputs caller-owned;
-- prove that the shared Field system can carry compact report-scope controls without adding a page-local input language or widening shared APIs.
-
-Implementation boundary:
-- replace only the current inline-styled risk `<select>` with existing shared V2 `Select`;
-- replace only the current inline-styled native `<input type="date">` with existing shared V2 `DateField`;
-- preserve exact risk state/value behavior: `riskLabel ?? ''`, `setRiskLabel(e.target.value || undefined)`, option order and values `all / VIP / LOYAL / ENGAGED / AT_RISK / DORMANT`, and current Arabic option copy;
-- preserve exact as-of-date state/value behavior: `asOfDate`, `max={today}`, and `setAsOfDate(e.target.value)`;
-- provide an accessible name for the risk classification control and preserve the visible `بتاريخ` meaning through the shared Field/accessibility contract without changing filter semantics;
-- preserve the current wrapping header composition while ensuring the two controls remain contained with no ordinary horizontal overflow.
-
-Device / state / accessibility acceptance:
-- **Mobile `<=768px`:** controls remain usable in the wrapped header, inherit canonical touch-safe V2 control height, have accessible labels/names and create no ordinary page overflow;
-- **Tablet `769–1024px`:** controls remain touch-first and deliberately contained rather than inheriting compact Desktop-only sizing;
-- **Desktop `>=1025px`:** preserve the compact management/report header and current information hierarchy;
-- Arabic labels/options remain RTL-native; native option/date value behavior remains unchanged;
-- keyboard/focus/label relationships come from the existing `Field`/`Select`/`DateField` contracts; no custom focus implementation is added;
-- loading/blocked/chart/detail states are unaffected because the slice changes presentation controls only.
-
-Focused evidence expected:
-- extend `src/pages/reports/ChurnRiskPage.test.tsx` with focused source-level tests for accessible shared risk/date controls and preservation of the exact selected values / hook-filter propagation;
-- preserve existing ChartPanel and ResponsiveCollection tests unchanged;
-- expected normal evidence label remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved execution route actually runs them.
-
-Explicit exclusions:
-- no Churn Risk five-card KPI-grid migration or five-column `MetricGrid` API/CSS work;
-- no ChartPanel, pie chart, chart colors/legend/tooltip, SystemHealthBar or Trust/Freshness change;
-- no customer-detail `ResponsiveCollection`, Desktop table, Tablet/Mobile cards, RiskBadge or RecencyCell change;
-- no second report page and no Customer Reengagement work;
-- no shared `Select`, `DateField`, `Field`, Input API/CSS/token/breakpoint modification;
-- no hook/query/cache/calculation/RPC/DB/RBAC/RLS/permission/routing/export/print/validation/workflow/backend/business-semantic change.
-
-Stop rule:
-- if correct implementation requires changing shared control APIs/styles, date/filter semantics, or any excluded functional behavior, mark REPORT027 `BLOCKED` and return to Product Design for re-bounding instead of widening the PR.
+Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
 
 ## Product migration roadmap
 
@@ -177,9 +148,9 @@ Open only when a real migrated screen proves the recurring gap:
 - further Work detail/feedback/management convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
 
 ### I. Reports / Analytics
-- `DS2-REPORT-001` through `DS2-REPORT-026` — `DONE`
-- `DS2-REPORT-027 — Churn Risk filter-control field convergence` — `READY — BOUNDED`
-- further Reports/Analytics convergence beyond REPORT027 — `BACKLOG` / each concern must be bounded separately
+- `DS2-REPORT-001` through `DS2-REPORT-027` — `DONE`
+- `DS2-REPORT-028 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY`
+- further Reports/Analytics convergence beyond REPORT028 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
