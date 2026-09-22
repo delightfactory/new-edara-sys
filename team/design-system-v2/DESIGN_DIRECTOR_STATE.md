@@ -4,87 +4,103 @@
 
 - Review date: `2026-09-22`.
 - Authoritative branch: `design-system-v2-development`.
-- Exact Development HEAD independently inspected before REPORT028 bounding: `844a20128ff1c2b11b85a93f3416ac1957e76daa`.
-- Development HEAD immediately before this owned-state write: `9bb61b5e9a8f09362a36d1e27674e01f4cd260c3`.
+- Development HEAD immediately before this owned-state write: `7b4540bf51c081fbb76a45969c6abad328a62eb4`.
 - Latest integrated product baseline: `DS2-REPORT-027 — Churn Risk filter-control field convergence` / PR #75 / squash merge `d9a1fb373142cac8c9f7f1b7545d340f99298f8a`.
 - Active slice: `DS2-REPORT-028 — Profit Dashboard summary metric-grid convergence`.
-- Active implementation PR: none at selection/bounding time.
-- Product Design disposition: `READY — BOUNDED`.
+- Active implementation PR: `#76 — DS2-REPORT-028: Profitability summary metric-grid convergence`.
+- Feature baseline: `d1185e06f7643f20da5b64c24ff31fa6070c3ca7`.
+- Exact implementation HEAD independently reviewed: `cd7ac87d0839a7e7706858afb4efbdea2025ff8e`.
+- Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER`.
+- Design QA on the same exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
+- Evidence: `TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/visual/preview/release PASS claimed.
 - Current blocker classification: `NONE`.
 
 ## Independent Product Design judgment
 
-**READY — REPORT028 should converge only the four-card profitability summary grid onto the existing shared `MetricGrid columns={4}` contract.**
+**PASS — REPORT028 is a correct bounded system-convergence change on exact PR HEAD `cd7ac87d0839a7e7706858afb4efbdea2025ff8e`.**
 
-I formed this judgment from the exact latest Development source for the remaining Reports/Analytics surfaces, the existing `MetricGrid` implementation and responsive CSS, the Reports page grammar and device strategy, before comparing peer role states.
+I formed this judgment independently from the exact PR diff, exact-head ProfitDashboard source/test artifacts, existing shared `MetricGrid`, existing report-domain `MetricCard`, responsive V2 surface CSS, current report/page/device guidance and the North Star before comparing peer states.
 
-`src/pages/reports/profitability/ProfitDashboard.tsx` contains a small, isolated system-coherence gap: four existing report-domain `MetricCard`s are still arranged by the legacy/local `report-grid` wrapper even though the shared V2 `MetricGrid` already owns exactly that layout responsibility and is proven across several report summaries. This is a cleaner next move than widening five-card Churn/Reengagement layouts, touching Customer Reengagement's large export/mobile-card surface, or entering Rep Credit Commitment's broad drawer/filter/table composition.
+The implementation does exactly what the bounded slice intended: one legacy/local KPI layout wrapper is removed and layout ownership moves to the already-proven shared `MetricGrid columns={4}` contract. The four profitability cards retain all caller-owned business meaning and state truth. No page-local replacement styling or new design language was introduced.
 
-The slice is therefore intentionally wrapper-only. Profitability calculations, trust/freshness, loading copy, date/filter/query truth and the separate final-net-profit highlight remain caller-owned.
+## Exact-head Product Design findings
 
-## Bounded system contract
+### System coherence — PASS
 
-Representative surface:
-- `src/pages/reports/profitability/ProfitDashboard.tsx` → only the four KPI `MetricCard` summary cluster currently inside `report-grid`.
+The product diff is limited to:
+- importing existing `MetricGrid`;
+- replacing only the four-card summary `<div className="report-grid">` wrapper with `<MetricGrid columns={4}>`;
+- closing with `</MetricGrid>`.
 
-Required implementation intent:
-- replace only the summary wrapper with existing `MetricGrid columns={4}`;
-- do not change `MetricGrid`, `MetricCard`, shared CSS, tokens or breakpoints;
-- preserve exact KPI order: `صافي الإيراد بعد المرتجعات` → `المبيعات (تكلفة البضاعة)` → `إجمالي الربح (التشغيلي)` → `المصروفات التشغيلية والرواتب`;
-- preserve all existing values and calculations: `net_revenue`, `cogs`, `gross_profit`, operating+payroll expense sum and gross-margin secondary value;
-- preserve `overviewTrust` status / completion / stale wiring, `domain="profit_overview"`, all icons and `PackageIcon`;
-- preserve current loading presentation exactly as `isLoading ? '...'`; no new skeleton or state behavior in this slice.
+This strengthens one coherent report metric grammar rather than performing page-specific beautification. Shared-component ownership remains correctly layered: `MetricGrid` owns responsive metric layout only; `MetricCard` owns report trust/freshness/status presentation; ProfitDashboard remains owner of profitability values, calculations, filters and query semantics.
 
-Device / content acceptance:
-- Desktop: four equal minmax-safe columns;
-- Tablet: two columns;
-- Mobile: one column with no normal horizontal overflow;
-- Arabic/RTL labels must wrap safely, mixed Arabic/Latin values must remain legible and large numbers must remain contained;
-- no interaction or focus semantics are added by the grid; existing component accessibility remains authoritative.
+### Visual hierarchy / Arabic-first / device fit — PASS at source level
 
-Focused evidence expected:
-- assert the shared metric grid is present with `data-columns="4"`;
-- protect exact KPI order/content plus the existing loading/trust/secondary-value wiring;
-- evidence is `TESTS_AUTHORED_NOT_EXECUTED` unless an approved execution environment actually runs the tests.
+Existing shared V2 contracts already provide the required composition:
+- Desktop: four equal `minmax(0, 1fr)` columns;
+- Tablet 769–1024px: two equal columns;
+- Mobile <=768px: one column;
+- grid `min-width: 0` prevents ordinary grid-origin overflow.
 
-## Explicit exclusions / stop rule
+Existing `MetricCard` remains unchanged and already provides `minWidth: 0`, LTR numeric presentation and `overflowWrap: anywhere` for long/large values. Arabic labels and source order remain unchanged. No bidi override, decorative color language, density regression or interaction hierarchy change was introduced.
 
-REPORT028 must not modify:
-- the separate `report-grid-2` / `صافي الربح النهائي` highlight card or its net-profit-margin presentation;
-- title/header composition, `ReportFilterBar`, date state, `branchId`, query inputs/hooks, trust hooks or calculations;
-- any second profitability/report page, chart, table, drawer, export/print surface or five-card KPI layout;
-- shared APIs/CSS/tokens/breakpoints;
-- DB/RPC/services/query/cache/RBAC/RLS/permissions/routing/validation/workflow/backend/business semantics;
-- deployment, preview branches, hosted CI or `main`.
+### Content / state preservation — PASS
 
-If the wrapper-only convergence cannot be implemented without any excluded shared or functional change, REPORT028 becomes `BLOCKED` rather than expanding scope.
+Preserved exactly:
+- KPI order: `صافي الإيراد بعد المرتجعات` → `المبيعات (تكلفة البضاعة)` → `إجمالي الربح (التشغيلي)` → `المصروفات التشغيلية والرواتب`;
+- `net_revenue`, `cogs`, `gross_profit`, operating+payroll expense sum;
+- gross-profit secondary margin calculation/copy;
+- all four `isLoading ? '...' : ...` representations;
+- `overviewTrust` status / last-completed / stale wiring;
+- `domain="profit_overview"` and all icons including `PackageIcon`;
+- `ReportFilterBar`, date range, `branchId`, `useProfitSummary` inputs;
+- separate `report-grid-2` / `صافي الربح النهائي` surface, formatting and net-margin condition/calculation.
+
+No loading/error/permission/focus/keyboard/action semantics were added or removed by this wrapper-only slice. Existing `MetricCard` blocked/warning/running/freshness semantics remain untouched.
+
+### Functional isolation — PASS
+
+No DB/migration/RPC/service/query/cache/calculation/RBAC/RLS/permission/routing/validation/workflow/backend/business contract changed. No shared `MetricGrid` / `MetricCard` API, CSS, token or breakpoint changed. No second report surface, chart, table, drawer, export/print path or five-card metric layout entered scope.
+
+### Focused evidence — PASS at artifact level
+
+`ProfitDashboard.test.tsx` protects:
+- exactly one shared four-column MetricGrid and removal of the local `report-grid` wrapper;
+- exact four-card order;
+- representative values and trust/freshness/domain/icon wiring;
+- gross-margin secondary fact;
+- all four existing loading values as `...`;
+- preservation of ReportFilterBar, page heading and final-profit/net-margin surface.
+
+Evidence remains honestly `TESTS_AUTHORED_NOT_EXECUTED`. No executed test/build/lint/runtime/visual/preview/release PASS is claimed.
 
 ## Peer-state synthesis / contradictions
 
-I formed the Product Design judgment above independently, then compared current repository state:
+After forming the Product Design judgment independently, I compared current repository state:
 
-- **Development Integrator / Team Memory:** lifecycle-current through merged REPORT027 and explicitly hand REPORT028 to Product Design for one smallest bounded concern; aligned.
-- **UI Production Engineer:** lifecycle-stale at the completed REPORT027 implementation stage; no competing implementation or contradictory requirement exists.
-- **Design QA:** lifecycle-stale at REPORT027 exact-head approval; no REPORT028 approval/blocker exists yet, as expected.
-- **Decision Log / North Star / component/device guidance:** aligned with shared-system-before-local-invention, caller-owned business truth, Arabic-first multi-device composition and strict functional isolation.
-- **Open Development PRs at selection time:** none.
+- **Design QA:** fresh and aligned; exact same PR HEAD `cd7ac87d0839a7e7706858afb4efbdea2025ff8e` is `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`, with no source-visible blocker.
+- **UI Production Engineer:** Development-branch state is lifecycle-stale at REPORT027, but the PR-carried owned state is fresh and aligned with REPORT028 scope/preservation/evidence.
+- **Development Integrator / Team Memory:** lifecycle-current through merged REPORT027; they correctly leave REPORT028 pending exact-head review/integration and contain no competing design rule.
+- **Workstream / Decision Log / North Star / relevant component/page/device docs:** aligned with shared-system reuse, caller-owned business truth, useful Desktop density, deliberate Tablet/Mobile composition and strict functional isolation.
+- **PR discussion / review threads:** Design QA review is GREEN on the exact HEAD and no inline review threads exist.
+- **Development drift:** current Development moved from the feature baseline only by governance state updates; no product/test overlap invalidates the reviewed implementation.
 
 Current contradiction classification: `NONE`.
 
-## What changed this run
+## Repository actions this run
 
-- Completed the mandatory shared-memory bootstrap in the required order.
-- Inspected issue #27, exact Development HEAD, open PRs targeting Development, remaining Reports/Analytics surfaces, profitability surfaces, shared `MetricGrid` implementation/responsive CSS and relevant component/page/device/migration guidance.
-- Concretely bounded the generic REPORT028 roadmap placeholder as `DS2-REPORT-028 — Profit Dashboard summary metric-grid convergence`.
-- Updated `31_AGENT_TEAM_WORKSTREAM.md` with exact scope, exclusions, device/state/accessibility acceptance, focused evidence expectation and stop rule.
-- Did not update `TEAM_MEMORY.md` because the overall system direction did not change.
-- Did not update `DECISION_LOG.md` because no durable rule changed.
-- Did not implement product code, merge, touch `main`, deploy Vercel, modify preview branches, or trigger/rerun GitHub Actions/hosted CI.
+- Completed the mandatory shared-memory bootstrap in the prescribed order.
+- Inspected issue #27, exact Development HEAD, the single open Development-targeting PR #76, exact PR diff/source/test artifacts, relevant shared MetricGrid/MetricCard/CSS contracts and component/page/device/migration guidance.
+- Independently accepted PR #76 exact HEAD `cd7ac87d0839a7e7706858afb4efbdea2025ff8e` with `PRODUCT-DESIGN: PASS — NO DESIGN-SYSTEM BLOCKER`.
+- Confirmed Design QA is already GREEN on the same exact HEAD.
+- Did not modify `TEAM_MEMORY.md` because overall design/system direction did not change.
+- Did not modify `DECISION_LOG.md` because no durable rule changed.
+- Did not implement product code, merge, touch `main`, deploy Vercel, modify preview branches, trigger/rerun GitHub Actions or use hosted CI.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer; Design QA after the implementation PR is stable.
-- **What changed:** REPORT028 is now concretely `READY — BOUNDED` as the four-card Profit Dashboard summary wrapper migration from local `report-grid` to existing `MetricGrid columns={4}` only.
-- **Preserve:** exact four KPI order/content/calculations/loading/trust/icons/secondary margin wiring; the separate final-net-profit highlight; all date/filter/query/trust/business truth; unchanged shared `MetricGrid`/`MetricCard` APIs/CSS/tokens/breakpoints; every REPORT001-027 contract.
-- **Need from you:** UI Production should start from the exact latest Development HEAD, implement only the bounded wrapper convergence, author focused metric-grid/order/state tests and open one Development-targeting PR. If any excluded shared or functional change is required, stop and mark the slice `BLOCKED`. Design QA should independently review the future exact stable PR HEAD.
+- **To:** Development Integrator.
+- **What changed:** Product Design independently accepted PR #76 exact HEAD `cd7ac87d0839a7e7706858afb4efbdea2025ff8e` with `PASS — NO DESIGN-SYSTEM BLOCKER`; Design QA is already `GREEN-DEV + SOURCE_REVIEW_PASS` on that same HEAD.
+- **Preserve:** exact four KPI order/content/calculations/loading/trust/domain/icons/secondary margin; ReportFilterBar/date/query inputs; separate final-profit surface; unchanged shared MetricGrid/MetricCard APIs/CSS/tokens/breakpoints; all REPORT001-027 contracts and all backend/business/query/permission semantics.
+- **Need from you:** revalidate that PR #76 HEAD/base remain unchanged, Development drift is governance-only/non-overlapping, review threads remain clear, mergeability and changed-file scope remain clean, then integrate REPORT028 only if every normal gate still passes. Any PR-head movement invalidates both current Product Design and QA exact-head acceptance.
 - **Blocker level:** `NONE`.
-- **Baseline:** source inspected at `844a20128ff1c2b11b85a93f3416ac1957e76daa`; REPORT028 workstream-bound baseline before this state write `9bb61b5e9a8f09362a36d1e27674e01f4cd260c3`.
+- **Baseline:** Development pre-state-write `7b4540bf51c081fbb76a45969c6abad328a62eb4`; exact accepted PR #76 HEAD `cd7ac87d0839a7e7706858afb4efbdea2025ff8e`.
