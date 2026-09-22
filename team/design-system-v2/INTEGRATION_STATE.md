@@ -4,65 +4,58 @@
 
 - Review date: `2026-09-22`.
 - Development branch: `design-system-v2-development`.
-- Development HEAD immediately before merge: `f135bd2c4a054511004914794c3e6e593ef9c8b9`.
-- Completed slice: `DS2-REPORT-026 — Product Performance summary metric-grid convergence`.
-- Merged PR: `#74 — DS2-REPORT-026: Product Performance summary metric-grid convergence`.
-- Exact reviewed implementation HEAD: `f3b2386130924ee375f1912190a6ad82befe0065`.
-- Squash merge commit: `9ac63ca20baaeefa6fe5cb3e87a9734f59847ac5`.
-- Design QA: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` on the exact merged HEAD.
-- Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact HEAD.
+- Exact Development HEAD inspected before this owned-state write: `b303f61f4c13bfa3b9aea5e3898fb9ef82433aa1`.
+- Active slice: `DS2-REPORT-027 — Churn Risk filter-control field convergence`.
+- Active PR: `#75 — DS2-REPORT-027: Churn Risk filter-control field convergence`.
+- PR base: `design-system-v2-development`.
+- Feature baseline / PR base SHA: `1df0d8f0dbd367349f6f2082a309d0f978294ec7`.
+- Exact current PR HEAD inspected: `2beb65da6a2b46f3e1bf831471c55b9a5bbf8f5a`.
+- PR state: `OPEN / DRAFT`, `mergeable=true`.
+- Design QA: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` on exact HEAD `2beb65da6a2b46f3e1bf831471c55b9a5bbf8f5a`.
 - Evidence: `TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/visual/preview/release PASS is claimed.
-- Current integration disposition: `MERGED — REPORT026 DONE`.
-- Next single READY roadmap item: `DS2-REPORT-027 — Next bounded Reports metrics/charts/tables/responsive-composition convergence`.
+- Product Design exact-head closeout: pending; current Product Design state is the pre-implementation `READY — BOUNDED` handoff and has not yet accepted or blocked PR #75 exact HEAD.
+- Current integration disposition: `NO_MERGE — WAITING_FRESH_PRODUCT_DESIGN_EXACT_HEAD_CLOSEOUT`.
 
 ## Integrator decision
 
-**MERGED.** PR #74 passed every Development integration gate on exact HEAD `f3b2386130924ee375f1912190a6ad82befe0065`.
+**NO MERGE this run.**
 
-Validated immediately before integration:
-- base exactly `design-system-v2-development`;
-- PR HEAD remained exactly `f3b2386130924ee375f1912190a6ad82befe0065` through Draft-to-Ready transition;
-- PR was mergeable;
-- exact-head Design QA marker `AGENT-REVIEW: GREEN-DEV` with `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`;
-- Product Design exact-head `PASS — NO DESIGN-SYSTEM BLOCKER`;
-- no inline review threads or unresolved material review blocker;
-- no current role-state `BLOCKING` contradiction;
-- no known source-visible build/type failure;
-- changed-file scope exactly three files: Product Performance page, focused Product Performance test, and UI Production's owned state;
-- product diff presentation-only: Product Performance's four-card KPI summary consumes existing shared `MetricGrid columns={4}` instead of page-local `report-grid`;
-- no DB/RPC/service/query/cache/calculation/RBAC/RLS/permission/routing/validation/export/print/workflow/backend/business change;
-- no shared API/CSS/token/breakpoint widening or unexpected workflow/deployment-enabling change.
+The technical Development merge gates are otherwise clean on exact PR HEAD `2beb65da6a2b46f3e1bf831471c55b9a5bbf8f5a`:
+- base is exactly `design-system-v2-development`;
+- exact-head Design QA marker is present with `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`;
+- no inline review threads exist;
+- no known source-visible build/type failure is outstanding;
+- no current role-state file records a `BLOCKING` contradiction;
+- changed-file scope is exactly three files: `src/pages/reports/ChurnRiskPage.tsx`, focused `src/pages/reports/ChurnRiskPage.test.tsx`, and UI Production's owned state;
+- product diff is presentation-only: page-local risk/date controls consume existing shared `Select` + `DateField`/`Field` grammar;
+- exact risk option order/values/copy, `riskLabel ?? ''`, clearing to `undefined`, `asOfDate`, `max={today}`, both customer-risk hook inputs, KPI/chart/detail/trust/state behavior and all business semantics remain caller-owned and unchanged;
+- no DB/RPC/service/query/cache/calculation/RBAC/RLS/permission/routing/validation/export/print/workflow/backend change is present;
+- no shared control API/CSS/token/breakpoint or workflow/deployment-enabling change is present.
 
-Feature baseline was `4c281373a55b99e535b9d51818635ff6c1efb569`. Before merge, Development advanced to `f135bd2c4a054511004914794c3e6e593ef9c8b9` through exactly two governance-only commits affecting `DESIGN_QA_STATE.md` and `DESIGN_DIRECTOR_STATE.md`; compare evidence confirmed that drift was two commits ahead, zero behind, and non-overlapping with product/test scope.
+However, the fresh Design QA handoff explicitly routes the same exact HEAD to Product Design for independent exact-head acceptance before Integration. Product Design's current repository state only bounds REPORT027 before implementation and has not yet closed out PR #75. This is normal in-progress coordination, not a persistent blocker, so Integration must not pre-empt that specialist handoff.
 
-PR #74 was transitioned from Draft to Ready without moving its head, then squash-merged with expected-head protection as `9ac63ca20baaeefa6fe5cb3e87a9734f59847ac5`.
+## Development drift check
 
-## Integrated system result
+The feature branch started from Development SHA `1df0d8f0dbd367349f6f2082a309d0f978294ec7`.
 
-REPORT026 removes another page-local report KPI layout and reuses the established layout-only `MetricGrid` grammar:
-- Desktop: 4-column management comparison;
-- Tablet: 2-column composition;
-- Mobile: 1-column stack;
-- exact card order `إجمالى الإيراد` → `منتجات نشطة` → `أعلى منتج` → `متوسط نسبة المرتجع` remains caller-owned;
-- all labels, subtitles, values, `fmtCur` / `fmtPct`, status/Trust/Freshness/stale wiring, `domain="sales"`, icons and caller-owned `avgReturnRate` remain unchanged;
-- loading remains exactly four `SkeletonCard height={160}` items under `isLoading = summaryLoading || tableLoading`;
-- REPORT011 Product Performance `ChartPanel` and REPORT006 responsive detail collection remain unchanged;
-- all query/cache/calculation/permission/backend/business truth remains outside the Design System.
+Before this Integrator state write, Development had advanced by exactly one governance-only commit to `b303f61f4c13bfa3b9aea5e3898fb9ef82433aa1`:
+- ahead by `1`, behind by `0`;
+- only changed file: `team/design-system-v2/DESIGN_QA_STATE.md`.
 
-No durable rule changed or was superseded, so `DECISION_LOG.md` remains unchanged.
+This drift does not overlap product/test scope and does not invalidate the exact-head QA evidence. Product Design must nevertheless evaluate the exact current PR HEAD, not the pre-implementation boundary alone.
 
-## Queue continuity
+## Current integrated truth remains unchanged
 
-Exactly one dependency-safe roadmap item advanced to READY:
-
-`DS2-REPORT-027 — Next bounded Reports metrics/charts/tables/responsive-composition convergence`
-
-Product Design Director owns the next action: inspect the exact latest Development baseline and bound one smallest dependency-safe presentation-only Reports/Analytics concern before UI Production starts product-code work. The broader North-Star roadmap remains explicit: remaining Reports debt, shared component-depth work, remaining Work/Field convergence, Settings/Admin and Global Dark/RTL/accessibility/legacy cleanup.
+- Product UI remains integrated through `DS2-REPORT-026`.
+- Latest product merge remains PR #74 / squash `9ac63ca20baaeefa6fe5cb3e87a9734f59847ac5`.
+- REPORT027 remains the single active bounded slice; it is not DONE and no next slice advances while PR #75 is unresolved.
+- `TEAM_MEMORY.md`, `31_AGENT_TEAM_WORKSTREAM.md` and `DECISION_LOG.md` remain unchanged this run.
+- No GitHub Actions/hosted CI, Vercel/preview, `main`, workflow trigger/rerun or feature/product-code action occurred.
 
 ### Cross-role handoff
-- **To:** Product Design Director; then UI Production Engineer only after REPORT027 is bounded.
-- **What changed:** REPORT026 is integrated as squash merge `9ac63ca20baaeefa6fe5cb3e87a9734f59847ac5`; Workstream marks REPORT026 DONE and exactly one next item, REPORT027, READY.
-- **Preserve:** REPORT026 four-card/loading contracts; complete REPORT011 ChartPanel and REPORT006 detail contracts; `MetricGrid` layout-only ownership; all REPORT001-026 contracts; all query/calculation/trust/permission/routing/export/print/backend/business semantics; full North-Star roadmap beyond Reports.
-- **Need from you:** Product Design should inspect the exact latest Development baseline and define one smallest dependency-safe REPORT027 concern with representative file/surface, acceptance boundary, exclusions and evidence expectations before implementation.
-- **Blocker level:** `NONE`.
-- **Baseline:** product merge `9ac63ca20baaeefa6fe5cb3e87a9734f59847ac5`; coordination branch advances through this integration-state write.
+- **To:** Product Design Director; Development Integrator after Product Design closeout.
+- **What changed:** PR #75 exact HEAD `2beb65da6a2b46f3e1bf831471c55b9a5bbf8f5a` is QA GREEN-DEV and otherwise integration-clean, but merge is intentionally deferred for the pending Product Design exact-head closeout already requested by QA/UI Production.
+- **Preserve:** exact risk/date/filter wiring; shared `Select`/`DateField`/`Field` contracts unchanged; current KPI/chart/detail/trust/state behavior; all functional/business/query/permission/backend semantics; one-active-slice discipline and full North-Star roadmap.
+- **Need from you:** Product Design independently accept or block the exact current PR #75 HEAD. If accepted and the PR HEAD/base remain unchanged with no new blocker, Integration can revalidate and merge next run.
+- **Blocker level:** `NONE` — normal specialist review pending.
+- **Baseline:** Development pre-state-write `b303f61f4c13bfa3b9aea5e3898fb9ef82433aa1`; exact PR #75 HEAD `2beb65da6a2b46f3e1bf831471c55b9a5bbf8f5a`.
