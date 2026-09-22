@@ -116,19 +116,59 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-020 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
-Status: `READY`
-Owner role for immediate next action: Product Design Director
+### DS2-REPORT-020 — Visit Reports responsive detail-collection convergence
+Status: `READY — BOUNDED`
+Owner role for immediate next action: UI Production Engineer
 
-System intent:
-- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline and select exactly one smallest dependency-safe presentation-only concern;
-- name one representative file/surface and explicit acceptance/exclusion boundary before UI Production begins;
-- prefer established shared V2 primitives/patterns and strengthen a shared contract only when a real consumer proves the need;
-- preserve REPORT001-019 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/business semantics;
-- keep remaining Reports debt, Settings/Admin, further Work/Field convergence, shared component-depth work and Global Dark/RTL/accessibility/legacy cleanup in the active roadmap;
-- do not turn REPORT020 into broad multi-page report beautification.
+Representative surface:
+- `src/pages/reports/VisitReportsPage.tsx` → `VisitRowsTable` used by `سجل الزيارات` and `الزيارات التي تحتاج مراجعة`.
+- Page-local evidence: `.visit-report-table-wrap { overflow-x: auto; }` and `.visit-report-table { min-width: 1050px; }` currently make this ten-column detail collection depend on ordinary horizontal scrolling on compact devices.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+System-pattern intent:
+- preserve the dense semantic ten-column table on Desktop;
+- use the established `ResponsiveCollection + Card + KeyValueList` grammar for Tablet/Mobile from the same unchanged `VisitReportRow[]` truth;
+- Tablet uses two-column key/value cards; Mobile uses one-column key/value cards with no ordinary horizontal-table dependence;
+- exactly one renderer is mounted for the current device; do not CSS-hide duplicate desktop/compact interaction trees;
+- reuse `Card` as a neutral non-clickable surface and preserve real `Link` controls inside cards rather than making the card itself interactive;
+- add `scope="col"` to the preserved Desktop headers as the only intended semantic table enhancement.
+
+Exact presentation contract to preserve in both normal and quality modes:
+1. `التاريخ` — existing `formatDate(row.plan_date)` and current LTR treatment;
+2. `المندوب` — `employee_name` plus existing `branch_name ?? '—'` secondary line;
+3. `العميل` — `customer_name` plus existing LTR `customer_code` secondary line;
+4. `الغرض` — current `PURPOSE_LABELS` mapping/fallback;
+5. `الحالة` — current `STATUS_LABELS` text and current `badgeClass` semantics;
+6. `نتيجة التواصل` — `contact_result ?? '—'`;
+7. mode-specific fact: normal mode keeps `المدة` with `duration_minutes` and `started_at`; quality mode keeps `الاستثناءات` from existing `qualityReasons(row)` with exact fallback `—`;
+8. `GPS` — current `GPS_LABELS`, `needs_gps_review` and `badgeClass` semantics;
+9. `التسجيل` — current `QUALITY_LABELS`, `qualityKind(row)` and badge semantics;
+10. `التفاصيل` — preserve real links and destinations exactly: `/activities/visit-plans/${row.plan_id}` and conditional `/activities/${row.activity_id}`.
+
+Device / state / accessibility acceptance:
+- **Mobile:** one-column cards, Arabic labels/value wrapping, no ordinary horizontal-table scroll, preserved LTR treatment where already used, and all detail links remain clear touch targets.
+- **Tablet:** deliberate two-column cards with the same ten facts, order and mode-specific seventh fact; links remain explicit and touch-ready.
+- **Desktop:** retain the current dense ten-column comparison table, same row order/content/cell anatomy and visual badges; add `scope="col"` to headers.
+- **State:** preserve the current caller-owned rendering order and copy around the collection: `جاري تحميل الزيارات…`, `تعذر تحميل سجل الزيارات.`, data/pagination behavior, and exact empty copy `لا توجد زيارات مطابقة للفلاتر المحددة.`. Do not move loading/error/pagination ownership into the shared primitive or invent blocked/offline states.
+- **RTL / bidi:** preserve Arabic-first RTL hierarchy and current LTR date/code/duration treatment; long Arabic/customer/rep/reason text must wrap rather than force horizontal overflow.
+- **Accessibility / interaction:** Desktop headers are semantic column headers; compact cards use `KeyValueList` (`dl/dt/dd`); existing plan/activity links retain native link semantics and destinations; no fabricated card clickability.
+- **Dark mode:** continue existing semantic tokens/classes; no page-specific palette or status-color reinterpretation.
+
+Explicit exclusions:
+- all other Visit Reports tables/collections, including `الأداء حسب المندوب` and survey `الإجابات التفصيلية`;
+- report tabs/view switching, header, date/filter/search controls, KPI/summary/overview panels, pagination logic, export/CSV behavior and distribution/funnel content;
+- hooks, query/cache/data shaping, row ordering, calculations, label/helper/status/quality/GPS/reason logic, route eligibility/destinations, permissions/RBAC/RLS, backend/services, validation and business semantics;
+- shared component APIs, shared CSS/tokens, or a broad DataTable/FilterBar/Pagination redesign;
+- unrelated `VisitReportsPage.css` cleanup. Page-local CSS may change only if strictly required to support this bounded collection without altering unrelated Visit Reports surfaces.
+
+Focused test artifact required:
+- source/contract tests for Desktop vs Tablet vs Mobile composition and exactly-one-renderer behavior;
+- preserve the exact ten facts/order in both normal and quality modes, including the mode-specific seventh fact;
+- preserve rep/customer secondary facts, current label/badge/helper semantics, plan/activity hrefs and conditional activity link;
+- preserve Desktop `scope="col"` headers;
+- preserve caller-owned loading/error/data/pagination behavior and exact empty copy;
+- evidence must remain honestly labeled `TESTS_AUTHORED_NOT_EXECUTED` unless an approved exact-head local execution occurs.
+
+If implementation requires changing shared APIs/CSS/tokens or any functional/data/business semantics, mark REPORT020 `BLOCKED` and return to Product Design instead of widening the PR.
 
 ## Product migration roadmap
 
@@ -178,7 +218,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-019` — `DONE`
-- `DS2-REPORT-020 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY`
+- `DS2-REPORT-020 — Visit Reports responsive detail-collection convergence` — `READY — BOUNDED`
 - further Reports/Analytics convergence beyond REPORT020 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
