@@ -155,19 +155,40 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-024 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
-Status: `READY`
-Owner role for immediate next action: Product Design Director
+### DS2-REPORT-024 — Treasury summary metric-grid convergence
+Status: `READY — BOUNDED`
+Owner role for immediate next action: UI Production Engineer
+Representative surface: `src/pages/reports/TreasuryPage.tsx` → three-card treasury KPI summary only.
+Product Design source baseline: `4a7ee557c3df4630f86710ebaccaeae3014c18ec`.
 
-Intent:
-- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline;
-- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance/exclusion boundary;
-- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
-- preserve REPORT001-023 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
-- preserve remaining shared component-depth work, Work/Field debt, Settings/Admin and Global convergence in the roadmap;
-- do not turn REPORT024 into broad multi-page report beautification.
+System intent:
+- remove one remaining page-local Reports KPI-layout implementation by consuming the already-proven layout-only `MetricGrid` contract;
+- keep Treasury/report truth, trust/freshness semantics, chart semantics and business behavior caller-owned;
+- advance system coherence without widening shared APIs or turning Treasury into a page-wide restyle.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+Required implementation / acceptance:
+- add the existing shared `MetricGrid` import and replace only the treasury KPI-summary `<div className="report-grid">` wrapper with `<MetricGrid columns={3}>` in the existing loading/ready branch;
+- preserve `summaryLoading` as the only summary loading gate and preserve exactly three `SkeletonCard height={160}` placeholders;
+- preserve the exact ready-state card order and contracts: `صافي التدفق الخزيني` / `إجمالي التحصيل الداخل` / `إجمالي المسترد`; their current subtitles, `fmtCur` values, `trsTrust` status / `last_completed_at` / `is_stale`, `domain="treasury"`, and `Wallet` / `ArrowDownToLine` / `ArrowUpFromLine` icons remain unchanged;
+- Desktop uses the shared three-column management comparison, Tablet the shared two-column composition, Mobile the shared one-column stack, with `minmax(0, 1fr)` containment and no ordinary summary-grid horizontal overflow;
+- preserve Arabic/RTL card order and wrapping plus the existing LTR/numeric presentation inside `MetricCard`; cards remain informational/non-interactive, so no focus/keyboard/touch action semantics change;
+- preserve the existing Treasury `ChartPanel` and all current chart-state tests as non-regression guards.
+
+Explicit exclusions:
+- page header/title/description, `ReportFilterBar`, semantic-contract notice and `SystemHealthBar`;
+- Treasury `ChartPanel`, Trust/Freshness action, blocked/loading/empty/ready precedence, 280px chart/state bodies, `chartData`, AreaChart geometry/margins/gradients/grid/axes/tooltip/reference line/series;
+- hooks, query/cache/data mapping, calculations, trust-key/fallback logic, permissions/RBAC/RLS, routing, backend/services, validation, export/print/workflow/business semantics;
+- `MetricCard` redesign, shared `MetricGrid` API/CSS/tokens, global `report-grid` cleanup, or any other Reports surface.
+
+Focused evidence expected:
+- extend `TreasuryPage.test.tsx` to prove shared `[data-metric-grid]` adoption with `data-columns="3"`;
+- protect exact three ready-card order/labels and the existing caller-owned trust/domain/icon wiring at the level needed by the test mock;
+- prove exactly three summary loading placeholders at `160px` while keeping the existing chart `280px` loading assertion isolated;
+- retain all existing REPORT018 ChartPanel/state/data/series tests unchanged as behavioral guards;
+- evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved exact-head local execution actually occurs.
+
+Stop rule:
+- if this bounded wrapper convergence requires any excluded shared-contract or functional/business change, mark REPORT024 `BLOCKED` rather than widen the implementation PR.
 
 ## Product migration roadmap
 
@@ -178,6 +199,8 @@ The Product Design Director may decompose an item further, but exactly one depen
 
 ### B. Shared component-depth program
 Open only when a real migrated screen proves the recurring gap:
+- PageHeader / ActionRegistry / ActionSlot completion
+- SearchInput clear-button accessibility and Field/search convergence
 - FilterBar decomposition and Mobile filter-sheet contract
 - DataTable V2 hardening and table action/accessibility/overflow-region contract
 - shared Pagination convergence
@@ -217,7 +240,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-023` — `DONE`
-- `DS2-REPORT-024 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY`
+- `DS2-REPORT-024 — Treasury summary metric-grid convergence` — `READY — BOUNDED`
 - further Reports/Analytics convergence beyond REPORT024 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
