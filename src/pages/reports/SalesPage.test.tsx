@@ -21,7 +21,30 @@ vi.mock('@/hooks/useSalesGrain', () => ({
 }))
 
 vi.mock('@/components/reports/MetricCard', () => ({
-  default: ({ label }: { label: string }) => <div data-testid="metric-card">{label}</div>,
+  default: ({ label, subtitle, value, status, lastCompletedAt, isStale, domain, icon }: {
+    label: string
+    subtitle?: string
+    value?: string | number | null
+    status?: string | null
+    lastCompletedAt?: string | null
+    isStale?: boolean
+    domain?: string
+    icon?: ReactNode
+  }) => (
+    <div
+      data-testid="metric-card"
+      data-label={label}
+      data-subtitle={subtitle ?? ''}
+      data-value={value == null ? '' : String(value)}
+      data-status={status ?? ''}
+      data-last-completed-at={lastCompletedAt ?? ''}
+      data-stale={String(Boolean(isStale))}
+      data-domain={domain ?? ''}
+      data-has-icon={String(Boolean(icon))}
+    >
+      {label}
+    </div>
+  ),
 }))
 
 vi.mock('@/components/reports/SkeletonCard', () => ({
@@ -75,7 +98,7 @@ const trustByComponent: Record<string, { status: string; last_completed_at: stri
   'fact_sales_daily_grain.ar_creation': { status: 'OK', last_completed_at: '2026-09-19T00:00:00Z', is_stale: false },
 }
 
-describe('Sales report chart-panel composition', () => {
+describe('Sales report composition', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.useSystemTrustState.mockReturnValue({ data: [], isLoading: false, error: null })
@@ -90,6 +113,59 @@ describe('Sales report chart-panel composition', () => {
       },
       isLoading: false,
     })
+  })
+
+  it('uses the shared four-column MetricGrid and preserves exact Sales summary card order and content', () => {
+    const { container } = render(<SalesPage />)
+
+    const grid = container.querySelector('[data-metric-grid]') as HTMLElement
+    expect(grid).not.toBeNull()
+    expect(grid.getAttribute('data-columns')).toBe('4')
+    expect(grid.classList.contains('ds-metric-grid--cols-4')).toBe(true)
+    expect(container.querySelector('.report-grid')).toBeNull()
+
+    const cards = within(grid).getAllByTestId('metric-card')
+    expect(cards).toHaveLength(4)
+    expect(cards.map(card => card.getAttribute('data-label'))).toEqual([
+      'صافي الإيراد',
+      'إجمالي الضريبة المحصلة',
+      'قيمة المرتجعات',
+      'ذمم عملاء منشأة',
+    ])
+    expect(cards.map(card => card.getAttribute('data-subtitle'))).toEqual([
+      'ضريبة مستبعدة · مرتجعات مستبعدة',
+      'ضريبة القيمة المضافة (2200)',
+      'صافي قيمة ما تم رده',
+      'قيمة الجزء الآجل من الفواتير',
+    ])
+    expect(cards.map(card => card.getAttribute('data-value'))).toEqual(['100 ج.م', '14 ج.م', '5 ج.م', '40 ج.م'])
+    expect(cards.map(card => card.getAttribute('data-domain'))).toEqual(['sales', 'sales', 'sales', 'ar'])
+    expect(cards.map(card => card.getAttribute('data-has-icon'))).toEqual(['true', 'true', 'true', 'false'])
+
+    cards.forEach(card => {
+      expect(card.getAttribute('data-status')).toBe('OK')
+      expect(card.getAttribute('data-last-completed-at')).toBe('2026-09-19T00:00:00Z')
+      expect(card.getAttribute('data-stale')).toBe('false')
+    })
+  })
+
+  it('keeps exactly four 160px summary loading skeletons without changing either Sales chart state', () => {
+    mocks.useSalesSummary.mockReturnValue({ data: undefined, isLoading: true })
+
+    const { container } = render(<SalesPage />)
+
+    const grid = container.querySelector('[data-metric-grid]') as HTMLElement
+    const skeletons = within(grid).getAllByTestId('skeleton-card')
+    expect(skeletons).toHaveLength(4)
+    expect(skeletons.map(skeleton => skeleton.getAttribute('data-height'))).toEqual(['160', '160', '160', '160'])
+    expect(within(grid).queryAllByTestId('metric-card')).toHaveLength(0)
+
+    const firstPanel = screen.getByRole('heading', { level: 2, name: 'تطور الإيراد اليومي' }).closest('.ds-chart-panel') as HTMLElement
+    const secondPanel = screen.getByRole('heading', { level: 2, name: 'توزيع الإيرادات اليومي (إيراد + ضريبة)' }).closest('.ds-chart-panel') as HTMLElement
+    expect(within(firstPanel).queryByTestId('skeleton-card')).toBeNull()
+    expect(within(firstPanel).getByText('لا توجد بيانات في النطاق الزمني المحدد')).not.toBeNull()
+    expect(within(secondPanel).queryByTestId('skeleton-card')).toBeNull()
+    expect(within(secondPanel).getByTestId('bar-chart')).not.toBeNull()
   })
 
   it('uses shared ChartPanel for both analytical sections while preserving the first panel contract', () => {
