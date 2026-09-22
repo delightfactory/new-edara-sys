@@ -4,95 +4,102 @@
 
 - Review date: `2026-09-22`.
 - Authoritative branch: `design-system-v2-development`.
-- Exact Development HEAD inspected before REPORT027 bounding: `9e55bea48e0ae2c2a8cd9292f4514f0eadf7c73e`.
+- Development HEAD immediately before this Product Design state write: `b303f61f4c13bfa3b9aea5e3898fb9ef82433aa1`.
 - Latest integrated product baseline: `DS2-REPORT-026 — Product Performance summary metric-grid convergence` / PR #74 / squash merge `9ac63ca20baaeefa6fe5cb3e87a9734f59847ac5`.
-- Workstream boundary commit produced this run: `88a01704d2db5405123434d2ee461c93091b0c8b`.
-- Active single READY slice: `DS2-REPORT-027 — Churn Risk filter-control field convergence`.
-- Active implementation PR: none at selection/recheck time.
-- Product Design disposition: `READY — BOUNDED`.
+- Active slice: `DS2-REPORT-027 — Churn Risk filter-control field convergence`.
+- Active implementation PR: `#75 — DS2-REPORT-027: Churn Risk filter-control field convergence`.
+- Exact PR HEAD independently reviewed: `2beb65da6a2b46f3e1bf831471c55b9a5bbf8f5a`.
+- Design QA on the same exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
+- Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER`.
+- Evidence remains `TESTS_AUTHORED_NOT_EXECUTED`; no build/test/lint/runtime/visual/preview/release PASS is claimed.
 - Current blocker classification: `NONE`.
 
 ## Independent Product Design judgment
 
-**REPORT027 should converge the Churn Risk page-header filter controls onto the existing V2 Field grammar, and nothing else.**
+**PASS — REPORT027 is correctly bounded and materially improves system coherence without widening product or shared-component scope.**
 
-I formed this judgment from the current report surfaces and shared control contracts before comparing peer states. `src/pages/reports/ChurnRiskPage.tsx` already uses the accepted shared `ChartPanel` and `ResponsiveCollection + Card + KeyValueList` grammar, but its page-header scope controls still recreate a native `<select>` and native `<input type="date">` with page-local inline styling. Existing shared `Select` and `DateField` already own exactly this presentation/accessibility responsibility through `Field`; filter values, date semantics and hook inputs can remain caller-owned.
+I formed this judgment from the exact PR diff, exact-head Churn Risk composition, existing `Select` / `DateField` / `Input` / `Field` contracts, V2 form sizing rules, relevant component/device guidance and the North Star before comparing peer states.
 
-This is the smallest dependency-safe system move available after REPORT026. It advances the report/filter and Field-convergence roadmap without creating another local visual language and without changing business truth.
+The implementation removes two remaining page-local form-control treatments from a report surface that already consumes shared V2 chart and responsive-collection grammar. The risk classifier now uses the existing shared native `Select` through `Field`; the as-of date now uses the existing `DateField` / `Input` / `Field` anatomy. This is the intended architectural direction: shared primitives own presentation/accessibility mechanics while the page retains filter/date/business meaning.
 
-## Why this slice is preferred over adjacent debt
+The change is preferable to a page-local restyle because it reduces independent visual implementations and strengthens a consistent Arabic-first Field language across report surfaces. It does not create a new variant, breakpoint, palette or report-specific control API.
 
-- **Churn Risk five-card KPI summary:** deliberately deferred. Shared `MetricGrid` currently supports only 2/3/4 columns. Extending it to five columns would widen a shared contract and needs a separately bounded design decision with responsive evidence rather than being smuggled into a page migration.
-- **Customer Reengagement responsive collection/Table/Card cleanup:** important debt, especially because its custom CSS leaves Tablet on the Desktop table path, but it is materially broader than two header controls and should be a later explicit slice rather than bundled into REPORT027.
-- **Geography two-card metric grid:** safe but lower-value at this point because recent REPORT021-026 work already proved MetricGrid convergence repeatedly, while Churn Risk still exposes a direct shared-Field adoption gap.
+## Exact-head Product Design findings
 
-## REPORT027 bounded contract
+### System coherence — PASS
 
-Representative surface:
-- `src/pages/reports/ChurnRiskPage.tsx` → risk classification select and the single `بتاريخ` as-of-date control in the page header only.
+- The bounded header now consumes existing V2 controls instead of recreating native input styling locally.
+- Shared `Select` retains native keyboard semantics and common Field/focus/error plumbing.
+- Shared `DateField` retains native date behavior and composes through the same Field anatomy.
+- No shared `Select`, `DateField`, `Input`, `Field`, CSS, token or breakpoint contract changed.
+- No second page or adjacent report debt was bundled into the slice.
+- The five-card Churn Risk KPI summary remains intentionally outside scope; no unsupported five-column `MetricGrid` variant was introduced.
 
-Required implementation intent:
-- replace the inline-styled native risk `<select>` with existing shared V2 `Select`;
-- replace the inline-styled native date `<input type="date">` with existing shared V2 `DateField`;
-- preserve exact `riskLabel ?? ''` value semantics and `setRiskLabel(e.target.value || undefined)` behavior;
-- preserve exact option order/values and copy: all classifications, `VIP`, `LOYAL`, `ENGAGED`, `AT_RISK`, `DORMANT`;
-- preserve `asOfDate`, `max={today}`, and `setAsOfDate(e.target.value)` exactly;
-- give the risk control an accessible name and preserve the visible `بتاريخ` meaning through shared Field/accessibility plumbing;
-- retain the current wrapped report-header composition and caller-owned filtering logic.
+### Hierarchy / Arabic / RTL / device fit — PASS at source level
 
-Device / accessibility acceptance:
-- Mobile remains contained, touch-safe and free of ordinary horizontal overflow;
-- Tablet inherits touch-first V2 control sizing and must not behave as a compact Desktop-only toolbar;
-- Desktop retains a compact report-management header;
-- Arabic/RTL labels and option copy remain first-class;
-- keyboard focus, label association and standard control sizing come from existing shared Field/Input/Select contracts;
-- no loading/blocked/chart/detail state changes are introduced.
+- The existing report-header hierarchy remains intact: title/description first, compact report-scope controls second.
+- Risk options and Arabic copy remain unchanged and RTL-native.
+- `بتاريخ:` is now a visible Field label associated with the date control; the risk select has the explicit accessible name `تصنيف الخطر`.
+- The header control container remains wrapping flex with no new fixed widths, preserving containment across device widths.
+- Existing V2 form rules provide standard Desktop control height and touch-height controls through Tablet/Mobile at `<=1024px`.
+- No ordinary horizontal-overflow mechanism or compressed Desktop-only Tablet sizing is introduced.
 
-Focused evidence expectation:
-- extend `src/pages/reports/ChurnRiskPage.test.tsx` only as needed to prove accessible shared risk/date controls plus preserved selected values / hook-filter propagation;
-- existing ChartPanel and ResponsiveCollection tests remain intact;
-- normal expected evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved execution route actually runs the tests.
+This is source-level acceptance only; no `RUNTIME_VISUAL_PASS` is claimed.
 
-## Explicit exclusions / stop boundary
+### Behavior / state isolation — PASS
 
-REPORT027 must not change:
-- the five-card Churn Risk KPI summary or create a five-column `MetricGrid` variant;
-- ChartPanel, pie-chart geometry/data/colors/tooltip/legend, Trust/Freshness or SystemHealthBar;
-- responsive customer details, Desktop table, Tablet/Mobile cards, RiskBadge or RecencyCell;
-- shared `Select`, `DateField`, `Field`, Input APIs/CSS/tokens/breakpoints;
-- any second report, including Customer Reengagement;
-- hooks, queries, cache, calculations, RPC/DB, permissions, RBAC/RLS, routing, validation, export/print, workflow, backend or business semantics.
+The implementation preserves exactly:
+- `riskLabel ?? ''`;
+- `setRiskLabel(e.target.value || undefined)` including clearing back to `undefined`;
+- exact risk option order/values/copy: `all / VIP / LOYAL / ENGAGED / AT_RISK / DORMANT` with current labels;
+- `asOfDate`, `max={today}` and date `onChange` behavior;
+- both `useCustomerRiskSummary({ asOfDate, riskLabel })` and `useCustomerRiskList({ asOfDate, riskLabel })` inputs;
+- current five-card KPI summary, ChartPanel/pie/trust/SystemHealthBar behavior;
+- current responsive customer details/Desktop table/Tablet-Mobile cards/RiskBadge/RecencyCell;
+- loading, blocked, empty and detail behavior outside the two controls.
 
-If correct implementation requires any excluded shared or functional change, REPORT027 becomes `BLOCKED` and returns to Product Design for re-bounding instead of widening the PR.
+No query/cache/calculation/RPC/DB/RBAC/RLS/permission/routing/export/print/validation/workflow/backend/business semantic change is present.
 
-## Peer-state synthesis
+### Focused evidence — PASS with honest execution label
 
-I formed the Product Design direction above first, then compared repository memory and peer states.
+The focused test artifact protects:
+- shared Field adoption for both controls;
+- accessible risk/date naming and date label association;
+- native date type and `max` preservation;
+- exact risk option values/order/copy;
+- propagation of risk/date changes to both existing hooks;
+- clearing risk back to `undefined`;
+- existing ChartPanel and ResponsiveCollection coverage remains intact.
 
-- **Development Integrator / Team Memory:** lifecycle-current through merged REPORT026 and explicitly hand the unbounded REPORT027 placeholder to Product Design. Aligned; no blocker.
-- **UI Production Engineer:** lifecycle-stale at the now-merged REPORT026 implementation. No competing implementation or contradictory rule exists.
-- **Design QA:** lifecycle-stale at the now-consumed REPORT026 GREEN-DEV approval. No REPORT027 contradiction exists.
-- **Previous Product Design state:** lifecycle-stale at REPORT026 pre-integration closeout and superseded by this direction.
-- **Decision Log / North Star / component and device guidance:** aligned with shared-system-before-local-invention, V2 Field adoption, Arabic-first composition, touch-safe Tablet/Mobile behavior and strict functional isolation.
-- **Open PR recheck:** no PR targeting `design-system-v2-development` existed when REPORT027 was selected or immediately after the Workstream boundary write.
+Evidence remains `TESTS_AUTHORED_NOT_EXECUTED`. No executed test/build/lint/runtime/visual/preview/release PASS is inferred from source review.
+
+## Peer-state synthesis / contradictions
+
+I formed the Product Design judgment above independently, then compared current team state.
+
+- **Design QA:** fresh and aligned on exact HEAD `2beb65da6a2b46f3e1bf831471c55b9a5bbf8f5a`; `GREEN-DEV + SOURCE_REVIEW_PASS`; no blocker.
+- **UI Production Engineer:** the Development copy is lifecycle-stale at REPORT026, while the PR-carried owned-state update is fresh for REPORT027 and aligned with the bounded contract; no contradiction.
+- **Development Integrator / Team Memory:** lifecycle-current through merged REPORT026 and therefore stale for the active REPORT027 review stage, but contain no conflicting rule or blocker.
+- **Workstream / Decision Log / North Star:** aligned with shared-system-before-local-invention, Field convergence, multi-device touch behavior, Arabic-first composition, strict functional isolation and honest evidence labels.
+- **Development drift since feature baseline:** exactly one governance-only QA-state commit (`b303f61f4c13bfa3b9aea5e3898fb9ef82433aa1`) on top of `1df0d8f0dbd367349f6f2082a309d0f978294ec7`; it does not overlap product/test scope and does not invalidate the PR review.
+- **PR discussion:** Design QA exact-head review is present; no inline review threads exist.
 
 Current contradiction classification: `NONE`.
 
 ## What changed this run
 
 - Completed the mandatory shared-memory bootstrap in the required order.
-- Confirmed REPORT026 is integrated and no implementation PR is active.
-- Inspected exact Development HEAD, issue #27, remaining report surfaces, current Churn Risk tests, and relevant shared Field/Select/DateField/ResponsiveCollection/MetricGrid contracts plus component/page/device/migration guidance.
-- Concretely bounded REPORT027 as Churn Risk header filter-control Field convergence.
-- Updated `31_AGENT_TEAM_WORKSTREAM.md` in commit `88a01704d2db5405123434d2ee461c93091b0c8b`.
-- Did not update `TEAM_MEMORY.md` because the overall system direction did not change.
+- Inspected issue #27, exact current Development HEAD, the single open Development PR, exact PR #75 head/diff/discussion/threads, relevant component/device/migration guidance, exact-head Churn Risk composition and existing shared Field-control contracts.
+- Independently accepted PR #75 exact HEAD `2beb65da6a2b46f3e1bf831471c55b9a5bbf8f5a` with `PASS — NO DESIGN-SYSTEM BLOCKER`.
+- Did not update `TEAM_MEMORY.md` because overall design/system direction did not change.
 - Did not update `DECISION_LOG.md` because no durable rule changed.
+- Did not update the Workstream because the active slice boundary remains valid and an implementation PR is already in review.
 - Did not implement product code, merge, touch `main`, deploy Vercel, modify preview branches, or trigger/rerun GitHub Actions/hosted CI.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer; Design QA after implementation.
-- **What changed:** REPORT027 is now concretely `READY — BOUNDED` to the Churn Risk page-header risk-select and as-of-date controls, consuming existing `Select` + `DateField` only.
-- **Preserve:** exact risk option values/order/copy/state wiring; exact `asOfDate` / `max={today}` / onChange behavior; current KPI/chart/detail/trust contracts; all query/calculation/permission/backend/business semantics; unchanged shared control APIs/CSS/tokens/breakpoints.
-- **Need from you:** start from the exact latest Development HEAD after this governance write, implement only REPORT027 in one PR targeting `design-system-v2-development`, add focused accessible-control/filter-propagation tests, and stop as `BLOCKED` if any shared or functional widening is required. Design QA must then review the future exact stable PR HEAD independently.
+- **To:** Development Integrator.
+- **What changed:** Product Design independently accepted PR #75 exact HEAD `2beb65da6a2b46f3e1bf831471c55b9a5bbf8f5a` with `PASS — NO DESIGN-SYSTEM BLOCKER`; Design QA is already GREEN-DEV on the same exact HEAD.
+- **Preserve:** exact risk option values/order/copy/state wiring; exact `asOfDate` / `max={today}` / date onChange; both customer-risk hook inputs; current KPI/chart/detail/trust/state contracts; unchanged shared control APIs/CSS/tokens/breakpoints; all query/calculation/permission/backend/business semantics.
+- **Need from you:** revalidate unchanged PR head/base, governance-only Development drift, review threads, mergeability, changed-file scope and functional isolation; if all gates remain clean, integrate REPORT027 into `design-system-v2-development` without touching `main` or deployment.
 - **Blocker level:** `NONE`.
-- **Baseline:** Development source baseline inspected `9e55bea48e0ae2c2a8cd9292f4514f0eadf7c73e`; Workstream boundary commit `88a01704d2db5405123434d2ee461c93091b0c8b`.
+- **Baseline:** exact accepted PR #75 HEAD `2beb65da6a2b46f3e1bf831471c55b9a5bbf8f5a`; Development pre-state-write HEAD `b303f61f4c13bfa3b9aea5e3898fb9ef82433aa1`.
