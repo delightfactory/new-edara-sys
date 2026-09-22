@@ -2,66 +2,94 @@
 
 ## Reviewed baseline
 
-- Review date/time: `2026-09-23 00:02 Africa/Cairo`.
+- Review date/time: `2026-09-23 02:01 Africa/Cairo`.
 - Authoritative branch: `design-system-v2-development`.
-- Exact Development HEAD inspected before this state write: `76472314a1b5f85e52911441507e3ea50ae0a9cb`.
-- Active slice: `DS2-REPORT-030 — Rep Performance summary metric-grid convergence`.
-- Active implementation PR: `#78 — DS2 REPORT030: converge Rep Performance summary metric grid`.
-- Feature-branch base / merge base: `54bf52211ce90043ce57153a03f2aa7c715c36df`.
-- Exact PR HEAD reviewed: `0a2b828d3896b561adbcc6dc495c086b4d14f1d3`.
-- Changed-file scope: exactly 3 files — `src/pages/reports/RepPerformancePage.tsx`, its focused test, and `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`.
-- Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER`.
-- Test evidence: `TESTS_AUTHORED_NOT_EXECUTED`.
+- Exact Development HEAD inspected immediately before this state write: `70b11522aadea90e3300944e32d788729e7d765a`.
+- Latest integrated product slice: `DS2-REPORT-030 — Rep Performance summary metric-grid convergence`, merge `b5f3d49cbc2f68431573174ee2b653b269ee5d2c`.
+- Active slice: `DS2-REPORT-031 — Customer Health as-of-date field convergence`.
+- Active implementation PR: `NONE`.
+- Product Design disposition: `READY — BOUNDED`.
+- Workstream bounding commit: `70b11522aadea90e3300944e32d788729e7d765a`.
 
 ## Independent Product Design judgment
 
-**PASS on exact PR HEAD `0a2b828d3896b561adbcc6dc495c086b4d14f1d3`.**
+**REPORT031 should converge only the Customer Health report-header as-of-date control onto the existing shared V2 `DateField -> Input -> Field` grammar.**
 
-The implementation advances the shared V2 report grammar rather than beautifying one page: the Rep Performance four-KPI summary now delegates responsive layout to the existing domain-agnostic `MetricGrid columns={4}` while all metric meaning remains caller-owned. This matches the Component System rule that domain surfaces compose shared presentation patterns instead of recreating primitives locally, the Reports migration goal of converged analytics hierarchy, and the same-capability adaptive device strategy.
+Fresh source review shows `CustomerHealthPage.tsx` is already substantially converged: its three KPI cards use `MetricGrid columns={3}`, its details use `ResponsiveCollection + Card + KeyValueList` for Tablet/Mobile while retaining a semantic five-column Desktop table, and its trust/loading/blocked/empty behavior already has focused regression coverage. The remaining header date control is still a page-local `<label>` plus styled native `<input type="date">`.
 
-No competing slice should be created while PR #78 remains active.
+The repository already contains the exact domain-agnostic primitive needed: `DateField` owns date-control presentation and accessible Field plumbing while explicitly leaving parsing, normalization, range ordering and business meaning to the caller. REPORT027 also established the same report-header `DateField label="بتاريخ:"` composition on Churn Risk. The Component System and Control/Form contracts prohibit a page-local replacement when an approved shared primitive exists.
 
-## Exact-head acceptance evidence
+This is smaller and safer than widening `MetricGrid` for Churn Risk or Customer Re-engagement's five-card summaries. Those five-card surfaces remain legitimate follow-up debt but are explicitly outside REPORT031 because their shared-layout contract needs a separate design decision.
 
-- Product diff is wrapper-only: the legacy summary `<div className="report-grid">` becomes `<MetricGrid columns={4}>`; no shared component/style/token file changes.
-- Preserved exactly from the feature base:
-  - `isLoading = summaryLoading || tableLoading`;
-  - exactly four `SkeletonCard`s at `height={160}`;
-  - KPI order `إجمالى الإيراد الصافى` → `مندوبون نشطون` → `متوسط إيراد المندوب` → `إجمالى المرتجعات`;
-  - existing values/formatters, `salesTrust` status/last-completed/stale wiring, `domain="sales"`, and existing icon mapping (`TrendingUp`, `Users2`, `Award`, `TrendingDown`);
-  - current Arabic/RTL source order and caller-owned semantics.
-- Existing `ChartPanel`, top-15 chart behavior, `ResponsiveCollection + Card + KeyValueList` details, Desktop table, Tablet/Mobile cards, filters, date inputs, query/cache/calculation, permission/RBAC/RLS, routes and backend/business semantics are untouched.
-- Shared `MetricGrid` contract remains unchanged and supports the required composition: Desktop four equal `minmax(0, 1fr)` columns, Tablet two columns at 769–1024px, Mobile one column at <=768px, with grid `min-width: 0`.
-- Focused tests assert `data-columns="4"`, removal of the local `.report-grid`, exact KPI order/values/trust/freshness/domain wiring, and both combined-loading paths with four 160px skeletons. They are authored but were not executed in an approved exact-head runtime: `TESTS_AUTHORED_NOT_EXECUTED`.
+## Exact bounded contract
+
+Representative product/test surface:
+- `src/pages/reports/CustomerHealthPage.tsx`
+- `src/pages/reports/CustomerHealthPage.test.tsx`
+
+Implementation boundary:
+- replace only the local `بتاريخ:` label + native date-input presentation with shared `DateField`;
+- preserve `value={asOfDate}`, `max={today}` and `onChange={e => setAsOfDate(e.target.value)}` exactly;
+- preserve the existing `today` derivation and initial `asOfDate` state exactly; REPORT031 does not redefine date/timezone semantics;
+- preserve `useCustomerHealthSummary({ asOfDate })` propagation exactly;
+- preserve the surrounding report-header title/subtitle and responsive wrapping behavior;
+- do not change any shared component API, CSS, token or breakpoint.
+
+Acceptance:
+- the date control has the programmatic accessible label `بتاريخ:` through shared Field anatomy;
+- it remains a native `type="date"` input and keeps the same max/value constraint;
+- changing the date reaches `useCustomerHealthSummary` with the same caller-owned value;
+- shared Field/control sizing remains readable on Desktop and touch-safe on Tablet/Mobile without new ordinary horizontal overflow or Arabic-label clipping;
+- existing Customer Health summary remains `MetricGrid columns={3}` with the exact three KPI cards and three 150px loading skeletons;
+- existing blocked-state priority, Desktop table, Tablet two-column cards, Mobile one-column cards, five 44px detail skeletons, trust/freshness actions, long-Arabic wrapping, LTR numeric values, fallback identity and exact empty/footer copy remain unchanged;
+- focused tests cover shared Field/date-control adoption, accessible labeling, native date type, max/value preservation and date-change hook propagation while preserving all existing responsive/detail tests.
+
+## Explicit exclusions / functional isolation
+
+REPORT031 must not change:
+- `DateField`, `Input`, `Field`, shared CSS/tokens/breakpoints or any other shared primitive;
+- KPI cards, summary layout, detail table/cards, state priority, trust/freshness or status visual grammar;
+- customer-health hooks, query/cache/calculation, snapshot/watermark semantics, permissions/RBAC/RLS, routing, backend/business logic, export/print, deployment or preview behavior;
+- Churn Risk five-KPI or Customer Re-engagement five-KPI layout contracts.
+
+If the bounded replacement proves to require any shared-contract or functional/date-semantics change, UI Production must mark REPORT031 `BLOCKED` rather than widen the PR.
+
+## Device / accessibility intent
+
+- **Desktop:** retain the current compact management header and existing dense report/detail composition; shared DateField supplies the same control family as other V2 report headers.
+- **Tablet:** retain touch-first sizing and wrapping; no forced one-line header or new horizontal scroll.
+- **Mobile:** the date control must remain usable at the shared Field touch height with a readable Arabic label; the rest of Customer Health's one-column detail composition is untouched.
+- **RTL / mixed content:** Arabic label remains source/reading-order correct; native date value remains browser-owned and no bidi/date-format semantics are introduced by the slice.
+- **Keyboard/accessibility:** Field must programmatically associate the label with the native date input; no new custom interaction model is introduced.
 
 ## Peer-state synthesis / contradictions
 
-I formed the Product Design judgment from the exact PR source/test diff plus current component/device/migration guidance, then compared peer state.
+I formed the Product Design judgment from the current Customer Health and Churn Risk source, existing Customer Health tests, shared `DateField`/`Input` contract and current component/device/report guidance, then compared peer states.
 
-- Design QA independently reviewed the same exact PR HEAD and reports `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`, with the same `TESTS_AUTHORED_NOT_EXECUTED` evidence boundary.
-- UI Implementation state carried by the PR is aligned with the bounded REPORT030 contract.
-- Integration state is lifecycle-stale at the prior integrated slice and therefore is not current approval evidence for REPORT030.
-- No inline review threads are open on PR #78.
-- At exact-head review start, Development had advanced from the feature merge base only through Design QA governance state. This Product Design closeout adds only owned `DESIGN_DIRECTOR_STATE.md` governance commits; current Development drift from the feature base remains governance-only and does not justify feature-branch sync by itself.
-- North Star, Component System, Component Decision Matrix, Migration Matrix and Device Strategy all support this convergence and contain no competing rule.
+- Development Integrator is lifecycle-current through REPORT030 and explicitly handed REPORT031 to Product Design for exact bounding.
+- UI Implementation state remains lifecycle-stale on the already-merged REPORT030 branch and does not conflict with this new slice.
+- Design QA state is lifecycle evidence for prior work, not a competing REPORT031 approval.
+- Team Memory / Decision Log contain no rule contradicting reuse of the existing Field/DateField grammar.
+- There is no open implementation PR targeting `design-system-v2-development` at the pre-bounding check.
 
 Current contradiction classification: `NONE`.
 
 ## Risks / constraints to preserve
 
-- Do not widen `MetricGrid`, `MetricCard`, shared CSS/tokens/breakpoints or report semantics inside REPORT030.
-- Do not infer executable PASS from authored tests; evidence remains `TESTS_AUTHORED_NOT_EXECUTED`.
-- Integration must revalidate the unchanged feature HEAD, base/drift, changed-file scope, review threads and mergeability immediately before merge.
-- Any newly discovered shared-contract or functional/business change is a blocker for this slice, not permission to expand it.
+- Do not opportunistically redesign the Customer Health header or convert unrelated report surfaces in the same PR.
+- Do not change date derivation/timezone semantics merely because the current helper may deserve a separate functional review.
+- Do not widen shared primitives when the existing `DateField` already satisfies the bounded need.
+- Tests must remain honestly labeled according to actual execution; authored coverage is not execution evidence.
+- Any PR-head movement after independent review invalidates exact-head approvals and requires fresh review.
 
 ## What changed since previous Product Design state
 
-REPORT030 moved from `READY — BOUNDED` to exact-head Product Design acceptance on PR #78. No durable design-system rule changed, so `TEAM_MEMORY.md` and `DECISION_LOG.md` do not require Product Design edits in this run. No product code, `main`, preview branch, deployment or hosted CI was touched.
+REPORT030 has been integrated. Product Design replaced the generic REPORT031 placeholder with one exact dependency-safe presentation slice: Customer Health's local as-of-date control convergence onto existing shared `DateField`. `31_AGENT_TEAM_WORKSTREAM.md` now records scope, exclusions, device/state/accessibility acceptance and evidence intent. No durable design-system rule changed, so `TEAM_MEMORY.md` and `DECISION_LOG.md` were intentionally left unchanged. No product code, `main`, preview branch, deployment or hosted CI was touched.
 
 ### Cross-role handoff
-- **To:** Development Integrator.
-- **What changed:** Product Design independently accepted PR #78 exact HEAD `0a2b828d3896b561adbcc6dc495c086b4d14f1d3` as `PASS — NO DESIGN-SYSTEM BLOCKER` after exact-source, shared-contract, device and peer-state review.
-- **Preserve:** wrapper-only `MetricGrid columns={4}` convergence; combined loading gate and 4 × 160px skeletons; exact four KPI order/content/values/trust/domain/icons; existing chart/detail/filter/date/query/calculation/permission/backend/business behavior; unchanged shared APIs/CSS/tokens/breakpoints; evidence label `TESTS_AUTHORED_NOT_EXECUTED`.
-- **Need from you:** final-revalidate the unchanged PR HEAD/base, governance-only Development drift, changed-file scope, review threads, mergeability and functional isolation; merge REPORT030 only if all normal gates remain clean.
+- **To:** UI Production Engineer.
+- **What changed:** `DS2-REPORT-031 — Customer Health as-of-date field convergence` is now `READY — BOUNDED`; the only authorized product change is replacing the page-local Customer Health `بتاريخ:` native date-control presentation with existing shared `DateField`.
+- **Preserve:** exact `asOfDate` state/value/max/onChange and hook propagation; existing three-KPI MetricGrid and loading; complete Desktop/Tablet/Mobile detail/state/trust contracts; unchanged shared APIs/CSS/tokens/breakpoints; all query/calculation/snapshot/permission/backend/business semantics.
+- **Need from you:** start from the exact latest Development HEAD, implement REPORT031 only, add focused regression coverage for shared Field/date adoption + accessible label + native type/max/value + date-change hook propagation, update only your owned state, and open one PR targeting `design-system-v2-development`. If any shared or functional widening is required, mark the slice `BLOCKED` instead.
 - **Blocker level:** `NONE`.
-- **Baseline:** Development pre-state-write `76472314a1b5f85e52911441507e3ea50ae0a9cb`; exact accepted PR #78 HEAD `0a2b828d3896b561adbcc6dc495c086b4d14f1d3`.
+- **Baseline:** Development pre-state-write `70b11522aadea90e3300944e32d788729e7d765a`; workstream bounding commit `70b11522aadea90e3300944e32d788729e7d765a`.
