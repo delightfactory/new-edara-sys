@@ -38,17 +38,17 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-019`.
+Product UI is integrated through `DS2-REPORT-020`.
 
 Latest product integration:
-- PR: `#67 — DS2-REPORT-019: converge Overview customer health metric grid`
-- Exact reviewed PR HEAD: `a03724562f461c0072c736f6091ff7bcc158bda6`
-- Squash merge commit: `5184c06021d2162e4c1feb5170e92e300bd846d9`
+- PR: `#68 — DS2-REPORT-020: converge Visit Reports responsive detail collection`
+- Exact reviewed PR HEAD: `9e922249b905bc940534273d658ee817185f3c4a`
+- Squash merge commit: `92d0091fcd34980a4e91c6626135931a18a199b9`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact HEAD
 - Runtime/preview/release evidence: not claimed
 
-The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, Supervisor Work shared KPI summary convergence, Reports shared route-level sub-navigation convergence, Reports date-preset and native custom-date convergence, Reports Overview KPI-summary and customer-health summary convergence, shared `ChartPanel` proofs across Sales/Receivables/Churn/Product Performance/Rep Performance/Treasury analytical surfaces, and responsive detail-collection proofs across Product Performance, Customer Health, Churn Risk, Geography, Rep Performance and Target Attainment using `ResponsiveCollection + Card + KeyValueList` while preserving dense Desktop comparison.
+The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, Customers migrations, Sales list/form/detail foundations, Inventory list/transfer migrations, Procurement list/form-shell migrations, Finance overview/detail foundations, HR operational-task/admin collection proofs, Field Activities list/create-edit proofs, Work create-task form convergence, Work Hub shared view-mode selector convergence, Supervisor Work shared KPI summary convergence, Reports shared route-level sub-navigation convergence, Reports date-preset and native custom-date convergence, Reports Overview KPI-summary and customer-health summary convergence, shared `ChartPanel` proofs across Sales/Receivables/Churn/Product Performance/Rep Performance/Treasury analytical surfaces, and responsive detail-collection proofs across Product Performance, Customer Health, Churn Risk, Geography, Rep Performance, Target Attainment and Visit Reports using `ResponsiveCollection + Card + KeyValueList` while preserving dense Desktop comparison.
 
 ## Completed slices
 
@@ -89,6 +89,7 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - `DS2-REPORT-017 — Target Attainment responsive detail-collection convergence` — `DONE` — PR #65 — reviewed HEAD `ccaaa6ede829f4d81017779c99cd76c1bf719918` — merge `3474748541068600e1deae061bf68fca23b346ef` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-018 — Treasury daily cashflow chart-panel convergence` — `DONE` — PR #66 — reviewed HEAD `1e9b2ad87d00a99a7db18f70bbcb1d881c5953e2` — merge `aa11853c351aac3a9da3203af1a0208fc49fd6f3` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-019 — Overview customer-health metric-grid convergence` — `DONE` — PR #67 — reviewed HEAD `a03724562f461c0072c736f6091ff7bcc158bda6` — merge `5184c06021d2162e4c1feb5170e92e300bd846d9` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
+- `DS2-REPORT-020 — Visit Reports responsive detail-collection convergence` — `DONE` — PR #68 — reviewed HEAD `9e922249b905bc940534273d658ee817185f3c4a` — merge `92d0091fcd34980a4e91c6626135931a18a199b9` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 
 ### REPORT017 system result
 
@@ -114,61 +115,30 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - Mobile uses the shared one-column stack; Tablet and Desktop preserve the deliberate two-column comparison with no shared API/CSS/token widening.
 - No query/cache/calculation/trust/permission/RBAC/RLS/routing/backend/validation/export/print/workflow/business semantics changed.
 
+### REPORT020 system result
+
+- Visit Reports `VisitRowsTable` now preserves the dense ten-column Desktop table while Tablet/Mobile use the established single-renderer `ResponsiveCollection + Card + KeyValueList` grammar.
+- Desktop retains exact row/fact order, helpers, badges and native detail links, with `scope="col"` on all ten headers.
+- Tablet uses two-column passive cards; Mobile uses one-column passive cards with safe Arabic wrapping, deliberate LTR date/code/duration treatment and native links with compact touch targets.
+- Normal mode preserves duration + started-at; quality mode preserves exception reasons/order/fallback and GPS/recording warning semantics.
+- Caller-owned loading/error/empty/pagination behavior and exact copy remain unchanged.
+- No shared API/CSS/token, query/cache/data-shaping, permission/RBAC/RLS, routing, export, backend/service, validation, workflow or business semantic change occurred.
+
 ## Current single READY slice
 
-### DS2-REPORT-020 — Visit Reports responsive detail-collection convergence
-Status: `READY — BOUNDED`
-Owner role for immediate next action: UI Production Engineer
+### DS2-REPORT-021 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
+Status: `READY`
+Owner role for immediate next action: Product Design Director
 
-Representative surface:
-- `src/pages/reports/VisitReportsPage.tsx` → `VisitRowsTable` used by `سجل الزيارات` and `الزيارات التي تحتاج مراجعة`.
-- Page-local evidence: `.visit-report-table-wrap { overflow-x: auto; }` and `.visit-report-table { min-width: 1050px; }` currently make this ten-column detail collection depend on ordinary horizontal scrolling on compact devices.
+Intent:
+- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline before implementation;
+- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance boundary;
+- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
+- preserve REPORT001-020 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/business semantics;
+- preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
+- do not turn REPORT021 into broad multi-page report beautification.
 
-System-pattern intent:
-- preserve the dense semantic ten-column table on Desktop;
-- use the established `ResponsiveCollection + Card + KeyValueList` grammar for Tablet/Mobile from the same unchanged `VisitReportRow[]` truth;
-- Tablet uses two-column key/value cards; Mobile uses one-column key/value cards with no ordinary horizontal-table dependence;
-- exactly one renderer is mounted for the current device; do not CSS-hide duplicate desktop/compact interaction trees;
-- reuse `Card` as a neutral non-clickable surface and preserve real `Link` controls inside cards rather than making the card itself interactive;
-- add `scope="col"` to the preserved Desktop headers as the only intended semantic table enhancement.
-
-Exact presentation contract to preserve in both normal and quality modes:
-1. `التاريخ` — existing `formatDate(row.plan_date)` and current LTR treatment;
-2. `المندوب` — `employee_name` plus existing `branch_name ?? '—'` secondary line;
-3. `العميل` — `customer_name` plus existing LTR `customer_code` secondary line;
-4. `الغرض` — current `PURPOSE_LABELS` mapping/fallback;
-5. `الحالة` — current `STATUS_LABELS` text and current `badgeClass` semantics;
-6. `نتيجة التواصل` — `contact_result ?? '—'`;
-7. mode-specific fact: normal mode keeps `المدة` with `duration_minutes` and `started_at`; quality mode keeps `الاستثناءات` from existing `qualityReasons(row)` with exact fallback `—`;
-8. `GPS` — current `GPS_LABELS`, `needs_gps_review` and `badgeClass` semantics;
-9. `التسجيل` — current `QUALITY_LABELS`, `qualityKind(row)` and badge semantics;
-10. `التفاصيل` — preserve real links and destinations exactly: `/activities/visit-plans/${row.plan_id}` and conditional `/activities/${row.activity_id}`.
-
-Device / state / accessibility acceptance:
-- **Mobile:** one-column cards, Arabic labels/value wrapping, no ordinary horizontal-table scroll, preserved LTR treatment where already used, and all detail links remain clear touch targets.
-- **Tablet:** deliberate two-column cards with the same ten facts, order and mode-specific seventh fact; links remain explicit and touch-ready.
-- **Desktop:** retain the current dense ten-column comparison table, same row order/content/cell anatomy and visual badges; add `scope="col"` to headers.
-- **State:** preserve the current caller-owned rendering order and copy around the collection: `جاري تحميل الزيارات…`, `تعذر تحميل سجل الزيارات.`, data/pagination behavior, and exact empty copy `لا توجد زيارات مطابقة للفلاتر المحددة.`. Do not move loading/error/pagination ownership into the shared primitive or invent blocked/offline states.
-- **RTL / bidi:** preserve Arabic-first RTL hierarchy and current LTR date/code/duration treatment; long Arabic/customer/rep/reason text must wrap rather than force horizontal overflow.
-- **Accessibility / interaction:** Desktop headers are semantic column headers; compact cards use `KeyValueList` (`dl/dt/dd`); existing plan/activity links retain native link semantics and destinations; no fabricated card clickability.
-- **Dark mode:** continue existing semantic tokens/classes; no page-specific palette or status-color reinterpretation.
-
-Explicit exclusions:
-- all other Visit Reports tables/collections, including `الأداء حسب المندوب` and survey `الإجابات التفصيلية`;
-- report tabs/view switching, header, date/filter/search controls, KPI/summary/overview panels, pagination logic, export/CSV behavior and distribution/funnel content;
-- hooks, query/cache/data shaping, row ordering, calculations, label/helper/status/quality/GPS/reason logic, route eligibility/destinations, permissions/RBAC/RLS, backend/services, validation and business semantics;
-- shared component APIs, shared CSS/tokens, or a broad DataTable/FilterBar/Pagination redesign;
-- unrelated `VisitReportsPage.css` cleanup. Page-local CSS may change only if strictly required to support this bounded collection without altering unrelated Visit Reports surfaces.
-
-Focused test artifact required:
-- source/contract tests for Desktop vs Tablet vs Mobile composition and exactly-one-renderer behavior;
-- preserve the exact ten facts/order in both normal and quality modes, including the mode-specific seventh fact;
-- preserve rep/customer secondary facts, current label/badge/helper semantics, plan/activity hrefs and conditional activity link;
-- preserve Desktop `scope="col"` headers;
-- preserve caller-owned loading/error/data/pagination behavior and exact empty copy;
-- evidence must remain honestly labeled `TESTS_AUTHORED_NOT_EXECUTED` unless an approved exact-head local execution occurs.
-
-If implementation requires changing shared APIs/CSS/tokens or any functional/data/business semantics, mark REPORT020 `BLOCKED` and return to Product Design instead of widening the PR.
+Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
 
 ## Product migration roadmap
 
@@ -217,9 +187,9 @@ Open only when a real migrated screen proves the recurring gap:
 - further Work detail/feedback/management convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
 
 ### I. Reports / Analytics
-- `DS2-REPORT-001` through `DS2-REPORT-019` — `DONE`
-- `DS2-REPORT-020 — Visit Reports responsive detail-collection convergence` — `READY — BOUNDED`
-- further Reports/Analytics convergence beyond REPORT020 — `BACKLOG` / each concern must be bounded separately
+- `DS2-REPORT-001` through `DS2-REPORT-020` — `DONE`
+- `DS2-REPORT-021 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY`
+- further Reports/Analytics convergence beyond REPORT021 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
