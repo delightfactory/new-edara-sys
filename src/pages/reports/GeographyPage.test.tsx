@@ -20,7 +20,35 @@ vi.mock('@/hooks/useGeographyPerformance', () => ({
 }))
 
 vi.mock('@/components/reports/MetricCard', () => ({
-  default: ({ label }: { label: string }) => <div data-testid="metric-card">{label}</div>,
+  default: ({
+    label,
+    subtitle,
+    value,
+    status,
+    lastCompletedAt,
+    isStale,
+    domain,
+  }: {
+    label: string
+    subtitle?: string
+    value?: string | number | null
+    status?: string | null
+    lastCompletedAt?: string
+    isStale?: boolean
+    domain?: string
+  }) => (
+    <div
+      data-testid="metric-card"
+      data-subtitle={subtitle}
+      data-value={value ?? ''}
+      data-status={status ?? ''}
+      data-last-completed-at={lastCompletedAt ?? ''}
+      data-stale={String(Boolean(isStale))}
+      data-domain={domain ?? ''}
+    >
+      {label}
+    </div>
+  ),
 }))
 
 vi.mock('@/components/reports/SkeletonCard', () => ({
@@ -96,6 +124,33 @@ describe('Geography responsive detail collection', () => {
       isLoading: false,
     })
     mocks.useGeographyTable.mockReturnValue({ data: geographyRows, isLoading: false })
+  })
+
+  it('uses one shared two-column MetricGrid for the summary with exact card order and caller-owned metric truth', () => {
+    const { container } = render(<GeographyPage />)
+
+    const metricGrids = container.querySelectorAll('[data-metric-grid]')
+    expect(metricGrids).toHaveLength(1)
+
+    const metricGrid = metricGrids[0] as HTMLElement
+    expect(metricGrid.getAttribute('data-columns')).toBe('2')
+    expect(container.querySelector('.report-grid')).toBeNull()
+
+    const cards = within(metricGrid).getAllByTestId('metric-card')
+    expect(cards.map(card => card.textContent)).toEqual([
+      'إجمالى الإيراد',
+      'محافظة مغطاة',
+    ])
+    expect(cards[0].getAttribute('data-subtitle')).toBe('من جميع المناطق الجغرافية')
+    expect(cards[0].getAttribute('data-value')).toBe('2,500 ج.م')
+    expect(cards[1].getAttribute('data-subtitle')).toBe('بها مبيعات فى الفترة')
+    expect(cards[1].getAttribute('data-value')).toBe('2')
+    cards.forEach(card => {
+      expect(card.getAttribute('data-status')).toBe('OK')
+      expect(card.getAttribute('data-last-completed-at')).toBe('2026-09-21T00:00:00Z')
+      expect(card.getAttribute('data-stale')).toBe('false')
+      expect(card.getAttribute('data-domain')).toBe('sales')
+    })
   })
 
   it('preserves the shared Select contract and exact controlled geography filter shape', () => {
@@ -221,10 +276,16 @@ describe('Geography responsive detail collection', () => {
     expect(within(section).getByText('—')).toBeTruthy()
   })
 
-  it('preserves the exact five-row loading state and exact empty copy before any ready renderer mounts', () => {
+  it('preserves the exact two-card summary loading grid plus five-row detail loading state and exact empty copy', () => {
     setViewport(390)
     mocks.useGeographyTable.mockReturnValue({ data: geographyRows, isLoading: true })
-    const { rerender } = render(<GeographyPage />)
+    const { container, rerender } = render(<GeographyPage />)
+
+    const summaryGrid = container.querySelector('[data-metric-grid]') as HTMLElement
+    const summarySkeletons = within(summaryGrid).getAllByTestId('skeleton-card')
+    expect(summaryGrid.getAttribute('data-columns')).toBe('2')
+    expect(summarySkeletons).toHaveLength(2)
+    summarySkeletons.forEach(skeleton => expect(skeleton.getAttribute('data-height')).toBe('160'))
 
     let section = getDistributionSection()
     const loadingCollection = section.querySelector('[data-collection-state="loading"]') as HTMLElement
