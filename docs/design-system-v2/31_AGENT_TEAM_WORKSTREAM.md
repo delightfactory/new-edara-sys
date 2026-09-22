@@ -135,19 +135,48 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-022 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
-Status: `READY — NEEDS PRODUCT DESIGN BOUNDING`
-Owner role for immediate next action: Product Design Director
+### DS2-REPORT-022 — Rep Credit Commitment summary metric-grid convergence
+Status: `READY — BOUNDED`
+Owner role for immediate next action: UI Production Engineer
+Representative surface: `src/pages/reports/RepCreditCommitmentPage.tsx` — the four-card filtered summary cluster only.
 
-Intent:
-- inspect the exact latest Development baseline and representative remaining Reports/Analytics debt;
-- select exactly one smallest dependency-safe presentation-only concern and record a concrete representative surface/file plus explicit acceptance and exclusion boundary before implementation;
-- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer proves the need;
-- preserve REPORT001-021 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/business semantics;
-- keep Settings/Admin, remaining Work/Field debt, shared component-depth work and Global convergence explicitly in the roadmap;
-- do not turn REPORT022 into broad multi-page report beautification.
+System-pattern intent:
+- converge the remaining local four-column KPI-summary layout onto the already-proven layout-only `MetricGrid columns={4}` contract;
+- make the summary deliberately adaptive as Desktop 4-column, Tablet 2-column and Mobile 1-column without changing metric meaning or introducing page-local breakpoint rules;
+- keep the existing KPI cards caller-owned in this slice; `StatCard`/`MetricCard` conversion is explicitly not part of REPORT022.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+Implementation scope:
+- import the existing shared `MetricGrid` from `@/components/patterns/MetricGrid`;
+- replace only the two `css.kpiGrid` wrappers: the four-card loading branch and the four-card ready branch, each with `MetricGrid columns={4}`;
+- remove the local `css.kpiGrid` style only if it is unused after migration;
+- add focused source tests proving shared grid adoption and the preserved loading/ready contract;
+- do not modify shared `MetricGrid` API/CSS/tokens. If the existing contract proves insufficient, mark the slice `BLOCKED` rather than widening scope.
+
+Acceptance boundary:
+- Desktop `>=1025px`: exactly four summary cards remain in one dense management row through the shared grid;
+- Tablet `769–1024px`: exactly two columns through the existing shared grid contract;
+- Mobile `<=768px`: exactly one column with no ordinary horizontal overflow and safe Arabic wrapping;
+- loading remains exactly four caller-owned shimmer cards, each retaining the current `6rem` height, local card shell, `var(--bg-surface-2)` background and shimmer behavior;
+- ready-state order and content remain exact: `مسؤولو المحافظ` → `إجمالي محافظ المتابعة` → `إجمالي المديونية المنشأة` → `إجمالي التحصيلات المؤكدة`, with the same values, formatters, subtitles and current local accent styling;
+- ready summary remains absent when `rows.length === 0`; current error/empty/filter indicators remain unchanged;
+- the separate `summary.hasUnassigned` warning remains immediately after the ready summary and preserves copy, amount, styling and behavior;
+- no new interactive surface is introduced, so keyboard/touch semantics remain unchanged; DOM reading order follows the same four-card business order in RTL.
+
+Explicit exclusions:
+- no change to `deriveFilteredSummary`, `applyPageFilters`, service/query/cache behavior or any numeric/business calculation;
+- no change to page header, paper selector, `DocumentActions`, filters/advanced ranges, reset/sort behavior, permission/output behavior or print params;
+- no change to the representative table/mobile-card renderer, `useIsMobile`, row click/hover behavior, drawers, drawer filters, customer/order/receipt sections or credit-state logic;
+- no `StatCard`, `MetricCard`, FilterBar, ResponsiveCollection, DataTable, card-style, status-tone or warning-banner redesign in this slice;
+- no backend/service contract, RBAC/RLS/permission, routing, validation, export/print, workflow or deployment change;
+- no shared component API/CSS/token change and no cross-page cleanup.
+
+Focused test/evidence contract:
+- prove the summary loading and ready branches mount the shared grid with `data-columns="4"`;
+- prove the loading branch still exposes four summary placeholders and does not change page/table loading semantics;
+- prove the ready branch preserves all four labels in exact order and leaves the unassigned-warning contract outside the grid;
+- preserve honest evidence labeling: authored tests remain `TESTS_AUTHORED_NOT_EXECUTED` unless actually executed in an allowed local environment; hosted CI remains forbidden.
+
+Implementation is authorized only for this bounded concern from Development baseline `9a9830e5255630e6acf82cfa1012e008e6bcf069`. Any required functional change or shared-contract widening makes REPORT022 `BLOCKED`.
 
 ## Product migration roadmap
 
@@ -197,7 +226,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-021` — `DONE`
-- `DS2-REPORT-022 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — NEEDS PRODUCT DESIGN BOUNDING`
+- `DS2-REPORT-022 — Rep Credit Commitment summary metric-grid convergence` — `READY — BOUNDED`
 - further Reports/Analytics convergence beyond REPORT022 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
