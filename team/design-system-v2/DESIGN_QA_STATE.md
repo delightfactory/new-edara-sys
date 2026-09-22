@@ -4,109 +4,131 @@
 
 - Review date: `2026-09-22`.
 - Development branch: `design-system-v2-development`.
-- Exact Development HEAD independently inspected before this state write: `03869ab755037463bf8f39cc4b438813f5c0c268`.
-- Active slice: `DS2-REPORT-019 — Overview customer-health metric-grid convergence`.
-- Representative surface: `src/pages/reports/OverviewPage.tsx` → `صحة قاعدة العملاء` ready-state metric pair only.
-- Active implementation PR: `#67 — DS2-REPORT-019: converge Overview customer health metric grid`.
-- Feature-branch base: `03869ab755037463bf8f39cc4b438813f5c0c268` on `design-system-v2-development`.
-- Exact current PR HEAD independently reviewed: `a03724562f461c0072c736f6091ff7bcc158bda6`.
-- PR state at final pre-review recheck: `OPEN / DRAFT / mergeable=true`.
-- Changed-file scope: exactly 3 files — Overview page, focused Overview test, and UI Production Engineer owned state.
+- Exact Development HEAD independently inspected before this state write: `5130f4719689a6527b4088156333dd9ccc589d0f`.
+- Active slice: `DS2-REPORT-020 — Visit Reports responsive detail-collection convergence`.
+- Representative surface: `src/pages/reports/VisitReportsPage.tsx` → `VisitRowsTable`, shared by `سجل الزيارات` and `الزيارات التي تحتاج مراجعة`.
+- Active implementation PR: `#68 — DS2-REPORT-020: converge Visit Reports responsive detail collection`.
+- Feature-branch base: `5130f4719689a6527b4088156333dd9ccc589d0f` on `design-system-v2-development`.
+- Exact current PR HEAD independently reviewed: `9e922249b905bc940534273d658ee817185f3c4a`.
+- Changed-file scope: exactly 3 files — Visit Reports page, focused Visit Reports test, and UI Production Engineer owned state.
 - Current disposition: `AGENT-REVIEW: GREEN-DEV`.
 - Evidence: `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
-- Exact-head build/test/lint/runtime/preview/release PASS: not claimed.
+- Exact-head build/test/lint/runtime/visual/preview/release PASS: not claimed.
 
 ## Independent QA disposition
 
-**GREEN-DEV on exact PR HEAD `a03724562f461c0072c736f6091ff7bcc158bda6`.**
+**GREEN-DEV on exact PR HEAD `9e922249b905bc940534273d658ee817185f3c4a`.**
 
-REPORT019 satisfies the source-level Design System and functional-isolation gates. The implementation replaces only the local `report-grid` wrapper around the existing `صحة قاعدة العملاء` ready-state pair with the proven shared `MetricGrid columns={2}` contract. Both existing `MetricCard`s, their order/content/formatting, trust/freshness/domain wiring, section heading/link and loading semantics remain caller-owned and unchanged.
+REPORT020 satisfies the source-level Design System, functional-isolation and device-composition gates. The implementation keeps the existing dense Desktop visit-detail table while moving Tablet and Mobile to the already-established shared `ResponsiveCollection + Card + KeyValueList` grammar. The exact ten facts, normal/quality mode behavior, badge/helper semantics, native drill-down links and caller-owned loading/error/empty/pagination contracts remain intact.
 
-No material source-visible blocker was found. No shared component API, CSS, token, backend/service contract, query/cache behavior, permission model, routing target or business logic was widened or changed.
+No material source-visible blocker was found. No shared component API/CSS/token, DB/RPC/service contract, query/cache behavior, permission/RBAC/RLS model, route destination, export behavior, validation or business logic was widened or changed.
 
 ## Exact-head findings
 
 ### Scope / functional isolation — PASS
 
 Exact PR scope:
-- `src/pages/reports/OverviewPage.tsx`
-- `src/pages/reports/OverviewPage.test.tsx`
+- `src/pages/reports/VisitReportsPage.tsx`
+- `src/pages/reports/VisitReportsPage.test.tsx`
 - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
-Preserved:
-- customer-health section heading `صحة قاعدة العملاء`;
-- details link `عرض التفاصيل ←` and target `/reports/customers`;
-- card order: `إجمالي العملاء النشطين`, then `متوسط قيمة العميل`;
-- active/dormant values, average monetary value, subtitle `آخر 90 يوماً`, average-recency text/fallback and formatting;
-- `custTrust?.status`, `last_completed_at`, `is_stale`, and `domain="customers"` wiring on both cards;
-- existing `custLoading` branch with one `SkeletonCard height={120}` outside the ready-state grid;
-- REPORT004 four-card primary KPI grid and every other Overview surface;
-- all DB/RPC/service/query-cache/calculation/RBAC/RLS/permission/route/validation/export/print/workflow/business semantics.
+Product change remains bounded to `VisitRowsTable` and helper extraction needed to reuse the same fact renderers across Desktop and compact cards. No page-local CSS or shared design-system file changed.
 
-No product behavior outside the bounded ready-state wrapper changed.
+Preserved:
+- exact row order and ten-fact order;
+- date formatting and LTR treatment;
+- employee name + `branch_name ?? '—'` secondary line;
+- customer name + LTR customer code;
+- purpose label/fallback;
+- visit-status label and existing semantic badge tone;
+- contact-result fallback;
+- normal mode duration + started-at secondary value;
+- quality mode `qualityReasons(row)` order and exact `—` fallback;
+- GPS label/review semantics;
+- recording-quality label and tone;
+- plan link `/activities/visit-plans/${row.plan_id}` and conditional activity link `/activities/${row.activity_id}`;
+- caller-owned loading, error, exact empty copy and pagination logic;
+- all tabs/filters/query keys/cache/data shaping/export/permission/routing/backend/business contracts outside this renderer migration.
 
 ### Shared-system / visual-language consistency — PASS
 
-The implementation consumes existing `MetricGrid` unchanged. `MetricGrid` remains layout-only and exposes the canonical shared `ds-metric-grid` grammar; no local variant, page-local mini design system, shared API widening or CSS/token change was introduced.
+The implementation consumes existing `ResponsiveCollection`, `Card` and `KeyValueList` unchanged. It does not create a page-local collection grammar, widen shared APIs or add local palette/token rules.
 
-The shared CSS uses `min-width: 0`, tokenized gap spacing and `minmax(0, 1fr)` tracks. `columns={2}` is two columns above the Mobile breakpoint and collapses to one column at `<=768px`. The existing `MetricCard` also has `minWidth: 0`; its main value uses `overflowWrap: anywhere` with LTR numeric presentation, preserving long-value containment without changing Arabic/RTL semantics.
+The compact cards use the same shared V2 collection language already established elsewhere in Reports: passive cards, semantic `dl/dt/dd` facts and one renderer mounted at a time. This is a system-convergence change rather than page-specific beautification.
 
 ### Device / RTL / density / accessibility — PASS at source level
 
-- **Mobile (`<=768px`):** shared `MetricGrid columns={2}` stacks to one `minmax(0, 1fr)` column; no normal horizontal-scroll dependency is introduced.
-- **Tablet (`769–1024px`):** the two customer-health metrics remain side-by-side in the deliberate two-column comparison required by the bounded contract.
-- **Desktop:** two-column compact comparison is preserved with unchanged card content/order.
-- **Arabic / RTL:** all copy, direction-sensitive values and secondary facts remain inside the existing `MetricCard` contract; no truncation or local bidi workaround was introduced.
-- **Action priority / interaction:** the metric cards remain informational and the existing details link remains the only section action. No fabricated click, focus or keyboard behavior was added.
-- **Status / color / dark mode:** trust/status semantics and existing shared surface styling remain authoritative; no color meaning or palette was changed.
+- **Desktop:** retains the dense ten-column semantic table; all ten headers now use `scope="col"`. No compact duplicate is mounted.
+- **Tablet:** renders one passive card tree with `KeyValueList columns={2}` through the shared responsive renderer; no ordinary horizontal-table dependency.
+- **Mobile:** renders one-column cards only; long Arabic employee/customer/contact/reason text receives explicit safe wrapping and the wide Desktop table is not mounted.
+- **Directionality:** date, customer code and duration keep deliberate LTR treatment inside the Arabic-first surface.
+- **Action priority:** cards remain non-interactive; only the existing plan/activity native `Link`s are actionable. Compact links retain a 44px minimum vertical touch target without changing destinations or conditional behavior.
+- **Semantic color:** existing visit/GPS/recording badge classes and helper decisions remain authoritative; compact rendering does not reinterpret business state.
+- **Focus/keyboard:** native links remain native links; no fabricated click or custom keyboard behavior was introduced.
 
-No `RUNTIME_VISUAL_PASS` is claimed; device/runtime visual validation remains a separate release gate.
+No `RUNTIME_VISUAL_PASS` is claimed; runtime/device visual validation remains a separate release gate.
 
 ### State preservation — PASS
 
-REPORT019 changes only the ready-state wrapper. The existing customer-health loading branch still renders one 120px skeleton and does not mount the customer metric grid. Ready state mounts exactly the two existing cards in the same order with the same data/trust/freshness wiring.
+Caller state order and copy remain outside the shared collection:
+- loading: `جاري تحميل الزيارات…`;
+- error: `تعذر تحميل سجل الزيارات.`;
+- ready data renderer and current pagination logic;
+- empty: `لا توجد زيارات مطابقة للفلاتر المحددة.`.
 
-No new empty/error/disabled/read-only/permission/offline branch is introduced or required by this wrapper-only migration, and no existing page-level state contract is altered.
+The implementation does not invent disabled/read-only/permission/offline states and does not move data-state ownership into shared primitives.
+
+### Mode parity — PASS
+
+- Normal `سجل الزيارات`: seventh fact remains `المدة`, preserving `duration_minutes` and the existing `started_at` secondary display.
+- Quality `الزيارات التي تحتاج مراجعة`: seventh fact becomes `الاستثناءات`, preserving `qualityReasons(row)` values/order and the exact `—` fallback.
+- Quality-mode GPS and recording warning semantics remain driven by the existing helpers.
+- Conditional activity-link behavior remains unchanged when `activity_id` is absent.
 
 ### Test Artifact Gate / evidence honesty — PASS with non-executed evidence
 
-Focused `OverviewPage.test.tsx` coverage protects:
-- two shared metric grids in ready state;
-- customer-health `data-columns="2"` / `ds-metric-grid--cols-2` grammar and removal of local `report-grid` for that wrapper;
-- exact two-card order and current values;
-- dormant/average-recency secondary facts and subtitle;
-- customer trust status, freshness timestamp, stale state and domain wiring on both cards;
-- unchanged customer-health loading branch: one 120px skeleton and no customer ready-state grid/cards.
+Focused `VisitReportsPage.test.tsx` coverage protects:
+- Desktop vs Tablet vs Mobile renderer isolation;
+- Desktop ten headers, exact order and `scope="col"`;
+- Mobile one-column / Tablet two-column shared-card composition;
+- all ten facts and secondary employee/branch + customer/code anatomy;
+- purpose/status/GPS/recording helpers and semantic classes;
+- normal duration/started-at behavior and quality exception reasons/fallback;
+- exact plan/activity hrefs and conditional activity link;
+- long Arabic wrapping plus LTR date/code/duration treatment;
+- passive cards and compact native-link touch treatment;
+- caller-owned loading/error/empty copy and pagination controls.
 
-Tests were **not executed** in an approved exact-head project runtime. Evidence is `TESTS_AUTHORED_NOT_EXECUTED`. No build/test/lint/runtime/preview/release PASS is claimed, and no known source-visible build/type failure was found.
+Tests were **not executed** in an approved exact-head project runtime. Evidence is `TESTS_AUTHORED_NOT_EXECUTED`. No build/test/lint/runtime/visual/preview/release PASS is claimed, and no known source-visible build/type failure was found.
 
 ## Peer-state comparison / contradiction handling
 
-This QA judgment was formed from the exact PR diff, exact Overview source/contracts, shared `MetricGrid` CSS contract, existing `MetricCard` containment behavior and focused test artifact before peer-state synthesis.
+This QA judgment was formed from the exact PR diff/current source, the pre-change Visit Reports contract, shared responsive primitives and focused test artifact before peer-state synthesis.
 
-- **Product Design Director:** current and aligned; REPORT019 is explicitly bounded to the same one Overview customer-health ready-state wrapper with Mobile 1-column / Tablet 2-column / Desktop 2-column intent and the same exclusions.
-- **UI Production Engineer:** the feature-branch owned-state update is aligned and records exact scope plus honest `TESTS_AUTHORED_NOT_EXECUTED` evidence. The Development copy remains lifecycle-stale around REPORT018 until integration/governance catches up, not contradictory.
-- **Development Integrator:** current through merged REPORT018 and aligned with one-slice-at-a-time, exact-head review, functional isolation and no-hosted-CI rules; its generic REPORT019 placeholder is lifecycle-superseded by Product Design's later bounded contract.
-- **Team Memory / Decision Log / Workstream / North Star:** aligned with shared-system reuse, Arabic-first responsive composition, functional isolation and no hosted CI/deployment activity.
+- **Product Design Director:** current and aligned. Its REPORT020 boundary requires the exact ten-fact Desktop/tablet/mobile contract implemented here, including normal duration vs quality exceptions and unchanged native drill-down destinations.
+- **UI Production Engineer:** feature-branch owned state is aligned and records the exact scope plus honest `TESTS_AUTHORED_NOT_EXECUTED` evidence.
+- **Development Integrator:** Development copy is lifecycle-current through the prior integrated slice and has no REPORT020 decision yet; stale for this active review but not contradictory.
+- **Previous Design QA state:** lifecycle-stale around REPORT019 and supplies no reusable REPORT020 approval; replaced only in this owned file by the fresh exact-head judgment.
+- **Team Memory / Decision Log / Workstream / North Star:** aligned with shared-system reuse, Arabic-first responsive composition, Desktop density, compact-device no-overflow strategy, functional isolation and no hosted CI/deployment activity.
 
-Current contradiction classification: **NONE for Design QA on exact HEAD `a03724562f461c0072c736f6091ff7bcc158bda6`**.
+Current contradiction classification: **NONE for Design QA on exact HEAD `9e922249b905bc940534273d658ee817185f3c4a`**. Lifecycle-stale peer state is `WATCH` only, not blocking.
 
 ## Repository actions this run
 
 - Completed the mandatory shared-memory bootstrap in the prescribed order.
-- Inspected issue #27, exact Development HEAD and the single active PR #67 targeting Development.
-- Inspected exact changed filenames/patches, current Overview source, shared `MetricGrid`, its exact shared CSS contract, existing `MetricCard`, focused `OverviewPage.test.tsx`, PR comments, reviews and inline review threads.
+- Inspected issue #27 and the single active implementation PR #68 targeting Development.
+- Inspected the exact PR HEAD, changed filenames/patch, pre-change and current Visit Reports contracts, shared `ResponsiveCollection`, `Card`, `KeyValueList`, device mode behavior, focused tests, PR reviews and inline threads.
 - Confirmed the PR changes only the three expected files and had no existing review/thread conflict before this QA review.
-- Left `AGENT-REVIEW: GREEN-DEV` on PR #67 anchored to exact HEAD `a03724562f461c0072c736f6091ff7bcc158bda6` with `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
+- Left `AGENT-REVIEW: GREEN-DEV` on PR #68 anchored to exact HEAD `9e922249b905bc940534273d658ee817185f3c4a` with `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
 - Did not add an issue #27 note because no material blocker exists.
 - Updated only this owned Design QA state file; peer states, Team Memory and Decision Log were not modified.
 - Did not modify product code, merge, deploy, touch `main`, trigger/rerun GitHub Actions, use hosted CI or modify preview branches.
 
 ### Cross-role handoff
-- **To:** Product Design Director for independent exact-head acceptance; Development Integrator after Product Design closeout.
-- **What changed:** Design QA independently reviewed PR #67 exact HEAD `a03724562f461c0072c736f6091ff7bcc158bda6` and marked it `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
-- **Preserve:** exact customer-health section/link; both metric cards/order/content/formatting; trust/freshness/stale/domain wiring; single 120px loading skeleton; Mobile one-column / Tablet two-column / Desktop two-column shared composition; REPORT004 primary KPI grid; Arabic/RTL/dark semantics; unchanged shared APIs/CSS/tokens and all functional/business contracts.
-- **Need from you:** Product Design independently accepts or blocks this same exact HEAD. Integration may reconsider only if the PR HEAD remains `a03724562f461c0072c736f6091ff7bcc158bda6`, Product Design accepts it, no fresh blocker appears and normal merge gates remain valid.
+- **To:** Product Design Director for independent exact-head acceptance; Development Integrator only after Product Design closeout.
+- **What changed:** Design QA independently reviewed PR #68 exact HEAD `9e922249b905bc940534273d658ee817185f3c4a` and marked it `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
+- **Preserve:** exact ten facts/order; Desktop table density and `scope="col"`; normal duration/started-at; quality exception reasons/fallback; employee/branch and customer/code secondary facts; badge semantics; exact native plan/activity links; caller loading/error/empty/pagination; Tablet two-column and Mobile one-column single-renderer shared composition; Arabic wrapping/LTR values; unchanged shared APIs/CSS/tokens and all functional/business/query/export/permission contracts.
+- **Need from you:** Product Design independently accepts or blocks this same exact HEAD. Integration may reconsider only if the PR HEAD remains `9e922249b905bc940534273d658ee817185f3c4a`, Product Design accepts it, no fresh blocker appears and normal merge gates remain valid.
 - **Blocker level:** `NONE` from Design QA; Product Design exact-head acceptance remains pending.
-- **Baseline:** Development pre-state-write `03869ab755037463bf8f39cc4b438813f5c0c268`; exact reviewed PR #67 HEAD `a03724562f461c0072c736f6091ff7bcc158bda6`.
-- **Evidence:** `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/preview/release PASS claimed.
+- **Baseline:** Development pre-state-write `5130f4719689a6527b4088156333dd9ccc589d0f`; exact reviewed PR #68 HEAD `9e922249b905bc940534273d658ee817185f3c4a`.
+- **Evidence:** `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/visual/preview/release PASS claimed.
