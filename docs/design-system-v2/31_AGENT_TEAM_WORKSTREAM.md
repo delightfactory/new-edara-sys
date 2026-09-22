@@ -89,19 +89,41 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-031 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
-Status: `READY — PRODUCT DESIGN BOUNDING REQUIRED`.
-Owner role for immediate next action: Product Design Director.
+### DS2-REPORT-031 — Customer Health as-of-date field convergence
+Status: `READY — BOUNDED`.
+Owner role for immediate next action: UI Production Engineer.
+
+Representative surface:
+- `src/pages/reports/CustomerHealthPage.tsx`
+- focused acceptance coverage: `src/pages/reports/CustomerHealthPage.test.tsx`
 
 System intent:
-- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline;
-- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance/exclusion boundary;
-- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
-- preserve REPORT001-030 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
-- preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
-- do not turn REPORT031 into broad multi-page report beautification.
+- converge the remaining page-local Customer Health report-header date control onto the already-approved shared V2 `DateField -> Input -> Field` grammar used by the Churn Risk report;
+- remove the local primitive/styling duplication without changing what the date means, how it is stored, or which report data it requests;
+- use the existing shared component contract only; no shared API/CSS/token/breakpoint widening is authorized.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+Exact implementation boundary:
+- replace only the local `بتاريخ:` label + native `<input type="date">` presentation with shared `DateField`;
+- preserve `value={asOfDate}`, `max={today}`, and `onChange={e => setAsOfDate(e.target.value)}` semantics exactly;
+- preserve the existing `today` derivation and initial state exactly; this slice does not redefine date/timezone semantics;
+- preserve `useCustomerHealthSummary({ asOfDate })` propagation exactly;
+- preserve the existing report header title/subtitle and surrounding responsive wrapping behavior.
+
+Acceptance:
+- the date control has a programmatically associated accessible name `بتاريخ:` through the shared Field anatomy;
+- the rendered control remains native `type="date"`, retains the same current max/value constraint, and date changes propagate to `useCustomerHealthSummary` unchanged;
+- the shared Field/control sizing remains readable on Desktop and touch-safe on Tablet/Mobile, with no new horizontal overflow or Arabic-label clipping;
+- existing Customer Health summary remains `MetricGrid columns={3}` with the exact three KPI cards and 3 × 150px loading skeletons;
+- existing detail behavior remains unchanged: blocked-state priority, semantic five-column Desktop table, Tablet two-column cards, Mobile one-column cards, five 44px detail skeletons, trust/freshness actions, long-Arabic wrapping, LTR numeric values, fallback identity and exact empty/footer copy;
+- focused tests must cover shared Field/date-control adoption, accessible labeling, `type=date`, max/value preservation and date-change hook propagation while retaining all existing responsive/detail tests.
+
+Explicit exclusions:
+- no changes to `DateField`, `Input`, `Field`, shared CSS/tokens/breakpoints or any other shared primitive;
+- no KPI/card/table/detail/chart/status/trust/freshness visual redesign;
+- no changes to customer-health hooks, queries, cache, calculations, snapshot/watermark semantics, permissions/RBAC/RLS, routing, backend/business logic, export/print, deployment or preview behavior;
+- no Churn Risk five-KPI or Customer Re-engagement five-KPI convergence in this slice.
+
+If implementation discovers that this bounded replacement requires shared-contract or functional/date-semantics changes, mark REPORT031 `BLOCKED` instead of widening the PR.
 
 ## Product migration roadmap
 
@@ -153,7 +175,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-030` — `DONE`
-- `DS2-REPORT-031 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — PRODUCT DESIGN BOUNDING REQUIRED`
+- `DS2-REPORT-031 — Customer Health as-of-date field convergence` — `READY — BOUNDED`
 - further Reports/Analytics convergence beyond REPORT031 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
