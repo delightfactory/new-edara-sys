@@ -4,142 +4,123 @@
 
 - Review date: `2026-09-22`.
 - Authoritative branch: `design-system-v2-development`.
-- Exact Development HEAD independently inspected before REPORT020 boundary write: `ea5d2eb141168f894722e6d05f6a829e0b6603f4`.
-- Workstream boundary commit written this run: `f67e414239f78f66ddf6697e2c4deb467a8556f4`.
-- Latest integrated product baseline: `DS2-REPORT-019 — Overview customer-health metric-grid convergence` / PR #67, squash merge `5184c06021d2162e4c1feb5170e92e300bd846d9` from reviewed implementation HEAD `a03724562f461c0072c736f6091ff7bcc158bda6`.
-- Open implementation PRs targeting Development at the pre-write recheck: `NONE`.
-- Current single active slice: `DS2-REPORT-020 — Visit Reports responsive detail-collection convergence`.
-- Current Product Design disposition: `READY — BOUNDED`.
-- Immediate next owner: UI Production Engineer.
-- Evidence boundary for prior integrated work remains `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no build/lint/runtime/visual/preview/release PASS is claimed for REPORT020.
+- Exact Development HEAD independently inspected before this Product Design closeout: `53dbd4675d45f1d874b8c6b071818fdedd847411`.
+- Development drift from the REPORT020 feature baseline `5130f4719689a6527b4088156333dd9ccc589d0f` is governance-only: the sole intervening file is `team/design-system-v2/DESIGN_QA_STATE.md`.
+- Latest integrated product baseline remains `DS2-REPORT-019 — Overview customer-health metric-grid convergence` / PR #67, squash merge `5184c06021d2162e4c1feb5170e92e300bd846d9`.
+- Current single implementation PR targeting Development: `#68 — DS2-REPORT-020: converge Visit Reports responsive detail collection`.
+- Exact current PR HEAD independently reviewed: `9e922249b905bc940534273d658ee817185f3c4a`.
+- PR state at review: `OPEN / DRAFT`, base `design-system-v2-development`, mergeable, exactly 3 changed files.
+- Design QA on the same exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
+- Evidence boundary: `TESTS_AUTHORED_NOT_EXECUTED`; no build/lint/runtime/visual/preview/release PASS is claimed.
+- Current Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER`.
+- Immediate next owner: Development Integrator for final unchanged-head integration revalidation only.
 
 ## Independent Product Design judgment
 
-**REPORT020 is now precisely bounded and implementation-authorized as one presentation-only Visit Reports collection slice.**
+**PR #68 exact HEAD `9e922249b905bc940534273d658ee817185f3c4a` is accepted for Product Design with `PASS — NO DESIGN-SYSTEM BLOCKER`.**
 
-I formed this judgment from the exact latest Development baseline and current product UI before peer-state synthesis. The smallest high-value system-coherence gap is `VisitRowsTable` in `src/pages/reports/VisitReportsPage.tsx`, shared by the `سجل الزيارات` and `الزيارات التي تحتاج مراجعة` views.
+I reviewed the implementation independently against the bounded REPORT020 contract, the North Star, device strategy, current shared pattern contracts and the exact PR source/test diff before comparing peer-state conclusions.
 
-The current collection is a ten-column Desktop-style table inside `.visit-report-table-wrap { overflow-x: auto; }`, while `.visit-report-table` has `min-width: 1050px`. That makes normal compact-device use depend on horizontal table scrolling even though the Design System already has a proven single-renderer responsive collection grammar. This is a direct North-Star/device-strategy gap, not a request for page beautification.
+The change is system convergence rather than page-local beautification. It preserves the management value of the dense Visit Reports table on Desktop while replacing compact-device dependence on a wide horizontally scrolling table with the already-proven single-renderer `ResponsiveCollection + Card + KeyValueList` grammar. No new visual language or shared-contract widening is introduced.
 
-I rejected broader candidates such as Customer Reengagement, Rep Credit Commitment, and the other Visit Reports summary/survey tables for this slice because they combine additional filter/action/business or multiple-collection concerns. REPORT020 remains deliberately one collection renderer migration only.
+## Exact-head Product Design review
 
-## REPORT020 bounded contract
+### System fit and scope — PASS
 
-### Representative surface and shared grammar
+Changed scope remains exactly:
+- `src/pages/reports/VisitReportsPage.tsx`;
+- `src/pages/reports/VisitReportsPage.test.tsx`;
+- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`.
 
-Surface:
-- `src/pages/reports/VisitReportsPage.tsx` → `VisitRowsTable` only.
-- Page-local CSS may change only if strictly required to support this bounded collection without altering unrelated Visit Reports surfaces.
+The product change stays inside `VisitRowsTable`, shared by normal `سجل الزيارات` and quality `الزيارات التي تحتاج مراجعة`. Presentation helper extraction (`VisitStatusBadge`, `VisitGpsBadge`, `VisitRecordingBadge`, `VisitModeSpecificFact`, `VisitDetailsLinks`) reuses the same existing mappings/helpers and does not move business decisions into shared components.
 
-Consume unchanged shared patterns:
-- `ResponsiveCollection` for device renderer selection with only one renderer mounted at a time;
-- `Card` as a neutral non-clickable compact surface;
-- `KeyValueList` for semantic `dl/dt/dd` fact presentation.
+No page CSS, shared component API, shared CSS/token, query/cache, data-shaping, calculation, route, permission/RBAC/RLS, service/backend, export, validation, workflow or business semantic change is present.
 
-No shared API/CSS/token widening is authorized.
+### Device composition and density — PASS
 
-### Device composition
+- **Desktop:** the dense ten-column semantic table remains the active renderer; row order, information density, helper anatomy and native drill-down links are preserved. All ten headers now use `scope="col"`.
+- **Tablet:** one passive card renderer is mounted with `KeyValueList columns={2}`. Touch remains first-class and no Desktop table is mounted behind it.
+- **Mobile:** one passive card renderer is mounted with `KeyValueList columns={1}`. Long Arabic employee/customer/contact/reason text receives safe wrapping and ordinary use no longer depends on horizontal table scrolling.
+- **Single-renderer contract:** the implementation delegates device selection to unchanged `ResponsiveCollection`; it does not mount duplicate Desktop/Tablet/Mobile interaction trees and hide them with CSS.
 
-- **Desktop:** preserve the current dense ten-column table, row order, cell anatomy, helper/badge semantics and native links. Add `scope="col"` to the ten table headers as the only intended semantic table enhancement.
-- **Tablet:** render the same rows as cards using two-column `KeyValueList`; no ordinary horizontal-table dependency.
-- **Mobile:** render the same rows as cards using one-column `KeyValueList`; long Arabic/customer/rep/reason text wraps and ordinary use does not require horizontal table scrolling.
-- **Single renderer:** do not mount desktop and compact interaction trees simultaneously or hide duplicates with CSS.
+This matches the product strategy: compact devices adapt composition rather than shrink a Desktop table, while Desktop retains useful comparative density.
 
-### Exact ten-fact contract
+### Exact ten-fact and mode contract — PASS
 
-Preserve this order and existing cell anatomy in both normal and quality modes:
+The compact and Desktop renderers preserve the same ordered facts:
+1. `التاريخ`;
+2. `المندوب` + branch secondary line;
+3. `العميل` + LTR customer-code secondary line;
+4. `الغرض` with existing mapping/fallback;
+5. `الحالة` with existing label/tone semantics;
+6. `نتيجة التواصل` with existing fallback;
+7. normal `المدة` + started-at secondary value, or quality `الاستثناءات` from existing `qualityReasons(row)` with exact `—` fallback;
+8. `GPS` with existing label/review/tone semantics;
+9. `التسجيل` with existing quality mapping/tone semantics;
+10. `التفاصيل` with exact plan link `/activities/visit-plans/${row.plan_id}` and conditional activity link `/activities/${row.activity_id}`.
 
-1. `التاريخ` — existing `formatDate(row.plan_date)` and current LTR treatment.
-2. `المندوب` — `employee_name` plus current `branch_name ?? '—'` secondary line.
-3. `العميل` — `customer_name` plus current LTR `customer_code` secondary line.
-4. `الغرض` — current `PURPOSE_LABELS` mapping/fallback.
-5. `الحالة` — current `STATUS_LABELS` text and `badgeClass` semantics.
-6. `نتيجة التواصل` — `contact_result ?? '—'`.
-7. Mode-specific fact:
-   - normal `سجل الزيارات`: `المدة`, preserving `duration_minutes` plus current `started_at` secondary value;
-   - quality view: `الاستثناءات`, preserving `qualityReasons(row)` and exact `—` fallback.
-8. `GPS` — current `GPS_LABELS`, `needs_gps_review` and `badgeClass` semantics.
-9. `التسجيل` — current `QUALITY_LABELS`, `qualityKind(row)` and badge semantics.
-10. `التفاصيل` — preserve real links and destinations exactly: `/activities/visit-plans/${row.plan_id}` plus conditional `/activities/${row.activity_id}`.
+No compact business summary, re-ranking, semantic-color reinterpretation or fact loss was introduced.
 
-The compact cards must not reinterpret these facts, collapse them into new business summaries or change semantic color meaning.
+### Interaction / Arabic / accessibility — PASS at source level
 
-### State / interaction / accessibility acceptance
+- Cards remain neutral, non-clickable containers; the implementation does not fabricate card-button semantics.
+- Plan/activity actions remain native `Link`s with unchanged destinations; compact links receive a 44px minimum vertical touch target.
+- Arabic-first hierarchy is preserved; long text can wrap safely; direction-sensitive date/customer-code/duration values retain deliberate LTR treatment.
+- Existing badge classes/tokens remain authoritative for semantic color and dark-mode behavior.
+- Desktop table semantics improve through `scope="col"` without changing business meaning.
 
-Preserve caller ownership and current order/copy around the collection:
+No runtime visual acceptance is claimed from source review.
+
+### State contract — PASS
+
+Caller ownership remains intact for:
 - loading: `جاري تحميل الزيارات…`;
 - error: `تعذر تحميل سجل الزيارات.`;
-- data/pagination behavior and current pagination logic;
+- current data/pagination behavior;
 - empty: `لا توجد زيارات مطابقة للفلاتر المحددة.`.
 
-Do not move loading/error/pagination logic into shared primitives and do not invent blocked/offline states.
+The responsive primitive receives only ready/empty collection presentation responsibilities needed by the bounded renderer migration. No new offline/blocked/permission state or query behavior was invented.
 
-Interaction/accessibility:
-- plan/activity controls remain native `Link`s with unchanged destinations and clear touch targets;
-- `Card` stays non-interactive rather than fabricating card clickability;
-- compact detail anatomy uses `KeyValueList` semantics;
-- Desktop headers use `scope="col"`;
-- preserve Arabic-first RTL hierarchy and current direction-sensitive LTR values/codes/dates/duration treatment;
-- preserve existing semantic tokens/classes and dark-mode behavior without page-specific palette changes.
+### Focused test artifact — PASS with non-executed evidence
 
-### Explicit exclusions
+The exact-head test diff protects Desktop/Tablet/Mobile renderer isolation, exact ten-column/fact order, `scope="col"`, both normal and quality modes, secondary employee/branch and customer/code anatomy, mappings/badge tones, exact/conditional links, Arabic wrapping/LTR treatment, 44px compact link targets, loading/error/empty copy and existing pagination controls.
 
-REPORT020 must not change:
-- the other Visit Reports tables/collections, including `الأداء حسب المندوب` and survey `الإجابات التفصيلية`;
-- tabs/view switching, header, date/filter/search controls, KPIs/metrics, overview/distribution/funnel panels, pagination logic, export/CSV behavior;
-- hooks, queries/cache, data shaping, calculations, row ordering, route eligibility/destinations, permissions/RBAC/RLS, backend/services, validation or business semantics;
-- existing purpose/status/quality/GPS/reason helper logic or semantic color decisions;
-- shared component APIs, shared CSS/tokens, or a broad DataTable/FilterBar/Pagination redesign;
-- unrelated `VisitReportsPage.css` cleanup.
-
-If any implementation need crosses those boundaries, REPORT020 becomes `BLOCKED` and returns to Product Design rather than widening the PR.
-
-### Focused test artifact required
-
-Author source/contract tests that protect:
-- Desktop vs Tablet vs Mobile composition and exactly-one-renderer behavior;
-- the exact ten facts/order in normal and quality modes, including the mode-specific seventh fact;
-- employee branch and customer code secondary facts;
-- current label/helper/badge semantics;
-- exact plan/activity hrefs and conditional activity link;
-- Desktop `scope="col"` headers;
-- caller-owned loading/error/data/pagination behavior and exact empty copy.
-
-Evidence must remain `TESTS_AUTHORED_NOT_EXECUTED` unless an approved exact-head local execution is explicitly available. No hosted GitHub Actions or CI is authorized.
+Evidence remains honestly `TESTS_AUTHORED_NOT_EXECUTED`. The test artifacts were source-reviewed but not executed in an approved exact-head runtime; no build/test/lint/runtime/visual/preview/release PASS is claimed.
 
 ## Peer-state synthesis / contradiction status
 
-This Product Design judgment was formed independently first, then compared with peer states.
+This Product Design judgment was formed first, then compared with peer state.
 
-- **Team Memory:** refreshed through REPORT019 and correctly says REPORT020 still requires Product Design bounding. This run supplies that missing boundary; the overall product/system direction is unchanged, so Team Memory itself was not rewritten by Product Design.
-- **Development Integrator:** current through merged REPORT019 and explicitly hands REPORT020 to Product Design for smallest-safe bounding. Fully aligned.
-- **UI Production Engineer:** Development copy still describes the already-integrated REPORT019 implementation lifecycle. It is stale for the new slice, not contradictory; it must bootstrap from the new REPORT020 boundary before product-code work.
-- **Design QA:** Development copy still records exact-head REPORT019 GREEN-DEV consumed by the merge. It is lifecycle-stale for REPORT020, not contradictory and supplies no reusable approval.
-- **Decision Log / North Star / component/device/migration guidance:** aligned with shared-system reuse, single-renderer responsive composition, Arabic-first compact ergonomics and strict functional isolation.
-- **Open implementation PRs:** none at the final pre-boundary inspection, so no competing slice exists.
+- **Design QA:** current and aligned on exact HEAD `9e922249b905bc940534273d658ee817185f3c4a`; QA is `GREEN-DEV + SOURCE_REVIEW_PASS` with no material source-visible blocker.
+- **UI Production Engineer:** the feature-branch state is current and aligned; the Development-branch copy is lifecycle-stale at REPORT019 because the owned implementation state lives in the active PR. That staleness is non-blocking.
+- **Development Integrator:** Development state is lifecycle-current only through REPORT019 and therefore stale for REPORT020, not contradictory. Integration has no authority to reuse prior-slice approval and must revalidate the current exact HEAD.
+- **Team Memory:** still contains the pre-bound REPORT020 placeholder and is lifecycle-stale for this active implementation, but the Product Design boundary in Workstream/Director State plus active PR/QA state is unambiguous. Overall system direction did not change, so Product Design does not rewrite Team Memory mid-PR.
+- **Decision Log / North Star / component and device guidance:** fully aligned; no durable decision changed.
+- **Open implementation PRs:** exactly one, PR #68. No competing slice exists.
+- **Inline review comments/threads:** none are present on PR #68 at this review point.
 
 Current contradiction classification: `NONE`.
 
 ## Repository actions this run
 
-- Completed the mandatory shared-memory bootstrap in the prescribed order, then re-read the newly refreshed Team Memory after Development advanced by one Team-Memory-only governance commit.
-- Inspected issue #27, latest Development HEAD, open PRs targeting Development, relevant component/page/device/migration guidance and the current Visit Reports source/CSS.
-- Independently compared representative remaining Reports surfaces and selected the smallest dependency-safe presentation concern.
-- Replaced the generic REPORT020 placeholder in `31_AGENT_TEAM_WORKSTREAM.md` with the exact `VisitRowsTable` scope, device/state/accessibility acceptance, exclusions and focused test contract in commit `f67e414239f78f66ddf6697e2c4deb467a8556f4`.
+- Completed the mandatory shared-memory bootstrap in the prescribed order.
+- Inspected issue #27, exact current Development HEAD, the single open Development-targeting PR, exact changed files/source/test diff, PR review discussion and relevant component/device/responsive-collection guidance.
+- Independently reviewed PR #68 exact HEAD `9e922249b905bc940534273d658ee817185f3c4a` and accepted it with `PASS — NO DESIGN-SYSTEM BLOCKER`.
+- Confirmed current Development drift from the feature baseline is governance-only and does not overlap product/test scope.
 - Updated only this owned specialist state among role-state files.
-- Did not modify Team Memory because the overall design/system direction did not change.
-- Did not modify Decision Log because no new durable design rule was introduced; REPORT020 reuses already-established responsive collection decisions.
+- Did not modify Team Memory, Decision Log or Workstream because no system direction/durable rule/slice boundary changed.
 - Did not modify product code, merge a PR, touch `main`, trigger/rerun GitHub Actions, use hosted CI, deploy Vercel or modify preview branches.
 
 ## What changed since previous state
 
-- REPORT019 is now integrated and no implementation PR is active.
-- REPORT020 moved from generic roadmap placeholder to one implementation-authorized slice: Visit Reports `VisitRowsTable` responsive detail-collection convergence.
-- UI Production may now start exactly one implementation PR from the latest Development baseline; all broader Visit Reports debt remains outside this slice.
+- REPORT020 moved from `READY — BOUNDED` to an implemented, QA-GREEN exact-head PR awaiting integration.
+- Product Design independently accepted PR #68 exact HEAD `9e922249b905bc940534273d658ee817185f3c4a`.
+- No design-system blocker, scope expansion or durable architecture decision was introduced.
 
 ### Cross-role handoff
-- **Scope moved:** `DS2-REPORT-020 — Visit Reports responsive detail-collection convergence` is `READY — BOUNDED` for UI Production, limited to `VisitRowsTable` in `src/pages/reports/VisitReportsPage.tsx` plus focused tests and only strictly necessary page-local style support.
-- **What did not move:** every other Visit Reports table/panel/control, all filters/tabs/KPIs/pagination/export behavior, shared APIs/CSS/tokens, hooks/queries/calculations/routing/permissions/backend/business semantics, REPORT001-019 contracts, `main`, preview/deployment and hosted CI remain unchanged/out of scope.
-- **Evidence:** exact inspected Development baseline `ea5d2eb141168f894722e6d05f6a829e0b6603f4`; bounded Workstream commit `f67e414239f78f66ddf6697e2c4deb467a8556f4`; current source shows a ten-column VisitRowsTable backed by `.visit-report-table { min-width: 1050px; }` inside horizontal overflow, while shared `ResponsiveCollection + Card + KeyValueList` already provides the required single-renderer compact grammar.
-- **Risk:** no current blocker; tests/runtime/visual evidence does not yet exist for REPORT020. Any need for shared-contract widening or functional/business change is a BLOCKED condition, not permission to expand the PR.
-- **Action next:** UI Production Engineer should bootstrap from the latest Development HEAD, implement REPORT020 only, author the focused contract tests as `TESTS_AUTHORED_NOT_EXECUTED`, and open one Draft PR targeting `design-system-v2-development` for independent Design QA/Product Design review.
+- **To:** Development Integrator.
+- **What changed:** Product Design independently accepted PR #68 exact HEAD `9e922249b905bc940534273d658ee817185f3c4a` with `PASS — NO DESIGN-SYSTEM BLOCKER`; Design QA is already `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` on the same exact HEAD.
+- **Preserve:** exact ten-fact/mode contract; dense Desktop table + `scope="col"`; Tablet two-column and Mobile one-column single-renderer cards; Arabic wrapping/LTR values; passive cards/native exact links; caller-owned loading/error/empty/pagination; unchanged shared APIs/CSS/tokens and all functional/query/export/permission/backend/business semantics; no `main`, preview/deployment or hosted-CI activity.
+- **Need from you:** revalidate that PR #68 HEAD/base remain unchanged, current Development drift is non-overlapping governance-only, review threads remain clear, mergeability/scope/functional isolation remain clean, then integrate REPORT020 into `design-system-v2-development` only if every normal gate still passes. Any PR-head movement invalidates both current Product Design and QA exact-head acceptance.
+- **Blocker level:** `NONE`.
+- **Baseline:** Development HEAD before this state write `53dbd4675d45f1d874b8c6b071818fdedd847411`; exact accepted PR #68 HEAD `9e922249b905bc940534273d658ee817185f3c4a`; evidence `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
