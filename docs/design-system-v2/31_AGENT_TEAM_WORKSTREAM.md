@@ -84,19 +84,49 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-027 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
-Status: `READY — NEEDS PRODUCT DESIGN BOUNDING`
-Owner role for immediate next action: Product Design Director.
+### DS2-REPORT-027 — Churn Risk filter-control field convergence
+Status: `READY — BOUNDED`
+Owner role for immediate next action: UI Production Engineer.
 
-Intent:
-- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline;
-- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance/exclusion boundary;
-- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
-- preserve REPORT001-026 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
-- preserve Settings/Admin, Global convergence, remaining Work/Field debt and shared component-depth work in the roadmap;
-- do not turn REPORT027 into broad multi-page report beautification.
+Representative surface:
+- `src/pages/reports/ChurnRiskPage.tsx` → page-header risk-classification select and single `بتاريخ` as-of-date control only.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+System intent:
+- remove the remaining page-local native form-control styling in this report header by composing the existing V2 `Select` and `DateField` / `Field` grammar;
+- keep report filtering truth, date semantics and hook inputs caller-owned;
+- prove that the shared Field system can carry compact report-scope controls without adding a page-local input language or widening shared APIs.
+
+Implementation boundary:
+- replace only the current inline-styled risk `<select>` with existing shared V2 `Select`;
+- replace only the current inline-styled native `<input type="date">` with existing shared V2 `DateField`;
+- preserve exact risk state/value behavior: `riskLabel ?? ''`, `setRiskLabel(e.target.value || undefined)`, option order and values `all / VIP / LOYAL / ENGAGED / AT_RISK / DORMANT`, and current Arabic option copy;
+- preserve exact as-of-date state/value behavior: `asOfDate`, `max={today}`, and `setAsOfDate(e.target.value)`;
+- provide an accessible name for the risk classification control and preserve the visible `بتاريخ` meaning through the shared Field/accessibility contract without changing filter semantics;
+- preserve the current wrapping header composition while ensuring the two controls remain contained with no ordinary horizontal overflow.
+
+Device / state / accessibility acceptance:
+- **Mobile `<=768px`:** controls remain usable in the wrapped header, inherit canonical touch-safe V2 control height, have accessible labels/names and create no ordinary page overflow;
+- **Tablet `769–1024px`:** controls remain touch-first and deliberately contained rather than inheriting compact Desktop-only sizing;
+- **Desktop `>=1025px`:** preserve the compact management/report header and current information hierarchy;
+- Arabic labels/options remain RTL-native; native option/date value behavior remains unchanged;
+- keyboard/focus/label relationships come from the existing `Field`/`Select`/`DateField` contracts; no custom focus implementation is added;
+- loading/blocked/chart/detail states are unaffected because the slice changes presentation controls only.
+
+Focused evidence expected:
+- extend `src/pages/reports/ChurnRiskPage.test.tsx` with focused source-level tests for accessible shared risk/date controls and preservation of the exact selected values / hook-filter propagation;
+- preserve existing ChartPanel and ResponsiveCollection tests unchanged;
+- expected normal evidence label remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved execution route actually runs them.
+
+Explicit exclusions:
+- no Churn Risk five-card KPI-grid migration or five-column `MetricGrid` API/CSS work;
+- no ChartPanel, pie chart, chart colors/legend/tooltip, SystemHealthBar or Trust/Freshness change;
+- no customer-detail `ResponsiveCollection`, Desktop table, Tablet/Mobile cards, RiskBadge or RecencyCell change;
+- no second report page and no Customer Reengagement work;
+- no shared `Select`, `DateField`, `Field`, Input API/CSS/token/breakpoint modification;
+- no hook/query/cache/calculation/RPC/DB/RBAC/RLS/permission/routing/export/print/validation/workflow/backend/business-semantic change.
+
+Stop rule:
+- if correct implementation requires changing shared control APIs/styles, date/filter semantics, or any excluded functional behavior, mark REPORT027 `BLOCKED` and return to Product Design for re-bounding instead of widening the PR.
 
 ## Product migration roadmap
 
@@ -148,7 +178,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-026` — `DONE`
-- `DS2-REPORT-027 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — NEEDS PRODUCT DESIGN BOUNDING`
+- `DS2-REPORT-027 — Churn Risk filter-control field convergence` — `READY — BOUNDED`
 - further Reports/Analytics convergence beyond REPORT027 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
