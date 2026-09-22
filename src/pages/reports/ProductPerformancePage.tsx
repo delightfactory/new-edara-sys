@@ -9,6 +9,7 @@ import TrustStateBadge from '@/components/reports/TrustStateBadge'
 import FreshnessIndicator from '@/components/reports/FreshnessIndicator'
 import ResponsiveCollection from '@/components/patterns/ResponsiveCollection'
 import ChartPanel from '@/components/patterns/ChartPanel'
+import MetricGrid from '@/components/patterns/MetricGrid'
 import Card from '@/components/patterns/Card'
 import KeyValueList from '@/components/patterns/KeyValueList'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
@@ -123,7 +124,7 @@ export default function ProductPerformancePage() {
 
       <SystemHealthBar trustRows={trustRows} isLoading={trustLoading} error={trustError} />
 
-      <div className="report-grid">
+      <MetricGrid columns={4}>
         {isLoading ? [1, 2, 3, 4].map(i => <SkeletonCard key={i} height={160} />) : (
           <>
             <MetricCard label="إجمالى الإيراد" subtitle="صافى — مرتجعات مستبعدة"
@@ -148,7 +149,7 @@ export default function ProductPerformancePage() {
               domain="sales" icon={<TrendingDown size={16} />} />
           </>
         )}
-      </div>
+      </MetricGrid>
 
       {/* Chart */}
       <ChartPanel

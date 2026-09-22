@@ -118,6 +118,10 @@ function getChartPanel() {
   return heading.closest('.ds-chart-panel') as HTMLElement
 }
 
+function getMetricGrid() {
+  return document.querySelector('[data-metric-grid]') as HTMLElement
+}
+
 describe('Product Performance responsive detail collection', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -129,6 +133,44 @@ describe('Product Performance responsive detail collection', () => {
       isLoading: false,
     })
     mocks.useProductPerformanceTable.mockReturnValue({ data: rows, isLoading: false })
+  })
+
+  it('uses the shared four-column MetricGrid for the KPI summary with exact ready-card order', () => {
+    render(<ProductPerformancePage />)
+
+    const grid = getMetricGrid()
+    expect(document.querySelectorAll('[data-metric-grid]')).toHaveLength(1)
+    expect(grid.getAttribute('data-columns')).toBe('4')
+    expect(grid.classList.contains('ds-metric-grid--cols-4')).toBe(true)
+    expect(within(grid).getAllByTestId('metric-card').map(card => card.textContent)).toEqual([
+      'إجمالى الإيراد',
+      'منتجات نشطة',
+      'أعلى منتج',
+      'متوسط نسبة المرتجع',
+    ])
+    expect(document.querySelector('.report-grid')).toBeNull()
+  })
+
+  it('preserves four 160px summary skeletons when either side of the combined loading gate is active', () => {
+    mocks.useProductPerformanceSummary.mockReturnValue({ data: undefined, isLoading: true })
+    const { rerender } = render(<ProductPerformancePage />)
+
+    let grid = getMetricGrid()
+    let skeletons = within(grid).getAllByTestId('skeleton-card')
+    expect(skeletons).toHaveLength(4)
+    skeletons.forEach(skeleton => expect(skeleton.getAttribute('data-height')).toBe('160'))
+
+    mocks.useProductPerformanceSummary.mockReturnValue({
+      data: { total_revenue: 1234, total_products: 1, top_product_revenue: 1234 },
+      isLoading: false,
+    })
+    mocks.useProductPerformanceTable.mockReturnValue({ data: rows, isLoading: true })
+    rerender(<ProductPerformancePage />)
+
+    grid = getMetricGrid()
+    skeletons = within(grid).getAllByTestId('skeleton-card')
+    expect(skeletons).toHaveLength(4)
+    skeletons.forEach(skeleton => expect(skeleton.getAttribute('data-height')).toBe('160'))
   })
 
   it('uses the shared ChartPanel with semantic hierarchy, exact copy, and the existing trust action', () => {
