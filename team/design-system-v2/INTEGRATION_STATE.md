@@ -4,19 +4,19 @@
 
 - Review date: `2026-09-22`.
 - Development branch: `design-system-v2-development`.
-- Exact Development HEAD immediately before this owned-state write: `fd388e6976fa9eaf1942ae8250f08656c3f81387`.
-- Latest integrated product baseline: `DS2-REPORT-020 — Visit Reports responsive detail-collection convergence`.
-- Latest product merge: PR #68, squash merge `92d0091fcd34980a4e91c6626135931a18a199b9` from exact reviewed implementation HEAD `9e922249b905bc940534273d658ee817185f3c4a`.
+- Exact Development HEAD immediately before this owned-state write: `fae1c50498d243cf87f57bfe2e69ddd37ca790ad`.
+- Latest integrated product baseline: `DS2-REPORT-021 — Receivables summary metric-grid convergence`.
+- Latest product merge: PR #69, squash merge `e93463e9d59d5979eea44edec3afb0e2ffd8bb56` from exact reviewed implementation HEAD `54bbb151c54daf0f923e9bb6940de6ef353777fa`.
 - Design QA disposition on the merged exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
-- Product Design exact-head closeout: `PASS — NO DESIGN-SYSTEM BLOCKER` on `9e922249b905bc940534273d658ee817185f3c4a`.
-- Current integration disposition: `MERGED — REPORT020 DONE`.
-- Next single READY roadmap item: `DS2-REPORT-021 — Next bounded Reports metrics/charts/tables/responsive-composition convergence`.
+- Product Design exact-head closeout: `PASS — NO DESIGN-SYSTEM BLOCKER` on `54bbb151c54daf0f923e9bb6940de6ef353777fa`.
+- Current integration disposition: `MERGED — REPORT021 DONE`.
+- Next single READY roadmap item: `DS2-REPORT-022 — Next bounded Reports metrics/charts/tables/responsive-composition convergence`.
 
 ## Integrator decision
 
 **MERGED.**
 
-PR #68 satisfied every Development integration gate on exact HEAD `9e922249b905bc940534273d658ee817185f3c4a`:
+PR #69 satisfied every Development integration gate on exact HEAD `54bbb151c54daf0f923e9bb6940de6ef353777fa`:
 
 - base exactly `design-system-v2-development`;
 - exact PR HEAD remained unchanged through final recheck and Draft-to-Ready transition;
@@ -25,64 +25,63 @@ PR #68 satisfied every Development integration gate on exact HEAD `9e922249b905b
 - evidence is honestly labeled `TESTS_AUTHORED_NOT_EXECUTED`; no build/test/lint/runtime/visual/preview/release PASS is claimed;
 - Product Design independently recorded `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact HEAD;
 - no inline review threads or unresolved material blocker existed;
-- no current role-state recorded a `BLOCKING` contradiction for REPORT020;
+- no current role-state recorded a `BLOCKING` contradiction for REPORT021;
 - no known source-visible build/type failure was outstanding;
-- exact changed-file scope was only `src/pages/reports/VisitReportsPage.tsx`, focused `VisitReportsPage.test.tsx`, and UI Production's owned state;
-- no backend/service/query/cache/RBAC/RLS/permission/routing/validation/export/workflow/business change was present;
+- exact changed-file scope was only `src/pages/reports/ReceivablesPage.tsx`, focused `ReceivablesPage.test.tsx`, and UI Production's owned state;
+- no backend/service/query/cache/RBAC/RLS/permission/routing/validation/export/print/workflow/business change was present;
 - no shared component API/CSS/token widening or workflow/deployment-enabling change was present.
 
-The feature branch started at Development `5130f4719689a6527b4088156333dd9ccc589d0f`. Development advanced before integration only through Design QA and Product Design governance-state commits. That drift was explicitly inspected, did not overlap the product/test scope, and did not invalidate exact-head evidence.
+The feature branch started at Development `b445ecd0f90a997ffd62dfa151bc9df9610f0d97`. Development advanced before integration only through Design QA and Product Design governance-state commits (`d28433766d136718454b73726ad54ce3bac8c76f`, then `bea56adfc8ffca2a33bf1fb05dda53eb2696061b`). That drift was explicitly inspected and did not overlap product/test scope.
 
-The Draft PR was transitioned to Ready without moving its HEAD, then squash-merged with expected-head protection as `92d0091fcd34980a4e91c6626135931a18a199b9`.
+The Draft PR was transitioned to Ready without moving its HEAD, then squash-merged with expected-head protection as `e93463e9d59d5979eea44edec3afb0e2ffd8bb56`.
 
 ## Integrated system result
 
-REPORT020 converges Visit Reports `VisitRowsTable` onto the established responsive collection grammar while preserving the existing Desktop management surface and business truth.
+REPORT021 converges the Receivables three-card AR summary onto the existing shared `MetricGrid columns={3}` while preserving report-domain and business truth.
 
 Preserved exactly:
-- dense ten-column Desktop table, row order and fact order;
-- semantic status/GPS/recording badge mappings and helper behavior;
-- employee/branch and customer/code secondary anatomy;
-- normal mode `المدة` with duration + started-at secondary value;
-- quality mode `الاستثناءات` from existing `qualityReasons(row)` with exact fallback `—`;
-- exact native plan link `/activities/visit-plans/:plan_id` and conditional activity link `/activities/:activity_id`;
-- caller-owned loading, error, empty copy and pagination behavior;
-- all filter/query/cache/data-shaping/export/permission/RBAC/RLS/routing/backend/service/validation/workflow/business semantics.
+- three summary cards and order;
+- labels, subtitles, values, `fmtCur`, icons and `arTrust` trust/freshness/stale wiring;
+- `domain="ar"` semantics;
+- exactly three `SkeletonCard height={160}` items while the summary is loading;
+- page header, `ReportFilterBar` and `SystemHealthBar` behavior;
+- the existing AR `ChartPanel`, including blocked/loading/empty/ready precedence, 260px body, mapping, margins, axes, tooltip and `receipts / refunds / net` series semantics;
+- all query/cache/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/service/validation/workflow/business contracts.
 
 Shared-system impact:
-- Desktop retains the dense semantic table and all ten headers now use `scope="col"`;
-- Tablet renders one two-column passive `Card + KeyValueList` tree;
-- Mobile renders one one-column passive tree with safe Arabic wrapping and deliberate LTR date/code/duration treatment;
-- `ResponsiveCollection` continues to own only device renderer orchestration, with exactly one renderer mounted;
-- cards remain passive and real drill-down links remain native, explicit and touch-ready;
+- the remaining page-local `report-grid` wrapper for this summary is removed;
+- Desktop preserves three-column management comparison;
+- Tablet uses the existing shared two-column metric composition;
+- Mobile uses the existing shared one-column stack;
+- `MetricGrid` remains layout-only, while `MetricCard` retains report trust/status meaning;
 - no shared API/CSS/token widening was required.
 
 ## Queue continuity
 
 Exactly one dependency-safe roadmap item advances to READY:
 
-`DS2-REPORT-021 — Next bounded Reports metrics/charts/tables/responsive-composition convergence`
+`DS2-REPORT-022 — Next bounded Reports metrics/charts/tables/responsive-composition convergence`
 
 Product Design Director owns the next action: inspect the exact latest Development baseline and bound exactly one smallest dependency-safe presentation-only Reports/Analytics concern before UI Production starts implementation. The broader North-Star roadmap remains intact: remaining Reports debt, shared component-depth work, remaining Work/Field convergence, Settings/Admin and Global Dark/RTL/accessibility/legacy cleanup all remain explicit future work.
 
 ## Repository actions this run
 
 - Completed the mandatory shared-memory bootstrap in the prescribed order.
-- Inspected issue #27 and confirmed exactly one active PR targeting Development: PR #68.
+- Inspected issue #27 and confirmed exactly one active PR targeting Development: PR #69.
 - Revalidated exact PR metadata/head/base/mergeability, Design QA marker/evidence, Product Design closeout, review submissions, empty inline threads, changed-file scope, functional isolation and Development drift.
-- Inspected product and focused-test patches and found no forbidden functional/backend/deployment drift.
+- Inspected the product/test/governance patch and found no forbidden functional/backend/deployment drift.
 - Confirmed Development drift from the feature baseline was governance-only: Design QA state then Product Design state.
-- Transitioned PR #68 from Draft to Ready without moving exact HEAD `9e922249b905bc940534273d658ee817185f3c4a`.
-- Squash-merged PR #68 with expected-head protection as `92d0091fcd34980a4e91c6626135931a18a199b9`.
-- Updated the Workstream: REPORT020 is DONE and exactly one next slice, REPORT021, is READY.
-- Decision Log remains unchanged because REPORT020 introduces no new durable rule and supersedes none.
+- Transitioned PR #69 from Draft to Ready without moving exact HEAD `54bbb151c54daf0f923e9bb6940de6ef353777fa`.
+- Squash-merged PR #69 with expected-head protection as `e93463e9d59d5979eea44edec3afb0e2ffd8bb56`.
+- Updated the Workstream: REPORT021 is DONE and exactly one next slice, REPORT022, is READY for Product Design bounding.
+- Decision Log remains unchanged because REPORT021 introduces no new durable rule and supersedes none.
 - Did not modify peer specialist states.
 - Did not trigger/rerun GitHub Actions, use hosted CI, deploy Vercel, modify preview branches or touch `main`.
 
 ### Cross-role handoff
-- **To:** Product Design Director; then UI Production Engineer only after Product Design bounds REPORT021.
-- **What changed:** REPORT020 is integrated as squash merge `92d0091fcd34980a4e91c6626135931a18a199b9`; exactly one next roadmap item, REPORT021, is READY for Product Design bounding.
-- **Preserve:** REPORT020 exact ten-fact/mode contract; dense Desktop table; Tablet two-column/Mobile one-column single-renderer responsive cards; native detail links; caller-owned state/query/export/business truth; REPORT001-020 contracts; no backend/business/query/permission/deployment drift; full North-Star roadmap beyond Reports.
-- **Need from you:** Product Design should inspect the exact latest Development baseline and define one smallest dependency-safe REPORT021 concern with explicit representative file/surface, acceptance boundary and exclusions before any product-code work begins.
+- **To:** Product Design Director; then UI Production Engineer only after Product Design bounds REPORT022.
+- **What changed:** REPORT021 is integrated as squash merge `e93463e9d59d5979eea44edec3afb0e2ffd8bb56`; exactly one next roadmap item, REPORT022, is READY for Product Design bounding.
+- **Preserve:** REPORT021 exact three-card/loading/chart contract; `MetricGrid` layout-only ownership; report-domain trust/status semantics in `MetricCard`; all REPORT001-021 contracts; no backend/business/query/permission/deployment drift; full North-Star roadmap beyond Reports.
+- **Need from you:** Product Design should inspect the exact latest Development baseline and define one smallest dependency-safe REPORT022 concern with explicit representative file/surface, acceptance boundary and exclusions before any product-code work begins.
 - **Blocker level:** `NONE`.
-- **Baseline:** integrated product merge `92d0091fcd34980a4e91c6626135931a18a199b9`; merged exact implementation HEAD `9e922249b905bc940534273d658ee817185f3c4a`; evidence `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
+- **Baseline:** integrated product merge `e93463e9d59d5979eea44edec3afb0e2ffd8bb56`; merged exact implementation HEAD `54bbb151c54daf0f923e9bb6940de6ef353777fa`; evidence `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
