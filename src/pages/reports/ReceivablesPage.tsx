@@ -2,6 +2,7 @@
 import { useSystemTrustState, useTrustForComponent } from '@/hooks/useSystemTrustState'
 import { useARDailyTotals, useARSummary } from '@/hooks/useARCollections'
 import MetricCard from '@/components/reports/MetricCard'
+import MetricGrid from '@/components/patterns/MetricGrid'
 import SkeletonCard from '@/components/reports/SkeletonCard'
 import SystemHealthBar from '@/components/reports/SystemHealthBar'
 import ChartPanel from '@/components/patterns/ChartPanel'
@@ -67,7 +68,7 @@ export default function ReceivablesPage() {
 
       <SystemHealthBar trustRows={trustRows?.filter(r => r.component_name.includes('ar_collections'))} isLoading={trustLoading} error={trustError} />
 
-      <div className="report-grid">
+      <MetricGrid columns={3}>
         {summaryLoading ? [1,2,3].map(i => <SkeletonCard key={i} height={160} />) : (
           <>
             <MetricCard label="صافي التحصيل (Cohort)" subtitle="منسوب لتاريخ البيع الأصلي"
@@ -87,7 +88,7 @@ export default function ReceivablesPage() {
               domain="ar" icon={<RotateCcw size={16} />} />
           </>
         )}
-      </div>
+      </MetricGrid>
 
       <ChartPanel
         title="تحصيلات AR مجمّعة بتاريخ البيع الأصلي"
