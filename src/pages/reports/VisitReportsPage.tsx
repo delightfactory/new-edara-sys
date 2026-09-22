@@ -19,6 +19,9 @@ import {
 } from 'lucide-react'
 import ReportFilterBar, { type DateRange } from '@/components/reports/ReportFilterBar'
 import Button from '@/components/ui/Button'
+import ResponsiveCollection from '@/components/patterns/ResponsiveCollection'
+import Card from '@/components/patterns/Card'
+import KeyValueList from '@/components/patterns/KeyValueList'
 import { useBranches, useHREmployees } from '@/hooks/useQueryHooks'
 import { useAuthStore } from '@/stores/auth-store'
 import { PERMISSIONS } from '@/lib/permissions/constants'
@@ -263,75 +266,192 @@ function downloadVisitCsv(rows: VisitReportRow[]) {
   URL.revokeObjectURL(url)
 }
 
-function VisitRowsTable({ rows, qualityMode = false }: { rows: VisitReportRow[]; qualityMode?: boolean }) {
-  if (!rows.length) {
-    return <div className="visit-report-empty">لا توجد زيارات مطابقة للفلاتر المحددة.</div>
+function VisitStatusBadge({ row }: { row: VisitReportRow }) {
+  return (
+    <span className={badgeClass(row.visit_status === 'completed' ? 'success' : 'muted')}>
+      {STATUS_LABELS[row.visit_status] ?? row.visit_status}
+    </span>
+  )
+}
+
+function VisitGpsBadge({ row }: { row: VisitReportRow }) {
+  return (
+    <span className={badgeClass(row.gps_validation_status === 'passed' ? 'success' : row.needs_gps_review ? 'warning' : 'muted')}>
+      {GPS_LABELS[row.gps_validation_status ?? ''] ?? row.gps_validation_status ?? 'غير مسجل'}
+    </span>
+  )
+}
+
+function VisitRecordingBadge({ row }: { row: VisitReportRow }) {
+  return (
+    <span className={badgeClass(qualityKind(row))}>
+      {QUALITY_LABELS[row.recording_quality] ?? row.recording_quality}
+    </span>
+  )
+}
+
+function VisitModeSpecificFact({ row, qualityMode }: { row: VisitReportRow; qualityMode: boolean }) {
+  if (qualityMode) {
+    const reasons = qualityReasons(row)
+    return reasons.length
+      ? <>{reasons.map(reason => <div key={reason} style={{ overflowWrap: 'anywhere', minWidth: 0 }}>{reason}</div>)}</>
+      : <>—</>
   }
 
+  return (
+    <>
+      <strong dir="ltr">{row.duration_minutes == null ? '—' : `${formatNumber(row.duration_minutes)} د`}</strong>
+      <div className="text-muted">{formatDateTime(row.started_at)}</div>
+    </>
+  )
+}
+
+function VisitDetailsLinks({ row, compact = false }: { row: VisitReportRow; compact?: boolean }) {
+  const compactLinkStyle = compact
+    ? { display: 'inline-flex', alignItems: 'center', minHeight: '44px' }
+    : undefined
+
+  return (
+    <>
+      <Link className="visit-report-link" style={compactLinkStyle} to={`/activities/visit-plans/${row.plan_id}`}>الخطة</Link>
+      {row.activity_id ? (
+        <> · <Link className="visit-report-link" style={compactLinkStyle} to={`/activities/${row.activity_id}`}>النشاط</Link></>
+      ) : null}
+    </>
+  )
+}
+
+function VisitRowsDesktopTable({ rows, qualityMode }: { rows: VisitReportRow[]; qualityMode: boolean }) {
   return (
     <div className="visit-report-table-wrap">
       <table className="visit-report-table">
         <thead>
           <tr>
-            <th>التاريخ</th>
-            <th>المندوب</th>
-            <th>العميل</th>
-            <th>الغرض</th>
-            <th>الحالة</th>
-            <th>نتيجة التواصل</th>
-            <th>{qualityMode ? 'الاستثناءات' : 'المدة'}</th>
-            <th>GPS</th>
-            <th>التسجيل</th>
-            <th>التفاصيل</th>
+            <th scope="col">التاريخ</th>
+            <th scope="col">المندوب</th>
+            <th scope="col">العميل</th>
+            <th scope="col">الغرض</th>
+            <th scope="col">الحالة</th>
+            <th scope="col">نتيجة التواصل</th>
+            <th scope="col">{qualityMode ? 'الاستثناءات' : 'المدة'}</th>
+            <th scope="col">GPS</th>
+            <th scope="col">التسجيل</th>
+            <th scope="col">التفاصيل</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map(row => {
-            const reasons = qualityReasons(row)
-            return (
-              <tr key={row.visit_item_id}>
-                <td dir="ltr">{formatDate(row.plan_date)}</td>
-                <td>
-                  <strong>{row.employee_name}</strong>
-                  <div className="text-muted">{row.branch_name ?? '—'}</div>
-                </td>
-                <td>
-                  <strong>{row.customer_name}</strong>
-                  <div className="text-muted" dir="ltr">{row.customer_code}</div>
-                </td>
-                <td>{PURPOSE_LABELS[row.purpose_type ?? 'unspecified'] ?? row.purpose_type}</td>
-                <td><span className={badgeClass(row.visit_status === 'completed' ? 'success' : 'muted')}>{STATUS_LABELS[row.visit_status] ?? row.visit_status}</span></td>
-                <td>{row.contact_result ?? '—'}</td>
-                <td>
-                  {qualityMode ? (
-                    reasons.length ? reasons.map(reason => <div key={reason}>{reason}</div>) : '—'
-                  ) : (
-                    <>
-                      <strong dir="ltr">{row.duration_minutes == null ? '—' : `${formatNumber(row.duration_minutes)} د`}</strong>
-                      <div className="text-muted">{formatDateTime(row.started_at)}</div>
-                    </>
-                  )}
-                </td>
-                <td>
-                  <span className={badgeClass(row.gps_validation_status === 'passed' ? 'success' : row.needs_gps_review ? 'warning' : 'muted')}>
-                    {GPS_LABELS[row.gps_validation_status ?? ''] ?? row.gps_validation_status ?? 'غير مسجل'}
-                  </span>
-                </td>
-                <td>
-                  <span className={badgeClass(qualityKind(row))}>{QUALITY_LABELS[row.recording_quality] ?? row.recording_quality}</span>
-                </td>
-                <td>
-                  <Link className="visit-report-link" to={`/activities/visit-plans/${row.plan_id}`}>الخطة</Link>
-                  {row.activity_id ? (
-                    <> · <Link className="visit-report-link" to={`/activities/${row.activity_id}`}>النشاط</Link></>
-                  ) : null}
-                </td>
-              </tr>
-            )
-          })}
+          {rows.map(row => (
+            <tr key={row.visit_item_id}>
+              <td dir="ltr">{formatDate(row.plan_date)}</td>
+              <td>
+                <strong>{row.employee_name}</strong>
+                <div className="text-muted">{row.branch_name ?? '—'}</div>
+              </td>
+              <td>
+                <strong>{row.customer_name}</strong>
+                <div className="text-muted" dir="ltr">{row.customer_code}</div>
+              </td>
+              <td>{PURPOSE_LABELS[row.purpose_type ?? 'unspecified'] ?? row.purpose_type}</td>
+              <td><VisitStatusBadge row={row} /></td>
+              <td>{row.contact_result ?? '—'}</td>
+              <td><VisitModeSpecificFact row={row} qualityMode={qualityMode} /></td>
+              <td><VisitGpsBadge row={row} /></td>
+              <td><VisitRecordingBadge row={row} /></td>
+              <td><VisitDetailsLinks row={row} /></td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>
+  )
+}
+
+function VisitRowsCards({ rows, qualityMode, device }: { rows: VisitReportRow[]; qualityMode: boolean; device: 'mobile' | 'tablet' }) {
+  return (
+    <div className={`ds-responsive-card-grid ds-responsive-card-grid--${device}`}>
+      {rows.map(row => (
+        <Card key={row.visit_item_id} padding="md">
+          <KeyValueList
+            columns={device === 'tablet' ? 2 : 1}
+            compact
+            items={[
+              {
+                key: 'date',
+                label: 'التاريخ',
+                value: <span dir="ltr">{formatDate(row.plan_date)}</span>,
+              },
+              {
+                key: 'employee',
+                label: 'المندوب',
+                value: (
+                  <span style={{ display: 'block', overflowWrap: 'anywhere', minWidth: 0 }}>
+                    <strong>{row.employee_name}</strong>
+                    <span className="text-muted" style={{ display: 'block', overflowWrap: 'anywhere' }}>{row.branch_name ?? '—'}</span>
+                  </span>
+                ),
+              },
+              {
+                key: 'customer',
+                label: 'العميل',
+                value: (
+                  <span style={{ display: 'block', overflowWrap: 'anywhere', minWidth: 0 }}>
+                    <strong>{row.customer_name}</strong>
+                    <span className="text-muted" dir="ltr" style={{ display: 'block', overflowWrap: 'anywhere' }}>{row.customer_code}</span>
+                  </span>
+                ),
+              },
+              {
+                key: 'purpose',
+                label: 'الغرض',
+                value: <span style={{ overflowWrap: 'anywhere', minWidth: 0 }}>{PURPOSE_LABELS[row.purpose_type ?? 'unspecified'] ?? row.purpose_type}</span>,
+              },
+              {
+                key: 'status',
+                label: 'الحالة',
+                value: <VisitStatusBadge row={row} />,
+              },
+              {
+                key: 'contact-result',
+                label: 'نتيجة التواصل',
+                value: <span style={{ overflowWrap: 'anywhere', minWidth: 0 }}>{row.contact_result ?? '—'}</span>,
+              },
+              {
+                key: 'mode-specific',
+                label: qualityMode ? 'الاستثناءات' : 'المدة',
+                value: <VisitModeSpecificFact row={row} qualityMode={qualityMode} />,
+              },
+              {
+                key: 'gps',
+                label: 'GPS',
+                value: <VisitGpsBadge row={row} />,
+              },
+              {
+                key: 'recording',
+                label: 'التسجيل',
+                value: <VisitRecordingBadge row={row} />,
+              },
+              {
+                key: 'details',
+                label: 'التفاصيل',
+                value: <VisitDetailsLinks row={row} compact />,
+              },
+            ]}
+          />
+        </Card>
+      ))}
+    </div>
+  )
+}
+
+function VisitRowsTable({ rows, qualityMode = false }: { rows: VisitReportRow[]; qualityMode?: boolean }) {
+  return (
+    <ResponsiveCollection<VisitReportRow>
+      items={rows}
+      emptyState={<div className="visit-report-empty">لا توجد زيارات مطابقة للفلاتر المحددة.</div>}
+      renderDesktop={items => <VisitRowsDesktopTable rows={items} qualityMode={qualityMode} />}
+      renderTablet={items => <VisitRowsCards rows={items} qualityMode={qualityMode} device="tablet" />}
+      renderMobile={items => <VisitRowsCards rows={items} qualityMode={qualityMode} device="mobile" />}
+    />
   )
 }
 
