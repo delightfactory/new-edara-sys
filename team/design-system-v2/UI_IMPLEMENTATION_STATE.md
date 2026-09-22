@@ -4,65 +4,61 @@
 
 - Run date: `2026-09-22`.
 - Development branch: `design-system-v2-development`.
-- Exact feature baseline / latest Development HEAD at branch creation: `1df0d8f0dbd367349f6f2082a309d0f978294ec7`.
-- Active slice: `DS2-REPORT-027 — Churn Risk filter-control field convergence`.
-- Representative surface: `src/pages/reports/ChurnRiskPage.tsx` → page-header risk-classification select and single `بتاريخ` as-of-date control only.
-- Feature branch: `ds2-report-027-churn-risk-filter-field`.
-- Draft PR: `#75 — DS2-REPORT-027: Churn Risk filter-control field convergence`, base `design-system-v2-development`.
-- Exact implementation/test HEAD before this owned-state write: `511465076f4b2eea6405eacac6f916d11431aa9d`.
+- Exact feature baseline / latest Development HEAD at branch creation: `d1185e06f7643f20da5b64c24ff31fa6070c3ca7`.
+- Active slice: `DS2-REPORT-028 — Profitability summary metric-grid convergence`.
+- Representative surface: `src/pages/reports/profitability/ProfitDashboard.tsx` → four-card profitability KPI summary only.
+- Feature branch: `ds2-report-028-profitability-metric-grid`.
+- Draft PR: `#76 — DS2-REPORT-028: Profitability summary metric-grid convergence`, base `design-system-v2-development`.
+- Exact implementation/test HEAD before this owned-state write: `9ae1ff85ce3563cc8c4873868260607b1265eba4`.
 - Disposition: `REVIEW — FRESH EXACT-HEAD DESIGN QA + PRODUCT DESIGN REVIEW REQUIRED`.
 - Evidence: `TESTS_AUTHORED_NOT_EXECUTED`.
 - Build/test/lint/runtime/preview/release PASS: not claimed.
 
 ## Independent implementation judgment
 
-The bounded Churn Risk header still recreated two native controls with page-local inline styling even though existing shared V2 `Select`, `DateField`, `Input` and `Field` contracts already own the required presentation, label/focus plumbing and touch sizing. The smallest safe change is therefore to consume those existing controls unchanged while keeping risk/date values and both customer-risk hook inputs fully caller-owned.
+The bounded Profitability dashboard summary was still using the legacy local `report-grid` wrapper even though the four cards are a canonical KPI cluster already covered by shared V2 `MetricGrid`. The smallest safe system-level correction is therefore to replace only that wrapper with `MetricGrid columns={4}` while leaving all card semantics, caller-owned values, loading representation, trust wiring, filter behavior and the downstream final-profit surface untouched.
 
-I formed this judgment from the exact Churn Risk source/tests plus the shared control contracts before comparing peer state. Product Design's fresh REPORT027 boundary is aligned. Team Memory, Design QA and Integration are lifecycle-current only through merged REPORT026 and contain no competing implementation or blocking contradiction. Current contradiction classification: `NONE`.
+I formed this judgment from the exact ProfitDashboard source plus the existing `MetricGrid` contract and already-converged report examples before comparing peer state. Product Design's fresh REPORT028 boundary is aligned. No peer state introduced a competing implementation or functional exception. Current contradiction classification: `NONE`.
 
 ## Material implementation progress
 
 - Completed the mandatory shared-memory bootstrap in the required order; inspected issue #27, exact Development HEAD and all open PRs targeting Development.
-- Confirmed REPORT027 was `READY — BOUNDED`, Development HEAD was exactly `1df0d8f0dbd367349f6f2082a309d0f978294ec7`, and no implementation PR existed.
-- Created `ds2-report-027-churn-risk-filter-field` from that exact SHA.
-- Replaced only the inline-styled risk `<select>` with existing shared `Select`, retaining `riskLabel ?? ''` and `setRiskLabel(e.target.value || undefined)` exactly.
-- Preserved exact risk option order/value/copy: `كل التصنيفات`, `VIP`, `LOYAL / مخلص`, `ENGAGED / متفاعل`, `AT_RISK / معرض للخطر`, `DORMANT / خامد`.
-- Added accessible risk-control naming with `aria-label="تصنيف الخطر"`.
-- Replaced only the standalone `بتاريخ:` label + native date input with existing shared `DateField label="بتاريخ:"`, retaining `asOfDate`, `max={today}` and `setAsOfDate(e.target.value)` exactly.
-- Retained the existing wrapped report-header flex composition; no page-local replacement style or shared API/CSS/token/breakpoint change was introduced.
-- Left the five-card Churn Risk KPI summary, ChartPanel/pie/trust surfaces, SystemHealthBar, responsive customer details/table/cards, RiskBadge and RecencyCell unchanged.
-- Added focused Vitest/testing-library coverage for shared Field composition, accessible risk/date names, native date/max preservation, exact risk option order/copy, and propagation of risk/date changes to both existing customer-risk hooks, including clearing risk back to `undefined`.
-- Retained existing ChartPanel and ResponsiveCollection test coverage unchanged.
-- Self-reviewed baseline → implementation/test HEAD: product file `15 additions / 7 deletions`; test file `57 additions / 2 deletions`; changed files before the owned-state write were exactly those two files.
-- Opened Draft PR #75 targeting only `design-system-v2-development`.
+- Confirmed REPORT028 was the first actionable bounded slice, Development HEAD was exactly `d1185e06f7643f20da5b64c24ff31fa6070c3ca7`, and no implementation PR targeted Development.
+- Created `ds2-report-028-profitability-metric-grid` from that exact SHA.
+- Added the existing shared `MetricGrid` import and replaced only the summary `<div className="report-grid">` with `<MetricGrid columns={4}>`.
+- Preserved the exact four KPI cards and order: `صافي الإيراد بعد المرتجعات`, `المبيعات (تكلفة البضاعة)`, `إجمالي الربح (التشغيلي)`, `المصروفات التشغيلية والرواتب`.
+- Preserved every existing KPI value expression, `...` loading representation, trust status/freshness fields, `profit_overview` domain, icons and gross-profit margin secondary fact.
+- Preserved `ReportFilterBar`, date-range state/query inputs, page title behavior, `report-grid-2` final-profit surface, final-profit formatting and net-margin rendering unchanged.
+- Added focused Vitest/testing-library coverage for the shared four-column MetricGrid contract, exact card order/value/trust wiring, current loading representation and preservation of the surrounding filter/final-profit surface.
+- Self-reviewed baseline → implementation/test HEAD: product file `3 additions / 2 deletions`; new test file `112 additions`; changed files before this owned-state write were exactly those two files.
+- Opened Draft PR #76 targeting only `design-system-v2-development`.
 
 ## Scope / files / shared patterns touched
 
 Product/test files:
-- `src/pages/reports/ChurnRiskPage.tsx`
-- `src/pages/reports/ChurnRiskPage.test.tsx`
+- `src/pages/reports/profitability/ProfitDashboard.tsx`
+- `src/pages/reports/profitability/ProfitDashboard.test.tsx`
 
 Governance:
 - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md` (owned file only)
 
-Shared controls consumed unchanged:
-- `Select`
-- `DateField`
-- underlying `Field` / `Input` contracts
+Shared pattern consumed unchanged:
+- `MetricGrid columns={4}`
 
 No shared component API/CSS/token/breakpoint, DB/migration/RPC, service, RBAC/RLS, route guard, workflow, query/cache, calculation, validation, export, print, permission or backend file was modified.
 
 ## Device / state / accessibility coverage
 
-- **Mobile:** existing wrapped header remains; V2 Field controls inherit canonical touch height at `<=1024px`; no new fixed width or ordinary horizontal-overflow rule was added.
-- **Tablet:** same wrapped composition inherits touch-first control sizing from the existing V2 form contract rather than compact Desktop-only native styling.
-- **Desktop:** existing compact report-management header hierarchy and wrapping behavior remain; controls now use the shared standard control contract.
-- **RTL / Arabic:** Arabic option/date-label copy and exact option order remain unchanged; no bidi override was introduced.
-- **Accessibility / interaction:** risk control has an accessible name; date control receives visible label association from shared `Field`; focus/keyboard behavior remains native and uses existing shared focus styling.
-- **Filtering behavior:** both existing hooks continue receiving the same caller-owned `asOfDate` / `riskLabel`; focused tests protect selection, date update and clearing behavior.
-- **Loading / blocked / chart / details:** no state branch or data renderer changed.
-- **Disabled/read-only/permission/destructive:** none are introduced by this slice; existing report behavior is unchanged.
-- **Dark mode:** shared semantic form styling remains authoritative; no page-local color override was added.
+- **Mobile:** the shared MetricGrid owns canonical single-column KPI composition; no new fixed width or horizontal-overflow behavior was introduced.
+- **Tablet:** the shared MetricGrid owns canonical two-column composition with the exact same card order/content.
+- **Desktop:** `columns={4}` preserves useful four-up summary density while moving layout ownership into the V2 shared pattern.
+- **RTL / Arabic:** all Arabic labels and source order remain unchanged; no bidi override was introduced.
+- **Accessibility:** no card semantics or control behavior changed; this slice changes summary layout ownership only.
+- **Ready state:** exact existing KPI values, trust/freshness/domain/icon wiring and gross-margin secondary fact are protected by focused tests.
+- **Loading state:** the existing four card-level `value="..."` representation is intentionally preserved; no SkeletonCard or new state branch was introduced.
+- **Filter/final-profit surface:** date filter composition and downstream final-profit / net-margin surface remain outside the converged grid and are protected by focused regression coverage.
+- **Disabled/read-only/permission/destructive/error/empty:** no such state branch exists or changes in the bounded summary; existing behavior is untouched.
+- **Dark mode:** shared semantic MetricGrid/Card styling remains authoritative; no color/token override was added.
 
 ## Evidence / execution honesty
 
@@ -75,32 +71,30 @@ No `LOCAL_EXECUTION_PASS`, `RUNTIME_VISUAL_PASS`, preview or release PASS is cla
 ## Preserve / risks
 
 Preserve exactly:
-- `riskLabel ?? ''` and `setRiskLabel(e.target.value || undefined)`;
-- exact risk option values/order/copy;
-- `asOfDate`, `max={today}` and date onChange behavior;
-- both existing customer-risk hook inputs and all query/cache/calculation semantics;
-- current wrapped report-header hierarchy;
-- five-card KPI summary and its current local layout;
-- complete ChartPanel/pie/trust/SystemHealthBar behavior;
-- complete ResponsiveCollection/Desktop-table/Tablet-Mobile-card behavior;
-- unchanged shared `Select`, `DateField`, `Field`, `Input` APIs/CSS/tokens/breakpoints;
-- all permission/RBAC/RLS/routing/export/print/validation/workflow/backend/business semantics.
+- four KPI labels/order/value expressions;
+- current `isLoading ? '...' : ...` behavior for all four cards;
+- trust status / last-completed / stale / `profit_overview` domain wiring;
+- existing icons and gross-profit secondary margin calculation/display;
+- `ReportFilterBar`, date-range state and `useProfitSummary` inputs;
+- downstream `report-grid-2` final-profit card, number formatting and net-margin condition/calculation;
+- unchanged shared `MetricGrid` API/CSS/tokens/breakpoints;
+- all permission/RBAC/RLS/routing/export/print/validation/workflow/query/cache/backend/business semantics.
 
 Remaining risks are independent review/runtime only: tests were not executed and no runtime visual pass exists. Any later PR-head movement invalidates exact-head approvals.
 
 ## Peer-state comparison
 
-- **Product Design Director:** fresh and aligned; explicitly bounds REPORT027 to the two Churn Risk header controls and requires existing shared controls unchanged.
-- **Design QA:** lifecycle-stale at merged REPORT026; no REPORT027 approval or blocker exists yet.
-- **Development Integrator / Team Memory:** lifecycle-current through merged REPORT026 and handed REPORT027 forward; no competing implementation exists.
-- **Decision Log / North Star / Workstream:** aligned with shared-system reuse, Arabic-first multi-device composition, touch-first Tablet/Mobile behavior, strict functional isolation and honest evidence labeling.
+- **Product Design Director:** fresh and aligned; explicitly bounds REPORT028 to ProfitDashboard's four-card summary wrapper and requires shared MetricGrid convergence without semantic drift.
+- **Design QA:** no REPORT028 exact-head approval exists yet; fresh review is required.
+- **Development Integrator / Team Memory:** no competing implementation PR existed at slice start; integration remains gated on fresh review.
+- **Decision Log / North Star / Workstream:** aligned with shared-system reuse, Arabic-first multi-device composition, useful Desktop density, strict functional isolation and honest evidence labeling.
 
 Current contradiction classification: `NONE` from UI Production. Review gates are pending, not implementation blockers.
 
 ### Cross-role handoff
 - **To:** Design QA and Product Design Director; Development Integrator only after fresh exact-head approvals.
-- **What changed:** REPORT027 now consumes existing shared `Select` + `DateField` for the Churn Risk header risk/date controls, with focused accessible-control and exact filter-propagation tests; Draft PR #75 is open.
-- **Preserve:** exact risk values/order/copy/state wiring; exact as-of date/max/onChange; both hook-filter inputs; current KPI/chart/detail/trust contracts; unchanged shared control contracts and all functional/business semantics.
-- **Need from you:** independently review the exact current PR #75 HEAD after this owned-state write. Design QA should issue or withhold fresh `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`; Product Design should independently accept or block that same exact HEAD. Any later PR-head movement invalidates those gates.
+- **What changed:** REPORT028 now uses existing shared `MetricGrid columns={4}` for the four Profitability summary KPIs, with focused composition/loading/regression tests; Draft PR #76 is open.
+- **Preserve:** exact KPI order/values/loading/trust/domain/icons/secondary margin; date filter/query inputs; downstream final-profit surface; unchanged MetricGrid contract and all functional/business semantics.
+- **Need from you:** independently review the exact current PR #76 HEAD after this owned-state write. Design QA should issue or withhold fresh `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`; Product Design should independently accept or block that same exact HEAD. Any later PR-head movement invalidates those gates.
 - **Blocker level:** `NONE` from UI Production; independent review pending.
-- **Baseline:** `1df0d8f0dbd367349f6f2082a309d0f978294ec7`; implementation/test HEAD before this state write `511465076f4b2eea6405eacac6f916d11431aa9d`; Draft PR `#75`; feature branch `ds2-report-027-churn-risk-filter-field`.
+- **Baseline:** `d1185e06f7643f20da5b64c24ff31fa6070c3ca7`; implementation/test HEAD before this state write `9ae1ff85ce3563cc8c4873868260607b1265eba4`; Draft PR `#76`; feature branch `ds2-report-028-profitability-metric-grid`.
