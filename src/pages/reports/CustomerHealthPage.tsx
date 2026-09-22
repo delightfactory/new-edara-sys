@@ -10,6 +10,7 @@ import MetricGrid from '@/components/patterns/MetricGrid'
 import ResponsiveCollection from '@/components/patterns/ResponsiveCollection'
 import Card from '@/components/patterns/Card'
 import KeyValueList from '@/components/patterns/KeyValueList'
+import DateField from '@/components/ui/DateField'
 import { Users2, UserX, ActivitySquare } from 'lucide-react'
 
 function toISO(d: Date) { return d.toISOString().split('T')[0] }
@@ -87,11 +88,11 @@ export default function CustomerHealthPage() {
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-          <label style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', fontWeight: 500 }}>بتاريخ:</label>
-          <input
-            type="date" value={asOfDate} max={today}
+          <DateField
+            label="بتاريخ:"
+            value={asOfDate}
+            max={today}
             onChange={e => setAsOfDate(e.target.value)}
-            style={{ padding: '5px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-primary)', background: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-sans)', outline: 'none' }}
           />
         </div>
       </div>
