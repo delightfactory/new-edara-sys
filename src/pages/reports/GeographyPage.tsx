@@ -10,6 +10,7 @@ import FreshnessIndicator from '@/components/reports/FreshnessIndicator'
 import ResponsiveCollection from '@/components/patterns/ResponsiveCollection'
 import Card from '@/components/patterns/Card'
 import KeyValueList from '@/components/patterns/KeyValueList'
+import MetricGrid from '@/components/patterns/MetricGrid'
 import Select from '@/components/ui/Select'
 import { TrendingUp, MapPin } from 'lucide-react'
 
@@ -101,7 +102,7 @@ export default function GeographyPage() {
 
       <SystemHealthBar trustRows={trustRows} isLoading={trustLoading} error={trustError} />
 
-      <div className="report-grid">
+      <MetricGrid columns={2}>
         {isLoading ? [1, 2].map(i => <SkeletonCard key={i} height={160} />) : (
           <>
             <MetricCard label="إجمالى الإيراد" subtitle="من جميع المناطق الجغرافية"
@@ -116,7 +117,7 @@ export default function GeographyPage() {
               domain="sales" icon={<MapPin size={16} />} />
           </>
         )}
-      </div>
+      </MetricGrid>
 
       {/* Table with heatmap rows */}
       <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-primary)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
