@@ -38,14 +38,14 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-032`.
+Product UI is integrated through `DS2-REPORT-033`.
 
 Latest product integration:
-- PR: `#80 — DS2-REPORT-032: converge Customer Re-engagement KPI summary`
-- Exact reviewed PR HEAD: `2177d3ca687434a0185a5787639ee2138148d341`
-- Squash merge commit: `e7088ed6d683b4cc714059cd7f3d07831f9485b5`
+- PR: `#81 — DS2-REPORT-033: converge Target Attainment chart panel`
+- Exact reviewed PR HEAD: `1d67d89e57c150542cea487e0cafc8d520d5c30a`
+- Squash merge commit: `464adbfe86f9ff1e53d288babb9715a010346b15`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
-- Product Design boundary remained aligned at `READY — BOUNDED`; no separate exact-head Product Design closeout is claimed for this integration.
+- Product Design exact-head closeout: `PASS — NO DESIGN-SYSTEM BLOCKER`
 - Runtime/preview/release evidence: not claimed
 
 The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, representative Customers/Sales/Inventory/Procurement/Finance/HR/Field/Work migrations, Reports route/date/filter convergence, shared `ChartPanel`, shared `MetricGrid`, shared V2 `Field` controls in representative report headers, and responsive detail-collection proofs using `ResponsiveCollection + Card + KeyValueList` while preserving dense Desktop comparison and caller-owned business truth.
@@ -78,58 +78,32 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - `DS2-REPORT-030 — Rep Performance summary metric-grid convergence` — `DONE` — PR #78 — reviewed HEAD `0a2b828d3896b561adbcc6dc495c086b4d14f1d3` — merge `b5f3d49cbc2f68431573174ee2b653b269ee5d2c` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-031 — Customer Health as-of-date field convergence` — `DONE` — PR #79 — reviewed HEAD `acc79751b2e24903a7d63842eb5b962e2ab19d0b` — merge `7271801b22a58c4280c9bdbd82b37aa9de7a0fdc` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-032 — Customer Re-engagement KPI summary shared metric convergence` — `DONE` — PR #80 — reviewed HEAD `2177d3ca687434a0185a5787639ee2138148d341` — merge `e7088ed6d683b4cc714059cd7f3d07831f9485b5` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
+- `DS2-REPORT-033 — Target Attainment individual-rep chart-panel convergence` — `DONE` — PR #81 — reviewed HEAD `1d67d89e57c150542cea487e0cafc8d520d5c30a` — merge `464adbfe86f9ff1e53d288babb9715a010346b15` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 
-## REPORT032 system result
+## REPORT033 system result
 
-- Customer Re-engagement's page-local KPI mini-system now consumes the existing shared `MetricGrid columns={3}` + `StatCard` grammar.
-- Exact five-card order, labels/context, emoji identity, caller-owned count/value sources, `FMT` / `fmtCur`, `Math.abs(total_outstanding)` and debt-vs-credit copy/sign behavior remain unchanged.
-- Shared semantic tones now express the existing urgency/credit meaning without moving any calculation or priority classification into the Design System.
-- Loading preserves all five metric identities/context and replaces only each value layer with an `aria-hidden` skeleton.
-- Desktop uses the shared 3 + 2 composition, Tablet 2 + 2 + 1, and Mobile one card per row through the existing shared contract.
-- Only orphaned KPI-specific local presentation CSS was removed; FilterBar, query/filter truth, list/detail/mobile/table/export/permission/business behavior remain unchanged.
-- No shared `MetricGrid`/`StatCard`/`Card` API/CSS/token/breakpoint widening and no backend/functional/business/workflow/deployment change occurred.
+- Target Attainment's page-local individual-rep analytical frame/header now consumes the existing shared `ChartPanel -> Card + SectionHeader` grammar.
+- Exact `chartData.length > 0` visibility, Arabic title/description and Trust/Freshness inputs remain unchanged.
+- The complete caller-owned Recharts body remains unchanged: data/order, responsive height, vertical layout, axes, tooltip, `ReferenceLine x={100}`, bar sizing/radius and `barColor` thresholds.
+- Shared semantic heading and shrink-safe/mobile-wrapping behavior replace local frame/header styling without widening shared APIs, CSS, tokens or breakpoints.
+- Header filters, four-KPI summary, detail `ResponsiveCollection`, calculations, queries, permissions, export/print and business/backend behavior remain untouched.
+- Focused chart-panel regression tests were authored but not executed under the hosted-CI quota policy.
 
 ## Current single READY slice
 
-### DS2-REPORT-033 — Target Attainment individual-rep chart-panel convergence
-Status: `READY — BOUNDED`.
-Owner role for immediate next action: UI Production Engineer.
-Representative surface: `src/pages/reports/TargetAttainmentPage.tsx` → `نسبة الإنجاز — المندوبون الفرديون` chart shell only.
-Product Design bounding baseline: `f9688fb8414d82e9eec2be67b2cb3a2ae0c64dd1`.
+### DS2-REPORT-034 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
+Status: `READY — PRODUCT DESIGN BOUNDING REQUIRED`.
+Owner role for immediate next action: Product Design Director.
 
-System intent:
-- remove the remaining page-local analytical chart shell on this representative Reports surface and consume the existing shared `ChartPanel` hierarchy;
-- keep chart data and business truth fully caller-owned; this is presentation composition convergence only;
-- prove that the established `ChartPanel -> Card + SectionHeader` grammar can carry the chart title, explanatory copy and Trust/Freshness action without inventing another page-specific wrapper.
+Intent:
+- inspect representative remaining Reports/Analytics surfaces from the exact latest Development baseline;
+- select exactly one smallest dependency-safe presentation-only concern and name its representative file/surface plus explicit acceptance/exclusion boundary;
+- prefer existing shared V2 primitives/patterns, strengthening a shared contract only when a real consumer proves a recurring gap;
+- preserve every REPORT001-033 contract and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
+- preserve Settings/Admin, Global convergence, remaining Work/Field debt and the shared component-depth program in the roadmap;
+- do not turn REPORT034 into broad multi-page report polishing.
 
-Acceptance boundary:
-- keep the existing `chartData.length > 0` visibility condition exactly;
-- replace only the local outer chart surface/header with existing `ChartPanel` unchanged;
-- preserve exact title `نسبة الإنجاز — المندوبون الفرديون` and exact description `الخط المنقط عند 100% هو الهدف`;
-- preserve the existing TrustStateBadge + FreshnessIndicator action wiring, status/domain/lastCompletedAt/isStale values and their conditional presence;
-- preserve `ResponsiveContainer` width and `height={Math.max(chartData.length * 40, 200)}`;
-- preserve the vertical `BarChart`, axes, tooltip formatter, `ReferenceLine x={100}`, bar radius/max width and per-row `barColor` thresholds/data order exactly;
-- Desktop/Tablet/Mobile inherit the shared ChartPanel heading/action wrapping and neutral card surface; chart semantics and caller-owned sizing remain unchanged;
-- maintain Arabic-first heading/description wrapping and existing LTR numeric/percentage behavior; no new interactive semantics are introduced.
-
-Explicit exclusions / stop boundary:
-- Target Attainment header scope/date controls and their state;
-- the four KPI summary cards / current `report-grid` wrapper;
-- `تفاصيل الأهداف` ResponsiveCollection/table/cards, TrendBadge and achievement-value presentation;
-- `chartData` derivation, `individualRows`, `achievementColor`, `barColor`, percentage/currency formatting or any target calculation/status meaning;
-- shared `ChartPanel`, `Card`, `SectionHeader`, CSS, token or breakpoint APIs;
-- hooks, queries/cache, Trust/Freshness semantics, RBAC/RLS/permissions, routes, export/print, backend, business/workflow behavior and every other report surface.
-
-If implementation requires any excluded shared or functional change, REPORT033 becomes `BLOCKED` rather than widening the PR.
-
-Focused validation expectation:
-- shared `.ds-chart-panel` is present only when individual-rep chart data is present;
-- exact chart title and description survive the migration;
-- Trust/Freshness action content remains in the shared panel header with unchanged data wiring;
-- the existing individual-rep chart data/order and 100% target/reference semantics remain unchanged;
-- no local replacement chart-shell styling is introduced and no excluded Target Attainment surface changes.
-
-Under the current quota policy, focused coverage remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved execution environment actually runs it. No build/test/lint/runtime/preview/release PASS is implied by this Product Design direction.
+Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
 
 ## Product migration roadmap
 
@@ -180,9 +154,9 @@ Open only when a real migrated screen proves the recurring gap:
 - further Work detail/feedback/management convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
 
 ### I. Reports / Analytics
-- `DS2-REPORT-001` through `DS2-REPORT-032` — `DONE`
-- `DS2-REPORT-033 — Target Attainment individual-rep chart-panel convergence` — `READY — BOUNDED`
-- further Reports/Analytics convergence beyond REPORT033 — `BACKLOG` / each concern must be bounded separately
+- `DS2-REPORT-001` through `DS2-REPORT-033` — `DONE`
+- `DS2-REPORT-034 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — PRODUCT DESIGN BOUNDING REQUIRED`
+- further Reports/Analytics convergence beyond REPORT034 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
