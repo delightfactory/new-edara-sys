@@ -3,12 +3,12 @@
 ## Current truth
 
 - Authoritative integration branch: `design-system-v2-development`.
-- Product UI is integrated through `DS2-REPORT-040`.
-- Current integrated product HEAD / squash merge: `23707a5465549613dfbde0a6637acee5fbc847e2` from PR #88.
-- Exact reviewed implementation HEAD: `1e916d2d7e7ec9618d1ae7f6294fdfe00f08c6a1`.
-- Coordination HEAD immediately before this Team Memory write: `8dc0a20d549b4109fc71351db37b3d694d067f82`.
-- Current single READY roadmap item: `DS2-REPORT-041 — Next bounded Reports metrics/charts/tables/responsive-composition convergence`.
-- REPORT041 is intentionally unbounded: Product Design Director must inspect the exact latest Development baseline and record exactly one smallest dependency-safe presentation-only concern before UI Production begins.
+- Product UI is integrated through `DS2-REPORT-041`.
+- Current integrated product HEAD / squash merge: `b334b07e93b7551839772d6a5cbbdb53089df06b` from PR #89.
+- Exact reviewed implementation HEAD: `1f3195250b9d6f964389090efc3acd8c7bdcc85a`.
+- Coordination HEAD immediately before this Team Memory write: `62bb7e717c19fa5f2ee7bc7cc46537285de37833`.
+- Current single READY roadmap item: `DS2-REPORT-042 — Next bounded Reports metrics/charts/tables/responsive-composition convergence`.
+- REPORT042 is intentionally unbounded: Product Design Director must inspect the exact latest Development baseline and record exactly one smallest dependency-safe presentation-only concern before UI Production begins.
 - `main` remains frozen until explicit owner approval.
 - Vercel preview remains user-requested only.
 - GitHub Actions / hosted CI remain forbidden for normal Design System development.
@@ -25,70 +25,70 @@ Development now includes:
 - shared V2 Field grammar proven for compact report-scope risk/date controls and Customer Health as-of-date control while filter/date/query truth remains caller-owned;
 - shared `MetricGrid` proofs across representative report KPI clusters while report-domain/business meaning remains caller-owned;
 - shared `ChartPanel` analytical-surface grammar proven across representative report surfaces while chart data/visualization semantics remain caller-owned;
-- shared `StatePanel` empty-state grammar proven across Product Performance, Rep Performance, Customer Health responsive detail, Receivables AR chart, Geography responsive detail and now Churn Risk responsive detail while state precedence/data/trust truth remain caller-owned;
+- shared compact passive `StatePanel` empty-state grammar proven across Product Performance, Rep Performance, Customer Health responsive detail, Receivables AR chart, Geography responsive detail, Churn Risk responsive detail, and now the first Sales revenue chart while state precedence/data/trust/chart truth remain caller-owned;
 - representative report detail collections using shared responsive collection grammar while preserving dense semantic Desktop tables;
 - Design System North Star, test policy, role-state handoff protocol, Team Memory and durable Decision Log.
 
 ## Latest completed slice
 
-`DS2-REPORT-040 — Churn Risk responsive-detail empty-state convergence`
+`DS2-REPORT-041 — Sales revenue-chart empty-state convergence`
 
 Result:
-- PR #88 exact reviewed HEAD `1e916d2d7e7ec9618d1ae7f6294fdfe00f08c6a1` received `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
+- PR #89 exact reviewed HEAD `1f3195250b9d6f964389090efc3acd8c7bdcc85a` received `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
 - Product Design independently closed out the same exact HEAD as `PASS — NO DESIGN-SYSTEM BLOCKER`.
 - Evidence remains honestly labeled `TESTS_AUTHORED_NOT_EXECUTED`; no exact-head local build/test/lint/runtime/preview/release PASS is claimed.
-- Squash merge commit: `23707a5465549613dfbde0a6637acee5fbc847e2`.
-- Churn Risk responsive detail empty state now consumes `ResponsiveCollection.emptyTitle`, which renders the existing shared compact passive `StatePanel kind="empty"`, instead of a bespoke page-local empty block.
-- Exact copy remains `لا توجد بيانات — شغّل watermark sweep أولاً`.
-- Exact state precedence remains `isBlocked -> listLoading -> empty -> ready`; BLOCKED meaning/copy remain caller-owned and unchanged.
-- Detail loading remains exactly 5×44px.
-- Empty state mounts no Desktop table / Tablet cards / Mobile cards; ready composition remains dense semantic six-column Desktop table, Tablet two-column cards and Mobile one-column cards with one ready renderer per device.
-- Customer-risk identity/fallback, facts/order, Arabic wrapping, LTR numeric/currency treatment, Trust/Freshness, KPI summary, pie chart, filters/date controls and SystemHealthBar remain unchanged.
-- No shared API/CSS/token/breakpoint widening occurred and no query/cache/calculation/risk-classification/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics changed.
+- Squash merge commit: `b334b07e93b7551839772d6a5cbbdb53089df06b`.
+- The first Sales analytical panel (`تطور الإيراد اليومي`) now consumes the existing shared compact passive `StatePanel kind="empty"` instead of recreating empty-state typography/alignment/tone locally.
+- Exact empty copy remains `لا توجد بيانات في النطاق الزمني المحدد`.
+- Caller-owned analytical body remains 240px across blocked/loading/empty/ready.
+- Exact state precedence remains `isBlocked -> dailyLoading -> empty -> ready`; BLOCKED meaning/copy and 240px loading remain caller-owned and unchanged.
+- Ready AreaChart mapping, margin, axes/grid/tooltip, revenue/returns series, gradients/colors/geometry and Trust/Freshness remain unchanged.
+- The second Sales chart and its current no-data behavior remain untouched.
+- No shared API/CSS/token/breakpoint widening occurred and no query/cache/aggregation/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business/workflow semantics changed.
 
 ## Current single READY roadmap item
 
-`DS2-REPORT-041 — Next bounded Reports metrics/charts/tables/responsive-composition convergence`
+`DS2-REPORT-042 — Next bounded Reports metrics/charts/tables/responsive-composition convergence`
 
 Intent:
 - Product Design Director inspects representative remaining Reports/Analytics surfaces on the exact latest Development baseline before implementation;
 - select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance/exclusion boundary;
 - prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
-- preserve REPORT001-040 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
+- preserve REPORT001-041 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
 - preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
-- do not turn REPORT041 into broad multi-page report beautification.
+- do not turn REPORT042 into broad multi-page report beautification.
 
 Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
 
 ## Latest role positions
 
 ### Product Design Director
-- Independently accepted REPORT040 exact PR HEAD `1e916d2d7e7ec9618d1ae7f6294fdfe00f08c6a1` as `PASS — NO DESIGN-SYSTEM BLOCKER`.
+- Independently accepted REPORT041 exact PR HEAD `1f3195250b9d6f964389090efc3acd8c7bdcc85a` as `PASS — NO DESIGN-SYSTEM BLOCKER`.
 - No current `BLOCKING` contradiction exists.
-- Next responsibility is to inspect the exact latest Development baseline and bound one smallest safe REPORT041 concern.
+- That acceptance is consumed by REPORT041 integration; next responsibility is to inspect the exact latest Development baseline and bound one smallest safe REPORT042 concern.
 
 ### UI Production Engineer
-- REPORT040 implementation is integrated.
-- The PR-carried owned state records REPORT040 scope/evidence and is consumed by integration.
-- Must not begin REPORT041 product code until Product Design records the exact boundary from the latest Development HEAD.
+- REPORT041 implementation is integrated.
+- The PR-carried owned state records REPORT041 scope/evidence and is consumed by integration; the Development copy may remain lifecycle-stale until the next implementation run.
+- Must not begin REPORT042 product code until Product Design records the exact boundary from the latest Development HEAD.
 
 ### Design QA
-- Issued exact-head `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` on `1e916d2d7e7ec9618d1ae7f6294fdfe00f08c6a1` with `TESTS_AUTHORED_NOT_EXECUTED`.
+- Issued exact-head `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` on `1f3195250b9d6f964389090efc3acd8c7bdcc85a` with `TESTS_AUTHORED_NOT_EXECUTED`.
 - Found no known source-visible build/type blocker, material review thread, functional-isolation breach or deployment/workflow drift on the merged exact HEAD.
-- That approval is consumed by the merge and cannot be reused for REPORT041.
+- That approval is consumed by the merge and cannot be reused for REPORT042.
 
 ### Development Integrator
-- Revalidated PR #88 base/head, exact-head QA gate, exact-head Product Design closeout, empty review threads, three-file UI/Test/Governance scope, governance-only Development drift, clean mergeability and functional isolation.
-- Transitioned the Draft PR to Ready without moving its HEAD and squash-merged with expected-head protection as `23707a5465549613dfbde0a6637acee5fbc847e2`.
-- Marked REPORT040 DONE and advanced exactly one roadmap item, REPORT041, to READY for Product Design bounding.
+- Revalidated PR #89 base/head, exact-head QA gate, exact-head Product Design closeout, empty review threads, three-file UI/Test/Governance scope, governance-only Development drift, clean mergeability and functional isolation.
+- Transitioned the Draft PR to Ready without moving its HEAD and squash-merged with expected-head protection as `b334b07e93b7551839772d6a5cbbdb53089df06b`.
+- Marked REPORT041 DONE and advanced exactly one roadmap item, REPORT042, to READY for Product Design bounding.
 
 ## Invariants to preserve
 
 - UI work must not alter business behavior or backend contracts.
 - Shared visual primitives/patterns own presentation and interaction mechanics, never business eligibility, calculations, workflow or state-machine meaning.
 - `StatePanel` owns shared state presentation/anatomy only; state precedence, loading decisions, data truth, actions and business meaning remain caller-owned.
+- A page-local state wrapper is acceptable for preserved analytical geometry; state typography/color/anatomy belongs to the shared state family.
 - `ResponsiveCollection` owns device renderer selection/orchestration plus generic loading/empty collection presentation only; collection data, business ordering, row meaning, domain copy and actions remain caller-owned.
-- A page-local state wrapper is acceptable only for preserved geometry; state typography/color/anatomy belongs to the shared state family.
 - `Field`, `Select`, `Input` and `DateField` own presentation/accessibility/control mechanics only; filter values, date semantics and query inputs remain caller-owned.
 - `MetricGrid` owns KPI/metric layout and responsive composition only; callers and metric components retain calculation, trust/status and business meaning.
 - `StatCard` owns semantic KPI presentation only; report/domain calculations, category classification and sign/risk truth remain caller-owned.
@@ -102,10 +102,10 @@ Implementation is not authorized until Product Design records the exact bounded 
 
 ## Known evidence / risks
 
-- Development evidence through REPORT040 remains source-level: no exact-head executed test suite, local build/lint, runtime visual pass or release approval is claimed.
+- Development evidence through REPORT041 remains source-level: no exact-head executed test suite, local build/lint, runtime visual pass or release approval is claimed.
 - Hosted CI quota protection remains active; absence of GitHub Actions/status checks is expected.
 - Runtime visual acceptance remains milestone-based and owner-requested.
-- REPORT041 is intentionally a roadmap-level placeholder and must be decomposed by Product Design into one smallest representative presentation concern before implementation.
+- REPORT042 is intentionally a roadmap-level placeholder and must be decomposed by Product Design into one smallest representative presentation concern before implementation.
 - Remaining report tables, chart surfaces, dense responsive composition, loading/empty/error states, export/print and broader FilterBar grammar still need later bounded convergence; no business semantics may move into the Design System.
 - Further Work detail/feedback/management convergence and Field create/detail convergence remain debt.
 - Shared Pagination, FilterBar/search/filter convergence, DataTable keyboard/overflow semantics, SearchInput clear accessibility, error/offline-state convergence and dense-table overflow remain broader shared debt.
@@ -113,10 +113,10 @@ Implementation is not authorized until Product Design records the exact bounded 
 
 ## Reusable patterns learned
 
-- REPORT040 confirms the same `ResponsiveCollection.emptyTitle -> compact passive StatePanel` grammar safely applies to Churn Risk details even when the page has a higher-priority caller-owned BLOCKED trust state; generic state presentation must not absorb trust/business semantics.
+- REPORT041 confirms fixed analytical geometry can remain page-owned while shared compact passive `StatePanel` owns empty-state anatomy inside an existing `ChartPanel`; chart data, state precedence, Trust/Freshness and visualization semantics must remain caller-owned.
+- REPORT040 confirms `ResponsiveCollection.emptyTitle -> compact passive StatePanel` safely applies even when a higher-priority caller-owned BLOCKED trust state exists; generic state presentation must not absorb trust/business semantics.
 - REPORT039 confirms a `ResponsiveCollection` consumer should prefer caller-owned `emptyTitle` feeding the built-in compact passive shared `StatePanel` over supplying a bespoke local `emptyState` when no domain-specific action/geometry is required.
-- REPORT038 confirms fixed analytical geometry can remain caller-owned while shared compact `StatePanel` owns passive empty-state anatomy inside `ChartPanel` without moving chart/trust truth into shared components.
-- Empty-state convergence must preserve caller-owned loading/blocking precedence and prevent hidden ready renderers from mounting in empty device modes.
+- Empty-state convergence must preserve caller-owned loading/blocking precedence and prevent hidden ready renderers from mounting in non-ready states.
 - Category-oriented metric summaries can retire arbitrary page-local KPI grid/card styling onto existing `MetricGrid` + `StatCard` without moving category classification or report truth into the Design System.
 - Existing report charts can retire local analytical frames onto shared `ChartPanel -> Card + SectionHeader` without changing chart data, responsive sizing, visualization semantics or trust/freshness meaning.
 - Compact report-scope controls can converge onto existing `Select` + `DateField` / `Field` grammar without moving filter/date/query meaning into shared components or widening shared APIs.
@@ -126,6 +126,6 @@ Implementation is not authorized until Product Design records the exact bounded 
 
 ## Next handoff
 
-Product Design Director should inspect representative remaining Reports/Analytics surfaces on the exact latest `design-system-v2-development` baseline and record exactly one smallest dependency-safe REPORT041 presentation concern, including representative file/surface and explicit acceptance/exclusion boundary. Preserve REPORT001-040 contracts, all analytics/query/calculation/trust/permission/routing/export/print/backend/business semantics, and keep Settings/Admin, Global, remaining Work/Field and shared-component roadmap intact.
+Product Design Director should inspect representative remaining Reports/Analytics surfaces on the exact latest `design-system-v2-development` baseline and record exactly one smallest dependency-safe REPORT042 presentation concern, including representative file/surface and explicit acceptance/exclusion boundary. Preserve REPORT001-041 contracts, all analytics/query/calculation/trust/permission/routing/export/print/backend/business semantics, and keep Settings/Admin, Global, remaining Work/Field and shared-component roadmap intact.
 
 UI Production Engineer should bootstrap only after that boundary is recorded and implement one coherent concern from the exact then-current Development HEAD. Design QA should independently review the future exact stable PR HEAD. Development Integrator should no-op until a future PR receives fresh `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` and all normal gates pass.
