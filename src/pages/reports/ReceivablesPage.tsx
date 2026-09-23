@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useSystemTrustState, useTrustForComponent } from '@/hooks/useSystemTrustState'
 import { useARDailyTotals, useARSummary } from '@/hooks/useARCollections'
 import MetricCard from '@/components/reports/MetricCard'
@@ -6,6 +6,7 @@ import MetricGrid from '@/components/patterns/MetricGrid'
 import SkeletonCard from '@/components/reports/SkeletonCard'
 import SystemHealthBar from '@/components/reports/SystemHealthBar'
 import ChartPanel from '@/components/patterns/ChartPanel'
+import StatePanel from '@/components/patterns/StatePanel'
 import ReportFilterBar, { type DateRange } from '@/components/reports/ReportFilterBar'
 import TrustStateBadge from '@/components/reports/TrustStateBadge'
 import FreshnessIndicator from '@/components/reports/FreshnessIndicator'
@@ -106,7 +107,9 @@ export default function ReceivablesPage() {
             <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>يحتاج إلى اكتمال تشغيل محرك AR أولاً</div>
           </div>
         ) : dailyLoading ? <SkeletonCard height={260} /> : chartData.length === 0 ? (
-          <div style={{ height: '260px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>لا توجد بيانات تحصيل في هذه الفترة</div>
+          <div style={{ height: 260, display: 'grid', alignItems: 'center' }}>
+            <StatePanel kind="empty" title="لا توجد بيانات تحصيل في هذه الفترة" compact />
+          </div>
         ) : (
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={chartData} margin={{ top: 4, left: -10, right: 4, bottom: 0 }}>
