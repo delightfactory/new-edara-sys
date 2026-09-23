@@ -12,6 +12,7 @@ import ChartPanel from '@/components/patterns/ChartPanel'
 import ResponsiveCollection from '@/components/patterns/ResponsiveCollection'
 import Card from '@/components/patterns/Card'
 import KeyValueList from '@/components/patterns/KeyValueList'
+import StatePanel from '@/components/patterns/StatePanel'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 import { TrendingUp, TrendingDown, Users2, Award } from 'lucide-react'
 
@@ -156,7 +157,9 @@ export default function RepPerformancePage() {
         )}
       >
         {tableLoading ? <SkeletonCard height={300} /> : chartData.length === 0 ? (
-          <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>لا توجد بيانات فى النطاق الزمني المحدد</div>
+          <div style={{ height: 300, display: 'grid', alignItems: 'center' }}>
+            <StatePanel kind="empty" title="لا توجد بيانات فى النطاق الزمني المحدد" compact />
+          </div>
         ) : (
           <ResponsiveContainer width="100%" height={Math.max(chartData.length * 40, 200)}>
             <BarChart data={chartData} layout="vertical" margin={{ top: 4, left: 10, right: 20, bottom: 0 }}>
@@ -184,11 +187,7 @@ export default function RepPerformancePage() {
               {[1,2,3,4,5].map(i => <SkeletonCard key={i} height={44} />)}
             </div>
           )}
-          emptyState={(
-            <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
-              لا توجد بيانات فى النطاق الزمني المحدد
-            </div>
-          )}
+          emptyState={<StatePanel kind="empty" title="لا توجد بيانات فى النطاق الزمني المحدد" />}
           renderDesktop={desktopRows => (
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
