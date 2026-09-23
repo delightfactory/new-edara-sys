@@ -2,100 +2,111 @@
 
 ## Reviewed baseline
 
-- Review date/time: `2026-09-23 06:02 Africa/Cairo`.
+- Review date/time: `2026-09-23 06:57 Africa/Cairo`.
 - Authoritative branch: `design-system-v2-development`.
-- Exact Development HEAD independently inspected before REPORT033 bounding: `f9688fb8414d82e9eec2be67b2cb3a2ae0c64dd1`.
-- REPORT032 is integrated via PR #80 / squash `e7088ed6d683b4cc714059cd7f3d07831f9485b5`; no implementation PR was open against Development at REPORT033 selection time.
-- Active READY slice: `DS2-REPORT-033 — Target Attainment individual-rep chart-panel convergence`.
-- Representative surface: `src/pages/reports/TargetAttainmentPage.tsx` → `نسبة الإنجاز — المندوبون الفرديون` chart shell only.
-- Product Design disposition: `READY — BOUNDED`.
-- Workstream bounding commit: `b0ed41ed54151ee38248dcf8c63a1431411b21b2`.
+- Exact Development HEAD independently rechecked before this state write: `e027fbe38d0088c0e54a00636e7e9646f79cabe7`.
+- Active slice: `DS2-REPORT-033 — Target Attainment individual-rep chart-panel convergence`.
+- Active implementation PR: `#81 — DS2-REPORT-033: converge Target Attainment chart panel`.
+- Feature baseline: `67430cfe6a6957d9266ef2f0a41008aba81af4b0`.
+- Exact PR HEAD independently reviewed: `1d67d89e57c150542cea487e0cafc8d520d5c30a`.
+- Changed-file scope: exactly 3 files — `TargetAttainmentPage.tsx`, focused `TargetAttainmentChartPanel.test.tsx`, and UI Production's owned state.
+- Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER` on exact PR HEAD `1d67d89e57c150542cea487e0cafc8d520d5c30a`.
+- Design QA on the same exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
+- Evidence remains `TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/visual/preview/release PASS is claimed.
 
 ## Independent Product Design judgment
 
-**REPORT033 should retire the remaining page-local Target Attainment analytical chart shell onto the existing shared `ChartPanel` composition, without touching the chart itself or widening any shared contract.**
+**REPORT033 is correctly implemented as a structural convergence onto the existing shared analytical surface, with no material design-system blocker on the exact PR HEAD.**
 
-The exact Development source already uses the shared responsive collection grammar for Target Attainment details, but the individual-rep achievement chart still builds its own surface with inline background, border, radius, padding, shadow and a page-local title/action header. This is a clean system-level gap because `ChartPanel` already owns exactly that neutral analytical responsibility through `Card + SectionHeader`, while explicitly leaving chart data, visualization semantics, trust/freshness and business truth to the caller.
+I formed this judgment from the exact PR diff/source, current shared `ChartPanel -> Card + SectionHeader` contract and responsive surface CSS before comparing peer states.
 
-The migration should therefore be structural rather than cosmetic: replace only the local chart frame/header with `ChartPanel`, keep the existing conditional presence and Recharts tree intact, and reuse the existing title, explanatory copy and Trust/Freshness action. No new chart abstraction, color contract, tooltip contract or shared API is justified by this slice.
+The product change is appropriately narrow: only the page-local Target Attainment individual-rep chart frame/header is replaced by `ChartPanel`. The chart remains fully caller-owned. The shared component already has exactly the required responsibility: neutral analytical surface, semantic heading/description/action hierarchy, shrink-safe containment and Mobile header wrapping. This removes one local mini-system without creating a new abstraction or moving target/business semantics into V2.
 
-## REPORT033 acceptance boundary
+The visible hierarchy improves in a system-consistent way: the chart title becomes a semantic shared section heading, the explanation remains attached to the heading, and Trust/Freshness remains a passive header action cluster. Existing shared `Card padding="lg"` and `.ds-chart-panel__body` spacing replace equivalent local frame spacing rather than introducing a page-specific visual treatment.
 
-Implementation is authorized only for the Target Attainment individual-rep chart shell.
+## Exact-head acceptance findings
 
-Preserve exactly:
-- the existing `chartData.length > 0` visibility condition;
+### Scope / system fit — PASS
+
+The product diff only:
+- imports existing `ChartPanel`;
+- replaces the local inline chart surface and local title/header wrapper with `ChartPanel` props;
+- leaves the entire Recharts body unchanged.
+
+Preserved exactly:
+- `chartData.length > 0` visibility condition;
 - title `نسبة الإنجاز — المندوبون الفرديون`;
-- explanatory copy `الخط المنقط عند 100% هو الهدف`;
-- `TrustStateBadge` + `FreshnessIndicator` conditional action content and all current status/domain/timestamp/staleness wiring;
+- description `الخط المنقط عند 100% هو الهدف`;
+- Trust/Freshness status/domain/timestamp/staleness inputs and conditional presence;
 - `ResponsiveContainer width="100%"` and `height={Math.max(chartData.length * 40, 200)}`;
-- the vertical `BarChart`, `chartData` order, axes, tooltip formatter, `ReferenceLine x={100}`, `Bar` radius/max size and per-row `Cell` fill from `barColor`;
-- existing percentage formatting and all target-attainment calculation/status meaning.
+- vertical `BarChart`, `chartData` order, axes, tooltip formatter, `ReferenceLine x={100}`, `Bar` radius/max size and per-row `barColor` mapping;
+- all caller-owned percentage/target calculations and status meaning.
 
-Shared presentation contract:
-- consume existing `ChartPanel` unchanged;
-- map the current chart title to `title`, the current 100% explanation to `description`, and the existing Trust/Freshness cluster to `action`;
-- Desktop/Tablet/Mobile inherit the shared ChartPanel neutral card surface, semantic section hierarchy and heading/action wrapping;
-- Arabic-first title/description wrapping must remain safe and the percentage chart keeps its existing numeric presentation;
-- the chart remains a data visualization, not a new interactive card/action surface.
+No shared `ChartPanel`, `Card`, `SectionHeader`, CSS, token or breakpoint contract changed.
 
-## Explicit exclusions / stop boundary
+### Device / Arabic / accessibility — PASS at source level
 
-REPORT033 must not change:
-- Target Attainment header scope/date controls or their state/query wiring;
-- the four KPI summary cards or current `report-grid` wrapper;
-- `تفاصيل الأهداف` ResponsiveCollection/Desktop table/Tablet-Mobile cards, TrendBadge or detail-state handling;
-- `individualRows`, `chartData`, `achievementColor`, `barColor`, formatting functions, target calculations, trend/status classification or Trust/Freshness semantics;
-- shared `ChartPanel`, `Card`, `SectionHeader`, CSS, token or breakpoint APIs;
-- hooks, queries/cache, RBAC/RLS/permissions, routing, export/print, backend, business/workflow semantics or any other report surface.
+- Desktop and Tablet keep the established shared analytical-card hierarchy without a new breakpoint or duplicate renderer.
+- Mobile inherits the existing shared `SectionHeader` wrapping contract and reduced shared large-card padding; no ordinary new overflow source is introduced.
+- Shared surfaces retain `min-width: 0`; the title/description copy can shrink/wrap while the existing Trust/Freshness cluster remains non-interactive.
+- Arabic title/description remain exact and visible; numeric/percentage chart presentation is unchanged.
+- The chart title now has semantic `h2` hierarchy through `ChartPanel/SectionHeader`.
+- No new focus target, pseudo-control, hover-only meaning, destructive action, permission state or workflow state is introduced.
 
-If implementation needs any excluded shared or functional change, REPORT033 becomes `BLOCKED` rather than broadening the PR.
+The existing chart geometry itself still contains broader future chart-level polish/accessibility opportunities, but REPORT033 does not worsen or redefine those semantics and no such issue is a blocker for this bounded shell migration.
 
-## Device / state / accessibility acceptance
+### Functional isolation — PASS
 
-- Desktop, Tablet and Mobile use the existing shared ChartPanel hierarchy; no duplicate device renderer is introduced.
-- The panel must tolerate long Arabic title/description text and the existing Trust/Freshness action without ordinary horizontal overflow.
-- Chart visibility remains data-driven exactly as today: no individual-rep chart data means no chart panel.
-- Visible title/description remain semantic through ChartPanel/SectionHeader; Trust/Freshness accessibility semantics remain owned by their existing components.
-- No pseudo-button semantics, new focus target, hover-only meaning, destructive state, permission state, offline state or workflow state is introduced.
+No DB/migration/RPC/service/query/cache/calculation/RBAC/RLS/permission/routing/validation/workflow/export/print/backend/business change entered the PR.
 
-## Focused validation expectation
+Target Attainment header controls, four-KPI summary, detail `ResponsiveCollection`, `TrendBadge`, report state handling and every other report surface are unchanged.
 
-Focused Target Attainment coverage should guard the material migration risk:
-- shared `.ds-chart-panel` is present when individual-rep chart data exists and absent when it does not;
-- exact title and description remain visible;
-- existing Trust/Freshness action content remains associated with the shared panel header with unchanged inputs;
-- individual-rep chart data/order and the 100% reference-line semantics remain unchanged;
-- no local replacement chart-shell styling or excluded Target Attainment surface change is introduced.
+### Test artifact / evidence honesty — PASS
 
-Under the current quota policy, authored coverage remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved execution environment actually runs it. No build/test/lint/runtime/preview/release PASS is implied by this Product Design direction.
+Focused `TargetAttainmentChartPanel.test.tsx` coverage guards:
+- conditional shared `.ds-chart-panel` presence/absence;
+- semantic title and exact description;
+- Trust/Freshness inputs;
+- responsive chart width/height and data order;
+- 100% target `ReferenceLine`;
+- unchanged bar key/name/radius/max-size and threshold fills.
 
-## Peer-state synthesis
+Tests were not executed in an approved exact-head runtime. Evidence is correctly labeled `TESTS_AUTHORED_NOT_EXECUTED`. No build/lint/runtime/visual/preview/release PASS is claimed.
 
-I formed the direction from the exact Development source and the existing `ChartPanel` contract first, then compared current team memory and peer states.
+## Peer-state synthesis / freshness
 
-- **Development Integrator:** fresh and aligned; REPORT032 is merged and it handed exactly one REPORT033 placeholder to Product Design for bounding.
-- **Team Memory:** fresh through REPORT032 and intentionally still describes REPORT033 at roadmap-placeholder level. This run does not alter durable system direction, so Team Memory is not rewritten for routine slice bounding; the Workstream and this owned state now carry the exact REPORT033 boundary.
-- **UI Production Engineer:** REPORT032 lifecycle is consumed by integration and there is no active competing implementation PR.
-- **Design QA:** REPORT032 exact-head approval is consumed by integration; no REPORT033 approval or contradiction exists yet.
-- **Decision Log / North Star / component blueprint:** aligned with shared-system-before-local-invention, Arabic-first responsive composition and strict functional isolation.
+After the independent exact-head judgment:
+
+- **Design QA:** fresh and aligned; exact PR HEAD `1d67d89e57c150542cea487e0cafc8d520d5c30a` is `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` with no blocker.
+- **UI Production Engineer:** the Development-branch copy of `UI_IMPLEMENTATION_STATE.md` is lifecycle-stale from REPORT032, but the PR-carried owned state on exact HEAD `1d67d89e57c150542cea487e0cafc8d520d5c30a` is fresh and aligned with the bounded REPORT033 implementation and honest non-executed evidence.
+- **Development Integrator:** state is lifecycle-current through REPORT032 only; it contains no conflicting REPORT033 rule or blocker and must revalidate this PR before integration.
+- **Team Memory:** integrated truth remains current through REPORT032 but its REPORT033 description is lifecycle-stale at placeholder level after Product Design bounded the slice. This is not a design contradiction; current slice truth is carried by the Workstream, this owned state, the PR and fresh QA state. No overall/durable system direction changed, so Team Memory is not rewritten for this routine closeout.
+- **Decision Log / North Star / component and device blueprint:** aligned with shared-system-before-local-invention, Arabic-first responsive composition and strict functional isolation.
 
 Current contradiction classification: `NONE`.
+
+## Base drift / merge readiness observation
+
+Development advanced from PR feature baseline `67430cfe6a6957d9266ef2f0a41008aba81af4b0` to pre-write HEAD `e027fbe38d0088c0e54a00636e7e9646f79cabe7` by exactly one governance-only commit modifying `team/design-system-v2/DESIGN_QA_STATE.md`.
+
+Immediately before this state write, PR #81 remained `OPEN / DRAFT`, exact HEAD unchanged at `1d67d89e57c150542cea487e0cafc8d520d5c30a`, `mergeable=true`, with exactly three changed files and no material review thread beyond the fresh QA disposition.
+
+This governance-only base drift does not justify merge-syncing the feature branch and invalidating exact-head review evidence. Development Integrator should revalidate after this Product Design governance write and integrate only if all normal gates remain clean.
 
 ## Repository actions this run
 
 - Completed the mandatory shared-memory bootstrap in the prescribed order.
-- Inspected issue #27, the current Development HEAD, PR #80 and current open PRs targeting Development, relevant Reports/component/device/migration docs, and representative remaining report sources.
-- Observed REPORT032 integration complete and confirmed zero open implementation PRs targeting `design-system-v2-development` before REPORT033 selection.
-- Independently compared remaining Reports debt and selected one smallest dependency-safe chart-composition concern rather than broad page beautification or shared-contract widening.
-- Bounded REPORT033 in Workstream commit `b0ed41ed54151ee38248dcf8c63a1431411b21b2`.
-- Did not change Team Memory or Decision Log because no durable/overall design-system rule changed.
-- Did not modify product code, merge, deploy, touch `main`, trigger/rerun GitHub Actions or use hosted CI.
+- Inspected issue #27, exact current Development HEAD, the single open PR targeting Development, exact PR metadata/head/base, changed filenames and product/test diff.
+- Inspected relevant component/page/device blueprint docs plus current `ChartPanel`, `Card`, `SectionHeader` and shared surface CSS contracts.
+- Independently reviewed exact PR HEAD `1d67d89e57c150542cea487e0cafc8d520d5c30a`, then compared peer states and fresh Design QA evidence.
+- Issued Product Design `PASS — NO DESIGN-SYSTEM BLOCKER` for the unchanged exact PR HEAD.
+- Did not modify product code, peer states, Team Memory, Decision Log or Workstream.
+- Did not merge, deploy, touch `main`, modify preview branches, trigger/rerun GitHub Actions or use hosted CI.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer; Design QA after one REPORT033 PR reaches stable REVIEW.
-- **What changed:** REPORT033 is now `READY — BOUNDED` to the Target Attainment individual-rep chart shell only, replacing its page-local analytical frame/header with existing `ChartPanel` while leaving the Recharts visualization and domain truth untouched.
-- **Preserve:** exact chart visibility condition/title/description/Trust-Freshness action; chart data/order/height/axes/tooltip/100% ReferenceLine/bar colors and thresholds; header controls, KPI summary, detail collection and all query/calculation/permission/backend/business semantics; shared ChartPanel/Card/SectionHeader APIs, CSS, tokens and breakpoints.
-- **Need from you:** UI Production should start from the exact latest Development HEAD after this governance write, implement only REPORT033, add focused tests for shared ChartPanel adoption plus preserved visibility/title/description/action/reference semantics, and open one PR targeting `design-system-v2-development`; mark BLOCKED rather than widen scope if a shared or functional change proves necessary.
+- **To:** Development Integrator.
+- **What changed:** Product Design independently accepted PR #81 exact HEAD `1d67d89e57c150542cea487e0cafc8d520d5c30a` as `PASS — NO DESIGN-SYSTEM BLOCKER`; Design QA is already GREEN-DEV on the same exact HEAD.
+- **Preserve:** exact chart visibility/title/description/Trust-Freshness wiring; Recharts data/order/height/axes/tooltip/100% reference/bar sizing and `barColor` thresholds; all excluded Target Attainment surfaces; unchanged shared ChartPanel/Card/SectionHeader contracts; strict UI-only isolation and honest `TESTS_AUTHORED_NOT_EXECUTED` evidence.
+- **Need from you:** revalidate unchanged PR head/base, governance-only Development drift including this Product Design state commit, review threads, changed-file scope, mergeability and functional isolation; if every normal gate remains clean, transition the Draft as appropriate and squash-merge REPORT033 into `design-system-v2-development`. Any PR HEAD movement invalidates both current Product Design and QA acceptance.
 - **Blocker level:** `NONE`.
-- **Baseline:** Product Design selection baseline `f9688fb8414d82e9eec2be67b2cb3a2ae0c64dd1`; Workstream bounding commit `b0ed41ed54151ee38248dcf8c63a1431411b21b2`.
+- **Baseline:** Development pre-write `e027fbe38d0088c0e54a00636e7e9646f79cabe7`; exact accepted PR #81 HEAD `1d67d89e57c150542cea487e0cafc8d520d5c30a`.
