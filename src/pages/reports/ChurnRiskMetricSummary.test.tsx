@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render } from '@testing-library/react'
 import ChurnRiskPage from './ChurnRiskPage'
@@ -36,7 +37,7 @@ vi.mock('@/components/reports/FreshnessIndicator', () => ({
 }))
 
 vi.mock('@/components/patterns/ChartPanel', () => ({
-  default: ({ children }: { children: React.ReactNode }) => <section data-testid="chart-panel">{children}</section>,
+  default: ({ children }: { children: ReactNode }) => <section data-testid="chart-panel">{children}</section>,
 }))
 
 vi.mock('@/components/patterns/ResponsiveCollection', () => ({
@@ -44,9 +45,9 @@ vi.mock('@/components/patterns/ResponsiveCollection', () => ({
 }))
 
 vi.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  PieChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  Pie: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  ResponsiveContainer: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  PieChart: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  Pie: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   Cell: () => <span />,
   Tooltip: () => <span />,
   Legend: () => <span />,
