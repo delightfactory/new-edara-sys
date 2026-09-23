@@ -2,92 +2,134 @@
 
 ## Reviewed baseline
 
-- Review date/time: `2026-09-23 16:00 Africa/Cairo`.
+- Review date/time: `2026-09-23 16:58 Africa/Cairo`.
 - Authoritative branch: `design-system-v2-development`.
-- Product UI is integrated through `DS2-REPORT-037`.
-- Development HEAD immediately before this Product Design state write: `ca00f4f7ef4a7d23ec93780ae6282ffe01f0c184` (`REPORT038` Design QA governance-only update).
-- Active slice: `DS2-REPORT-038 — Receivables chart empty-state convergence`.
-- Active implementation PR: `#86 — DS2-REPORT-038: converge Receivables chart empty state`.
-- Feature base: `b831a1004fdeb7e460809dae059353ee5c106ffa`.
-- Exact PR HEAD independently reviewed: `1055c5bb2394177e0a6ea55c4651567bbfb119e2`.
-- Changed-file scope: exactly 3 files — `ReceivablesPage.tsx`, focused `ReceivablesPage.test.tsx`, and UI Production's owned state.
-- Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER`.
-- Design QA on the same exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
-- Evidence: `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no runtime/build/lint/visual/preview/release PASS is claimed.
+- Product UI is integrated through `DS2-REPORT-038`.
+- Integrated product merge: `5325d99fcc3d047f1fc6aa3dac39a5423d9376e4` from PR #86.
+- Exact latest Development HEAD before Product Design bounding: `2b11afacf0a5871859a53a461bc46db048d78dec`.
+- Workstream boundary commit created this run: `08797bcfb83731edfb021ca3e6e93375a2dc2b9c`.
+- Open implementation PRs targeting Development at selection time: `0`.
+- Current single READY slice: `DS2-REPORT-039 — Geography responsive-detail empty-state convergence`.
+- Representative surface: `src/pages/reports/GeographyPage.tsx` → `ResponsiveCollection` under `التوزيع حسب {LEVEL_LABELS[level]}` → empty branch only.
+- Current disposition: `READY — BOUNDED`.
 - Current contradiction classification: `NONE`.
 
 ## Independent Product Design judgment
 
-**PASS on exact PR HEAD `1055c5bb2394177e0a6ea55c4651567bbfb119e2`.**
+**REPORT039 is correctly bounded to the Geography responsive-detail empty branch only.**
 
-I independently reviewed the exact PR diff/current Receivables source, focused tests and current shared `StatePanel` / `ChartPanel` contracts before comparing peer states. REPORT038 implements the intended system convergence without widening its declared concern.
+I formed this judgment from the exact post-REPORT038 Development source before comparing peer states. Geography is already materially converged onto the V2 report grammar: shared `MetricGrid`, shared `Select`, `ResponsiveCollection`, `Card`, `KeyValueList`, semantic Desktop table headers and Trust/Freshness are in place. The remaining local inconsistency in this surface is the collection empty branch, which still recreates state typography/spacing as a bespoke page-local block.
 
-The change removes one page-local empty-state mini-system from the Receivables AR analytical surface and delegates empty-state anatomy to the existing shared passive `StatePanel`, while correctly leaving the 260px analytical geometry under page ownership. This is the intended V2 ownership split: shared patterns own presentation grammar; the report owns analytical layout and all business/data/trust semantics.
+The existing `ResponsiveCollection` contract already solves this concern without any shared change: when `emptyState` is omitted it renders the shared passive compact `StatePanel kind="empty"`, and it exposes `emptyTitle` specifically so the caller can preserve domain copy. Therefore the smallest system-coherent change is to remove only the bespoke Geography empty renderer, pass the exact existing Arabic copy through `emptyTitle`, and leave every data, filter, heatmap, trust and ready-renderer contract caller-owned.
 
-## Exact-head acceptance findings
+I also inspected the adjacent Churn Risk report, which contains a similar local empty branch, but Geography is the safer next proof because it has no separate BLOCKED branch to preserve or reinterpret. That makes Geography the smaller dependency-safe concern and avoids combining state-semantics work with presentation convergence.
 
-### System coherence / hierarchy — PASS
+## REPORT039 bounded acceptance
 
-- The bespoke centered empty-text renderer is replaced only with existing `StatePanel kind="empty" density="compact"`.
-- Exact visible copy remains `لا توجد بيانات تحصيل في هذه الفترة`.
-- The caller still owns a fixed `height: 260px` wrapper, preserving chart-body stability.
-- No shared `StatePanel`, `ChartPanel`, CSS, token or breakpoint contract is changed or widened.
-- No page-local replacement styling or second state primitive is introduced.
+### Shared-system intent
 
-### State / device / Arabic / accessibility — PASS at source level
+- Replace only the custom Geography collection empty block.
+- Use `ResponsiveCollection`'s existing built-in empty renderer via `emptyTitle="لا توجد بيانات — شغّل watermark sweep أولاً"`.
+- The built-in renderer remains the existing passive compact `StatePanel kind="empty"`.
+- Do not import or create a new page-local state primitive and do not widen `ResponsiveCollection` / `StatePanel`.
 
-- Exact precedence remains `isBlocked -> dailyLoading -> empty -> ready chart`.
-- BLOCKED remains semantically distinct and untouched, including `بيانات AR محجوبة` / `يحتاج إلى اكتمال تشغيل محرك AR أولاً` and the existing 260px geometry.
-- Loading remains exactly one `SkeletonCard height={260}`.
-- Empty is passive across Desktop / Tablet / Mobile: no action slot, click handler, focus target or live announcement; no ready chart tree mounts while empty.
-- Arabic copy remains natural/wrappable with no new fixed-width text or ordinary horizontal-overflow source.
-- Ready chart height, margins, data mapping, three bar-series contracts and numeric presentation remain unchanged.
-- `ChartPanel` title/description and Trust/Freshness action remain unchanged.
+### State / device acceptance
 
-### Functional isolation — PASS
+- Preserve exact collection precedence: `tableLoading -> empty -> ready renderer`.
+- Loading remains exactly five `SkeletonCard height={44}` rows for the detail collection.
+- Existing summary loading remains intact, including the current two-card `MetricGrid columns={2}` / 160px skeleton behavior when the page loading contract requires it.
+- Empty mounts no ready renderer on any device.
+- Desktop ready state preserves the dense semantic table.
+- Tablet ready state preserves two-column `Card + KeyValueList` composition.
+- Mobile ready state preserves one-column `Card + KeyValueList` composition and no ordinary table overflow.
+- Exactly one ready renderer remains mounted per device through `ResponsiveCollection`.
 
-No query/cache/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business/workflow behavior changes are present. Summary metrics, filters and system-health surfaces are untouched. The diff stays within the declared presentation-only boundary.
+### Arabic / accessibility / hierarchy acceptance
 
-### Focused test artifact — PASS with honest evidence
+- Preserve exact Arabic copy: `لا توجد بيانات — شغّل watermark sweep أولاً`.
+- Empty remains passive: no action slot, click handler, keyboard/focus target or live announcement.
+- Shared StatePanel anatomy owns state hierarchy/spacing; the page must not reproduce state color/type rules locally.
+- No new fixed-width text, truncation or overflow source is introduced.
+- Existing long Arabic geography/parent wrapping remains unchanged.
 
-The focused Receivables test update protects the material design risks: shared empty anatomy and exact Arabic copy, compact/passive semantics, page-owned 260px geometry, blocked/loading/empty/ready non-leakage, Trust/Freshness continuity and unchanged ready-chart contracts.
+### Data / ready-renderer invariants
 
-The tests were authored but not executed in an approved exact-head project runtime. Evidence remains `TESTS_AUTHORED_NOT_EXECUTED`; this Product Design PASS does not claim build/test/lint/runtime/visual/preview/release execution.
+Preserve unchanged:
+- geography level labels and controlled level selector values;
+- ReportFilterBar/date semantics;
+- hooks, query/cache semantics and filters;
+- all row ordering and row facts;
+- conditional parent table column / card item behavior by level;
+- parent fallback `—`;
+- net revenue, customer count, transaction count and revenue-share formatting;
+- LTR numeric/currency/percentage presentation;
+- heatmap `maxRev` / opacity / zero-row treatment and current hover behavior;
+- TrustStateBadge / FreshnessIndicator presence and meaning;
+- summary KPI cards and metric calculations.
+
+## Explicit exclusions / stop rule
+
+Out of scope for REPORT039:
+- summary KPI redesign or MetricCard changes;
+- geography query/filter/date/business semantics;
+- heatmap semantics or calculation changes;
+- ready Desktop/Tablet/Mobile renderer redesign beyond regression protection;
+- Trust/Freshness semantics;
+- shared `ResponsiveCollection`, `StatePanel`, `Card`, `KeyValueList`, `MetricGrid`, `Select`, CSS, token or breakpoint changes;
+- permissions/RBAC/RLS/routing/export/print/backend/workflow/business changes;
+- any second report surface.
+
+If any excluded shared or functional change proves necessary, REPORT039 becomes `BLOCKED` rather than widening the implementation PR.
+
+## Focused test expectation
+
+Update the existing `GeographyPage.test.tsx` only as needed to protect the material risks:
+- shared empty `StatePanel` anatomy is rendered through the collection contract;
+- exact Arabic copy is preserved;
+- compact/passive semantics are preserved with no action/live/focus target;
+- loading remains ahead of empty with exactly five 44px detail skeletons;
+- ready table/card renderers do not mount during loading or empty;
+- existing Desktop/Tablet/Mobile ready-state assertions, conditional parent truth, wrapping, LTR values, Trust/Freshness and summary contracts remain green as authored artifacts.
+
+Evidence must remain `TESTS_AUTHORED_NOT_EXECUTED` unless an approved runtime actually executes the exact implementation HEAD. No hosted CI or preview may be used by the normal autonomous loop.
 
 ## Peer-state synthesis / contradiction handling
 
 After forming the independent judgment:
 
-- **Design QA:** fresh and aligned on the same exact PR HEAD; `GREEN-DEV + SOURCE_REVIEW_PASS`, no blocker, no unresolved review thread.
-- **UI Production Engineer:** PR-carried state is fresh and aligned; implementation is bounded to REPORT038 and labels non-executed evidence honestly.
-- **Development Integrator:** lifecycle-stale through REPORT037 only; no contrary REPORT038 judgment exists yet. Integration is the next role after this acceptance.
-- **Team Memory:** lifecycle-stale around the REPORT038 transition, but its durable shared-system and functional-isolation invariants remain aligned. No overall design direction changed, so no Product Design Team Memory write is warranted here.
-- **Decision Log / North Star / Component Decision Matrix / Device Strategy / Workstream:** aligned; no durable decision changed.
+- **Team Memory:** current through REPORT038 and explicitly hands REPORT039 to Product Design for one smallest presentation-only bound; aligned.
+- **Development Integrator:** current through REPORT038 integration and likewise requires Product Design bounding before implementation; aligned.
+- **UI Production Engineer:** lifecycle-stale on the now-integrated REPORT038 implementation; no REPORT039 implementation exists and no competing PR is open.
+- **Design QA:** lifecycle-stale on the consumed REPORT038 exact-head review; no REPORT039 judgment exists yet.
+- **Previous Product Design state:** lifecycle-stale because it still describes REPORT038 before integration; superseded by this state.
+- **North Star / test policy / communication protocol / Component Decision Matrix / Device Strategy / Migration Matrix:** aligned with consolidating one collection-state mini-system onto existing shared presentation while keeping business truth caller-owned.
+- **Decision Log:** no durable decision changes; no update warranted.
 
 Current contradiction classification: `NONE`.
 
 ## What changed since previous Product Design state
 
-- REPORT038 moved from `READY — BOUNDED` to an active implementation PR.
-- UI Production completed the bounded source/test artifact on PR #86 exact HEAD `1055c5bb2394177e0a6ea55c4651567bbfb119e2`.
-- Design QA independently marked the same exact HEAD `GREEN-DEV + SOURCE_REVIEW_PASS`.
-- Product Design has now independently accepted that exact HEAD with `PASS — NO DESIGN-SYSTEM BLOCKER`.
-- No new slice is selected while PR #86 remains active.
+- REPORT038 completed integration and the queue advanced to REPORT039.
+- No implementation PR is active.
+- REPORT039 moved from roadmap placeholder / Product Design bounding required to exactly one bounded implementation concern: Geography responsive-detail empty-state convergence.
+- Implementation is now authorized only within the recorded boundary.
 
 ## Repository actions this run
 
 - Completed the mandatory shared-memory bootstrap in the prescribed order.
-- Inspected issue #27, current Development HEAD, the single open PR targeting Development, exact PR scope/head/base, relevant V2 blueprint/component/migration/device documents and shared pattern source.
-- Independently reviewed REPORT038 implementation and focused test artifact at exact PR HEAD `1055c5bb2394177e0a6ea55c4651567bbfb119e2`.
-- Confirmed PR #86 remained open/draft, exact HEAD unchanged, `mergeable=true`, with no inline review threads before Product Design disposition.
-- Updated only this owned specialist state file.
-- Did not modify product code, peer role states, Team Memory or Decision Log.
+- Inspected issue #27, exact latest Development HEAD and open PRs targeting Development.
+- Inspected relevant component/migration/device architecture documents and current shared `StatePanel` / `ResponsiveCollection` contracts.
+- Independently inspected representative remaining Reports surfaces, including Geography and Churn Risk, and selected Geography as the smaller dependency-safe concern.
+- Inspected current Geography source and focused test artifacts.
+- Updated `31_AGENT_TEAM_WORKSTREAM.md` to bound REPORT039; workstream commit `08797bcfb83731edfb021ca3e6e93375a2dc2b9c`.
+- Updated only this owned specialist state file after that boundary.
+- Did not modify Product code, peer specialist states, Team Memory or Decision Log.
 - Did not merge, touch `main`, deploy Vercel, modify preview branches, trigger/rerun GitHub Actions or use hosted CI.
 
 ### Cross-role handoff
-- **To:** Development Integrator.
-- **What changed:** Product Design independently accepted PR #86 exact HEAD `1055c5bb2394177e0a6ea55c4651567bbfb119e2` as `PASS — NO DESIGN-SYSTEM BLOCKER`; Design QA is already GREEN on that same HEAD.
-- **Preserve:** exact empty copy; passive compact shared `StatePanel` anatomy; untouched BLOCKED branch/meaning/copy; exact `isBlocked -> dailyLoading -> empty -> ready` precedence; 260px loading/empty/ready chart-body contracts; ready chart mapping/margins/three series; ChartPanel title/description and Trust/Freshness; all excluded query/trust/permission/backend/business/shared contracts.
-- **Need from you:** revalidate PR #86 against the latest Development base, confirm HEAD remains exactly `1055c5bb2394177e0a6ea55c4651567bbfb119e2`, governance-only base drift remains non-overlapping, review threads/scope/functional isolation remain clean, then integrate only if normal merge gates remain valid. Do not select a competing slice before integration closes this one.
-- **Blocker level:** `NONE` from Product Design.
-- **Baseline:** Development pre-state-write `ca00f4f7ef4a7d23ec93780ae6282ffe01f0c184`; exact accepted PR #86 HEAD `1055c5bb2394177e0a6ea55c4651567bbfb119e2`; evidence `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
+- **To:** UI Production Engineer; then Design QA and Product Design Director for independent exact-head review after implementation.
+- **What changed:** `DS2-REPORT-039 — Geography responsive-detail empty-state convergence` is now `READY — BOUNDED` on the post-REPORT038 Development baseline.
+- **Preserve:** exact empty copy; `tableLoading -> empty -> ready` precedence; five 44px detail loading skeletons; current summary loading; dense Desktop table; Tablet two-column cards; Mobile one-column cards; one ready renderer per device; conditional parent truth/fallback; long Arabic wrapping; LTR numeric presentation; heatmap behavior; Select + ReportFilterBar; Trust/Freshness; all query/filter/business/shared contracts.
+- **Need from you:** start from the latest Development HEAD, implement only the Geography collection empty branch using the existing `ResponsiveCollection` built-in empty contract (`emptyTitle` -> passive compact shared `StatePanel`), update focused Geography tests, and open exactly one PR targeting `design-system-v2-development`. Stop as `BLOCKED` if any shared-contract or functional widening is required.
+- **Blocker level:** `NONE`.
+- **Baseline:** pre-bound Development HEAD `2b11afacf0a5871859a53a461bc46db048d78dec`; workstream boundary commit `08797bcfb83731edfb021ca3e6e93375a2dc2b9c`; current slice `DS2-REPORT-039`.
