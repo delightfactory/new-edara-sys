@@ -38,14 +38,14 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-031`.
+Product UI is integrated through `DS2-REPORT-032`.
 
 Latest product integration:
-- PR: `#79 — DS2-REPORT-031: Customer Health as-of-date field convergence`
-- Exact reviewed PR HEAD: `acc79751b2e24903a7d63842eb5b962e2ab19d0b`
-- Squash merge commit: `7271801b22a58c4280c9bdbd82b37aa9de7a0fdc`
+- PR: `#80 — DS2-REPORT-032: converge Customer Re-engagement KPI summary`
+- Exact reviewed PR HEAD: `2177d3ca687434a0185a5787639ee2138148d341`
+- Squash merge commit: `e7088ed6d683b4cc714059cd7f3d07831f9485b5`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
-- Product Design: `PASS — NO DESIGN-SYSTEM BLOCKER` on the same exact HEAD
+- Product Design boundary remained aligned at `READY — BOUNDED`; no separate exact-head Product Design closeout is claimed for this integration.
 - Runtime/preview/release evidence: not claimed
 
 The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, representative Customers/Sales/Inventory/Procurement/Finance/HR/Field/Work migrations, Reports route/date/filter convergence, shared `ChartPanel`, shared `MetricGrid`, shared V2 `Field` controls in representative report headers, and responsive detail-collection proofs using `ResponsiveCollection + Card + KeyValueList` while preserving dense Desktop comparison and caller-owned business truth.
@@ -77,52 +77,33 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - `DS2-REPORT-029 — Geography summary metric-grid convergence` — `DONE` — PR #77 — reviewed HEAD `8c955d7d4507150d0d4bfaaa6bfe652166268797` — merge `523f547a4259043d33ee77afc5139ffe42c1354e` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-030 — Rep Performance summary metric-grid convergence` — `DONE` — PR #78 — reviewed HEAD `0a2b828d3896b561adbcc6dc495c086b4d14f1d3` — merge `b5f3d49cbc2f68431573174ee2b653b269ee5d2c` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-031 — Customer Health as-of-date field convergence` — `DONE` — PR #79 — reviewed HEAD `acc79751b2e24903a7d63842eb5b962e2ab19d0b` — merge `7271801b22a58c4280c9bdbd82b37aa9de7a0fdc` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
+- `DS2-REPORT-032 — Customer Re-engagement KPI summary shared metric convergence` — `DONE` — PR #80 — reviewed HEAD `2177d3ca687434a0185a5787639ee2138148d341` — merge `e7088ed6d683b4cc714059cd7f3d07831f9485b5` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
 
-## REPORT031 system result
+## REPORT032 system result
 
-- Customer Health's page-local `بتاريخ:` label + styled native date input now consume the existing shared `DateField -> Input -> Field` grammar.
-- Caller-owned `today` derivation, initial `asOfDate`, `value={asOfDate}`, `max={today}`, `onChange={e => setAsOfDate(e.target.value)}` and `useCustomerHealthSummary({ asOfDate })` propagation remain unchanged.
-- The Arabic label remains programmatically associated through the shared Field anatomy while native `type="date"` semantics remain intact.
-- Existing `MetricGrid columns={3}`, exact three KPI cards, 3 × 150px summary skeletons, blocked-state priority, dense five-column Desktop detail table, Tablet two-column cards, Mobile one-column cards, five 44px detail skeletons, trust/freshness, fallback identity, numeric presentation and exact empty/footer copy remain unchanged.
-- No shared `DateField`/`Input`/`Field` API/CSS/token/breakpoint widening occurred.
-- No query/cache/calculation/snapshot/permission/RBAC/RLS/routing/export/print/backend/business/workflow/deployment change occurred.
+- Customer Re-engagement's page-local KPI mini-system now consumes the existing shared `MetricGrid columns={3}` + `StatCard` grammar.
+- Exact five-card order, labels/context, emoji identity, caller-owned count/value sources, `FMT` / `fmtCur`, `Math.abs(total_outstanding)` and debt-vs-credit copy/sign behavior remain unchanged.
+- Shared semantic tones now express the existing urgency/credit meaning without moving any calculation or priority classification into the Design System.
+- Loading preserves all five metric identities/context and replaces only each value layer with an `aria-hidden` skeleton.
+- Desktop uses the shared 3 + 2 composition, Tablet 2 + 2 + 1, and Mobile one card per row through the existing shared contract.
+- Only orphaned KPI-specific local presentation CSS was removed; FilterBar, query/filter truth, list/detail/mobile/table/export/permission/business behavior remain unchanged.
+- No shared `MetricGrid`/`StatCard`/`Card` API/CSS/token/breakpoint widening and no backend/functional/business/workflow/deployment change occurred.
 
 ## Current single READY slice
 
-### DS2-REPORT-032 — Customer Re-engagement KPI summary shared metric convergence
-Status: `READY — BOUNDED`.
-Owner role for immediate next action: UI Production Engineer.
-Representative surface: `src/pages/reports/CustomerReengagementPage.tsx` → `KpiStrip` summary only.
+### DS2-REPORT-033 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
+Status: `READY — PRODUCT DESIGN BOUNDING REQUIRED`.
+Owner role for immediate next action: Product Design Director.
 
-System intent:
-- retire the page-local KPI mini-system (`rp-kpi-grid` + local KPI card/value/label/icon/sublabel presentation) in favor of existing shared `MetricGrid` + `StatCard` grammar;
-- use `MetricGrid columns={3}` for the five-card summary rather than widening the shared API to a five-column mode: Desktop composes 3 + 2, Tablet 2 + 2 + 1, Mobile one card per row;
-- preserve all metric calculation/data meaning in `CustomerReengagementPage`; shared patterns own presentation and responsive layout only;
-- replace arbitrary KPI accent-border/value styling with the shared semantic tone vocabulary without changing priority/business meaning.
+Intent:
+- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline;
+- select exactly one smallest dependency-safe presentation-only concern and record its representative surface/file plus explicit acceptance/exclusion boundary before UI Production begins;
+- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
+- preserve REPORT001-032 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
+- preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
+- do not turn REPORT033 into broad multi-page report beautification.
 
-Acceptance / preserve:
-- exact five-card DOM/data order remains `Champion Lost` → `تراجع عالي` → `متوسط خامد` → `إجمالي العملاء` → `صافي الأرصدة`;
-- preserve every current label, sublabel/context, emoji/icon, count/value source, `FMT` / `fmtCur` formatting, `Math.abs(summary.total_outstanding)` behavior and the exact `إجمالي مديونية` / `رصيد دائن صاف` conditional copy;
-- semantic presentation maps the existing meanings only: Champion Lost=`danger`; تراجع عالي=`warning`; متوسط خامد=`warning`; إجمالي العملاء=`info`; صافي الأرصدة=`success` only when `total_outstanding < 0`, otherwise `info`;
-- summary loading keeps all five metric identities/context visible and replaces only their values with five skeleton placeholders, matching the current state priority rather than blanking the whole summary;
-- Desktop uses the shared three-column metric contract with five cards wrapping naturally; Tablet uses the shared two-column contract; Mobile uses the shared one-column contract with no ordinary horizontal overflow and tolerance for long Arabic/currency values;
-- KPI cards remain passive/non-interactive; no new focus targets or hover-dependent meaning; decorative emoji/icon presentation must not become an accessible-name dependency;
-- remove only KPI-specific scoped CSS that becomes orphaned by the shared migration; do not broaden this into Customer Re-engagement style cleanup.
-
-Focused test artifact expectation:
-- add focused `CustomerReengagementPage` coverage proving shared `MetricGrid` with `data-columns="3"`, five shared StatCard surfaces in exact order, preserved values/copy/conditional net-balance behavior and semantic tones;
-- prove summary loading retains five metric identities and five value-level skeletons;
-- evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless an actually approved runtime executes it.
-
-Explicit exclusions:
-- Customer Re-engagement `FilterBar`, URL-synced filters/reference-data/query inputs and filter stats;
-- list/table/mobile-card/detail composition, `PriorityBadge`, `RecencyBadge`, balance-cell logic outside the KPI summary, Customer 360 links/actions and permissions;
-- Export Drawer, print/PDF/CSV output, action hierarchy and document-output behavior;
-- `PRIORITY` configuration still consumed outside the summary, any broader local-style cleanup, and the existing Desktop-vs-Mobile collection switch;
-- shared `MetricGrid`, `StatCard`, `Card`, token, CSS or breakpoint API changes;
-- hooks, calculations, query/cache semantics, permissions/RBAC/RLS, routing, export/print contracts, backend/business/workflow behavior and every other report surface.
-
-Stop rule: if implementation requires a shared API/CSS/token/breakpoint change or any functional/business semantic change, mark REPORT032 `BLOCKED` rather than widen the PR.
+Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
 
 ## Product migration roadmap
 
@@ -173,9 +154,9 @@ Open only when a real migrated screen proves the recurring gap:
 - further Work detail/feedback/management convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
 
 ### I. Reports / Analytics
-- `DS2-REPORT-001` through `DS2-REPORT-031` — `DONE`
-- `DS2-REPORT-032 — Customer Re-engagement KPI summary shared metric convergence` — `READY — BOUNDED`
-- further Reports/Analytics convergence beyond REPORT032 — `BACKLOG` / each concern must be bounded separately
+- `DS2-REPORT-001` through `DS2-REPORT-032` — `DONE`
+- `DS2-REPORT-033 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — PRODUCT DESIGN BOUNDING REQUIRED`
+- further Reports/Analytics convergence beyond REPORT033 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
