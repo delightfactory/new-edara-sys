@@ -91,19 +91,45 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-033 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
-Status: `READY — PRODUCT DESIGN BOUNDING REQUIRED`.
-Owner role for immediate next action: Product Design Director.
+### DS2-REPORT-033 — Target Attainment individual-rep chart-panel convergence
+Status: `READY — BOUNDED`.
+Owner role for immediate next action: UI Production Engineer.
+Representative surface: `src/pages/reports/TargetAttainmentPage.tsx` → `نسبة الإنجاز — المندوبون الفرديون` chart shell only.
+Product Design bounding baseline: `f9688fb8414d82e9eec2be67b2cb3a2ae0c64dd1`.
 
-Intent:
-- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline;
-- select exactly one smallest dependency-safe presentation-only concern and record its representative surface/file plus explicit acceptance/exclusion boundary before UI Production begins;
-- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
-- preserve REPORT001-032 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
-- preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
-- do not turn REPORT033 into broad multi-page report beautification.
+System intent:
+- remove the remaining page-local analytical chart shell on this representative Reports surface and consume the existing shared `ChartPanel` hierarchy;
+- keep chart data and business truth fully caller-owned; this is presentation composition convergence only;
+- prove that the established `ChartPanel -> Card + SectionHeader` grammar can carry the chart title, explanatory copy and Trust/Freshness action without inventing another page-specific wrapper.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+Acceptance boundary:
+- keep the existing `chartData.length > 0` visibility condition exactly;
+- replace only the local outer chart surface/header with existing `ChartPanel` unchanged;
+- preserve exact title `نسبة الإنجاز — المندوبون الفرديون` and exact description `الخط المنقط عند 100% هو الهدف`;
+- preserve the existing TrustStateBadge + FreshnessIndicator action wiring, status/domain/lastCompletedAt/isStale values and their conditional presence;
+- preserve `ResponsiveContainer` width and `height={Math.max(chartData.length * 40, 200)}`;
+- preserve the vertical `BarChart`, axes, tooltip formatter, `ReferenceLine x={100}`, bar radius/max width and per-row `barColor` thresholds/data order exactly;
+- Desktop/Tablet/Mobile inherit the shared ChartPanel heading/action wrapping and neutral card surface; chart semantics and caller-owned sizing remain unchanged;
+- maintain Arabic-first heading/description wrapping and existing LTR numeric/percentage behavior; no new interactive semantics are introduced.
+
+Explicit exclusions / stop boundary:
+- Target Attainment header scope/date controls and their state;
+- the four KPI summary cards / current `report-grid` wrapper;
+- `تفاصيل الأهداف` ResponsiveCollection/table/cards, TrendBadge and achievement-value presentation;
+- `chartData` derivation, `individualRows`, `achievementColor`, `barColor`, percentage/currency formatting or any target calculation/status meaning;
+- shared `ChartPanel`, `Card`, `SectionHeader`, CSS, token or breakpoint APIs;
+- hooks, queries/cache, Trust/Freshness semantics, RBAC/RLS/permissions, routes, export/print, backend, business/workflow behavior and every other report surface.
+
+If implementation requires any excluded shared or functional change, REPORT033 becomes `BLOCKED` rather than widening the PR.
+
+Focused validation expectation:
+- shared `.ds-chart-panel` is present only when individual-rep chart data is present;
+- exact chart title and description survive the migration;
+- Trust/Freshness action content remains in the shared panel header with unchanged data wiring;
+- the existing individual-rep chart data/order and 100% target/reference semantics remain unchanged;
+- no local replacement chart-shell styling is introduced and no excluded Target Attainment surface changes.
+
+Under the current quota policy, focused coverage remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved execution environment actually runs it. No build/test/lint/runtime/preview/release PASS is implied by this Product Design direction.
 
 ## Product migration roadmap
 
@@ -155,7 +181,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-032` — `DONE`
-- `DS2-REPORT-033 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — PRODUCT DESIGN BOUNDING REQUIRED`
+- `DS2-REPORT-033 — Target Attainment individual-rep chart-panel convergence` — `READY — BOUNDED`
 - further Reports/Analytics convergence beyond REPORT033 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
