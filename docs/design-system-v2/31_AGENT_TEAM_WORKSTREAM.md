@@ -99,20 +99,34 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-039 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
-Status: `READY — PRODUCT DESIGN BOUNDING REQUIRED`.
-Owner role for immediate next action: Product Design Director.
-Selection baseline: product integration `5325d99fcc3d047f1fc6aa3dac39a5423d9376e4`.
+### DS2-REPORT-039 — Geography responsive-detail empty-state convergence
+Status: `READY — BOUNDED`.
+Owner role for immediate next action: UI Production Engineer.
+Selection baseline: Development HEAD `2b11afacf0a5871859a53a461bc46db048d78dec` after REPORT038 integration/governance refresh.
+Representative surface: `src/pages/reports/GeographyPage.tsx` → `ResponsiveCollection` under `التوزيع حسب {LEVEL_LABELS[level]}` → empty branch only.
 
 System intent / acceptance:
-- inspect representative remaining Reports/Analytics surfaces on the exact latest `design-system-v2-development` baseline before implementation;
-- select exactly one smallest dependency-safe presentation-only concern and name its representative file/surface plus explicit acceptance/exclusion boundary;
-- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer proves the need;
-- preserve REPORT001-038 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
-- preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
-- do not turn REPORT039 into broad multi-page report beautification.
+- remove only the bespoke page-local empty block and use the existing `ResponsiveCollection` shared empty-state contract by supplying `emptyTitle="لا توجد بيانات — شغّل watermark sweep أولاً"` and allowing its built-in passive compact `StatePanel kind="empty"` renderer to own anatomy;
+- preserve the exact Arabic empty copy `لا توجد بيانات — شغّل watermark sweep أولاً`;
+- preserve exact state precedence `tableLoading -> empty -> ready renderer` inside the collection and ensure no Desktop table / Tablet cards / Mobile cards mount while loading or empty;
+- preserve exactly five detail loading `SkeletonCard height={44}` rows and the existing summary loading behavior (`MetricGrid columns={2}` with two `SkeletonCard height={160}` when the page loading contract requires it);
+- preserve deliberate ready composition: dense semantic Desktop table; Tablet two-column `Card + KeyValueList`; Mobile one-column `Card + KeyValueList`; exactly one ready renderer per device;
+- preserve all geography facts/order/fallbacks, conditional parent column/item behavior by level, long Arabic wrapping, LTR numeric/currency/percentage presentation, heatmap row calculation/hover behavior, Select + ReportFilterBar contracts and Trust/Freshness;
+- empty remains passive: no action slot, click handler, focus target or live announcement; no new fixed-width/overflow source is introduced;
+- focused tests must protect the shared empty StatePanel anatomy/exact copy/compact-passive semantics, loading-before-empty precedence, no ready-renderer leakage in empty/loading, and retain existing Desktop/Tablet/Mobile ready-state assertions;
+- evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved runtime actually executes it.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+Explicit exclusions:
+- summary KPI cards/metric calculations;
+- geography level/date/filter semantics and hook/query/cache behavior;
+- table/card ready renderers beyond assertions needed to prove no regression;
+- heatmap calculation or business meaning;
+- Trust/Freshness semantics;
+- shared `ResponsiveCollection`, `StatePanel`, `Card`, `KeyValueList`, `MetricGrid`, `Select`, CSS, token or breakpoint implementation/API changes;
+- permissions/RBAC/RLS/routing/export/print/backend/business/workflow changes;
+- every other Reports surface.
+
+Stop rule: if implementation requires shared-contract widening, data/query/filter/trust/business changes, or any alteration beyond this empty-state presentation concern, mark REPORT039 `BLOCKED` instead of widening the PR.
 
 ## Product migration roadmap
 
@@ -164,7 +178,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-038` — `DONE`
-- `DS2-REPORT-039 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — PRODUCT DESIGN BOUNDING REQUIRED`
+- `DS2-REPORT-039 — Geography responsive-detail empty-state convergence` — `READY — BOUNDED`
 - further Reports/Analytics convergence beyond REPORT039 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
