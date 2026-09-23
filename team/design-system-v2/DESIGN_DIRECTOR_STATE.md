@@ -2,132 +2,98 @@
 
 ## Reviewed baseline
 
-- Review date/time: `2026-09-23 20:00 Africa/Cairo`.
+- Review date/time: `2026-09-23 21:04 Africa/Cairo`.
 - Authoritative branch: `design-system-v2-development`.
-- Product UI remains integrated through `DS2-REPORT-039`.
-- Integrated product merge: `035558bb3e86026742d3658d7c1928ee75f09215` from PR #87.
-- Exact Development HEAD before this Product Design state write: `126b796dde0019577f61ea481857c0aabc7c7c1a`.
-- Active slice: `DS2-REPORT-040 — Churn Risk responsive-detail empty-state convergence`.
-- Active implementation PR: `#88 — DS2-REPORT-040: converge Churn Risk detail empty state`.
-- Feature baseline: `bd8ea3eeba4dc45d02cc098436506b8326dc894d`.
-- Exact PR HEAD independently reviewed: `1e916d2d7e7ec9618d1ae7f6294fdfe00f08c6a1`.
-- Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER`.
-- Design QA disposition on the same exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
-- Evidence: `TESTS_AUTHORED_NOT_EXECUTED`; no build/test/lint/runtime/visual/preview/release PASS is claimed.
+- Product UI is integrated through `DS2-REPORT-040`.
+- Latest product integration: PR #88, squash merge `23707a5465549613dfbde0a6637acee5fbc847e2`.
+- Exact Development HEAD before the REPORT041 Workstream boundary write: `7387e5ce050abd6cdb1d8ca68ee032fb50da3ab4`.
+- Workstream boundary commit created this run: `fcb74efd439a3e8d489cbd93d4acb6d99329b5ca`.
+- Active/READY slice: `DS2-REPORT-041 — Sales revenue-chart empty-state convergence`.
+- Active implementation PR: none; open PRs targeting `design-system-v2-development`: `0` at review time.
 - Current contradiction classification: `NONE`.
 
 ## Independent Product Design judgment
 
-**REPORT040 passes Product Design on exact PR HEAD `1e916d2d7e7ec9618d1ae7f6294fdfe00f08c6a1`.**
+**REPORT041 is `READY — BOUNDED` as one presentation-only Sales analytics concern.**
 
-I formed this judgment from the exact PR diff/current product source, current shared `ResponsiveCollection` / `StatePanel` contracts and the relevant Component System, Migration Matrix, QA Guardrails, Device Strategy and Component Decision Matrix before comparing peer-role conclusions.
+I formed this judgment from the exact current Development source and shared component contracts before comparing peer role states. The smallest dependency-safe remaining Reports concern is the page-local empty renderer inside the Sales `ChartPanel` titled `تطور الإيراد اليومي`.
 
-The implementation remains exactly inside the bounded North-Star concern. It removes one page-local empty-state mini-system from Churn Risk customer details and delegates only generic empty-state anatomy to the already-proven shared grammar. It does not move risk truth, trust gating, query behavior, responsive data composition or business meaning into the Design System.
+That panel already has the correct caller-owned state machine and analytical contract: `isBlocked -> dailyLoading -> empty -> ready`, a fixed 240px chart body, Trust/Freshness context, and an established ready `AreaChart`. Only the empty branch still recreates state presentation locally instead of consuming the shared `StatePanel` grammar. The current shared `StatePanel` already supports a passive compact empty state without carrying business logic, and Receivables proves the same fixed-height chart-body composition safely on Development.
 
-This is the correct system-level move: the page continues to own `isBlocked -> listLoading -> empty -> ready`, while `ResponsiveCollection` owns generic collection orchestration and `StatePanel` owns passive empty-state presentation. No new abstraction, local variant or shared-contract widening is introduced.
+This is preferable to broader debt inspected during this run. Reports Overview still contains a larger local interactive navigation-card mini-system and literal accent colors; Customer Re-engagement contains a much broader legacy FilterBar/export-drawer/status mini-system intertwined with permissions/output behavior. Those are real future system debts, but widening REPORT041 into either would violate the one-smallest-concern rule and raise interaction/functional risk.
 
-## Exact-head acceptance findings
+## REPORT041 bounded design contract
 
-### Scope / system fit — PASS
+Representative surface:
+- `src/pages/reports/SalesPage.tsx`
+- first `ChartPanel`: `تطور الإيراد اليومي`
+- empty branch only.
 
-Exact changed-file scope remains three files:
-- `src/pages/reports/ChurnRiskPage.tsx`
-- `src/pages/reports/ChurnRiskPage.test.tsx`
-- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
+Required convergence:
+- replace only the page-local 240px empty block with existing shared `StatePanel kind="empty"` using `compact` presentation;
+- preserve exact visible copy: `لا توجد بيانات في النطاق الزمني المحدد`;
+- preserve a 240px chart-body footprint around the shared state;
+- preserve passive semantics: no action slot, click handler, button/link, explicit focus target or live announcement.
 
-The only product-code change is:
-- remove the bespoke `ResponsiveCollection.emptyState` wrapper;
-- pass exact existing copy through `emptyTitle="لا توجد بيانات — شغّل watermark sweep أولاً"`.
+Preserve exactly:
+- precedence `isBlocked -> dailyLoading -> empty -> ready`;
+- current BLOCKED renderer, copy and trust meaning;
+- `SkeletonCard height={240}` loading state;
+- `ChartPanel` title, description, TrustStateBadge and FreshnessIndicator placement;
+- ready `ResponsiveContainer + AreaChart` data mapping, margin, axes/grid/tooltip, revenue/returns series, gradients, colors and geometry;
+- report filter/range behavior, KPI MetricGrid/MetricCard composition, SystemHealthBar and formatting;
+- all query/cache/aggregation/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics.
 
-The existing `ResponsiveCollection.emptyTitle -> compact StatePanel kind="empty"` contract is reused unchanged. No shared component implementation, API, CSS, token or breakpoint changed.
+Explicitly excluded:
+- the second chart `توزيع الإيرادات اليومي (إيراد + ضريبة)`, including its current no-data behavior;
+- chart tooltip/color/token refactors;
+- any shared `StatePanel` / `ChartPanel` API, CSS, token or breakpoint widening;
+- Overview navigation-card debt, Customer Re-engagement debt, Settings/Admin and Global cleanup.
 
-### State hierarchy / semantics — PASS
+## Device / RTL / accessibility acceptance
 
-Preserved exactly:
-- caller precedence `isBlocked -> listLoading -> empty -> ready`;
-- BLOCKED renderer/copy/meaning: `بيانات الخطر محجوبة` and `snapshot_customer_risk يحتاج تشغيل ناجح أولاً`;
-- exactly five `SkeletonCard height={44}` detail loading rows;
-- exact empty copy `لا توجد بيانات — شغّل watermark sweep أولاً`;
-- empty mounts no Desktop table, Tablet cards or Mobile cards;
-- ready state mounts no loading/empty renderer.
+The shared empty state must preserve the same 240px analytical footprint at representative Mobile/Tablet/Desktop widths (390/900/1440px), remain visually centered and compact, allow Arabic copy to wrap naturally, introduce no normal horizontal overflow, and preserve the same business meaning across devices.
 
-BLOCKED remains caller-owned trust/data meaning and is not reinterpreted as a generic Design System state in this slice.
+Because the state is passive, there must be no new touch target, keyboard target or focus order. `kind="empty"` must retain the shared contract's non-live behavior. The change must remain readable in RTL and not rely on color to communicate the empty condition.
 
-### Device / hierarchy — PASS at source level
+## Focused test intent
 
-Preserved:
-- dense semantic six-column Desktop table;
-- Tablet two-column `Card + KeyValueList` composition;
-- Mobile one-column `Card + KeyValueList` composition;
-- one ready renderer per device through `ResponsiveCollection`;
-- customer identity/fallback and existing risk facts/order;
-- long Arabic wrapping;
-- existing LTR RFM/recency/frequency/currency treatment;
-- TrustStateBadge / FreshnessIndicator placement and meaning;
-- KPI summary, pie chart, filter/date controls and SystemHealthBar behavior.
+Update focused `SalesPage.test.tsx` coverage to prove:
+- empty data mounts one shared `.ds-state-panel[data-state-kind="empty"]` with compact anatomy and exact Arabic copy inside a 240px body;
+- empty does not mount the ready AreaChart renderer;
+- loading retains higher priority than empty and stays exactly 240px;
+- BLOCKED retains higher priority and exact current copy/meaning;
+- ready chart behavior remains unchanged when data exists;
+- representative 390/900/1440px source-level acceptance has no semantic/device divergence or new overflow/focus target.
 
-Focused artifacts cover the empty state at 390 / 900 / 1440px and protect against ready-renderer leakage.
-
-### Accessibility / interaction — PASS
-
-The empty state remains passive:
-- no action slot;
-- no click handler;
-- no button or link;
-- no explicit focus target;
-- no live announcement for `kind="empty"`;
-- no new keyboard/touch behavior.
-
-This is aligned with the current shared `StatePanel` contract, whose `aria-live` behavior is error-only.
-
-### Functional isolation — PASS
-
-No DB/migration/RPC/service, query/cache/calculation, risk-classification, permission/RBAC/RLS, route, validation, export/print, workflow, backend or business-semantic change is present.
-
-`RiskBadge`, `RecencyCell`, `RISK_CONFIG`, risk classification/category semantics, chart data/geometry/colors/tooltip/legend and report truth remain caller/domain-owned and unchanged.
-
-### Test artifact / evidence honesty — PASS
-
-Focused `ChurnRiskPage.test.tsx` changes protect:
-- BLOCKED higher priority than collection loading/empty/ready;
-- loading higher priority than empty/ready;
-- exact five 44px detail skeletons;
-- shared compact passive `.ds-state-panel[data-state-kind="empty"]` anatomy;
-- exact Arabic copy;
-- no action/live/focus targets;
-- no ready renderer while empty at representative Mobile/Tablet/Desktop widths.
-
-Evidence remains `TESTS_AUTHORED_NOT_EXECUTED`. No executed build/test/lint/runtime/visual/preview/release PASS is claimed.
+Evidence must remain honest: focused tests are to be authored, but `TESTS_AUTHORED_NOT_EXECUTED` remains the correct label unless local execution evidence is actually produced. Hosted GitHub Actions remain forbidden.
 
 ## Peer-state synthesis / contradiction handling
 
-After forming the independent judgment:
+After the independent judgment:
 
-- **Design QA:** fresh and aligned; exact-head `GREEN-DEV + SOURCE_REVIEW_PASS` on `1e916d2d7e7ec9618d1ae7f6294fdfe00f08c6a1`; no material blocker or review thread found.
-- **UI Production Engineer:** Development copy is lifecycle-stale through REPORT039, but the PR-carried owned state is fresh/aligned for REPORT040 and honestly labels `TESTS_AUTHORED_NOT_EXECUTED`.
-- **Development Integrator:** lifecycle-current only through REPORT039; its next-slice handoff is aligned but requires refresh before integration.
-- **Team Memory:** integrated truth is current through REPORT039; its earlier unbounded REPORT040 placeholder is superseded for active-slice scope by the Product Design boundary/workstream state, while durable system invariants remain aligned.
-- **Decision Log / North Star / Component System / Migration Matrix / QA Guardrails / Device Strategy / Component Decision Matrix:** aligned with shared state-family consolidation, one-device renderer composition and strict presentation-only ownership.
-- **PR discussion / review threads:** Design QA review is aligned; no inline review thread exists.
-- **Development drift:** `bd8ea3eeba4dc45d02cc098436506b8326dc894d -> 126b796dde0019577f61ea481857c0aabc7c7c1a` is exactly one governance-only file: `team/design-system-v2/DESIGN_QA_STATE.md`; no product/test overlap.
+- **Integration state:** current through REPORT040 and explicitly delegates REPORT041 bounding to Product Design; aligned, not contradictory.
+- **Team Memory:** current through REPORT040 and marks REPORT041 as intentionally unbounded pending Product Design; now superseded only for routine current-slice scope by this bounded Workstream state. No overall North-Star direction changed, so Team Memory is not rewritten this run.
+- **UI Production state:** lifecycle-stale after REPORT040 merge and contains no competing REPORT041 implementation; no contradiction.
+- **Design QA state:** lifecycle-stale after REPORT040 merge and contains no REPORT041 judgment; no contradiction.
+- **Decision Log / North Star / Component System / Migration Matrix / QA Guardrails / Device Strategy / Component Decision Matrix:** aligned with consolidating state presentation through the existing shared component while keeping state truth/business semantics caller-owned.
+- **Open implementation PRs:** none targeting Development at the final pre-write check, so no competing slice exists.
 
 Current contradiction classification: `NONE`.
 
-## Repository actions this run
+## What changed since the previous state
 
-- Completed the mandatory shared-memory bootstrap in the prescribed order.
-- Inspected issue #27, exact Development HEAD and the single open PR targeting Development.
-- Inspected PR #88 metadata, exact HEAD/base, changed filenames, product/test patches, PR-carried UI Production state, Design QA review and review-thread state.
-- Inspected exact Churn Risk source plus current `ResponsiveCollection` / `StatePanel` contracts and relevant V2 architecture/migration/QA/device/component-decision documents.
-- Added Product Design exact-head PASS to PR #88.
-- Updated only this owned Design Director state file.
-- Did not modify product code, peer role states, Team Memory, Decision Log or the Workstream.
+- REPORT040 is now integrated; the prior exact-head PR acceptance state is no longer the active lifecycle state.
+- Inspected the exact post-REPORT040 Development baseline, issue #27, open PRs, relevant Reports source/tests and shared contracts.
+- Independently selected and bounded REPORT041 to the Sales first-chart empty branch only.
+- Updated `31_AGENT_TEAM_WORKSTREAM.md` at commit `fcb74efd439a3e8d489cbd93d4acb6d99329b5ca`.
+- Did not change product code, peer role states, Team Memory or Decision Log.
 - Did not merge, touch `main`, deploy Vercel, modify preview branches, trigger/rerun GitHub Actions or use hosted CI.
 
 ### Cross-role handoff
-- **To:** Development Integrator.
-- **What changed:** Product Design independently accepted PR #88 exact HEAD `1e916d2d7e7ec9618d1ae7f6294fdfe00f08c6a1` as `PASS — NO DESIGN-SYSTEM BLOCKER`; Design QA is already GREEN-DEV on the same exact HEAD.
-- **Preserve:** exact empty copy; `isBlocked -> listLoading -> empty -> ready`; unchanged BLOCKED copy/meaning; 5×44px loading; passive compact shared empty renderer; unchanged six-column Desktop table / two-column Tablet cards / one-column Mobile cards; one ready renderer per device; customer-risk facts/fallbacks; Arabic wrapping; LTR facts; Trust/Freshness; KPI/chart/filter contracts; all excluded shared/data/query/permission/export/backend/business semantics.
-- **Need from you:** revalidate PR #88 unchanged HEAD/base, current governance-only Development drift, three-file scope, reviews/threads, mergeability and functional isolation; integrate only if all normal gates remain clean. Any PR-head movement invalidates both Product Design and Design QA exact-head acceptance.
+- **To:** UI Production Engineer.
+- **What changed:** `DS2-REPORT-041 — Sales revenue-chart empty-state convergence` is now the single `READY — BOUNDED` slice; only the first Sales chart empty renderer is authorized.
+- **Preserve:** exact copy `لا توجد بيانات في النطاق الزمني المحدد`; `isBlocked -> dailyLoading -> empty -> ready`; unchanged BLOCKED and 240px loading contracts; unchanged first-chart ready data/geometry/Trust/Freshness; second chart entirely untouched; passive compact shared empty semantics; all data/query/permission/export/backend/business behavior.
+- **Need from you:** start from the latest Development HEAD, implement REPORT041 only, author focused Sales tests for blocked/loading/empty/ready plus representative device acceptance, and open one Draft PR targeting `design-system-v2-development`. If any shared-contract or functional widening is required, stop and mark the slice `BLOCKED`.
 - **Blocker level:** `NONE`.
-- **Baseline:** Development pre-state-write `126b796dde0019577f61ea481857c0aabc7c7c1a`; exact reviewed PR #88 HEAD `1e916d2d7e7ec9618d1ae7f6294fdfe00f08c6a1`.
+- **Baseline:** pre-boundary Development `7387e5ce050abd6cdb1d8ca68ee032fb50da3ab4`; Workstream boundary commit `fcb74efd439a3e8d489cbd93d4acb6d99329b5ca`.
