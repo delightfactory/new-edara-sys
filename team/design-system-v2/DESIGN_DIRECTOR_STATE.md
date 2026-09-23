@@ -2,122 +2,127 @@
 
 ## Reviewed baseline
 
-- Review date/time: `2026-09-23 18:01 Africa/Cairo`.
+- Review date/time: `2026-09-23 19:00 Africa/Cairo`.
 - Authoritative branch: `design-system-v2-development`.
-- Product UI is integrated through `DS2-REPORT-038`.
-- Active slice: `DS2-REPORT-039 — Geography responsive-detail empty-state convergence`.
-- Active implementation PR: `#87 — DS2-REPORT-039: converge Geography detail empty state`.
-- Feature baseline: `3952b838160d885aad08f8a169882abe3c4562bf`.
-- Exact PR HEAD independently reviewed: `2877257b3f04b84c01a058a47f82c2cd6e0ccb59`.
-- Exact Development HEAD before this Product Design state write: `d2bc67ddb319af5f2763bcc5bb56f6b5361b847d`.
-- Development drift from feature baseline before this write: one governance-only file, `team/design-system-v2/DESIGN_QA_STATE.md`.
-- Exact changed-file scope on PR #87: 3 files — `GeographyPage.tsx`, `GeographyPage.test.tsx`, and UI Production Engineer owned state.
-- Current disposition: `PRODUCT DESIGN PASS — NO DESIGN-SYSTEM BLOCKER`.
-- Evidence: `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
+- Product UI is integrated through `DS2-REPORT-039`.
+- Integrated product merge: `035558bb3e86026742d3658d7c1928ee75f09215` from PR #87.
+- Exact Development HEAD before Product Design bounding: `d7ac8b8cf68a1cc4a15522c2f4fa0f7731197fa7`.
+- Workstream bounding commit: `739beedd30526959276064d4a85b6f9afa8c5c0c`.
+- Active slice: `DS2-REPORT-040 — Churn Risk responsive-detail empty-state convergence`.
+- Current slice state: `READY — BOUNDED`.
+- Active implementation PR: none at review/recheck time.
+- Representative surface: `src/pages/reports/ChurnRiskPage.tsx` → `تفاصيل العملاء — مرتب: معرض للخطر أولاً` → `ResponsiveCollection` empty branch only.
 - Current contradiction classification: `NONE`.
 
 ## Independent Product Design judgment
 
-**PASS on exact PR HEAD `2877257b3f04b84c01a058a47f82c2cd6e0ccb59`.**
+REPORT040 should converge the Churn Risk responsive-detail **empty branch only** onto the already-proven shared collection state grammar.
 
-I formed this judgment from the exact PR diff/current source and the current shared `ResponsiveCollection` / `StatePanel` contracts before comparing peer conclusions. REPORT039 is correctly implemented as the smallest presentation-only convergence: the Geography detail collection no longer recreates empty-state spacing/type/tone locally and instead delegates empty anatomy to the existing shared collection contract through `emptyTitle`.
+I formed this judgment from the current Development source before comparing peer conclusions. Churn Risk is already substantially aligned with V2: shared `MetricGrid + StatCard`, shared `ChartPanel`, shared V2 filter controls, and `ResponsiveCollection + Card + KeyValueList` for the customer detail collection. The remaining bounded inconsistency is a bespoke page-local `emptyState` wrapper that recreates padding, typography, color and alignment even though `ResponsiveCollection` already owns the generic empty-state path through `emptyTitle -> compact StatePanel kind="empty"`.
 
-This is the right system-level move because `ResponsiveCollection` already owns loading/empty/ready orchestration and, when `emptyState` is omitted, renders the shared compact passive `StatePanel kind="empty"`. The page therefore keeps domain copy and all business/data truth while the Design System owns state presentation. No new primitive, API widening, CSS/token change or page-local mini-system is introduced.
+This is the smallest dependency-safe concern because it removes one duplicated state mini-system without touching business truth, chart semantics, risk classification, trust gating or responsive ready composition. It also extends the exact pattern just proven by REPORT039 rather than inventing a new abstraction.
 
-## Exact-head Product Design acceptance
+I also inspected other representative remaining Reports surfaces before selection. `OverviewPage` still contains broader navigation-card/local-color debt, while `CustomerReengagementPage` contains much larger filter/drawer/output interaction debt. Those are real future concerns but materially broader and carry more interaction/semantic risk than this state-only slice, so they should not displace the safer REPORT040 boundary.
 
-### Scope / system coherence — PASS
+## REPORT040 bounded contract
 
-The only product-code change is:
-- remove the bespoke Geography `emptyState` wrapper/style block;
-- add `emptyTitle="لا توجد بيانات — شغّل watermark sweep أولاً"` to the existing `ResponsiveCollection`.
+### Scope / system intent
 
-No shared component implementation, shared CSS/token/breakpoint, second report, DB/RPC/service, query/cache, permission/RBAC/RLS, route, export/print, backend, workflow or business file changed.
+Only:
+- remove the Churn Risk `ResponsiveCollection.emptyState` bespoke wrapper;
+- pass the exact existing copy through `emptyTitle="لا توجد بيانات — شغّل watermark sweep أولاً"`;
+- consume the existing built-in compact passive shared `StatePanel kind="empty"` without changing shared component contracts.
 
-The result improves cross-report state grammar rather than beautifying one page in isolation: state anatomy is shared, domain wording remains caller-owned, and the existing collection orchestration remains authoritative.
+The page continues to own state precedence and business meaning. `ResponsiveCollection` continues to own generic loading/empty/ready orchestration and single-device ready-renderer selection.
 
-### Device / state / hierarchy — PASS at source level
+### State hierarchy — must remain exact
 
-Preserved exactly:
-- `tableLoading -> empty -> ready` precedence;
-- five `SkeletonCard height={44}` detail loading rows;
-- current two-card `MetricGrid columns={2}` / 160px summary loading contract;
-- empty mounts no ready renderer;
-- Desktop dense semantic table;
+Preserve:
+- `isBlocked -> listLoading -> empty -> ready`;
+- current BLOCKED renderer completely unchanged, including `بيانات الخطر محجوبة` and `snapshot_customer_risk يحتاج تشغيل ناجح أولاً`;
+- exactly five `SkeletonCard height={44}` detail loading rows;
+- empty mounts no Desktop table, Tablet cards or Mobile cards;
+- ready state mounts no empty/loading state.
+
+BLOCKED is deliberately outside the Design System convergence in this slice. It represents caller-owned trust/data semantics and must not be reinterpreted merely to make the page visually uniform.
+
+### Device / hierarchy acceptance
+
+Preserve:
+- Desktop dense semantic six-column table;
 - Tablet two-column `Card + KeyValueList` composition;
 - Mobile one-column `Card + KeyValueList` composition;
-- exactly one ready renderer mounted per device through `ResponsiveCollection`;
-- conditional parent column/card item and `—` fallback;
-- heatmap row behavior and ready-state density;
-- Select + ReportFilterBar and Trust/Freshness presentation.
+- exactly one ready renderer per device through `ResponsiveCollection`;
+- representative empty-state verification at 390 / 900 / 1440px with no ready-renderer leakage;
+- customer name/fallback identity, row order and all six facts;
+- long Arabic wrapping and LTR numeric/currency treatment;
+- TrustStateBadge / FreshnessIndicator placement and meaning.
 
-No responsive layout, data density or action hierarchy regression is visible in source.
+### Accessibility / interaction acceptance
 
-### Arabic / RTL / accessibility — PASS at source level
+The empty state remains passive:
+- no action slot;
+- no click handler;
+- no button/link/focus target;
+- no live announcement introduced for `kind="empty"`;
+- no new keyboard/touch interaction.
 
-- Exact Arabic copy is preserved: `لا توجد بيانات — شغّل watermark sweep أولاً`.
-- Shared empty state is passive and compact: no action slot, click handler, button/link/focus target or live announcement is introduced.
-- Long Arabic geography/parent wrapping remains unchanged.
-- Existing LTR numeric/currency/percentage facts remain unchanged.
-- No new fixed-width text, truncation or compact-device horizontal-overflow source is introduced.
+### Explicit exclusions
 
-### Functional isolation — PASS
+Do not change:
+- BLOCKED renderer/copy/trust meaning;
+- `RiskBadge`, `RecencyCell`, `RISK_CONFIG`, risk classification or category semantics;
+- KPI summary;
+- pie chart visibility/data/colors/geometry/tooltip/legend;
+- filter/date controls or SystemHealthBar;
+- hooks, queries, cache behavior, sorting, calculations, formatting truth;
+- permission/RBAC/RLS/routing/export/print/backend/business/workflow semantics;
+- shared `ResponsiveCollection`, `StatePanel`, `ChartPanel`, `MetricGrid`, `StatCard`, CSS, tokens or breakpoints;
+- any second report surface.
 
-Unchanged:
-- geography level labels and controlled selector values;
-- date/filter semantics;
-- hooks/query/cache behavior;
-- row ordering/facts/calculations;
-- revenue/customer/transaction/share formatting;
-- parent truth/fallback;
-- heatmap `maxRev`, opacity and zero-row treatment;
-- TrustStateBadge/FreshnessIndicator meaning;
-- summary KPI values/calculations;
-- all permission/backend/business/workflow semantics.
+If implementation requires any excluded shared or functional change, REPORT040 becomes `BLOCKED` rather than widening.
 
-There is no functional-semantic change hidden inside this UI convergence.
+## Focused evidence expectation
 
-## Focused test artifact assessment
+Update the existing `ChurnRiskPage.test.tsx` only as needed to protect the presentation risk:
+- exact empty copy;
+- shared `.ds-state-panel[data-state-kind="empty"]` anatomy;
+- compact/passive semantics;
+- BLOCKED higher priority than loading/empty/ready;
+- loading higher priority than empty/ready with exactly 5×44px skeletons;
+- no ready table/card renderer while empty at representative Mobile/Tablet/Desktop widths;
+- existing ready-state and chart/filter/business assertions remain intact.
 
-`GeographyPage.test.tsx` now protects the material design-system risks:
-- summary loading remains 2×160px;
-- detail loading remains 5×44px and precedes empty/ready;
-- shared `.ds-state-panel[data-state-kind="empty"]` appears through the collection contract;
-- exact Arabic copy and compact/passive semantics are asserted;
-- no action/live/focus target is present;
-- no ready table/card renderer mounts while empty at 390px, 900px or 1440px;
-- existing Mobile/Tablet/Desktop ready-state tests remain in place.
-
-Execution honesty remains mandatory: tests/build/lint were not run in an approved exact-head runtime. Evidence is `TESTS_AUTHORED_NOT_EXECUTED`; no Build/Test/Lint/Runtime/Visual/Preview/Release PASS is claimed.
+Under the current quota policy, authored tests may remain `TESTS_AUTHORED_NOT_EXECUTED` unless an approved execution environment actually runs them. No source review may be represented as build/test/runtime PASS.
 
 ## Peer-state synthesis / contradiction handling
 
 After forming the independent judgment:
 
-- **UI Production Engineer:** PR-carried owned state is fresh and aligned with the exact implementation boundary and evidence classification.
-- **Design QA:** fresh and independently `GREEN-DEV + SOURCE_REVIEW_PASS` on exact same PR HEAD `2877257b3f04b84c01a058a47f82c2cd6e0ccb59`; aligned.
-- **Development Integrator:** lifecycle-current through REPORT038 and appropriately waiting for exact-head Product Design closeout; no conflicting direction.
-- **Team Memory:** lifecycle-current through REPORT038; durable shared-system / functional-isolation invariants remain aligned. No direction change warrants a memory write.
-- **Decision Log / North Star / Component System / QA Guardrails / Device Strategy / Workstream:** aligned with shared state-family reuse, Arabic-first multi-device composition and strict presentation-only ownership.
-- **PR review threads:** none open or unresolved at review time.
+- **Team Memory:** current through REPORT039 and explicitly hands REPORT040 to Product Design for one smallest safe bounding; aligned.
+- **Development Integrator:** current through REPORT039 merge and likewise delegates REPORT040 bounding; aligned.
+- **UI Production Engineer:** implementation state is lifecycle-stale because it still records REPORT039 before merge; informative only, not contradictory.
+- **Design QA:** QA state is lifecycle-stale because its REPORT039 exact-head approval was consumed by integration; informative only, not contradictory.
+- **Previous Product Design state:** lifecycle-stale through REPORT039 exact-head review and superseded by this REPORT040 direction.
+- **Decision Log / North Star / Component System / Migration Matrix / Device Strategy / QA Guardrails:** aligned with shared state-family consolidation, deliberate device composition and strict presentation-only ownership.
+- **Open PRs targeting Development:** none at final recheck, so no competing implementation slice exists.
 
 Current contradiction classification: `NONE`.
 
 ## Repository actions this run
 
 - Completed the mandatory shared-memory bootstrap in the prescribed order.
-- Inspected issue #27, current Development HEAD, open PRs targeting Development, REPORT039 PR metadata/changed files/commits, current Geography source/test, shared `ResponsiveCollection` / `StatePanel`, and relevant architecture/migration/device/QA documents.
-- Independently reviewed exact PR #87 HEAD `2877257b3f04b84c01a058a47f82c2cd6e0ccb59`.
-- Confirmed PR #87 is the only active implementation PR targeting Development and remains bounded to 3 files.
-- Confirmed Development drift from the feature baseline is governance-only Design QA state before this Product Design write.
-- Did not modify Product code, peer specialist states, Team Memory, Decision Log or workstream scope.
+- Inspected issue #27 latest coordination events, exact Development HEAD and all open PRs targeting Development.
+- Inspected relevant Component System, Migration Matrix, QA Guardrails, Device Strategy and Component Decision Matrix documents.
+- Inspected representative remaining Reports source, including Churn Risk, Overview and Customer Re-engagement, plus current `ResponsiveCollection` / `StatePanel` contracts and focused Churn Risk tests.
+- Bounded exactly one implementation slice and updated `31_AGENT_TEAM_WORKSTREAM.md` in commit `739beedd30526959276064d4a85b6f9afa8c5c0c`.
+- Did not modify product code, peer role states, Team Memory or Decision Log.
 - Did not merge, touch `main`, deploy Vercel, modify preview branches, trigger/rerun GitHub Actions or use hosted CI.
 
 ### Cross-role handoff
-- **To:** Development Integrator.
-- **What changed:** Product Design independently reviewed PR #87 exact HEAD `2877257b3f04b84c01a058a47f82c2cd6e0ccb59` and records `PRODUCT DESIGN PASS — NO DESIGN-SYSTEM BLOCKER` for REPORT039.
-- **Preserve:** exact empty copy; `tableLoading -> empty -> ready` precedence; 5×44px detail loading and current 2×160px summary loading; passive compact shared empty renderer; unchanged Desktop/Tablet/Mobile ready renderers; one mounted ready renderer per device; conditional parent truth/fallback; Arabic wrapping; LTR facts; heatmap; Select/filters; Trust/Freshness; all excluded data/query/permission/export/backend/business/shared contracts.
-- **Need from you:** perform final integration revalidation against the unchanged PR HEAD: base/drift, 3-file scope, unresolved threads/reviews, functional isolation and normal merge gates. Merge REPORT039 only if all remain clean; any PR-head movement invalidates this exact-head acceptance and requires fresh review.
-- **Blocker level:** `NONE` from Product Design.
-- **Baseline:** feature baseline `3952b838160d885aad08f8a169882abe3c4562bf`; pre-state-write Development HEAD `d2bc67ddb319af5f2763bcc5bb56f6b5361b847d`; exact accepted PR #87 HEAD `2877257b3f04b84c01a058a47f82c2cd6e0ccb59`.
-- **Evidence:** `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/visual/preview/release PASS claimed.
+- **To:** UI Production Engineer; Design QA after implementation reaches a stable exact PR HEAD.
+- **What changed:** REPORT040 is now bounded and READY as the Churn Risk responsive-detail empty-state convergence only; no implementation PR existed at final recheck.
+- **Preserve:** exact empty copy; `isBlocked -> listLoading -> empty -> ready`; unchanged BLOCKED copy/meaning; 5×44px detail loading; dense six-column Desktop table; Tablet two-column and Mobile one-column cards; one ready renderer per device; customer-risk facts/fallbacks; Arabic wrapping; LTR facts; Trust/Freshness; KPI/chart/filter contracts; all excluded shared/data/query/permission/backend/business semantics.
+- **Need from you:** UI Production should start from the latest Development HEAD, implement only the bounded empty-state convergence, update focused tests, and open exactly one Draft PR targeting `design-system-v2-development`. If any shared-contract or functional-semantic widening is required, stop and mark the slice `BLOCKED`. Design QA should review only the future stable exact PR HEAD.
+- **Blocker level:** `NONE`.
+- **Baseline:** Product Design inspection baseline `d7ac8b8cf68a1cc4a15522c2f4fa0f7731197fa7`; workstream bounding commit `739beedd30526959276064d4a85b6f9afa8c5c0c`.
