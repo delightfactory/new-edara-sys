@@ -12,6 +12,7 @@ import ChartPanel from '@/components/patterns/ChartPanel'
 import MetricGrid from '@/components/patterns/MetricGrid'
 import Card from '@/components/patterns/Card'
 import KeyValueList from '@/components/patterns/KeyValueList'
+import StatePanel from '@/components/patterns/StatePanel'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 import { TrendingUp, TrendingDown, Package, BarChart3 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
@@ -163,7 +164,9 @@ export default function ProductPerformancePage() {
         )}
       >
         {tableLoading ? <SkeletonCard height={240} /> : chartData.length === 0 ? (
-          <div style={{ height: 240, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>لا توجد بيانات</div>
+          <div style={{ height: 240, display: 'grid', alignItems: 'center' }}>
+            <StatePanel kind="empty" title="لا توجد بيانات" compact />
+          </div>
         ) : (
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={chartData} margin={{ top: 4, left: -10, right: 4, bottom: 60 }}>
@@ -190,9 +193,7 @@ export default function ProductPerformancePage() {
               {[1, 2, 3, 4, 5].map(i => <SkeletonCard key={i} height={44} />)}
             </div>
           )}
-          emptyState={(
-            <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>لا توجد بيانات</div>
-          )}
+          emptyState={<StatePanel kind="empty" title="لا توجد بيانات" />}
           renderDesktop={desktopRows => (
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>

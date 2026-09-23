@@ -192,19 +192,25 @@ describe('Product Performance responsive detail collection', () => {
     expect(within(panel).queryByTestId('freshness-indicator')).toBeNull()
   })
 
-  it('preserves the exact 240px chart loading and empty states', () => {
+  it('preserves the exact 240px chart loading gate and converges empty presentation onto compact StatePanel', () => {
     mocks.useProductPerformanceTable.mockReturnValue({ data: rows, isLoading: true })
     const { rerender } = render(<ProductPerformancePage />)
 
     let panel = getChartPanel()
     expect(within(panel).getByTestId('skeleton-card').getAttribute('data-height')).toBe('240')
+    expect(panel.querySelector('.ds-state-panel')).toBeNull()
 
     mocks.useProductPerformanceTable.mockReturnValue({ data: [], isLoading: false })
     rerender(<ProductPerformancePage />)
 
     panel = getChartPanel()
-    const empty = within(panel).getByText('لا توجد بيانات')
-    expect(empty.style.height).toBe('240px')
+    const emptyCopy = within(panel).getByText('لا توجد بيانات')
+    const statePanel = emptyCopy.closest('.ds-state-panel') as HTMLElement
+    expect(statePanel).toBeTruthy()
+    expect(statePanel.getAttribute('data-state-kind')).toBe('empty')
+    expect(statePanel.classList.contains('ds-state-panel--compact')).toBe(true)
+    expect(statePanel.parentElement?.style.height).toBe('240px')
+    expect(statePanel.querySelector('.ds-state-panel__action')).toBeNull()
   })
 
   it('preserves the 240px responsive BarChart data, axes, grid, tooltip, and revenue-series contract', () => {
@@ -303,22 +309,36 @@ describe('Product Performance responsive detail collection', () => {
     expect(within(section).getByText(rows[0].product_name)).toBeTruthy()
   })
 
-  it('preserves the custom five-row loading state and exact empty copy without mounting any renderer', () => {
+  it('preserves five 44px detail loading rows before empty evaluation', () => {
     setViewport(390)
     mocks.useProductPerformanceTable.mockReturnValue({ data: [], isLoading: true })
-    const { rerender } = render(<ProductPerformancePage />)
+    render(<ProductPerformancePage />)
 
-    let section = getDetailSection()
-    expect(within(section).getAllByTestId('skeleton-card')).toHaveLength(5)
+    const section = getDetailSection()
+    const skeletons = within(section).getAllByTestId('skeleton-card')
+    expect(skeletons).toHaveLength(5)
+    skeletons.forEach(skeleton => expect(skeleton.getAttribute('data-height')).toBe('44'))
+    expect(section.querySelector('.ds-state-panel')).toBeNull()
     expect(section.querySelector('.ds-responsive-card-grid')).toBeNull()
     expect(within(section).queryByRole('table')).toBeNull()
+  })
 
+  it('uses one passive shared detail StatePanel on Mobile, Tablet, and Desktop without mounting ready renderers', () => {
     mocks.useProductPerformanceTable.mockReturnValue({ data: [], isLoading: false })
-    rerender(<ProductPerformancePage />)
+    render(<ProductPerformancePage />)
 
-    section = getDetailSection()
-    expect(within(section).getByText('لا توجد بيانات')).toBeTruthy()
-    expect(section.querySelector('.ds-responsive-card-grid')).toBeNull()
-    expect(within(section).queryByRole('table')).toBeNull()
+    for (const width of [390, 900, 1440]) {
+      setViewport(width)
+      const section = getDetailSection()
+      const collection = section.querySelector('.ds-responsive-collection[data-collection-state="empty"]') as HTMLElement
+      const statePanel = collection.querySelector('.ds-state-panel[data-state-kind="empty"]') as HTMLElement
+
+      expect(collection).toBeTruthy()
+      expect(statePanel).toBeTruthy()
+      expect(within(statePanel).getByText('لا توجد بيانات')).toBeTruthy()
+      expect(statePanel.querySelector('.ds-state-panel__action')).toBeNull()
+      expect(section.querySelector('.ds-responsive-card-grid')).toBeNull()
+      expect(within(section).queryByRole('table')).toBeNull()
+    }
   })
 })
