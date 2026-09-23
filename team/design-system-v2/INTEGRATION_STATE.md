@@ -2,54 +2,52 @@
 
 ## Reviewed baseline
 
-- Review date/time: `2026-09-23 06:05 Africa/Cairo`.
+- Review date/time: `2026-09-23 07:10 Africa/Cairo`.
 - Development branch: `design-system-v2-development`.
-- Development HEAD at final pre-merge validation: `41aebe3227d22a63965eb12a77daeb5b4f79d5c3`.
-- Completed slice: `DS2-REPORT-032 — Customer Re-engagement KPI summary shared metric convergence`.
-- Merged PR: `#80 — DS2-REPORT-032: converge Customer Re-engagement KPI summary`.
-- Feature baseline / original PR base SHA: `a8c608931773b0e4c0ac00c1b5a53e6c4be6dd13`.
-- Exact reviewed implementation HEAD: `2177d3ca687434a0185a5787639ee2138148d341`.
-- Squash merge commit: `e7088ed6d683b4cc714059cd7f3d07831f9485b5`.
+- Development HEAD at final pre-merge validation: `512c88a3ca1dd546663694b4f8630eca45868c8d`.
+- Completed slice: `DS2-REPORT-033 — Target Attainment individual-rep chart-panel convergence`.
+- Merged PR: `#81 — DS2-REPORT-033: converge Target Attainment chart panel`.
+- Feature baseline / original PR base SHA: `67430cfe6a6957d9266ef2f0a41008aba81af4b0`.
+- Exact reviewed implementation HEAD: `1d67d89e57c150542cea487e0cafc8d520d5c30a`.
+- Squash merge commit: `464adbfe86f9ff1e53d288babb9715a010346b15`.
 - Design QA: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` on the exact merged HEAD.
 - Evidence: `TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/visual/preview/release PASS is claimed.
-- Product Design boundary remained `READY — BOUNDED` and aligned with the implementation; no separate exact-head Product Design closeout is claimed for this integration.
-- Current integration disposition: `MERGED — REPORT032 DONE`.
-- Next single READY roadmap item: `DS2-REPORT-033 — Next bounded Reports metrics/charts/tables/responsive-composition convergence`.
-- Workstream advancement commit: `c1b54a3ecbcb72e35e6b40aab3098975f799c806`.
+- Product Design: exact-head `PASS — NO DESIGN-SYSTEM BLOCKER` on `1d67d89e57c150542cea487e0cafc8d520d5c30a`.
+- Current integration disposition: `MERGED — REPORT033 DONE`.
+- Next single READY roadmap item: `DS2-REPORT-034 — Next bounded Reports metrics/charts/tables/responsive-composition convergence`.
+- Workstream advancement commit: `b005df7c090b01fb211e3027c4843672de0000ee`.
 
 ## Integrator decision
 
-**MERGED.** PR #80 passed every explicit Development integration gate on exact HEAD `2177d3ca687434a0185a5787639ee2138148d341`.
+**MERGED.** PR #81 passed every explicit Development integration gate on exact HEAD `1d67d89e57c150542cea487e0cafc8d520d5c30a`.
 
 Validated immediately before integration:
 - base ref exactly `design-system-v2-development`;
-- PR HEAD remained exactly `2177d3ca687434a0185a5787639ee2138148d341` through Draft-to-Ready transition;
-- PR was mergeable;
+- PR HEAD remained exactly `1d67d89e57c150542cea487e0cafc8d520d5c30a` through Draft-to-Ready transition;
+- PR remained mergeable;
 - exact-head Design QA marker `AGENT-REVIEW: GREEN-DEV` with `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`;
-- no inline review threads or unresolved material review blocker;
-- no current role-state file recorded a `BLOCKING` contradiction for REPORT032;
-- no known source-visible build/type failure;
+- Product Design exact-head closeout was `PASS — NO DESIGN-SYSTEM BLOCKER` on the same SHA;
+- inline review-thread list was empty and no unresolved material blocker existed;
+- no current role-state file recorded a `BLOCKING` contradiction for REPORT033;
+- no known source-visible build/type failure existed;
 - absence of hosted CI/status checks was expected under the quota policy and no Actions were triggered or rerun;
-- changed-file scope exactly three files: `CustomerReengagementPage.tsx`, focused `CustomerReengagementPage.test.tsx`, and UI Production's owned state;
-- product diff is presentation-only: local KPI-grid/card presentation is replaced by existing shared `MetricGrid columns={3}` + `StatCard`;
-- exact five KPI order, labels/context, value sources/formatting, emoji identities, balance-sign semantics and passive behavior remain caller-owned and unchanged;
-- loading retains all five metric identities/context and only replaces value layers with skeletons;
+- changed-file scope was exactly three files: `TargetAttainmentPage.tsx`, focused `TargetAttainmentChartPanel.test.tsx`, and UI Production's owned state;
+- product diff was presentation-only: page-local analytical frame/header replaced by existing shared `ChartPanel` while chart visibility/title/description/Trust-Freshness and all Recharts semantics stayed caller-owned and unchanged;
 - no DB/RPC/service/query/cache/calculation/RBAC/RLS/permission/routing/validation/export/print/workflow/backend/business change;
-- no shared `MetricGrid`/`StatCard`/`Card` API/CSS/token/breakpoint widening or unexpected workflow/deployment-enabling change.
+- no shared `ChartPanel`/`Card`/`SectionHeader` API/CSS/token/breakpoint widening and no unexpected workflow/deployment-enabling change.
 
-Development advanced from feature base `a8c608931773b0e4c0ac00c1b5a53e6c4be6dd13` to pre-merge HEAD `41aebe3227d22a63965eb12a77daeb5b4f79d5c3` through the Design QA state commit only. That drift was governance-only and did not overlap product/test scope.
+Development advanced from feature base `67430cfe6a6957d9266ef2f0a41008aba81af4b0` to pre-merge HEAD `512c88a3ca1dd546663694b4f8630eca45868c8d` through exactly two governance-only commits: Design QA state and Product Design state. That drift did not overlap product/test scope and did not invalidate the exact-head approvals.
 
-PR #80 was transitioned from Draft to Ready without moving its exact HEAD and squash-merged with expected-head protection as `e7088ed6d683b4cc714059cd7f3d07831f9485b5`.
+PR #81 was transitioned from Draft to Ready without moving its exact HEAD and squash-merged with expected-head protection as `464adbfe86f9ff1e53d288babb9715a010346b15`.
 
 ## Integrated system result
 
-REPORT032 removes another page-local report metric mini-system while preserving domain truth at the report layer:
-- Customer Re-engagement now uses shared `MetricGrid columns={3}` + `StatCard` for its five KPI summary surfaces;
-- Desktop composes 3 + 2, Tablet 2 + 2 + 1, and Mobile one card per row through the existing shared contract;
-- semantic tones express existing urgency/credit meaning while calculations and balance-sign truth remain caller-owned;
-- five metric identities/context remain visible during summary loading with five value-level `aria-hidden` skeletons;
-- orphaned KPI-local presentation CSS was removed without broad style cleanup;
-- filters, query truth, customer collection/detail actions, export/print, permissions and business semantics remain untouched.
+REPORT033 removes another page-local analytical mini-system while preserving chart/domain truth at the report layer:
+- Target Attainment individual-rep chart now uses shared `ChartPanel -> Card + SectionHeader` for the analytical surface/header;
+- exact data-driven visibility, Arabic title/description and Trust/Freshness action inputs remain unchanged;
+- responsive chart width/height, vertical BarChart, data order, axes, tooltip, `ReferenceLine x={100}`, bar sizing/radius and `barColor` thresholds remain unchanged;
+- shared semantic heading, shrink-safe containment and Mobile header wrapping replace local frame/header styling;
+- header filters, KPI summary, detail ResponsiveCollection, calculations, hooks/queries, permissions, export/print and business/backend behavior remain untouched.
 
 No durable rule changed or was superseded, so `DECISION_LOG.md` remains unchanged.
 
@@ -57,14 +55,14 @@ No durable rule changed or was superseded, so `DECISION_LOG.md` remains unchange
 
 Exactly one dependency-safe roadmap item advanced to READY:
 
-`DS2-REPORT-033 — Next bounded Reports metrics/charts/tables/responsive-composition convergence`
+`DS2-REPORT-034 — Next bounded Reports metrics/charts/tables/responsive-composition convergence`
 
 Product Design Director owns the next action: inspect the exact latest Development baseline and bound one smallest dependency-safe presentation-only Reports/Analytics concern before UI Production starts product-code work. The broader North-Star roadmap remains explicit: remaining Reports debt, shared component-depth work, remaining Work/Field convergence, Settings/Admin and Global Dark/RTL/accessibility/legacy cleanup.
 
 ### Cross-role handoff
-- **To:** Product Design Director; then UI Production Engineer only after REPORT033 is bounded.
-- **What changed:** REPORT032 is integrated as squash merge `e7088ed6d683b4cc714059cd7f3d07831f9485b5`; Workstream marks REPORT032 DONE and exactly one next item, REPORT033, READY for Product Design bounding.
-- **Preserve:** exact Customer Re-engagement five-metric order/copy/value/sign/loading contract; shared `MetricGrid`/`StatCard` presentation-only ownership; all REPORT001-032 contracts; all analytics/query/calculation/permission/routing/export/print/backend/business semantics; full North-Star roadmap beyond Reports.
-- **Need from you:** Product Design should inspect the exact latest Development baseline and define one smallest dependency-safe REPORT033 concern with representative file/surface, acceptance boundary, exclusions and evidence expectations before implementation.
+- **To:** Product Design Director; then UI Production Engineer only after REPORT034 is bounded.
+- **What changed:** REPORT033 is integrated as squash merge `464adbfe86f9ff1e53d288babb9715a010346b15`; Workstream marks REPORT033 DONE and exactly one next item, REPORT034, READY for Product Design bounding.
+- **Preserve:** exact Target Attainment chart visibility/title/description/Trust-Freshness/Recharts semantics; shared `ChartPanel` presentation-only ownership; all REPORT001-033 contracts; all analytics/query/calculation/permission/routing/export/print/backend/business semantics; full North-Star roadmap beyond Reports.
+- **Need from you:** Product Design should inspect the exact latest Development baseline and define one smallest dependency-safe REPORT034 concern with representative file/surface, acceptance boundary, exclusions and evidence expectations before implementation.
 - **Blocker level:** `NONE`.
-- **Baseline:** product merge `e7088ed6d683b4cc714059cd7f3d07831f9485b5`; workstream advancement commit `c1b54a3ecbcb72e35e6b40aab3098975f799c806`.
+- **Baseline:** product merge `464adbfe86f9ff1e53d288babb9715a010346b15`; workstream advancement commit `b005df7c090b01fb211e3027c4843672de0000ee`.
