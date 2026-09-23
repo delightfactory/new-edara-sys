@@ -2,123 +2,122 @@
 
 ## Reviewed baseline
 
-- Review date/time: `2026-09-23 10:58 Africa/Cairo`.
+- Review date/time: `2026-09-23 12:06 Africa/Cairo`.
 - Authoritative branch: `design-system-v2-development`.
-- Exact Development HEAD immediately before this state write: `38898a578ad6fe62e9e98055431ac0a134a6e22d`.
-- Product UI is integrated through `DS2-REPORT-034` / PR #82 squash `7ba36015798df5d4aa615077adade862687a6f9c`.
-- Active slice: `DS2-REPORT-035 — Product Performance shared empty-state convergence`.
-- Active implementation PR: `#83 — DS2-REPORT-035: converge Product Performance empty states`.
-- Feature baseline / original PR base SHA: `20b1514e803d16cfaf93e80f5164578f3b758ada`.
-- Exact PR HEAD independently reviewed: `1b9870cb92fe660a527ca4e521c42fd538bb5d30`.
-- PR state at final pre-write recheck: `OPEN / DRAFT / mergeable=true`.
-- Design QA: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` on the same exact PR HEAD.
-- Evidence: `TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/visual/preview/release PASS is claimed.
-- Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER`.
+- Exact Development HEAD immediately before this state write: `1ca1a9924e8ca8a27a33d860bc5044c7a9bc1229`.
+- Product UI is integrated through `DS2-REPORT-035` / PR #83 squash `8d1aa7e4db89b8dfee7d9ce8c536bb4c160a40fb`.
+- Current single READY slice: `DS2-REPORT-036 — Rep Performance shared empty-state convergence`.
+- Selection baseline before Product Design Workstream write: `4e266d58f01cd0601534a9c43b52c082e60b3f9b`.
+- Workstream bounding commit: `1ca1a9924e8ca8a27a33d860bc5044c7a9bc1229`.
+- Representative surface: `src/pages/reports/RepPerformancePage.tsx` → comparison-chart empty branch + responsive detail-collection empty branch only.
+- Open implementation PRs targeting Development at selection/recheck: none.
 - Current blocker classification: `NONE`.
 
 ## Independent Product Design judgment
 
-**PASS — NO DESIGN-SYSTEM BLOCKER on exact PR HEAD `1b9870cb92fe660a527ca4e521c42fd538bb5d30`.**
+**REPORT036 is READY — BOUNDED.**
 
-I formed this judgment from the exact PR diff/source, shared `StatePanel` / `ResponsiveCollection` / `ChartPanel` contracts, V2 state CSS, device strategy and report migration grammar before comparing peer states.
+I formed this judgment from the exact latest Development source before comparing peer states. Rep Performance is already structurally aligned with V2 through shared `MetricGrid`, `ChartPanel`, `ResponsiveCollection`, `Card` and `KeyValueList`. The smallest remaining recurring inconsistency is that its chart empty branch and responsive detail empty branch still render page-local empty-state anatomy even though the existing shared `StatePanel` now owns that presentation responsibility and REPORT035 has already proven the pattern safely in the adjacent Product Performance report.
 
-The implementation remains correctly bounded to the two Product Performance empty-state renderers and improves system coherence rather than merely restyling the page:
+The correct next step is therefore not a page redesign and not a shared-contract expansion. It is a two-renderer presentation convergence onto existing `StatePanel kind="empty"` while preserving all caller-owned state precedence, chart/data truth, responsive ready renderers and business semantics.
 
-- the chart empty branch now consumes existing shared `StatePanel kind="empty"` with compact density while a neutral geometry-only wrapper preserves the existing 240px analytical-body footprint;
-- the product-detail empty branch now consumes the same shared state family as the single empty renderer inside `ResponsiveCollection` across Desktop, Tablet and Mobile;
-- exact visible Arabic copy remains `لا توجد بيانات` in both contexts;
-- loading precedence and ready-state composition remain caller-owned and unchanged;
-- no shared component/API/CSS/token/breakpoint contract was widened.
+## Bounded REPORT036 contract
 
-The chart wrapper is acceptable because it owns only the pre-existing geometry, not state typography/color/anatomy. The detail renderer's explicit `StatePanel` remains within the established shared state grammar and does not create a new page-local state language. No additional shared abstraction is justified by this slice.
+### Product/system intent
 
-## Product/system acceptance
+Replace only these two page-local Rep Performance empty renderers:
 
-### Shared-system fit — PASS
+1. `ChartPanel` body for `مقارنة المندوبين — أعلى 15` when `chartData.length === 0`.
+2. `ResponsiveCollection` `emptyState` for `تفصيل الأداء — جميع المندوبين` when `rows` are empty.
 
-- `StatePanel` already owns empty/error/permission/offline/sync/success state presentation while caller behavior remains external.
-- This slice removes two page-local empty mini-patterns instead of inventing new report-local styling.
-- `ResponsiveCollection` still owns device renderer orchestration only; data, order, loading and ready renderers remain caller-owned.
-- `ChartPanel` still owns neutral analytical frame/hierarchy only; visualization/data/state decisions remain with the report page.
+Both must consume the existing shared `StatePanel kind="empty"` without modifying the shared component.
 
-### Hierarchy / RTL / device composition — PASS at source level
+Exact visible Arabic copy remains:
 
-- Empty copy is explicit Arabic text and centered through the same shared state anatomy.
-- Chart empty geometry remains stable at 240px, avoiding vertical rhythm jump between loading/empty/ready analytical states.
-- Detail empty state is one renderer across Desktop/Tablet/Mobile; no Desktop table or Tablet/Mobile card tree mounts when empty.
-- Existing ready composition remains deliberate: dense seven-column Desktop table, two-column Tablet cards and one-column Mobile cards.
-- No new fixed-width control, ordinary horizontal-overflow source or accidental Tablet behavior was introduced.
+`لا توجد بيانات فى النطاق الزمني المحدد`
 
-### State / accessibility — PASS
+### Chart acceptance
 
-Preserved exact precedence:
-- chart: `tableLoading -> SkeletonCard height={240} -> empty -> ready BarChart`;
-- detail: `tableLoading -> five SkeletonCard height={44} rows -> empty -> ready device renderer`.
+- Preserve exact precedence: `tableLoading -> SkeletonCard height={300} -> empty -> ready BarChart`.
+- Empty presentation uses compact shared `StatePanel` inside a neutral geometry-only wrapper preserving the exact `300px` analytical-body footprint.
+- Preserve ready chart top-15 mapping/order and dynamic height `Math.max(chartData.length * 40, 200)`.
+- Preserve vertical layout, margins, Cartesian grid, axes, tooltip, revenue and returns series, existing colors/radii/maxBarSize, title/description and Trust/Freshness action behavior.
+- No chart calculation, data mapping or visualization semantics move into the Design System.
 
-Both empty states remain passive:
-- no action slot;
-- no click handler;
-- no focus target;
-- no alert role;
-- no live announcement for `kind="empty"`.
+### Detail acceptance
 
-The existing `StatePanel` section semantics and `data-state-kind="empty"` are sufficient for this bounded convergence.
+- Preserve exact precedence: `tableLoading -> five SkeletonCard height={44} rows -> empty -> ready device renderer`.
+- Empty presentation becomes one passive shared `StatePanel` inside the existing `ResponsiveCollection` for Desktop, Tablet and Mobile.
+- No Desktop table or Tablet/Mobile ready-card renderer mounts while empty.
+- Preserve dense seven-column Desktop table and existing Tablet/Mobile `Card + KeyValueList` detail composition, row order, ranking, revenue/returns/customer facts, branch context, return-rate thresholds, Arabic wrapping and LTR numeric treatment.
 
-### Functional isolation — PASS
+### Device / accessibility acceptance
 
-Unchanged/excluded:
-- page header, category control, `ReportFilterBar`, System Health and KPI `MetricGrid` / MetricCards;
-- Trust/Freshness;
-- chart data mapping/order, ResponsiveContainer height, BarChart geometry, axes, grid, tooltip, revenue series/color/margins;
-- product row ordering, seven displayed facts/fallbacks, return-rate thresholds and responsive breakpoints;
-- category RPC, hooks, queries/cache/calculations, permissions/RBAC/RLS, routes, export/print, backend and business semantics;
-- shared `StatePanel`, `ResponsiveCollection`, `ChartPanel`, Card/KeyValueList implementations/APIs, global CSS, tokens and breakpoints.
+- Desktop, Tablet and Mobile share the same passive detail empty anatomy.
+- Chart empty/loading footprint remains exactly 300px, avoiding analytical-panel rhythm shift.
+- No ordinary horizontal overflow source is introduced.
+- Empty states remain non-interactive: no action slot, click handler, focus target, alert role or live announcement.
+- Shared `StatePanel` semantics remain unchanged; no new color-only meaning.
 
-Exact PR changed-file scope remains three files only:
-- `src/pages/reports/ProductPerformancePage.tsx`;
-- `src/pages/reports/ProductPerformancePage.test.tsx`;
-- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`.
+### Focused test expectation
 
-### Test artifact / evidence — PASS with honest limitation
+Update/extend `src/pages/reports/RepPerformancePage.test.tsx` so it protects:
+- one 300px chart loading skeleton before empty evaluation;
+- chart empty `.ds-state-panel[data-state-kind="empty"]`, compact density, exact Arabic copy, 300px parent footprint and no action;
+- unchanged ready chart contract;
+- exactly five 44px detail loading skeletons with neither empty nor ready renderer mounted;
+- one passive shared StatePanel on Mobile/Tablet/Desktop when detail data are empty;
+- unchanged existing ready renderer/device/data coverage.
 
-Focused tests protect the material risks:
-- chart loading remains one 240px skeleton before empty evaluation;
-- chart empty branch uses `.ds-state-panel[data-state-kind="empty"]`, compact density, exact Arabic copy, 240px parent footprint and no action;
-- ready chart contract remains covered;
-- detail loading remains exactly five 44px skeletons with no empty/ready renderer;
-- detail empty branch uses one passive shared StatePanel across Mobile/Tablet/Desktop and mounts no ready table/card renderer;
-- existing ready device renderer coverage remains intact.
+Evidence must remain `TESTS_AUTHORED_NOT_EXECUTED` unless an approved runtime actually executes it.
 
-Evidence remains `TESTS_AUTHORED_NOT_EXECUTED`. No local/hosted CI, build, lint, runtime visual, Vercel preview or release PASS is claimed.
+## Explicit exclusions / stop rule
+
+Do not modify:
+- page header, `ReportFilterBar`, System Health or summary `MetricGrid` / report `MetricCard` contract;
+- chart data/calculations/order/geometry/series/Trust/Freshness beyond replacing the empty renderer;
+- detail ready table/card semantics, facts, thresholds or interactions;
+- hooks, queries/cache, calculations, permissions/RBAC/RLS, routing, export/print, backend/business/workflow semantics;
+- any other report page;
+- `StatePanel`, `ResponsiveCollection`, `ChartPanel`, shared CSS, tokens, breakpoints or other shared APIs.
+
+If implementation requires any excluded shared-contract or functional/business change, REPORT036 becomes `BLOCKED` rather than widening the PR.
+
+## System-coherence rationale
+
+This slice advances the North Star because it removes another local state mini-system while reusing a shared pattern already proven in a materially equivalent analytics context. `StatePanel` owns only shared state presentation/anatomy; loading decisions, empty-state precedence, chart truth, collection truth and business meaning remain caller-owned.
+
+The adjacent Product Performance implementation is the correct structural precedent: compact shared state inside a geometry-only fixed-height analytical wrapper, and a single shared passive detail empty renderer inside `ResponsiveCollection`. Rep Performance differs only in its preserved 300px chart loading footprint and exact Arabic copy, both of which remain page-owned.
+
+No reason exists to create a new state component, add a report-specific variant or widen shared CSS/API contracts.
 
 ## Peer-state synthesis / contradiction handling
 
 After forming the independent Product Design judgment:
 
-- **Design QA:** fresh and aligned; independently issued `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` on exact HEAD `1b9870cb92fe660a527ca4e521c42fd538bb5d30` with the same preservation boundary.
-- **UI Production Engineer:** PR-carried owned state is aligned with the bounded contract and honest evidence label.
-- **Development Integrator:** lifecycle-current through REPORT034 only; no competing REPORT035 blocker exists. Its next valid action is final integration revalidation after this Product Design closeout.
-- **Team Memory:** lifecycle-stale on REPORT035 bounding/review but its durable system invariants remain aligned; no overall design/system direction changed, so no Team Memory write is warranted from Product Design.
-- **Decision Log / North Star / component matrix / device strategy:** aligned with state-family consolidation, shared-system-before-local-invention, Arabic-first multi-device composition and strict presentation-only ownership.
-
-Development drift from the feature baseline is exactly one governance-only file: `team/design-system-v2/DESIGN_QA_STATE.md`; it does not overlap product/test scope and does not invalidate the exact-head review.
+- **Team Memory:** current through REPORT035 and explicitly hands REPORT036 to Product Design for one smallest bounded presentation concern. Its generic REPORT036 placeholder is now lifecycle-stale only because this run has bounded it; durable invariants remain aligned.
+- **UI Production Engineer:** lifecycle-current through REPORT035 only; no competing implementation or blocker exists. It must start REPORT036 only from the latest Development HEAD after this Design Director state write.
+- **Design QA:** lifecycle-current through REPORT035 only; no REPORT036 disposition exists and fresh exact-head review will be required after implementation.
+- **Development Integrator:** current through REPORT035 and explicitly handed REPORT036 to Product Design for bounding; aligned.
+- **Decision Log / North Star / Component Decision Matrix / Device Strategy:** aligned with shared state-family consolidation, shared-system-before-local-invention, Arabic-first responsive composition and strict presentation-only ownership.
+- **Open PRs targeting Development:** none at selection/recheck, so no competing slice exists.
 
 Current contradiction classification: `NONE`.
 
 ## Repository actions this run
 
 - Completed the mandatory shared-memory bootstrap in the prescribed order.
-- Inspected issue #27, exact Development HEAD, the single open PR targeting Development, exact PR base/head/commit history, changed files/patches and PR review conversation.
-- Independently inspected the exact feature source/tests plus shared StatePanel/ResponsiveCollection/ChartPanel, state CSS and relevant component/page/migration/device documents.
-- Confirmed PR #83 remained `OPEN / DRAFT`, exact HEAD unchanged at `1b9870cb92fe660a527ca4e521c42fd538bb5d30`, `mergeable=true`, with no inline material review thread.
-- Accepted the exact HEAD as `PASS — NO DESIGN-SYSTEM BLOCKER`.
-- Did not modify product code, Workstream, peer role states, Team Memory or Decision Log.
+- Inspected issue #27, exact latest Development HEAD and all open PRs targeting Development.
+- Inspected current Rep Performance source and focused tests, existing Product Performance REPORT035 implementation, shared `StatePanel`, `Card`, `SectionHeader`, component decision matrix and device strategy.
+- Independently selected Rep Performance's two local empty renderers as the smallest dependency-safe REPORT036 concern.
+- Updated `31_AGENT_TEAM_WORKSTREAM.md` to `DS2-REPORT-036 — Rep Performance shared empty-state convergence`, `READY — BOUNDED`, with scope, exclusions, device/state/accessibility acceptance, focused-test expectations and stop rule.
+- Did not modify product code, peer role states, Team Memory or Decision Log.
 - Did not merge, deploy, touch `main`, modify preview branches, trigger/rerun GitHub Actions or use hosted CI.
 
 ### Cross-role handoff
-- **To:** Development Integrator.
-- **What changed:** Product Design independently accepted PR #83 exact HEAD `1b9870cb92fe660a527ca4e521c42fd538bb5d30` as `PASS — NO DESIGN-SYSTEM BLOCKER`; Design QA is already GREEN-DEV on the same exact HEAD.
-- **Preserve:** exact `لا توجد بيانات` copy; compact chart StatePanel and 240px chart empty/loading footprint; five 44px detail loading skeletons; one passive detail empty renderer across devices; unchanged ready chart/table/card compositions; all query/calculation/trust/permission/export/print/backend/business semantics; unchanged shared APIs/CSS/tokens/breakpoints.
-- **Need from you:** final-revalidate unchanged PR head/base, current Development governance-only drift, review/thread state, changed-file scope, mergeability and functional isolation; integrate REPORT035 only if every normal gate remains clean. Any PR-head movement invalidates both current Product Design and QA exact-head acceptance.
+- **To:** UI Production Engineer; Design QA after a stable implementation PR exists.
+- **What changed:** REPORT036 is now bounded to Rep Performance's comparison-chart empty branch plus responsive detail empty branch, both converging onto existing shared `StatePanel kind="empty"` only.
+- **Preserve:** exact Arabic copy `لا توجد بيانات فى النطاق الزمني المحدد`; 300px chart loading/empty footprint; exact chart `loading -> empty -> ready` precedence and ready visualization contract; five 44px detail loading rows; one passive detail empty renderer across devices; unchanged Desktop/Tablet/Mobile ready composition; all query/calculation/trust/permission/export/print/backend/business semantics; unchanged shared APIs/CSS/tokens/breakpoints.
+- **Need from you:** UI Production should start from the latest Development HEAD, implement REPORT036 only, add/update focused tests, and open exactly one PR targeting `design-system-v2-development`. Any required excluded/shared/functional widening must be reported as `BLOCKED`, not absorbed. Design QA must independently review the future exact stable PR HEAD.
 - **Blocker level:** `NONE`.
-- **Baseline:** Development pre-state-write `38898a578ad6fe62e9e98055431ac0a134a6e22d`; exact accepted PR #83 HEAD `1b9870cb92fe660a527ca4e521c42fd538bb5d30`.
+- **Baseline:** Product Design selection baseline `4e266d58f01cd0601534a9c43b52c082e60b3f9b`; Workstream-bounded Development HEAD before this state write `1ca1a9924e8ca8a27a33d860bc5044c7a9bc1229`.
