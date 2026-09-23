@@ -2,114 +2,113 @@
 
 ## Reviewed baseline
 
-- Review date: `2026-09-23`.
+- Review date/time: `2026-09-23 05:46 Africa/Cairo`.
 - Development branch: `design-system-v2-development`.
-- Exact Development HEAD independently inspected before this state write: `552006603a85149d6a9c306736ab6df480f7e16b`.
-- Active slice: `DS2-REPORT-031 — Customer Health as-of-date field convergence`.
-- Representative surface: `src/pages/reports/CustomerHealthPage.tsx` → header as-of-date control only.
-- Active implementation PR: `#79 — DS2-REPORT-031: Customer Health as-of-date field convergence`.
-- Feature-branch base: `552006603a85149d6a9c306736ab6df480f7e16b` on `design-system-v2-development`.
-- Exact PR HEAD independently reviewed: `acc79751b2e24903a7d63842eb5b962e2ab19d0b`.
-- Changed-file scope: exactly 3 files — CustomerHealthPage, focused CustomerHealthPage test, and UI Production Engineer owned state.
+- Exact Development HEAD independently rechecked before this state write: `a8c608931773b0e4c0ac00c1b5a53e6c4be6dd13`.
+- Active slice: `DS2-REPORT-032 — Customer Re-engagement KPI summary shared metric convergence`.
+- Representative surface: `src/pages/reports/CustomerReengagementPage.tsx` → `KpiStrip` only.
+- Active implementation PR: `#80 — DS2-REPORT-032: converge Customer Re-engagement KPI summary`.
+- Feature-branch base: `a8c608931773b0e4c0ac00c1b5a53e6c4be6dd13` on `design-system-v2-development`.
+- Exact PR HEAD independently reviewed: `2177d3ca687434a0185a5787639ee2138148d341`.
+- Changed-file scope: exactly 3 files — CustomerReengagementPage, focused CustomerReengagementPage test, and UI Production Engineer owned state.
 - Current disposition: `AGENT-REVIEW: GREEN-DEV`.
 - Evidence: `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
 - Executed build/test/lint/runtime/visual/preview/release PASS: not claimed.
 
 ## Independent QA disposition
 
-**GREEN-DEV on exact PR HEAD `acc79751b2e24903a7d63842eb5b962e2ab19d0b`.**
+**GREEN-DEV on exact PR HEAD `2177d3ca687434a0185a5787639ee2138148d341`.**
 
-REPORT031 satisfies the bounded source-level scope, functional-isolation, shared-system reuse, Arabic-first accessibility and focused-test-artifact gates. The only product change is replacement of the Customer Health page-local `بتاريخ:` label + styled native date input with the existing shared `DateField`.
+REPORT032 satisfies the bounded source-level scope, functional-isolation, shared-system reuse, Arabic-first responsive-composition and focused-test-artifact gates. The product diff replaces only the page-local Customer Re-engagement KPI grid/card presentation with the existing shared `MetricGrid columns={3}` + `StatCard` grammar.
 
-No material blocker, known real/source-visible build/type failure or relevant peer contradiction was found. No DB/RPC/service/query/cache/calculation/RBAC/RLS/permission/route/validation/workflow/backend/business contract changed, and no shared component API/CSS/token/breakpoint contract was modified.
+No material blocker, known real/source-visible build/type failure or relevant peer contradiction was found. No DB/RPC/service/query/cache/calculation/RBAC/RLS/permission/route/validation/workflow/backend/business/export/print contract changed, and no shared component API/CSS/token/breakpoint contract was modified.
 
 ## Exact-head findings
 
 ### Scope / functional isolation — PASS
 
 Exact PR scope:
-- `src/pages/reports/CustomerHealthPage.tsx`
-- `src/pages/reports/CustomerHealthPage.test.tsx`
+- `src/pages/reports/CustomerReengagementPage.tsx`
+- `src/pages/reports/CustomerReengagementPage.test.tsx`
 - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
-The product diff adds the existing shared `DateField` import and replaces only the header-local date label/input block with:
-
-```tsx
-<DateField
-  label="بتاريخ:"
-  value={asOfDate}
-  max={new Date().toISOString().slice(0, 10)}
-  onChange={(event) => setAsOfDate(event.target.value)}
-/>
-```
+The product diff imports existing `MetricGrid` and `StatCard`, migrates only `KpiStrip`, and removes only the now-orphaned page-local KPI grid/card/icon/label/value/context/hover styling while retaining the value-skeleton rule still in use.
 
 Preserved exactly:
-- caller-owned `asOfDate` state;
-- current-day `max` constraint;
-- `setAsOfDate(event.target.value)` change propagation;
-- `useCustomerHealthSummary({ asOfDate })` query consumption;
-- Arabic visible label `بتاريخ:` and header placement;
-- existing three-KPI MetricGrid, report filters, chart/detail composition, System Health and all Desktop/Tablet/Mobile detail contracts;
-- existing blocked/loading/empty/trust/freshness behavior and long-content handling.
+- five-card order: `Champion Lost` → `تراجع عالي` → `متوسط خامد` → `إجمالي العملاء` → `صافي الأرصدة`;
+- labels, context/sublabels and emoji identities;
+- `champion_lost_count`, `declining_high_count`, `mid_lost_count`, `total_customers` and `total_outstanding` caller-owned data sources;
+- `FMT` / `fmtCur`, `Math.abs(total_outstanding)` and exact debt-vs-credit conditional copy;
+- summary loading semantics: all five metric identities/context remain mounted while only the five value layers become skeleton placeholders;
+- passive/static KPI behavior;
+- FilterBar/URL-synced filters, list/table/mobile-card/detail composition, Customer 360 permission/actions, export drawer, CSV/PDF/print paths and all downstream report behavior.
 
 No second report, shared component, shared style or functional/backend file was modified.
 
-### Shared-system / Arabic-first / accessibility fit — PASS at source level
+### Shared-system / semantic / Arabic-first fit — PASS at source level
 
-The migration removes page-local inline date-control styling and uses the existing V2 `DateField` → `Input` → `Field` anatomy without widening those contracts.
+The migration removes a page-local mini metric system and consumes the existing shared V2 grammar unchanged.
 
-The shared `Field` generates/uses the input id and binds the visible label through `htmlFor`, so `بتاريخ:` remains programmatically associated with the native date input even though this caller does not need to supply a page-local id or aria-label. Native `type="date"` keyboard/focus semantics remain owned by the browser/shared primitive.
+Semantic presentation maps existing meaning into the shared vocabulary without moving domain truth into the component:
+- Champion Lost → `danger`;
+- تراجع عالي → `warning`;
+- متوسط خامد → `warning`;
+- إجمالي العملاء → `info`;
+- صافي الأرصدة → `success` only when `total_outstanding < 0`, otherwise `info`.
 
-No fixed width, new bidi override, local replacement style or page-local mini design system is introduced. Header composition remains in the same action region; surrounding responsive report structures are untouched by the product diff.
+`MetricGrid columns={3}` provides the Product-Design-bounded composition through existing shared CSS: Desktop 3 + 2, Tablet 2 + 2 + 1, Mobile one column. The shared grid uses `min-width: 0` and `minmax(0, 1fr)` containment, so this change introduces no ordinary summary overflow. `Card`/`StatCard` remain system-owned surfaces rather than page-local variants.
+
+Arabic/English labels and contexts remain visible in the same business order. The KPI surfaces remain static information, not pseudo-controls; shared `StatCard` keeps its icon slot decorative via `aria-hidden`, so the emoji is not an accessible-name dependency. No keyboard/focus/touch behavior was removed because the migrated summary has no interactive controls.
 
 ### State / behavior preservation — PASS
 
-- Date value, max and change behavior are unchanged.
-- The summary hook still receives `asOfDate` through the same contract.
-- KPI, chart, table/card/drawer and report-state behavior are untouched.
-- No new destructive, permission, disabled/read-only, offline, validation or workflow behavior is introduced.
-- No route, query-cache, service, calculation or backend semantics changed.
+- Five metric identities/context remain visible during loading.
+- Exactly five value-level skeletons are rendered and marked `aria-hidden`.
+- Current debt/credit balance sign behavior and context/icon/tone branch remain caller-owned.
+- Existing empty/error/permission/export/list/detail states are outside the changed summary and untouched.
+- No new disabled/read-only/offline/destructive/validation/workflow state is introduced.
 
 ### Test Artifact Gate — PASS with non-executed evidence
 
-Focused `CustomerHealthPage.test.tsx` coverage protects the material migration risks, including:
-- shared `DateField` adoption and removal of the page-local native date-input markup;
-- Arabic `بتاريخ:` label contract;
-- native date semantics;
-- `asOfDate` value and current-day `max` preservation;
-- date-change propagation to `setAsOfDate` / continued query consumption;
-- existing metric-grid, loading, Desktop/Tablet/Mobile detail, blocked, empty and trust/footer coverage remains present.
+Focused `CustomerReengagementPage.test.tsx` coverage protects the material migration risks required by the bounded slice:
+- shared `[data-metric-grid][data-columns="3"]` adoption;
+- five shared StatCard surfaces in exact business order;
+- exact label/context/value/icon/tone contracts;
+- both positive-debt and negative-credit balance outcomes;
+- five value-level loading skeletons with metric identity/context retained;
+- removal of the legacy local KPI grid/card selectors from the rendered summary.
 
 Tests/build/lint were **not executed** in an approved exact-head project runtime. Evidence is `TESTS_AUTHORED_NOT_EXECUTED`. No Build/Test/Lint/Runtime/Visual/Preview/Release PASS is claimed.
 
 ## Peer-state comparison / contradiction handling
 
-This QA judgment was formed from the exact PR diff, exact-head product/test source and existing `DateField` / `Input` / `Field` contracts, then compared with peer state.
+This QA judgment was formed from the exact PR diff, exact-head page/test source and existing `MetricGrid` / `StatCard` / shared responsive CSS contracts first, then compared with peer state.
 
-- **Product Design Director:** fresh and aligned; REPORT031 is explicitly bounded to this Customer Health as-of-date control migration with the same preservation contract and exclusions.
-- **UI Production Engineer:** PR-carried owned-state update is fresh and aligned with REPORT031 and records `TESTS_AUTHORED_NOT_EXECUTED`.
-- **Development Integrator / previous Design QA state:** lifecycle-stale from the completed prior slice and contains no competing REPORT031 rule or blocker.
-- **Team Memory / Decision Log / North Star / Workstream:** aligned with shared-system reuse, Arabic-first multi-device composition and strict functional isolation.
-- **PR reviews/threads before QA disposition:** no material unresolved blocker was present.
+- **Product Design Director:** fresh and aligned; REPORT032 explicitly requires the same five-card order, `MetricGrid columns={3}`, unchanged `StatCard`, semantic tone mapping, value-level loading and strict exclusion boundary.
+- **UI Production Engineer:** PR-carried owned-state update is fresh and aligned, records exact bounded implementation intent and `TESTS_AUTHORED_NOT_EXECUTED` without claiming execution.
+- **Development Integrator:** lifecycle-current through REPORT031 and contains no competing REPORT032 rule or blocker.
+- **Previous Design QA state:** lifecycle-stale from REPORT031 and superseded by this exact-head review.
+- **Team Memory / Decision Log / North Star / Workstream:** aligned with shared-system-before-local-invention, semantic presentation, deliberate Mobile/Tablet/Desktop composition and strict functional isolation.
+- **PR review/comment threads before QA disposition:** empty; no material unresolved blocker or competing exact-head review was present.
 
-Current contradiction classification: **NONE** on exact HEAD `acc79751b2e24903a7d63842eb5b962e2ab19d0b`.
+Current contradiction classification: **NONE** on exact HEAD `2177d3ca687434a0185a5787639ee2138148d341`.
 
 ## Repository actions this run
 
 - Completed the mandatory shared-memory bootstrap in the prescribed order.
-- Inspected issue #27 and confirmed PR #79 as the single active implementation PR targeting Development.
-- Inspected exact PR metadata/head/base, all changed filenames, exact patches, Customer Health product/test source, existing V2 DateField/Input/Field contracts and PR review/comment threads.
-- Reconfirmed immediately before disposition that PR #79 remained on exact HEAD `acc79751b2e24903a7d63842eb5b962e2ab19d0b`, base `design-system-v2-development`, `mergeable=true`, with Development exactly at `552006603a85149d6a9c306736ab6df480f7e16b`.
-- Left `AGENT-REVIEW: GREEN-DEV` on PR #79 anchored to exact HEAD `acc79751b2e24903a7d63842eb5b962e2ab19d0b` with `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
+- Inspected issue #27 and confirmed PR #80 as the single active implementation PR targeting Development.
+- Inspected exact PR metadata/head/base, all changed filenames, exact patches, full current Customer Re-engagement source, focused test artifact, existing V2 `MetricGrid`, `StatCard`, `Card`/surface responsive CSS and PR review/comment state.
+- Reconfirmed immediately before disposition that PR #80 remained on exact HEAD `2177d3ca687434a0185a5787639ee2138148d341`, base `design-system-v2-development`, `mergeable=true`, with Development exactly at `a8c608931773b0e4c0ac00c1b5a53e6c4be6dd13`.
+- Left `AGENT-REVIEW: GREEN-DEV` on PR #80 anchored to exact HEAD `2177d3ca687434a0185a5787639ee2138148d341` with `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
 - Did not add an issue #27 note because no material blocker exists.
 - Updated only this owned Design QA state file; peer states, Team Memory and Decision Log were not modified.
 - Did not modify product code, merge, deploy, touch `main`, trigger/rerun GitHub Actions, use hosted CI or modify preview branches.
 
 ### Cross-role handoff
 - **To:** Product Design Director for independent exact-head acceptance; Development Integrator only after Product Design closeout.
-- **What changed:** Design QA independently reviewed PR #79 exact HEAD `acc79751b2e24903a7d63842eb5b962e2ab19d0b` and marked it `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
-- **Preserve:** exact `asOfDate` value/max/onChange/query semantics; Arabic `بتاريخ:` label association; existing header placement; three-KPI summary, report filters, chart/details, Desktop/Tablet/Mobile composition and all current state/trust behavior; unchanged shared DateField/Input/Field APIs/CSS/tokens/breakpoints; all query/calculation/permission/backend/business semantics.
+- **What changed:** Design QA independently reviewed PR #80 exact HEAD `2177d3ca687434a0185a5787639ee2138148d341` and marked it `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
+- **Preserve:** exact five metrics/order/copy/value sources/formatting/sign behavior/icons/tone mapping/loading; all filters/list/export/permission/query/business behavior; unchanged shared MetricGrid/StatCard/Card APIs/CSS/tokens/breakpoints.
 - **Need from you:** Product Design independently accepts or blocks this same exact HEAD. Integration may reconsider only if PR HEAD remains unchanged, Product Design accepts it, no fresh blocker appears and normal merge gates remain valid.
 - **Blocker level:** `NONE` from Design QA; Product Design exact-head acceptance remains pending.
-- **Baseline:** Development pre-state-write `552006603a85149d6a9c306736ab6df480f7e16b`; exact reviewed PR #79 HEAD `acc79751b2e24903a7d63842eb5b962e2ab19d0b`.
+- **Baseline:** Development pre-state-write `a8c608931773b0e4c0ac00c1b5a53e6c4be6dd13`; exact reviewed PR #80 HEAD `2177d3ca687434a0185a5787639ee2138148d341`.
 - **Evidence:** `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/visual/preview/release PASS claimed.
