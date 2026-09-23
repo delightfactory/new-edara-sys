@@ -71,8 +71,28 @@ vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children, width, height }: { children: ReactNode; width?: string | number; height?: string | number }) => (
     <div data-testid="responsive-container" data-width={String(width)} data-height={String(height)}>{children}</div>
   ),
-  AreaChart: ({ children }: { children: ReactNode }) => <div data-testid="area-chart">{children}</div>,
-  Area: () => null,
+  AreaChart: ({ children, data, margin }: { children: ReactNode; data: unknown; margin: unknown }) => (
+    <div data-testid="area-chart" data-chart-data={JSON.stringify(data)} data-margin={JSON.stringify(margin)}>{children}</div>
+  ),
+  Area: ({ type, dataKey, name, stroke, strokeWidth, fill, dot }: {
+    type: string
+    dataKey: string
+    name: string
+    stroke: string
+    strokeWidth: number
+    fill: string
+    dot: boolean
+  }) => (
+    <div
+      data-testid={`area-${dataKey}`}
+      data-type={type}
+      data-name={name}
+      data-stroke={stroke}
+      data-stroke-width={String(strokeWidth)}
+      data-fill={fill}
+      data-dot={String(dot)}
+    />
+  ),
   XAxis: () => null,
   YAxis: () => null,
   Tooltip: () => null,
@@ -96,6 +116,22 @@ const trustByComponent: Record<string, { status: string; last_completed_at: stri
   'fact_sales_daily_grain.revenue': { status: 'OK', last_completed_at: '2026-09-19T00:00:00Z', is_stale: false },
   'fact_sales_daily_grain.tax': { status: 'OK', last_completed_at: '2026-09-19T00:00:00Z', is_stale: false },
   'fact_sales_daily_grain.ar_creation': { status: 'OK', last_completed_at: '2026-09-19T00:00:00Z', is_stale: false },
+}
+
+function setViewport(width: number) {
+  Object.defineProperty(window, 'innerWidth', {
+    configurable: true,
+    writable: true,
+    value: width,
+  })
+}
+
+function getFirstPanel() {
+  return screen.getByRole('heading', { level: 2, name: 'تطور الإيراد اليومي' }).closest('.ds-chart-panel') as HTMLElement
+}
+
+function getSecondPanel() {
+  return screen.getByRole('heading', { level: 2, name: 'توزيع الإيرادات اليومي (إيراد + ضريبة)' }).closest('.ds-chart-panel') as HTMLElement
 }
 
 describe('Sales report composition', () => {
@@ -160,8 +196,8 @@ describe('Sales report composition', () => {
     expect(skeletons.map(skeleton => skeleton.getAttribute('data-height'))).toEqual(['160', '160', '160', '160'])
     expect(within(grid).queryAllByTestId('metric-card')).toHaveLength(0)
 
-    const firstPanel = screen.getByRole('heading', { level: 2, name: 'تطور الإيراد اليومي' }).closest('.ds-chart-panel') as HTMLElement
-    const secondPanel = screen.getByRole('heading', { level: 2, name: 'توزيع الإيرادات اليومي (إيراد + ضريبة)' }).closest('.ds-chart-panel') as HTMLElement
+    const firstPanel = getFirstPanel()
+    const secondPanel = getSecondPanel()
     expect(within(firstPanel).queryByTestId('skeleton-card')).toBeNull()
     expect(within(firstPanel).getByText('لا توجد بيانات في النطاق الزمني المحدد')).not.toBeNull()
     expect(within(secondPanel).queryByTestId('skeleton-card')).toBeNull()
@@ -171,10 +207,8 @@ describe('Sales report composition', () => {
   it('uses shared ChartPanel for both analytical sections while preserving the first panel contract', () => {
     const { container } = render(<SalesPage />)
 
-    const firstHeading = screen.getByRole('heading', { level: 2, name: 'تطور الإيراد اليومي' })
-    const secondHeading = screen.getByRole('heading', { level: 2, name: 'توزيع الإيرادات اليومي (إيراد + ضريبة)' })
-    const firstPanel = firstHeading.closest('.ds-chart-panel') as HTMLElement
-    const secondPanel = secondHeading.closest('.ds-chart-panel') as HTMLElement
+    const firstPanel = getFirstPanel()
+    const secondPanel = getSecondPanel()
 
     expect(firstPanel).not.toBeNull()
     expect(secondPanel).not.toBeNull()
@@ -190,7 +224,29 @@ describe('Sales report composition', () => {
     expect(within(secondPanel).queryByText('صافي إيراد + قيمة مرتجعات — مجمّع يومياً في قاعدة البيانات')).toBeNull()
   })
 
-  it('keeps the first chart blocked state without introducing blocked semantics into the second panel', () => {
+  it('uses one compact passive shared empty StatePanel with exact copy and 240px geometry at Mobile, Tablet, and Desktop widths', () => {
+    for (const width of [390, 900, 1440]) {
+      setViewport(width)
+      const view = render(<SalesPage />)
+      const firstPanel = getFirstPanel()
+      const emptyCopy = within(firstPanel).getByText('لا توجد بيانات في النطاق الزمني المحدد')
+      const statePanel = emptyCopy.closest('.ds-state-panel') as HTMLElement
+
+      expect(statePanel).not.toBeNull()
+      expect(statePanel.getAttribute('data-state-kind')).toBe('empty')
+      expect(statePanel.classList.contains('ds-state-panel--compact')).toBe(true)
+      expect(statePanel.parentElement?.style.height).toBe('240px')
+      expect(statePanel.parentElement?.style.width).toBe('')
+      expect(statePanel.querySelector('.ds-state-panel__action')).toBeNull()
+      expect(statePanel.getAttribute('aria-live')).toBeNull()
+      expect(statePanel.querySelector('button, a, input, select, textarea, [tabindex]:not([tabindex="-1"])')).toBeNull()
+      expect(within(firstPanel).queryByTestId('area-chart')).toBeNull()
+
+      view.unmount()
+    }
+  })
+
+  it('keeps the first chart blocked state first with exact copy and no empty/loading/ready renderer leakage', () => {
     mocks.useTrustForComponent.mockImplementation((_rows: unknown, component: string) => {
       if (component === 'fact_sales_daily_grain.revenue') {
         return { ...trustByComponent[component], status: 'BLOCKED' }
@@ -200,25 +256,77 @@ describe('Sales report composition', () => {
 
     render(<SalesPage />)
 
-    const firstPanel = screen.getByRole('heading', { level: 2, name: 'تطور الإيراد اليومي' }).closest('.ds-chart-panel') as HTMLElement
-    const secondPanel = screen.getByRole('heading', { level: 2, name: 'توزيع الإيرادات اليومي (إيراد + ضريبة)' }).closest('.ds-chart-panel') as HTMLElement
+    const firstPanel = getFirstPanel()
+    const secondPanel = getSecondPanel()
+    const blockedTitle = within(firstPanel).getByText('المخطط محجوب')
 
-    expect(within(firstPanel).getByText('المخطط محجوب')).not.toBeNull()
+    expect(blockedTitle.parentElement?.style.height).toBe('240px')
     expect(within(firstPanel).getByText('لا يمكن عرض بيانات الإيراد حتى اكتمال المطابقة المحاسبية')).not.toBeNull()
+    expect(firstPanel.querySelector('.ds-state-panel')).toBeNull()
+    expect(within(firstPanel).queryByTestId('skeleton-card')).toBeNull()
+    expect(within(firstPanel).queryByTestId('area-chart')).toBeNull()
     expect(within(secondPanel).queryByText('المخطط محجوب')).toBeNull()
     expect(within(secondPanel).getByTestId('bar-chart')).not.toBeNull()
   })
 
-  it('preserves the 240px first-chart loading body and the 200px second-chart loading body', () => {
+  it('preserves the 240px first-chart loading body ahead of empty/ready and the 200px second-chart loading body', () => {
     mocks.useSalesDailyTotals.mockReturnValue({ data: [], isLoading: true })
 
     render(<SalesPage />)
 
-    const firstPanel = screen.getByRole('heading', { level: 2, name: 'تطور الإيراد اليومي' }).closest('.ds-chart-panel') as HTMLElement
-    const secondPanel = screen.getByRole('heading', { level: 2, name: 'توزيع الإيرادات اليومي (إيراد + ضريبة)' }).closest('.ds-chart-panel') as HTMLElement
+    const firstPanel = getFirstPanel()
+    const secondPanel = getSecondPanel()
 
     expect(within(firstPanel).getByTestId('skeleton-card').getAttribute('data-height')).toBe('240')
+    expect(firstPanel.querySelector('.ds-state-panel')).toBeNull()
+    expect(within(firstPanel).queryByTestId('area-chart')).toBeNull()
     expect(within(secondPanel).getByTestId('skeleton-card').getAttribute('data-height')).toBe('200')
+  })
+
+  it('preserves the first chart data mapping, 240px container, margins and exact revenue/returns series contract', () => {
+    mocks.useSalesDailyTotals.mockReturnValue({
+      data: [{
+        sale_date: '2026-09-19',
+        net_revenue: 1250,
+        returns_value: 75,
+        tax_amount: 175,
+      }],
+      isLoading: false,
+    })
+
+    render(<SalesPage />)
+
+    const firstPanel = getFirstPanel()
+    const responsive = within(firstPanel).getByTestId('responsive-container')
+    const areaChart = within(firstPanel).getByTestId('area-chart')
+    const revenueArea = within(firstPanel).getByTestId('area-revenue')
+    const returnsArea = within(firstPanel).getByTestId('area-returns')
+
+    expect(firstPanel.querySelector('.ds-state-panel')).toBeNull()
+    expect(within(firstPanel).queryByTestId('skeleton-card')).toBeNull()
+    expect(responsive.getAttribute('data-width')).toBe('100%')
+    expect(responsive.getAttribute('data-height')).toBe('240')
+    expect(areaChart.getAttribute('data-margin')).toBe(JSON.stringify({ top: 4, left: -10, right: 4, bottom: 0 }))
+    expect(JSON.parse(areaChart.getAttribute('data-chart-data') ?? '[]')).toEqual([
+      { date: '2026-09-19', revenue: 1250, returns: 75, tax: 175 },
+    ])
+
+    expect(revenueArea.dataset).toMatchObject({
+      type: 'monotone',
+      name: 'الإيراد الصافي',
+      stroke: '#2563eb',
+      strokeWidth: '2',
+      fill: 'url(#revGrad)',
+      dot: 'false',
+    })
+    expect(returnsArea.dataset).toMatchObject({
+      type: 'monotone',
+      name: 'المرتجعات',
+      stroke: '#dc2626',
+      strokeWidth: '1.5',
+      fill: 'url(#retGrad)',
+      dot: 'false',
+    })
   })
 
   it('preserves the second chart data mapping, 200px container, margins and exact revenue/tax series contract', () => {
@@ -234,7 +342,7 @@ describe('Sales report composition', () => {
 
     render(<SalesPage />)
 
-    const secondPanel = screen.getByRole('heading', { level: 2, name: 'توزيع الإيرادات اليومي (إيراد + ضريبة)' }).closest('.ds-chart-panel') as HTMLElement
+    const secondPanel = getSecondPanel()
     const responsive = within(secondPanel).getByTestId('responsive-container')
     const barChart = within(secondPanel).getByTestId('bar-chart')
     const revenueBar = within(secondPanel).getByTestId('bar-revenue')

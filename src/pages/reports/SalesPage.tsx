@@ -6,6 +6,7 @@ import MetricGrid from '@/components/patterns/MetricGrid'
 import SkeletonCard from '@/components/reports/SkeletonCard'
 import SystemHealthBar from '@/components/reports/SystemHealthBar'
 import ChartPanel from '@/components/patterns/ChartPanel'
+import StatePanel from '@/components/patterns/StatePanel'
 import ReportFilterBar, { type DateRange } from '@/components/reports/ReportFilterBar'
 import TrustStateBadge from '@/components/reports/TrustStateBadge'
 import FreshnessIndicator from '@/components/reports/FreshnessIndicator'
@@ -118,7 +119,9 @@ export default function SalesPage() {
             <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>لا يمكن عرض بيانات الإيراد حتى اكتمال المطابقة المحاسبية</div>
           </div>
         ) : dailyLoading ? <SkeletonCard height={240} /> : chartData.length === 0 ? (
-          <div style={{ height: '240px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>لا توجد بيانات في النطاق الزمني المحدد</div>
+          <div style={{ height: 240, display: 'grid', alignItems: 'center' }}>
+            <StatePanel kind="empty" title="لا توجد بيانات في النطاق الزمني المحدد" compact />
+          </div>
         ) : (
           <ResponsiveContainer width="100%" height={240}>
             <AreaChart data={chartData} margin={{ top: 4, left: -10, right: 4, bottom: 0 }}>
