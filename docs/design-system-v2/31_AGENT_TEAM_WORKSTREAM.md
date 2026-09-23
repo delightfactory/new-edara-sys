@@ -38,12 +38,12 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-038`.
+Product UI is integrated through `DS2-REPORT-039`.
 
 Latest product integration:
-- PR: `#86 — DS2-REPORT-038: converge Receivables chart empty state`
-- Exact reviewed PR HEAD: `1055c5bb2394177e0a6ea55c4651567bbfb119e2`
-- Squash merge commit: `5325d99fcc3d047f1fc6aa3dac39a5423d9376e4`
+- PR: `#87 — DS2-REPORT-039: converge Geography detail empty state`
+- Exact reviewed PR HEAD: `2877257b3f04b84c01a058a47f82c2cd6e0ccb59`
+- Squash merge commit: `035558bb3e86026742d3658d7c1928ee75f09215`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design exact-head closeout: `PASS — NO DESIGN-SYSTEM BLOCKER`
 - Runtime/preview/release evidence: not claimed
@@ -84,49 +84,34 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - `DS2-REPORT-036 — Rep Performance shared empty-state convergence` — `DONE` — PR #84 — reviewed HEAD `3850c40095465528e317fcde675f427307e8e856` — merge `9c69d2103172c950dcdaf145bfade24e604b09fc` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-037 — Customer Health responsive-detail empty-state convergence` — `DONE` — PR #85 — reviewed HEAD `a20442ca930ef957bdf79a156145aeec2771f196` — merge `2af5917c0b370d1bd6aaa785ef248f6084e483d3` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-038 — Receivables chart empty-state convergence` — `DONE` — PR #86 — reviewed HEAD `1055c5bb2394177e0a6ea55c4651567bbfb119e2` — merge `5325d99fcc3d047f1fc6aa3dac39a5423d9376e4` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
+- `DS2-REPORT-039 — Geography responsive-detail empty-state convergence` — `DONE` — PR #87 — reviewed HEAD `2877257b3f04b84c01a058a47f82c2cd6e0ccb59` — merge `035558bb3e86026742d3658d7c1928ee75f09215` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 
-## REPORT038 system result
+## REPORT039 system result
 
-- Receivables AR chart empty state now consumes the existing shared passive compact `StatePanel kind="empty"` grammar instead of bespoke page-local empty text styling.
-- Exact visible copy remains `لا توجد بيانات تحصيل في هذه الفترة`.
-- Exact state precedence remains `isBlocked -> dailyLoading -> empty -> ready chart`; the existing BLOCKED renderer, copy, trust meaning and 260px geometry remain untouched.
-- Loading remains exactly one `SkeletonCard height={260}` before empty evaluation.
-- The page continues to own the fixed 260px analytical body geometry while shared `StatePanel` owns empty-state presentation anatomy.
-- Ready chart 260px container, margins, `date / receipts / refunds / net` mapping, three bar series, `ChartPanel` title/description and Trust/Freshness remain unchanged.
-- One passive empty renderer is used across Desktop, Tablet and Mobile; no ready chart tree mounts while empty.
+- Geography responsive detail empty state now consumes the existing `ResponsiveCollection.emptyTitle` contract, which renders the shared compact passive `StatePanel kind="empty"`, instead of a bespoke page-local empty block.
+- Exact visible copy remains `لا توجد بيانات — شغّل watermark sweep أولاً`.
+- Exact collection precedence remains `tableLoading -> empty -> ready`; loading stays exactly five `SkeletonCard height={44}` detail rows and the existing two-card 160px summary loading contract remains unchanged.
+- Empty state mounts no Desktop table, Tablet cards or Mobile cards; ready composition remains dense semantic Desktop table, Tablet two-column `Card + KeyValueList`, and Mobile one-column `Card + KeyValueList`, with exactly one ready renderer per device.
+- Parent truth/fallback, Arabic wrapping, LTR numeric facts, heatmap behavior, Select/filter contracts and Trust/Freshness remain caller-owned and unchanged.
 - No shared API/CSS/token/breakpoint widening and no query/cache/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business behavior change occurred.
 - Focused regression tests were authored but not executed under the hosted-CI quota policy.
 
 ## Current single READY slice
 
-### DS2-REPORT-039 — Geography responsive-detail empty-state convergence
-Status: `READY — BOUNDED`.
-Owner role for immediate next action: UI Production Engineer.
-Selection baseline: Development HEAD `2b11afacf0a5871859a53a461bc46db048d78dec` after REPORT038 integration/governance refresh.
-Representative surface: `src/pages/reports/GeographyPage.tsx` → `ResponsiveCollection` under `التوزيع حسب {LEVEL_LABELS[level]}` → empty branch only.
+### DS2-REPORT-040 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
+Status: `READY — PRODUCT DESIGN BOUNDING REQUIRED`.
+Owner role for immediate next action: Product Design Director.
+Selection baseline: REPORT039 product merge `035558bb3e86026742d3658d7c1928ee75f09215`; Product Design must inspect the exact latest Development HEAD before recording the bounded concern.
 
 System intent / acceptance:
-- remove only the bespoke page-local empty block and use the existing `ResponsiveCollection` shared empty-state contract by supplying `emptyTitle="لا توجد بيانات — شغّل watermark sweep أولاً"` and allowing its built-in passive compact `StatePanel kind="empty"` renderer to own anatomy;
-- preserve the exact Arabic empty copy `لا توجد بيانات — شغّل watermark sweep أولاً`;
-- preserve exact state precedence `tableLoading -> empty -> ready renderer` inside the collection and ensure no Desktop table / Tablet cards / Mobile cards mount while loading or empty;
-- preserve exactly five detail loading `SkeletonCard height={44}` rows and the existing summary loading behavior (`MetricGrid columns={2}` with two `SkeletonCard height={160}` when the page loading contract requires it);
-- preserve deliberate ready composition: dense semantic Desktop table; Tablet two-column `Card + KeyValueList`; Mobile one-column `Card + KeyValueList`; exactly one ready renderer per device;
-- preserve all geography facts/order/fallbacks, conditional parent column/item behavior by level, long Arabic wrapping, LTR numeric/currency/percentage presentation, heatmap row calculation/hover behavior, Select + ReportFilterBar contracts and Trust/Freshness;
-- empty remains passive: no action slot, click handler, focus target or live announcement; no new fixed-width/overflow source is introduced;
-- focused tests must protect the shared empty StatePanel anatomy/exact copy/compact-passive semantics, loading-before-empty precedence, no ready-renderer leakage in empty/loading, and retain existing Desktop/Tablet/Mobile ready-state assertions;
-- evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved runtime actually executes it.
+- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline;
+- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance/exclusion boundary;
+- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
+- preserve REPORT001-039 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
+- preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
+- do not turn REPORT040 into broad multi-page report beautification.
 
-Explicit exclusions:
-- summary KPI cards/metric calculations;
-- geography level/date/filter semantics and hook/query/cache behavior;
-- table/card ready renderers beyond assertions needed to prove no regression;
-- heatmap calculation or business meaning;
-- Trust/Freshness semantics;
-- shared `ResponsiveCollection`, `StatePanel`, `Card`, `KeyValueList`, `MetricGrid`, `Select`, CSS, token or breakpoint implementation/API changes;
-- permissions/RBAC/RLS/routing/export/print/backend/business/workflow changes;
-- every other Reports surface.
-
-Stop rule: if implementation requires shared-contract widening, data/query/filter/trust/business changes, or any alteration beyond this empty-state presentation concern, mark REPORT039 `BLOCKED` instead of widening the PR.
+Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
 
 ## Product migration roadmap
 
@@ -177,9 +162,9 @@ Open only when a real migrated screen proves the recurring gap:
 - further Work detail/feedback/management convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
 
 ### I. Reports / Analytics
-- `DS2-REPORT-001` through `DS2-REPORT-038` — `DONE`
-- `DS2-REPORT-039 — Geography responsive-detail empty-state convergence` — `READY — BOUNDED`
-- further Reports/Analytics convergence beyond REPORT039 — `BACKLOG` / each concern must be bounded separately
+- `DS2-REPORT-001` through `DS2-REPORT-039` — `DONE`
+- `DS2-REPORT-040 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — PRODUCT DESIGN BOUNDING REQUIRED`
+- further Reports/Analytics convergence beyond REPORT040 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
