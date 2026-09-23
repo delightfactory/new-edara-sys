@@ -38,17 +38,17 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-042`.
+Product UI is integrated through `DS2-REPORT-043`.
 
 Latest product integration:
-- PR: `#90 — DS2-REPORT-042: converge Sales revenue/tax chart empty state`
-- Exact reviewed PR HEAD: `dbabddc56743f2d448bbefbab4998b6f0b98e9bb`
-- Squash merge commit: `f7479859fe5c3233c3082bad2e97c0a004213f4c`
+- PR: `#91 — DS2-REPORT-043: converge Treasury semantic notice on AlertPanel`
+- Exact reviewed PR HEAD: `932457d5cf34c0eaa17404614f697bc5cf100eb3`
+- Squash merge commit: `c9e28bd2b98bbf65d4d916e114cebb6cdcb86bf4`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design exact-head closeout: `PASS — NO DESIGN-SYSTEM BLOCKER`
 - Runtime/preview/release evidence: not claimed
 
-The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, representative Customers/Sales/Inventory/Procurement/Finance/HR/Field/Work migrations, Reports route/date/filter convergence, shared `ChartPanel`, shared `MetricGrid`, shared `StatePanel`, shared V2 `Field` controls in representative report headers, and responsive detail-collection proofs using `ResponsiveCollection + Card + KeyValueList` while preserving dense Desktop comparison and caller-owned business truth.
+The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, representative Customers/Sales/Inventory/Procurement/Finance/HR/Field/Work migrations, Reports route/date/filter convergence, shared `ChartPanel`, shared `MetricGrid`, shared `StatePanel`, shared `AlertPanel`, shared V2 `Field` controls in representative report headers, and responsive detail-collection proofs using `ResponsiveCollection + Card + KeyValueList` while preserving dense Desktop comparison and caller-owned business truth.
 
 ## Completed slices
 
@@ -88,54 +88,33 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - `DS2-REPORT-040 — Churn Risk responsive-detail empty-state convergence` — `DONE` — PR #88 — reviewed HEAD `1e916d2d7e7ec9618d1ae7f6294fdfe00f08c6a1` — merge `23707a5465549613dfbde0a6637acee5fbc847e2` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-041 — Sales revenue-chart empty-state convergence` — `DONE` — PR #89 — reviewed HEAD `1f3195250b9d6f964389090efc3acd8c7bdcc85a` — merge `b334b07e93b7551839772d6a5cbbdb53089df06b` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-042 — Sales revenue/tax bar-chart empty-state convergence` — `DONE` — PR #90 — reviewed HEAD `dbabddc56743f2d448bbefbab4998b6f0b98e9bb` — merge `f7479859fe5c3233c3082bad2e97c0a004213f4c` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
+- `DS2-REPORT-043 — Treasury semantic-contract notice AlertPanel convergence` — `DONE` — PR #91 — reviewed HEAD `932457d5cf34c0eaa17404614f697bc5cf100eb3` — merge `c9e28bd2b98bbf65d4d916e114cebb6cdcb86bf4` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 
-## REPORT042 system result
+## REPORT043 system result
 
-- The second Sales analytical panel (`توزيع الإيرادات اليومي (إيراد + ضريبة)`) now uses the existing shared compact passive `StatePanel kind="empty"` for its no-data branch instead of allowing an empty Recharts canvas to act as an implicit empty state.
-- Exact visible copy remains `لا توجد بيانات في النطاق الزمني المحدد`.
-- Caller-owned analytical geometry remains 200px across loading, empty and ready states.
-- Exact caller-owned precedence is `dailyLoading -> empty -> ready`; no `isBlocked`, BLOCKED/FAILED, trust gate, TrustStateBadge or FreshnessIndicator semantics were added to this second chart.
-- Existing `SkeletonCard height={200}` remains unchanged.
-- Ready `ResponsiveContainer width="100%" height={200}` and BarChart data mapping, margin, axes/grid/tooltip, revenue/tax series, fills, radii and `maxBarSize` remain unchanged.
-- The first Sales chart remains completely unchanged, including its `isBlocked -> dailyLoading -> empty -> ready` precedence, BLOCKED copy/meaning, 240px geometry, Trust/Freshness and AreaChart contract.
-- No shared API/CSS/token/breakpoint widening and no query/cache/aggregation/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business/workflow behavior change occurred.
+- Treasury's static semantic-contract notice now uses the existing shared `AlertPanel tone="info"` instead of a page-local rgba/border/padding/emoji information surface.
+- The notice remains in the exact same hierarchy position immediately after the page header/filter area and before `SystemHealthBar`.
+- Disclosure meaning and exact technical literals remain unchanged: `مطابق لسجلات الخزينة`, `vault_transactions / custody_transactions`, and `net_cashflow`, with technical literals preserved as inline `<code>`.
+- The notice remains passive and static: no `announce`, action slot, click target, explicit focus target or live-region behavior was introduced; the shared default icon remains decorative/aria-hidden.
+- Treasury chart precedence `isBlocked -> dailyLoading -> empty -> ready`, 280px analytical geometry, blocked/empty/ready renderers, Recharts contract, Trust/Freshness action area, KPI `MetricGrid` / `MetricCard`, filters and `SystemHealthBar` remain unchanged.
+- No shared `AlertPanel` API/CSS/token/breakpoint widening and no query/cache/aggregation/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business/workflow behavior change occurred.
 - Focused regression tests were authored but not executed under the hosted-CI quota policy.
 
 ## Current single READY slice
 
-### DS2-REPORT-043 — Treasury semantic-contract notice AlertPanel convergence
-Status: `READY — BOUNDED`.
-Owner role for immediate next action: UI Production Engineer.
+### DS2-REPORT-044 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
+Status: `READY — UNBOUNDED`.
+Owner role for immediate next action: Product Design Director.
 
-Representative surface:
-- `src/pages/reports/TreasuryPage.tsx` → the static semantic-contract information notice immediately below the page header and above `SystemHealthBar`.
+Intent:
+- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline before implementation;
+- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance/exclusion boundary;
+- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
+- preserve REPORT001-043 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
+- preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
+- do not turn REPORT044 into broad multi-page report beautification.
 
-System-pattern intent:
-- retire the page-local info surface (custom rgba background/border/radius/padding + emoji icon) onto the existing shared `AlertPanel` information grammar;
-- use the existing `AlertPanel` contract unchanged, with `tone="info"`, static/non-live semantics, and its default decorative information icon unless implementation evidence requires preserving a supplied icon;
-- keep Treasury/report truth and explanatory copy caller-owned; `AlertPanel` owns presentation/accessibility anatomy only;
-- advance the established shared feedback grammar rather than creating another report-local notice style.
-
-Acceptance boundary:
-- preserve the notice in the exact same information hierarchy position, immediately after the header/filter area and before `SystemHealthBar`;
-- preserve the full visible disclosure meaning and exact technical literals: `مطابق لسجلات الخزينة`, `vault_transactions / custody_transactions`, and `net_cashflow`;
-- preserve inline code treatment for the technical literals; no business wording, trust definition or data-source meaning may be rewritten;
-- Mobile 390, Tablet 900 and Desktop 1440 must wrap Arabic/Latin/code content without ordinary horizontal overflow, clipping or truncation;
-- the notice remains passive and static: no action slot, no click target, no focus target, and no live-region announcement (`announce` remains omitted/false);
-- the shared default icon remains decorative/aria-hidden; the text itself carries the meaning;
-- focused Treasury tests must protect shared `AlertPanel` anatomy/tone, exact disclosure content, passive semantics and preservation of surrounding report contracts; evidence must be honestly labeled under `33_TEST_AND_VALIDATION_POLICY.md`.
-
-Explicit exclusions:
-- do not change the Treasury chart `isBlocked -> dailyLoading -> empty -> ready` state machine, its current blocked/empty renderers, 280px geometry, Recharts mapping/tooltip/series/colors, or Trust/Freshness action area;
-- do not change Treasury KPI `MetricGrid` / `MetricCard`, page header/filter composition, `SystemHealthBar`, hooks, queries, calculations or trust resolution;
-- do not modify `AlertPanel` API, shared CSS/tokens/breakpoints, or migrate other notices/pages in this slice;
-- no query/cache/aggregation/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business/workflow semantics may change.
-
-Why this slice now:
-- REPORT035-042 proved the shared state family repeatedly; the smallest next safe system gap visible on the current baseline is a report-local semantic information notice that exactly matches the already-established `AlertPanel` responsibility;
-- this broadens Reports adoption of shared feedback grammar without opening a multi-page cleanup or inventing a new component contract.
-
-Implementation is authorized only for this bounded concern from the exact latest Development HEAD. Any need to alter Treasury trust/business wording, chart state semantics, or shared `AlertPanel` contracts makes the slice `BLOCKED` pending Product Design review.
+Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
 
 ## Product migration roadmap
 
@@ -186,9 +165,9 @@ Open only when a real migrated screen proves the recurring gap:
 - further Work detail/feedback/management convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
 
 ### I. Reports / Analytics
-- `DS2-REPORT-001` through `DS2-REPORT-042` — `DONE`
-- `DS2-REPORT-043 — Treasury semantic-contract notice AlertPanel convergence` — `READY — BOUNDED`
-- further Reports/Analytics convergence beyond REPORT043 — `BACKLOG` / each concern must be bounded separately
+- `DS2-REPORT-001` through `DS2-REPORT-043` — `DONE`
+- `DS2-REPORT-044 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — UNBOUNDED`
+- further Reports/Analytics convergence beyond REPORT044 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
