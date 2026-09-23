@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import CustomerHealthPage from './CustomerHealthPage'
 
 const mocks = vi.hoisted(() => ({
@@ -100,6 +100,24 @@ describe('Customer Health responsive detail collection', () => {
       data: { stats, rows },
       isLoading: false,
     })
+  })
+
+  it('uses shared DateField anatomy while preserving the native date contract and hook propagation', () => {
+    render(<CustomerHealthPage />)
+
+    const dateInput = screen.getByLabelText('بتاريخ:') as HTMLInputElement
+    expect(dateInput.type).toBe('date')
+    expect(dateInput.value).toBe(dateInput.max)
+    expect(dateInput.max).not.toBe('')
+    expect(dateInput.classList.contains('form-input')).toBe(true)
+    expect(dateInput.closest('.ds-field')).not.toBeNull()
+
+    const preservedMax = dateInput.max
+    fireEvent.change(dateInput, { target: { value: '2026-09-18' } })
+
+    expect(dateInput.value).toBe('2026-09-18')
+    expect(dateInput.max).toBe(preservedMax)
+    expect(mocks.useCustomerHealthSummary).toHaveBeenLastCalledWith({ asOfDate: '2026-09-18' })
   })
 
   it('uses the shared three-column MetricGrid for the summary and preserves exact card order', () => {
