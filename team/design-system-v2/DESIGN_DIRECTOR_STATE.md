@@ -2,105 +2,110 @@
 
 ## Reviewed baseline
 
-- Review date/time: `2026-09-23 08:58 Africa/Cairo`.
+- Review date/time: `2026-09-23 10:00 Africa/Cairo`.
 - Authoritative branch: `design-system-v2-development`.
-- Exact Development HEAD immediately before this state write: `3e5ef9083da861f634e0f5ded56fdde409bc737d`.
-- Development drift from the REPORT034 feature baseline is governance-only: `3e5ef908...` changes only `team/design-system-v2/DESIGN_QA_STATE.md` over parent `50cc90adb7b93a33061b83cb32f3c43961942704`.
-- Active slice: `DS2-REPORT-034 — Churn Risk KPI summary shared metric convergence`.
-- Active PR: `#82 — DS2-REPORT-034: converge Churn Risk KPI summary`.
-- Feature baseline: `50cc90adb7b93a33061b83cb32f3c43961942704`.
-- Exact PR HEAD independently reviewed: `8bec856b57aff490092c68b948fdac52078c2bf2`.
-- PR state at review: `OPEN / DRAFT`, base `design-system-v2-development`, `mergeable=true`; review threads empty.
-- Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER` on exact HEAD `8bec856b57aff490092c68b948fdac52078c2bf2`.
-- Design QA on the same exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
-- Evidence remains `TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/visual/preview/release PASS is claimed.
+- Exact Development HEAD at selection start: `8b6353d187a490c16b56d209554f9ff51683380f`.
+- Exact Development HEAD immediately before this state write: `4cd736fd13568b0129a7330a4407946c0b79c33a` (REPORT035 Workstream bounding only).
+- Product UI is integrated through `DS2-REPORT-034` / PR #82 squash `7ba36015798df5d4aa615077adade862687a6f9c`.
+- Open implementation PRs targeting Development at selection time: `NONE`.
+- Active slice: `DS2-REPORT-035 — Product Performance shared empty-state convergence`.
+- Slice status: `READY — BOUNDED`.
+- Representative surface: `src/pages/reports/ProductPerformancePage.tsx` only.
+- Current blocker classification: `NONE`.
 
 ## Independent Product Design judgment
 
-**PASS — REPORT034 implements the bounded system intent cleanly and should proceed to Integration revalidation without scope expansion.**
+**READY — BOUNDED.** The smallest dependency-safe Reports concern that now gives useful system depth is the remaining page-local empty-state anatomy inside Product Performance, not another metric/card restyle.
 
-I independently reviewed the exact PR source/diff and current shared `MetricGrid`, `StatCard` and surface-responsive contracts before comparing peer states. The implementation removes the remaining Churn Risk page-local KPI grid/card mini-system and consumes the established shared metric grammar without moving customer-risk truth into the Design System.
+I formed this judgment from the exact current Development source before comparing peer states. Product Performance is already substantially converged: the KPI summary uses shared `MetricGrid`, the analytical surface uses shared `ChartPanel`, and the product-detail section uses shared `ResponsiveCollection + Card + KeyValueList` with a deliberate Desktop/Tablet/Mobile composition. The remaining inconsistency is that both the chart empty branch and the responsive detail empty branch still render bespoke inline `لا توجد بيانات` blocks instead of the existing shared `StatePanel` state grammar.
 
-The result is directionally correct for the North Star: one calmer, reusable KPI hierarchy replaces arbitrary page-local card borders/value colors; visible category labels remain the primary identity; semantic tone metadata uses only the shared vocabulary; and the same shared responsive composition now governs Desktop, Tablet and Mobile.
+This is a stronger next proof than broad page beautification: it exercises the same shared empty-state component in two analytical contexts on one page — a constrained chart body and a device-orchestrated detail collection — while leaving data truth, loading precedence, visualization semantics and responsive renderers entirely caller-owned.
 
-No shared-contract widening is justified or needed. In particular, `MetricGrid columns={3}` is the correct five-metric composition rather than inventing a five-column mode. The current `StatCard` tone contract does not need to be widened merely to recreate the removed arbitrary per-category coloration; the text labels carry category identity and the shared system retains semantic metadata without making color the sole signal.
+No shared-contract widening is justified. `StatePanel` already owns empty-state presentation, supports compact density, remains passive by default, exposes `data-state-kind`, and has shrink-safe shared styling. The chart may retain a neutral local geometry wrapper solely to preserve the existing 240px analytical-body footprint; state typography/color/anatomy must come from `StatePanel`, not another local mini-system.
 
-## Exact-head design acceptance
+## Exact bounded contract
 
-### System fit / hierarchy — PASS
+### In scope
 
-Exact metric order remains:
-1. `VIP`
-2. `مخلص`
-3. `متفاعل`
-4. `معرض للخطر`
-5. `خامد`
+Only two empty renderers in `src/pages/reports/ProductPerformancePage.tsx`:
 
-Exact caller-owned values remain mapped from:
-- `stats.vip`
-- `stats.loyal`
-- `stats.engaged`
-- `stats.at_risk`
-- `stats.dormant`
+1. `ChartPanel` titled `أعلى 15 منتجاً بالإيراد` when `chartData.length === 0`.
+   - Replace the bespoke centered empty `<div>` with existing shared `StatePanel kind="empty"` using compact density.
+   - Preserve the exact visible copy: `لا توجد بيانات`.
+   - Preserve the exact 240px chart empty-state footprint.
 
-Existing `FMT.format(...)` integer formatting and `—` fallback are preserved. The local key-to-stat mapping remains page-owned.
+2. `ResponsiveCollection.emptyState` under `تفاصيل المنتجات — أعلى 50 حسب الإيراد`.
+   - Replace the bespoke inline empty block with existing shared `StatePanel kind="empty"`.
+   - Preserve the exact visible copy: `لا توجد بيانات`.
+   - Keep it as the single empty renderer for Desktop, Tablet and Mobile; no table/card renderer may mount when rows are empty.
 
-Semantic tone mapping matches the bounded direction exactly:
-- `VIP` → `neutral`
-- `مخلص` → `success`
-- `متفاعل` → `info`
-- `معرض للخطر` → `warning`
-- `خامد` → `danger`
+### State preservation
 
-The summary now uses existing `MetricGrid columns={3}` + passive `StatCard` only. No page-specific StatCard variant, arbitrary color prop or new visual primitive was introduced.
+Preserve exact precedence:
+- chart: `tableLoading -> SkeletonCard height={240} -> empty -> ready BarChart`;
+- detail: `tableLoading -> five SkeletonCard height={44} rows -> empty -> ready device renderer`.
 
-### Device / Arabic / accessibility — PASS at source level
+Ready-state chart data/order, 240px `ResponsiveContainer`, BarChart geometry, axes, tooltip, grid, revenue series, color and margins are unchanged.
 
-The unchanged shared grid contract provides:
-- Desktop `>=1025px`: `3 + 2`;
-- Tablet `769–1024px`: `2 + 2 + 1`;
-- Mobile `<=768px`: one-column stack.
+Ready-state detail ordering, Desktop seven-column semantic table, Tablet two-column cards, Mobile one-column cards, all seven facts/fallbacks, return-rate thresholds, Arabic wrapping and LTR numeric presentation are unchanged.
 
-Shared `minmax(0, 1fr)` / `min-width: 0` containment avoids introducing ordinary horizontal overflow. Arabic labels remain text-visible and cards remain passive/non-interactive; no new click/focus/hover-only pseudo-control, ARIA role or heading level was introduced.
+### Device / accessibility acceptance
 
-### State preservation — PASS
+- Desktop/Tablet/Mobile receive the same shared empty-state anatomy and exact Arabic copy.
+- No new ordinary horizontal overflow, fixed-width control or duplicate mounted interaction tree.
+- Empty state remains passive: no click handler, focus target, action, alert role or live announcement.
+- Existing `StatePanel` semantic section and `data-state-kind="empty"` are sufficient; no shared API/CSS change.
+- Chart geometry remains stable at 240px in the empty branch so surrounding analytical rhythm does not jump.
 
-- Exact `statsLoading` gate is unchanged.
-- Loading renders exactly five `SkeletonCard height={120}` placeholders inside the same shared MetricGrid.
-- Ready state renders five StatCards and no loading cards.
-- Header filters/date, System Health, pie ChartPanel/Trust-Freshness and customer-detail BLOCKED/loading/empty/ready precedence remain untouched.
+### Explicit exclusions
 
-### Functional isolation / scope — PASS
+Do not modify:
+- page header, category native `<select>`, `ReportFilterBar`, System Health;
+- KPI `MetricGrid` / MetricCards;
+- TrustStateBadge / FreshnessIndicator;
+- chart data mapping, BarChart/axes/grid/tooltip/series/colors/margins or ready-state geometry;
+- product-detail table/card facts, row order, return-rate thresholds or responsive breakpoints;
+- category Supabase RPC, hooks, query/cache/calculation semantics, permissions/RBAC/RLS, routing, export/print, backend or business behavior;
+- shared `StatePanel`, `ResponsiveCollection`, `ChartPanel`, Card/KeyValueList implementations/APIs, global CSS, tokens or breakpoints;
+- every other report page.
 
-Changed scope is exactly the bounded page summary, focused regression test, and UI Production's owned state. No DB/RPC/service/query/cache/calculation/RBAC/RLS/permission/route/validation/workflow/export/print/backend/business change is present. No shared `MetricGrid`, `StatCard`, Card/Status API, CSS, token or breakpoint file changed.
+### Test artifact expectations
 
-Focused tests cover the material migration risks: shared grid adoption, exact five-card order, tone mapping, formatted values/fallback, and 5×120px loading behavior. Evidence is honestly `TESTS_AUTHORED_NOT_EXECUTED`.
+Focused source tests must prove:
+- chart empty branch consumes `.ds-state-panel[data-state-kind="empty"]`, preserves exact `لا توجد بيانات`, compact density and the 240px analytical-body footprint;
+- detail `ResponsiveCollection` empty branch consumes `.ds-state-panel[data-state-kind="empty"]`, preserves the same copy, and mounts neither table nor responsive cards on Mobile/Tablet/Desktop;
+- chart loading still renders exactly one 240px SkeletonCard before empty-state evaluation;
+- detail loading still renders exactly five 44px SkeletonCards and no empty/ready renderer;
+- ready chart and device-specific detail renderers remain unchanged.
+
+Evidence must remain honestly labeled `TESTS_AUTHORED_NOT_EXECUTED` unless an approved exact-head runtime is actually executed. Hosted CI remains forbidden.
 
 ## Peer-state synthesis / contradiction handling
 
 After forming the independent Product Design judgment:
 
-- **Design QA:** fresh and aligned on exact PR HEAD `8bec856b57aff490092c68b948fdac52078c2bf2`; `GREEN-DEV + SOURCE_REVIEW_PASS`, no blocker.
-- **UI Production Engineer:** Development copy of its state is lifecycle-stale from REPORT033, but the PR-carried owned-state update and implementation evidence are aligned with REPORT034. No conflicting rule/blocker.
-- **Development Integrator:** lifecycle-current through REPORT033 and waiting for fresh REPORT034 gates; no conflicting blocker.
-- **Team Memory:** lifecycle-stale through REPORT033 but its durable shared-system/functional-isolation/evidence invariants remain aligned.
-- **Decision Log / North Star / component matrix / device strategy / Workstream:** aligned with semantic shared-system reuse, Arabic-first multi-device composition and strict caller-owned business truth.
+- **Development Integrator:** current through REPORT034, explicitly hands REPORT035 to Product Design for one smallest bounded concern; aligned.
+- **Team Memory:** current through REPORT034 and still describes REPORT035 as an unbounded placeholder; lifecycle-stale after this Product Design bounding, but its durable direction/invariants are fully aligned. No need for a Team Memory write because overall system direction did not change.
+- **UI Production Engineer:** lifecycle-stale from REPORT034; no active competing PR or REPORT035 implementation exists.
+- **Design QA:** lifecycle-stale from REPORT034; no REPORT035 approval is expected before implementation.
+- **Decision Log / North Star / component matrix / device strategy:** aligned with shared-system-before-local-invention, state-family consolidation, Arabic-first multi-device composition and strict presentation-only ownership.
 
 Current contradiction classification: `NONE`.
 
 ## Repository actions this run
 
 - Completed the mandatory shared-memory bootstrap in the prescribed order.
-- Inspected issue #27, exact Development HEAD, the sole open implementation PR targeting Development, PR review state/threads and relevant component/device/migration blueprints.
-- Independently inspected PR #82 exact HEAD `8bec856b57aff490092c68b948fdac52078c2bf2`, exact Churn Risk source, focused tests, shared `MetricGrid`, `StatCard` and responsive surface CSS.
-- Accepted the exact PR HEAD as `PASS — NO DESIGN-SYSTEM BLOCKER`.
-- Did not modify product code, peer role states, Team Memory, Decision Log or Workstream.
+- Inspected issue #27, exact Development HEAD, open PRs targeting Development, relevant component/device/page-pattern/migration documents and representative remaining report source.
+- Confirmed no implementation PR was active before selection.
+- Independently inspected Product Performance source/tests plus existing shared `StatePanel` contract and CSS.
+- Bounded REPORT035 in `31_AGENT_TEAM_WORKSTREAM.md` at commit `4cd736fd13568b0129a7330a4407946c0b79c33a`.
+- Did not modify product code, peer role states, Team Memory or Decision Log.
 - Did not merge, deploy, touch `main`, modify preview branches, trigger/rerun GitHub Actions or use hosted CI.
 
 ### Cross-role handoff
-- **To:** Development Integrator.
-- **What changed:** Product Design independently accepted PR #82 exact HEAD `8bec856b57aff490092c68b948fdac52078c2bf2` as `PASS — NO DESIGN-SYSTEM BLOCKER`; Design QA is already `GREEN-DEV` on that same exact HEAD.
-- **Preserve:** exact five-metric order/labels/stat sources/FMT/fallback, `statsLoading` + 5×120px skeletons, bounded semantic tones, all excluded filter/RFM/chart/detail/trust/query/permission/export/backend semantics, unchanged shared API/CSS/token/breakpoint contracts, and honest `TESTS_AUTHORED_NOT_EXECUTED` evidence.
-- **Need from you:** final-revalidate the unchanged PR head/base, governance-only Development drift, exact-head QA + Product Design gates, changed-file scope, empty review threads, mergeability and functional isolation; merge REPORT034 into `design-system-v2-development` only if all gates remain clean. Do not merge-sync the feature branch solely for governance drift.
+- **To:** UI Production Engineer.
+- **What changed:** REPORT035 is now `READY — BOUNDED` as Product Performance shared empty-state convergence only: the chart empty branch and responsive-detail empty branch must consume existing `StatePanel kind="empty"` while preserving copy, state precedence and all ready/loading behavior.
+- **Preserve:** exact `لا توجد بيانات` copy; chart 240px empty/loading geometry; five 44px detail loading skeletons; current BarChart/data/trust semantics; Desktop/Tablet/Mobile detail renderer isolation and all seven product facts; all shared APIs/CSS/tokens and all query/calculation/permission/backend/business semantics.
+- **Need from you:** start from the latest `design-system-v2-development` HEAD, implement only this two-context empty-state concern with focused tests, update only your owned state, and open exactly one Draft PR targeting Development. If any shared-contract or functional widening proves necessary, mark REPORT035 `BLOCKED` instead.
 - **Blocker level:** `NONE`.
-- **Baseline:** Development pre-state-write `3e5ef9083da861f634e0f5ded56fdde409bc737d`; exact accepted PR #82 HEAD `8bec856b57aff490092c68b948fdac52078c2bf2`.
+- **Baseline:** selection baseline `8b6353d187a490c16b56d209554f9ff51683380f`; Workstream-bounded Development HEAD immediately before this state write `4cd736fd13568b0129a7330a4407946c0b79c33a`.
