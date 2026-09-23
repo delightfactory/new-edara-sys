@@ -139,11 +139,7 @@ export default function GeographyPage() {
               {[1, 2, 3, 4, 5].map(i => <SkeletonCard key={i} height={44} />)}
             </div>
           )}
-          emptyState={(
-            <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
-              لا توجد بيانات — شغّل watermark sweep أولاً
-            </div>
-          )}
+          emptyTitle="لا توجد بيانات — شغّل watermark sweep أولاً"
           renderDesktop={desktopRows => (
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
