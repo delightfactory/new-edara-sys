@@ -98,20 +98,31 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-040 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
-Status: `READY — PRODUCT DESIGN BOUNDING REQUIRED`.
-Owner role for immediate next action: Product Design Director.
-Selection baseline: REPORT039 product merge `035558bb3e86026742d3658d7c1928ee75f09215`; Product Design must inspect the exact latest Development HEAD before recording the bounded concern.
+### DS2-REPORT-040 — Churn Risk responsive-detail empty-state convergence
+Status: `READY — BOUNDED`.
+Owner role for immediate next action: UI Production Engineer.
+Selection baseline: exact `design-system-v2-development` HEAD `d7ac8b8cf68a1cc4a15522c2f4fa0f7731197fa7` inspected by Product Design before this boundary was recorded.
+Representative surface: `src/pages/reports/ChurnRiskPage.tsx` → `تفاصيل العملاء — مرتب: معرض للخطر أولاً` → `ResponsiveCollection` empty branch only.
 
 System intent / acceptance:
-- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline;
-- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance/exclusion boundary;
-- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
-- preserve REPORT001-039 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
-- preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
-- do not turn REPORT040 into broad multi-page report beautification.
+- remove only the bespoke `ResponsiveCollection.emptyState` wrapper and pass the exact existing copy through `emptyTitle="لا توجد بيانات — شغّل watermark sweep أولاً"`, so the existing collection contract renders the shared compact passive `StatePanel kind="empty"`;
+- preserve exact state precedence `isBlocked -> listLoading -> empty -> ready`; the existing BLOCKED renderer remains outside `ResponsiveCollection` and unchanged in copy, hierarchy and meaning;
+- preserve exactly five `SkeletonCard height={44}` detail loading rows;
+- preserve the dense semantic six-column Desktop table, Tablet two-column `Card + KeyValueList`, Mobile one-column `Card + KeyValueList`, and exactly one ready renderer per device;
+- preserve all customer-risk facts/fallbacks, risk/recency badge semantics, row order, long Arabic wrapping, LTR numeric/currency treatment, Trust/Freshness and current title/action hierarchy;
+- preserve KPI summary, pie-chart composition/visibility/data/colors/legend/tooltip, header filters/date controls and SystemHealthBar completely unchanged;
+- Mobile/Tablet/Desktop acceptance at representative 390/900/1440px: empty mounts only the shared collection state and no table/card ready renderer; loading and BLOCKED remain higher-priority and do not leak empty/ready content;
+- accessibility acceptance: empty remains passive/non-interactive with no action slot, click handler, focus target or live announcement; no new keyboard/touch behavior is introduced;
+- focused tests must assert exact copy, shared `.ds-state-panel[data-state-kind="empty"]` anatomy, compact/passive semantics, `BLOCKED -> loading -> empty -> ready` isolation, 5×44px loading and no ready-renderer leakage across representative device widths.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+Explicit exclusions:
+- no change to the BLOCKED renderer/copy or trust-state meaning;
+- no change to `RiskBadge`, `RecencyCell`, `RISK_CONFIG`, arbitrary chart/category color semantics or chart visualization behavior in this slice;
+- no KPI, filter/date, header, query/cache/hook, sorting, calculation, formatting, permission/RBAC/RLS, routing, export/print, backend/business/workflow change;
+- no shared `ResponsiveCollection`, `StatePanel`, `ChartPanel`, `MetricGrid`, `StatCard`, CSS/token/breakpoint API widening;
+- no second report surface or broad report beautification.
+
+Stop rule: if implementation requires any excluded shared-contract or functional-semantic change, mark REPORT040 `BLOCKED` rather than widening the slice.
 
 ## Product migration roadmap
 
@@ -163,7 +174,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-039` — `DONE`
-- `DS2-REPORT-040 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — PRODUCT DESIGN BOUNDING REQUIRED`
+- `DS2-REPORT-040 — Churn Risk responsive-detail empty-state convergence` — `READY — BOUNDED`
 - further Reports/Analytics convergence beyond REPORT040 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
