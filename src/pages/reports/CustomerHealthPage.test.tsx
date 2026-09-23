@@ -233,11 +233,13 @@ describe('Customer Health responsive detail collection', () => {
     expect(within(section).getByText('بيانات العملاء محجوبة')).toBeTruthy()
     expect(within(section).getByText('snapshot_customer_health يحتاج إلى تشغيل ناجح أولاً')).toBeTruthy()
     expect(section.querySelector('.ds-responsive-collection')).toBeNull()
+    expect(section.querySelector('.ds-state-panel')).toBeNull()
     expect(section.querySelector('.ds-responsive-card-grid')).toBeNull()
     expect(within(section).queryByRole('table')).toBeNull()
+    expect(within(section).queryByText(/يعرض أعلى 50 عميلاً حسب القيمة/)).toBeNull()
   })
 
-  it('preserves the custom five-row loading state and exact empty copy without mounting a ready renderer', () => {
+  it('preserves five-row loading precedence and converges the empty branch onto one passive shared StatePanel across device modes', () => {
     setViewport(390)
     mocks.useCustomerHealthSummary.mockReturnValue({
       data: { stats, rows: [] },
@@ -248,7 +250,10 @@ describe('Customer Health responsive detail collection', () => {
     let section = getDetailSection()
     const loadingCollection = section.querySelector('[data-collection-state="loading"]') as HTMLElement
     expect(loadingCollection).not.toBeNull()
-    expect(within(loadingCollection).getAllByTestId('skeleton-card')).toHaveLength(5)
+    const loadingSkeletons = within(loadingCollection).getAllByTestId('skeleton-card')
+    expect(loadingSkeletons).toHaveLength(5)
+    loadingSkeletons.forEach(skeleton => expect(skeleton.getAttribute('data-height')).toBe('44'))
+    expect(section.querySelector('.ds-state-panel')).toBeNull()
     expect(section.querySelector('.ds-responsive-card-grid')).toBeNull()
     expect(within(section).queryByRole('table')).toBeNull()
     expect(within(section).queryByText(/يعرض أعلى 50 عميلاً حسب القيمة/)).toBeNull()
@@ -259,12 +264,24 @@ describe('Customer Health responsive detail collection', () => {
     })
     rerender(<CustomerHealthPage />)
 
-    section = getDetailSection()
-    expect(section.querySelector('[data-collection-state="empty"]')).not.toBeNull()
-    expect(within(section).getByText('لا توجد بيانات snapshot لهذا التاريخ — شغّل watermark sweep أولاً')).toBeTruthy()
-    expect(section.querySelector('.ds-responsive-card-grid')).toBeNull()
-    expect(within(section).queryByRole('table')).toBeNull()
-    expect(within(section).queryByText(/يعرض أعلى 50 عميلاً حسب القيمة/)).toBeNull()
+    ;[390, 900, 1440].forEach(width => {
+      setViewport(width)
+      section = getDetailSection()
+      const emptyCollection = section.querySelector('[data-collection-state="empty"]') as HTMLElement
+      expect(emptyCollection).not.toBeNull()
+      const states = emptyCollection.querySelectorAll('.ds-state-panel[data-state-kind="empty"]')
+      expect(states).toHaveLength(1)
+      const state = states[0] as HTMLElement
+      expect(within(state).getByText('لا توجد بيانات snapshot لهذا التاريخ — شغّل watermark sweep أولاً')).toBeTruthy()
+      expect(state.classList.contains('ds-state-panel--compact')).toBe(false)
+      expect(state.querySelector('.ds-state-panel__action')).toBeNull()
+      expect(state.getAttribute('aria-live')).toBeNull()
+      expect(section.querySelector('.ds-responsive-card-grid')).toBeNull()
+      expect(within(section).queryByRole('table')).toBeNull()
+      expect(within(section).getByTestId('trust-state-badge')).toBeTruthy()
+      expect(within(section).getByTestId('freshness-indicator')).toBeTruthy()
+      expect(within(section).queryByText(/يعرض أعلى 50 عميلاً حسب القيمة/)).toBeNull()
+    })
   })
 
   it('preserves trust actions and renders the >50 informational footer exactly once only with ready data', () => {
