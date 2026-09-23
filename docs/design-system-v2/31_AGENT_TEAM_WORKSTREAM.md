@@ -38,12 +38,12 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-033`.
+Product UI is integrated through `DS2-REPORT-034`.
 
 Latest product integration:
-- PR: `#81 — DS2-REPORT-033: converge Target Attainment chart panel`
-- Exact reviewed PR HEAD: `1d67d89e57c150542cea487e0cafc8d520d5c30a`
-- Squash merge commit: `464adbfe86f9ff1e53d288babb9715a010346b15`
+- PR: `#82 — DS2-REPORT-034: converge Churn Risk KPI summary`
+- Exact reviewed PR HEAD: `8bec856b57aff490092c68b948fdac52078c2bf2`
+- Squash merge commit: `7ba36015798df5d4aa615077adade862687a6f9c`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design exact-head closeout: `PASS — NO DESIGN-SYSTEM BLOCKER`
 - Runtime/preview/release evidence: not claimed
@@ -79,53 +79,34 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - `DS2-REPORT-031 — Customer Health as-of-date field convergence` — `DONE` — PR #79 — reviewed HEAD `acc79751b2e24903a7d63842eb5b962e2ab19d0b` — merge `7271801b22a58c4280c9bdbd82b37aa9de7a0fdc` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-032 — Customer Re-engagement KPI summary shared metric convergence` — `DONE` — PR #80 — reviewed HEAD `2177d3ca687434a0185a5787639ee2138148d341` — merge `e7088ed6d683b4cc714059cd7f3d07831f9485b5` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
 - `DS2-REPORT-033 — Target Attainment individual-rep chart-panel convergence` — `DONE` — PR #81 — reviewed HEAD `1d67d89e57c150542cea487e0cafc8d520d5c30a` — merge `464adbfe86f9ff1e53d288babb9715a010346b15` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
+- `DS2-REPORT-034 — Churn Risk KPI summary shared metric convergence` — `DONE` — PR #82 — reviewed HEAD `8bec856b57aff490092c68b948fdac52078c2bf2` — merge `7ba36015798df5d4aa615077adade862687a6f9c` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 
-## REPORT033 system result
+## REPORT034 system result
 
-- Target Attainment's page-local individual-rep analytical frame/header now consumes the existing shared `ChartPanel -> Card + SectionHeader` grammar.
-- Exact `chartData.length > 0` visibility, Arabic title/description and Trust/Freshness inputs remain unchanged.
-- The complete caller-owned Recharts body remains unchanged: data/order, responsive height, vertical layout, axes, tooltip, `ReferenceLine x={100}`, bar sizing/radius and `barColor` thresholds.
-- Shared semantic heading and shrink-safe/mobile-wrapping behavior replace local frame/header styling without widening shared APIs, CSS, tokens or breakpoints.
-- Header filters, four-KPI summary, detail `ResponsiveCollection`, calculations, queries, permissions, export/print and business/backend behavior remain untouched.
-- Focused chart-panel regression tests were authored but not executed under the hosted-CI quota policy.
+- Churn Risk's remaining page-local five-card KPI mini-system now consumes existing shared `MetricGrid columns={3}` + passive `StatCard` surfaces without shared-contract widening.
+- Exact metric order remains `VIP → مخلص → متفاعل → معرض للخطر → خامد`, with caller-owned sources `stats.vip / stats.loyal / stats.engaged / stats.at_risk / stats.dormant`, existing `FMT.format(...)`, and `—` fallback unchanged.
+- Semantic tones are expressed through the shared vocabulary `neutral / success / info / warning / danger`; category identity remains visible in text rather than color-only.
+- Exact `statsLoading` behavior remains five `SkeletonCard height={120}` placeholders inside the shared metric grid.
+- Shared device composition now governs the summary: Desktop `3+2`, Tablet `2+2+1`, Mobile one column, with existing shrink-safe containment.
+- Header/filter/date controls, System Health, RFM/category identity, RiskBadge/RecencyCell, pie ChartPanel/Trust-Freshness, responsive customer details, queries/calculations/permissions/export/print/backend/business behavior and all shared APIs/CSS/tokens/breakpoints remain unchanged.
+- Focused regression tests were authored but not executed under the hosted-CI quota policy.
 
 ## Current single READY slice
 
-### DS2-REPORT-034 — Churn Risk KPI summary shared metric convergence
-Status: `READY — BOUNDED`.
-Owner role for immediate next action: UI Production Engineer.
-Product Design bounding baseline: Development HEAD `6ee7ed93a913ed74d0da0e7b2423cbf615dd99f9`.
-Representative surface: `src/pages/reports/ChurnRiskPage.tsx` → the five-card risk-classification KPI summary only.
+### DS2-REPORT-035 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
+Status: `READY — PRODUCT DESIGN BOUNDING REQUIRED`.
+Owner role for immediate next action: Product Design Director.
+Selection baseline: latest `design-system-v2-development` after REPORT034 integration and governance sync.
 
-System intent:
-- retire the remaining page-local KPI grid/card mini-system on Churn Risk by consuming existing `MetricGrid columns={3}` + `StatCard` unchanged;
-- keep all five risk metrics caller-owned and preserve exact order `VIP → مخلص → متفاعل → معرض للخطر → خامد`;
-- preserve exact data sources `stats.vip / stats.loyal / stats.engaged / stats.at_risk / stats.dormant`, integer formatting via the existing `FMT`, and `—` fallback;
-- map existing category emphasis into shared semantic tones without adding page-specific variants: `VIP=neutral`, `مخلص=success`, `متفاعل=info`, `معرض للخطر=warning`, `خامد=danger`;
-- preserve category meaning through visible text; color remains supportive rather than the sole signal.
+Intent:
+- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline;
+- choose exactly one smallest dependency-safe presentation-only concern and name its representative file/surface plus explicit acceptance/exclusion boundary;
+- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer proves the need;
+- preserve REPORT001-034 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
+- preserve Settings/Admin, Global convergence, remaining Work/Field debt and shared component-depth work in the roadmap;
+- do not turn REPORT035 into broad multi-page report beautification.
 
-Device / state / accessibility acceptance:
-- Desktop: shared `MetricGrid columns={3}` intentionally composes five passive metrics as `3 + 2` in the existing order;
-- Tablet: canonical shared two-column composition (`2 + 2 + 1`); Mobile: canonical shared one-column stack with no ordinary horizontal overflow;
-- preserve the current `statsLoading` gate exactly and render exactly five `SkeletonCard` placeholders at `height={120}` inside the shared MetricGrid while loading;
-- no new interactive target or focus behavior is introduced; cards remain passive, semantic labels remain text-visible, and Arabic labels / large numeric values must wrap or shrink safely through the shared contracts.
-
-Explicitly excluded:
-- Churn Risk page header, title/description, `Select` and `DateField` controls, `SystemHealthBar`;
-- `RISK_CONFIG` business/category identity, `RiskBadge`, `RecencyCell`, and customer-risk classification/filter semantics;
-- pie-chart `ChartPanel`, chart visibility/data/order/colors/geometry/tooltip/legend, Trust/Freshness action wiring;
-- customer-detail `ResponsiveCollection`, Desktop table, Tablet/Mobile cards, loading/blocked/empty copy and ordering;
-- hooks, queries, snapshot/trust calculations, permissions/RBAC/RLS, routing, export/print, backend/business behavior;
-- shared `MetricGrid`, `StatCard`, Card/Status APIs, CSS, tokens or breakpoints; every other report surface.
-
-Focused evidence expectation:
-- ready and loading states use shared `.ds-metric-grid[data-columns="3"]`;
-- five `StatCard` surfaces appear in the exact risk order with the specified semantic `data-tone` mapping and unchanged values/formatting/fallback;
-- loading preserves exactly five 120px skeletons and no ready StatCards;
-- existing chart/detail/header behavior remains protected by current page tests; add only the focused regression assertions needed for this bounded summary migration.
-
-Stop rule:
-- if implementation requires widening any shared API/CSS/token/breakpoint or changing risk classification, filters, query/calculation/trust/chart/detail/backend semantics, mark REPORT034 `BLOCKED` rather than widening the PR.
+Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
 
 ## Product migration roadmap
 
@@ -176,9 +157,9 @@ Open only when a real migrated screen proves the recurring gap:
 - further Work detail/feedback/management convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
 
 ### I. Reports / Analytics
-- `DS2-REPORT-001` through `DS2-REPORT-033` — `DONE`
-- `DS2-REPORT-034 — Churn Risk KPI summary shared metric convergence` — `READY — BOUNDED`
-- further Reports/Analytics convergence beyond REPORT034 — `BACKLOG` / each concern must be bounded separately
+- `DS2-REPORT-001` through `DS2-REPORT-034` — `DONE`
+- `DS2-REPORT-035 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — PRODUCT DESIGN BOUNDING REQUIRED`
+- further Reports/Analytics convergence beyond REPORT035 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
