@@ -103,15 +103,39 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-043 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
-Status: `READY — UNBOUNDED`.
-Owner role for immediate next action: Product Design Director.
+### DS2-REPORT-043 — Treasury semantic-contract notice AlertPanel convergence
+Status: `READY — BOUNDED`.
+Owner role for immediate next action: UI Production Engineer.
 
-Product Design must inspect the exact latest `design-system-v2-development` baseline and define exactly one smallest dependency-safe presentation-only Reports/Analytics concern before UI Production begins product-code work. The boundary must name the representative surface/file, acceptance criteria, explicit exclusions and evidence expectations.
+Representative surface:
+- `src/pages/reports/TreasuryPage.tsx` → the static semantic-contract information notice immediately below the page header and above `SystemHealthBar`.
 
-Preserve all REPORT001-042 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics. Do not widen a shared component contract unless a real representative consumer proves it is necessary. Keep Settings/Admin, remaining Work/Field convergence, shared component-depth work and Global Dark/RTL/accessibility/legacy cleanup explicit in the roadmap. Do not turn REPORT043 into broad multi-page report beautification.
+System-pattern intent:
+- retire the page-local info surface (custom rgba background/border/radius/padding + emoji icon) onto the existing shared `AlertPanel` information grammar;
+- use the existing `AlertPanel` contract unchanged, with `tone="info"`, static/non-live semantics, and its default decorative information icon unless implementation evidence requires preserving a supplied icon;
+- keep Treasury/report truth and explanatory copy caller-owned; `AlertPanel` owns presentation/accessibility anatomy only;
+- advance the established shared feedback grammar rather than creating another report-local notice style.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+Acceptance boundary:
+- preserve the notice in the exact same information hierarchy position, immediately after the header/filter area and before `SystemHealthBar`;
+- preserve the full visible disclosure meaning and exact technical literals: `مطابق لسجلات الخزينة`, `vault_transactions / custody_transactions`, and `net_cashflow`;
+- preserve inline code treatment for the technical literals; no business wording, trust definition or data-source meaning may be rewritten;
+- Mobile 390, Tablet 900 and Desktop 1440 must wrap Arabic/Latin/code content without ordinary horizontal overflow, clipping or truncation;
+- the notice remains passive and static: no action slot, no click target, no focus target, and no live-region announcement (`announce` remains omitted/false);
+- the shared default icon remains decorative/aria-hidden; the text itself carries the meaning;
+- focused Treasury tests must protect shared `AlertPanel` anatomy/tone, exact disclosure content, passive semantics and preservation of surrounding report contracts; evidence must be honestly labeled under `33_TEST_AND_VALIDATION_POLICY.md`.
+
+Explicit exclusions:
+- do not change the Treasury chart `isBlocked -> dailyLoading -> empty -> ready` state machine, its current blocked/empty renderers, 280px geometry, Recharts mapping/tooltip/series/colors, or Trust/Freshness action area;
+- do not change Treasury KPI `MetricGrid` / `MetricCard`, page header/filter composition, `SystemHealthBar`, hooks, queries, calculations or trust resolution;
+- do not modify `AlertPanel` API, shared CSS/tokens/breakpoints, or migrate other notices/pages in this slice;
+- no query/cache/aggregation/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business/workflow semantics may change.
+
+Why this slice now:
+- REPORT035-042 proved the shared state family repeatedly; the smallest next safe system gap visible on the current baseline is a report-local semantic information notice that exactly matches the already-established `AlertPanel` responsibility;
+- this broadens Reports adoption of shared feedback grammar without opening a multi-page cleanup or inventing a new component contract.
+
+Implementation is authorized only for this bounded concern from the exact latest Development HEAD. Any need to alter Treasury trust/business wording, chart state semantics, or shared `AlertPanel` contracts makes the slice `BLOCKED` pending Product Design review.
 
 ## Product migration roadmap
 
@@ -163,7 +187,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-042` — `DONE`
-- `DS2-REPORT-043 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — UNBOUNDED`
+- `DS2-REPORT-043 — Treasury semantic-contract notice AlertPanel convergence` — `READY — BOUNDED`
 - further Reports/Analytics convergence beyond REPORT043 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
