@@ -38,12 +38,12 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-035`.
+Product UI is integrated through `DS2-REPORT-036`.
 
 Latest product integration:
-- PR: `#83 — DS2-REPORT-035: converge Product Performance empty states`
-- Exact reviewed PR HEAD: `1b9870cb92fe660a527ca4e521c42fd538bb5d30`
-- Squash merge commit: `8d1aa7e4db89b8dfee7d9ce8c536bb4c160a40fb`
+- PR: `#84 — DS2-REPORT-036: converge Rep Performance empty states`
+- Exact reviewed PR HEAD: `3850c40095465528e317fcde675f427307e8e856`
+- Squash merge commit: `9c69d2103172c950dcdaf145bfade24e604b09fc`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design exact-head closeout: `PASS — NO DESIGN-SYSTEM BLOCKER`
 - Runtime/preview/release evidence: not claimed
@@ -81,62 +81,34 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - `DS2-REPORT-033 — Target Attainment individual-rep chart-panel convergence` — `DONE` — PR #81 — reviewed HEAD `1d67d89e57c150542cea487e0cafc8d520d5c30a` — merge `464adbfe86f9ff1e53d288babb9715a010346b15` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-034 — Churn Risk KPI summary shared metric convergence` — `DONE` — PR #82 — reviewed HEAD `8bec856b57aff490092c68b948fdac52078c2bf2` — merge `7ba36015798df5d4aa615077adade862687a6f9c` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-035 — Product Performance shared empty-state convergence` — `DONE` — PR #83 — reviewed HEAD `1b9870cb92fe660a527ca4e521c42fd538bb5d30` — merge `8d1aa7e4db89b8dfee7d9ce8c536bb4c160a40fb` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
+- `DS2-REPORT-036 — Rep Performance shared empty-state convergence` — `DONE` — PR #84 — reviewed HEAD `3850c40095465528e317fcde675f427307e8e856` — merge `9c69d2103172c950dcdaf145bfade24e604b09fc` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 
-## REPORT035 system result
+## REPORT036 system result
 
-- Product Performance's chart empty branch and responsive-detail empty branch now consume the existing shared `StatePanel kind="empty"` grammar instead of bespoke page-local empty blocks.
-- Exact visible Arabic copy remains `لا توجد بيانات` in both contexts.
-- The chart empty branch uses compact shared state anatomy inside a geometry-only wrapper that preserves the exact 240px analytical-body footprint.
-- Exact chart precedence remains `tableLoading -> SkeletonCard height={240} -> empty -> ready BarChart`; ready chart data/order/axes/grid/tooltip/revenue series/color/margins and Trust/Freshness remain unchanged.
+- Rep Performance's comparison-chart empty branch and responsive-detail empty branch now consume the existing shared `StatePanel kind="empty"` grammar instead of bespoke page-local empty blocks.
+- Exact visible Arabic copy remains `لا توجد بيانات فى النطاق الزمني المحدد` in both contexts.
+- The chart empty branch uses compact shared state anatomy inside a geometry-only wrapper that preserves the exact 300px analytical-body footprint.
+- Exact chart precedence remains `tableLoading -> SkeletonCard height={300} -> empty -> ready BarChart`; ready top-15 mapping/order, dynamic height, layout/margins/grid/axes/tooltip, revenue/returns series/colors and Trust/Freshness remain unchanged.
 - Exact detail precedence remains `tableLoading -> five SkeletonCard height={44} rows -> empty -> ready device renderer`; the empty state is one passive renderer across Desktop/Tablet/Mobile and mounts no ready table/card tree.
-- Dense seven-column Desktop detail, two-column Tablet cards, one-column Mobile cards, all displayed facts/fallbacks, return-rate thresholds, Arabic wrapping and LTR numeric presentation remain unchanged.
+- Dense seven-column Desktop detail, existing Tablet/Mobile cards, ranking/row order/facts/fallbacks, return-rate thresholds, Arabic wrapping and LTR numeric presentation remain unchanged.
 - No shared API/CSS/token/breakpoint widening and no query/cache/calculation/permission/RBAC/RLS/routing/export/print/backend/business behavior change occurred.
 - Focused regression tests were authored but not executed under the hosted-CI quota policy.
 
 ## Current single READY slice
 
-### DS2-REPORT-036 — Rep Performance shared empty-state convergence
-Status: `READY — BOUNDED`.
-Owner role for immediate next action: UI Production Engineer.
-Selection baseline: exact current Development HEAD at Product Design selection `4e266d58f01cd0601534a9c43b52c082e60b3f9b` on `design-system-v2-development`.
-Representative surface: `src/pages/reports/RepPerformancePage.tsx` → comparison-chart empty branch + responsive detail-collection empty branch only.
+### DS2-REPORT-037 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
+Status: `READY — PRODUCT DESIGN BOUNDING REQUIRED`.
+Owner role for immediate next action: Product Design Director.
 
-System intent:
-- retire exactly the two remaining page-local Rep Performance empty-state blocks in favor of the existing shared `StatePanel kind="empty"` grammar;
-- preserve exact visible Arabic copy `لا توجد بيانات فى النطاق الزمني المحدد` in both contexts;
-- chart empty state uses shared compact state anatomy inside a neutral geometry-only wrapper that preserves the exact `300px` analytical-body footprint;
-- preserve exact chart precedence `tableLoading -> SkeletonCard height={300} -> empty -> ready BarChart`;
-- preserve ready chart top-15 mapping/order, dynamic responsive height, layout/margins/grid/axes/tooltip, both revenue/returns series, colors and Trust/Freshness exactly;
-- detail empty state is one passive shared renderer inside existing `ResponsiveCollection` across Desktop/Tablet/Mobile;
-- preserve exact detail precedence `tableLoading -> five SkeletonCard height={44} rows -> empty -> ready device renderer`;
-- preserve dense seven-column Desktop table, existing Tablet/Mobile detail-card composition, all row ordering/facts/fallbacks, return-rate thresholds, Arabic wrapping and LTR numeric presentation;
-- do not widen `StatePanel`, `ResponsiveCollection`, `ChartPanel`, shared CSS, tokens or breakpoints.
+Intent:
+- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline;
+- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance/exclusion boundary;
+- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
+- preserve REPORT001-036 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
+- preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
+- do not turn REPORT037 into broad multi-page report beautification.
 
-Device/state/accessibility acceptance:
-- Desktop/Tablet/Mobile must share the same passive detail empty state while only the existing device-specific ready renderer mounts when data exists;
-- the chart empty branch must remain visually footprint-compatible with the existing 300px loading state and introduce no ordinary horizontal overflow;
-- empty states remain passive/non-interactive: no action slot, click handler, focus target, alert role or live announcement is added;
-- Arabic copy remains exact and readable; no color-only meaning is introduced.
-
-Focused test expectation:
-- chart loading remains one `300px` skeleton before empty evaluation;
-- chart empty branch contains `.ds-state-panel[data-state-kind="empty"]`, compact density, exact Arabic copy, preserved 300px parent footprint and no action;
-- ready chart contract remains unchanged;
-- detail loading remains exactly five `44px` skeletons and mounts neither empty nor ready renderer;
-- detail empty branch uses one passive shared StatePanel across Mobile/Tablet/Desktop and mounts no ready table/card renderer;
-- existing ready Desktop/Tablet/Mobile detail tests remain intact.
-
-Explicit exclusions:
-- header, `ReportFilterBar`, System Health, summary `MetricGrid` / `MetricCard` contract;
-- chart data/calculation/order/geometry/series/Trust/Freshness behavior beyond the empty renderer;
-- detail table/card facts, thresholds, ready composition and interaction semantics;
-- hooks, queries/cache, calculations, permissions/RBAC/RLS, routes, export/print, backend/business/workflow semantics;
-- any other report page, shared component implementation/API, global CSS, token or breakpoint changes.
-
-Stop rule:
-- if the implementation requires any excluded shared-contract or functional/business change, mark REPORT036 `BLOCKED` rather than widening the PR.
-
-Implementation is authorized only for this bounded concern from the latest Development HEAD available to UI Production at branch creation; exactly one implementation PR may target `design-system-v2-development`.
+Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
 
 ## Product migration roadmap
 
@@ -187,9 +159,9 @@ Open only when a real migrated screen proves the recurring gap:
 - further Work detail/feedback/management convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
 
 ### I. Reports / Analytics
-- `DS2-REPORT-001` through `DS2-REPORT-035` — `DONE`
-- `DS2-REPORT-036 — Rep Performance shared empty-state convergence` — `READY — BOUNDED`
-- further Reports/Analytics convergence beyond REPORT036 — `BACKLOG` / each concern must be bounded separately
+- `DS2-REPORT-001` through `DS2-REPORT-036` — `DONE`
+- `DS2-REPORT-037 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — PRODUCT DESIGN BOUNDING REQUIRED`
+- further Reports/Analytics convergence beyond REPORT037 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
