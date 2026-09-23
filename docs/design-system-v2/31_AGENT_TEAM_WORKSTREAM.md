@@ -89,19 +89,40 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-032 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
-Status: `READY — PRODUCT DESIGN BOUNDING REQUIRED`.
-Owner role for immediate next action: Product Design Director.
+### DS2-REPORT-032 — Customer Re-engagement KPI summary shared metric convergence
+Status: `READY — BOUNDED`.
+Owner role for immediate next action: UI Production Engineer.
+Representative surface: `src/pages/reports/CustomerReengagementPage.tsx` → `KpiStrip` summary only.
 
-Intent:
-- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline;
-- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance/exclusion boundary;
-- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer proves the need;
-- preserve REPORT001-031 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
-- preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
-- do not turn REPORT032 into broad multi-page report beautification.
+System intent:
+- retire the page-local KPI mini-system (`rp-kpi-grid` + local KPI card/value/label/icon/sublabel presentation) in favor of existing shared `MetricGrid` + `StatCard` grammar;
+- use `MetricGrid columns={3}` for the five-card summary rather than widening the shared API to a five-column mode: Desktop composes 3 + 2, Tablet 2 + 2 + 1, Mobile one card per row;
+- preserve all metric calculation/data meaning in `CustomerReengagementPage`; shared patterns own presentation and responsive layout only;
+- replace arbitrary KPI accent-border/value styling with the shared semantic tone vocabulary without changing priority/business meaning.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+Acceptance / preserve:
+- exact five-card DOM/data order remains `Champion Lost` → `تراجع عالي` → `متوسط خامد` → `إجمالي العملاء` → `صافي الأرصدة`;
+- preserve every current label, sublabel/context, emoji/icon, count/value source, `FMT` / `fmtCur` formatting, `Math.abs(summary.total_outstanding)` behavior and the exact `إجمالي مديونية` / `رصيد دائن صاف` conditional copy;
+- semantic presentation maps the existing meanings only: Champion Lost=`danger`; تراجع عالي=`warning`; متوسط خامد=`warning`; إجمالي العملاء=`info`; صافي الأرصدة=`success` only when `total_outstanding < 0`, otherwise `info`;
+- summary loading keeps all five metric identities/context visible and replaces only their values with five skeleton placeholders, matching the current state priority rather than blanking the whole summary;
+- Desktop uses the shared three-column metric contract with five cards wrapping naturally; Tablet uses the shared two-column contract; Mobile uses the shared one-column contract with no ordinary horizontal overflow and tolerance for long Arabic/currency values;
+- KPI cards remain passive/non-interactive; no new focus targets or hover-dependent meaning; decorative emoji/icon presentation must not become an accessible-name dependency;
+- remove only KPI-specific scoped CSS that becomes orphaned by the shared migration; do not broaden this into Customer Re-engagement style cleanup.
+
+Focused test artifact expectation:
+- add focused `CustomerReengagementPage` coverage proving shared `MetricGrid` with `data-columns="3"`, five shared StatCard surfaces in exact order, preserved values/copy/conditional net-balance behavior and semantic tones;
+- prove summary loading retains five metric identities and five value-level skeletons;
+- evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless an actually approved runtime executes it.
+
+Explicit exclusions:
+- Customer Re-engagement `FilterBar`, URL-synced filters/reference-data/query inputs and filter stats;
+- list/table/mobile-card/detail composition, `PriorityBadge`, `RecencyBadge`, balance-cell logic outside the KPI summary, Customer 360 links/actions and permissions;
+- Export Drawer, print/PDF/CSV output, action hierarchy and document-output behavior;
+- `PRIORITY` configuration still consumed outside the summary, any broader local-style cleanup, and the existing Desktop-vs-Mobile collection switch;
+- shared `MetricGrid`, `StatCard`, `Card`, token, CSS or breakpoint API changes;
+- hooks, calculations, query/cache semantics, permissions/RBAC/RLS, routing, export/print contracts, backend/business/workflow behavior and every other report surface.
+
+Stop rule: if implementation requires a shared API/CSS/token/breakpoint change or any functional/business semantic change, mark REPORT032 `BLOCKED` rather than widen the PR.
 
 ## Product migration roadmap
 
@@ -153,7 +174,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-031` — `DONE`
-- `DS2-REPORT-032 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — PRODUCT DESIGN BOUNDING REQUIRED`
+- `DS2-REPORT-032 — Customer Re-engagement KPI summary shared metric convergence` — `READY — BOUNDED`
 - further Reports/Analytics convergence beyond REPORT032 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
