@@ -93,20 +93,35 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-035 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
-Status: `READY — PRODUCT DESIGN BOUNDING REQUIRED`.
-Owner role for immediate next action: Product Design Director.
-Selection baseline: latest `design-system-v2-development` after REPORT034 integration and governance sync.
+### DS2-REPORT-035 — Product Performance shared empty-state convergence
+Status: `READY — BOUNDED`.
+Owner role for immediate next action: UI Production Engineer.
+Selection baseline: `8b6353d187a490c16b56d209554f9ff51683380f` on `design-system-v2-development`.
+Representative surface: `src/pages/reports/ProductPerformancePage.tsx` only.
 
-Intent:
-- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline;
-- choose exactly one smallest dependency-safe presentation-only concern and name its representative file/surface plus explicit acceptance/exclusion boundary;
-- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer proves the need;
-- preserve REPORT001-034 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
-- preserve Settings/Admin, Global convergence, remaining Work/Field debt and shared component-depth work in the roadmap;
-- do not turn REPORT035 into broad multi-page report beautification.
+System intent:
+- retire the two remaining page-local `لا توجد بيانات` presentation blocks in Product Performance and consume the existing shared `StatePanel` empty-state grammar;
+- chart scope is only the empty branch inside `ChartPanel` titled `أعلى 15 منتجاً بالإيراد`; use shared `StatePanel kind="empty"` with compact density while preserving the exact 240px analytical-body footprint;
+- detail scope is only `ResponsiveCollection.emptyState` under `تفاصيل المنتجات — أعلى 50 حسب الإيراد`; use shared `StatePanel kind="empty"` as the single empty renderer for Desktop, Tablet and Mobile;
+- preserve the exact empty copy `لا توجد بيانات` and keep both states passive with no new action, focus target or live announcement;
+- preserve exact state precedence: chart `tableLoading -> 240px SkeletonCard -> empty -> ready BarChart`, detail `tableLoading -> five 44px SkeletonCard rows -> empty -> ready device renderer`;
+- preserve one ready detail renderer per device, Arabic wrapping, LTR numeric presentation and the existing responsive collection contract;
+- keep the shared `StatePanel` API/CSS unchanged. A page-local neutral geometry wrapper is permitted only where necessary to preserve the chart's 240px body footprint; it must not recreate state typography/color/anatomy.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+Explicit exclusions:
+- page header, category `<select>`, `ReportFilterBar`, System Health, KPI `MetricGrid`/MetricCards, Trust/Freshness, chart data/order/bar/axes/tooltip/colors/margins, product-detail table/card facts and order, return-rate thresholds, category RPC, hooks/queries/cache/calculations/permissions/RBAC/RLS/routing/export/print/backend/business semantics;
+- shared `StatePanel`, `ResponsiveCollection`, `ChartPanel`, Card/KeyValueList APIs or implementations, global CSS, tokens or breakpoints;
+- every other report surface.
+
+Device/state/accessibility acceptance:
+- Desktop/Tablet/Mobile show the same explicit empty copy through shared state anatomy without mounting a detail table/card renderer when rows are empty;
+- no new ordinary horizontal overflow, fixed-width control or duplicate mounted interaction tree;
+- empty states remain non-interactive and do not acquire alert/live-region semantics; loading and ready states remain exactly as before;
+- focused tests must prove shared `.ds-state-panel[data-state-kind="empty"]` adoption in the chart and detail contexts, exact copy, chart 240px footprint, detail renderer isolation, and unchanged loading/ready precedence. Evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved runtime is actually used.
+
+Stop rule: if this convergence requires widening any shared contract/CSS or changing query/data/state/business semantics, mark REPORT035 `BLOCKED` rather than broaden the PR.
+
+Implementation is authorized only for this bounded concern from the latest Development HEAD at implementation start.
 
 ## Product migration roadmap
 
@@ -158,7 +173,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-034` — `DONE`
-- `DS2-REPORT-035 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — PRODUCT DESIGN BOUNDING REQUIRED`
+- `DS2-REPORT-035 — Product Performance shared empty-state convergence` — `READY — BOUNDED`
 - further Reports/Analytics convergence beyond REPORT035 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
