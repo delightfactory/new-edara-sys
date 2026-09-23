@@ -7,6 +7,7 @@ import SystemHealthBar from '@/components/reports/SystemHealthBar'
 import TrustStateBadge from '@/components/reports/TrustStateBadge'
 import FreshnessIndicator from '@/components/reports/FreshnessIndicator'
 import ResponsiveCollection from '@/components/patterns/ResponsiveCollection'
+import ChartPanel from '@/components/patterns/ChartPanel'
 import Card from '@/components/patterns/Card'
 import KeyValueList from '@/components/patterns/KeyValueList'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine, Cell } from 'recharts'
@@ -182,17 +183,16 @@ export default function TargetAttainmentPage() {
 
       {/* Individual Rep Chart */}
       {chartData.length > 0 && (
-        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-primary)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', boxShadow: 'var(--shadow-sm)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--text-primary)' }}>نسبة الإنجاز — المندوبون الفرديون</div>
-              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: '2px' }}>الخط المنقط عند 100% هو الهدف</div>
-            </div>
+        <ChartPanel
+          title="نسبة الإنجاز — المندوبون الفرديون"
+          description="الخط المنقط عند 100% هو الهدف"
+          action={targetTrust ? (
             <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
-              {targetTrust && <TrustStateBadge status={targetTrust.status as TrustStatus} domain="sales" size="sm" />}
-              {targetTrust && <FreshnessIndicator lastCompletedAt={targetTrust.last_completed_at} isStale={targetTrust.is_stale} />}
+              <TrustStateBadge status={targetTrust.status as TrustStatus} domain="sales" size="sm" />
+              <FreshnessIndicator lastCompletedAt={targetTrust.last_completed_at} isStale={targetTrust.is_stale} />
             </div>
-          </div>
+          ) : undefined}
+        >
           <ResponsiveContainer width="100%" height={Math.max(chartData.length * 40, 200)}>
             <BarChart data={chartData} layout="vertical" margin={{ top: 4, left: 10, right: 40, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" horizontal={false} />
@@ -207,7 +207,7 @@ export default function TargetAttainmentPage() {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-        </div>
+        </ChartPanel>
       )}
 
       {/* Table */}
