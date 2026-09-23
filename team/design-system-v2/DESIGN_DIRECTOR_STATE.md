@@ -2,99 +2,100 @@
 
 ## Reviewed baseline
 
-- Review date/time: `2026-09-23 05:00 Africa/Cairo`.
+- Review date/time: `2026-09-23 06:02 Africa/Cairo`.
 - Authoritative branch: `design-system-v2-development`.
-- Exact Development HEAD independently inspected before REPORT032 bounding: `eee09daf4f57702a3cdb2c5492bda49ca3307dba`.
-- REPORT031 is integrated; no implementation PR was open against Development at selection time.
-- Active READY slice: `DS2-REPORT-032 — Customer Re-engagement KPI summary shared metric convergence`.
-- Representative surface: `src/pages/reports/CustomerReengagementPage.tsx` → `KpiStrip` only.
+- Exact Development HEAD independently inspected before REPORT033 bounding: `f9688fb8414d82e9eec2be67b2cb3a2ae0c64dd1`.
+- REPORT032 is integrated via PR #80 / squash `e7088ed6d683b4cc714059cd7f3d07831f9485b5`; no implementation PR was open against Development at REPORT033 selection time.
+- Active READY slice: `DS2-REPORT-033 — Target Attainment individual-rep chart-panel convergence`.
+- Representative surface: `src/pages/reports/TargetAttainmentPage.tsx` → `نسبة الإنجاز — المندوبون الفرديون` chart shell only.
 - Product Design disposition: `READY — BOUNDED`.
-- Workstream bounding commit: `88f7e965ba0675ff0f32f3fe272a2dc86f92d021`.
+- Workstream bounding commit: `b0ed41ed54151ee38248dcf8c63a1431411b21b2`.
 
 ## Independent Product Design judgment
 
-**REPORT032 should converge the Customer Re-engagement five-card KPI strip onto the already-proven shared metric grammar, without widening that grammar.**
+**REPORT033 should retire the remaining page-local Target Attainment analytical chart shell onto the existing shared `ChartPanel` composition, without touching the chart itself or widening any shared contract.**
 
-The exact Development source still carries a page-local KPI mini-system: `rp-kpi-grid`, `rp-kpi-card`, page-local label/value/icon/context styling, arbitrary per-card accent borders and a custom responsive grid. That is now the clearest small Reports/Analytics divergence because V2 already owns both pieces required to express the same responsibility: `MetricGrid` for responsive summary layout and `StatCard` for semantic KPI hierarchy.
+The exact Development source already uses the shared responsive collection grammar for Target Attainment details, but the individual-rep achievement chart still builds its own surface with inline background, border, radius, padding, shadow and a page-local title/action header. This is a clean system-level gap because `ChartPanel` already owns exactly that neutral analytical responsibility through `Card + SectionHeader`, while explicitly leaving chart data, visualization semantics, trust/freshness and business truth to the caller.
 
-The correct system move is **not** to add `columns={5}` to `MetricGrid`. Five dense Desktop columns would reduce long-Arabic/currency tolerance and would widen a shared API/CSS/breakpoint contract without a demonstrated system need. Existing `MetricGrid columns={3}` already composes five children safely as Desktop 3 + 2, Tablet 2 + 2 + 1 and Mobile one per row. This gives the page an intentional multi-device composition while preserving the shared contract unchanged.
+The migration should therefore be structural rather than cosmetic: replace only the local chart frame/header with `ChartPanel`, keep the existing conditional presence and Recharts tree intact, and reuse the existing title, explanatory copy and Trust/Freshness action. No new chart abstraction, color contract, tooltip contract or shared API is justified by this slice.
 
-The current arbitrary KPI color accents should also not be carried forward as a new page-specific StatCard variant. Existing business meaning can map onto the small semantic vocabulary already owned by V2: Champion Lost=`danger`; تراجع عالي=`warning`; متوسط خامد=`warning`; إجمالي العملاء=`info`; صافي الأرصدة=`success` only when the current total is credit (`total_outstanding < 0`), otherwise `info`. This mirrors existing urgency/credit-vs-debt meaning without moving any calculation or priority classification into the Design System.
+## REPORT033 acceptance boundary
 
-## REPORT032 acceptance boundary
-
-Implementation is authorized only for the Customer Re-engagement summary `KpiStrip`.
+Implementation is authorized only for the Target Attainment individual-rep chart shell.
 
 Preserve exactly:
-- five-card order: `Champion Lost` → `تراجع عالي` → `متوسط خامد` → `إجمالي العملاء` → `صافي الأرصدة`;
-- all current labels, sublabels/context and emoji/icon identity;
-- `summary?.champion_lost_count`, `declining_high_count`, `mid_lost_count`, `total_customers` and `total_outstanding` sources;
-- `FMT` / `fmtCur` formatting, `Math.abs(summary.total_outstanding)` and exact `إجمالي مديونية` / `رصيد دائن صاف` conditional copy;
-- summary loading precedence: five metric identities/context remain present and only five values become skeleton placeholders;
-- passive/non-interactive KPI behavior and no focus/hover-dependent meaning.
+- the existing `chartData.length > 0` visibility condition;
+- title `نسبة الإنجاز — المندوبون الفرديون`;
+- explanatory copy `الخط المنقط عند 100% هو الهدف`;
+- `TrustStateBadge` + `FreshnessIndicator` conditional action content and all current status/domain/timestamp/staleness wiring;
+- `ResponsiveContainer width="100%"` and `height={Math.max(chartData.length * 40, 200)}`;
+- the vertical `BarChart`, `chartData` order, axes, tooltip formatter, `ReferenceLine x={100}`, `Bar` radius/max size and per-row `Cell` fill from `barColor`;
+- existing percentage formatting and all target-attainment calculation/status meaning.
 
 Shared presentation contract:
-- consume existing `MetricGrid columns={3}` and existing `StatCard` unchanged;
-- Desktop: three-column shared metric layout with five cards wrapping 3 + 2;
-- Tablet: shared two-column layout;
-- Mobile: shared one-column layout, no ordinary horizontal overflow, long Arabic/currency tolerance;
-- semantic tone is presentation only; page/domain continues to own every count, balance sign and priority meaning;
-- remove only KPI-specific local CSS made orphaned by this migration. Do not use REPORT032 as a general cleanup vehicle.
-
-Accessibility/state intent:
-- KPI cards remain static information surfaces, not pseudo-buttons;
-- visible labels/context remain the accessible meaning; decorative emoji/icon presentation must not become an accessible-name dependency;
-- loading must preserve meaningful metric identity rather than replace the whole summary with anonymous cards;
-- no new permission, destructive, validation, offline or workflow state is introduced.
+- consume existing `ChartPanel` unchanged;
+- map the current chart title to `title`, the current 100% explanation to `description`, and the existing Trust/Freshness cluster to `action`;
+- Desktop/Tablet/Mobile inherit the shared ChartPanel neutral card surface, semantic section hierarchy and heading/action wrapping;
+- Arabic-first title/description wrapping must remain safe and the percentage chart keeps its existing numeric presentation;
+- the chart remains a data visualization, not a new interactive card/action surface.
 
 ## Explicit exclusions / stop boundary
 
-REPORT032 must not change:
-- `FilterBar`, URL-synced filter state, governorate/city/profile reference data, query inputs or filter stats;
-- customer list/table/mobile-card/detail composition, `PriorityBadge`, `RecencyBadge`, non-summary balance cells, Customer 360 links/actions or permission checks;
-- Export Drawer, print/PDF/CSV behavior or document-output contracts;
-- `PRIORITY` configuration still required outside the KPI summary;
-- broader Customer Re-engagement scoped-style cleanup or its existing Desktop/Mobile collection switching;
-- shared `MetricGrid`, `StatCard`, `Card`, CSS, token or breakpoint APIs;
-- hooks, calculations, query/cache semantics, RBAC/RLS, routes, exports, backend, business/workflow behavior or any other report surface.
+REPORT033 must not change:
+- Target Attainment header scope/date controls or their state/query wiring;
+- the four KPI summary cards or current `report-grid` wrapper;
+- `تفاصيل الأهداف` ResponsiveCollection/Desktop table/Tablet-Mobile cards, TrendBadge or detail-state handling;
+- `individualRows`, `chartData`, `achievementColor`, `barColor`, formatting functions, target calculations, trend/status classification or Trust/Freshness semantics;
+- shared `ChartPanel`, `Card`, `SectionHeader`, CSS, token or breakpoint APIs;
+- hooks, queries/cache, RBAC/RLS/permissions, routing, export/print, backend, business/workflow semantics or any other report surface.
 
-If implementation needs any excluded shared/functional change, REPORT032 becomes `BLOCKED` rather than broadening the PR.
+If implementation needs any excluded shared or functional change, REPORT033 becomes `BLOCKED` rather than broadening the PR.
+
+## Device / state / accessibility acceptance
+
+- Desktop, Tablet and Mobile use the existing shared ChartPanel hierarchy; no duplicate device renderer is introduced.
+- The panel must tolerate long Arabic title/description text and the existing Trust/Freshness action without ordinary horizontal overflow.
+- Chart visibility remains data-driven exactly as today: no individual-rep chart data means no chart panel.
+- Visible title/description remain semantic through ChartPanel/SectionHeader; Trust/Freshness accessibility semantics remain owned by their existing components.
+- No pseudo-button semantics, new focus target, hover-only meaning, destructive state, permission state, offline state or workflow state is introduced.
 
 ## Focused validation expectation
 
-A focused `CustomerReengagementPage` test artifact should guard the material migration risk:
-- shared `[data-metric-grid][data-columns="3"]` adoption;
-- five shared StatCard surfaces in exact business order;
-- preserved label/context/value formatting and both net-balance sign outcomes;
-- declared semantic-tone mapping;
-- summary loading retains five metric identities and five value-level skeletons.
+Focused Target Attainment coverage should guard the material migration risk:
+- shared `.ds-chart-panel` is present when individual-rep chart data exists and absent when it does not;
+- exact title and description remain visible;
+- existing Trust/Freshness action content remains associated with the shared panel header with unchanged inputs;
+- individual-rep chart data/order and the 100% reference-line semantics remain unchanged;
+- no local replacement chart-shell styling or excluded Target Attainment surface change is introduced.
 
-Under the current quota policy, authored coverage remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved execution environment actually runs it. No build/test/lint/runtime/preview PASS is implied by this Product Design direction.
+Under the current quota policy, authored coverage remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved execution environment actually runs it. No build/test/lint/runtime/preview/release PASS is implied by this Product Design direction.
 
 ## Peer-state synthesis
 
-I formed the direction from the exact Development source and existing `MetricGrid` / `StatCard` contracts first, then compared peer state.
+I formed the direction from the exact Development source and the existing `ChartPanel` contract first, then compared current team memory and peer states.
 
-- **Development Integrator:** fresh and aligned; REPORT031 is merged and it explicitly handed REPORT032 to Product Design for one smallest bounded concern.
-- **Team Memory:** lifecycle-current through REPORT031 but its REPORT032 text is intentionally still the pre-bounding placeholder; the Workstream and this owned state now carry the material current boundary. No durable system direction changed, so Team Memory is not rewritten for routine slice progress.
-- **UI Production Engineer / Design QA:** lifecycle-stale from REPORT031 and contain no competing REPORT032 implementation, approval or blocker.
-- **Decision Log / North Star / component blueprint:** aligned with shared-system-before-local-invention, semantic variants, Arabic-first multi-device composition and strict functional isolation.
+- **Development Integrator:** fresh and aligned; REPORT032 is merged and it handed exactly one REPORT033 placeholder to Product Design for bounding.
+- **Team Memory:** fresh through REPORT032 and intentionally still describes REPORT033 at roadmap-placeholder level. This run does not alter durable system direction, so Team Memory is not rewritten for routine slice bounding; the Workstream and this owned state now carry the exact REPORT033 boundary.
+- **UI Production Engineer:** REPORT032 lifecycle is consumed by integration and there is no active competing implementation PR.
+- **Design QA:** REPORT032 exact-head approval is consumed by integration; no REPORT033 approval or contradiction exists yet.
+- **Decision Log / North Star / component blueprint:** aligned with shared-system-before-local-invention, Arabic-first responsive composition and strict functional isolation.
 
 Current contradiction classification: `NONE`.
 
 ## Repository actions this run
 
 - Completed the mandatory shared-memory bootstrap in the prescribed order.
-- Inspected issue #27, current Development HEAD, open PRs targeting Development and relevant Reports/component/device/migration source.
-- Confirmed zero open implementation PRs targeting `design-system-v2-development` before selection.
-- Bounded exactly one dependency-safe REPORT032 concern and updated the Workstream in `88f7e965ba0675ff0f32f3fe272a2dc86f92d021`.
+- Inspected issue #27, the current Development HEAD, PR #80 and current open PRs targeting Development, relevant Reports/component/device/migration docs, and representative remaining report sources.
+- Observed REPORT032 integration complete and confirmed zero open implementation PRs targeting `design-system-v2-development` before REPORT033 selection.
+- Independently compared remaining Reports debt and selected one smallest dependency-safe chart-composition concern rather than broad page beautification or shared-contract widening.
+- Bounded REPORT033 in Workstream commit `b0ed41ed54151ee38248dcf8c63a1431411b21b2`.
 - Did not change Team Memory or Decision Log because no durable/overall design-system rule changed.
 - Did not modify product code, merge, deploy, touch `main`, trigger/rerun GitHub Actions or use hosted CI.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer; Design QA after one REPORT032 PR reaches stable REVIEW.
-- **What changed:** REPORT032 is now `READY — BOUNDED` to Customer Re-engagement `KpiStrip` only, converging five local KPI cards onto existing `MetricGrid columns={3}` + `StatCard` with semantic tones and no shared-contract widening.
-- **Preserve:** exact five metrics/order/copy/value sources/formatting/loading semantics; all filters/list/export/permission/query/business behavior; existing shared MetricGrid/StatCard/Card APIs, CSS, tokens and breakpoints.
-- **Need from you:** UI Production should start from the exact latest Development HEAD after this governance write, implement only REPORT032, add focused tests for the declared metric/tone/loading contract and open one PR targeting `design-system-v2-development`; mark BLOCKED rather than widen scope if a shared or functional change proves necessary.
+- **To:** UI Production Engineer; Design QA after one REPORT033 PR reaches stable REVIEW.
+- **What changed:** REPORT033 is now `READY — BOUNDED` to the Target Attainment individual-rep chart shell only, replacing its page-local analytical frame/header with existing `ChartPanel` while leaving the Recharts visualization and domain truth untouched.
+- **Preserve:** exact chart visibility condition/title/description/Trust-Freshness action; chart data/order/height/axes/tooltip/100% ReferenceLine/bar colors and thresholds; header controls, KPI summary, detail collection and all query/calculation/permission/backend/business semantics; shared ChartPanel/Card/SectionHeader APIs, CSS, tokens and breakpoints.
+- **Need from you:** UI Production should start from the exact latest Development HEAD after this governance write, implement only REPORT033, add focused tests for shared ChartPanel adoption plus preserved visibility/title/description/action/reference semantics, and open one PR targeting `design-system-v2-development`; mark BLOCKED rather than widen scope if a shared or functional change proves necessary.
 - **Blocker level:** `NONE`.
-- **Baseline:** Product Design selection baseline `eee09daf4f57702a3cdb2c5492bda49ca3307dba`; Workstream bounding commit `88f7e965ba0675ff0f32f3fe272a2dc86f92d021`.
+- **Baseline:** Product Design selection baseline `f9688fb8414d82e9eec2be67b2cb3a2ae0c64dd1`; Workstream bounding commit `b0ed41ed54151ee38248dcf8c63a1431411b21b2`.
