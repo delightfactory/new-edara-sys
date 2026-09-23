@@ -2,111 +2,112 @@
 
 ## Reviewed baseline
 
-- Review date/time: `2026-09-24 01:05 Africa/Cairo`.
+- Review date/time: `2026-09-24 02:01 Africa/Cairo`.
 - Authoritative branch: `design-system-v2-development`.
 - Product UI is integrated through `DS2-REPORT-042`.
 - Latest product integration: PR #90, squash merge `f7479859fe5c3233c3082bad2e97c0a004213f4c`.
-- Exact Development HEAD immediately before this Product Design state write: `9bed2a597392437b9389783e19f2bbfedd7ffd1b`.
-- Current single READY slice: `DS2-REPORT-043 — Treasury semantic-contract notice AlertPanel convergence`.
-- Slice status: `READY — BOUNDED`.
-- Active implementation PR targeting Development at selection time: none.
-- Product Design disposition: `IMPLEMENTATION AUTHORIZED WITHIN BOUNDARY`.
+- Exact Development HEAD immediately before this Product Design state write: `c30163249c26f4b54d3a0a5ea5645ba858935fbb`.
+- Active slice: `DS2-REPORT-043 — Treasury semantic-contract notice AlertPanel convergence`.
+- Active implementation PR: `#91 — DS2-REPORT-043: converge Treasury semantic notice on AlertPanel`.
+- Feature baseline / PR base: `0f3a9c3c2fe0e782716b52cd54ec20dc8b972c97`.
+- Exact PR HEAD independently reviewed and rechecked: `932457d5cf34c0eaa17404614f697bc5cf100eb3`.
+- Changed-file scope: exactly 3 files — `TreasuryPage.tsx`, focused `TreasuryPage.test.tsx`, and UI Production Engineer owned state.
+- Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER` on exact HEAD `932457d5cf34c0eaa17404614f697bc5cf100eb3`.
+- Design QA on the same exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
+- Evidence: `TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/visual/preview/release PASS is claimed.
 - Current contradiction classification: `NONE`.
-- Build/test/lint/runtime/visual/preview/release evidence for REPORT043: not yet applicable; no implementation exists yet.
 
 ## Independent Product Design judgment
 
-**REPORT043 should converge only the static Treasury semantic-contract information notice onto the existing shared `AlertPanel` information grammar.**
+**PASS — NO DESIGN-SYSTEM BLOCKER on exact PR HEAD `932457d5cf34c0eaa17404614f697bc5cf100eb3`.**
 
-I formed this judgment from the exact latest Development baseline, current Treasury/Overview report sources and tests, existing shared `AlertPanel` / `StatePanel` / `Card` contracts, component decision matrix, migration matrix and device strategy before comparing peer states.
+I formed this judgment from the exact PR diff/current Treasury source, focused tests, shared `AlertPanel` implementation/CSS and the relevant component/migration/device blueprint before using peer conclusions as approval evidence.
 
-The current Treasury notice is a page-local information surface: custom rgba background/border/radius/padding plus an emoji information icon. Its responsibility already maps cleanly to the established shared `AlertPanel`: static semantic information with no action and no live-announcement requirement. The Design System should own that presentation/accessibility anatomy while Treasury continues to own the disclosure copy and trust/data-source meaning.
+The implementation is the correct bounded system move. It removes one page-local semantic-information mini-pattern and reuses the established shared `AlertPanel tone="info"` grammar without widening the component contract or moving Treasury trust/business truth into the Design System.
 
-This is smaller and safer than opening the broader Reports Overview navigation-card debt, which involves interactive navigation-card semantics, arbitrary domain colors, focus/touch behavior and a potentially reusable navigation pattern. REPORT043 therefore advances shared feedback grammar without inventing a new component, widening shared contracts or turning the run into page-wide beautification.
-
-## Bounded design direction
-
-### Representative surface
-
-`src/pages/reports/TreasuryPage.tsx` → the static semantic-contract notice immediately below the page header/filter area and above `SystemHealthBar`.
-
-### System-pattern intent
-
-- Replace only the bespoke notice surface with the existing shared `AlertPanel`.
-- Use `tone="info"`.
-- Keep it static/non-live: `announce` omitted/false.
-- Prefer the shared default information icon; it is decorative/`aria-hidden`, while the notice text carries the meaning.
-- Do not change `AlertPanel` API, CSS, tokens or breakpoints for this slice.
-
-### Content / hierarchy acceptance
-
-Preserve the notice in the same hierarchy position and preserve its full disclosure meaning, including the exact technical literals:
+The exact disclosure remains in the same hierarchy position between the page header/filter area and `SystemHealthBar`, and preserves the business/trust meaning plus inline technical literals:
 - `مطابق لسجلات الخزينة`
 - `vault_transactions / custody_transactions`
 - `net_cashflow`
 
-The technical literals must retain inline code treatment. Do not rewrite the business/trust definition, data-source meaning or audit disclaimer merely to fit the component.
+The notice remains correctly static and passive: `announce` is omitted, so no `role`/`aria-live` region is introduced; there is no action slot, click target or explicit focus target; the shared information icon is decorative/`aria-hidden`, while the text independently carries the meaning.
 
-### Device / RTL / accessibility acceptance
+At source level the shared alert anatomy remains suitable for Mobile 390 / Tablet 900 / Desktop 1440: the content column is `min-width: 0`, mobile wrapping is already part of the shared contract, and the implementation adds no fixed width, truncation or horizontal-scroll source. This is source-level acceptance only; no runtime visual pass is claimed.
 
-At representative Mobile 390, Tablet 900 and Desktop 1440:
-- Arabic + Latin/code content must wrap without ordinary horizontal overflow, clipping or truncation;
-- the notice remains passive: no action slot, click target or explicit focus target;
-- no live-region announcement is introduced for this static explanatory content;
-- icon semantics remain decorative and the textual disclosure remains sufficient without color/icon dependence.
+## Scope / system-fit acceptance
 
-### Explicit exclusions
+### PASS — bounded presentation-only change
 
-REPORT043 must not change:
-- Treasury chart state precedence `isBlocked -> dailyLoading -> empty -> ready`;
-- current Treasury blocked/empty renderers, 280px geometry or Recharts data/margins/tooltip/series/colors;
+The product diff does only this:
+- imports the existing `AlertPanel`;
+- replaces the bespoke rgba/border/radius/padding/flex/emoji wrapper with `<AlertPanel tone="info">`;
+- keeps the disclosure body and inline `<code>` literals unchanged.
+
+Preserved exactly:
+- notice hierarchy position;
+- Treasury chart precedence `isBlocked -> dailyLoading -> empty -> ready`;
+- current Treasury blocked/empty renderers and 280px analytical geometry;
+- Recharts data mapping, margins, grid/axes/tooltip/series/colors/reference line;
 - TrustStateBadge/FreshnessIndicator action area;
 - Treasury KPI `MetricGrid` / `MetricCard` contracts;
-- header/filter composition, `SystemHealthBar`, hooks, query/calculation/trust resolution;
-- any other report/page notice;
-- shared `AlertPanel` implementation, shared CSS, tokens or breakpoints;
-- query/cache/aggregation/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business/workflow semantics.
+- ReportFilterBar/range behavior, `SystemHealthBar` and hooks;
+- all query/cache/aggregation/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business/workflow semantics;
+- shared `AlertPanel` API, CSS, tokens and breakpoints.
 
-If implementation demonstrates that any excluded semantic/shared-contract change is necessary, REPORT043 becomes `BLOCKED` pending Product Design reassessment rather than widening silently.
+No DB/migration/RPC/service/permission/business or deployment surface is present in the changed-file set.
 
-## Evidence expectations
+### PASS — shared-system coherence
 
-Focused `TreasuryPage` tests should protect:
-- shared `.ds-alert-panel` anatomy and `data-tone="info"` / equivalent semantic evidence;
-- exact disclosure content and technical literals/code treatment;
-- static/passive semantics: no action and no live announcement;
-- hierarchy placement relative to the header and `SystemHealthBar` where source-testable;
-- no regression to the already-covered Treasury MetricGrid/ChartPanel/loading/blocked/empty/ready contracts.
+This aligns with the V2 component direction that `AlertPanel` owns info/warning/danger/success operational-message presentation, while domain/business meaning remains caller-owned. It reduces independent visual implementations rather than creating a Treasury-specific variant or color language.
 
-Execution evidence must follow `33_TEST_AND_VALIDATION_POLICY.md`; authored-but-unexecuted tests must remain labeled `TESTS_AUTHORED_NOT_EXECUTED` unless an approved execution route actually runs them.
+The change also respects the Reports/Analytics migration strategy: one small reversible concern, proven through an existing shared primitive, without broad page beautification or unrelated report cleanup.
+
+## Test/evidence acceptance
+
+Focused `TreasuryPage.test.tsx` coverage now protects:
+- shared `.ds-alert-panel` anatomy and `data-tone="info"`;
+- static/non-live semantics (`role` and `aria-live` absent);
+- no shared alert action UI;
+- decorative icon semantics (`aria-hidden="true"`);
+- exact disclosure meaning and technical literals as `<code>`;
+- hierarchy immediately after the page header/filter area and before `SystemHealthBar`;
+- existing Treasury MetricGrid/ChartPanel/BLOCKED/loading/empty/ready/ready-chart regression coverage remains present.
+
+Evidence remains honestly labeled `TESTS_AUTHORED_NOT_EXECUTED`. No source review is being represented as an executed build/test/runtime pass.
 
 ## Peer-state synthesis / contradiction handling
 
 After the independent judgment:
 
-- **Team Memory:** fresh for the integrated REPORT042 truth and explicitly delegates REPORT043 bounding to Product Design; aligned.
-- **Development Integrator:** fresh through REPORT042 integration and delegates exactly one next REPORT043 concern to Product Design; aligned.
-- **UI Production Engineer:** Development copy is lifecycle-historical for completed REPORT042; no REPORT043 implementation claim exists yet. Not a contradiction.
-- **Design QA:** Development copy is lifecycle-historical for completed REPORT042; no REPORT043 review claim exists yet. Not a contradiction.
-- **Decision Log / North Star / component/migration/device docs:** aligned with shared-system-before-local-invention, presentation-only ownership, Arabic-first responsive composition and feedback/state completeness.
-- **Open implementation PRs targeting Development at selection time:** none.
+- **Design QA:** fresh and aligned; exact HEAD `932457d5cf34c0eaa17404614f697bc5cf100eb3` is `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`, with no current blocker.
+- **UI Production Engineer:** PR-carried owned state is fresh and aligned with the same bounded implementation/exclusions; its earlier pre-state implementation SHA is superseded by the state-only PR HEAD movement already included in this exact-head review.
+- **Development Integrator:** Development copy is lifecycle-current through REPORT042 only; its earlier REPORT043-unbounded placeholder is superseded by the bounded Product Design/workstream direction and is not contradictory.
+- **Team Memory:** integrated truth through REPORT042 remains valid; its REPORT043-unbounded handoff is lifecycle-stale for the active slice scope, not a contradiction.
+- **Decision Log / North Star / component/migration/device docs:** aligned with shared-system-before-local-invention, semantic consistency, Arabic-first multi-device behavior and presentation-only ownership.
+- **PR discussion / review threads:** Design QA GREEN-DEV exists on the exact current HEAD; inline review-thread list is empty.
 
 Current contradiction classification: `NONE`.
 
+## Development drift / integration readiness
+
+Development advanced from the feature baseline `0f3a9c3c2fe0e782716b52cd54ec20dc8b972c97` to pre-state-write HEAD `c30163249c26f4b54d3a0a5ea5645ba858935fbb` by exactly one governance-only file: `team/design-system-v2/DESIGN_QA_STATE.md`.
+
+There is no product/test overlap with PR #91. Product Design acceptance remains anchored only to exact PR HEAD `932457d5cf34c0eaa17404614f697bc5cf100eb3`; any later PR-head movement invalidates this acceptance and requires fresh review.
+
 ## Repository actions / what changed since the previous state
 
-- Completed the mandatory shared-memory bootstrap in the prescribed order and inspected issue #27, exact current Development HEAD, open PRs targeting Development and relevant blueprint/component/migration/device docs.
-- Confirmed REPORT042 is integrated and REPORT043 was the sole READY unbounded placeholder.
-- Inspected current report evidence and selected the smallest dependency-safe concern: Treasury static semantic-contract notice → existing shared `AlertPanel` info grammar.
-- Bounded REPORT043 in `31_AGENT_TEAM_WORKSTREAM.md` at commit `9bed2a597392437b9389783e19f2bbfedd7ffd1b`.
-- Deliberately deferred the broader Reports Overview navigation-card debt because it carries a larger interactive/shared-pattern decision surface.
-- Did not update Team Memory or Decision Log because no overall system direction or durable rule changed.
+- Completed the mandatory shared-memory bootstrap in the prescribed order.
+- Inspected issue #27, current Development HEAD, the single open PR targeting Development, exact changed-file scope/patches, current Treasury source/test, shared `AlertPanel` contract/CSS and relevant blueprint/component/migration/device docs.
+- Independently accepted PR #91 exact HEAD `932457d5cf34c0eaa17404614f697bc5cf100eb3` as `PASS — NO DESIGN-SYSTEM BLOCKER`.
+- Confirmed Design QA independently GREEN-DEV'd the same exact HEAD and found no review-thread blocker.
+- Confirmed Development drift from feature baseline is governance-only and non-overlapping.
+- Did not update Workstream, Team Memory or Decision Log because no new system direction or durable decision changed.
 - Did not modify product code or peer role states, merge, touch `main`, deploy Vercel, modify preview branches, trigger/rerun GitHub Actions or use hosted CI.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer.
-- **What changed:** REPORT043 is now `READY — BOUNDED` to the Treasury static semantic-contract information notice only, converging its page-local presentation onto the existing shared `AlertPanel tone="info"` grammar.
-- **Preserve:** exact disclosure meaning and technical literals/code treatment; same hierarchy position; static/non-live/passive semantics; all Treasury chart/KPI/filter/SystemHealthBar/trust/query/business contracts; unchanged shared `AlertPanel` API/CSS/tokens/breakpoints.
-- **Need from you:** start from the exact latest `design-system-v2-development` HEAD, implement only this concern, add focused Treasury tests and open one Draft PR targeting Development with honest evidence labeling; if shared contracts or Treasury trust/business semantics must change, mark the slice `BLOCKED` instead of widening it.
+- **To:** Development Integrator.
+- **What changed:** Product Design independently accepted PR #91 exact HEAD `932457d5cf34c0eaa17404614f697bc5cf100eb3` as `PASS — NO DESIGN-SYSTEM BLOCKER`; Design QA is already GREEN-DEV on the same exact HEAD.
+- **Preserve:** `AlertPanel tone="info"` only for this static Treasury notice; exact disclosure/business-trust meaning and inline code literals; same hierarchy position; passive/non-live/no-action semantics; all Treasury chart/KPI/filter/SystemHealthBar/trust/query/business contracts; unchanged shared AlertPanel API/CSS/tokens/breakpoints.
+- **Need from you:** final revalidate unchanged PR head/base, current governance-only Development drift, three-file scope, reviews/threads, mergeability and functional isolation; merge REPORT043 into `design-system-v2-development` only if all gates remain clean. Do not deploy or touch `main`.
 - **Blocker level:** `NONE`.
-- **Baseline:** Development pre-state-write `9bed2a597392437b9389783e19f2bbfedd7ffd1b`; REPORT042 product merge `f7479859fe5c3233c3082bad2e97c0a004213f4c`.
+- **Baseline:** exact accepted PR #91 HEAD `932457d5cf34c0eaa17404614f697bc5cf100eb3`; Development pre-state-write `c30163249c26f4b54d3a0a5ea5645ba858935fbb`.
