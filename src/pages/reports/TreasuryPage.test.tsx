@@ -128,6 +128,27 @@ describe('Treasury daily cashflow chart composition', () => {
     })
   })
 
+  it('uses the shared static info AlertPanel for the Treasury semantic-contract notice without changing disclosure meaning or hierarchy', () => {
+    const { container } = render(<TreasuryPage />)
+
+    const alert = container.querySelector('.ds-alert-panel') as HTMLElement
+    expect(alert).not.toBeNull()
+    expect(alert.getAttribute('data-tone')).toBe('info')
+    expect(alert.getAttribute('role')).toBeNull()
+    expect(alert.getAttribute('aria-live')).toBeNull()
+    expect(alert.querySelector('.ds-alert-panel__action')).toBeNull()
+    expect(alert.querySelector('.ds-alert-panel__icon')?.getAttribute('aria-hidden')).toBe('true')
+
+    expect(alert.textContent).toContain('مطابق لسجلات الخزينة')
+    expect(alert.textContent).toContain('وليس تدقيقاً خارجياً مستقلاً')
+    expect(within(alert).getByText('vault_transactions / custody_transactions', { selector: 'code' })).not.toBeNull()
+    expect(within(alert).getByText('net_cashflow', { selector: 'code' })).not.toBeNull()
+
+    expect(alert.previousElementSibling?.querySelector('h1')?.textContent).toBe('التدفق النقدي الخزيني')
+    expect(alert.previousElementSibling?.querySelector('[data-testid="report-filter-bar"]')).not.toBeNull()
+    expect(alert.nextElementSibling?.getAttribute('data-testid')).toBe('system-health-bar')
+  })
+
   it('uses the shared three-column MetricGrid and preserves exact Treasury summary card order and contracts', () => {
     const { container } = render(<TreasuryPage />)
 

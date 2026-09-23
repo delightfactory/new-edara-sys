@@ -4,6 +4,7 @@ import { useTreasuryDailyTotals, useTreasurySummary } from '@/hooks/useTreasuryC
 import MetricCard from '@/components/reports/MetricCard'
 import SkeletonCard from '@/components/reports/SkeletonCard'
 import SystemHealthBar from '@/components/reports/SystemHealthBar'
+import AlertPanel from '@/components/patterns/AlertPanel'
 import ChartPanel from '@/components/patterns/ChartPanel'
 import MetricGrid from '@/components/patterns/MetricGrid'
 import ReportFilterBar, { type DateRange } from '@/components/reports/ReportFilterBar'
@@ -71,14 +72,13 @@ export default function TreasuryPage() {
       </div>
 
       {/* Semantic contract notice */}
-      <div style={{ background: 'rgba(37,99,235,0.04)', border: '1px solid rgba(37,99,235,0.15)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3) var(--space-4)', fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'flex-start', gap: 'var(--space-2)' }}>
-        <span style={{ flexShrink: 0 }}>ℹ️</span>
+      <AlertPanel tone="info">
         <span>
           حالة <strong>مطابق لسجلات الخزينة</strong> تعني: تطابق كامل مع سجلات التنفيذ التشغيلية في
           EDARA (<code>vault_transactions / custody_transactions</code>) — وليس تدقيقاً خارجياً مستقلاً.
           عمود الفاكت المُراجَع: <code>net_cashflow</code>.
         </span>
-      </div>
+      </AlertPanel>
 
       <SystemHealthBar trustRows={trustRows?.filter(r => r.component_name.includes('treasury'))} isLoading={trustLoading} error={trustError} />
 
