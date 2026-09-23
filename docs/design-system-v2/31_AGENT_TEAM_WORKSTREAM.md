@@ -97,20 +97,37 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-038 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
-Status: `READY — PRODUCT DESIGN BOUNDING REQUIRED`.
-Owner role for immediate next action: Product Design Director.
-Selection baseline: latest `design-system-v2-development` after REPORT037 integration bookkeeping.
+### DS2-REPORT-038 — Receivables chart empty-state convergence
+Status: `READY — BOUNDED`.
+Owner role for immediate next action: UI Production Engineer.
+Selection baseline: `3edeb12a543155e79ae81a7775d57e65be1eb6e4`.
 
-System intent:
-- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline;
-- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance/exclusion boundary;
-- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer proves the need;
-- preserve REPORT001-037 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
-- preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
-- do not turn REPORT038 into broad multi-page report beautification.
+Representative surface:
+- `src/pages/reports/ReceivablesPage.tsx` → `تحصيلات AR مجمّعة بتاريخ البيع الأصلي` → chart empty branch only.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+System intent / acceptance:
+- replace only the bespoke 260px empty renderer with existing passive `StatePanel kind="empty"` while keeping the 260px chart-body footprint page-owned;
+- preserve exact empty copy `لا توجد بيانات تحصيل في هذه الفترة`;
+- preserve exact precedence `isBlocked -> dailyLoading -> empty -> ready chart`;
+- keep the existing BLOCKED renderer/meaning untouched, including `بيانات AR محجوبة` / `يحتاج إلى اكتمال تشغيل محرك AR أولاً` and 260px geometry;
+- keep loading exactly `SkeletonCard height={260}`;
+- keep ready chart width/height/margins/data mapping/three bar series, `ChartPanel` title/description, Trust/Freshness unchanged;
+- use one passive non-interactive empty renderer across Mobile/Tablet/Desktop; mixed Arabic/LTR data behavior remains unchanged.
+
+Focused evidence expectations:
+- tests protect shared `.ds-state-panel[data-state-kind="empty"]`, exact copy, compact/passive semantics and 260px wrapper;
+- blocked/loading/empty/ready precedence and non-leakage;
+- existing ready chart mapping/260px/margins/series and Trust/Freshness contracts;
+- evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved runtime actually executes it.
+
+Explicit exclusions:
+- summary `MetricGrid` / `MetricCard`s, `ReportFilterBar`, `SystemHealthBar`;
+- BLOCKED-state reinterpretation or trust semantics;
+- hooks, queries/cache, calculations, permissions/RBAC/RLS, routing, export/print, backend/business behavior;
+- shared `StatePanel`, `ChartPanel`, CSS, tokens, breakpoints or other report surfaces.
+
+Stop rule:
+- if implementation requires any excluded functional/data/trust change or shared-contract widening, mark REPORT038 `BLOCKED` instead of widening the PR.
 
 ## Product migration roadmap
 
@@ -162,7 +179,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-037` — `DONE`
-- `DS2-REPORT-038 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — PRODUCT DESIGN BOUNDING REQUIRED`
+- `DS2-REPORT-038 — Receivables chart empty-state convergence` — `READY — BOUNDED`
 - further Reports/Analytics convergence beyond REPORT038 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
