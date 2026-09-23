@@ -96,19 +96,43 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-037 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
-Status: `READY — PRODUCT DESIGN BOUNDING REQUIRED`.
-Owner role for immediate next action: Product Design Director.
+### DS2-REPORT-037 — Customer Health responsive-detail empty-state convergence
+Status: `READY — BOUNDED`.
+Owner role for immediate next action: UI Production Engineer.
+Selection baseline: exact Development HEAD `e1ac77683feac8b5c81b813ed1d9649e93b9acc2` after REPORT036 integration bookkeeping.
+Representative surface: `src/pages/reports/CustomerHealthPage.tsx` → `تفاصيل العملاء — أعلى 50 حسب القيمة` responsive collection empty branch only.
 
-Intent:
-- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline;
-- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance/exclusion boundary;
-- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
-- preserve REPORT001-036 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
-- preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
-- do not turn REPORT037 into broad multi-page report beautification.
+System intent:
+- retire only the Customer Health detail collection's bespoke page-local empty block and consume the existing shared passive `StatePanel kind="empty"` grammar;
+- preserve exact visible Arabic copy `لا توجد بيانات snapshot لهذا التاريخ — شغّل watermark sweep أولاً`;
+- preserve `isBlocked` as the higher-priority trust gate exactly as-is; this slice does not reinterpret `BLOCKED` / `FAILED` as a shared state kind or alter its presentation;
+- preserve collection precedence `isBlocked -> loading -> empty -> ready` and the custom five `SkeletonCard height={44}` loading rows;
+- preserve the existing dense five-column Desktop table and deliberate two-column Tablet / one-column Mobile `Card + KeyValueList` composition with exactly one ready renderer mounted per device;
+- preserve Trust/Freshness actions and the ready-only `>50` informational footer rule exactly;
+- do not widen `StatePanel`, `ResponsiveCollection`, shared CSS, tokens or breakpoints.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+Device/state/accessibility acceptance:
+- Desktop/Tablet/Mobile use one passive shared empty state from the existing collection branch and mount no ready table/card renderer while empty;
+- exact Arabic copy remains readable/wrappable with no ordinary horizontal overflow;
+- empty state has no action slot, click handler, focus target, alert role or live announcement;
+- the BLOCKED branch remains semantically and visually untouched and continues to suppress collection loading/empty/ready renderers;
+- loading remains exactly five 44px skeleton rows before empty evaluation.
+
+Focused test expectation:
+- preserve the existing blocked-priority test unchanged in meaning;
+- preserve exact five-row 44px loading precedence and assert no shared empty state / ready renderer while loading;
+- empty branch must contain `.ds-state-panel[data-state-kind="empty"]`, exact Arabic copy, passive/no-action semantics and no mounted Desktop/Tablet/Mobile ready renderer;
+- preserve current ready Desktop/Tablet/Mobile truth, long-Arabic wrapping, fallback identity and LTR numeric-value tests;
+- preserve Trust/Freshness and ready-only `>50` footer behavior.
+
+Explicit exclusions:
+- page header, `DateField`, System Health and three-card KPI summary;
+- the existing BLOCKED renderer/anatomy and trust-status meaning;
+- ready table/card content, columns, row order, RFM/recency calculations, status thresholds and customer identity fallbacks;
+- hooks/query/cache/snapshot semantics, permissions/RBAC/RLS, routing, export/print, backend/business/workflow behavior;
+- shared component implementations, shared CSS/tokens/breakpoints and every other report page.
+
+Stop rule: if implementation requires changing the BLOCKED semantics/presentation, a shared contract, or any excluded functional/data behavior, mark REPORT037 `BLOCKED` rather than widening the PR.
 
 ## Product migration roadmap
 
@@ -160,7 +184,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-036` — `DONE`
-- `DS2-REPORT-037 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — PRODUCT DESIGN BOUNDING REQUIRED`
+- `DS2-REPORT-037 — Customer Health responsive-detail empty-state convergence` — `READY — BOUNDED`
 - further Reports/Analytics convergence beyond REPORT037 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
