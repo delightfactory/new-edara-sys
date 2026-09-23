@@ -2,102 +2,92 @@
 
 ## Reviewed baseline
 
-- Review date/time: `2026-09-23 15:00 Africa/Cairo`.
+- Review date/time: `2026-09-23 16:00 Africa/Cairo`.
 - Authoritative branch: `design-system-v2-development`.
 - Product UI is integrated through `DS2-REPORT-037`.
-- Current product integration: PR #85 squash `2af5917c0b370d1bd6aaa785ef248f6084e483d3`.
-- Development HEAD at the start of this Product Design run: `3edeb12a543155e79ae81a7775d57e65be1eb6e4`.
-- Workstream boundary commit created this run: `d0b2dc8bb5352d5b52720034ea7cbda246ede45b`.
-- Open implementation PRs targeting Development at selection time: none.
-- Current single READY slice: `DS2-REPORT-038 — Receivables chart empty-state convergence`.
-- Status: `READY — BOUNDED`.
+- Development HEAD immediately before this Product Design state write: `ca00f4f7ef4a7d23ec93780ae6282ffe01f0c184` (`REPORT038` Design QA governance-only update).
+- Active slice: `DS2-REPORT-038 — Receivables chart empty-state convergence`.
+- Active implementation PR: `#86 — DS2-REPORT-038: converge Receivables chart empty state`.
+- Feature base: `b831a1004fdeb7e460809dae059353ee5c106ffa`.
+- Exact PR HEAD independently reviewed: `1055c5bb2394177e0a6ea55c4651567bbfb119e2`.
+- Changed-file scope: exactly 3 files — `ReceivablesPage.tsx`, focused `ReceivablesPage.test.tsx`, and UI Production's owned state.
+- Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER`.
+- Design QA on the same exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
+- Evidence: `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no runtime/build/lint/visual/preview/release PASS is claimed.
 - Current contradiction classification: `NONE`.
 
 ## Independent Product Design judgment
 
-**REPORT038 should converge only the Receivables AR chart empty renderer onto the existing shared passive `StatePanel` grammar.**
+**PASS on exact PR HEAD `1055c5bb2394177e0a6ea55c4651567bbfb119e2`.**
 
-I formed this judgment from the exact latest Development source, the current Receivables focused tests, the shared `StatePanel` contract and adjacent integrated report proofs before comparing peer role states.
+I independently reviewed the exact PR diff/current Receivables source, focused tests and current shared `StatePanel` / `ChartPanel` contracts before comparing peer states. REPORT038 implements the intended system convergence without widening its declared concern.
 
-The Receivables page is already materially aligned with the V2 report grammar through `MetricGrid`, report-domain `MetricCard`, `ChartPanel`, `ReportFilterBar`, Trust/Freshness and shared loading treatment. The smallest remaining presentation-only inconsistency on that surface is the chart's bespoke 260px centered empty text block. Existing Product Performance proves the correct system split: the page may continue to own fixed analytical geometry while shared `StatePanel` owns empty-state anatomy.
+The change removes one page-local empty-state mini-system from the Receivables AR analytical surface and delegates empty-state anatomy to the existing shared passive `StatePanel`, while correctly leaving the 260px analytical geometry under page ownership. This is the intended V2 ownership split: shared patterns own presentation grammar; the report owns analytical layout and all business/data/trust semantics.
 
-This advances system coherence without changing chart data, trust semantics, business truth or any shared API.
+## Exact-head acceptance findings
 
-## Bounded REPORT038 contract
+### System coherence / hierarchy — PASS
 
-Representative surface:
-- `src/pages/reports/ReceivablesPage.tsx` → `تحصيلات AR مجمّعة بتاريخ البيع الأصلي` → chart empty branch only.
+- The bespoke centered empty-text renderer is replaced only with existing `StatePanel kind="empty" density="compact"`.
+- Exact visible copy remains `لا توجد بيانات تحصيل في هذه الفترة`.
+- The caller still owns a fixed `height: 260px` wrapper, preserving chart-body stability.
+- No shared `StatePanel`, `ChartPanel`, CSS, token or breakpoint contract is changed or widened.
+- No page-local replacement styling or second state primitive is introduced.
 
-Required implementation:
-- replace only the bespoke empty renderer with existing `StatePanel kind="empty"`;
-- preserve exact visible copy `لا توجد بيانات تحصيل في هذه الفترة`;
-- preserve the chart-body footprint at exactly 260px through a page-owned geometry wrapper;
-- use compact/passive shared state anatomy, with no action, click target, focus target or live announcement;
-- preserve exact state precedence `isBlocked -> dailyLoading -> empty -> ready chart`.
+### State / device / Arabic / accessibility — PASS at source level
 
-Preserve unchanged:
-- existing BLOCKED branch, title `بيانات AR محجوبة`, description `يحتاج إلى اكتمال تشغيل محرك AR أولاً`, trust meaning and 260px geometry;
-- exactly one `SkeletonCard height={260}` for chart loading;
-- `ChartPanel` title/description and TrustStateBadge/FreshnessIndicator action;
-- ready chart `ResponsiveContainer` height 260, margins `{ top: 4, left: -10, right: 4, bottom: 0 }`, data mapping `date / receipts / refunds / net`, and all three bar series names/colors/radii/max widths;
-- Arabic/RTL composition and LTR numeric presentation;
-- summary MetricGrid/MetricCards, ReportFilterBar and SystemHealthBar;
-- all hooks, query/cache/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business/workflow semantics;
-- all shared `StatePanel`, `ChartPanel`, CSS, token and breakpoint contracts.
+- Exact precedence remains `isBlocked -> dailyLoading -> empty -> ready chart`.
+- BLOCKED remains semantically distinct and untouched, including `بيانات AR محجوبة` / `يحتاج إلى اكتمال تشغيل محرك AR أولاً` and the existing 260px geometry.
+- Loading remains exactly one `SkeletonCard height={260}`.
+- Empty is passive across Desktop / Tablet / Mobile: no action slot, click handler, focus target or live announcement; no ready chart tree mounts while empty.
+- Arabic copy remains natural/wrappable with no new fixed-width text or ordinary horizontal-overflow source.
+- Ready chart height, margins, data mapping, three bar-series contracts and numeric presentation remain unchanged.
+- `ChartPanel` title/description and Trust/Freshness action remain unchanged.
 
-Explicit stop rule:
-- if the implementation requires reinterpreting the BLOCKED state, widening a shared contract/CSS rule, changing data/trust semantics or touching any other report surface, mark REPORT038 `BLOCKED` instead of widening the PR.
+### Functional isolation — PASS
 
-## Device / state / accessibility acceptance
+No query/cache/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business/workflow behavior changes are present. Summary metrics, filters and system-health surfaces are untouched. The diff stays within the declared presentation-only boundary.
 
-- **Desktop / Tablet / Mobile:** the same passive empty renderer is used; the 260px analytical body footprint remains stable and the ready chart tree does not mount while empty.
-- **Arabic / RTL:** exact Arabic copy remains; no fixed-width text constraint or ordinary horizontal-overflow source may be introduced.
-- **Loading:** loading remains higher priority than empty and stays exactly 260px.
-- **BLOCKED:** remains higher priority than loading/empty/ready and remains visually/semantically untouched.
-- **Empty accessibility:** no action slot, interactive element, alert role or live announcement; `StatePanel` empty semantics remain passive.
-- **Ready:** chart mapping, geometry, series and Trust/Freshness remain unchanged.
+### Focused test artifact — PASS with honest evidence
 
-## Focused test-artifact expectation
+The focused Receivables test update protects the material design risks: shared empty anatomy and exact Arabic copy, compact/passive semantics, page-owned 260px geometry, blocked/loading/empty/ready non-leakage, Trust/Freshness continuity and unchanged ready-chart contracts.
 
-Update the existing Receivables focused tests to protect:
-- one `.ds-state-panel[data-state-kind="empty"]` with exact copy inside the 260px empty wrapper;
-- compact/passive semantics with no action/live announcement/focus target;
-- BLOCKED priority and absence of shared empty StatePanel in BLOCKED;
-- 260px loading skeleton priority and no empty/ready chart leakage while loading;
-- unchanged ready 260px container, margins, data mapping and three series contracts;
-- unchanged Trust/Freshness continuity.
-
-Evidence must remain honestly labeled `TESTS_AUTHORED_NOT_EXECUTED` unless an approved exact-head runtime actually executes tests. No hosted CI or Vercel preview is authorized.
+The tests were authored but not executed in an approved exact-head project runtime. Evidence remains `TESTS_AUTHORED_NOT_EXECUTED`; this Product Design PASS does not claim build/test/lint/runtime/visual/preview/release execution.
 
 ## Peer-state synthesis / contradiction handling
 
-After forming the independent judgment, I compared current repository memory and peer states:
+After forming the independent judgment:
 
-- **Team Memory:** current through REPORT037 and explicitly hands REPORT038 to Product Design for one smallest bounded concern; aligned.
-- **Development Integrator:** current through REPORT037 integration and hands REPORT038 to Product Design; aligned.
-- **UI Production Engineer:** lifecycle-stale through REPORT037 implementation, with no competing active PR or blocker.
-- **Design QA:** lifecycle-stale through REPORT037 exact-head review; no REPORT038 approval exists or is expected before implementation.
-- **Previous Product Design state:** lifecycle-stale through REPORT037 exact-head acceptance and superseded by this state.
-- **Decision Log / North Star / Component Decision Matrix / Device Strategy:** aligned with shared-state consolidation, caller-owned business semantics, Arabic-first multi-device composition and strict functional isolation.
+- **Design QA:** fresh and aligned on the same exact PR HEAD; `GREEN-DEV + SOURCE_REVIEW_PASS`, no blocker, no unresolved review thread.
+- **UI Production Engineer:** PR-carried state is fresh and aligned; implementation is bounded to REPORT038 and labels non-executed evidence honestly.
+- **Development Integrator:** lifecycle-stale through REPORT037 only; no contrary REPORT038 judgment exists yet. Integration is the next role after this acceptance.
+- **Team Memory:** lifecycle-stale around the REPORT038 transition, but its durable shared-system and functional-isolation invariants remain aligned. No overall design direction changed, so no Product Design Team Memory write is warranted here.
+- **Decision Log / North Star / Component Decision Matrix / Device Strategy / Workstream:** aligned; no durable decision changed.
 
 Current contradiction classification: `NONE`.
+
+## What changed since previous Product Design state
+
+- REPORT038 moved from `READY — BOUNDED` to an active implementation PR.
+- UI Production completed the bounded source/test artifact on PR #86 exact HEAD `1055c5bb2394177e0a6ea55c4651567bbfb119e2`.
+- Design QA independently marked the same exact HEAD `GREEN-DEV + SOURCE_REVIEW_PASS`.
+- Product Design has now independently accepted that exact HEAD with `PASS — NO DESIGN-SYSTEM BLOCKER`.
+- No new slice is selected while PR #86 remains active.
 
 ## Repository actions this run
 
 - Completed the mandatory shared-memory bootstrap in the prescribed order.
-- Inspected issue #27, exact latest Development HEAD and all open PRs targeting Development.
-- Confirmed there was no active implementation PR before REPORT038 selection.
-- Inspected representative remaining Reports surfaces and chose the smallest safe system-level gap rather than broad report beautification.
-- Inspected `ReceivablesPage.tsx`, its focused tests, shared `StatePanel`, adjacent integrated `ProductPerformance` proof and relevant V2 blueprint/migration/device documents.
-- Updated the Workstream to bound exactly one READY REPORT038 concern.
+- Inspected issue #27, current Development HEAD, the single open PR targeting Development, exact PR scope/head/base, relevant V2 blueprint/component/migration/device documents and shared pattern source.
+- Independently reviewed REPORT038 implementation and focused test artifact at exact PR HEAD `1055c5bb2394177e0a6ea55c4651567bbfb119e2`.
+- Confirmed PR #86 remained open/draft, exact HEAD unchanged, `mergeable=true`, with no inline review threads before Product Design disposition.
 - Updated only this owned specialist state file.
 - Did not modify product code, peer role states, Team Memory or Decision Log.
 - Did not merge, touch `main`, deploy Vercel, modify preview branches, trigger/rerun GitHub Actions or use hosted CI.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer; then Design QA and Product Design after a stable implementation PR HEAD exists.
-- **What changed:** REPORT038 is now bounded to the Receivables AR chart empty branch only, converging its bespoke empty text onto existing passive `StatePanel kind="empty"` while retaining page-owned 260px analytical geometry.
-- **Preserve:** exact empty copy; exact `isBlocked -> dailyLoading -> empty -> ready chart` precedence; untouched BLOCKED branch/meaning/copy; 260px loading/empty/ready body contracts; exact ready chart mapping/margins/three series; ChartPanel title/description; Trust/Freshness; summary/filter/system-health surfaces; all query/trust/permission/backend/business semantics; unchanged shared contracts.
-- **Need from you:** start from the latest Development HEAD after these governance commits, implement REPORT038 only, update focused Receivables tests, and open exactly one Draft PR targeting `design-system-v2-development`. If any excluded or shared-contract widening becomes necessary, stop and mark the slice `BLOCKED`.
-- **Blocker level:** `NONE`.
-- **Baseline:** selection baseline `3edeb12a543155e79ae81a7775d57e65be1eb6e4`; Workstream boundary commit `d0b2dc8bb5352d5b52720034ea7cbda246ede45b`.
+- **To:** Development Integrator.
+- **What changed:** Product Design independently accepted PR #86 exact HEAD `1055c5bb2394177e0a6ea55c4651567bbfb119e2` as `PASS — NO DESIGN-SYSTEM BLOCKER`; Design QA is already GREEN on that same HEAD.
+- **Preserve:** exact empty copy; passive compact shared `StatePanel` anatomy; untouched BLOCKED branch/meaning/copy; exact `isBlocked -> dailyLoading -> empty -> ready` precedence; 260px loading/empty/ready chart-body contracts; ready chart mapping/margins/three series; ChartPanel title/description and Trust/Freshness; all excluded query/trust/permission/backend/business/shared contracts.
+- **Need from you:** revalidate PR #86 against the latest Development base, confirm HEAD remains exactly `1055c5bb2394177e0a6ea55c4651567bbfb119e2`, governance-only base drift remains non-overlapping, review threads/scope/functional isolation remain clean, then integrate only if normal merge gates remain valid. Do not select a competing slice before integration closes this one.
+- **Blocker level:** `NONE` from Product Design.
+- **Baseline:** Development pre-state-write `ca00f4f7ef4a7d23ec93780ae6282ffe01f0c184`; exact accepted PR #86 HEAD `1055c5bb2394177e0a6ea55c4651567bbfb119e2`; evidence `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
