@@ -366,30 +366,52 @@ describe('ChurnRisk responsive detail collection', () => {
     expect(within(section).getByText('بيانات الخطر محجوبة')).toBeTruthy()
     expect(within(section).getByText('snapshot_customer_risk يحتاج تشغيل ناجح أولاً')).toBeTruthy()
     expect(section.querySelector('.ds-responsive-collection')).toBeNull()
+    expect(section.querySelector('.ds-state-panel[data-state-kind="empty"]')).toBeNull()
     expect(section.querySelector('.ds-responsive-card-grid')).toBeNull()
     expect(within(section).queryByRole('table')).toBeNull()
   })
 
-  it('preserves the five-row 44px loading state and exact empty copy without mounting a ready renderer', () => {
+  it('keeps the five-row 44px loading state ahead of empty and ready renderers', () => {
     setViewport(390)
     mocks.useCustomerRiskList.mockReturnValue({ data: [], isLoading: true })
-    const { rerender } = render(<ChurnRiskPage />)
 
-    let section = getDetailSection()
+    render(<ChurnRiskPage />)
+
+    const section = getDetailSection()
     const loadingCollection = section.querySelector('[data-collection-state="loading"]') as HTMLElement
     expect(loadingCollection).not.toBeNull()
     const loadingRows = within(loadingCollection).getAllByTestId('skeleton-card')
     expect(loadingRows).toHaveLength(5)
     loadingRows.forEach(row => expect(row.getAttribute('data-height')).toBe('44'))
+    expect(section.querySelector('.ds-state-panel[data-state-kind="empty"]')).toBeNull()
     expect(section.querySelector('.ds-responsive-card-grid')).toBeNull()
     expect(within(section).queryByRole('table')).toBeNull()
+  })
 
+  it.each([
+    [390, 'mobile'],
+    [900, 'tablet'],
+    [1440, 'desktop'],
+  ])('uses the shared compact passive empty state without ready-renderer leakage at %ipx', (width, device) => {
+    setViewport(width)
     mocks.useCustomerRiskList.mockReturnValue({ data: [], isLoading: false })
-    rerender(<ChurnRiskPage />)
 
-    section = getDetailSection()
-    expect(section.querySelector('[data-collection-state="empty"]')).not.toBeNull()
-    expect(within(section).getByText('لا توجد بيانات — شغّل watermark sweep أولاً')).toBeTruthy()
+    render(<ChurnRiskPage />)
+
+    const section = getDetailSection()
+    const emptyCollection = section.querySelector('[data-collection-state="empty"]') as HTMLElement
+    const statePanel = emptyCollection.querySelector('.ds-state-panel[data-state-kind="empty"]') as HTMLElement
+
+    expect(emptyCollection).not.toBeNull()
+    expect(emptyCollection.getAttribute('data-device')).toBe(device)
+    expect(statePanel).not.toBeNull()
+    expect(statePanel.classList.contains('ds-state-panel--compact')).toBe(true)
+    expect(within(statePanel).getByText('لا توجد بيانات — شغّل watermark sweep أولاً')).toBeTruthy()
+    expect(statePanel.getAttribute('aria-live')).toBeNull()
+    expect(statePanel.querySelector('.ds-state-panel__action')).toBeNull()
+    expect(within(statePanel).queryByRole('button')).toBeNull()
+    expect(within(statePanel).queryByRole('link')).toBeNull()
+    expect(statePanel.querySelector('[tabindex]')).toBeNull()
     expect(section.querySelector('.ds-responsive-card-grid')).toBeNull()
     expect(within(section).queryByRole('table')).toBeNull()
   })
