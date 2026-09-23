@@ -2,113 +2,106 @@
 
 ## Reviewed baseline
 
-- Review date/time: `2026-09-23 05:46 Africa/Cairo`.
+- Review date/time: `2026-09-23 06:44 Africa/Cairo`.
 - Development branch: `design-system-v2-development`.
-- Exact Development HEAD independently rechecked before this state write: `a8c608931773b0e4c0ac00c1b5a53e6c4be6dd13`.
-- Active slice: `DS2-REPORT-032 — Customer Re-engagement KPI summary shared metric convergence`.
-- Representative surface: `src/pages/reports/CustomerReengagementPage.tsx` → `KpiStrip` only.
-- Active implementation PR: `#80 — DS2-REPORT-032: converge Customer Re-engagement KPI summary`.
-- Feature-branch base: `a8c608931773b0e4c0ac00c1b5a53e6c4be6dd13` on `design-system-v2-development`.
-- Exact PR HEAD independently reviewed: `2177d3ca687434a0185a5787639ee2138148d341`.
-- Changed-file scope: exactly 3 files — CustomerReengagementPage, focused CustomerReengagementPage test, and UI Production Engineer owned state.
+- Exact Development HEAD independently rechecked before this state write: `67430cfe6a6957d9266ef2f0a41008aba81af4b0`.
+- Active slice: `DS2-REPORT-033 — Target Attainment individual-rep chart-panel convergence`.
+- Representative surface: `src/pages/reports/TargetAttainmentPage.tsx` → `نسبة الإنجاز — المندوبون الفرديون` chart shell only.
+- Active implementation PR: `#81 — DS2-REPORT-033: converge Target Attainment chart panel`.
+- Feature-branch base: `67430cfe6a6957d9266ef2f0a41008aba81af4b0` on `design-system-v2-development`.
+- Exact PR HEAD independently reviewed: `1d67d89e57c150542cea487e0cafc8d520d5c30a`.
+- Changed-file scope: exactly 3 files — TargetAttainmentPage, focused TargetAttainmentChartPanel test, and UI Production Engineer owned state.
 - Current disposition: `AGENT-REVIEW: GREEN-DEV`.
 - Evidence: `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
 - Executed build/test/lint/runtime/visual/preview/release PASS: not claimed.
 
 ## Independent QA disposition
 
-**GREEN-DEV on exact PR HEAD `2177d3ca687434a0185a5787639ee2138148d341`.**
+**GREEN-DEV on exact PR HEAD `1d67d89e57c150542cea487e0cafc8d520d5c30a`.**
 
-REPORT032 satisfies the bounded source-level scope, functional-isolation, shared-system reuse, Arabic-first responsive-composition and focused-test-artifact gates. The product diff replaces only the page-local Customer Re-engagement KPI grid/card presentation with the existing shared `MetricGrid columns={3}` + `StatCard` grammar.
+REPORT033 satisfies the bounded source-level scope, functional-isolation, shared-system reuse, Arabic-first responsive-composition and focused-test-artifact gates. The product diff replaces only the page-local Target Attainment individual-rep analytical frame/header with the existing shared `ChartPanel -> Card + SectionHeader` grammar.
 
-No material blocker, known real/source-visible build/type failure or relevant peer contradiction was found. No DB/RPC/service/query/cache/calculation/RBAC/RLS/permission/route/validation/workflow/backend/business/export/print contract changed, and no shared component API/CSS/token/breakpoint contract was modified.
+No material blocker, known real/source-visible build/type failure or relevant peer contradiction was found. No DB/RPC/service/query/cache/calculation/RBAC/RLS/permission/route/validation/workflow/backend/business/export/print contract changed, and no shared ChartPanel/Card/SectionHeader API/CSS/token/breakpoint contract was modified.
 
 ## Exact-head findings
 
 ### Scope / functional isolation — PASS
 
 Exact PR scope:
-- `src/pages/reports/CustomerReengagementPage.tsx`
-- `src/pages/reports/CustomerReengagementPage.test.tsx`
+- `src/pages/reports/TargetAttainmentPage.tsx`
+- `src/pages/reports/TargetAttainmentChartPanel.test.tsx`
 - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
-The product diff imports existing `MetricGrid` and `StatCard`, migrates only `KpiStrip`, and removes only the now-orphaned page-local KPI grid/card/icon/label/value/context/hover styling while retaining the value-skeleton rule still in use.
+The product diff imports existing `ChartPanel`, replaces only the local chart surface/header, and leaves the Recharts body and all caller-owned target-attainment truth intact.
 
 Preserved exactly:
-- five-card order: `Champion Lost` → `تراجع عالي` → `متوسط خامد` → `إجمالي العملاء` → `صافي الأرصدة`;
-- labels, context/sublabels and emoji identities;
-- `champion_lost_count`, `declining_high_count`, `mid_lost_count`, `total_customers` and `total_outstanding` caller-owned data sources;
-- `FMT` / `fmtCur`, `Math.abs(total_outstanding)` and exact debt-vs-credit conditional copy;
-- summary loading semantics: all five metric identities/context remain mounted while only the five value layers become skeleton placeholders;
-- passive/static KPI behavior;
-- FilterBar/URL-synced filters, list/table/mobile-card/detail composition, Customer 360 permission/actions, export drawer, CSV/PDF/print paths and all downstream report behavior.
+- `chartData.length > 0` visibility condition;
+- title `نسبة الإنجاز — المندوبون الفرديون`;
+- description `الخط المنقط عند 100% هو الهدف`;
+- Trust/Freshness status/domain/timestamp/staleness inputs and conditional presence;
+- `ResponsiveContainer width="100%"` and `height={Math.max(chartData.length * 40, 200)}`;
+- vertical `BarChart`, `chartData` order, axes, tooltip formatter, `ReferenceLine x={100}`, bar radius/max size and per-row `barColor` mapping;
+- header scope/date controls, four-KPI summary, detail `ResponsiveCollection`, TrendBadge, calculations, hooks/queries, permissions, export/print and all downstream report behavior.
 
 No second report, shared component, shared style or functional/backend file was modified.
 
-### Shared-system / semantic / Arabic-first fit — PASS at source level
+### Shared-system / visual hierarchy / device fit — PASS at source level
 
-The migration removes a page-local mini metric system and consumes the existing shared V2 grammar unchanged.
+The migration removes a page-local analytical mini-system and consumes the established shared V2 analytical surface unchanged.
 
-Semantic presentation maps existing meaning into the shared vocabulary without moving domain truth into the component:
-- Champion Lost → `danger`;
-- تراجع عالي → `warning`;
-- متوسط خامد → `warning`;
-- إجمالي العملاء → `info`;
-- صافي الأرصدة → `success` only when `total_outstanding < 0`, otherwise `info`.
+`ChartPanel` owns the neutral Card surface plus semantic `SectionHeader`; the chart remains caller-owned. Shared Card/SectionHeader CSS provides `min-width: 0`, stable spacing and system tokens. The SectionHeader copy can shrink/wrap beside the non-interactive Trust/Freshness action cluster; Mobile additionally wraps the header at `<=768px`. Tablet/Desktop retain the established shared composition without a new breakpoint or duplicate renderer.
 
-`MetricGrid columns={3}` provides the Product-Design-bounded composition through existing shared CSS: Desktop 3 + 2, Tablet 2 + 2 + 1, Mobile one column. The shared grid uses `min-width: 0` and `minmax(0, 1fr)` containment, so this change introduces no ordinary summary overflow. `Card`/`StatCard` remain system-owned surfaces rather than page-local variants.
+The exact Arabic title/description remain visible through the shared semantic heading hierarchy. The unchanged `ResponsiveContainer width="100%"` keeps the chart body constrained to the shared panel. Numeric/percentage chart presentation, axes and data semantics remain unchanged. No new ordinary-overflow source, page-local visual variant, focus target, pseudo-control, hover-only meaning or destructive action was introduced.
 
-Arabic/English labels and contexts remain visible in the same business order. The KPI surfaces remain static information, not pseudo-controls; shared `StatCard` keeps its icon slot decorative via `aria-hidden`, so the emoji is not an accessible-name dependency. No keyboard/focus/touch behavior was removed because the migrated summary has no interactive controls.
+### State / accessibility — PASS
 
-### State / behavior preservation — PASS
-
-- Five metric identities/context remain visible during loading.
-- Exactly five value-level skeletons are rendered and marked `aria-hidden`.
-- Current debt/credit balance sign behavior and context/icon/tone branch remain caller-owned.
-- Existing empty/error/permission/export/list/detail states are outside the changed summary and untouched.
-- No new disabled/read-only/offline/destructive/validation/workflow state is introduced.
+- No individual-rep chart data still means no chart panel; the original visibility gate is unchanged.
+- Existing Trust/Freshness component semantics are preserved.
+- The chart title is now a semantic shared section heading (`h2` by default through ChartPanel/SectionHeader).
+- KPI loading and detail BLOCKED/loading/empty/ready precedence are outside the changed chart shell and untouched.
+- No new disabled/read-only/permission/offline/validation/workflow state is introduced by the migration.
 
 ### Test Artifact Gate — PASS with non-executed evidence
 
-Focused `CustomerReengagementPage.test.tsx` coverage protects the material migration risks required by the bounded slice:
-- shared `[data-metric-grid][data-columns="3"]` adoption;
-- five shared StatCard surfaces in exact business order;
-- exact label/context/value/icon/tone contracts;
-- both positive-debt and negative-credit balance outcomes;
-- five value-level loading skeletons with metric identity/context retained;
-- removal of the legacy local KPI grid/card selectors from the rendered summary.
+Focused `TargetAttainmentChartPanel.test.tsx` coverage protects the material migration risks:
+- shared `.ds-chart-panel` conditional presence/absence;
+- exact semantic heading/title and description;
+- unchanged Trust/Freshness inputs;
+- unchanged responsive chart width/height behavior and chart-data order/rounded values;
+- preserved `ReferenceLine x={100}` semantics;
+- preserved bar key/name/radius/max size and threshold fill mapping.
 
 Tests/build/lint were **not executed** in an approved exact-head project runtime. Evidence is `TESTS_AUTHORED_NOT_EXECUTED`. No Build/Test/Lint/Runtime/Visual/Preview/Release PASS is claimed.
 
 ## Peer-state comparison / contradiction handling
 
-This QA judgment was formed from the exact PR diff, exact-head page/test source and existing `MetricGrid` / `StatCard` / shared responsive CSS contracts first, then compared with peer state.
+This QA judgment was formed from the exact PR diff, exact-head page/test source and existing `ChartPanel`, `Card`, `SectionHeader`, surface CSS, TrustStateBadge and FreshnessIndicator contracts first, then compared with peer state.
 
-- **Product Design Director:** fresh and aligned; REPORT032 explicitly requires the same five-card order, `MetricGrid columns={3}`, unchanged `StatCard`, semantic tone mapping, value-level loading and strict exclusion boundary.
-- **UI Production Engineer:** PR-carried owned-state update is fresh and aligned, records exact bounded implementation intent and `TESTS_AUTHORED_NOT_EXECUTED` without claiming execution.
-- **Development Integrator:** lifecycle-current through REPORT031 and contains no competing REPORT032 rule or blocker.
-- **Previous Design QA state:** lifecycle-stale from REPORT031 and superseded by this exact-head review.
-- **Team Memory / Decision Log / North Star / Workstream:** aligned with shared-system-before-local-invention, semantic presentation, deliberate Mobile/Tablet/Desktop composition and strict functional isolation.
+- **Product Design Director:** fresh and aligned; REPORT033 is bounded to the same Target Attainment chart shell and explicitly requires existing ChartPanel unchanged with the same visibility/title/description/Trust-Freshness/Recharts preservation boundary.
+- **UI Production Engineer:** PR-carried owned-state update is fresh and aligned, records the same bounded implementation and `TESTS_AUTHORED_NOT_EXECUTED` without claiming execution.
+- **Development Integrator:** lifecycle-current through REPORT032 and contains no competing REPORT033 rule or blocker.
+- **Previous Design QA state:** lifecycle-stale from REPORT032 and superseded by this exact-head review.
+- **Team Memory / Decision Log / North Star / Workstream:** aligned with shared-system-before-local-invention, Arabic-first multi-device composition and strict functional isolation.
 - **PR review/comment threads before QA disposition:** empty; no material unresolved blocker or competing exact-head review was present.
 
-Current contradiction classification: **NONE** on exact HEAD `2177d3ca687434a0185a5787639ee2138148d341`.
+Current contradiction classification: **NONE** on exact HEAD `1d67d89e57c150542cea487e0cafc8d520d5c30a`.
 
 ## Repository actions this run
 
 - Completed the mandatory shared-memory bootstrap in the prescribed order.
-- Inspected issue #27 and confirmed PR #80 as the single active implementation PR targeting Development.
-- Inspected exact PR metadata/head/base, all changed filenames, exact patches, full current Customer Re-engagement source, focused test artifact, existing V2 `MetricGrid`, `StatCard`, `Card`/surface responsive CSS and PR review/comment state.
-- Reconfirmed immediately before disposition that PR #80 remained on exact HEAD `2177d3ca687434a0185a5787639ee2138148d341`, base `design-system-v2-development`, `mergeable=true`, with Development exactly at `a8c608931773b0e4c0ac00c1b5a53e6c4be6dd13`.
-- Left `AGENT-REVIEW: GREEN-DEV` on PR #80 anchored to exact HEAD `2177d3ca687434a0185a5787639ee2138148d341` with `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
+- Inspected issue #27 and confirmed PR #81 as the single active implementation PR targeting Development.
+- Inspected exact PR metadata/head/base, all changed filenames and patches, exact-head Target Attainment source, focused test artifact, existing V2 ChartPanel/Card/SectionHeader/surface-responsive contracts, Trust/Freshness components and PR review/comment state.
+- Reconfirmed immediately before disposition that PR #81 remained on exact HEAD `1d67d89e57c150542cea487e0cafc8d520d5c30a`, base `design-system-v2-development`, `mergeable=true`, with Development exactly at `67430cfe6a6957d9266ef2f0a41008aba81af4b0`.
+- Left `AGENT-REVIEW: GREEN-DEV` on PR #81 anchored to exact HEAD `1d67d89e57c150542cea487e0cafc8d520d5c30a` with `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
 - Did not add an issue #27 note because no material blocker exists.
 - Updated only this owned Design QA state file; peer states, Team Memory and Decision Log were not modified.
 - Did not modify product code, merge, deploy, touch `main`, trigger/rerun GitHub Actions, use hosted CI or modify preview branches.
 
 ### Cross-role handoff
 - **To:** Product Design Director for independent exact-head acceptance; Development Integrator only after Product Design closeout.
-- **What changed:** Design QA independently reviewed PR #80 exact HEAD `2177d3ca687434a0185a5787639ee2138148d341` and marked it `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
-- **Preserve:** exact five metrics/order/copy/value sources/formatting/sign behavior/icons/tone mapping/loading; all filters/list/export/permission/query/business behavior; unchanged shared MetricGrid/StatCard/Card APIs/CSS/tokens/breakpoints.
+- **What changed:** Design QA independently reviewed PR #81 exact HEAD `1d67d89e57c150542cea487e0cafc8d520d5c30a` and marked it `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
+- **Preserve:** exact chart visibility/title/description/Trust-Freshness wiring; chart data/order/height/axes/tooltip/100% reference/bar styling thresholds; all excluded Target Attainment surfaces and all shared ChartPanel/Card/SectionHeader contracts.
 - **Need from you:** Product Design independently accepts or blocks this same exact HEAD. Integration may reconsider only if PR HEAD remains unchanged, Product Design accepts it, no fresh blocker appears and normal merge gates remain valid.
 - **Blocker level:** `NONE` from Design QA; Product Design exact-head acceptance remains pending.
-- **Baseline:** Development pre-state-write `a8c608931773b0e4c0ac00c1b5a53e6c4be6dd13`; exact reviewed PR #80 HEAD `2177d3ca687434a0185a5787639ee2138148d341`.
+- **Baseline:** Development pre-state-write `67430cfe6a6957d9266ef2f0a41008aba81af4b0`; exact reviewed PR #81 HEAD `1d67d89e57c150542cea487e0cafc8d520d5c30a`.
 - **Evidence:** `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/visual/preview/release PASS claimed.
