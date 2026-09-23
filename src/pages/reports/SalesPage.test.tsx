@@ -201,7 +201,8 @@ describe('Sales report composition', () => {
     expect(within(firstPanel).queryByTestId('skeleton-card')).toBeNull()
     expect(within(firstPanel).getByText('لا توجد بيانات في النطاق الزمني المحدد')).not.toBeNull()
     expect(within(secondPanel).queryByTestId('skeleton-card')).toBeNull()
-    expect(within(secondPanel).getByTestId('bar-chart')).not.toBeNull()
+    expect(within(secondPanel).getByText('لا توجد بيانات في النطاق الزمني المحدد')).not.toBeNull()
+    expect(within(secondPanel).queryByTestId('bar-chart')).toBeNull()
   })
 
   it('uses shared ChartPanel for both analytical sections while preserving the first panel contract', () => {
@@ -222,6 +223,7 @@ describe('Sales report composition', () => {
     expect(within(secondPanel).queryByTestId('trust-state-badge')).toBeNull()
     expect(within(secondPanel).queryByTestId('freshness-indicator')).toBeNull()
     expect(within(secondPanel).queryByText('صافي إيراد + قيمة مرتجعات — مجمّع يومياً في قاعدة البيانات')).toBeNull()
+    expect(within(secondPanel).getByText('لا توجد بيانات في النطاق الزمني المحدد')).not.toBeNull()
   })
 
   it('uses one compact passive shared empty StatePanel with exact copy and 240px geometry at Mobile, Tablet, and Desktop widths', () => {
@@ -246,7 +248,30 @@ describe('Sales report composition', () => {
     }
   })
 
-  it('keeps the first chart blocked state first with exact copy and no empty/loading/ready renderer leakage', () => {
+  it('uses one compact passive shared empty StatePanel with exact copy and 200px geometry for the second chart at Mobile, Tablet, and Desktop widths', () => {
+    for (const width of [390, 900, 1440]) {
+      setViewport(width)
+      const view = render(<SalesPage />)
+      const secondPanel = getSecondPanel()
+      const emptyCopy = within(secondPanel).getByText('لا توجد بيانات في النطاق الزمني المحدد')
+      const statePanel = emptyCopy.closest('.ds-state-panel') as HTMLElement
+
+      expect(statePanel).not.toBeNull()
+      expect(statePanel.getAttribute('data-state-kind')).toBe('empty')
+      expect(statePanel.classList.contains('ds-state-panel--compact')).toBe(true)
+      expect(statePanel.parentElement?.style.height).toBe('200px')
+      expect(statePanel.parentElement?.style.width).toBe('')
+      expect(statePanel.querySelector('.ds-state-panel__action')).toBeNull()
+      expect(statePanel.getAttribute('aria-live')).toBeNull()
+      expect(statePanel.querySelector('button, a, input, select, textarea, [tabindex]:not([tabindex="-1"])')).toBeNull()
+      expect(within(secondPanel).queryByTestId('bar-chart')).toBeNull()
+      expect(within(secondPanel).queryByTestId('responsive-container')).toBeNull()
+
+      view.unmount()
+    }
+  })
+
+  it('keeps the first chart blocked state first with exact copy while the second chart remains independently empty', () => {
     mocks.useTrustForComponent.mockImplementation((_rows: unknown, component: string) => {
       if (component === 'fact_sales_daily_grain.revenue') {
         return { ...trustByComponent[component], status: 'BLOCKED' }
@@ -265,11 +290,13 @@ describe('Sales report composition', () => {
     expect(firstPanel.querySelector('.ds-state-panel')).toBeNull()
     expect(within(firstPanel).queryByTestId('skeleton-card')).toBeNull()
     expect(within(firstPanel).queryByTestId('area-chart')).toBeNull()
+
     expect(within(secondPanel).queryByText('المخطط محجوب')).toBeNull()
-    expect(within(secondPanel).getByTestId('bar-chart')).not.toBeNull()
+    expect(within(secondPanel).getByText('لا توجد بيانات في النطاق الزمني المحدد')).not.toBeNull()
+    expect(within(secondPanel).queryByTestId('bar-chart')).toBeNull()
   })
 
-  it('preserves the 240px first-chart loading body ahead of empty/ready and the 200px second-chart loading body', () => {
+  it('preserves the 240px first-chart loading body and 200px second-chart loading body ahead of empty/ready', () => {
     mocks.useSalesDailyTotals.mockReturnValue({ data: [], isLoading: true })
 
     render(<SalesPage />)
@@ -280,7 +307,11 @@ describe('Sales report composition', () => {
     expect(within(firstPanel).getByTestId('skeleton-card').getAttribute('data-height')).toBe('240')
     expect(firstPanel.querySelector('.ds-state-panel')).toBeNull()
     expect(within(firstPanel).queryByTestId('area-chart')).toBeNull()
+
     expect(within(secondPanel).getByTestId('skeleton-card').getAttribute('data-height')).toBe('200')
+    expect(secondPanel.querySelector('.ds-state-panel')).toBeNull()
+    expect(within(secondPanel).queryByTestId('bar-chart')).toBeNull()
+    expect(within(secondPanel).queryByTestId('responsive-container')).toBeNull()
   })
 
   it('preserves the first chart data mapping, 240px container, margins and exact revenue/returns series contract', () => {
@@ -348,6 +379,8 @@ describe('Sales report composition', () => {
     const revenueBar = within(secondPanel).getByTestId('bar-revenue')
     const taxBar = within(secondPanel).getByTestId('bar-tax')
 
+    expect(secondPanel.querySelector('.ds-state-panel')).toBeNull()
+    expect(within(secondPanel).queryByTestId('skeleton-card')).toBeNull()
     expect(responsive.getAttribute('data-width')).toBe('100%')
     expect(responsive.getAttribute('data-height')).toBe('200')
     expect(barChart.getAttribute('data-margin')).toBe(JSON.stringify({ top: 4, left: -10, right: 4, bottom: 0 }))
