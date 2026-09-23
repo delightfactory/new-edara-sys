@@ -2,14 +2,14 @@
 
 ## Reviewed baseline
 
-- Review date/time: `2026-09-23 21:44 Africa/Cairo`.
+- Review date/time: `2026-09-23 23:44 Africa/Cairo`.
 - Development branch: `design-system-v2-development`.
-- Exact Development HEAD immediately before this QA-state write: `7c75869314147e5c928ca0570320bb136546e0fd`.
-- Active slice: `DS2-REPORT-041 — Sales revenue-chart empty-state convergence`.
-- Representative surface: `src/pages/reports/SalesPage.tsx` → first `ChartPanel` `تطور الإيراد اليومي` → empty branch only.
-- Active implementation PR: `#89 — DS2-REPORT-041: converge Sales revenue chart empty state`.
-- Feature baseline / PR base: `7c75869314147e5c928ca0570320bb136546e0fd`.
-- Exact PR HEAD independently reviewed and rechecked immediately before disposition: `1f3195250b9d6f964389090efc3acd8c7bdcc85a`.
+- Exact Development HEAD immediately before this QA-state write: `6c8187fe8b1d6bb48638fca2903126f5ae26ff3d`.
+- Active slice: `DS2-REPORT-042 — Sales revenue/tax bar-chart empty-state convergence`.
+- Representative surface: `src/pages/reports/SalesPage.tsx` → second `ChartPanel` `توزيع الإيرادات اليومي (إيراد + ضريبة)` → no-data branch only.
+- Active implementation PR: `#90 — DS2-REPORT-042: converge Sales revenue/tax chart empty state`.
+- Feature baseline / PR base: `6c8187fe8b1d6bb48638fca2903126f5ae26ff3d`.
+- Exact PR HEAD independently reviewed and rechecked immediately before disposition: `dbabddc56743f2d448bbefbab4998b6f0b98e9bb`.
 - Changed-file scope: exactly 3 files — `SalesPage.tsx`, focused `SalesPage.test.tsx`, and UI Production Engineer owned state.
 - Current disposition: `AGENT-REVIEW: GREEN-DEV`.
 - Evidence: `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
@@ -18,9 +18,9 @@
 
 ## Independent QA disposition
 
-**GREEN-DEV on exact PR HEAD `1f3195250b9d6f964389090efc3acd8c7bdcc85a`.**
+**GREEN-DEV on exact PR HEAD `dbabddc56743f2d448bbefbab4998b6f0b98e9bb`.**
 
-REPORT041 passes the bounded source-level scope, functional-isolation, shared-system reuse, Arabic/RTL, device/state/accessibility and focused-test-artifact gates. The product diff changes only the first Sales revenue chart empty branch from a bespoke page-local 240px text block to the existing shared compact passive `StatePanel kind="empty"` inside a caller-owned 240px wrapper.
+REPORT042 passes the bounded source-level scope, functional-isolation, shared-system reuse, Arabic/RTL, device/state/accessibility and focused-test-artifact gates. The product diff adds only an explicit no-data branch to the second Sales revenue/tax BarChart, replacing the previous blank Recharts canvas with the existing shared compact passive `StatePanel kind="empty"` inside caller-owned 200px analytical geometry.
 
 No material blocker, known real/source-visible build/type failure, unresolved review thread or relevant peer contradiction was found.
 
@@ -33,90 +33,88 @@ Exact PR scope:
 - `src/pages/reports/SalesPage.test.tsx`
 - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
-The only product-code changes are:
-- import existing `StatePanel`;
-- replace the first chart's local empty block with a `height: 240` wrapper containing `StatePanel kind="empty" title="لا توجد بيانات في النطاق الزمني المحدد" compact`.
+The only product-code behavior added is the presentation-state branch:
+- second chart remains `dailyLoading -> empty -> ready`;
+- when not loading and `chartData.length === 0`, a caller-owned `height: 200` wrapper renders `StatePanel kind="empty" title="لا توجد بيانات في النطاق الزمني المحدد" compact`.
 
 Preserved exactly:
-- caller precedence `isBlocked -> dailyLoading -> empty -> ready`;
-- BLOCKED renderer/copy/trust meaning: `المخطط محجوب` / `لا يمكن عرض بيانات الإيراد حتى اكتمال المطابقة المحاسبية`;
-- first-chart loading `SkeletonCard height={240}`;
-- first ready `ResponsiveContainer + AreaChart` data mapping, margin, axes/grid/tooltip, revenue/returns series, gradients/colors and 240px geometry;
-- TrustStateBadge/FreshnessIndicator placement and meaning;
-- second Sales chart and its current no-data behavior;
-- filter/range behavior, KPI `MetricGrid`/`MetricCard`, SystemHealthBar and formatting;
-- all hooks/query/cache/aggregation/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business/workflow semantics.
+- `SkeletonCard height={200}` loading state;
+- ready `ResponsiveContainer width="100%" height={200}`;
+- BarChart data mapping, margin, grid, axes, tooltip, revenue/tax bars, fills, radii and `maxBarSize`;
+- no `isBlocked`, BLOCKED/trust gate, TrustStateBadge or FreshnessIndicator semantics for the second chart;
+- first Sales chart entirely unchanged, including its `isBlocked -> dailyLoading -> empty -> ready`, 240px geometry, BLOCKED meaning/copy, Trust/Freshness and AreaChart contract;
+- report filter/range behavior, KPI summaries, SystemHealthBar, formatting and hooks;
+- all query/cache/aggregation/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business/workflow semantics.
 
 No shared component implementation, shared CSS/token/breakpoint, DB/migration/RPC/service, workflow, deployment or `main` file changed.
 
-### Shared-system / visual hierarchy / device fit — PASS at source level
+### Shared-system / hierarchy / device / RTL — PASS at source level
 
-- The change removes duplicated page-local empty-state typography/alignment/tone and consumes the established shared `StatePanel` state grammar.
-- `ChartPanel` remains presentation-only and caller-owned chart/state truth remains unchanged.
-- The implementation matches the already-integrated Receivables fixed-height analytical empty-state pattern: caller-owned geometry around shared compact passive state anatomy.
-- Shared `StatePanel` uses `min-width: 0`, centered flex anatomy and compact spacing; `ChartPanel` body also uses `min-width: 0`.
-- The empty branch introduces no fixed inline width or truncation source and preserves the 240px analytical footprint at representative Mobile/Tablet/Desktop widths.
-- Arabic copy remains exact and can wrap naturally; no ordinary horizontal-overflow source is introduced.
-- Desktop management density and all ready-chart information remain unchanged because ready composition is untouched.
+- The change closes a state-completeness gap and removes an implicit blank chart while using the already-established shared `StatePanel` grammar instead of creating local empty-state typography/tone.
+- `ChartPanel` continues to own only analytical surface hierarchy; state truth and 200px geometry remain caller-owned.
+- Shared `ChartPanel` body and `StatePanel` use `min-width: 0`; the new wrapper introduces height only, no fixed width or truncation source.
+- Exact Arabic copy can wrap naturally and no new ordinary horizontal-overflow source is visible.
+- At representative Mobile 390, Tablet 900 and Desktop 1440 widths, the bounded empty state remains one compact shared state inside the preserved 200px body. No new touch action is introduced, and Desktop ready-chart density is unchanged.
+- The first chart and surrounding page hierarchy/action priority remain untouched.
 
 ### State / accessibility — PASS
 
-- BLOCKED remains caller-owned and first priority; empty/loading/ready renderers do not mount while blocked.
-- Loading remains ahead of empty/ready and retains exact 240px skeleton geometry.
-- Empty exact copy remains `لا توجد بيانات في النطاق الزمني المحدد`.
+- Loading remains first and mounts only the 200px skeleton for the second chart.
+- Empty appears only when loading is false and `chartData.length === 0`; ready BarChart does not mount in empty.
+- Ready mounts no shared empty panel and preserves the existing 200px BarChart contract.
 - Shared empty `StatePanel` is passive/non-interactive: no action slot, button/link/click handler, explicit focus target or live announcement; `aria-live` remains error-only in the shared component.
-- Empty mounts no ready `AreaChart`; ready mounts no shared empty panel.
-- No new disabled/read-only/permission/offline/validation/workflow state is introduced by this bounded presentation-only slice.
+- First-chart BLOCKED state remains independent and does not introduce BLOCKED/trust semantics into the second chart.
+- No unrelated disabled/read-only/permission/offline/validation/workflow state is introduced or changed by this presentation-only slice.
 
 ### Test Artifact Gate — PASS with non-executed evidence
 
 Focused `SalesPage.test.tsx` coverage protects the material risks:
 - compact shared `.ds-state-panel[data-state-kind="empty"]` with exact Arabic copy;
-- caller-owned 240px empty geometry at 390px, 900px and 1440px;
-- no action/live/focus targets in the empty state;
-- BLOCKED priority and exact current copy;
-- 240px loading priority over empty/ready;
-- absence of ready AreaChart during blocked/loading/empty;
-- retained first ready-chart mapping/margins/series/geometry contract;
-- retained second-chart data/margin/series contract and existing behavior.
+- caller-owned 200px empty geometry at 390px, 900px and 1440px;
+- no action/live/focus targets in the second-chart empty state;
+- `dailyLoading` priority and exact 200px loading geometry;
+- absence of BarChart/ResponsiveContainer during loading/empty;
+- independence from the first chart's BLOCKED state;
+- retained ready BarChart data/margin/revenue+tax series/geometry contract;
+- retained first-chart contracts while the second chart is migrated.
 
 Tests/build/lint were **not executed** in an approved exact-head project runtime. Evidence is `TESTS_AUTHORED_NOT_EXECUTED`. No Build/Test/Lint/Runtime/Visual/Preview/Release PASS is claimed.
 
 ## Peer-state comparison / contradiction handling
 
-This QA judgment was formed from the exact PR diff/current HEAD, exact Sales source/test, shared `StatePanel` / `ChartPanel` contracts, relevant CSS and the existing Receivables proof before comparing peer conclusions.
+This QA judgment was formed from the exact PR diff/current HEAD, exact Sales source/test, shared `StatePanel` / `ChartPanel` contracts and relevant V2 CSS before comparing peer conclusions.
 
-- **Product Design Director:** fresh and aligned; REPORT041 is explicitly bounded to the first Sales revenue-chart empty branch with the same exact copy, 240px geometry, passive semantics and no shared/functional widening.
-- **UI Production Engineer:** Development copy is lifecycle-stale through REPORT040, but the PR-carried owned-state update is fresh and aligned with REPORT041 and honestly labels `TESTS_AUTHORED_NOT_EXECUTED`.
-- **Development Integrator:** current through REPORT040 integration; its next-slice handoff delegates REPORT041 bounding/implementation and does not conflict with this review.
-- **Team Memory:** current integrated truth is through REPORT040 and its earlier unbounded REPORT041 placeholder is superseded for current-slice scope by the fresher Product Design boundary; durable invariants remain aligned.
-- **Previous Design QA state:** consumed by REPORT040 integration and superseded for the active lifecycle by this exact-head REPORT041 review.
-- **PR comments/reviews/threads before QA disposition:** no prior PR comment, review submission or inline review-thread blocker existed.
+- **Product Design Director:** fresh and aligned; REPORT042 is explicitly bounded to this second Sales chart no-data branch with the same exact copy, 200px geometry, passive shared-state semantics and no trust/shared/functional widening.
+- **UI Production Engineer:** the PR-carried owned-state update is fresh and aligned with REPORT042 and honestly labels `TESTS_AUTHORED_NOT_EXECUTED`; the Development copy remains lifecycle-stale until integration and is not competing evidence.
+- **Development Integrator:** current through REPORT041 and aligned with the handoff to Product Design for REPORT042 bounding; its earlier unbounded placeholder is lifecycle-stale for current scope, not a contradiction.
+- **Team Memory:** integrated truth through REPORT041 remains valid; its earlier `REPORT042 READY — UNBOUNDED` placeholder is superseded for current-slice scope by the fresher Product Design state/workstream boundary. Durable invariants remain aligned.
+- **Previous Design QA state:** consumed by REPORT041 integration and superseded for the active lifecycle by this exact-head REPORT042 review.
+- **PR discussion before QA disposition:** no prior PR comment, review submission or inline review-thread blocker existed.
 
-Current contradiction classification: **NONE** on exact HEAD `1f3195250b9d6f964389090efc3acd8c7bdcc85a`.
+Current contradiction classification: **NONE** on exact HEAD `dbabddc56743f2d448bbefbab4998b6f0b98e9bb`.
 
 ## Repository actions this run
 
 - Completed the mandatory shared-memory bootstrap in the prescribed order.
-- Inspected issue #27 and confirmed PR #89 as the single active implementation PR targeting Development.
-- Inspected exact PR metadata/head/base, changed filenames and all patches, exact-head Sales source, shared `StatePanel` / `ChartPanel` / relevant CSS contracts, the integrated Receivables analogue, and PR review/comment/thread state.
-- Reconfirmed immediately before disposition that PR #89 remained `OPEN / DRAFT`, exact HEAD `1f3195250b9d6f964389090efc3acd8c7bdcc85a`, base `design-system-v2-development`, `mergeable=true`, with Development still at feature baseline `7c75869314147e5c928ca0570320bb136546e0fd`.
-- Left `AGENT-REVIEW: GREEN-DEV` on PR #89 anchored to exact HEAD `1f3195250b9d6f964389090efc3acd8c7bdcc85a` with `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
+- Inspected issue #27 and confirmed PR #90 as the single active implementation PR targeting Development.
+- Inspected exact PR metadata/head/base, changed filenames and patches, exact-head Sales source/test, shared `StatePanel` / `ChartPanel` / relevant CSS contracts, and PR review/comment/thread state.
+- Reconfirmed immediately before disposition that PR #90 remained `OPEN / DRAFT`, exact HEAD `dbabddc56743f2d448bbefbab4998b6f0b98e9bb`, base `design-system-v2-development`, `mergeable=true`, with Development at exact feature baseline `6c8187fe8b1d6bb48638fca2903126f5ae26ff3d`.
+- Left `AGENT-REVIEW: GREEN-DEV` on PR #90 anchored to exact HEAD `dbabddc56743f2d448bbefbab4998b6f0b98e9bb` with `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
 - Did not add an issue #27 note because no material blocker exists.
 - Updated only this owned Design QA state file; peer states, Team Memory and Decision Log were not modified.
 - Did not modify product code, merge, deploy, touch `main`, trigger/rerun GitHub Actions, use hosted CI or modify preview branches.
 
 ## What changed since the previous state
 
-- REPORT040 is integrated and the prior QA approval is consumed by that merge.
-- Independently reviewed REPORT041 exact PR HEAD `1f3195250b9d6f964389090efc3acd8c7bdcc85a`.
+- REPORT041 is integrated and its prior QA approval is consumed by that merge.
+- Independently reviewed REPORT042 exact PR HEAD `dbabddc56743f2d448bbefbab4998b6f0b98e9bb`.
 - Disposition advanced to fresh exact-head `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` with `TESTS_AUTHORED_NOT_EXECUTED`.
 
 ### Cross-role handoff
 - **To:** Product Design Director for independent exact-head acceptance; Development Integrator only after Product Design closeout.
-- **What changed:** Design QA independently reviewed PR #89 exact HEAD `1f3195250b9d6f964389090efc3acd8c7bdcc85a` and marked it `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
-- **Preserve:** exact empty copy; `isBlocked -> dailyLoading -> empty -> ready`; unchanged BLOCKED meaning/copy; 240px loading/empty/ready geometry; passive compact shared empty renderer; unchanged first ready AreaChart mapping/series/gradients; Trust/Freshness; second chart entirely untouched; all excluded data/query/calculation/permission/export/backend/business/shared contracts.
+- **What changed:** Design QA independently reviewed PR #90 exact HEAD `dbabddc56743f2d448bbefbab4998b6f0b98e9bb` and marked it `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
+- **Preserve:** second-chart `dailyLoading -> empty -> ready`; exact empty copy `لا توجد بيانات في النطاق الزمني المحدد`; 200px loading/empty/ready geometry; no second-chart BLOCKED/trust semantics; passive compact shared empty renderer; unchanged ready BarChart data/margins/axes/tooltip/revenue+tax series/fills/radii; first Sales chart entirely unchanged; all excluded data/query/calculation/permission/export/backend/business/shared contracts.
 - **Need from you:** Product Design independently accepts or blocks this same exact HEAD. Integration may reconsider only if PR HEAD remains unchanged, Product Design accepts it, no fresh blocker appears and normal merge gates remain valid. Governance-only Development drift from this QA-state write must be revalidated by Integrator.
 - **Blocker level:** `NONE` from Design QA; Product Design exact-head acceptance remains pending.
-- **Baseline:** Development pre-state-write `7c75869314147e5c928ca0570320bb136546e0fd`; exact reviewed PR #89 HEAD `1f3195250b9d6f964389090efc3acd8c7bdcc85a`.
+- **Baseline:** Development pre-state-write `6c8187fe8b1d6bb48638fca2903126f5ae26ff3d`; exact reviewed PR #90 HEAD `dbabddc56743f2d448bbefbab4998b6f0b98e9bb`.
 - **Evidence:** `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/visual/preview/release PASS claimed.
