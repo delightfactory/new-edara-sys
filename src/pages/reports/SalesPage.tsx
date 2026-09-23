@@ -146,7 +146,11 @@ export default function SalesPage() {
 
       {/* Bar chart */}
       <ChartPanel title="توزيع الإيرادات اليومي (إيراد + ضريبة)">
-        {dailyLoading ? <SkeletonCard height={200} /> : (
+        {dailyLoading ? <SkeletonCard height={200} /> : chartData.length === 0 ? (
+          <div style={{ height: 200, display: 'grid', alignItems: 'center' }}>
+            <StatePanel kind="empty" title="لا توجد بيانات في النطاق الزمني المحدد" compact />
+          </div>
+        ) : (
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={chartData} margin={{ top: 4, left: -10, right: 4, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" vertical={false} />
