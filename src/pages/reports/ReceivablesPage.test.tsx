@@ -99,6 +99,10 @@ const arTrust = {
   is_stale: false,
 }
 
+function getChartPanel() {
+  return screen.getByRole('heading', { level: 2, name: 'تحصيلات AR مجمّعة بتاريخ البيع الأصلي' }).closest('.ds-chart-panel') as HTMLElement
+}
+
 describe('Receivables report composition', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -157,46 +161,57 @@ describe('Receivables report composition', () => {
     expect(skeletons.map(skeleton => skeleton.getAttribute('data-height'))).toEqual(['160', '160', '160'])
     expect(within(grid).queryAllByTestId('metric-card')).toHaveLength(0)
 
-    const panel = screen.getByRole('heading', { level: 2, name: 'تحصيلات AR مجمّعة بتاريخ البيع الأصلي' }).closest('.ds-chart-panel') as HTMLElement
+    const panel = getChartPanel()
     expect(within(panel).queryByTestId('skeleton-card')).toBeNull()
     expect(within(panel).getByText('لا توجد بيانات تحصيل في هذه الفترة')).not.toBeNull()
   })
 
-  it('uses the shared ChartPanel with the exact title, description, trust action and empty state', () => {
+  it('uses the shared ChartPanel and compact passive StatePanel while preserving copy, trust action and 260px geometry', () => {
     const { container } = render(<ReceivablesPage />)
 
-    const heading = screen.getByRole('heading', { level: 2, name: 'تحصيلات AR مجمّعة بتاريخ البيع الأصلي' })
-    const panel = heading.closest('.ds-chart-panel') as HTMLElement
-
+    const panel = getChartPanel()
     expect(panel).not.toBeNull()
     expect(container.querySelectorAll('.ds-chart-panel')).toHaveLength(1)
     expect(within(panel).getByText('مجمّع في قاعدة البيانات — إيصالات، مردودات، صافي')).not.toBeNull()
     expect(within(panel).getByTestId('trust-state-badge').textContent).toBe('OK')
     expect(within(panel).getByTestId('freshness-indicator')).not.toBeNull()
 
-    const empty = within(panel).getByText('لا توجد بيانات تحصيل في هذه الفترة')
-    expect(empty.style.height).toBe('260px')
+    const emptyCopy = within(panel).getByText('لا توجد بيانات تحصيل في هذه الفترة')
+    const statePanel = emptyCopy.closest('.ds-state-panel') as HTMLElement
+    expect(statePanel).not.toBeNull()
+    expect(statePanel.getAttribute('data-state-kind')).toBe('empty')
+    expect(statePanel.classList.contains('ds-state-panel--compact')).toBe(true)
+    expect(statePanel.parentElement?.style.height).toBe('260px')
+    expect(statePanel.querySelector('.ds-state-panel__action')).toBeNull()
+    expect(statePanel.getAttribute('aria-live')).toBeNull()
+    expect(statePanel.querySelector('button, a, input, select, textarea, [tabindex]:not([tabindex="-1"])')).toBeNull()
+    expect(within(panel).queryByTestId('responsive-container')).toBeNull()
   })
 
-  it('keeps the existing blocked AR state and 260px body contract inside the shared panel', () => {
+  it('keeps the existing blocked AR state first, preserves its 260px body contract and does not leak empty/loading/ready renderers', () => {
     mocks.useTrustForComponent.mockReturnValue({ ...arTrust, status: 'BLOCKED' })
 
     render(<ReceivablesPage />)
 
-    const panel = screen.getByRole('heading', { level: 2, name: 'تحصيلات AR مجمّعة بتاريخ البيع الأصلي' }).closest('.ds-chart-panel') as HTMLElement
+    const panel = getChartPanel()
     const blockedTitle = within(panel).getByText('بيانات AR محجوبة')
 
     expect(blockedTitle.parentElement?.style.height).toBe('260px')
     expect(within(panel).getByText('يحتاج إلى اكتمال تشغيل محرك AR أولاً')).not.toBeNull()
+    expect(panel.querySelector('.ds-state-panel')).toBeNull()
+    expect(within(panel).queryByTestId('skeleton-card')).toBeNull()
+    expect(within(panel).queryByTestId('responsive-container')).toBeNull()
   })
 
-  it('keeps the loading skeleton at 260px', () => {
+  it('keeps the loading skeleton at 260px ahead of empty and ready renderers', () => {
     mocks.useARDailyTotals.mockReturnValue({ data: [], isLoading: true })
 
     render(<ReceivablesPage />)
 
-    const panel = screen.getByRole('heading', { level: 2, name: 'تحصيلات AR مجمّعة بتاريخ البيع الأصلي' }).closest('.ds-chart-panel') as HTMLElement
+    const panel = getChartPanel()
     expect(within(panel).getByTestId('skeleton-card').getAttribute('data-height')).toBe('260')
+    expect(panel.querySelector('.ds-state-panel')).toBeNull()
+    expect(within(panel).queryByTestId('responsive-container')).toBeNull()
   })
 
   it('preserves the AR chart data mapping, 260px container, margins and all three series contracts', () => {
@@ -212,10 +227,12 @@ describe('Receivables report composition', () => {
 
     render(<ReceivablesPage />)
 
-    const panel = screen.getByRole('heading', { level: 2, name: 'تحصيلات AR مجمّعة بتاريخ البيع الأصلي' }).closest('.ds-chart-panel') as HTMLElement
+    const panel = getChartPanel()
     const container = within(panel).getByTestId('responsive-container')
     const chart = within(panel).getByTestId('bar-chart')
 
+    expect(panel.querySelector('.ds-state-panel')).toBeNull()
+    expect(within(panel).queryByTestId('skeleton-card')).toBeNull()
     expect(container.getAttribute('data-height')).toBe('260')
     expect(JSON.parse(chart.getAttribute('data-data') ?? '[]')).toEqual([
       { date: '2026-09-18', receipts: 120, refunds: 20, net: 100 },
