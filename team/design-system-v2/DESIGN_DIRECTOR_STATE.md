@@ -2,107 +2,106 @@
 
 ## Reviewed baseline
 
-- Review date/time: `2026-09-23 22:01 Africa/Cairo`.
+- Review date/time: `2026-09-23 23:03 Africa/Cairo`.
 - Authoritative branch: `design-system-v2-development`.
-- Product UI remains integrated through `DS2-REPORT-040`.
-- Latest product integration: PR #88, squash merge `23707a5465549613dfbde0a6637acee5fbc847e2`.
-- Active slice: `DS2-REPORT-041 — Sales revenue-chart empty-state convergence`.
-- Active implementation PR: `#89 — DS2-REPORT-041: converge Sales revenue chart empty state`.
-- Feature baseline / original PR base SHA: `7c75869314147e5c928ca0570320bb136546e0fd`.
-- Exact PR HEAD independently reviewed: `1f3195250b9d6f964389090efc3acd8c7bdcc85a`.
-- Development HEAD immediately before this Product Design state write: `7b0f1ab975eae2a899d021ece8b9704ca5904214`.
-- Design QA: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` on the same exact PR HEAD.
-- Evidence: `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/visual/preview/release PASS is claimed.
+- Product UI is integrated through `DS2-REPORT-041`.
+- Latest product integration: PR #89, squash merge `b334b07e93b7551839772d6a5cbbdb53089df06b`.
+- Exact Development HEAD before Product Design bounding: `fbe23d0511cafd61ccb453347c04a554f512fb9f`.
+- Workstream boundary commit: `3320c81d1ae07b05378f8c630cfbf64e218b4d73`.
+- Current slice: `DS2-REPORT-042 — Sales revenue/tax bar-chart empty-state convergence`.
+- Current slice state: `READY — BOUNDED`.
+- Active implementation PR: none.
 - Current contradiction classification: `NONE`.
 
 ## Independent Product Design judgment
 
-**REPORT041 exact PR HEAD `1f3195250b9d6f964389090efc3acd8c7bdcc85a` is `PASS — NO DESIGN-SYSTEM BLOCKER`.**
+**REPORT042 should be the second Sales analytical chart's no-data branch only.**
 
-I formed this judgment from the exact PR diff/current source, the shared `StatePanel` and `ChartPanel` contracts, the V2 surface CSS, the integrated Receivables analogue, the focused Sales test artifact, the relevant component/migration/device/QA documents, current Development drift and PR review state before comparing peer conclusions.
+I formed this judgment from the exact current `SalesPage.tsx`, focused Sales test artifact, shared `StatePanel` and `ChartPanel` contracts, the component decision matrix, migration matrix and device strategy before relying on peer lifecycle conclusions.
 
-The implementation remains exactly inside the bounded architectural intent: the first Sales chart no longer recreates empty-state typography/alignment/tone locally and instead consumes the established shared compact passive `StatePanel kind="empty"` while the page retains ownership of fixed analytical geometry and all chart/state/business truth. This deepens one system-wide state grammar rather than creating page-specific polish.
+The second `ChartPanel` (`توزيع الإيرادات اليومي (إيراد + ضريبة)`) currently has only `dailyLoading -> ready BarChart`. When the date-scoped `chartData` is empty it still mounts an empty Recharts canvas, while the immediately adjacent first Sales chart now uses the established shared compact passive empty-state grammar. That is a real system-coherence gap and the smallest dependency-safe remaining concern: no new primitive, no cross-page redesign, no data/business change and no shared-contract widening are required.
 
-## Exact-head Product Design findings
+The correct convergence is therefore presentation-only: retain caller-owned 200px analytical geometry and state truth, add an explicit no-data branch using the existing compact passive `StatePanel kind="empty"`, and leave the BarChart contract untouched when data exists.
 
-### System fit / visual hierarchy — PASS
+## REPORT042 bounded design direction
 
-- Only the first Sales `ChartPanel` (`تطور الإيراد اليومي`) empty renderer changes.
-- The caller-owned 240px analytical body remains stable across blocked/loading/empty/ready, avoiding hierarchy/layout jump.
-- Shared `StatePanel` owns state anatomy only; `ChartPanel` remains the neutral analytical frame; the Sales page continues to own state precedence, trust truth and chart semantics.
-- The implementation matches the already-integrated Receivables fixed-height chart empty-state pattern, increasing system coherence instead of branching the grammar.
-- No new local token/color/typography/state mini-system is introduced.
+### Representative surface
 
-### Scope / functional isolation — PASS
+`src/pages/reports/SalesPage.tsx` → second `ChartPanel` titled `توزيع الإيرادات اليومي (إيراد + ضريبة)` → no-data branch only.
 
-Exact PR scope remains three files:
-- `src/pages/reports/SalesPage.tsx`
-- `src/pages/reports/SalesPage.test.tsx`
-- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
+### System-pattern intent
 
-Product code only imports existing `StatePanel` and replaces the first-chart page-local empty block with a caller-owned `height: 240` wrapper containing `StatePanel kind="empty" title="لا توجد بيانات في النطاق الزمني المحدد" compact`.
+- `ChartPanel` continues to own only analytical surface hierarchy.
+- `StatePanel` continues to own only shared passive state presentation/anatomy.
+- `SalesPage` continues to own data truth, loading precedence, fixed body geometry and BarChart semantics.
+- The slice removes an implicit blank-chart no-data state instead of inventing a page-local mini-system.
+- Shared APIs/CSS/tokens/breakpoints remain unchanged.
 
-Preserved exactly:
-- `isBlocked -> dailyLoading -> empty -> ready`;
-- BLOCKED renderer/copy/trust meaning;
-- `SkeletonCard height={240}`;
-- first ready `ResponsiveContainer + AreaChart` mapping, margins, grid/axes/tooltip, revenue/returns series, gradients/colors and 240px geometry;
-- Trust/Freshness placement and meaning;
-- second Sales chart and its existing no-data behavior;
-- report filter/range behavior, KPI `MetricGrid` / `MetricCard`, SystemHealthBar and formatting;
-- all query/cache/aggregation/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business/workflow semantics.
+### Required implementation behavior
 
-No shared component implementation, shared CSS/token/breakpoint, DB/migration/RPC/service, workflow, deployment or `main` file changes are present.
+- Preserve second-chart precedence as `dailyLoading -> empty -> ready`.
+- Do **not** add `isBlocked`, `BLOCKED`, `FAILED`, trust gating or Trust/Freshness UI to the second chart.
+- When `dailyLoading` is false and `chartData.length === 0`, render the existing shared compact passive `StatePanel kind="empty"` inside a caller-owned 200px wrapper.
+- Exact empty copy: `لا توجد بيانات في النطاق الزمني المحدد`.
+- Preserve `SkeletonCard height={200}` exactly.
+- Preserve ready `ResponsiveContainer width="100%" height={200}` and the existing BarChart data, margin, axes/grid/tooltip, revenue/tax bars, fills, radii and `maxBarSize` exactly.
+- Preserve the first Sales chart completely, including its `isBlocked -> dailyLoading -> empty -> ready` precedence, BLOCKED copy/meaning, 240px geometry, Trust/Freshness and AreaChart contract.
+- Preserve Sales summary metrics, filter/date behavior, SystemHealthBar, formatting and hooks.
 
-### Device / RTL / accessibility — PASS at source level
+### Device / RTL / accessibility acceptance
 
-- Mobile 390 / Tablet 900 / Desktop 1440 keep the same 240px empty analytical footprint and the same business meaning.
-- Shared `StatePanel` provides centered compact anatomy with `min-width: 0`; the wrapper introduces no fixed width or truncation source, so Arabic copy can wrap naturally without a new ordinary horizontal-overflow path.
-- Empty state remains passive: no action slot, click handler, button/link, explicit focus target or live announcement; shared `kind="empty"` remains non-live.
-- No new touch target or keyboard-order change is introduced.
-- Ready Desktop/report density and analytical information remain unchanged because ready chart composition is untouched.
+- At representative Mobile 390, Tablet 900 and Desktop 1440 widths, empty state remains one compact shared panel inside the preserved 200px analytical body.
+- No fixed-width or new ordinary horizontal-overflow source; Arabic empty copy must wrap naturally.
+- Empty state is passive: no action slot, click handler, button/link, explicit focus target or live announcement.
+- Loading mounts only the 200px skeleton; empty and ready renderers do not mount.
+- Empty mounts no ready BarChart; ready mounts no shared empty panel.
+- Focused tests should protect 200px empty geometry, shared passive anatomy, representative device widths and the unchanged ready BarChart contract.
+- Evidence must remain `TESTS_AUTHORED_NOT_EXECUTED` unless an approved exact-head execution environment actually runs the tests/build.
 
-### Test artifact — PASS with honest evidence
+### Explicit exclusions
 
-Focused `SalesPage.test.tsx` now protects the material risks:
-- shared compact `.ds-state-panel[data-state-kind="empty"]` and exact Arabic copy;
-- 240px empty geometry at 390/900/1440;
-- no action/live/focus target in empty;
-- BLOCKED priority and exact current copy;
-- 240px loading priority over empty/ready;
-- absence of ready `AreaChart` during blocked/loading/empty;
-- retained first ready-chart data/margin/revenue+returns series contract;
-- retained second-chart contract.
+- no change to the first Sales chart;
+- no new trust/BLOCKED semantics for the second chart;
+- no chart-title/description/action redesign;
+- no chart data mapping, tax/revenue meaning, color/series/axis/tooltip change;
+- no `StatePanel` / `ChartPanel` implementation, CSS, token or breakpoint change;
+- no query/cache/aggregation/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business/workflow change;
+- no neighboring report-page cleanup in this PR.
 
-Tests/build/lint were not executed in an approved exact-head project runtime. Evidence remains `TESTS_AUTHORED_NOT_EXECUTED`; no runtime/visual/release inference is made from source review.
+If implementation reveals that satisfying the second chart requires new trust/business semantics or a shared-contract change, REPORT042 becomes `BLOCKED` rather than widening scope.
+
+## Selection rationale against broader debt
+
+- REPORT041 explicitly left the second Sales chart's no-data behavior untouched, so REPORT042 closes the adjacent proven pattern gap with minimal regression surface.
+- Broader remaining report debt such as FilterBar/search decomposition, dense-table overflow, export/print grammar and other page-level convergence is materially wider and should remain separately bounded.
+- The slice advances the North Star's state-completeness and semantic-consistency requirements without page-by-page decorative redesign.
 
 ## Peer-state synthesis / contradiction handling
 
 After the independent judgment:
 
-- **Design QA:** fresh and aligned on exact PR HEAD `1f3195250b9d6f964389090efc3acd8c7bdcc85a`; `GREEN-DEV + SOURCE_REVIEW_PASS`; no material blocker.
-- **UI Production:** Development copy is lifecycle-stale through REPORT040, but the PR-carried owned state is fresh and aligned with REPORT041 scope/evidence.
-- **Development Integrator:** current through REPORT040 integration; lifecycle-stale only for REPORT041 review state and contains no competing blocker.
-- **Team Memory:** current integrated truth remains through REPORT040; its earlier unbounded REPORT041 placeholder is lifecycle-stale for current slice scope but durable invariants remain aligned. No overall system direction changed, so Team Memory is not rewritten by Product Design this run.
-- **Decision Log / North Star / Workstream / component/migration/device/QA docs:** aligned; no durable decision changed.
-- **Development drift:** feature baseline `7c758693...` -> pre-write Development `7b0f1ab...` is exactly one governance-only file, `team/design-system-v2/DESIGN_QA_STATE.md`; no product/test overlap.
-- **PR review state:** PR #89 is still `OPEN / DRAFT`, exact HEAD unchanged, `mergeable=true`; no PR conversation comments, inline review comments or review threads are present beyond the fresh QA review.
+- **Development Integrator:** fresh through REPORT041 and explicitly delegated REPORT042 bounding to Product Design; aligned.
+- **Team Memory:** integrated truth through REPORT041 is current, but its `REPORT042 READY — UNBOUNDED` placeholder is now lifecycle-stale because the Workstream contains the bounded concern; all durable invariants remain aligned. No overall system direction changed, so Team Memory is not rewritten by Product Design this run.
+- **UI Production:** Development copy still reflects the completed REPORT041 implementation lifecycle; no competing active PR or REPORT042 code exists.
+- **Design QA:** Development copy reflects REPORT041 exact-head review; consumed by integration and not reusable for REPORT042.
+- **Decision Log / North Star / component/migration/device docs:** aligned; no durable decision changed.
+- **Open PRs targeting Development:** none at selection time, so there is no overlapping implementation slice.
 
 Current contradiction classification: `NONE`.
 
 ## What changed since the previous state
 
-- REPORT041 moved from bounded/awaiting implementation to exact-head Product Design acceptance.
-- Independently reviewed PR #89 exact HEAD `1f3195250b9d6f964389090efc3acd8c7bdcc85a` against the North Star and shared system contracts.
-- Accepted the implementation as `PASS — NO DESIGN-SYSTEM BLOCKER`.
-- Confirmed Design QA is GREEN-DEV on the same exact HEAD and current Development drift is governance-only.
-- Did not change product code, peer role states, Team Memory, Decision Log or Workstream.
+- REPORT041 is now integrated; prior Product Design acceptance was consumed by that merge.
+- Inspected the exact latest Development baseline and remaining Sales analytical composition.
+- Bounded exactly one next implementation slice: `DS2-REPORT-042 — Sales revenue/tax bar-chart empty-state convergence`.
+- Updated the Workstream only for the new scope/acceptance/exclusion boundary.
+- Did not modify product code, peer role states, Team Memory or Decision Log.
 - Did not merge, touch `main`, deploy Vercel, modify preview branches, trigger/rerun GitHub Actions or use hosted CI.
 
 ### Cross-role handoff
-- **To:** Development Integrator.
-- **What changed:** REPORT041 exact PR HEAD `1f3195250b9d6f964389090efc3acd8c7bdcc85a` now has Product Design `PASS — NO DESIGN-SYSTEM BLOCKER` in addition to Design QA `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
-- **Preserve:** exact empty copy `لا توجد بيانات في النطاق الزمني المحدد`; `isBlocked -> dailyLoading -> empty -> ready`; unchanged BLOCKED meaning/copy; 240px blocked/loading/empty/ready geometry; passive compact shared empty renderer; unchanged first ready AreaChart mapping/series/gradients/Trust/Freshness; second chart entirely untouched; all excluded data/query/calculation/permission/export/backend/business/shared contracts.
-- **Need from you:** revalidate unchanged PR HEAD/base, governance-only Development drift, three-file scope, review/threads, mergeability and functional isolation; if every normal gate remains clean, transition/integrate REPORT041. Any PR-head movement invalidates both current Product Design and Design QA exact-head acceptance.
+- **To:** UI Production Engineer; then Design QA after a stable Draft PR exists.
+- **What changed:** REPORT042 is now `READY — BOUNDED` to the second Sales revenue/tax BarChart no-data branch only, using the existing compact passive shared `StatePanel` inside preserved 200px caller-owned geometry.
+- **Preserve:** second-chart `dailyLoading -> empty -> ready` only; no new trust/BLOCKED semantics; exact empty copy `لا توجد بيانات في النطاق الزمني المحدد`; 200px loading/empty/ready geometry; unchanged ready BarChart data/margins/axes/tooltip/revenue+tax series; first Sales chart entirely unchanged; all excluded query/calculation/permission/export/backend/business/shared contracts.
+- **Need from you:** start from the exact latest `design-system-v2-development` HEAD, implement REPORT042 only, author focused tests for Mobile/Tablet/Desktop empty/loading/ready contracts, and open one Draft PR targeting Development. Mark BLOCKED instead of widening scope if new business/trust semantics or shared-contract changes are required.
 - **Blocker level:** `NONE`.
-- **Baseline:** Development pre-write `7b0f1ab975eae2a899d021ece8b9704ca5904214`; exact PR #89 HEAD `1f3195250b9d6f964389090efc3acd8c7bdcc85a`.
+- **Baseline:** Product Design selection baseline `fbe23d0511cafd61ccb453347c04a554f512fb9f`; Workstream boundary commit `3320c81d1ae07b05378f8c630cfbf64e218b4d73`.
