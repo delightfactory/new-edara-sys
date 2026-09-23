@@ -100,20 +100,41 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-041 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
-Status: `READY`.
-Owner role for immediate next action: Product Design Director.
-Selection baseline: exact latest `design-system-v2-development` baseline after REPORT040 integration and coordination updates.
+### DS2-REPORT-041 — Sales revenue-chart empty-state convergence
+Status: `READY — BOUNDED`.
+Owner role for immediate next action: UI Production Engineer.
+Selection baseline: exact `design-system-v2-development` HEAD `7387e5ce050abd6cdb1d8ca68ee032fb50da3ab4` before this Workstream boundary write.
+Representative surface: `src/pages/reports/SalesPage.tsx` → `ChartPanel` titled `تطور الإيراد اليومي` → empty branch only.
 
 System intent:
-- inspect representative remaining Reports/Analytics surfaces from the exact latest Development baseline;
-- select exactly one smallest dependency-safe presentation-only concern and name the representative surface/file plus explicit acceptance/exclusion boundary;
-- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer proves the need;
-- preserve REPORT001-040 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
-- keep Settings/Admin, Global convergence, remaining Work/Field debt and shared component-depth work explicit in the roadmap;
-- do not turn REPORT041 into broad multi-page report beautification.
+- replace only the page-local 240px empty block with the existing shared `StatePanel kind="empty"` using `compact` presentation;
+- preserve exact visible copy `لا توجد بيانات في النطاق الزمني المحدد`;
+- preserve the caller-owned state order exactly: `isBlocked -> dailyLoading -> empty -> ready`;
+- preserve the current 240px chart-body footprint for blocked, loading, empty and ready states so the analytical hierarchy does not jump;
+- preserve the existing `ChartPanel` title, description, TrustStateBadge/FreshnessIndicator action content and placement;
+- preserve the ready `ResponsiveContainer + AreaChart` composition, chart data mapping, margin, axes/grid/tooltip, revenue/returns series, gradients, colors and geometry unchanged;
+- preserve the existing BLOCKED renderer/copy/meaning and the `SkeletonCard height={240}` loading renderer unchanged;
+- keep the empty state passive: no action slot, click target, explicit focus target or live announcement;
+- on Mobile/Tablet/Desktop, use the same shared compact state anatomy inside the preserved 240px body, allow Arabic copy to wrap naturally, and introduce no normal horizontal overflow or device-specific semantic divergence.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+Explicit exclusions:
+- the second `ChartPanel` titled `توزيع الإيرادات اليومي (إيراد + ضريبة)` including its current no-data behavior;
+- report header, `ReportFilterBar`, date/range behavior, SystemHealthBar, KPI `MetricGrid` / `MetricCard` composition;
+- chart tooltip implementation, chart colors/tokens, series names, gradients, chart-library behavior or chart responsiveness;
+- Trust/Freshness derivation or BLOCKED semantics;
+- hooks, query/cache, aggregation/calculation, formatting, permissions/RBAC/RLS, routing, export/print, backend/database/business behavior;
+- shared `StatePanel`, `ChartPanel`, CSS, token or breakpoint API widening.
+
+Acceptance / focused test intent:
+- empty data mounts one shared `.ds-state-panel[data-state-kind="empty"]` with compact anatomy and exact Arabic copy, inside a preserved 240px body;
+- empty state mounts no ready `AreaChart` / ready chart renderer;
+- loading retains priority over empty and remains exactly `SkeletonCard height={240}`;
+- BLOCKED retains priority over loading/empty and exact current copy/meaning;
+- ready state remains unchanged when chart data exists;
+- source-level device acceptance covers representative Mobile/Tablet/Desktop widths (390/900/1440px) with the same passive state semantics, Arabic wrapping and no new overflow/focus/touch target;
+- focused tests are authored, but evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless locally executed evidence is actually available.
+
+Stop rule: if implementation requires changing the second chart, trust/data semantics, chart mapping/geometry, shared component contracts, CSS/tokens/breakpoints or any functional/backend behavior, mark REPORT041 `BLOCKED` rather than widen the slice.
 
 ## Product migration roadmap
 
@@ -165,7 +186,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-040` — `DONE`
-- `DS2-REPORT-041 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY`
+- `DS2-REPORT-041 — Sales revenue-chart empty-state convergence` — `READY — BOUNDED`
 - further Reports/Analytics convergence beyond REPORT041 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
@@ -177,24 +198,3 @@ Open only when a real migrated screen proves the recurring gap:
 - `DS2-GLOBAL-003` Accessibility/focus/touch/motion pass — `BACKLOG`
 - `DS2-GLOBAL-004` Legacy component/CSS retirement — `BACKLOG`
 - `DS2-GLOBAL-005` Final visual/system consistency audit — `BACKLOG`
-
-## Integrator development gate
-
-Before merge:
-- exact current PR HEAD has `AGENT-REVIEW: GREEN-DEV`;
-- reviewer records `SOURCE_REVIEW_PASS` and honest test evidence;
-- no known build/type failure;
-- no unresolved material blocker or current `BLOCKING` role-state contradiction;
-- PR base is `design-system-v2-development`;
-- diff contains no forbidden backend/business/query/permission/deployment change.
-
-After merge:
-- completed slice becomes DONE with reviewed/merge SHA and evidence;
-- exactly one next dependency-safe roadmap item becomes READY;
-- Integration State and Team Memory are synchronized;
-- no preview deployment;
-- no merge to `main`.
-
-## End condition
-
-The autonomous workstream continues until the North Star completion definition is met across major modules, shared component grammar, device behavior, RTL/dark/state/accessibility convergence and final controlled runtime review.
