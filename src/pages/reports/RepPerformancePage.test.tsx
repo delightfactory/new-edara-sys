@@ -285,20 +285,26 @@ describe('Rep Performance comparison ChartPanel convergence', () => {
     expect(within(panel).queryByTestId('freshness-indicator')).toBeNull()
   })
 
-  it('preserves the exact 300px chart loading and empty states', () => {
+  it('preserves the exact 300px chart loading state and converges the empty branch onto shared StatePanel', () => {
     mocks.useRepPerformanceTable.mockReturnValue({ data: rows, isLoading: true })
     const { rerender } = render(<RepPerformancePage />)
 
     let panel = getChartPanel()
     expect(within(panel).getByTestId('skeleton-card').getAttribute('data-height')).toBe('300')
+    expect(panel.querySelector('.ds-state-panel')).toBeNull()
     expect(within(panel).queryByTestId('bar-chart')).toBeNull()
 
     mocks.useRepPerformanceTable.mockReturnValue({ data: [], isLoading: false })
     rerender(<RepPerformancePage />)
 
     panel = getChartPanel()
-    const empty = within(panel).getByText('لا توجد بيانات فى النطاق الزمني المحدد')
-    expect(empty.style.height).toBe('300px')
+    const state = panel.querySelector('.ds-state-panel[data-state-kind="empty"]') as HTMLElement
+    expect(state).not.toBeNull()
+    expect(state.classList.contains('ds-state-panel--compact')).toBe(true)
+    expect(within(state).getByText('لا توجد بيانات فى النطاق الزمني المحدد')).toBeTruthy()
+    expect(state.parentElement?.style.height).toBe('300px')
+    expect(state.querySelector('.ds-state-panel__action')).toBeNull()
+    expect(state.getAttribute('aria-live')).toBeNull()
     expect(within(panel).queryByTestId('bar-chart')).toBeNull()
   })
 
@@ -483,7 +489,7 @@ describe('Rep Performance responsive detail collection', () => {
     })
   })
 
-  it('preserves the exact five-row loading state and exact empty copy before any ready renderer mounts', () => {
+  it('preserves five-row loading precedence and uses one passive shared empty renderer across device modes', () => {
     setViewport(390)
     mocks.useRepPerformanceTable.mockReturnValue({ data: detailRows, isLoading: true })
     const { rerender } = render(<RepPerformancePage />)
@@ -494,16 +500,27 @@ describe('Rep Performance responsive detail collection', () => {
     const loadingSkeletons = within(loadingCollection).getAllByTestId('skeleton-card')
     expect(loadingSkeletons).toHaveLength(5)
     loadingSkeletons.forEach(skeleton => expect(skeleton.getAttribute('data-height')).toBe('44'))
+    expect(section.querySelector('.ds-state-panel')).toBeNull()
     expect(section.querySelector('.ds-responsive-card-grid')).toBeNull()
     expect(within(section).queryByRole('table')).toBeNull()
 
     mocks.useRepPerformanceTable.mockReturnValue({ data: [], isLoading: false })
     rerender(<RepPerformancePage />)
 
-    section = getDetailSection()
-    expect(section.querySelector('[data-collection-state="empty"]')).not.toBeNull()
-    expect(within(section).getByText('لا توجد بيانات فى النطاق الزمني المحدد')).toBeTruthy()
-    expect(section.querySelector('.ds-responsive-card-grid')).toBeNull()
-    expect(within(section).queryByRole('table')).toBeNull()
+    ;[390, 900, 1440].forEach(width => {
+      setViewport(width)
+      section = getDetailSection()
+      const emptyCollection = section.querySelector('[data-collection-state="empty"]') as HTMLElement
+      expect(emptyCollection).not.toBeNull()
+      const states = emptyCollection.querySelectorAll('.ds-state-panel[data-state-kind="empty"]')
+      expect(states).toHaveLength(1)
+      const state = states[0] as HTMLElement
+      expect(within(state).getByText('لا توجد بيانات فى النطاق الزمني المحدد')).toBeTruthy()
+      expect(state.classList.contains('ds-state-panel--compact')).toBe(false)
+      expect(state.querySelector('.ds-state-panel__action')).toBeNull()
+      expect(state.getAttribute('aria-live')).toBeNull()
+      expect(section.querySelector('.ds-responsive-card-grid')).toBeNull()
+      expect(within(section).queryByRole('table')).toBeNull()
+    })
   })
 })
