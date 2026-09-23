@@ -1,5 +1,6 @@
+import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, within } from '@testing-library/react'
+import { render } from '@testing-library/react'
 import CustomerReengagementPage from './CustomerReengagementPage'
 
 const mocks = vi.hoisted(() => ({
@@ -51,10 +52,15 @@ vi.mock('@/components/shared/PageHeader', () => ({
 }))
 
 vi.mock('@/components/shared/FilterBar', () => {
-  const FilterBar = ({ children }: { children?: unknown }) => <div data-testid="filter-bar">{children as never}</div>
-  FilterBar.Select = () => null
-  FilterBar.DateRange = () => null
-  FilterBar.Toggle = () => null
+  const EmptyControl = () => null
+  const FilterBar = Object.assign(
+    ({ children }: { children?: ReactNode }) => <div data-testid="filter-bar">{children}</div>,
+    {
+      Select: EmptyControl,
+      DateRange: EmptyControl,
+      Toggle: EmptyControl,
+    },
+  )
   return { default: FilterBar }
 })
 
@@ -191,7 +197,7 @@ describe('Customer Re-engagement KPI summary convergence', () => {
       'إجمالي مديونية',
     ])
 
-    const skeletons = within(grid).getAllByRole('generic').filter(node => node.classList.contains('rp-kpi-skeleton'))
+    const skeletons = Array.from(grid.querySelectorAll('.rp-kpi-skeleton')) as HTMLElement[]
     expect(skeletons).toHaveLength(5)
     skeletons.forEach(skeleton => expect(skeleton.getAttribute('aria-hidden')).toBe('true'))
     cards.forEach(card => expect(card.querySelector('.ds-stat-card__value .rp-kpi-skeleton')).not.toBeNull())
