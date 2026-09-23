@@ -38,12 +38,12 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-041`.
+Product UI is integrated through `DS2-REPORT-042`.
 
 Latest product integration:
-- PR: `#89 — DS2-REPORT-041: converge Sales revenue chart empty state`
-- Exact reviewed PR HEAD: `1f3195250b9d6f964389090efc3acd8c7bdcc85a`
-- Squash merge commit: `b334b07e93b7551839772d6a5cbbdb53089df06b`
+- PR: `#90 — DS2-REPORT-042: converge Sales revenue/tax chart empty state`
+- Exact reviewed PR HEAD: `dbabddc56743f2d448bbefbab4998b6f0b98e9bb`
+- Squash merge commit: `f7479859fe5c3233c3082bad2e97c0a004213f4c`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design exact-head closeout: `PASS — NO DESIGN-SYSTEM BLOCKER`
 - Runtime/preview/release evidence: not claimed
@@ -87,58 +87,31 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - `DS2-REPORT-039 — Geography responsive-detail empty-state convergence` — `DONE` — PR #87 — reviewed HEAD `2877257b3f04b84c01a058a47f82c2cd6e0ccb59` — merge `035558bb3e86026742d3658d7c1928ee75f09215` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-040 — Churn Risk responsive-detail empty-state convergence` — `DONE` — PR #88 — reviewed HEAD `1e916d2d7e7ec9618d1ae7f6294fdfe00f08c6a1` — merge `23707a5465549613dfbde0a6637acee5fbc847e2` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-041 — Sales revenue-chart empty-state convergence` — `DONE` — PR #89 — reviewed HEAD `1f3195250b9d6f964389090efc3acd8c7bdcc85a` — merge `b334b07e93b7551839772d6a5cbbdb53089df06b` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
+- `DS2-REPORT-042 — Sales revenue/tax bar-chart empty-state convergence` — `DONE` — PR #90 — reviewed HEAD `dbabddc56743f2d448bbefbab4998b6f0b98e9bb` — merge `f7479859fe5c3233c3082bad2e97c0a004213f4c` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 
-## REPORT041 system result
+## REPORT042 system result
 
-- The first Sales analytical panel (`تطور الإيراد اليومي`) now uses the existing shared compact passive `StatePanel kind="empty"` for its no-data branch instead of page-local empty-state typography/alignment styling.
+- The second Sales analytical panel (`توزيع الإيرادات اليومي (إيراد + ضريبة)`) now uses the existing shared compact passive `StatePanel kind="empty"` for its no-data branch instead of allowing an empty Recharts canvas to act as an implicit empty state.
 - Exact visible copy remains `لا توجد بيانات في النطاق الزمني المحدد`.
-- The caller-owned analytical body remains 240px across blocked, loading, empty and ready states.
-- Exact caller-owned precedence remains `isBlocked -> dailyLoading -> empty -> ready`; existing BLOCKED copy/meaning and `SkeletonCard height={240}` remain unchanged.
-- Ready `ResponsiveContainer + AreaChart` data mapping, margin, axes/grid/tooltip, revenue/returns series, gradients/colors/geometry and Trust/Freshness remain unchanged.
-- The second Sales chart and its existing no-data behavior remain untouched.
+- Caller-owned analytical geometry remains 200px across loading, empty and ready states.
+- Exact caller-owned precedence is `dailyLoading -> empty -> ready`; no `isBlocked`, BLOCKED/FAILED, trust gate, TrustStateBadge or FreshnessIndicator semantics were added to this second chart.
+- Existing `SkeletonCard height={200}` remains unchanged.
+- Ready `ResponsiveContainer width="100%" height={200}` and BarChart data mapping, margin, axes/grid/tooltip, revenue/tax series, fills, radii and `maxBarSize` remain unchanged.
+- The first Sales chart remains completely unchanged, including its `isBlocked -> dailyLoading -> empty -> ready` precedence, BLOCKED copy/meaning, 240px geometry, Trust/Freshness and AreaChart contract.
 - No shared API/CSS/token/breakpoint widening and no query/cache/aggregation/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business/workflow behavior change occurred.
 - Focused regression tests were authored but not executed under the hosted-CI quota policy.
 
 ## Current single READY slice
 
-### DS2-REPORT-042 — Sales revenue/tax bar-chart empty-state convergence
-Status: `READY — BOUNDED`.
-Owner role for immediate next action: UI Production Engineer.
-Selection baseline: exact Development HEAD `fbe23d0511cafd61ccb453347c04a554f512fb9f` before this Product Design boundary write.
-Representative surface: `src/pages/reports/SalesPage.tsx` → second `ChartPanel` `توزيع الإيرادات اليومي (إيراد + ضريبة)` → no-data branch only.
+### DS2-REPORT-043 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
+Status: `READY — UNBOUNDED`.
+Owner role for immediate next action: Product Design Director.
 
-System-pattern intent:
-- complete the already-proven analytical empty-state grammar on the second Sales chart instead of allowing an empty Recharts canvas to act as an implicit no-data state;
-- keep `ChartPanel` responsible only for neutral analytical surface hierarchy and `StatePanel` responsible only for passive state anatomy;
-- keep the Sales page responsible for data truth, loading precedence, analytical geometry and ready BarChart semantics;
-- do not widen shared APIs/CSS/tokens/breakpoints or invent a Sales-specific state component.
+Product Design must inspect the exact latest `design-system-v2-development` baseline and define exactly one smallest dependency-safe presentation-only Reports/Analytics concern before UI Production begins product-code work. The boundary must name the representative surface/file, acceptance criteria, explicit exclusions and evidence expectations.
 
-Implementation boundary:
-- preserve exact second-chart precedence as `dailyLoading -> empty -> ready`; do **not** add `isBlocked`, trust gating or any new business/trust semantics to this chart;
-- after `dailyLoading`, when `chartData.length === 0`, render the existing shared compact passive `StatePanel kind="empty"` inside a caller-owned 200px wrapper;
-- exact empty copy: `لا توجد بيانات في النطاق الزمني المحدد`;
-- preserve `SkeletonCard height={200}` exactly;
-- preserve the ready `ResponsiveContainer width="100%" height={200}` + `BarChart` data mapping, margin, axes/grid/tooltip and exact revenue/tax Bar series, fills, radii and `maxBarSize`;
-- preserve the first Sales chart completely, including its `isBlocked -> dailyLoading -> empty -> ready` state machine, BLOCKED copy/meaning, 240px geometry, Trust/Freshness and AreaChart contract;
-- preserve the Sales summary `MetricGrid`/`MetricCard`, ReportFilterBar, SystemHealthBar and all formatting/hook wiring.
+Preserve all REPORT001-042 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics. Do not widen a shared component contract unless a real representative consumer proves it is necessary. Keep Settings/Admin, remaining Work/Field convergence, shared component-depth work and Global Dark/RTL/accessibility/legacy cleanup explicit in the roadmap. Do not turn REPORT043 into broad multi-page report beautification.
 
-Device / state / accessibility acceptance:
-- Mobile 390 / Tablet 900 / Desktop 1440: one compact shared empty panel sits inside the preserved 200px analytical body with no fixed-width or ordinary horizontal-overflow source; Arabic copy wraps naturally;
-- empty state remains passive: no action slot, button/link/click handler, focus target or live announcement;
-- loading mounts only the 200px skeleton, not empty or ready BarChart;
-- empty mounts no ready BarChart; ready mounts no shared empty panel;
-- focused tests protect the 200px empty geometry, shared state anatomy/passive semantics and unchanged ready BarChart contract across representative device widths;
-- evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless an actually approved execution environment runs the exact PR HEAD.
-
-Explicit exclusions:
-- no change to the first Sales chart;
-- no new BLOCKED/FAILED/trust state or Trust/Freshness UI on the second chart;
-- no chart-title/description/action redesign;
-- no change to chart data mapping, tax/revenue meaning, series/color/tooltip/axis semantics or date/filter behavior;
-- no shared `StatePanel`/`ChartPanel` implementation, shared CSS/token/breakpoint change;
-- no query/cache/aggregation/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business/workflow change.
-
-Implementation is authorized only for this bounded concern. UI Production must start from the exact latest `design-system-v2-development` HEAD after the Product Design governance writes and open one Draft PR targeting Development. If implementation reveals that the second chart requires new trust/business semantics or a shared-contract change, mark the slice `BLOCKED` instead of widening scope.
+Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
 
 ## Product migration roadmap
 
@@ -189,9 +162,9 @@ Open only when a real migrated screen proves the recurring gap:
 - further Work detail/feedback/management convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
 
 ### I. Reports / Analytics
-- `DS2-REPORT-001` through `DS2-REPORT-041` — `DONE`
-- `DS2-REPORT-042 — Sales revenue/tax bar-chart empty-state convergence` — `READY — BOUNDED`
-- further Reports/Analytics convergence beyond REPORT042 — `BACKLOG` / each concern must be bounded separately
+- `DS2-REPORT-001` through `DS2-REPORT-042` — `DONE`
+- `DS2-REPORT-043 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — UNBOUNDED`
+- further Reports/Analytics convergence beyond REPORT043 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
