@@ -276,10 +276,10 @@ describe('Geography responsive detail collection', () => {
     expect(within(section).getByText('—')).toBeTruthy()
   })
 
-  it('preserves the exact two-card summary loading grid plus five-row detail loading state and exact empty copy', () => {
+  it('preserves the exact two-card summary loading grid and keeps five-row detail loading ahead of empty and ready renderers', () => {
     setViewport(390)
-    mocks.useGeographyTable.mockReturnValue({ data: geographyRows, isLoading: true })
-    const { container, rerender } = render(<GeographyPage />)
+    mocks.useGeographyTable.mockReturnValue({ data: [], isLoading: true })
+    const { container } = render(<GeographyPage />)
 
     const summaryGrid = container.querySelector('[data-metric-grid]') as HTMLElement
     const summarySkeletons = within(summaryGrid).getAllByTestId('skeleton-card')
@@ -287,22 +287,43 @@ describe('Geography responsive detail collection', () => {
     expect(summarySkeletons).toHaveLength(2)
     summarySkeletons.forEach(skeleton => expect(skeleton.getAttribute('data-height')).toBe('160'))
 
-    let section = getDistributionSection()
+    const section = getDistributionSection()
     const loadingCollection = section.querySelector('[data-collection-state="loading"]') as HTMLElement
     expect(loadingCollection).not.toBeNull()
     const loadingSkeletons = within(loadingCollection).getAllByTestId('skeleton-card')
     expect(loadingSkeletons).toHaveLength(5)
     loadingSkeletons.forEach(skeleton => expect(skeleton.getAttribute('data-height')).toBe('44'))
+    expect(section.querySelector('[data-collection-state="empty"]')).toBeNull()
+    expect(section.querySelector('.ds-state-panel')).toBeNull()
     expect(section.querySelector('.ds-responsive-card-grid')).toBeNull()
     expect(within(section).queryByRole('table')).toBeNull()
+  })
 
+  it('uses the shared compact passive empty StatePanel on Mobile, Tablet, and Desktop without mounting a ready renderer', () => {
     mocks.useGeographyTable.mockReturnValue({ data: [], isLoading: false })
-    rerender(<GeographyPage />)
 
-    section = getDistributionSection()
-    expect(section.querySelector('[data-collection-state="empty"]')).not.toBeNull()
-    expect(within(section).getByText('لا توجد بيانات — شغّل watermark sweep أولاً')).toBeTruthy()
-    expect(section.querySelector('.ds-responsive-card-grid')).toBeNull()
-    expect(within(section).queryByRole('table')).toBeNull()
+    for (const width of [390, 900, 1440]) {
+      setViewport(width)
+      const { unmount } = render(<GeographyPage />)
+
+      const section = getDistributionSection()
+      const emptyCollection = section.querySelector('[data-collection-state="empty"]') as HTMLElement
+      const emptyPanel = emptyCollection.querySelector('.ds-state-panel[data-state-kind="empty"]') as HTMLElement
+
+      expect(emptyCollection).not.toBeNull()
+      expect(emptyPanel).not.toBeNull()
+      expect(emptyPanel.classList.contains('ds-state-panel--compact')).toBe(true)
+      expect(within(emptyPanel).getByText('لا توجد بيانات — شغّل watermark sweep أولاً')).toBeTruthy()
+      expect(emptyPanel.getAttribute('aria-live')).toBeNull()
+      expect(emptyPanel.querySelector('.ds-state-panel__action')).toBeNull()
+      expect(within(emptyPanel).queryByRole('button')).toBeNull()
+      expect(within(emptyPanel).queryByRole('link')).toBeNull()
+      expect(emptyPanel.querySelector('[tabindex]')).toBeNull()
+      expect(section.querySelector('[data-collection-state="loading"]')).toBeNull()
+      expect(section.querySelector('.ds-responsive-card-grid')).toBeNull()
+      expect(within(section).queryByRole('table')).toBeNull()
+
+      unmount()
+    }
   })
 })
