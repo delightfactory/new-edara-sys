@@ -27,6 +27,8 @@ import { useAuthStore } from '@/stores/auth-store'
 import { Users, ExternalLink, Printer, Download, FileDown, X, AlertTriangle } from 'lucide-react'
 import FilterBar from '@/components/shared/FilterBar'
 import PageHeader from '@/components/shared/PageHeader'
+import MetricGrid from '@/components/patterns/MetricGrid'
+import StatCard from '@/components/patterns/StatCard'
 import { useDocumentOutput } from '@/features/output/hooks/useDocumentOutput'
 import { downloadAsCSV } from '@/lib/utils/export'
 
@@ -479,62 +481,65 @@ function KpiStrip({ summary, isLoading }: {
 }) {
   // ترتيب الأولوية: الأهم (يمين RTL) → الأقل إلحاحاً (يسار)
   // Champion Lost أعلى أولوية → يظهر في أقصى اليمين (أول بطاقة)
-  const cards = [
+  const cards: Array<{
+    label: string
+    sublabel: string
+    count: number | null
+    text: string | null
+    tone: 'danger' | 'warning' | 'info' | 'success'
+    icon: string
+  }> = [
     {
       label: 'Champion Lost', sublabel: 'عملاء مميزون خمدوا',
       count: summary?.champion_lost_count ?? null,
-      text: null as string | null,
-      accent: PRIORITY.CHAMPION_LOST.accent, icon: '🔴',
+      text: null,
+      tone: 'danger', icon: '🔴',
     },
     {
       label: 'تراجع عالي', sublabel: 'عملاء في خطر',
       count: summary?.declining_high_count ?? null,
-      text: null as string | null,
-      accent: PRIORITY.DECLINING_HIGH.accent, icon: '🟠',
+      text: null,
+      tone: 'warning', icon: '🟠',
     },
     {
       label: 'متوسط خامد', sublabel: 'فرصة متوسطة',
       count: summary?.mid_lost_count ?? null,
-      text: null as string | null,
-      accent: PRIORITY.MID_LOST.accent, icon: '🟡',
+      text: null,
+      tone: 'warning', icon: '🟡',
     },
     {
       label: 'إجمالي العملاء', sublabel: 'في قاعدة البيانات',
       count: summary?.total_customers ?? null,
-      text: null as string | null,
-      accent: '#0284c7', icon: '👥',
+      text: null,
+      tone: 'info', icon: '👥',
     },
     {
       label: 'صافي الأرصدة',
       sublabel: summary && summary.total_outstanding >= 0 ? 'إجمالي مديونية' : 'رصيد دائن صاف',
-      count: null as number | null,
+      count: null,
       text: summary ? fmtCur(Math.abs(summary.total_outstanding)) : null,
-      accent: summary && summary.total_outstanding < 0 ? '#16a34a' : '#0284c7',
+      tone: summary && summary.total_outstanding < 0 ? 'success' : 'info',
       icon: summary && summary.total_outstanding < 0 ? '🟢' : '💰',
     },
   ]
 
   return (
-    <div className="rp-kpi-grid">
-      {cards.map((card, i) => (
-        <div
-          key={i}
-          className="edara-card rp-kpi-card"
-          style={{ '--rp-accent': card.accent, borderTop: `3px solid ${card.accent}` } as React.CSSProperties}
-        >
-          <div className="rp-kpi-icon">{card.icon}</div>
-          <div className="rp-kpi-label">{card.label}</div>
-          {isLoading ? (
-            <div className="skeleton-row rp-kpi-skeleton" />
+    <MetricGrid columns={3}>
+      {cards.map(card => (
+        <StatCard
+          key={card.label}
+          label={card.label}
+          context={card.sublabel}
+          tone={card.tone}
+          icon={card.icon}
+          value={isLoading ? (
+            <div className="skeleton-row rp-kpi-skeleton" aria-hidden="true" />
           ) : (
-            <div className="rp-kpi-value rp-kpi-value--accent">
-              {card.count != null ? FMT.format(card.count) : (card.text ?? '—')}
-            </div>
+            card.count != null ? FMT.format(card.count) : (card.text ?? '—')
           )}
-          <div className="rp-kpi-sublabel">{card.sublabel}</div>
-        </div>
+        />
       ))}
-    </div>
+    </MetricGrid>
   )
 }
 
@@ -939,41 +944,7 @@ export default function CustomerReengagementPage() {
 // ─── CSS Styles ───────────────────────────────────────────────
 
 const STYLES = `
-/* ── KPI Grid ────────────────────────────────────── */
-.rp-kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: var(--space-3);
-}
-@media (max-width: 480px) {
-  .rp-kpi-grid { grid-template-columns: repeat(2, 1fr); }
-}
-.rp-kpi-card {
-  padding: var(--space-4);
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  border-radius: var(--radius-lg, 12px);
-  border: 1px solid var(--border-primary);
-  background: var(--bg-surface);
-  box-shadow: var(--shadow-sm);
-  transition: box-shadow 0.2s, transform 0.2s;
-}
-.rp-kpi-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
-.rp-kpi-icon  { font-size: 1.1rem; margin-bottom: var(--space-1); }
-.rp-kpi-label { font-size: var(--text-xs); color: var(--text-secondary); font-weight: 600; line-height: 1.4; }
-.rp-kpi-value {
-  font-size: var(--text-xl);
-  font-weight: 700;
-  direction: ltr;
-  text-align: start;
-  margin: var(--space-1) 0;
-  line-height: 1.2;
-  color: var(--text-primary);
-}
-/* يستخدم CSS custom property --rp-accent المُضاف على الـ element مباشرة */
-.rp-kpi-value--accent { color: var(--rp-accent, var(--color-primary)); }
-.rp-kpi-sublabel { font-size: 11px; color: var(--text-muted); }
+/* ── KPI loading value ───────────────────────────── */
 .rp-kpi-skeleton { height: 28px; width: 65%; border-radius: 6px; margin: var(--space-1) 0; }
 
 /* ── Table Card ──────────────────────────────────── */
