@@ -2,111 +2,137 @@
 
 ## Reviewed baseline
 
-- Review date/time: `2026-09-23 06:57 Africa/Cairo`.
+- Review date/time: `2026-09-23 08:07 Africa/Cairo`.
 - Authoritative branch: `design-system-v2-development`.
-- Exact Development HEAD independently rechecked before this state write: `e027fbe38d0088c0e54a00636e7e9646f79cabe7`.
-- Active slice: `DS2-REPORT-033 — Target Attainment individual-rep chart-panel convergence`.
-- Active implementation PR: `#81 — DS2-REPORT-033: converge Target Attainment chart panel`.
-- Feature baseline: `67430cfe6a6957d9266ef2f0a41008aba81af4b0`.
-- Exact PR HEAD independently reviewed: `1d67d89e57c150542cea487e0cafc8d520d5c30a`.
-- Changed-file scope: exactly 3 files — `TargetAttainmentPage.tsx`, focused `TargetAttainmentChartPanel.test.tsx`, and UI Production's owned state.
-- Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER` on exact PR HEAD `1d67d89e57c150542cea487e0cafc8d520d5c30a`.
-- Design QA on the same exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
-- Evidence remains `TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/visual/preview/release PASS is claimed.
+- Exact Development HEAD rechecked after bounding the Workstream and before this state write: `95f312f9491607f9829d8234dbe615bdc5cad362`.
+- Product/source baseline inspected before the governance-only Workstream write: `6ee7ed93a913ed74d0da0e7b2423cbf615dd99f9`.
+- Current integrated product baseline remains through `DS2-REPORT-033`, squash merge `464adbfe86f9ff1e53d288babb9715a010346b15` from PR #81.
+- Active slice: `DS2-REPORT-034 — Churn Risk KPI summary shared metric convergence`.
+- Active implementation PR: none at selection/bounding time; open PRs targeting Development were empty.
+- Current slice disposition: `READY — BOUNDED` for UI Production.
+- Representative surface: `src/pages/reports/ChurnRiskPage.tsx` → five-card risk-classification KPI summary only.
 
 ## Independent Product Design judgment
 
-**REPORT033 is correctly implemented as a structural convergence onto the existing shared analytical surface, with no material design-system blocker on the exact PR HEAD.**
+**REPORT034 should converge the remaining Churn Risk five-card KPI summary onto existing `MetricGrid columns={3}` + `StatCard`, without widening the shared contracts or touching Churn Risk classification/business truth.**
 
-I formed this judgment from the exact PR diff/source, current shared `ChartPanel -> Card + SectionHeader` contract and responsive surface CSS before comparing peer states.
+I formed this judgment from the exact Development source and existing shared `MetricGrid` / `StatCard` / semantic-tone contracts before comparing peer states.
 
-The product change is appropriately narrow: only the page-local Target Attainment individual-rep chart frame/header is replaced by `ChartPanel`. The chart remains fully caller-owned. The shared component already has exactly the required responsibility: neutral analytical surface, semantic heading/description/action hierarchy, shrink-safe containment and Mobile header wrapping. This removes one local mini-system without creating a new abstraction or moving target/business semantics into V2.
+Churn Risk is already substantially converged: its filter controls use shared `Select` + `DateField`, its pie visualization uses shared `ChartPanel`, and its customer detail uses shared `ResponsiveCollection + Card + KeyValueList`. The remaining KPI strip is therefore an isolated local mini-system: a page-local responsive grid plus five hand-styled cards with arbitrary per-category border/value colors. This is the smallest safe presentation gap that materially advances system coherence without opening a second report surface or changing analytics semantics.
 
-The visible hierarchy improves in a system-consistent way: the chart title becomes a semantic shared section heading, the explanation remains attached to the heading, and Trust/Freshness remains a passive header action cluster. Existing shared `Card padding="lg"` and `.ds-chart-panel__body` spacing replace equivalent local frame spacing rather than introducing a page-specific visual treatment.
+The existing shared contracts are sufficient. `MetricGrid` owns only responsive metric layout and supports `columns={3}`; `StatCard` owns neutral KPI hierarchy and semantic emphasis only. No five-column shared mode is justified: five metrics should intentionally compose as `3 + 2` on Desktop, `2 + 2 + 1` on Tablet, and one column on Mobile.
 
-## Exact-head acceptance findings
+## Bounded system contract
 
-### Scope / system fit — PASS
+### Scope — exactly one summary surface
 
-The product diff only:
-- imports existing `ChartPanel`;
-- replaces the local inline chart surface and local title/header wrapper with `ChartPanel` props;
-- leaves the entire Recharts body unchanged.
+Replace only the Churn Risk KPI summary presentation:
+- current loading `report-grid` wrapper → existing `MetricGrid columns={3}`;
+- current ready-state local CSS grid → the same `MetricGrid columns={3}`;
+- each local hand-built KPI card → existing `StatCard`.
 
-Preserved exactly:
-- `chartData.length > 0` visibility condition;
-- title `نسبة الإنجاز — المندوبون الفرديون`;
-- description `الخط المنقط عند 100% هو الهدف`;
-- Trust/Freshness status/domain/timestamp/staleness inputs and conditional presence;
-- `ResponsiveContainer width="100%"` and `height={Math.max(chartData.length * 40, 200)}`;
-- vertical `BarChart`, `chartData` order, axes, tooltip formatter, `ReferenceLine x={100}`, `Bar` radius/max size and per-row `barColor` mapping;
-- all caller-owned percentage/target calculations and status meaning.
+Preserve exact metric order:
+1. `VIP`
+2. `مخلص`
+3. `متفاعل`
+4. `معرض للخطر`
+5. `خامد`
 
-No shared `ChartPanel`, `Card`, `SectionHeader`, CSS, token or breakpoint contract changed.
+Preserve exact caller-owned values:
+- `stats.vip`
+- `stats.loyal`
+- `stats.engaged`
+- `stats.at_risk`
+- `stats.dormant`
 
-### Device / Arabic / accessibility — PASS at source level
+Preserve existing integer formatting through `FMT.format(...)` and the `—` fallback. Do not move the key-to-stat mapping or any RFM classification rule into the Design System.
 
-- Desktop and Tablet keep the established shared analytical-card hierarchy without a new breakpoint or duplicate renderer.
-- Mobile inherits the existing shared `SectionHeader` wrapping contract and reduced shared large-card padding; no ordinary new overflow source is introduced.
-- Shared surfaces retain `min-width: 0`; the title/description copy can shrink/wrap while the existing Trust/Freshness cluster remains non-interactive.
-- Arabic title/description remain exact and visible; numeric/percentage chart presentation is unchanged.
-- The chart title now has semantic `h2` hierarchy through `ChartPanel/SectionHeader`.
-- No new focus target, pseudo-control, hover-only meaning, destructive action, permission state or workflow state is introduced.
+### Semantic emphasis
 
-The existing chart geometry itself still contains broader future chart-level polish/accessibility opportunities, but REPORT033 does not worsen or redefine those semantics and no such issue is a blocker for this bounded shell migration.
+Use only shared semantic tones; do not create page-specific StatCard variants or pass arbitrary category colors into the shared primitive:
+- `VIP` → `neutral`
+- `مخلص` → `success`
+- `متفاعل` → `info`
+- `معرض للخطر` → `warning`
+- `خامد` → `danger`
 
-### Functional isolation — PASS
+Rationale: these tones communicate operational meaning through the shared vocabulary while visible labels remain the primary category identity. `VIP` is a segment, not intrinsically a warning/success state, so it remains neutral. The page may continue to use its existing category colors in `RiskBadge` and the pie chart because those are explicitly outside this bounded KPI migration.
 
-No DB/migration/RPC/service/query/cache/calculation/RBAC/RLS/permission/routing/validation/workflow/export/print/backend/business change entered the PR.
+### Device acceptance
 
-Target Attainment header controls, four-KPI summary, detail `ResponsiveCollection`, `TrendBadge`, report state handling and every other report surface are unchanged.
+- **Desktop >=1025px:** five passive metrics render through `MetricGrid columns={3}` as `3 + 2`, preserving order and avoiding a new five-column contract.
+- **Tablet 769–1024px:** canonical shared two-column composition `2 + 2 + 1`; touch-first layout remains deliberate.
+- **Mobile <=768px:** canonical shared one-column metric stack; no ordinary horizontal overflow.
+- Arabic labels and large numeric values must rely on the existing shrink/wrap-safe shared contracts; no page-local width hacks.
 
-### Test artifact / evidence honesty — PASS
+### State / accessibility acceptance
 
-Focused `TargetAttainmentChartPanel.test.tsx` coverage guards:
-- conditional shared `.ds-chart-panel` presence/absence;
-- semantic title and exact description;
-- Trust/Freshness inputs;
-- responsive chart width/height and data order;
-- 100% target `ReferenceLine`;
-- unchanged bar key/name/radius/max-size and threshold fills.
+- Preserve the exact `statsLoading` gate.
+- Loading must render exactly five `SkeletonCard` placeholders at `height={120}` inside the shared MetricGrid; do not substitute a new loading meaning or alter chart/detail state precedence.
+- Ready cards remain passive/non-interactive; no new click, focus, hover-only or pseudo-control behavior.
+- Category identity remains visible as text, so semantic meaning is not color-only.
+- No new heading level, ARIA role or interaction state is introduced by this slice.
 
-Tests were not executed in an approved exact-head runtime. Evidence is correctly labeled `TESTS_AUTHORED_NOT_EXECUTED`. No build/lint/runtime/visual/preview/release PASS is claimed.
+## Explicit exclusions / preservation boundary
 
-## Peer-state synthesis / freshness
+REPORT034 must not modify:
+- page title/description/header layout;
+- risk-classification `Select`, as-of `DateField`, or filter/date semantics;
+- `SystemHealthBar`;
+- `RISK_CONFIG` category identity, `RiskBadge`, `RecencyCell`, or RFM classification rules;
+- pie `ChartPanel`, chart visibility/data/order/colors/geometry/tooltip/legend, or Trust/Freshness action wiring;
+- customer-detail `ResponsiveCollection`, Desktop table, Tablet/Mobile cards, ordering, loading/blocked/empty copy or renderer semantics;
+- hooks, queries, snapshots, calculations, cache semantics, permissions, RBAC/RLS, routing, export/print, backend or business behavior;
+- shared `MetricGrid`, `StatCard`, Card/Status APIs, CSS, tokens or breakpoints;
+- any other report/page.
 
-After the independent exact-head judgment:
+If implementation discovers that any excluded shared or functional change is required, REPORT034 becomes `BLOCKED` instead of expanding the PR.
 
-- **Design QA:** fresh and aligned; exact PR HEAD `1d67d89e57c150542cea487e0cafc8d520d5c30a` is `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` with no blocker.
-- **UI Production Engineer:** the Development-branch copy of `UI_IMPLEMENTATION_STATE.md` is lifecycle-stale from REPORT032, but the PR-carried owned state on exact HEAD `1d67d89e57c150542cea487e0cafc8d520d5c30a` is fresh and aligned with the bounded REPORT033 implementation and honest non-executed evidence.
-- **Development Integrator:** state is lifecycle-current through REPORT032 only; it contains no conflicting REPORT033 rule or blocker and must revalidate this PR before integration.
-- **Team Memory:** integrated truth remains current through REPORT032 but its REPORT033 description is lifecycle-stale at placeholder level after Product Design bounded the slice. This is not a design contradiction; current slice truth is carried by the Workstream, this owned state, the PR and fresh QA state. No overall/durable system direction changed, so Team Memory is not rewritten for this routine closeout.
-- **Decision Log / North Star / component and device blueprint:** aligned with shared-system-before-local-invention, Arabic-first responsive composition and strict functional isolation.
+## Focused evidence expectation
+
+UI Production should author focused source-level tests that guard the actual migration risks:
+- both loading and ready summary states are under `.ds-metric-grid[data-columns="3"]`;
+- five shared `StatCard` surfaces appear in the exact risk order;
+- semantic `data-tone` mapping is exactly `neutral / success / info / warning / danger` in that order;
+- rendered values preserve the existing source/format/fallback contract;
+- loading renders exactly five 120px skeletons and no ready StatCards.
+
+Existing Churn Risk tests already protect shared filter wiring, pie-chart composition and responsive detail behavior; do not broaden this slice into rewriting those test families. Evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved runtime actually executes the exact future PR HEAD.
+
+## Peer-state synthesis / contradiction handling
+
+After forming the independent design judgment:
+
+- **Development Integrator:** fresh and aligned. REPORT033 is merged and Integrator explicitly handed REPORT034 to Product Design for one smallest dependency-safe presentation concern.
+- **Team Memory:** fresh through REPORT033 and aligned; it names REPORT034 as the sole unbounded READY roadmap item and preserves remaining Reports, shared-component depth, Work/Field, Settings/Admin and Global debt.
+- **UI Production Engineer:** lifecycle-stale from the now-integrated REPORT033 branch state; no conflicting rule/blocker. It must bootstrap again from the new Development HEAD before REPORT034 implementation.
+- **Design QA:** lifecycle-stale from REPORT033 exact-head review; no conflicting rule/blocker. Fresh exact-head QA is required for the future REPORT034 PR.
+- **Decision Log / North Star / component matrix / device strategy:** aligned with shared-system-before-local-invention, semantic variants rather than arbitrary page colors, Arabic-first multi-device composition and strict UI-only functional isolation.
 
 Current contradiction classification: `NONE`.
 
-## Base drift / merge readiness observation
+## Why adjacent candidates were not selected
 
-Development advanced from PR feature baseline `67430cfe6a6957d9266ef2f0a41008aba81af4b0` to pre-write HEAD `e027fbe38d0088c0e54a00636e7e9646f79cabe7` by exactly one governance-only commit modifying `team/design-system-v2/DESIGN_QA_STATE.md`.
+- Customer Re-engagement still contains a large local export drawer/overlay, but that slice would mix overlay, export and interaction concerns and carries a larger regression surface than this KPI-only convergence.
+- Overview retains a local report-navigation card grid with arbitrary accent colors, but it needs a clearer shared navigation-card/action contract rather than forcing an existing metric primitive onto a different responsibility.
+- Sales and several other representative report surfaces are already using shared `MetricGrid` / `ChartPanel` grammar correctly.
 
-Immediately before this state write, PR #81 remained `OPEN / DRAFT`, exact HEAD unchanged at `1d67d89e57c150542cea487e0cafc8d520d5c30a`, `mergeable=true`, with exactly three changed files and no material review thread beyond the fresh QA disposition.
-
-This governance-only base drift does not justify merge-syncing the feature branch and invalidating exact-head review evidence. Development Integrator should revalidate after this Product Design governance write and integrate only if all normal gates remain clean.
+Therefore Churn Risk KPI summary is the smallest dependency-safe next move that reduces a real duplicate visual implementation with an already-proven shared pattern.
 
 ## Repository actions this run
 
 - Completed the mandatory shared-memory bootstrap in the prescribed order.
-- Inspected issue #27, exact current Development HEAD, the single open PR targeting Development, exact PR metadata/head/base, changed filenames and product/test diff.
-- Inspected relevant component/page/device blueprint docs plus current `ChartPanel`, `Card`, `SectionHeader` and shared surface CSS contracts.
-- Independently reviewed exact PR HEAD `1d67d89e57c150542cea487e0cafc8d520d5c30a`, then compared peer states and fresh Design QA evidence.
-- Issued Product Design `PASS — NO DESIGN-SYSTEM BLOCKER` for the unchanged exact PR HEAD.
-- Did not modify product code, peer states, Team Memory, Decision Log or Workstream.
+- Inspected issue #27, the exact current Development branch, open PRs targeting Development, and representative remaining Reports surfaces.
+- Verified no implementation PR was open when selecting REPORT034.
+- Inspected `ChurnRiskPage.tsx`, its focused page tests, existing `MetricGrid`, `StatCard`, semantic tone contract and relevant component/page/device/migration blueprints.
+- Bounded REPORT034 in `31_AGENT_TEAM_WORKSTREAM.md` at commit `95f312f9491607f9829d8234dbe615bdc5cad362`.
+- Did not modify product code, peer state files, Team Memory or Decision Log.
 - Did not merge, deploy, touch `main`, modify preview branches, trigger/rerun GitHub Actions or use hosted CI.
 
 ### Cross-role handoff
-- **To:** Development Integrator.
-- **What changed:** Product Design independently accepted PR #81 exact HEAD `1d67d89e57c150542cea487e0cafc8d520d5c30a` as `PASS — NO DESIGN-SYSTEM BLOCKER`; Design QA is already GREEN-DEV on the same exact HEAD.
-- **Preserve:** exact chart visibility/title/description/Trust-Freshness wiring; Recharts data/order/height/axes/tooltip/100% reference/bar sizing and `barColor` thresholds; all excluded Target Attainment surfaces; unchanged shared ChartPanel/Card/SectionHeader contracts; strict UI-only isolation and honest `TESTS_AUTHORED_NOT_EXECUTED` evidence.
-- **Need from you:** revalidate unchanged PR head/base, governance-only Development drift including this Product Design state commit, review threads, changed-file scope, mergeability and functional isolation; if every normal gate remains clean, transition the Draft as appropriate and squash-merge REPORT033 into `design-system-v2-development`. Any PR HEAD movement invalidates both current Product Design and QA acceptance.
+- **To:** UI Production Engineer; then Design QA and Product Design for future exact-head review.
+- **What changed:** REPORT034 is now `READY — BOUNDED` as Churn Risk's five-card KPI summary convergence onto existing `MetricGrid columns={3}` + `StatCard` only.
+- **Preserve:** exact metric order/labels/stat sources/FMT/fallback, exact `statsLoading` gate and 5×120px skeletons, all filter/RFM/chart/detail/trust/query/permission/export/backend semantics, and unchanged shared component/API/CSS/token/breakpoint contracts.
+- **Need from you:** start from the latest Development HEAD, implement only this bounded summary migration, author the focused metric-grid/StatCard/order/tone/loading tests, and open exactly one PR targeting `design-system-v2-development`. Mark `BLOCKED` rather than widen scope if shared or functional changes become necessary.
 - **Blocker level:** `NONE`.
-- **Baseline:** Development pre-write `e027fbe38d0088c0e54a00636e7e9646f79cabe7`; exact accepted PR #81 HEAD `1d67d89e57c150542cea487e0cafc8d520d5c30a`.
+- **Baseline:** exact Development pre-state-write HEAD `95f312f9491607f9829d8234dbe615bdc5cad362`; product/source selection baseline `6ee7ed93a913ed74d0da0e7b2423cbf615dd99f9`.
