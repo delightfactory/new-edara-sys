@@ -101,20 +101,44 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-042 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
-Status: `READY — UNBOUNDED`.
-Owner role for immediate next action: Product Design Director.
-Selection baseline: product integration merge `b334b07e93b7551839772d6a5cbbdb53089df06b`; Product Design must inspect the exact latest `design-system-v2-development` HEAD before bounding implementation.
+### DS2-REPORT-042 — Sales revenue/tax bar-chart empty-state convergence
+Status: `READY — BOUNDED`.
+Owner role for immediate next action: UI Production Engineer.
+Selection baseline: exact Development HEAD `fbe23d0511cafd61ccb453347c04a554f512fb9f` before this Product Design boundary write.
+Representative surface: `src/pages/reports/SalesPage.tsx` → second `ChartPanel` `توزيع الإيرادات اليومي (إيراد + ضريبة)` → no-data branch only.
 
-Intent:
-- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline;
-- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance/exclusion boundary;
-- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
-- preserve REPORT001-041 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
-- preserve Settings/Admin, Global convergence, remaining Work/Field debt and shared component-depth work in the roadmap;
-- do not turn REPORT042 into broad multi-page report beautification.
+System-pattern intent:
+- complete the already-proven analytical empty-state grammar on the second Sales chart instead of allowing an empty Recharts canvas to act as an implicit no-data state;
+- keep `ChartPanel` responsible only for neutral analytical surface hierarchy and `StatePanel` responsible only for passive state anatomy;
+- keep the Sales page responsible for data truth, loading precedence, analytical geometry and ready BarChart semantics;
+- do not widen shared APIs/CSS/tokens/breakpoints or invent a Sales-specific state component.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+Implementation boundary:
+- preserve exact second-chart precedence as `dailyLoading -> empty -> ready`; do **not** add `isBlocked`, trust gating or any new business/trust semantics to this chart;
+- after `dailyLoading`, when `chartData.length === 0`, render the existing shared compact passive `StatePanel kind="empty"` inside a caller-owned 200px wrapper;
+- exact empty copy: `لا توجد بيانات في النطاق الزمني المحدد`;
+- preserve `SkeletonCard height={200}` exactly;
+- preserve the ready `ResponsiveContainer width="100%" height={200}` + `BarChart` data mapping, margin, axes/grid/tooltip and exact revenue/tax Bar series, fills, radii and `maxBarSize`;
+- preserve the first Sales chart completely, including its `isBlocked -> dailyLoading -> empty -> ready` state machine, BLOCKED copy/meaning, 240px geometry, Trust/Freshness and AreaChart contract;
+- preserve the Sales summary `MetricGrid`/`MetricCard`, ReportFilterBar, SystemHealthBar and all formatting/hook wiring.
+
+Device / state / accessibility acceptance:
+- Mobile 390 / Tablet 900 / Desktop 1440: one compact shared empty panel sits inside the preserved 200px analytical body with no fixed-width or ordinary horizontal-overflow source; Arabic copy wraps naturally;
+- empty state remains passive: no action slot, button/link/click handler, focus target or live announcement;
+- loading mounts only the 200px skeleton, not empty or ready BarChart;
+- empty mounts no ready BarChart; ready mounts no shared empty panel;
+- focused tests protect the 200px empty geometry, shared state anatomy/passive semantics and unchanged ready BarChart contract across representative device widths;
+- evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless an actually approved execution environment runs the exact PR HEAD.
+
+Explicit exclusions:
+- no change to the first Sales chart;
+- no new BLOCKED/FAILED/trust state or Trust/Freshness UI on the second chart;
+- no chart-title/description/action redesign;
+- no change to chart data mapping, tax/revenue meaning, series/color/tooltip/axis semantics or date/filter behavior;
+- no shared `StatePanel`/`ChartPanel` implementation, shared CSS/token/breakpoint change;
+- no query/cache/aggregation/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business/workflow change.
+
+Implementation is authorized only for this bounded concern. UI Production must start from the exact latest `design-system-v2-development` HEAD after the Product Design governance writes and open one Draft PR targeting Development. If implementation reveals that the second chart requires new trust/business semantics or a shared-contract change, mark the slice `BLOCKED` instead of widening scope.
 
 ## Product migration roadmap
 
@@ -166,7 +190,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-041` — `DONE`
-- `DS2-REPORT-042 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — UNBOUNDED`
+- `DS2-REPORT-042 — Sales revenue/tax bar-chart empty-state convergence` — `READY — BOUNDED`
 - further Reports/Analytics convergence beyond REPORT042 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
