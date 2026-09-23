@@ -10,6 +10,7 @@ import MetricGrid from '@/components/patterns/MetricGrid'
 import ResponsiveCollection from '@/components/patterns/ResponsiveCollection'
 import Card from '@/components/patterns/Card'
 import KeyValueList from '@/components/patterns/KeyValueList'
+import StatePanel from '@/components/patterns/StatePanel'
 import DateField from '@/components/ui/DateField'
 import { Users2, UserX, ActivitySquare } from 'lucide-react'
 
@@ -149,11 +150,7 @@ export default function CustomerHealthPage() {
                   {[1,2,3,4,5].map(i => <SkeletonCard key={i} height={44} />)}
                 </div>
               )}
-              emptyState={(
-                <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>
-                  لا توجد بيانات snapshot لهذا التاريخ — شغّل watermark sweep أولاً
-                </div>
-              )}
+              emptyState={<StatePanel kind="empty" title="لا توجد بيانات snapshot لهذا التاريخ — شغّل watermark sweep أولاً" />}
               renderDesktop={desktopRows => (
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
