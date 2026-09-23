@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useSystemTrustState, useTrustForComponent, type TrustStatus } from '@/hooks/useSystemTrustState'
 import { useCustomerRiskSummary, useCustomerRiskList, type CustomerRiskRow, type CustomerRiskStats } from '@/hooks/useCustomerRisk'
 import SkeletonCard from '@/components/reports/SkeletonCard'
@@ -6,6 +6,8 @@ import SystemHealthBar from '@/components/reports/SystemHealthBar'
 import TrustStateBadge from '@/components/reports/TrustStateBadge'
 import FreshnessIndicator from '@/components/reports/FreshnessIndicator'
 import ChartPanel from '@/components/patterns/ChartPanel'
+import MetricGrid from '@/components/patterns/MetricGrid'
+import StatCard from '@/components/patterns/StatCard'
 import ResponsiveCollection from '@/components/patterns/ResponsiveCollection'
 import Card from '@/components/patterns/Card'
 import KeyValueList from '@/components/patterns/KeyValueList'
@@ -25,6 +27,14 @@ const RISK_CONFIG = {
   ENGAGED: { label: 'متفاعل',      color: '#3b82f6', bg: '#3b82f618' },
   AT_RISK: { label: 'معرض للخطر', color: '#f97316', bg: '#f9731618' },
   DORMANT: { label: 'خامد',        color: '#ef4444', bg: '#ef444418' },
+} as const
+
+const RISK_TONES = {
+  VIP: 'neutral',
+  LOYAL: 'success',
+  ENGAGED: 'info',
+  AT_RISK: 'warning',
+  DORMANT: 'danger',
 } as const
 
 function RiskBadge({ label }: { label: string }) {
@@ -128,24 +138,26 @@ export default function ChurnRiskPage() {
       <SystemHealthBar trustRows={trustRows} isLoading={trustLoading} error={trustError} />
 
       {/* KPI Grid */}
-      {statsLoading ? (
-        <div className="report-grid">{[1,2,3,4,5].map(i => <SkeletonCard key={i} height={120} />)}</div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 'var(--space-3)' }}>
-          {(Object.entries(RISK_CONFIG) as [string, typeof RISK_CONFIG[keyof typeof RISK_CONFIG]][]).map(([key, cfg]) => {
-            const KEY_MAP: Record<string, keyof CustomerRiskStats> = {
+      <MetricGrid columns={3}>
+        {statsLoading ? (
+          [1,2,3,4,5].map(i => <SkeletonCard key={i} height={120} />)
+        ) : (
+          (Object.entries(RISK_CONFIG) as [keyof typeof RISK_CONFIG, typeof RISK_CONFIG[keyof typeof RISK_CONFIG]][]).map(([key, cfg]) => {
+            const KEY_MAP: Record<keyof typeof RISK_CONFIG, keyof CustomerRiskStats> = {
               VIP: 'vip', LOYAL: 'loyal', ENGAGED: 'engaged', AT_RISK: 'at_risk', DORMANT: 'dormant',
             }
             const val = stats ? (stats[KEY_MAP[key]] as number) ?? null : null
             return (
-              <div key={key} style={{ background: 'var(--bg-surface)', border: `1px solid ${cfg.color}40`, borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', boxShadow: 'var(--shadow-sm)' }}>
-                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', fontWeight: 500 }}>{cfg.label}</div>
-                <div style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, color: cfg.color, margin: '4px 0 0' }}>{val != null ? FMT.format(val) : '—'}</div>
-              </div>
+              <StatCard
+                key={key}
+                label={cfg.label}
+                value={val != null ? FMT.format(val) : '—'}
+                tone={RISK_TONES[key]}
+              />
             )
-          })}
-        </div>
-      )}
+          })
+        )}
+      </MetricGrid>
 
       {/* Pie Chart */}
       {!statsLoading && pieData.length > 0 && (
