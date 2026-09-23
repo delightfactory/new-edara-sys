@@ -38,17 +38,17 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-034`.
+Product UI is integrated through `DS2-REPORT-035`.
 
 Latest product integration:
-- PR: `#82 — DS2-REPORT-034: converge Churn Risk KPI summary`
-- Exact reviewed PR HEAD: `8bec856b57aff490092c68b948fdac52078c2bf2`
-- Squash merge commit: `7ba36015798df5d4aa615077adade862687a6f9c`
+- PR: `#83 — DS2-REPORT-035: converge Product Performance empty states`
+- Exact reviewed PR HEAD: `1b9870cb92fe660a527ca4e521c42fd538bb5d30`
+- Squash merge commit: `8d1aa7e4db89b8dfee7d9ce8c536bb4c160a40fb`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design exact-head closeout: `PASS — NO DESIGN-SYSTEM BLOCKER`
 - Runtime/preview/release evidence: not claimed
 
-The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, representative Customers/Sales/Inventory/Procurement/Finance/HR/Field/Work migrations, Reports route/date/filter convergence, shared `ChartPanel`, shared `MetricGrid`, shared V2 `Field` controls in representative report headers, and responsive detail-collection proofs using `ResponsiveCollection + Card + KeyValueList` while preserving dense Desktop comparison and caller-owned business truth.
+The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, representative Customers/Sales/Inventory/Procurement/Finance/HR/Field/Work migrations, Reports route/date/filter convergence, shared `ChartPanel`, shared `MetricGrid`, shared `StatePanel`, shared V2 `Field` controls in representative report headers, and responsive detail-collection proofs using `ResponsiveCollection + Card + KeyValueList` while preserving dense Desktop comparison and caller-owned business truth.
 
 ## Completed slices
 
@@ -80,48 +80,35 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - `DS2-REPORT-032 — Customer Re-engagement KPI summary shared metric convergence` — `DONE` — PR #80 — reviewed HEAD `2177d3ca687434a0185a5787639ee2138148d341` — merge `e7088ed6d683b4cc714059cd7f3d07831f9485b5` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
 - `DS2-REPORT-033 — Target Attainment individual-rep chart-panel convergence` — `DONE` — PR #81 — reviewed HEAD `1d67d89e57c150542cea487e0cafc8d520d5c30a` — merge `464adbfe86f9ff1e53d288babb9715a010346b15` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-034 — Churn Risk KPI summary shared metric convergence` — `DONE` — PR #82 — reviewed HEAD `8bec856b57aff490092c68b948fdac52078c2bf2` — merge `7ba36015798df5d4aa615077adade862687a6f9c` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
+- `DS2-REPORT-035 — Product Performance shared empty-state convergence` — `DONE` — PR #83 — reviewed HEAD `1b9870cb92fe660a527ca4e521c42fd538bb5d30` — merge `8d1aa7e4db89b8dfee7d9ce8c536bb4c160a40fb` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 
-## REPORT034 system result
+## REPORT035 system result
 
-- Churn Risk's remaining page-local five-card KPI mini-system now consumes existing shared `MetricGrid columns={3}` + passive `StatCard` surfaces without shared-contract widening.
-- Exact metric order remains `VIP → مخلص → متفاعل → معرض للخطر → خامد`, with caller-owned sources `stats.vip / stats.loyal / stats.engaged / stats.at_risk / stats.dormant`, existing `FMT.format(...)`, and `—` fallback unchanged.
-- Semantic tones are expressed through the shared vocabulary `neutral / success / info / warning / danger`; category identity remains visible in text rather than color-only.
-- Exact `statsLoading` behavior remains five `SkeletonCard height={120}` placeholders inside the shared metric grid.
-- Shared device composition now governs the summary: Desktop `3+2`, Tablet `2+2+1`, Mobile one column, with existing shrink-safe containment.
-- Header/filter/date controls, System Health, RFM/category identity, RiskBadge/RecencyCell, pie ChartPanel/Trust-Freshness, responsive customer details, queries/calculations/permissions/export/print/backend/business behavior and all shared APIs/CSS/tokens/breakpoints remain unchanged.
+- Product Performance's chart empty branch and responsive-detail empty branch now consume the existing shared `StatePanel kind="empty"` grammar instead of bespoke page-local empty blocks.
+- Exact visible Arabic copy remains `لا توجد بيانات` in both contexts.
+- The chart empty branch uses compact shared state anatomy inside a geometry-only wrapper that preserves the exact 240px analytical-body footprint.
+- Exact chart precedence remains `tableLoading -> SkeletonCard height={240} -> empty -> ready BarChart`; ready chart data/order/axes/grid/tooltip/revenue series/color/margins and Trust/Freshness remain unchanged.
+- Exact detail precedence remains `tableLoading -> five SkeletonCard height={44} rows -> empty -> ready device renderer`; the empty state is one passive renderer across Desktop/Tablet/Mobile and mounts no ready table/card tree.
+- Dense seven-column Desktop detail, two-column Tablet cards, one-column Mobile cards, all displayed facts/fallbacks, return-rate thresholds, Arabic wrapping and LTR numeric presentation remain unchanged.
+- No shared API/CSS/token/breakpoint widening and no query/cache/calculation/permission/RBAC/RLS/routing/export/print/backend/business behavior change occurred.
 - Focused regression tests were authored but not executed under the hosted-CI quota policy.
 
 ## Current single READY slice
 
-### DS2-REPORT-035 — Product Performance shared empty-state convergence
-Status: `READY — BOUNDED`.
-Owner role for immediate next action: UI Production Engineer.
-Selection baseline: `8b6353d187a490c16b56d209554f9ff51683380f` on `design-system-v2-development`.
-Representative surface: `src/pages/reports/ProductPerformancePage.tsx` only.
+### DS2-REPORT-036 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
+Status: `READY — PRODUCT DESIGN BOUNDING REQUIRED`.
+Owner role for immediate next action: Product Design Director.
+Selection baseline: `8d1aa7e4db89b8dfee7d9ce8c536bb4c160a40fb` on `design-system-v2-development`.
 
 System intent:
-- retire the two remaining page-local `لا توجد بيانات` presentation blocks in Product Performance and consume the existing shared `StatePanel` empty-state grammar;
-- chart scope is only the empty branch inside `ChartPanel` titled `أعلى 15 منتجاً بالإيراد`; use shared `StatePanel kind="empty"` with compact density while preserving the exact 240px analytical-body footprint;
-- detail scope is only `ResponsiveCollection.emptyState` under `تفاصيل المنتجات — أعلى 50 حسب الإيراد`; use shared `StatePanel kind="empty"` as the single empty renderer for Desktop, Tablet and Mobile;
-- preserve the exact empty copy `لا توجد بيانات` and keep both states passive with no new action, focus target or live announcement;
-- preserve exact state precedence: chart `tableLoading -> 240px SkeletonCard -> empty -> ready BarChart`, detail `tableLoading -> five 44px SkeletonCard rows -> empty -> ready device renderer`;
-- preserve one ready detail renderer per device, Arabic wrapping, LTR numeric presentation and the existing responsive collection contract;
-- keep the shared `StatePanel` API/CSS unchanged. A page-local neutral geometry wrapper is permitted only where necessary to preserve the chart's 240px body footprint; it must not recreate state typography/color/anatomy.
+- Product Design Director inspects representative remaining Reports/Analytics surfaces on the exact latest Development baseline before implementation;
+- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance/exclusion boundary;
+- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
+- preserve REPORT001-035 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
+- preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
+- do not turn REPORT036 into broad multi-page report beautification.
 
-Explicit exclusions:
-- page header, category `<select>`, `ReportFilterBar`, System Health, KPI `MetricGrid`/MetricCards, Trust/Freshness, chart data/order/bar/axes/tooltip/colors/margins, product-detail table/card facts and order, return-rate thresholds, category RPC, hooks/queries/cache/calculations/permissions/RBAC/RLS/routing/export/print/backend/business semantics;
-- shared `StatePanel`, `ResponsiveCollection`, `ChartPanel`, Card/KeyValueList APIs or implementations, global CSS, tokens or breakpoints;
-- every other report surface.
-
-Device/state/accessibility acceptance:
-- Desktop/Tablet/Mobile show the same explicit empty copy through shared state anatomy without mounting a detail table/card renderer when rows are empty;
-- no new ordinary horizontal overflow, fixed-width control or duplicate mounted interaction tree;
-- empty states remain non-interactive and do not acquire alert/live-region semantics; loading and ready states remain exactly as before;
-- focused tests must prove shared `.ds-state-panel[data-state-kind="empty"]` adoption in the chart and detail contexts, exact copy, chart 240px footprint, detail renderer isolation, and unchanged loading/ready precedence. Evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved runtime is actually used.
-
-Stop rule: if this convergence requires widening any shared contract/CSS or changing query/data/state/business semantics, mark REPORT035 `BLOCKED` rather than broaden the PR.
-
-Implementation is authorized only for this bounded concern from the latest Development HEAD at implementation start.
+Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
 
 ## Product migration roadmap
 
@@ -172,9 +159,9 @@ Open only when a real migrated screen proves the recurring gap:
 - further Work detail/feedback/management convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
 
 ### I. Reports / Analytics
-- `DS2-REPORT-001` through `DS2-REPORT-034` — `DONE`
-- `DS2-REPORT-035 — Product Performance shared empty-state convergence` — `READY — BOUNDED`
-- further Reports/Analytics convergence beyond REPORT035 — `BACKLOG` / each concern must be bounded separately
+- `DS2-REPORT-001` through `DS2-REPORT-035` — `DONE`
+- `DS2-REPORT-036 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — PRODUCT DESIGN BOUNDING REQUIRED`
+- further Reports/Analytics convergence beyond REPORT036 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
