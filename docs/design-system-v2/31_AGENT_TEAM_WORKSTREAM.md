@@ -104,19 +104,38 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-046 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
-Status: `READY — UNBOUNDED`.
-Owner role for immediate next action: Product Design Director.
+### DS2-REPORT-046 — Shared chart-tooltip presentation foundation (Receivables proof)
+Status: `READY — BOUNDED`.
+Owner role for immediate next action: UI Production Engineer.
+Representative surface: `src/pages/reports/ReceivablesPage.tsx` → Recharts tooltip content for the single AR chart only.
 
-Intent:
-- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline;
-- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance/exclusion boundary;
-- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer proves the need;
-- preserve REPORT001-045 contracts and all analytics/query/cache/calculation/date/filter/trust/permission/RBAC/RLS/routing/export/print/backend/business/workflow semantics;
-- preserve Settings/Admin, Global convergence, remaining Work and Field debt, and the shared component-depth program in the roadmap;
-- do not turn REPORT046 into broad multi-page report beautification.
+System-pattern intent:
+- establish one shared V2 chart-tooltip presentation pattern because the same page-local tooltip mini-system is independently duplicated across Receivables, Sales, Treasury, Product Performance and Rep Performance;
+- keep Recharts payload interpretation, series/domain labels, value formatting and business/chart truth caller-owned;
+- the shared layer owns only tooltip surface, spacing, RTL-safe label/row anatomy, typography, long-content containment and optional caller-provided series color treatment;
+- use existing V2 semantic surface/text/border/elevation roles; do not introduce new color/status/business semantics or chart-library data logic.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+Required implementation boundary:
+- add one domain-agnostic shared pattern under `src/components/patterns/` (preferred contract: label + caller-mapped presentation rows/items; no report/business calculations and no Supabase/query knowledge);
+- add the minimum shared styling in `src/styles/design-system-v2-surfaces.css` using existing semantic aliases; no new tokens/breakpoints unless a source-proven necessity blocks the slice;
+- migrate only Receivables' current `CustomTooltip` presentation onto the new shared pattern while preserving its Recharts adapter/payload mapping and exact currency formatting/order;
+- keep the other duplicated report tooltips unchanged in REPORT046; they become later adoption debt after this representative contract is reviewed.
+
+Acceptance:
+- Mobile 390 / Tablet 900 / Desktop 1440: tooltip surface remains legible, RTL-native, width-safe and does not introduce viewport overflow; long Arabic labels may wrap rather than truncate;
+- mixed-direction numeric/currency values remain caller-owned and explicitly LTR where currently used;
+- tooltip is informational only: no focus target, click action, hover-only business capability, live-region announcement or keyboard requirement is introduced;
+- Receivables chart keeps the exact `isBlocked -> dailyLoading -> empty -> ready` state precedence, 260px loading/empty/ready geometry, chart data/order/margins/axes/series/colors/radii/maxBarSize, Trust/Freshness and current Arabic copy;
+- focused tests must protect the shared tooltip anatomy/RTL/long-content contract and the Receivables adapter's unchanged label/value/order behavior where practical; existing Receivables chart-state tests must remain intact;
+- evidence must remain honestly labeled (`TESTS_AUTHORED_NOT_EXECUTED` unless an approved exact-head local runtime actually executes them).
+
+Explicit exclusions:
+- no migration of Sales, Treasury, Product Performance, Rep Performance or any other tooltip in this slice;
+- no chart series/palette/gradient/legend/axis/geometry changes;
+- no `ChartPanel` API widening unless the implementation proves the tooltip cannot remain an independent presentation pattern; such a need makes REPORT046 `BLOCKED` for Product Design reconsideration;
+- no FilterBar/KPI/table/ResponsiveCollection/Overview-navigation cleanup;
+- no query/cache/calculation/date/filter/trust/permission/RBAC/RLS/routing/export/print/backend/business/workflow change;
+- no `main`, Vercel, preview-branch or GitHub Actions activity.
 
 ## Product migration roadmap
 
@@ -168,7 +187,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-045` — `DONE`
-- `DS2-REPORT-046 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — UNBOUNDED`
+- `DS2-REPORT-046 — Shared chart-tooltip presentation foundation (Receivables proof)` — `READY — BOUNDED`
 - further Reports/Analytics convergence beyond REPORT046 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
