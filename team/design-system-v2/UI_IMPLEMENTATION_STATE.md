@@ -4,73 +4,46 @@
 
 - Run date/time: `2026-09-24 19:16 Africa/Cairo`.
 - Development branch: `design-system-v2-development`.
-- Exact feature baseline / Development HEAD at branch creation: `a5fe116aa3bda27b0ddc71cb60c4b1cf458d7122`.
+- Exact Development / feature baseline: `a5fe116aa3bda27b0ddc71cb60c4b1cf458d7122`.
 - Active slice: `DS2-REPORT-051 — Churn Risk shared chart-tooltip adoption`.
 - Feature branch: `ds2-report-051-churn-risk-chart-tooltip-adoption`.
-- Draft PR: not opened yet.
-- Disposition: `IN_PROGRESS`.
-- Evidence: `TESTS_AUTHORED_NOT_EXECUTED`.
-- Build/test/lint/runtime/preview/release PASS: not claimed.
+- Current feature HEAD before this blocker-state write: `46f8f021c5212a64c72a75f2564179406ead182b`.
+- Draft PR: not opened.
+- Disposition: `BLOCKED — REPOSITORY WRITE TOOLING`.
 
 ## Independent implementation judgment
 
-REPORT051 is a narrow presentation-only convergence. The existing Churn Risk pie chart already has the correct business/data/trust contract; the only duplicated concern is Recharts' default tooltip presentation.
+REPORT051 remains correctly bounded and technically straightforward: Churn Risk should keep the Recharts active/payload guard, category heading, exact `عملاء` row label, existing `FMT` count formatting, caller pie color and explicit LTR numeric direction, while delegating only passive RTL presentation to the existing shared `ChartTooltip`. No shared API/CSS/token/breakpoint or functional change is required.
 
-The correct implementation is to add a caller-owned Churn Risk tooltip adapter that keeps the active/payload guard, segment/category heading, exact one-row label `عملاء`, existing `FMT` count formatting, caller-provided pie color and explicit LTR numeric direction in the page, while delegating only passive RTL tooltip anatomy to the existing shared `ChartTooltip`.
+Peer states are lifecycle-stale on merged REPORT050 but contain no conflicting durable rule. The newer Workstream boundary at the exact Development HEAD authorizes REPORT051.
 
-No shared tooltip API/CSS/token/breakpoint change is required.
+## Material progress / blocker
 
-## Material progress this run
+- Mandatory shared-memory bootstrap completed in order.
+- Issue #27, exact Development HEAD and open PRs targeting Development inspected; no implementation PR exists.
+- Feature branch created from exact Development HEAD and slice marked IN_PROGRESS.
+- Current Churn Risk page/tests and proven Product Performance / shared `ChartTooltip` adoption pattern inspected.
+- Product and test edits were prepared, but repository code-file writes were repeatedly rejected by the available GitHub runtime safety layer before connector execution when the complete existing code-file payload was supplied.
+- The sandbox has no usable project checkout and direct GitHub network access is unavailable, so there is no approved alternative write path in this run.
+- No product/test file was modified. No PR was opened.
 
-- Completed the mandatory shared-memory bootstrap and inspected issue #27, current Development HEAD and all open PRs targeting Development.
-- Formed implementation judgment from the current Churn Risk source/tests and shared `ChartTooltip` contract before peer-state comparison.
-- Confirmed no implementation PR targets `design-system-v2-development`.
-- Confirmed the current Workstream at Development HEAD `a5fe116aa3bda27b0ddc71cb60c4b1cf458d7122` bounds REPORT051 to the Churn Risk pie tooltip only.
-- Created this feature branch from that exact Development HEAD.
-- Peer states are lifecycle-stale on merged REPORT050, but contain no conflicting design or functional rule. The newer Workstream boundary is authoritative for the current slice.
+## Intended product/test scope once tooling permits
 
-## Scope / preservation contract
+- `src/pages/reports/ChurnRiskPage.tsx` — replace only the default Recharts tooltip with a caller adapter delegating presentation to shared `ChartTooltip`.
+- `src/pages/reports/ChurnRiskPage.test.tsx` — focused guards, exact heading/row/count/color/LTR mapping, 390/900/1440 adoption, loading/zero-data isolation, and unchanged 260px pie geometry/data/colors/Legend/Trust-Freshness.
+- Shared `ChartTooltip` remains unchanged.
 
-Allowed product/test scope:
-- `src/pages/reports/ChurnRiskPage.tsx`;
-- `src/pages/reports/ChurnRiskPage.test.tsx`;
-- this owned state file.
+## Evidence / risks
 
-Preserve exactly:
-- chart presence rule `!statsLoading && pieData.length > 0`;
-- `ResponsiveContainer width="100%" height={260}`;
-- pie data/order, keys, geometry, padding, five caller colors and Legend;
-- ChartPanel title and Trust/Freshness action behavior;
-- report filters, KPI summary, responsive detail collection/table/cards and blocked/loading/empty precedence;
-- all hooks/query/cache/RPC/Supabase/calculation/trust/permission/RBAC/RLS/routing/validation/backend/business semantics.
-
-Excluded:
-- shared `ChartTooltip` implementation/API/tests/CSS/tokens/breakpoints;
-- Target Attainment or any other report tooltip;
-- any other shared pattern or product surface.
-
-## Device / state / accessibility target
-
-- Mobile 390 / Tablet 900 / Desktop 1440: same shared RTL passive tooltip grammar.
-- Long Arabic category text must remain contained/wrappable.
-- Count value remains explicit LTR/bidi-safe.
-- Tooltip stays informational only: no focus target, tab stop, role, aria-live or keyboard/action semantics.
-- No chart/tooltip surface is added during stats loading or when all pie values are zero.
-
-## Evidence / execution honesty
-
-Evidence remains `TESTS_AUTHORED_NOT_EXECUTED` until an approved local project runtime actually executes tests/build/lint. Hosted GitHub Actions and Vercel are forbidden and will not be used.
-
-## Risks / blocker status
-
-- UI blocker: `NONE`.
-- Product Design Director / Design QA / Integrator state files are stale on REPORT050, but the current Workstream boundary commit is newer and introduces no contradiction with their durable rules.
-- If the existing shared `ChartTooltip` cannot serve unchanged, REPORT051 must be marked `BLOCKED` rather than widening scope.
+- No test artifact was successfully committed in this run; therefore `TESTS_AUTHORED_NOT_EXECUTED` is **not** claimed.
+- No local test/build/lint/runtime/preview/release PASS is claimed.
+- No GitHub Actions, Vercel, preview branch, `main`, backend or business-semantic activity occurred.
+- UI/product blocker: none identified. Execution blocker is repository-write tooling only.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer continuation in this same slice.
-- **What changed:** REPORT051 branch created from exact Development HEAD and bounded implementation contract recorded.
-- **Preserve:** all contracts listed above; shared `ChartTooltip` unchanged.
-- **Need from you:** implement only the Churn Risk tooltip adoption, author focused tests, then open one Draft PR to `design-system-v2-development`.
-- **Blocker level:** `NONE`.
-- **Baseline:** `a5fe116aa3bda27b0ddc71cb60c4b1cf458d7122`.
+- **To:** next UI Production run / workstream coordinator.
+- **What changed:** REPORT051 branch exists from exact bounded baseline, but implementation is blocked before product/test writes by the current code-file write path.
+- **Preserve:** exact REPORT051 Workstream boundary and all Churn Risk chart/data/trust/business contracts.
+- **Need from you:** retry an approved repository code-write path; if available, continue the same slice/branch only. Do not start REPORT052.
+- **Blocker level:** `BLOCKING`.
+- **Baseline:** Development `a5fe116aa3bda27b0ddc71cb60c4b1cf458d7122`; pre-state-write feature HEAD `46f8f021c5212a64c72a75f2564179406ead182b`.
