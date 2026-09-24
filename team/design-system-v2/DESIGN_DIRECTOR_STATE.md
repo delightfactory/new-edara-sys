@@ -2,108 +2,122 @@
 
 ## Reviewed baseline
 
-- Review date/time: `2026-09-24 04:00 Africa/Cairo`.
+- Review date/time: `2026-09-24 05:06 Africa/Cairo`.
 - Authoritative branch: `design-system-v2-development`.
-- Product UI is integrated through `DS2-REPORT-043`.
-- Latest product integration: PR #91, squash merge `c9e28bd2b98bbf65d4d916e114cebb6cdcb86bf4`.
-- Current Development HEAD at exact-head Product Design review: `10ea887be4c72912565da0d0ac48cfdc6c590493`.
-- Active slice: `DS2-REPORT-044 — Reports Overview section-header convergence`.
-- Active implementation PR: `#92 — DS2-REPORT-044: converge Overview section headers`.
-- Exact PR HEAD independently reviewed and rechecked: `2f6afc096ed8ef6864ee3c661b9cd8190bea953c`.
-- Current Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER`.
-- Design QA on same exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
-- Evidence: `TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/visual/preview/release PASS is claimed.
+- Product UI is integrated through `DS2-REPORT-044`.
+- Latest product integration: PR #92, squash merge `a763a12538b9074e85af3f94365f8ccefc67f525`.
+- Exact Development HEAD before this owned-state write: `011abb806bf66b4d792b0ce7299aef42e82d8c9b`.
+- Active slice: `DS2-REPORT-045 — Customer Re-engagement responsive-list orchestration convergence`.
+- Slice status: `READY — BOUNDED`.
+- Active implementation PR: none at review/recheck time.
+- Current Product Design disposition: `IMPLEMENTATION AUTHORIZED WITHIN BOUNDED UI-ONLY CONTRACT`.
 - Current contradiction classification: `NONE`.
 
 ## Independent Product Design judgment
 
-**REPORT044 is accepted on exact PR HEAD `2f6afc096ed8ef6864ee3c661b9cd8190bea953c`.**
+**REPORT045 should converge the Customer Re-engagement result collection onto the existing shared `ResponsiveCollection` orchestration contract, with an explicit Tablet card composition.**
 
-I formed this judgment from the exact PR diff/source, current shared `SectionHeader` contract, V2 surface CSS, component decision matrix and device strategy before relying on peer approval.
+I formed this judgment from the exact current Customer Re-engagement source/tests, the current `ResponsiveCollection` implementation/tests, the Component Decision Matrix, Device Strategy and North Star before comparing peer states.
 
-The implementation is architecturally correct because it removes two local section-header mini-patterns from Reports Overview and consumes the existing shared hierarchy primitive without widening that primitive. This directly advances the durable system rule that local `SectionHead` variants converge onto shared `SectionHeader` and preserves caller ownership of report copy, navigation and data/business semantics.
+The current ready state mounts both the Desktop table and Mobile customer-card trees, then relies on CSS at `<=768px` to hide one of them. That leaves two presentation trees for the same data capability in the mounted React structure and gives Tablet `769–1024px` the Desktop table by default. This is weaker than the documented V2 contract: one renderer per device, Mobile cards instead of compressed tables, and Tablet as a deliberate touch-first hybrid rather than accidental Desktop inheritance.
 
-The implementation remains intentionally small: only `المؤشرات الرئيسية` and `صحة قاعدة العملاء` move to the shared pattern. The existing `عرض التفاصيل ←` action remains a native `Link` to `/reports/customers`; no new action abstraction, navigation-card behavior or neighboring report cleanup is introduced.
+The existing shared `ResponsiveCollection` already owns exactly this concern. It selects one Mobile/Tablet/Desktop renderer, supports explicit Tablet rendering, and accepts caller-owned loading/empty nodes without moving business/data semantics into the Design System. No shared API or functional change is required.
 
-## Product-design acceptance findings
+## Bounded architecture decision
 
-### System coherence / hierarchy — PASS
+Representative surface:
+- `src/pages/reports/CustomerReengagementPage.tsx` — customer-result collection only.
+- `src/pages/reports/CustomerReengagementPage.test.tsx` — focused regression coverage.
 
-- Both section titles remain semantic `h2` headings through `headingLevel={2}`.
-- Shared `SectionHeader` now owns title/action anatomy instead of page-local font/flex styling.
-- The existing `var(--space-3)` section-to-content spacing is preserved with a neutral wrapper rather than a new heading mini-system.
-- No shared `SectionHeader` API, CSS, token or breakpoint change occurred.
-- The Overview navigation shortcut grid remains explicitly out of scope; its interactive-card/action debt still requires a separate future slice rather than being smuggled into this convergence.
+Required convergence:
+- consume existing `ResponsiveCollection<ReengagementRow>` unchanged;
+- preserve the current dense semantic Desktop table as `renderDesktop`;
+- preserve the current customer-card information/action anatomy for Mobile;
+- provide an explicit Tablet renderer using the same row facts/actions in a two-column touch-first card grid at the canonical Tablet range, rather than falling back to the Desktop table;
+- preserve the existing loading node (`SkeletonRows count={8}`) and filtered-empty node/copy through the collection state slots;
+- remove only CSS visibility rules made obsolete by single-renderer orchestration.
 
-### Device / RTL / long-content fit — PASS at source level
+This is one responsive-composition concern. It is not permission to redesign the page, extract a new domain card primitive, rework filters, output, statuses or business behavior.
 
-- Shared `SectionHeader` provides `min-width: 0` on the outer/main/copy structure and wraps at `<=768px`.
-- **Mobile 390:** Arabic titles and the independent action can wrap without introducing a fixed-width/truncation/ordinary-overflow rule.
-- **Tablet 900:** the unchanged shared horizontal title/action relationship preserves deliberate compact management composition.
-- **Desktop 1440:** hierarchy and density remain appropriate for a report overview.
-- No duplicated hidden interaction tree or device-specific page-local branch was added.
+## Product-design acceptance contract
 
-### Accessibility / action clarity — PASS for bounded scope
+### Device composition
 
-- Both titles remain real headings, not styled generic text.
-- `عرض التفاصيل ←` remains one native keyboard-focusable link with unchanged route and no nested interactive wrapper.
-- No live-region, modal/sheet, focus-trap or click-proxy semantics were introduced.
-- The pre-existing compact text-link touch area remains carried debt, not a regression introduced by REPORT044. A larger touch/action-link solution would require a separately bounded shared action/control concern.
+- **Mobile 390:** only the customer-card renderer is mounted; one-column operational scanning remains; existing card facts/order, priority/recency/balance display and permission-gated 360° CTA are unchanged; Desktop table subtree is absent.
+- **Tablet 900:** only an explicit two-column customer-card renderer is mounted; cards use `minmax(0, 1fr)`-safe composition/no ordinary horizontal overflow; same data order and 360° permission/route semantics; Desktop table subtree is absent.
+- **Desktop 1440:** only the existing dense table renderer is mounted; existing columns, values, ordering and overflow containment remain; card subtree is absent.
 
-### Functional isolation / state preservation — PASS
+### States
 
-Unchanged by source inspection:
-- top Overview title/subtitle/header and `ReportFilterBar`;
-- `SystemHealthBar`, report hooks and trust/freshness wiring;
-- both `MetricGrid` / `MetricCard` compositions, values, order and domain semantics;
-- four summary `SkeletonCard height={160}` loading items;
-- customer-health single `SkeletonCard height={120}` loading branch;
-- complete navigation shortcut grid;
-- analytics/query/cache/calculation/date/filter/permission/RBAC/RLS/routing/export/print/backend/business/workflow semantics.
+Preserve caller-owned precedence and meaning:
+- page-level `listError` / unauthorized handling remains untouched;
+- collection state remains `loading -> empty -> ready`;
+- loading remains exactly eight existing skeleton rows;
+- empty retains exact title `لا يوجد عملاء يطابقون الفلاتر المحددة` and exact hint `جرّب تغيير الفلاتر أو إلغاء تفعيل «النشطون فقط»`;
+- no StatePanel/empty-state redesign is part of REPORT045.
 
-The PR changed exactly three files: `OverviewPage.tsx`, focused `OverviewPage.test.tsx`, and UI Production's owned state file.
+### RTL / Arabic / accessibility / interaction
 
-### Test-artifact / evidence gate — PASS with honest limitation
+- no new fixed-width/truncation or ordinary-horizontal-overflow source;
+- preserve existing mixed Arabic/Latin direction handling;
+- eliminate duplicate hidden interactive descendants by mounting one ready renderer only;
+- customer 360° links remain native keyboard-focusable links, permission-gated exactly as today, with unchanged `/customers/:id` destinations;
+- existing Mobile CTA minimum 44px contract must not regress;
+- no nested clickable surface, live region, focus trap or new action semantics.
 
-Focused tests protect:
-- exactly two shared `.ds-section-header` instances;
-- exact Arabic titles and `h2` semantics;
-- customer action containment and `/reports/customers` destination;
-- both existing MetricGrid contracts and card order/value regression coverage;
-- customer trust/freshness/domain wiring;
-- four-card summary loading behavior;
-- customer-health 120px loading branch without the ready customer grid.
+## Explicit exclusions / invariants
 
-Tests were authored but not executed. Evidence remains `TESTS_AUTHORED_NOT_EXECUTED`. No local/CI/runtime/preview/release PASS is claimed.
+Do not change:
+- `KpiStrip`, `MetricGrid`, `StatCard`, PageHeader or summary meaning/loading;
+- `FilterBar`, `useFilterState`, filter URL sync/stats/query inputs;
+- export/print action, `ExportDrawer`, document-output/CSV/360° export behavior or overlay semantics;
+- page-level unauthorized/error copy or error semantics;
+- priority classification/tone mapping, recency/balance meaning, row ordering, result limit or Customer 360 permission checks/routes;
+- Desktop table facts/columns/actions or customer-card facts/actions;
+- pagination/infinite-query behavior;
+- shared `ResponsiveCollection` implementation/API/CSS/tokens/device breakpoints;
+- Overview navigation-card debt or any other Reports page;
+- analytics/query/cache/calculation/date/filter/trust/permission/RBAC/RLS/routing/export/print/backend/business/workflow semantics.
+
+If implementation reveals a need for any shared-contract or functional widening above, REPORT045 becomes `BLOCKED` and returns to Product Design for re-bounding.
+
+## Evidence expectations
+
+Focused tests must protect:
+- 390 / 900 / 1440 renderer selection with exactly one ready renderer mounted per mode;
+- explicit Tablet renderer rather than Desktop fallback;
+- loading and empty state precedence/copy without ready renderer mounting;
+- enough row/action assertions to prove device compositions preserve data order and permission-gated 360° route semantics;
+- all existing KPI convergence regression coverage.
+
+Evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved exact-head local runtime actually executes tests. Hosted GitHub Actions remain forbidden and Vercel preview remains owner-requested only.
 
 ## Peer-state synthesis / contradiction handling
 
-After the independent review:
+After forming the independent judgment:
 
-- **Design QA:** fresh and aligned; independently marked the same exact PR HEAD `2f6afc096...` `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` with no blocking contradiction.
-- **UI Production Engineer:** PR-carried state is aligned with the bounded contract. Its recorded pre-state implementation/test SHA is superseded by the state-only PR HEAD movement already inspected by QA and Product Design; product/test content matches the reviewed diff.
-- **Development Integrator:** Development copy is lifecycle-current only through REPORT043 and therefore stale for REPORT044 integration, but contains no conflicting blocker.
-- **Team Memory:** integrated truth through REPORT043 remains valid; its earlier REPORT044-unbounded handoff is lifecycle-superseded by the bounded Workstream/Director state, not contradictory.
-- **Decision Log / North Star / component/device docs:** aligned with shared-system-before-local-invention, Arabic-first responsive hierarchy and strict presentation-only ownership.
-- **PR discussion:** Design QA is the only current review comment; no blocking review thread was found.
-- **Development drift:** Development advanced from the PR feature baseline `9ec57908...` to `10ea887...` by one governance-only commit modifying `DESIGN_QA_STATE.md`; no product/test/shared-component overlap exists.
+- **Team Memory:** current and aligned that REPORT044 is integrated and REPORT045 was awaiting one smallest Product Design boundary. Its unbounded wording is now lifecycle-superseded by the Workstream/Director boundary, not contradictory.
+- **Development Integrator:** current and aligned; REPORT044 is merged and REPORT045 is the sole next item for Product Design bounding.
+- **UI Production Engineer:** historical REPORT044 state; no REPORT045 implementation exists yet and no conflicting constraint is recorded.
+- **Design QA:** historical REPORT044 exact-head approval; no REPORT045 disposition exists yet and no conflicting blocker is recorded.
+- **Decision Log / North Star / Component Decision Matrix / Device Strategy:** aligned with UI-only functional isolation, shared-system-before-local-invention, one-renderer responsive collection orchestration and deliberate Mobile/Tablet/Desktop composition.
+- **Open PR recheck:** no open PR targets `design-system-v2-development`; there is no competing implementation slice.
 
 Current contradiction classification: `NONE`.
 
 ## Repository actions / what changed this run
 
 - Completed the mandatory shared-memory bootstrap in the required order.
-- Inspected issue #27, current Development HEAD, active PR #92, exact changed-file scope/diff, exact PR-head Overview source/tests, shared `SectionHeader`, V2 surface CSS, component decision matrix and device strategy.
-- Reconfirmed immediately before acceptance that PR #92 remained `OPEN / DRAFT`, base `design-system-v2-development`, exact HEAD `2f6afc096ed8ef6864ee3c661b9cd8190bea953c`, `mergeable=true`, and exactly three changed files.
-- Independently accepted REPORT044 on that exact HEAD as `PASS — NO DESIGN-SYSTEM BLOCKER`.
-- Did not update `TEAM_MEMORY.md` because overall system direction did not change.
-- Did not update `DECISION_LOG.md` because no durable rule changed.
-- Did not modify product code or any peer role state, merge a PR, touch `main`, deploy Vercel, modify preview branches, trigger/rerun GitHub Actions or use hosted CI.
+- Inspected issue #27, current Development HEAD, open PRs targeting Development, representative report source/tests, shared `ResponsiveCollection` source/tests and relevant component/device/migration docs.
+- Bounded REPORT045 in the Workstream as `READY — BOUNDED` with explicit scope, exclusions, device/state/accessibility acceptance and evidence expectations; boundary commit `011abb806bf66b4d792b0ce7299aef42e82d8c9b`.
+- Did not update `TEAM_MEMORY.md`; the overall North-Star/system direction did not change, only the next slice was decomposed.
+- Did not update `DECISION_LOG.md`; no durable decision changed.
+- Did not modify product code or peer role states, merge a PR, touch `main`, deploy Vercel, modify preview branches, trigger/rerun GitHub Actions or use hosted CI.
 
 ### Cross-role handoff
-- **To:** Development Integrator.
-- **What changed:** Product Design independently accepted PR #92 exact HEAD `2f6afc096ed8ef6864ee3c661b9cd8190bea953c` as `PASS — NO DESIGN-SYSTEM BLOCKER`; Design QA is already `GREEN-DEV` on the same exact HEAD.
-- **Preserve:** exact two Arabic `h2` section titles; `عرض التفاصيل ←` native Link and `/reports/customers` route; all MetricGrid/MetricCard/loading/SystemHealthBar/trust/query/business contracts; entire navigation grid; unchanged shared `SectionHeader` API/CSS/tokens/breakpoints; no `main`/Vercel/hosted-CI activity.
-- **Need from you:** final revalidate unchanged PR head/base, governance-only Development drift, exact 3-file scope, reviews/threads, mergeability and functional isolation; if all gates remain clean, integrate REPORT044 into Development. Any PR-head movement invalidates both current QA and Product Design acceptance.
+- **To:** UI Production Engineer; Design QA after a stable Draft PR exists.
+- **What changed:** REPORT045 is now `READY — BOUNDED` to converge only the Customer Re-engagement result collection onto existing `ResponsiveCollection`, with Desktop table / explicit two-column Tablet cards / Mobile cards and single-renderer mounting.
+- **Preserve:** existing row order/facts; Desktop columns; customer-card facts/actions; exact loading/empty copy and state precedence; 360° permission checks/routes; KPI/filter/export/error/query/business contracts; unchanged shared `ResponsiveCollection` API/CSS/tokens/breakpoints; no `main`/Vercel/hosted-CI activity.
+- **Need from you:** branch from the exact latest Development HEAD, implement REPORT045 only, author focused 390/900/1440 + loading/empty + permission/action regression tests, and open one Draft PR targeting `design-system-v2-development`. Stop and mark `BLOCKED` if shared-contract or functional widening is required.
 - **Blocker level:** `NONE`.
-- **Baseline:** Development `10ea887be4c72912565da0d0ac48cfdc6c590493`; exact accepted PR #92 HEAD `2f6afc096ed8ef6864ee3c661b9cd8190bea953c`.
+- **Baseline:** Development `011abb806bf66b4d792b0ce7299aef42e82d8c9b`; no implementation PR exists at handoff.
