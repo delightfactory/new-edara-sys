@@ -2,112 +2,110 @@
 
 ## Reviewed baseline
 
-- Review date/time: `2026-09-24 02:01 Africa/Cairo`.
+- Review date/time: `2026-09-24 03:04 Africa/Cairo`.
 - Authoritative branch: `design-system-v2-development`.
-- Product UI is integrated through `DS2-REPORT-042`.
-- Latest product integration: PR #90, squash merge `f7479859fe5c3233c3082bad2e97c0a004213f4c`.
-- Exact Development HEAD immediately before this Product Design state write: `c30163249c26f4b54d3a0a5ea5645ba858935fbb`.
-- Active slice: `DS2-REPORT-043 — Treasury semantic-contract notice AlertPanel convergence`.
-- Active implementation PR: `#91 — DS2-REPORT-043: converge Treasury semantic notice on AlertPanel`.
-- Feature baseline / PR base: `0f3a9c3c2fe0e782716b52cd54ec20dc8b972c97`.
-- Exact PR HEAD independently reviewed and rechecked: `932457d5cf34c0eaa17404614f697bc5cf100eb3`.
-- Changed-file scope: exactly 3 files — `TreasuryPage.tsx`, focused `TreasuryPage.test.tsx`, and UI Production Engineer owned state.
-- Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER` on exact HEAD `932457d5cf34c0eaa17404614f697bc5cf100eb3`.
-- Design QA on the same exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
-- Evidence: `TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/visual/preview/release PASS is claimed.
+- Product UI is integrated through `DS2-REPORT-043`.
+- Latest product integration: PR #91, squash merge `c9e28bd2b98bbf65d4d916e114cebb6cdcb86bf4`.
+- Exact Development baseline inspected before bounding: `6180f9b346d64a041091d6d5916f980bb49c5e63`.
+- Workstream boundary commit: `7538d3b01d8cc58a4b417db0b85e12bc9afc3398`.
+- Active slice: `DS2-REPORT-044 — Reports Overview section-header convergence`.
+- Current status: `READY — BOUNDED`.
+- Active implementation PR targeting Development: `NONE` at bounding time.
 - Current contradiction classification: `NONE`.
 
 ## Independent Product Design judgment
 
-**PASS — NO DESIGN-SYSTEM BLOCKER on exact PR HEAD `932457d5cf34c0eaa17404614f697bc5cf100eb3`.**
+**REPORT044 is now dependency-safe and implementation-ready.**
 
-I formed this judgment from the exact PR diff/current Treasury source, focused tests, shared `AlertPanel` implementation/CSS and the relevant component/migration/device blueprint before using peer conclusions as approval evidence.
+I formed the next-slice judgment from the latest integrated Reports source and existing shared contracts before using peer lifecycle states. The smallest useful remaining concern is not another chart/empty-state micro-fix and not a broad Overview beautification pass. It is one repeated hierarchy primitive that is still being recreated locally on the Reports Overview page despite an existing sound shared pattern.
 
-The implementation is the correct bounded system move. It removes one page-local semantic-information mini-pattern and reuses the established shared `AlertPanel tone="info"` grammar without widening the component contract or moving Treasury trust/business truth into the Design System.
+`src/pages/reports/OverviewPage.tsx` currently renders two section-heading compositions locally:
+- `المؤشرات الرئيسية` as a page-local styled `h2`;
+- `صحة قاعدة العملاء` inside a page-local flex heading/action row with the existing `عرض التفاصيل ←` link.
 
-The exact disclosure remains in the same hierarchy position between the page header/filter area and `SystemHealthBar`, and preserves the business/trust meaning plus inline technical literals:
-- `مطابق لسجلات الخزينة`
-- `vault_transactions / custody_transactions`
-- `net_cashflow`
+The shared `SectionHeader` already owns exactly this presentation responsibility: semantic heading level, title/description anatomy, optional independent action, min-width protection, and Mobile wrapping. Its CSS deliberately wraps the shared header at `<=768px` and constrains the action without inventing page-specific device behavior. Therefore REPORT044 should consume that existing grammar rather than extend it.
 
-The notice remains correctly static and passive: `announce` is omitted, so no `role`/`aria-live` region is introduced; there is no action slot, click target or explicit focus target; the shared information icon is decorative/`aria-hidden`, while the text independently carries the meaning.
+This is a system-convergence slice, not page-by-page beautification: the goal is to remove one independent section-header implementation and prove the canonical shared hierarchy grammar on a representative management/report surface.
 
-At source level the shared alert anatomy remains suitable for Mobile 390 / Tablet 900 / Desktop 1440: the content column is `min-width: 0`, mobile wrapping is already part of the shared contract, and the implementation adds no fixed width, truncation or horizontal-scroll source. This is source-level acceptance only; no runtime visual pass is claimed.
+## Bounded implementation contract
 
-## Scope / system-fit acceptance
+### Representative surface
 
-### PASS — bounded presentation-only change
+`src/pages/reports/OverviewPage.tsx` only, plus focused `OverviewPage.test.tsx` coverage and UI Production's owned state file.
 
-The product diff does only this:
-- imports the existing `AlertPanel`;
-- replaces the bespoke rgba/border/radius/padding/flex/emoji wrapper with `<AlertPanel tone="info">`;
-- keeps the disclosure body and inline `<code>` literals unchanged.
+### Required presentation change
 
-Preserved exactly:
-- notice hierarchy position;
-- Treasury chart precedence `isBlocked -> dailyLoading -> empty -> ready`;
-- current Treasury blocked/empty renderers and 280px analytical geometry;
-- Recharts data mapping, margins, grid/axes/tooltip/series/colors/reference line;
-- TrustStateBadge/FreshnessIndicator action area;
-- Treasury KPI `MetricGrid` / `MetricCard` contracts;
-- ReportFilterBar/range behavior, `SystemHealthBar` and hooks;
-- all query/cache/aggregation/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business/workflow semantics;
-- shared `AlertPanel` API, CSS, tokens and breakpoints.
+- Replace the local `المؤشرات الرئيسية` heading composition with existing shared `SectionHeader`, preserving semantic `h2`.
+- Replace the local `صحة قاعدة العملاء` heading/action layout with existing shared `SectionHeader`, preserving semantic `h2` and passing the existing `Link` action unchanged in meaning and destination.
+- Preserve exact action text `عرض التفاصيل ←` and route `/reports/customers`.
+- Do not widen or modify shared `SectionHeader` implementation, CSS, tokens or breakpoints.
 
-No DB/migration/RPC/service/permission/business or deployment surface is present in the changed-file set.
+### Device / RTL / accessibility acceptance
 
-### PASS — shared-system coherence
+- **Mobile 390:** shared SectionHeader wrapping must prevent clipping/ordinary horizontal overflow; Arabic title remains readable; the customer-details action remains an independent keyboard-focusable link and may wrap through the shared contract rather than page-local responsive CSS.
+- **Tablet 900:** preserve deliberate compact management composition; no compressed heading/action collision or hidden action.
+- **Desktop 1440:** preserve the existing section hierarchy and efficient horizontal title/action relationship.
+- Both section titles remain real `h2` headings; no fake clickable card, nested interactive region, focus trap or live-region behavior is introduced.
+- Long Arabic copy and mixed UI content must not be truncated by this slice.
 
-This aligns with the V2 component direction that `AlertPanel` owns info/warning/danger/success operational-message presentation, while domain/business meaning remains caller-owned. It reduces independent visual implementations rather than creating a Treasury-specific variant or color language.
+### Focused test expectations
 
-The change also respects the Reports/Analytics migration strategy: one small reversible concern, proven through an existing shared primitive, without broad page beautification or unrelated report cleanup.
+`OverviewPage.test.tsx` should protect:
+- exactly the intended two shared `.ds-section-header` instances for these sections;
+- exact Arabic titles and `h2` semantics;
+- second section action contains the existing link and `/reports/customers` destination;
+- existing summary/customer `MetricGrid` composition remains intact;
+- existing loading contracts remain intact, including four summary skeletons and the single customer-health `SkeletonCard height={120}` branch.
 
-## Test/evidence acceptance
+Evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved local exact-head runtime genuinely executes tests. Hosted GitHub Actions remain forbidden.
 
-Focused `TreasuryPage.test.tsx` coverage now protects:
-- shared `.ds-alert-panel` anatomy and `data-tone="info"`;
-- static/non-live semantics (`role` and `aria-live` absent);
-- no shared alert action UI;
-- decorative icon semantics (`aria-hidden="true"`);
-- exact disclosure meaning and technical literals as `<code>`;
-- hierarchy immediately after the page header/filter area and before `SystemHealthBar`;
-- existing Treasury MetricGrid/ChartPanel/BLOCKED/loading/empty/ready/ready-chart regression coverage remains present.
+## Explicit exclusions / preserve exactly
 
-Evidence remains honestly labeled `TESTS_AUTHORED_NOT_EXECUTED`. No source review is being represented as an executed build/test/runtime pass.
+Do not change:
+- the top page title/subtitle/header and `ReportFilterBar` composition;
+- `SystemHealthBar`, trust/freshness/domain wiring or report hooks;
+- either `MetricGrid`, any `MetricCard`, KPI values/copy, or loading/state semantics;
+- the navigation shortcut grid at the bottom of Overview;
+- legacy `edara-card` navigation surfaces, shortcut colors/icons/routes/copy;
+- Customer Re-engagement or any other report page;
+- shared `SectionHeader` API/CSS/tokens/breakpoints;
+- analytics/query/cache/calculation/date/filter/permission/RBAC/RLS/routing/export/print/backend/business/workflow semantics.
+
+If the implementation discovers that this slice cannot be completed without changing shared `SectionHeader` behavior or functional semantics, it must move to `BLOCKED` rather than widening scope.
+
+## Why broader neighboring debt is deferred
+
+The Overview navigation grid is real debt: it still uses whole-card links with legacy `edara-card`, inline presentation and some raw accent hex values. It is deliberately **not** folded into REPORT044. The current shared `Card` contract is explicitly neutral and intentionally carries no click/navigation semantics; a premium whole-card navigation surface therefore deserves a separate interaction/focus/touch contract and a separately bounded slice. Treating the neutral Card as an interactive primitive or smuggling new CSS into this small slice would weaken the system architecture.
+
+Customer Re-engagement is also intentionally deferred because its remaining debt spans filters, status/priority semantics, output/export, drawer behavior and operational actions. That is materially broader and riskier than the clean existing-contract convergence selected here.
 
 ## Peer-state synthesis / contradiction handling
 
 After the independent judgment:
 
-- **Design QA:** fresh and aligned; exact HEAD `932457d5cf34c0eaa17404614f697bc5cf100eb3` is `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`, with no current blocker.
-- **UI Production Engineer:** PR-carried owned state is fresh and aligned with the same bounded implementation/exclusions; its earlier pre-state implementation SHA is superseded by the state-only PR HEAD movement already included in this exact-head review.
-- **Development Integrator:** Development copy is lifecycle-current through REPORT042 only; its earlier REPORT043-unbounded placeholder is superseded by the bounded Product Design/workstream direction and is not contradictory.
-- **Team Memory:** integrated truth through REPORT042 remains valid; its REPORT043-unbounded handoff is lifecycle-stale for the active slice scope, not a contradiction.
-- **Decision Log / North Star / component/migration/device docs:** aligned with shared-system-before-local-invention, semantic consistency, Arabic-first multi-device behavior and presentation-only ownership.
-- **PR discussion / review threads:** Design QA GREEN-DEV exists on the exact current HEAD; inline review-thread list is empty.
+- **Development Integrator:** fresh lifecycle state confirms REPORT043 is merged and REPORT044 was intentionally `READY — UNBOUNDED` for Product Design. This run has now completed that required bounding step.
+- **UI Production Engineer:** current Development copy remains historical through REPORT043 and contains no competing REPORT044 implementation.
+- **Design QA:** current Development copy remains historical through REPORT043 and contains no competing REPORT044 disposition.
+- **Team Memory:** integrated truth through REPORT043 is fresh and aligned; its REPORT044-unbounded handoff is now lifecycle-superseded by this bounded Workstream/state, not contradictory.
+- **Decision Log / North Star / component/page/device docs:** aligned with shared-system-before-local-invention, Arabic-first hierarchy, adaptive composition and presentation-only ownership.
+- **Open PR search targeting Development:** none at the time REPORT044 was bounded.
 
 Current contradiction classification: `NONE`.
 
-## Development drift / integration readiness
+## Repository actions / what changed this run
 
-Development advanced from the feature baseline `0f3a9c3c2fe0e782716b52cd54ec20dc8b972c97` to pre-state-write HEAD `c30163249c26f4b54d3a0a5ea5645ba858935fbb` by exactly one governance-only file: `team/design-system-v2/DESIGN_QA_STATE.md`.
-
-There is no product/test overlap with PR #91. Product Design acceptance remains anchored only to exact PR HEAD `932457d5cf34c0eaa17404614f697bc5cf100eb3`; any later PR-head movement invalidates this acceptance and requires fresh review.
-
-## Repository actions / what changed since the previous state
-
-- Completed the mandatory shared-memory bootstrap in the prescribed order.
-- Inspected issue #27, current Development HEAD, the single open PR targeting Development, exact changed-file scope/patches, current Treasury source/test, shared `AlertPanel` contract/CSS and relevant blueprint/component/migration/device docs.
-- Independently accepted PR #91 exact HEAD `932457d5cf34c0eaa17404614f697bc5cf100eb3` as `PASS — NO DESIGN-SYSTEM BLOCKER`.
-- Confirmed Design QA independently GREEN-DEV'd the same exact HEAD and found no review-thread blocker.
-- Confirmed Development drift from feature baseline is governance-only and non-overlapping.
-- Did not update Workstream, Team Memory or Decision Log because no new system direction or durable decision changed.
-- Did not modify product code or peer role states, merge, touch `main`, deploy Vercel, modify preview branches, trigger/rerun GitHub Actions or use hosted CI.
+- Completed the mandatory shared-memory bootstrap in the required order.
+- Inspected issue #27, exact Development HEAD, open PRs targeting Development, Overview source/tests, shared `SectionHeader`, shared neutral `Card`, V2 surface CSS, and relevant component/page/device decision docs.
+- Selected and bounded REPORT044 as the smallest dependency-safe existing-contract concern.
+- Updated `31_AGENT_TEAM_WORKSTREAM.md` in commit `7538d3b01d8cc58a4b417db0b85e12bc9afc3398`.
+- Did not update `TEAM_MEMORY.md` because overall system direction did not change.
+- Did not update `DECISION_LOG.md` because no durable rule changed.
+- Did not modify product code or any peer role state, merge a PR, touch `main`, deploy Vercel, modify preview branches, trigger/rerun GitHub Actions or use hosted CI.
 
 ### Cross-role handoff
-- **To:** Development Integrator.
-- **What changed:** Product Design independently accepted PR #91 exact HEAD `932457d5cf34c0eaa17404614f697bc5cf100eb3` as `PASS — NO DESIGN-SYSTEM BLOCKER`; Design QA is already GREEN-DEV on the same exact HEAD.
-- **Preserve:** `AlertPanel tone="info"` only for this static Treasury notice; exact disclosure/business-trust meaning and inline code literals; same hierarchy position; passive/non-live/no-action semantics; all Treasury chart/KPI/filter/SystemHealthBar/trust/query/business contracts; unchanged shared AlertPanel API/CSS/tokens/breakpoints.
-- **Need from you:** final revalidate unchanged PR head/base, current governance-only Development drift, three-file scope, reviews/threads, mergeability and functional isolation; merge REPORT043 into `design-system-v2-development` only if all gates remain clean. Do not deploy or touch `main`.
+- **To:** UI Production Engineer.
+- **What changed:** `DS2-REPORT-044 — Reports Overview section-header convergence` is now `READY — BOUNDED`; only the two local Overview section-heading compositions may converge onto existing shared `SectionHeader`.
+- **Preserve:** exact section titles; `h2` semantics; existing `عرض التفاصيل ←` link and `/reports/customers` route; all MetricGrid/MetricCard/loading/SystemHealthBar/trust/query/business contracts; the entire Overview navigation grid; unchanged shared SectionHeader API/CSS/tokens/breakpoints.
+- **Need from you:** branch from the exact latest `design-system-v2-development` HEAD after this state write, implement REPORT044 only, add focused Overview tests for shared header anatomy/semantics/action plus regression preservation, and open one Draft PR targeting Development. If shared-contract or functional widening becomes necessary, mark `BLOCKED` instead.
 - **Blocker level:** `NONE`.
-- **Baseline:** exact accepted PR #91 HEAD `932457d5cf34c0eaa17404614f697bc5cf100eb3`; Development pre-state-write `c30163249c26f4b54d3a0a5ea5645ba858935fbb`.
+- **Baseline:** Product Design inspection baseline `6180f9b346d64a041091d6d5916f980bb49c5e63`; Workstream boundary commit `7538d3b01d8cc58a4b417db0b85e12bc9afc3398`; no implementation PR active at handoff.
