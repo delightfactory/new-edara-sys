@@ -6,8 +6,8 @@
 - Product UI is integrated through `DS2-REPORT-050`.
 - Current integrated product HEAD / squash merge: `22983eff7ce4d11113c2b10de5468bb33bb86936` from PR #98.
 - Exact reviewed implementation HEAD: `007d1174c09f1808a261fa49b133e4201d25ca68`.
-- Current single READY roadmap item: `DS2-REPORT-051 — Next bounded Reports metrics/charts/tables/responsive-composition convergence`.
-- REPORT051 is intentionally unbounded: Product Design Director must inspect the exact latest Development baseline and record exactly one smallest dependency-safe presentation-only concern before UI Production begins.
+- Current single READY roadmap item: `DS2-REPORT-051 — Churn Risk shared chart-tooltip adoption`.
+- REPORT051 is `READY — BOUNDED`: UI Production may implement only the `توزيع تصنيف العملاء` Pie-chart tooltip adoption from the exact latest Development baseline, using the existing shared `ChartTooltip` unchanged; if that requires shared-contract widening or functional semantics to change, the slice becomes `BLOCKED`.
 - `main` remains frozen until explicit owner approval.
 - Vercel preview remains user-requested only.
 - GitHub Actions / hosted CI remain forbidden for normal Design System development.
@@ -48,24 +48,25 @@ Result:
 
 ## Current single READY roadmap item
 
-`DS2-REPORT-051 — Next bounded Reports metrics/charts/tables/responsive-composition convergence`
+`DS2-REPORT-051 — Churn Risk shared chart-tooltip adoption`
 
 Intent:
-- Product Design Director inspects representative remaining Reports/Analytics surfaces on the exact latest Development baseline before implementation;
-- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance/exclusion boundary;
-- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
-- preserve REPORT001-050 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
-- preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
-- do not turn REPORT051 into broad multi-page report beautification.
+- replace only the default Recharts tooltip inside `src/pages/reports/ChurnRiskPage.tsx` → `توزيع تصنيف العملاء` with the already-proven presentation-only shared `ChartTooltip`;
+- keep Churn Risk ownership of chart-library payload interpretation, category heading, one-row `عملاء` label, existing `FMT` count formatting, caller pie-series color, explicit LTR numeric direction and every analytical/trust/business semantic;
+- preserve the exact chart presence gate `!statsLoading && pieData.length > 0`, 260px container, pie data/order/keys/radii/padding, five caller colors, Legend and Trust/Freshness behavior;
+- preserve header filters, KPI summary and responsive customer-detail collection/table/cards unchanged;
+- 390 / 900 / 1440 use the same shared RTL passive tooltip grammar with long-Arabic containment and bidi-safe numeric values;
+- no `ChartTooltip` API/CSS/token/breakpoint widening, no other report tooltip migration and no backend/query/calculation/permission/business change;
+- focused tests must protect inactive/empty payload guards, exact category/label/count/color/LTR mapping, CSSOM-normalized color evidence, device adoption, chart absence during loading/zero-data and unchanged chart geometry/contracts.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+If the existing shared `ChartTooltip` cannot serve this consumer unchanged, or exact behavior preservation requires functional change, REPORT051 is `BLOCKED` rather than broadened.
 
 ## Latest role positions
 
 ### Product Design Director
-- Accepted REPORT050 exact PR HEAD `007d1174c09f1808a261fa49b133e4201d25ca68` as `PASS — NO DESIGN-SYSTEM BLOCKER`.
-- No current `BLOCKING` contradiction exists for the integrated slice.
-- That acceptance is consumed by REPORT050 integration; next responsibility is to inspect the exact latest Development baseline and bound one smallest safe REPORT051 concern.
+- REPORT050 exact-head acceptance is consumed by integration.
+- Independently bounded REPORT051 as `Churn Risk shared chart-tooltip adoption` from the current integrated Reports baseline; the workstream boundary is commit `a5fe116aa3bda27b0ddc71cb60c4b1cf458d7122`.
+- No current `BLOCKING` contradiction exists; UI Production is the next owner and must keep shared `ChartTooltip` unchanged.
 
 ### UI Production Engineer
 - REPORT050 implementation is integrated.
