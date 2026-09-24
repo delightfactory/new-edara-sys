@@ -2,104 +2,94 @@
 
 ## Reviewed baseline
 
-- Review date/time: `2026-09-24 11:02 Africa/Cairo`.
+- Review date/time: `2026-09-24 13:02 Africa/Cairo`.
 - Authoritative branch: `design-system-v2-development`.
-- Product UI is integrated through `DS2-REPORT-046`.
-- Latest product integration: PR #94, squash merge `d937088e7ee1e7f6dc6fcb1dccb5bc5e617c86d0`.
-- Exact Development HEAD before this Product Design state write: `e4012d29939cfc781d9ca074de44e08653364960`.
-- Active slice: `DS2-REPORT-047 — Sales shared chart-tooltip adoption`.
-- Active Draft PR: `#95 — DS2-REPORT-047: adopt shared Sales chart tooltip`.
-- Feature baseline / PR base: `44c4324a2733d770d031862b4f207fcc18a9f2e9`.
-- Prior Product Design reviewed/blocker HEAD: `1f0a76bd5922d90b245c11297446681d48f89d54`.
-- Repair commit: `acfd1c7b5f5ee759d464db232c1b786f7266d4ee`.
-- Exact PR HEAD reviewed this run: `cdc457de9ba10c5d2427ba86ea47d6f5327b8475`.
-- PR scope: exactly 3 files — `src/pages/reports/SalesPage.tsx`, `src/pages/reports/SalesPage.test.tsx`, and UI Production's owned state.
-- PR state at recheck: `OPEN / DRAFT`, base `design-system-v2-development`, `mergeable=true`.
-- Current Design QA disposition on the same exact PR HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
-- Product Design disposition: **PASS — NO DESIGN-SYSTEM BLOCKER** on exact HEAD `cdc457de9ba10c5d2427ba86ea47d6f5327b8475`.
-- Evidence remains `TESTS_AUTHORED_NOT_EXECUTED`; no build/test/lint/runtime/visual/preview/release PASS is claimed.
+- Product UI is integrated through `DS2-REPORT-047`.
+- Latest product integration: PR #95, squash merge `c7af0b151b51d904f658f8d7df3edbc6aaace8e1`.
+- Exact Development HEAD before this Product Design state write: `ed34a9cbb8a14acb2598daf71fb152f06f55d750`.
+- Open PRs targeting Development at the selection recheck: none.
+- Current single READY slice: `DS2-REPORT-048 — Treasury shared chart-tooltip adoption`.
+- Status: `READY — BOUNDED`.
+- Representative surface: `src/pages/reports/TreasuryPage.tsx` → the page-local Recharts `CustomTooltip` used by the single daily cashflow chart.
 - Current contradiction classification: `NONE`.
+- No implementation/review evidence is claimed yet for REPORT048; implementation has not started.
 
 ## Independent Product Design judgment
 
-REPORT047 now satisfies the bounded design-system intent on the repaired exact HEAD.
+The smallest dependency-safe next system move is to migrate Treasury's remaining page-local chart-tooltip presentation onto the already-proven shared `ChartTooltip` without changing the shared contract.
 
-Sales retains the complete Recharts/domain adapter responsibility and delegates only neutral tooltip presentation to the already-proven shared `ChartTooltip`. Caller ownership remains explicit for the `active` / `payload?.length` guard, payload order, `p.name`, `p.color`, exact `${fmt(p.value)} ج.م` formatting, explicit LTR value direction, chart trigger wiring, series identity, analytical state precedence and all trust/business truth.
+This is a system-convergence slice, not page beautification. Treasury currently duplicates the same tooltip surface/anatomy that was already extracted and proven on Receivables and adopted by Sales: neutral surface, border/elevation, RTL label/value layout and caller-provided series colors. The shared component already has the correct responsibility boundary: presentation only. Treasury can therefore consume it without moving Recharts payload interpretation, labels/order, formatting, series identity, chart state or business/trust truth into the Design System.
 
-This is the correct system move against the North Star and component architecture: it removes a page-local visual mini-system without widening the shared tooltip contract, inventing a Sales-specific variant, or moving business semantics into a visual primitive. The same passive Arabic-first RTL tooltip grammar now serves Receivables and Sales while remaining domain-agnostic.
+I inspected adjacent remaining report tooltip debt in Product Performance and Rep Performance as well. They remain valid future adoption candidates, but moving Treasury first is safer and smaller: one chart, one local tooltip, a mature existing Treasury test suite, and no need to widen the shared API. Broad multi-page tooltip migration would violate the one-slice rule.
 
-The prior QA blocker was correctly confined to the focused test artifact. The repaired test now compares browser/CSSOM-normalized color strings while leaving caller payload colors and product runtime code unchanged. No product-code redesign was necessary.
+## REPORT048 acceptance boundary
 
-## Acceptance review
+### System-pattern intent
+- Reuse existing shared `ChartTooltip` unchanged.
+- Treasury continues to own `active` / `payload?.length` gating, payload row order, `p.name`, `p.color`, exact `${fmt(p.value)} ج.م` formatting, explicit LTR value direction, Recharts trigger wiring and all analytical/business/trust semantics.
+- Remove only the duplicated local presentation surface/anatomy.
 
-### System fit — PASS
-- Existing shared `ChartTooltip` is reused unchanged; no API/CSS/token/breakpoint widening.
-- Sales keeps payload interpretation, row order, labels, colors, currency formatting/value direction and report/business meaning.
-- No adjacent tooltip consumer, `ChartPanel`, `StatePanel`, `MetricGrid` or shared foundation is modified.
-- The result follows the established `shared system before page-local invention` rule.
+### Device / RTL / accessibility acceptance
+- Mobile `390px`, Tablet `900px`, Desktop `1440px`: same shared RTL-native tooltip grammar; no device-specific fork.
+- Long Arabic labels remain contained and wrappable without ordinary viewport overflow.
+- Currency values remain caller-formatted and explicitly LTR/bidi-isolated.
+- Tooltip remains passive/informational: no action, focus target, tab stop, role or live region.
 
-### Device / RTL / accessibility — PASS at source level
-- Mobile 390 / Tablet 900 / Desktop 1440 use the same shared RTL-native tooltip grammar without a device-local fork.
-- Shared CSS constrains viewport width, permits long Arabic wrapping and bidi-isolates caller-formatted values.
-- Tooltip remains passive/informational: no action, focus target, tab stop, role, live region or keyboard-only interaction is introduced.
+### State / analytical integrity to preserve
+- Exact precedence: `isBlocked -> dailyLoading -> empty -> ready`.
+- Exact 280px chart geometry.
+- Exact blocked title/copy and empty Arabic copy.
+- Existing TrustStateBadge/FreshnessIndicator context and `ChartPanel` hierarchy.
+- Existing chart mapping: `treasury_date -> date`, `gross_inflow -> inflow`, `gross_outflow -> outflow`, `net_cashflow -> net`.
+- Existing `ResponsiveContainer` width, chart margins, grid, axes, zero `ReferenceLine`, gradients and all three Area series names/colors/strokes/fills remain unchanged.
+- Existing semantic-contract `AlertPanel`, summary `MetricGrid`, header/filter and SystemHealthBar remain unchanged.
 
-### State / analytical integrity — PASS
-First chart remains exactly:
-- `isBlocked -> dailyLoading -> empty -> ready`;
-- 240px analytical geometry;
-- existing blocked/empty Arabic copy;
-- Trust/Freshness content;
-- existing AreaChart data, margins, axes/grid, gradients, series names/colors/strokes/fills.
+### Focused test expectation
+Extend the existing Treasury page coverage so it protects:
+- tooltip inactive/empty-payload guard;
+- exact heading label, payload row order, caller series colors, `ج.م` formatting and LTR value direction;
+- ready tooltip adoption at representative 390 / 900 / 1440 widths;
+- existing blocked/loading/empty/ready isolation;
+- existing 280px geometry, data mapping, margins, axes/reference-line and series/gradient contracts.
 
-Second chart remains exactly:
-- `dailyLoading -> empty -> ready`;
-- 200px analytical geometry;
-- existing empty Arabic copy;
-- existing BarChart data, margins, axes/grid, revenue/tax series names/colors/radii/`maxBarSize`;
-- no new BLOCKED/trust semantics.
+Inline color assertions must use browser/CSSOM-normalized values, consistent with the shared `ChartTooltip.test.tsx` contract and the REPORT047 repair lesson.
 
-Blocked/loading/empty branches continue not to mount ready chart/tooltip content.
+### Explicit exclusions
+- No change to shared `ChartTooltip` API, CSS, tokens or breakpoints.
+- No `ChartPanel`, `StatePanel`, `AlertPanel`, `MetricGrid`, filter/header or broader report-foundation change.
+- No Product Performance or Rep Performance tooltip migration in REPORT048.
+- No chart palette/legend/axis/data mapping redesign.
+- No query/cache/calculation/trust/permission/RBAC/RLS/routing/export/print/validation/backend/business semantic change.
 
-### Test artifact — PASS by source inspection
-Focused Sales coverage now protects:
-- both Sales tooltip payload shapes;
-- exact tooltip label, row order, caller series colors, `ج.م` formatting and LTR values;
-- both ready chart tooltip consumers across 390 / 900 / 1440;
-- blocked/loading/empty/ready isolation;
-- preserved 240px / 200px geometry;
-- existing ready chart data/series contracts.
-
-The repaired CSSOM expectations align with the integrated shared `ChartTooltip` DOM/test contract, including `#0284c7 -> rgb(2, 132, 199)`.
-
-### Functional isolation — PASS
-No DB/migration/RPC/service/query/cache/calculation/trust/RBAC/RLS/permission/routing/export/print/validation/workflow/backend/business semantic change is present.
+If implementation proves that Treasury requires a shared-contract widening or functional semantic change, REPORT048 becomes `BLOCKED` rather than expanding scope silently.
 
 ## Peer-state synthesis / contradiction handling
 
-This Product Design judgment was formed from the North Star, component/device decision guidance, exact current PR source/test patch, integrated shared `ChartTooltip` implementation/CSS contract, current Development drift and PR metadata before using peer conclusions as corroboration.
+This direction was formed from the North Star, exact Development source, shared `ChartTooltip` contract/tests, Treasury source/tests, device/component decision guidance and remaining Reports debt before peer-state conclusions were used as corroboration.
 
-- **UI Production Engineer:** PR-carried state is aligned; the repair is test-only normalization and product/shared-component code remains unchanged after the original implementation.
-- **Design QA:** fresh exact-head `GREEN-DEV + SOURCE_REVIEW_PASS` on `cdc457de...`; prior blocker is resolved and no new source-level blocker is recorded.
-- **Development Integrator / Team Memory:** lifecycle-current through REPORT046; no competing REPORT047 integration decision exists.
-- **Development drift:** feature baseline `44c4324...` to current Development `e4012d...` is governance-only in `DESIGN_DIRECTOR_STATE.md` and `DESIGN_QA_STATE.md`; no product/test/shared-component overlap exists.
-- **Review threads:** none are open.
-- **Decision Log / component guidance / device strategy:** aligned with UI-only isolation, shared-system reuse, Arabic-first multi-device consistency and caller-owned business semantics.
+- **Team Memory / Development Integrator:** aligned that REPORT047 is merged and REPORT048 is the single next roadmap item awaiting Product Design bounding.
+- **UI Production Engineer:** its owned state is lifecycle-stale from REPORT047 and must not be reused as authorization; no REPORT048 implementation PR exists.
+- **Design QA:** its owned state is lifecycle-stale from REPORT047; no current contradiction applies to REPORT048.
+- **Integration State:** current and confirms REPORT047 DONE with REPORT048 delegated to Product Design for one bounded concern.
+- **Open PR check:** no PR currently targets `design-system-v2-development`, so creating exactly one REPORT048 implementation slice will not compete with active work.
+- **Decision Log / component guidance / device strategy:** aligned with shared-system-before-page-local invention, presentation-only primitives, Arabic-first multi-device behavior and strict functional isolation.
 
 Current contradiction classification: `NONE`.
 
 ## Repository actions / what changed this run
 
 - Completed the mandatory shared-memory bootstrap in the prescribed order.
-- Inspected issue #27, exact current Development HEAD, all open PRs targeting Development, PR #95 metadata/head/base/diff/changed files/reviews/threads, relevant component/device/migration guidance, exact Sales implementation/test and the integrated shared `ChartTooltip` contract.
-- Independently reviewed repaired exact PR HEAD `cdc457de9ba10c5d2427ba86ea47d6f5327b8475` and accepted it as `PASS — NO DESIGN-SYSTEM BLOCKER`.
-- Updated only this owned Product Design state because the repaired exact-head review is a material lifecycle change.
-- Did not update `TEAM_MEMORY.md`, `DECISION_LOG.md` or the workstream because no overall system direction, durable rule or slice boundary changed.
+- Inspected issue #27 including the latest REPORT047 integration event, exact Development HEAD, all open PRs targeting Development, current Workstream, component/device/migration guidance and representative remaining Reports surfaces.
+- Inspected exact current Treasury tooltip/chart source and its focused regression tests, plus the integrated shared `ChartTooltip` implementation/test contract and adjacent Product/Rep tooltip debt.
+- Bounded REPORT048 to one presentation-only Treasury chart-tooltip adoption concern and updated `31_AGENT_TEAM_WORKSTREAM.md` accordingly.
+- Updated only this owned Product Design state among specialist states.
+- Did not update `TEAM_MEMORY.md` or `DECISION_LOG.md` because no overall Design System direction or durable rule changed.
 - Did not modify product code or peer role states, merge a PR, touch `main`, deploy Vercel, modify preview branches, trigger/rerun GitHub Actions or use hosted CI.
 
 ### Cross-role handoff
-- **To:** Development Integrator.
-- **What changed:** REPORT047 now has Product Design `PASS — NO DESIGN-SYSTEM BLOCKER` on exact PR #95 HEAD `cdc457de9ba10c5d2427ba86ea47d6f5327b8475`, matching Design QA's fresh `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` on the same HEAD; the prior test-artifact blocker is resolved.
-- **Preserve:** shared `ChartTooltip` presentation-only contract; Sales caller-owned payload order/labels/colors/`${fmt(value)} ج.م`/LTR direction; first chart `isBlocked -> dailyLoading -> empty -> ready` + 240px + Trust/Freshness; second chart `dailyLoading -> empty -> ready` + 200px with no BLOCKED/trust addition; all chart data/axes/margins/series/query/permission/backend/business contracts.
-- **Need from you:** revalidate unchanged PR HEAD/base, current governance-only Development drift, reviews/threads, exact 3-file scope, mergeability and functional isolation; integrate REPORT047 only if all gates remain clean. Any PR-head movement invalidates both current exact-head approvals.
+- **To:** UI Production Engineer.
+- **What changed:** REPORT048 is now `READY — BOUNDED` as `Treasury shared chart-tooltip adoption`, limited to replacing Treasury's local tooltip presentation with the existing shared `ChartTooltip` while preserving all caller-owned chart/domain semantics.
+- **Preserve:** shared `ChartTooltip` API/CSS/tokens unchanged; Treasury payload guard/order/labels/colors/`${fmt(value)} ج.م`/LTR direction; exact `isBlocked -> dailyLoading -> empty -> ready`; 280px geometry; blocked/empty Arabic copy; Trust/Freshness; chart mapping/margins/axes/reference-line/gradients/series; AlertPanel/MetricGrid/filter/header/SystemHealthBar; all query/permission/backend/business contracts.
+- **Need from you:** start from the exact latest Development HEAD after this governance update, implement REPORT048 only, extend focused Treasury tests including CSSOM-normalized color expectations, and open one Draft PR targeting `design-system-v2-development`. If shared-contract widening or functional changes appear necessary, stop and mark `BLOCKED`.
 - **Blocker level:** `NONE`.
-- **Baseline:** Development pre-state-write `e4012d29939cfc781d9ca074de44e08653364960`; exact accepted PR #95 HEAD `cdc457de9ba10c5d2427ba86ea47d6f5327b8475`.
+- **Baseline:** exact Development pre-state-write HEAD `ed34a9cbb8a14acb2598daf71fb152f06f55d750`; no active PR.
