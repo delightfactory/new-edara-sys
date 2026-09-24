@@ -103,11 +103,49 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-045 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
-Status: `READY — UNBOUNDED`.
-Owner role for immediate next action: Product Design Director.
+### DS2-REPORT-045 — Customer Re-engagement responsive-list orchestration convergence
+Status: `READY — BOUNDED`.
+Owner role for immediate next action: UI Production Engineer.
 
-Product Design must inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline and select exactly one smallest dependency-safe presentation-only concern. The boundary must name the representative file/surface, acceptance criteria, explicit exclusions and evidence expectations before UI Production begins.
+Representative surface:
+- `src/pages/reports/CustomerReengagementPage.tsx` — customer-result collection only.
+- Focused regression coverage: `src/pages/reports/CustomerReengagementPage.test.tsx`.
+
+System-pattern intent:
+- converge the ready customer list onto the existing shared `ResponsiveCollection<ReengagementRow>` device orchestrator so Desktop table and card-based responsive compositions are no longer mounted together and hidden only with CSS;
+- preserve the existing dense semantic Desktop table as the Desktop renderer;
+- preserve the existing customer-card information/action anatomy for Mobile, and use that same unchanged row information/action contract in an explicit touch-first Tablet card renderer rather than falling through to the Desktop table;
+- make Tablet deliberate at the canonical `769–1024px` range with a two-column card grid at the 900px acceptance viewport, while Mobile remains one column and Desktop remains the comparison table;
+- keep loading and filtered-empty truth/copy exactly caller-owned by passing the existing `SkeletonRows count={8}` and existing empty node through `ResponsiveCollection` state slots; do not redesign those states in this slice;
+- remove only CSS/device-hide rules made obsolete by single-renderer orchestration; do not perform broad page-style cleanup.
+
+Acceptance:
+- **State precedence:** preserve `listError` page handling and list collection behavior as `loading -> empty -> ready`; loading remains eight existing skeleton rows and empty retains exact title `لا يوجد عملاء يطابقون الفلاتر المحددة` plus exact hint `جرّب تغيير الفلاتر أو إلغاء تفعيل «النشطون فقط»`.
+- **Mobile 390:** only the customer-card renderer is mounted; existing card fields, priority/recency/balance presentation, row ordering, permission-gated 360° CTA and minimum 44px CTA contract are preserved; no Desktop table subtree is mounted.
+- **Tablet 900:** only the explicit Tablet card renderer is mounted in a two-column touch-first grid; preserve the same row order, data facts, permission-gated 360° action and route; use `minmax(0, 1fr)`-safe composition/no ordinary horizontal overflow and do not mount the Desktop table.
+- **Desktop 1440:** only the existing dense table renderer is mounted; preserve its columns, values, ordering, overflow containment and permission-gated 360° links; no card subtree is mounted.
+- **RTL / Arabic:** no new fixed-width/truncation rule or overflow source; mixed Arabic/Latin values keep their existing direction treatment; card/table copy and domain labels remain unchanged.
+- **Accessibility / interaction:** no duplicate hidden interactive descendants; native customer 360° links remain keyboard-focusable with the same permission gate and `/customers/:id` destination; no nested clickable surface, live-region, focus-trap or new action semantics.
+- **Shared-system boundary:** consume `ResponsiveCollection` unchanged. Any need to modify its API/CSS/device contract or alter business/query/permission semantics makes REPORT045 `BLOCKED` and requires re-bounding.
+
+Explicitly excluded:
+- `KpiStrip`, `MetricGrid`, `StatCard`, PageHeader and all summary semantics;
+- `FilterBar`, `useFilterState`, filter values/url-sync/stats and query inputs;
+- Export/print button, `ExportDrawer`, document output, CSV generation, 360° export options and overlay/focus behavior;
+- page-level unauthorized/error copy or error semantics;
+- priority classifications, color/tone mapping, recency/balance semantics, customer ordering/limit and Customer 360 permission checks/routes;
+- table column/data changes, card fact/action changes, pagination/infinite-query changes or any new business interaction;
+- shared `ResponsiveCollection` implementation/API/CSS/tokens/breakpoints;
+- Overview navigation-card debt and all other Reports pages;
+- all analytics/query/cache/calculation/date/filter/trust/permission/RBAC/RLS/routing/export/print/backend/business/workflow semantics.
+
+Evidence expectations:
+- focused tests must prove the 390/900/1440 device contract and that exactly one ready renderer is mounted per mode;
+- prove Tablet uses its explicit card composition rather than Desktop fallback;
+- prove loading and empty branches preserve exact existing anatomy/copy and do not mount ready renderers;
+- protect existing customer row order/facts and permission-gated 360° route/action semantics sufficiently to detect accidental device divergence;
+- preserve the existing KPI convergence tests;
+- evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved local runtime actually executes exact-head tests; no hosted CI or Vercel evidence is permitted.
 
 Preserve exactly:
 - all REPORT001-044 integrated contracts and shared-system ownership boundaries;
@@ -165,7 +203,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-044` — `DONE`
-- `DS2-REPORT-045 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — UNBOUNDED`
+- `DS2-REPORT-045 — Customer Re-engagement responsive-list orchestration convergence` — `READY — BOUNDED`
 - further Reports/Analytics convergence beyond REPORT045 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
