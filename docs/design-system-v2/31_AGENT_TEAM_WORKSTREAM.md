@@ -38,17 +38,17 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-049`.
+Product UI is integrated through `DS2-REPORT-050`.
 
 Latest product integration:
-- PR: `#97 — DS2-REPORT-049: adopt shared Product Performance chart tooltip`
-- Exact reviewed PR HEAD: `426bb9a76ad968d670473150e35ef4cfeb43372e`
-- Squash merge commit: `055aa6587ff2f08e9e89cbf604c15d58b46c86ff`
+- PR: `#98 — DS2-REPORT-050: adopt shared Rep Performance chart tooltip`
+- Exact reviewed PR HEAD: `007d1174c09f1808a261fa49b133e4201d25ca68`
+- Squash merge commit: `22983eff7ce4d11113c2b10de5468bb33bb86936`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design exact-head closeout: `PASS — NO DESIGN-SYSTEM BLOCKER`
 - Runtime/preview/release evidence: not claimed
 
-The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, representative Customers/Sales/Inventory/Procurement/Finance/HR/Field/Work migrations, Reports route/date/filter convergence, shared `ChartPanel`, `ChartTooltip`, `MetricGrid`, `StatePanel`, `AlertPanel`, `SectionHeader`, shared V2 Field controls in representative report headers, responsive detail-collection proofs, Customer Re-engagement single-renderer `ResponsiveCollection` orchestration across Mobile/Tablet/Desktop, and shared `ChartTooltip` adoption in Receivables, Sales, Treasury and Product Performance while preserving caller-owned analytical/business truth.
+The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, representative Customers/Sales/Inventory/Procurement/Finance/HR/Field/Work migrations, Reports route/date/filter convergence, shared `ChartPanel`, `ChartTooltip`, `MetricGrid`, `StatePanel`, `AlertPanel`, `SectionHeader`, shared V2 Field controls in representative report headers, responsive detail-collection proofs, Customer Re-engagement single-renderer `ResponsiveCollection` orchestration across Mobile/Tablet/Desktop, and shared `ChartTooltip` adoption in Receivables, Sales, Treasury, Product Performance and Rep Performance while preserving caller-owned analytical/business truth.
 
 ## Completed slices
 
@@ -84,67 +84,31 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - `DS2-REPORT-047 — Sales shared chart-tooltip adoption` — `DONE` — PR #95 — merge `c7af0b151b51d904f658f8d7df3edbc6aaace8e1` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`.
 - `DS2-REPORT-048 — Treasury shared chart-tooltip adoption` — `DONE` — PR #96 — reviewed HEAD `e8c718b8eb3f8be5df54627714a15166d8bd63ce` — merge `9eb5489a00631f1cc7b9377893e7b0a1ebb560d6` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-049 — Product Performance shared chart-tooltip adoption` — `DONE` — PR #97 — reviewed HEAD `426bb9a76ad968d670473150e35ef4cfeb43372e` — merge `055aa6587ff2f08e9e89cbf604c15d58b46c86ff` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
+- `DS2-REPORT-050 — Rep Performance shared chart-tooltip adoption` — `DONE` — PR #98 — reviewed HEAD `007d1174c09f1808a261fa49b133e4201d25ca68` — merge `22983eff7ce4d11113c2b10de5468bb33bb86936` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 
-## REPORT049 system result
+## REPORT050 system result
 
-- Product Performance now delegates only its revenue-chart tooltip presentation/anatomy to the existing shared domain-agnostic `ChartTooltip`.
-- Product Performance retains caller ownership of `active` / payload gating, heading, payload order, `p.name`, `p.color`, exact `${fmt(p.value)} ج.م` formatting, explicit LTR values, Recharts trigger wiring and all analytical/business/trust truth.
-- Exact `tableLoading -> empty -> ready`, 240px analytical geometry, 100% responsive containment, top-15 selection, 20-character visual product-name truncation, margins, grid/axes, revenue Bar and Trust/Freshness remain unchanged.
-- Shared `ChartTooltip` API/CSS/tokens/breakpoints were not widened; Receivables, Sales, Treasury and Product Performance are now bounded consumers.
-- Focused Product Performance adapter/device/state/chart regression tests were authored but not executed under the hosted-CI quota policy.
+- Rep Performance now delegates only the `مقارنة المندوبين — أعلى 15` comparison-chart tooltip presentation/anatomy to the existing shared domain-agnostic `ChartTooltip`.
+- Rep Performance retains caller ownership of `active` / payload gating, heading, payload order, `p.name`, `p.color`, exact `${fmt(p.value)} ج.م` formatting, explicit LTR values, Recharts trigger wiring and all analytical/business/trust truth.
+- Exact `tableLoading -> empty -> ready`, 300px loading/empty containment, top-15 mapping, dynamic ready height, vertical chart layout/margins/grid/axes, exact revenue/returns series order/colors/radii/max sizes and Trust/Freshness remain unchanged.
+- Shared `ChartTooltip` API/CSS/tokens/breakpoints were not widened; Receivables, Sales, Treasury, Product Performance and Rep Performance are now bounded consumers.
+- Focused Rep Performance adapter/device/state/chart regression tests were authored but not executed under the hosted-CI quota policy.
 
 ## Current single READY slice
 
-### DS2-REPORT-050 — Rep Performance shared chart-tooltip adoption
-Status: `READY — BOUNDED`.
-Owner role for immediate next action: UI Production Engineer.
-Representative surface: `src/pages/reports/RepPerformancePage.tsx` — the local Recharts `CustomTooltip` used by `مقارنة المندوبين — أعلى 15` only.
-Development source baseline inspected by Product Design: `0980f86c44564ab35a4453464e5711a1a0e0915c`.
+### DS2-REPORT-051 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
+Status: `READY — UNBOUNDED`.
+Owner role for immediate next action: Product Design Director.
 
-### System-pattern intent
+Product Design must inspect representative remaining Reports/Analytics surfaces on the exact latest `design-system-v2-development` baseline and record exactly one smallest dependency-safe presentation-only concern before UI Production begins product-code work.
 
-Remove the remaining Rep Performance page-local tooltip presentation mini-system by adopting the already-proven shared `ChartTooltip` presentation/anatomy. This is an adjacent bounded adoption, not a chart redesign and not permission to widen the shared tooltip contract.
+The next concern must:
+- preserve REPORT001-050 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
+- prefer existing shared V2 primitives/patterns, strengthening a shared contract only when a real consumer proves the need;
+- stay bounded to one coherent concern and representative surface;
+- keep remaining Work/Field convergence, shared component-depth work, Settings/Admin and Global Dark/RTL/accessibility/legacy cleanup explicit in the roadmap.
 
-Shared ownership boundary:
-- shared `ChartTooltip` owns only neutral surface, spacing, RTL structure, wrapping and passive informational row/value anatomy;
-- Rep Performance retains Recharts `active` / payload gating, caller heading, payload order, `p.name`, `p.color`, exact `${fmt(p.value)} ج.م` formatting, explicit LTR value direction, trigger wiring and all analytical/business/trust meaning.
-
-### Acceptance boundary
-
-- Preserve chart state precedence exactly as `tableLoading -> empty -> ready`.
-- Preserve the 300px loading skeleton and the 300px compact empty-state containment/copy.
-- Preserve `rows.slice(0, 15)` and exact mapping `{ name: rep_name, revenue: net_revenue, returns: returns_value }`.
-- Preserve ready chart geometry exactly: `ResponsiveContainer width="100%" height={Math.max(chartData.length * 40, 200)}`.
-- Preserve vertical `BarChart` layout and margins `{ top: 4, left: 10, right: 20, bottom: 0 }`.
-- Preserve Cartesian grid, X axis numeric formatter, Y axis `dataKey="name"` / width 120 and all current tick/axis behavior.
-- Preserve both series exactly: revenue `#2563eb`, radius `[0,3,3,0]`, `maxBarSize={20}`; returns `#dc2626`, radius `[0,3,3,0]`, `maxBarSize={10}`; preserve their existing Arabic names and order.
-- Preserve TrustStateBadge/FreshnessIndicator presence rule and all existing report summary/detail composition.
-- Mobile 390 / Tablet 900 / Desktop 1440 must use the same shared RTL tooltip grammar with no new breakpoint or device fork.
-- Long Arabic heading/series labels must remain wrap-safe inside the shared tooltip without ordinary viewport overflow; monetary values remain explicitly LTR.
-- Tooltip remains passive/informational: no action, focus target, tab stop, `role`, `aria-live` or new keyboard contract.
-
-### Focused test-artifact expectation
-
-Extend `src/pages/reports/RepPerformancePage.test.tsx` to cover, at minimum:
-- inactive and empty-payload adapter guards;
-- shared tooltip heading, exact row order/labels, exact currency formatting and LTR value direction;
-- caller colors using browser/CSSOM-normalized expectations: `#2563eb -> rgb(37, 99, 235)` and `#dc2626 -> rgb(220, 38, 38)`;
-- representative ready wiring at 390 / 900 / 1440 widths;
-- no tooltip leakage into loading/empty branches;
-- preserved top-15 mapping, dynamic height, margins/grid/axes and both Bar contracts.
-
-Evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved local runtime actually executes the tests.
-
-### Explicit exclusions / stop condition
-
-Excluded from REPORT050:
-- any change to shared `ChartTooltip` implementation/API/tests/CSS, semantic tokens or breakpoints;
-- `ChartPanel`, `MetricGrid`, `StatePanel`, `ResponsiveCollection`, `Card`, `KeyValueList` or other shared-pattern changes;
-- Rep Performance page header, `ReportFilterBar`, summary metrics, detail table/cards/responsive orchestration, rank/return-rate styling or trust semantics;
-- every other report/page tooltip consumer;
-- query/hooks/cache/RPC/Supabase, calculations, permissions, RBAC/RLS, routing, validation, export/print, backend, workflow or business semantics.
-
-If Rep Performance cannot adopt the existing shared `ChartTooltip` unchanged, or any functional/report semantic change becomes necessary, mark REPORT050 `BLOCKED` rather than widening the slice.
+Implementation is not authorized until Product Design records the exact bounded REPORT051 concern from the then-current Development HEAD.
 
 ## Product migration roadmap
 
@@ -195,9 +159,9 @@ Open only when a real migrated screen proves the recurring gap:
 - further Work detail/feedback/management convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
 
 ### I. Reports / Analytics
-- `DS2-REPORT-001` through `DS2-REPORT-049` — `DONE`
-- `DS2-REPORT-050 — Rep Performance shared chart-tooltip adoption` — `READY — BOUNDED`
-- further Reports/Analytics convergence beyond REPORT050 — `BACKLOG` / each concern must be bounded separately
+- `DS2-REPORT-001` through `DS2-REPORT-050` — `DONE`
+- `DS2-REPORT-051 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — UNBOUNDED`
+- further Reports/Analytics convergence beyond REPORT051 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
