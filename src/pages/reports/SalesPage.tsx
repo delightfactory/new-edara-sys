@@ -22,7 +22,7 @@ const FMT = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
 const fmt = (n: number | undefined | null) => n != null ? FMT.format(n) : '—'
 const fmtCur = (n: number | undefined | null) => n != null ? fmt(n) + ' ج.م' : '—'
 
-function CustomTooltip({ active, payload, label }: any) {
+export function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null
   return (
     <ChartTooltip
