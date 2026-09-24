@@ -126,6 +126,26 @@ describe('Reports Overview summary metric composition', () => {
     })
   })
 
+  it('uses the shared SectionHeader anatomy for both report sections while preserving h2 hierarchy and the customer-details link', () => {
+    const { container, getByRole } = renderPage()
+
+    const sectionHeaders = container.querySelectorAll('.ds-section-header')
+    expect(sectionHeaders).toHaveLength(2)
+
+    const summaryHeading = getByRole('heading', { level: 2, name: 'المؤشرات الرئيسية' })
+    expect(summaryHeading).toHaveClass('ds-section-header__title')
+    expect(summaryHeading.closest('.ds-section-header')).toBe(sectionHeaders[0])
+
+    const customerHeading = getByRole('heading', { level: 2, name: 'صحة قاعدة العملاء' })
+    expect(customerHeading).toHaveClass('ds-section-header__title')
+    const customerHeader = customerHeading.closest('.ds-section-header') as HTMLElement
+    expect(customerHeader).toBe(sectionHeaders[1])
+
+    const detailsLink = within(customerHeader).getByRole('link', { name: 'عرض التفاصيل ←' })
+    expect(detailsLink).toHaveAttribute('href', '/reports/customers')
+    expect(detailsLink.closest('.ds-section-header__action')).not.toBeNull()
+  })
+
   it('uses the shared four-column MetricGrid while preserving the existing four report MetricCard children in order', () => {
     const { container } = renderPage()
 
