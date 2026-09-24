@@ -38,17 +38,17 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-044`.
+Product UI is integrated through `DS2-REPORT-045`.
 
 Latest product integration:
-- PR: `#92 — DS2-REPORT-044: converge Overview section headers`
-- Exact reviewed PR HEAD: `2f6afc096ed8ef6864ee3c661b9cd8190bea953c`
-- Squash merge commit: `a763a12538b9074e85af3f94365f8ccefc67f525`
+- PR: `#93 — DS2-REPORT-045: converge re-engagement responsive collection`
+- Exact reviewed PR HEAD: `7b570f2a12c2c03200fe5c38d57c70335bbfecd5`
+- Squash merge commit: `573753d8d6c50e44d56cbb5c253604e9755118a5`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design exact-head closeout: `PASS — NO DESIGN-SYSTEM BLOCKER`
 - Runtime/preview/release evidence: not claimed
 
-The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, representative Customers/Sales/Inventory/Procurement/Finance/HR/Field/Work migrations, Reports route/date/filter convergence, shared `ChartPanel`, `MetricGrid`, `StatePanel`, `AlertPanel`, `SectionHeader`, shared V2 Field controls in representative report headers, and responsive detail-collection proofs using `ResponsiveCollection + Card + KeyValueList` while preserving dense Desktop comparison and caller-owned business truth.
+The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, representative Customers/Sales/Inventory/Procurement/Finance/HR/Field/Work migrations, Reports route/date/filter convergence, shared `ChartPanel`, `MetricGrid`, `StatePanel`, `AlertPanel`, `SectionHeader`, shared V2 Field controls in representative report headers, responsive detail-collection proofs, and Customer Re-engagement single-renderer `ResponsiveCollection` orchestration across Mobile/Tablet/Desktop while preserving caller-owned business truth.
 
 ## Completed slices
 
@@ -90,68 +90,33 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - `DS2-REPORT-042 — Sales revenue/tax bar-chart empty-state convergence` — `DONE` — PR #90 — reviewed HEAD `dbabddc56743f2d448bbefbab4998b6f0b98e9bb` — merge `f7479859fe5c3233c3082bad2e97c0a004213f4c` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-043 — Treasury semantic-contract notice AlertPanel convergence` — `DONE` — PR #91 — reviewed HEAD `932457d5cf34c0eaa17404614f697bc5cf100eb3` — merge `c9e28bd2b98bbf65d4d916e114cebb6cdcb86bf4` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-044 — Reports Overview section-header convergence` — `DONE` — PR #92 — reviewed HEAD `2f6afc096ed8ef6864ee3c661b9cd8190bea953c` — merge `a763a12538b9074e85af3f94365f8ccefc67f525` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
+- `DS2-REPORT-045 — Customer Re-engagement responsive-list orchestration convergence` — `DONE` — PR #93 — reviewed HEAD `7b570f2a12c2c03200fe5c38d57c70335bbfecd5` — merge `573753d8d6c50e44d56cbb5c253604e9755118a5` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 
-## REPORT044 system result
+## REPORT045 system result
 
-- `المؤشرات الرئيسية` and `صحة قاعدة العملاء` now consume the existing shared `SectionHeader` rather than page-local heading/alignment grammar.
-- Both titles remain semantic `h2` headings through `headingLevel={2}`.
-- `عرض التفاصيل ←` remains a native keyboard-focusable `Link` to `/reports/customers` in the shared action slot.
-- Existing `var(--space-3)` section-to-content spacing, both MetricGrid/MetricCard clusters, summary/customer loading branches, `SystemHealthBar`, trust/freshness/domain wiring and the complete navigation shortcut grid remain unchanged.
-- No shared `SectionHeader` API/CSS/token/breakpoint widening occurred.
-- No analytics/query/cache/calculation/date/filter/permission/RBAC/RLS/routing/export/print/backend/business/workflow semantics changed.
-- Focused tests were authored but not executed under the hosted-CI quota policy.
+- Customer Re-engagement now delegates ready collection device orchestration to existing shared `ResponsiveCollection<ReengagementRow>` rather than mounting Desktop and Mobile trees together and CSS-hiding one.
+- Mobile preserves the existing customer-card facts/actions and one-column operational composition.
+- Tablet now has an explicit touch-first two-column `ds-responsive-card-grid--tablet` renderer using the same unchanged customer-card anatomy and row/action truth.
+- Desktop preserves the existing dense semantic table, columns, values, ordering, overflow containment and native Customer 360 links.
+- Collection state remains caller-owned as `loading -> empty -> ready`; loading stays exactly eight skeleton rows and filtered-empty Arabic title/hint stay unchanged.
+- Customer 360 permissions, native `/customers/:id` links, KPI/filter/query/export/business semantics, and shared `ResponsiveCollection` API/CSS/tokens/breakpoints remain unchanged.
+- Focused device/state/permission tests were authored but not executed under the hosted-CI quota policy.
 
 ## Current single READY slice
 
-### DS2-REPORT-045 — Customer Re-engagement responsive-list orchestration convergence
-Status: `READY — BOUNDED`.
-Owner role for immediate next action: UI Production Engineer.
+### DS2-REPORT-046 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
+Status: `READY — UNBOUNDED`.
+Owner role for immediate next action: Product Design Director.
 
-Representative surface:
-- `src/pages/reports/CustomerReengagementPage.tsx` — customer-result collection only.
-- Focused regression coverage: `src/pages/reports/CustomerReengagementPage.test.tsx`.
+Intent:
+- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline;
+- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance/exclusion boundary;
+- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer proves the need;
+- preserve REPORT001-045 contracts and all analytics/query/cache/calculation/date/filter/trust/permission/RBAC/RLS/routing/export/print/backend/business/workflow semantics;
+- preserve Settings/Admin, Global convergence, remaining Work and Field debt, and the shared component-depth program in the roadmap;
+- do not turn REPORT046 into broad multi-page report beautification.
 
-System-pattern intent:
-- converge the ready customer list onto the existing shared `ResponsiveCollection<ReengagementRow>` device orchestrator so Desktop table and card-based responsive compositions are no longer mounted together and hidden only with CSS;
-- preserve the existing dense semantic Desktop table as the Desktop renderer;
-- preserve the existing customer-card information/action anatomy for Mobile, and use that same unchanged row information/action contract in an explicit touch-first Tablet card renderer rather than falling through to the Desktop table;
-- make Tablet deliberate at the canonical `769–1024px` range with a two-column card grid at the 900px acceptance viewport, while Mobile remains one column and Desktop remains the comparison table;
-- keep loading and filtered-empty truth/copy exactly caller-owned by passing the existing `SkeletonRows count={8}` and existing empty node through `ResponsiveCollection` state slots; do not redesign those states in this slice;
-- remove only CSS/device-hide rules made obsolete by single-renderer orchestration; do not perform broad page-style cleanup.
-
-Acceptance:
-- **State precedence:** preserve `listError` page handling and list collection behavior as `loading -> empty -> ready`; loading remains eight existing skeleton rows and empty retains exact title `لا يوجد عملاء يطابقون الفلاتر المحددة` plus exact hint `جرّب تغيير الفلاتر أو إلغاء تفعيل «النشطون فقط»`.
-- **Mobile 390:** only the customer-card renderer is mounted; existing card fields, priority/recency/balance presentation, row ordering, permission-gated 360° CTA and minimum 44px CTA contract are preserved; no Desktop table subtree is mounted.
-- **Tablet 900:** only the explicit Tablet card renderer is mounted in a two-column touch-first grid; preserve the same row order, data facts, permission-gated 360° action and route; use `minmax(0, 1fr)`-safe composition/no ordinary horizontal overflow and do not mount the Desktop table.
-- **Desktop 1440:** only the existing dense table renderer is mounted; preserve its columns, values, ordering, overflow containment and permission-gated 360° links; no card subtree is mounted.
-- **RTL / Arabic:** no new fixed-width/truncation rule or overflow source; mixed Arabic/Latin values keep their existing direction treatment; card/table copy and domain labels remain unchanged.
-- **Accessibility / interaction:** no duplicate hidden interactive descendants; native customer 360° links remain keyboard-focusable with the same permission gate and `/customers/:id` destination; no nested clickable surface, live-region, focus-trap or new action semantics.
-- **Shared-system boundary:** consume `ResponsiveCollection` unchanged. Any need to modify its API/CSS/device contract or alter business/query/permission semantics makes REPORT045 `BLOCKED` and requires re-bounding.
-
-Explicitly excluded:
-- `KpiStrip`, `MetricGrid`, `StatCard`, PageHeader and all summary semantics;
-- `FilterBar`, `useFilterState`, filter values/url-sync/stats and query inputs;
-- Export/print button, `ExportDrawer`, document output, CSV generation, 360° export options and overlay/focus behavior;
-- page-level unauthorized/error copy or error semantics;
-- priority classifications, color/tone mapping, recency/balance semantics, customer ordering/limit and Customer 360 permission checks/routes;
-- table column/data changes, card fact/action changes, pagination/infinite-query changes or any new business interaction;
-- shared `ResponsiveCollection` implementation/API/CSS/tokens/breakpoints;
-- Overview navigation-card debt and all other Reports pages;
-- all analytics/query/cache/calculation/date/filter/trust/permission/RBAC/RLS/routing/export/print/backend/business/workflow semantics.
-
-Evidence expectations:
-- focused tests must prove the 390/900/1440 device contract and that exactly one ready renderer is mounted per mode;
-- prove Tablet uses its explicit card composition rather than Desktop fallback;
-- prove loading and empty branches preserve exact existing anatomy/copy and do not mount ready renderers;
-- protect existing customer row order/facts and permission-gated 360° route/action semantics sufficiently to detect accidental device divergence;
-- preserve the existing KPI convergence tests;
-- evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved local runtime actually executes exact-head tests; no hosted CI or Vercel evidence is permitted.
-
-Preserve exactly:
-- all REPORT001-044 integrated contracts and shared-system ownership boundaries;
-- all analytics/query/cache/calculation/date/filter/trust/permission/RBAC/RLS/routing/export/print/backend/business/workflow semantics;
-- Settings/Admin, Global convergence, remaining Work and Field debt, and the shared component-depth program in the roadmap;
-- one concern per implementation PR; no broad multi-page report beautification.
+Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
 
 ## Product migration roadmap
 
@@ -202,9 +167,9 @@ Open only when a real migrated screen proves the recurring gap:
 - further Work detail/feedback/management convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
 
 ### I. Reports / Analytics
-- `DS2-REPORT-001` through `DS2-REPORT-044` — `DONE`
-- `DS2-REPORT-045 — Customer Re-engagement responsive-list orchestration convergence` — `READY — BOUNDED`
-- further Reports/Analytics convergence beyond REPORT045 — `BACKLOG` / each concern must be bounded separately
+- `DS2-REPORT-001` through `DS2-REPORT-045` — `DONE`
+- `DS2-REPORT-046 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — UNBOUNDED`
+- further Reports/Analytics convergence beyond REPORT046 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
