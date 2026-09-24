@@ -6,6 +6,7 @@ import { useARSummary } from '@/hooks/useARCollections'
 import { useCustomerHealthSummary } from '@/hooks/useCustomerHealth'
 import MetricCard from '@/components/reports/MetricCard'
 import MetricGrid from '@/components/patterns/MetricGrid'
+import SectionHeader from '@/components/patterns/SectionHeader'
 import SkeletonCard from '@/components/reports/SkeletonCard'
 import SystemHealthBar from '@/components/reports/SystemHealthBar'
 import ReportFilterBar, { type DateRange } from '@/components/reports/ReportFilterBar'
@@ -55,9 +56,9 @@ export default function OverviewPage() {
 
       {/* KPI grid */}
       <div>
-        <h2 style={{ fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 var(--space-3)' }}>
-          المؤشرات الرئيسية
-        </h2>
+        <div style={{ marginBottom: 'var(--space-3)' }}>
+          <SectionHeader title="المؤشرات الرئيسية" headingLevel={2} />
+        </div>
         <MetricGrid columns={4}>
           {salesLoading || trsLoading || arLoading ? (
             [1, 2, 3, 4].map(i => <SkeletonCard key={i} height={160} />)
@@ -114,11 +115,16 @@ export default function OverviewPage() {
 
       {/* Customer health strip */}
       <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)' }}>
-          <h2 style={{ fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>صحة قاعدة العملاء</h2>
-          <Link to="/reports/customers" style={{ fontSize: 'var(--text-xs)', color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 600 }}>
-            عرض التفاصيل ←
-          </Link>
+        <div style={{ marginBottom: 'var(--space-3)' }}>
+          <SectionHeader
+            title="صحة قاعدة العملاء"
+            headingLevel={2}
+            action={(
+              <Link to="/reports/customers" style={{ fontSize: 'var(--text-xs)', color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 600 }}>
+                عرض التفاصيل ←
+              </Link>
+            )}
+          />
         </div>
         {custLoading ? <SkeletonCard height={120} /> : (
           <MetricGrid columns={2}>
