@@ -94,19 +94,49 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-049 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
-Status: `READY — UNBOUNDED`.
-Owner role for immediate next action: Product Design Director.
+### DS2-REPORT-049 — Product Performance shared chart-tooltip adoption
+Status: `READY — BOUNDED`.
+Owner role for immediate next action: UI Production Engineer.
+Representative surface: `src/pages/reports/ProductPerformancePage.tsx` → the page-local Recharts `CustomTooltip` used by the “أعلى 15 منتجاً بالإيراد” chart.
 
-Intent:
-- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline;
-- select exactly one smallest dependency-safe presentation-only concern and name its representative file/surface plus explicit acceptance/exclusion boundary;
-- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
-- preserve REPORT001-048 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
-- keep Settings/Admin, Global convergence, remaining Work/Field debt and shared component-depth work in the roadmap;
-- do not turn REPORT049 into broad multi-page report beautification.
+### System-pattern intent
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+Product Performance currently recreates the same neutral chart-tooltip surface/anatomy already proven by the shared domain-agnostic `ChartTooltip`. REPORT049 removes that remaining page-local presentation mini-system on this one representative chart only. The shared component must continue to own presentation/anatomy only; Product Performance remains the owner of Recharts payload interpretation, row order, labels, series color, value formatting/direction and every analytical/business/trust decision.
+
+### Required implementation boundary
+
+- Reuse existing `src/components/patterns/ChartTooltip.tsx`; do not widen its API, CSS, tokens or breakpoints.
+- Keep a Product Performance-local Recharts adapter. It must preserve the existing `!active || !payload?.length` guard and map ready payload rows into shared tooltip items without moving interpretation into the shared component.
+- Preserve exact caller semantics: heading `label`, payload row order, `p.name`, `p.color`, exact `${fmt(p.value)} ج.م` formatting and explicit LTR monetary value direction.
+- Preserve ready wiring through existing Recharts `<Tooltip content={...} />` only.
+- Preserve the exact chart state sequence `tableLoading -> empty -> ready`; loading and empty branches must not mount ready chart/tooltip content.
+- Preserve exact 240px chart geometry and `ResponsiveContainer width="100%"` containment.
+- Preserve existing `chartData = rows.slice(0, 15)` mapping, product-name 20-character visual truncation, chart margins, Cartesian grid, axes/tick formatting/rotation and the single `revenue` Bar with name `الإيراد`, fill `#2563eb`, radius `[3, 3, 0, 0]` and `maxBarSize={32}`.
+- Preserve TrustStateBadge/FreshnessIndicator presence rule and all current chart title/description/Arabic copy.
+- Device acceptance: Mobile 390px, Tablet 900px and Desktop 1440px must use the same shared RTL tooltip presentation with no new breakpoint/device fork.
+- Long Arabic labels must remain contained/wrappable without ordinary viewport overflow; monetary values remain bidi-safe/LTR.
+- Tooltip remains passive/informational: no button/action, focus target, tab stop, role or live-region semantics.
+
+### Required focused test artifacts
+
+Author or extend focused Product Performance tests to protect:
+- inactive and empty-payload adapter guards;
+- exact heading label, payload order/label, caller color, `${fmt(value)} ج.م` and `dir="ltr"` value contract;
+- CSSOM-normalized inline series-color expectation (`#2563eb -> rgb(37, 99, 235)`), not raw HEX DOM style equality;
+- shared-tooltip ready wiring at representative 390 / 900 / 1440 widths;
+- no tooltip leakage into chart loading or empty branches;
+- preserved 240px geometry, data mapping, margins, grid/axes and Bar-series contract.
+
+Evidence remains subject to `33_TEST_AND_VALIDATION_POLICY.md`; authoring tests does not permit claiming execution.
+
+### Explicit exclusions
+
+- `RepPerformancePage` or any other report tooltip consumer.
+- Any modification to shared `ChartTooltip`, `ChartPanel`, `StatePanel`, `ResponsiveCollection`, `MetricGrid`, `Card`, `KeyValueList`, tokens, CSS or device breakpoints.
+- Product Performance category `<select>` / Field convergence, `ReportFilterBar`, page header, summary metrics, detail collection/table/cards, return-rate visual semantics, export/print or navigation.
+- Any hook/query/cache/RPC/Supabase, calculation, trust, permission, RBAC/RLS, route, validation, backend or business-semantic change.
+
+If Product Performance cannot adopt the existing shared tooltip contract without any excluded shared-contract or functional change, mark REPORT049 `BLOCKED` instead of broadening scope.
 
 ## Product migration roadmap
 
@@ -158,7 +188,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-048` — `DONE`
-- `DS2-REPORT-049 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — UNBOUNDED`
+- `DS2-REPORT-049 — Product Performance shared chart-tooltip adoption` — `READY — BOUNDED`
 - further Reports/Analytics convergence beyond REPORT049 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
