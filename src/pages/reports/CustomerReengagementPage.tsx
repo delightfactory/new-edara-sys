@@ -28,6 +28,7 @@ import { Users, ExternalLink, Printer, Download, FileDown, X, AlertTriangle } fr
 import FilterBar from '@/components/shared/FilterBar'
 import PageHeader from '@/components/shared/PageHeader'
 import MetricGrid from '@/components/patterns/MetricGrid'
+import ResponsiveCollection from '@/components/patterns/ResponsiveCollection'
 import StatCard from '@/components/patterns/StatCard'
 import { useDocumentOutput } from '@/features/output/hooks/useDocumentOutput'
 import { downloadAsCSV } from '@/lib/utils/export'
@@ -846,18 +847,18 @@ export default function CustomerReengagementPage() {
           )}
         </div>
 
-        {/* States */}
-        {listLoading ? (
-          <SkeletonRows count={8} />
-        ) : rows.length === 0 ? (
-          <div className="rp-empty">
-            <Users size={40} className="rp-empty-icon" aria-hidden="true" />
-            <div className="rp-empty-title">لا يوجد عملاء يطابقون الفلاتر المحددة</div>
-            <div className="rp-empty-hint">جرّب تغيير الفلاتر أو إلغاء تفعيل «النشطون فقط»</div>
-          </div>
-        ) : (
-          <>
-            {/* Desktop Table */}
+        <ResponsiveCollection<ReengagementRow>
+          items={rows}
+          loading={listLoading}
+          loadingState={<SkeletonRows count={8} />}
+          emptyState={(
+            <div className="rp-empty">
+              <Users size={40} className="rp-empty-icon" aria-hidden="true" />
+              <div className="rp-empty-title">لا يوجد عملاء يطابقون الفلاتر المحددة</div>
+              <div className="rp-empty-hint">جرّب تغيير الفلاتر أو إلغاء تفعيل «النشطون فقط»</div>
+            </div>
+          )}
+          renderDesktop={desktopRows => (
             <div className="rp-desktop-table">
               <table className="rp-table">
                 <thead className="rp-thead">
@@ -877,7 +878,7 @@ export default function CustomerReengagementPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map(row => (
+                  {desktopRows.map(row => (
                     <tr key={row.customer_id} className="rp-tr">
                       <td className="rp-td">
                         <div className="rp-customer-name">{row.customer_name}</div>
@@ -924,15 +925,22 @@ export default function CustomerReengagementPage() {
                 </tbody>
               </table>
             </div>
-
-            {/* Mobile Cards */}
-            <div className="rp-mobile-cards">
-              {rows.map(row => (
+          )}
+          renderTablet={tabletRows => (
+            <div className="ds-responsive-card-grid ds-responsive-card-grid--tablet rp-tablet-cards">
+              {tabletRows.map(row => (
                 <MobileCard key={row.customer_id} row={row} canSee360={canSee360} />
               ))}
             </div>
-          </>
-        )}
+          )}
+          renderMobile={mobileRows => (
+            <div className="rp-mobile-cards">
+              {mobileRows.map(row => (
+                <MobileCard key={row.customer_id} row={row} canSee360={canSee360} />
+              ))}
+            </div>
+          )}
+        />
       </div>
 
       {/* Scoped Styles */}
@@ -967,13 +975,9 @@ const STYLES = `
 .rp-table-title { font-weight: 700; font-size: var(--text-base); color: var(--text-primary); }
 .rp-table-count { font-size: var(--text-xs); color: var(--text-muted); }
 
-/* ── Responsive Switch ───────────────────────────── */
-.rp-desktop-table { display: block; overflow-x: auto; }
-.rp-mobile-cards  { display: none; }
-@media (max-width: 768px) {
-  .rp-desktop-table { display: none; }
-  .rp-mobile-cards  { display: flex; flex-direction: column; }
-}
+/* ── Responsive renderer layout ──────────────────── */
+.rp-desktop-table { overflow-x: auto; }
+.rp-mobile-cards { display: flex; flex-direction: column; }
 
 /* ── Table ───────────────────────────────────────── */
 .rp-table {
