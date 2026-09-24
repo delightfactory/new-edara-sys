@@ -38,17 +38,17 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-046`.
+Product UI is integrated through `DS2-REPORT-047`.
 
 Latest product integration:
-- PR: `#94 — DS2-REPORT-046: add shared chart tooltip foundation`
-- Exact reviewed PR HEAD: `d3e9be939b7489c5e4a53f4279f0d7b225ba1107`
-- Squash merge commit: `d937088e7ee1e7f6dc6fcb1dccb5bc5e617c86d0`
+- PR: `#95 — DS2-REPORT-047: adopt shared Sales chart tooltip`
+- Exact reviewed PR HEAD: `cdc457de9ba10c5d2427ba86ea47d6f5327b8475`
+- Squash merge commit: `c7af0b151b51d904f658f8d7df3edbc6aaace8e1`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design exact-head closeout: `PASS — NO DESIGN-SYSTEM BLOCKER`
 - Runtime/preview/release evidence: not claimed
 
-The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, representative Customers/Sales/Inventory/Procurement/Finance/HR/Field/Work migrations, Reports route/date/filter convergence, shared `ChartPanel`, `ChartTooltip`, `MetricGrid`, `StatePanel`, `AlertPanel`, `SectionHeader`, shared V2 Field controls in representative report headers, responsive detail-collection proofs, and Customer Re-engagement single-renderer `ResponsiveCollection` orchestration across Mobile/Tablet/Desktop while preserving caller-owned business truth.
+The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, representative Customers/Sales/Inventory/Procurement/Finance/HR/Field/Work migrations, Reports route/date/filter convergence, shared `ChartPanel`, `ChartTooltip`, `MetricGrid`, `StatePanel`, `AlertPanel`, `SectionHeader`, shared V2 Field controls in representative report headers, responsive detail-collection proofs, Customer Re-engagement single-renderer `ResponsiveCollection` orchestration across Mobile/Tablet/Desktop, and shared `ChartTooltip` adoption in both Receivables and Sales while preserving caller-owned analytical/business truth.
 
 ## Completed slices
 
@@ -81,7 +81,7 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - `DS2-REPORT-033 — Target Attainment individual-rep chart-panel convergence` — `DONE` — PR #81 — reviewed HEAD `1d67d89e57c150542cea487e0cafc8d520d5c30a` — merge `464adbfe86f9ff1e53d288babb9715a010346b15` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-034 — Churn Risk KPI summary shared metric convergence` — `DONE` — PR #82 — reviewed HEAD `8bec856b57aff490092c68b948fdac52078c2bf2` — merge `7ba36015798df5d4aa615077adade862687a6f9c` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-035 — Product Performance shared empty-state convergence` — `DONE` — PR #83 — reviewed HEAD `1b9870cb92fe660a527ca4e521c42fd538bb5d30` — merge `8d1aa7e4db89b8dfee7d9ce8c536bb4c160a40fb` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
-- `DS2-REPORT-036 — Rep Performance shared empty-state convergence` — `DONE` — PR #84 — reviewed HEAD `3850c40095465528e317fcde675f427307e8e856` — merge `9c69d2103172c950dcdaf145bfade24e604b09fc` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
+- `DS2-REPORT-036 — Rep Performance shared empty-state convergence` — `DONE` — PR #84 — reviewed HEAD `3850c40095465528e317fcde675f427307e8e856` — merge `9c69d2103172c950fcdaf145bfade24e604b09fc` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-037 — Customer Health responsive-detail empty-state convergence` — `DONE` — PR #85 — reviewed HEAD `a20442ca930ef957bdf79a156145aeec2771f196` — merge `2af5917c0b370d1bd6aaa785ef248f6084e483d3` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-038 — Receivables chart empty-state convergence` — `DONE` — PR #86 — reviewed HEAD `1055c5bb2394177e0a6ea55c4651567bbfb119e2` — merge `5325d99fcc3d047f1fc6aa3dac39a5423d9376e4` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-039 — Geography responsive-detail empty-state convergence` — `DONE` — PR #87 — reviewed HEAD `2877257b3f04b84c01a058a47f82c2cd6e0ccb59` — merge `035558bb3e86026742d3658d7c1928ee75f09215` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
@@ -92,51 +92,32 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - `DS2-REPORT-044 — Reports Overview section-header convergence` — `DONE` — PR #92 — reviewed HEAD `2f6afc096ed8ef6864ee3c661b9cd8190bea953c` — merge `a763a12538b9074e85af3f94365f8ccefc67f525` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-045 — Customer Re-engagement responsive-list orchestration convergence` — `DONE` — PR #93 — reviewed HEAD `7b570f2a12c2c03200fe5c38d57c70335bbfecd5` — merge `573753d8d6c50e44d56cbb5c253604e9755118a5` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-046 — Shared chart-tooltip presentation foundation (Receivables proof)` — `DONE` — PR #94 — reviewed HEAD `d3e9be939b7489c5e4a53f4279f0d7b225ba1107` — merge `d937088e7ee1e7f6dc6fcb1dccb5bc5e617c86d0` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
+- `DS2-REPORT-047 — Sales shared chart-tooltip adoption` — `DONE` — PR #95 — reviewed HEAD `cdc457de9ba10c5d2427ba86ea47d6f5327b8475` — merge `c7af0b151b51d904f658f8d7df3edbc6aaace8e1` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 
-## REPORT046 system result
+## REPORT047 system result
 
-- Added shared domain-agnostic `ChartTooltip` presentation grammar for informational chart tooltips.
-- The shared layer owns only surface, semantic border/elevation, compact spacing, RTL-safe label/value rows, typography, long-content containment, optional caller series color and caller-directed value direction.
-- Receivables is the sole proof consumer; its Recharts payload interpretation, row order, labels, currency formatting, explicit LTR values, series colors, chart data/geometry/state/trust semantics remain caller-owned and unchanged.
-- Receivables preserves `isBlocked -> dailyLoading -> empty -> ready`, exact 260px analytical geometry, existing Arabic copy, series/data/axes/margins and Trust/Freshness behavior.
-- `ChartPanel`, Sales, Treasury, Product Performance, Rep Performance and every other tooltip consumer remain unchanged.
-- Focused shared-pattern and Receivables adapter/device/state tests were authored but not executed under the hosted-CI quota policy.
+- Sales now adopts the existing shared domain-agnostic `ChartTooltip` presentation grammar for both existing report charts.
+- Sales retains the complete Recharts adapter responsibility: `active`/payload guard, payload order, `p.name`, `p.color`, exact `${fmt(p.value)} ج.م` formatting, explicit LTR value direction and both existing tooltip trigger integrations remain caller-owned.
+- The first chart still follows `isBlocked -> dailyLoading -> empty -> ready` with exact 240px geometry, existing blocked/empty Arabic copy, Trust/Freshness and unchanged AreaChart data/margins/axes/gradients/series/colors.
+- The second chart still follows `dailyLoading -> empty -> ready` with exact 200px geometry and unchanged BarChart data/margins/axes/revenue+tax series/colors/radii/`maxBarSize`; no BLOCKED/trust semantics were added.
+- Shared `ChartTooltip` API/CSS/tokens/breakpoints were not widened; Receivables and Sales are now two bounded proof/adoption consumers while other tooltip consumers remain future debt.
+- Focused Sales adapter/device/state/data tests were authored but not executed under the hosted-CI quota policy.
 
 ## Current single READY slice
 
-### DS2-REPORT-047 — Sales shared chart-tooltip adoption
-Status: `READY — BOUNDED`.
-Owner role for immediate next action: UI Production Engineer.
-Representative surface: `src/pages/reports/SalesPage.tsx` → the existing page-local `CustomTooltip` used by both Sales charts.
+### DS2-REPORT-048 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
+Status: `READY — UNBOUNDED`.
+Owner role for immediate next action: Product Design Director.
 
-System-pattern intent:
-- adopt the proven shared `ChartTooltip` presentation grammar on the next identical live consumer instead of preserving a Sales-local tooltip mini-system;
-- keep Recharts payload interpretation, labels/order, value formatting/direction, series colors and all chart/business/trust meaning caller-owned in Sales;
-- do not widen or restyle the shared `ChartTooltip`, `ChartPanel`, tokens, CSS or breakpoints in this slice.
+Intent:
+- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline;
+- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance and exclusion boundary;
+- prefer established shared V2 primitives/patterns, strengthening a shared contract only when a real consumer proves the need;
+- preserve REPORT001-047 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
+- preserve Settings/Admin, Global convergence, remaining Work/Field debt and the shared component-depth program in the roadmap;
+- do not turn REPORT048 into broad multi-page report beautification.
 
-Required implementation boundary:
-- preserve the existing `active` / `payload?.length` guard and existing Recharts `Tooltip content={<CustomTooltip />}` trigger contract;
-- delegate tooltip surface/anatomy to shared `ChartTooltip` with the existing chart label and payload row order;
-- preserve each payload row's current `p.name`, `p.color`, exact `fmt(p.value) + ' ج.م'` output and explicit LTR value direction;
-- the same caller adapter remains valid for both `تطور الإيراد اليومي` and `توزيع الإيرادات اليومي (إيراد + ضريبة)`.
-
-Explicit preservation / exclusions:
-- first chart remains `isBlocked -> dailyLoading -> empty -> ready` with exact 240px analytical geometry, existing blocked/empty Arabic copy, Trust/Freshness and AreaChart data/margins/axes/gradients/series/colors untouched;
-- second chart remains `dailyLoading -> empty -> ready` with exact 200px analytical geometry and BarChart data/margins/axes/revenue+tax series/colors/radii/`maxBarSize` untouched;
-- MetricGrid/KPIs, `ReportFilterBar`, query/cache/date semantics and all analytics/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business behavior remain unchanged;
-- Treasury, Product Performance, Rep Performance and every other tooltip consumer remain out of scope;
-- no shared API/CSS/token/breakpoint change. If Sales cannot adopt the existing shared contract without one, mark the slice `BLOCKED` instead of widening scope.
-
-Device / state / accessibility acceptance:
-- Mobile 390 / Tablet 900 / Desktop 1440 use the same shared RTL tooltip grammar with viewport containment and long-Arabic wrapping inherited from the proven shared pattern;
-- caller-formatted currency values remain explicit LTR/bidi-isolated and series colors/order remain unchanged;
-- tooltip remains informational/passive: no action, click target, focus target, role or live-region semantics are introduced;
-- loading/empty/blocked branches must not mount ready chart/tooltip content and both ready charts retain their existing geometry and data contracts.
-
-Test-artifact expectation:
-- extend focused Sales tests so the tooltip adapter is inspectable and proves exact label, row order, series colors, `ج.م` formatting and LTR value direction for both ready chart consumers across representative 390/900/1440 widths;
-- preserve existing regression coverage for both chart state precedence, 240px/200px geometry and ready AreaChart/BarChart data/series contracts;
-- evidence must remain honestly labeled; no hosted CI or runtime PASS may be inferred without execution.
+Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
 
 ## Product migration roadmap
 
@@ -187,9 +168,9 @@ Open only when a real migrated screen proves the recurring gap:
 - further Work detail/feedback/management convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
 
 ### I. Reports / Analytics
-- `DS2-REPORT-001` through `DS2-REPORT-046` — `DONE`
-- `DS2-REPORT-047 — Sales shared chart-tooltip adoption` — `READY — BOUNDED`
-- further Reports/Analytics convergence beyond REPORT047 — `BACKLOG` / each concern must be bounded separately
+- `DS2-REPORT-001` through `DS2-REPORT-047` — `DONE`
+- `DS2-REPORT-048 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — UNBOUNDED`
+- further Reports/Analytics convergence beyond REPORT048 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
