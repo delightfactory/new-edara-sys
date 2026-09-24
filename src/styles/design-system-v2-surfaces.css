@@ -84,6 +84,54 @@
   margin-block-start: var(--space-4);
 }
 
+/* ===== ChartTooltip ===== */
+.ds-chart-tooltip {
+  inline-size: max-content;
+  max-inline-size: min(20rem, calc(100vw - var(--space-6)));
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--ds-border-default);
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-surface-default);
+  box-shadow: var(--ds-elevation-floating);
+  color: var(--ds-text-primary);
+  font-size: var(--ds-type-caption-size);
+  line-height: 1.5;
+}
+
+.ds-chart-tooltip__label {
+  margin-block-end: var(--space-2);
+  overflow-wrap: anywhere;
+  color: var(--ds-text-primary);
+  font-weight: 700;
+}
+
+.ds-chart-tooltip__items {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.ds-chart-tooltip__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  align-items: baseline;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.ds-chart-tooltip__item-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ds-chart-tooltip__value {
+  white-space: nowrap;
+  font-weight: 600;
+  font-variant-numeric: var(--ds-type-numeric-font-variant);
+  unicode-bidi: isolate;
+}
+
 /* ===== StatCard ===== */
 .ds-stat-card {
   position: relative;
