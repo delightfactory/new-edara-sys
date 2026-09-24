@@ -104,19 +104,39 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-047 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
-Status: `READY — UNBOUNDED`.
-Owner role for immediate next action: Product Design Director.
+### DS2-REPORT-047 — Sales shared chart-tooltip adoption
+Status: `READY — BOUNDED`.
+Owner role for immediate next action: UI Production Engineer.
+Representative surface: `src/pages/reports/SalesPage.tsx` → the existing page-local `CustomTooltip` used by both Sales charts.
 
-Intent:
-- inspect the exact latest `design-system-v2-development` baseline and remaining Reports/Analytics debt;
-- select exactly one smallest dependency-safe presentation-only concern with one representative file/surface plus explicit acceptance and exclusion boundaries;
-- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer proves the need;
-- preserve REPORT001-046 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
-- keep Settings/Admin, remaining Work/Field debt, shared component-depth work and Global convergence explicitly in the roadmap;
-- do not turn REPORT047 into broad multi-page report polishing.
+System-pattern intent:
+- adopt the proven shared `ChartTooltip` presentation grammar on the next identical live consumer instead of preserving a Sales-local tooltip mini-system;
+- keep Recharts payload interpretation, labels/order, value formatting/direction, series colors and all chart/business/trust meaning caller-owned in Sales;
+- do not widen or restyle the shared `ChartTooltip`, `ChartPanel`, tokens, CSS or breakpoints in this slice.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+Required implementation boundary:
+- preserve the existing `active` / `payload?.length` guard and existing Recharts `Tooltip content={<CustomTooltip />}` trigger contract;
+- delegate tooltip surface/anatomy to shared `ChartTooltip` with the existing chart label and payload row order;
+- preserve each payload row's current `p.name`, `p.color`, exact `fmt(p.value) + ' ج.م'` output and explicit LTR value direction;
+- the same caller adapter remains valid for both `تطور الإيراد اليومي` and `توزيع الإيرادات اليومي (إيراد + ضريبة)`.
+
+Explicit preservation / exclusions:
+- first chart remains `isBlocked -> dailyLoading -> empty -> ready` with exact 240px analytical geometry, existing blocked/empty Arabic copy, Trust/Freshness and AreaChart data/margins/axes/gradients/series/colors untouched;
+- second chart remains `dailyLoading -> empty -> ready` with exact 200px analytical geometry and BarChart data/margins/axes/revenue+tax series/colors/radii/`maxBarSize` untouched;
+- MetricGrid/KPIs, `ReportFilterBar`, query/cache/date semantics and all analytics/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business behavior remain unchanged;
+- Treasury, Product Performance, Rep Performance and every other tooltip consumer remain out of scope;
+- no shared API/CSS/token/breakpoint change. If Sales cannot adopt the existing shared contract without one, mark the slice `BLOCKED` instead of widening scope.
+
+Device / state / accessibility acceptance:
+- Mobile 390 / Tablet 900 / Desktop 1440 use the same shared RTL tooltip grammar with viewport containment and long-Arabic wrapping inherited from the proven shared pattern;
+- caller-formatted currency values remain explicit LTR/bidi-isolated and series colors/order remain unchanged;
+- tooltip remains informational/passive: no action, click target, focus target, role or live-region semantics are introduced;
+- loading/empty/blocked branches must not mount ready chart/tooltip content and both ready charts retain their existing geometry and data contracts.
+
+Test-artifact expectation:
+- extend focused Sales tests so the tooltip adapter is inspectable and proves exact label, row order, series colors, `ج.م` formatting and LTR value direction for both ready chart consumers across representative 390/900/1440 widths;
+- preserve existing regression coverage for both chart state precedence, 240px/200px geometry and ready AreaChart/BarChart data/series contracts;
+- evidence must remain honestly labeled; no hosted CI or runtime PASS may be inferred without execution.
 
 ## Product migration roadmap
 
@@ -168,7 +188,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-046` — `DONE`
-- `DS2-REPORT-047 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — UNBOUNDED`
+- `DS2-REPORT-047 — Sales shared chart-tooltip adoption` — `READY — BOUNDED`
 - further Reports/Analytics convergence beyond REPORT047 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
