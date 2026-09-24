@@ -102,19 +102,43 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-044 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
-Status: `READY — UNBOUNDED`.
-Owner role for immediate next action: Product Design Director.
+### DS2-REPORT-044 — Reports Overview section-header convergence
+Status: `READY — BOUNDED`.
+Owner role for immediate next action: UI Production Engineer.
 
-Intent:
-- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline before implementation;
-- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance/exclusion boundary;
-- prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
-- preserve REPORT001-043 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
-- preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
-- do not turn REPORT044 into broad multi-page report beautification.
+Representative surface:
+- `src/pages/reports/OverviewPage.tsx` only.
+- Concern is limited to the two page-local section-heading compositions: `المؤشرات الرئيسية`, and `صحة قاعدة العملاء` plus its existing `عرض التفاصيل ←` link action.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+System-pattern intent:
+- replace those local heading/alignment wrappers with the existing shared `SectionHeader` pattern, keeping semantic heading level `h2`;
+- use `SectionHeader` as presentation/hierarchy only; do not widen its API/CSS/tokens/breakpoints and do not move any report/domain meaning into the Design System;
+- remove only the duplicated local section-header layout/typography grammar demonstrated by this representative page.
+
+Acceptance:
+- `المؤشرات الرئيسية` remains the first section title above the existing four-column `MetricGrid` contract;
+- `صحة قاعدة العملاء` remains the customer-health section title, and the existing `Link` text `عرض التفاصيل ←` continues to navigate to `/reports/customers` as the independent SectionHeader action;
+- both titles remain real `h2` headings in the document hierarchy;
+- Mobile 390, Tablet 900 and Desktop 1440 retain readable Arabic wrapping, no new clipping/ordinary horizontal overflow, and no hidden/duplicated action tree; the shared mobile SectionHeader wrapping contract is used rather than page-local device CSS;
+- the customer-details link remains keyboard-focusable and semantically a link; no nested interactive surface or live-region behavior is introduced;
+- focused `OverviewPage.test.tsx` coverage must protect shared `.ds-section-header` anatomy, exact titles/heading level, second-header action/link destination, and preserve the existing MetricGrid/loading regression assertions;
+- evidence remains honestly labeled `TESTS_AUTHORED_NOT_EXECUTED` unless an approved local runtime actually executes it.
+
+Explicit exclusions / preserve exactly:
+- top page header/title/subtitle and `ReportFilterBar` composition;
+- `SystemHealthBar`, all trust/freshness/domain wiring and report hooks;
+- both existing `MetricGrid` contracts, every `MetricCard`, the four-card loading branch, and the customer-health single `SkeletonCard height={120}` loading branch;
+- the entire report navigation grid, legacy `edara-card` navigation-surface debt, shortcut icons/accent colors/routes/copy, and any future interactive-navigation-card grammar;
+- Customer Re-engagement and every other report page;
+- shared `SectionHeader` implementation/CSS/tokens/breakpoints;
+- all analytics/query/cache/calculation/date/filter/permission/RBAC/RLS/routing/export/print/backend/business/workflow semantics.
+
+Why this concern now:
+- `SectionHeader` already has a sound Arabic/RTL-responsive contract with mobile wrapping and a dedicated action slot, so this is a dependency-safe system convergence rather than a new page-local invention;
+- the adjacent Overview navigation-card debt is deliberately deferred because the neutral shared `Card` contract explicitly carries no click/navigation semantics; solving whole-card navigation/focus/touch presentation deserves its own separately bounded interaction concern rather than being smuggled into this slice;
+- Customer Re-engagement remains broader and mixes filters, status semantics, output/export and operational actions, so it is not the smallest next dependency-safe concern.
+
+Product Design bounded this slice from Development baseline `6180f9b346d64a041091d6d5916f980bb49c5e63`. UI Production must branch from the exact latest `design-system-v2-development` HEAD after these governance writes and implement this concern only. If implementation reveals a need to change shared `SectionHeader` behavior or any functional semantics, mark the slice `BLOCKED` instead of widening it.
 
 ## Product migration roadmap
 
@@ -166,7 +190,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-043` — `DONE`
-- `DS2-REPORT-044 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — UNBOUNDED`
+- `DS2-REPORT-044 — Reports Overview section-header convergence` — `READY — BOUNDED`
 - further Reports/Analytics convergence beyond REPORT044 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
