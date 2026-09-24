@@ -65,7 +65,7 @@ const PRIORITY_OPTIONS = [
   { value: 'CHAMPION_LOST',  label: '🔴 Champion Lost' },
   { value: 'DECLINING_HIGH', label: '🟠 تراجع عالي'    },
   { value: 'MID_LOST',       label: '🟡 متوسط خامد'   },
-  { value: 'MID_AT_RISK',    label: '🟤 متوسط معرض'    },
+  { value: 'MID_AT_RISK',    label: '🟤 متوسط معرض'   },
   { value: 'OTHER',          label: '⚫ أخرى'           },
 ]
 
@@ -978,13 +978,6 @@ const STYLES = `
 /* ── Responsive renderer layout ──────────────────── */
 .rp-desktop-table { overflow-x: auto; }
 .rp-mobile-cards { display: flex; flex-direction: column; }
-.rp-tablet-cards { padding: var(--space-4); }
-.rp-tablet-cards .rp-mcard {
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-lg, 12px);
-  background: var(--bg-surface);
-}
-.rp-tablet-cards .rp-mcard:last-child { border-bottom: 1px solid var(--border-primary); }
 
 /* ── Table ───────────────────────────────────────── */
 .rp-table {
