@@ -105,19 +105,35 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-048 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
-Status: `READY — UNBOUNDED`.
-Owner role for immediate next action: Product Design Director.
+### DS2-REPORT-048 — Treasury shared chart-tooltip adoption
+Status: `READY — BOUNDED`.
+Owner role for immediate next action: UI Production Engineer.
 
-Intent:
-- inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline;
-- select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance and exclusion boundary;
-- prefer established shared V2 primitives/patterns, strengthening a shared contract only when a real consumer proves the need;
-- preserve REPORT001-047 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
-- preserve Settings/Admin, Global convergence, remaining Work/Field debt and the shared component-depth program in the roadmap;
-- do not turn REPORT048 into broad multi-page report beautification.
+Representative surface:
+- `src/pages/reports/TreasuryPage.tsx` → the existing page-local Recharts `CustomTooltip` used by the single daily cashflow chart.
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+System-pattern intent:
+- adopt the already-proven shared `ChartTooltip` presentation/anatomy only;
+- Treasury remains responsible for the Recharts `active` / `payload?.length` guard, payload row order, `p.name`, `p.color`, exact `${fmt(p.value)} ج.م` formatting, explicit LTR value direction, tooltip trigger wiring and all analytical/business/trust meaning;
+- remove one more duplicated page-local tooltip visual mini-system without widening the shared contract.
+
+Acceptance:
+- preserve exact chart state precedence `isBlocked -> dailyLoading -> empty -> ready`;
+- preserve exact 280px analytical geometry, blocked/empty Arabic copy, Trust/Freshness action context and current `ChartPanel` hierarchy;
+- preserve chart data mapping (`date`, `inflow`, `outflow`, `net`), 100% containment, margins, axes/grid, zero `ReferenceLine`, gradients and all three Area series names/colors/strokes/fills;
+- Mobile 390 / Tablet 900 / Desktop 1440 must use the same RTL-native passive shared tooltip grammar with long-Arabic wrapping/containment and no ordinary viewport overflow;
+- formatted currency values remain explicitly LTR/bidi-isolated;
+- tooltip remains informational only: no action, focus target, tab stop, role or live-region semantics;
+- focused Treasury tests should protect the tooltip adapter payload gate, exact label/row order/colors/`ج.م` formatting/LTR direction, ready rendering across representative device widths, and preserve existing blocked/loading/empty/ready + geometry/data/series regression contracts;
+- color assertions must respect browser/CSSOM-normalized inline color representation as established by the shared `ChartTooltip` tests and REPORT047 repair.
+
+Explicit exclusions:
+- no change to shared `ChartTooltip` API/CSS/tokens/breakpoints;
+- no `ChartPanel`, `StatePanel`, `AlertPanel`, `MetricGrid`, filter/header, palette/legend/axis or report-foundation changes;
+- no Product Performance or Rep Performance tooltip migration in this slice;
+- no query/cache/data mapping/calculation/trust/permission/RBAC/RLS/routing/export/print/validation/backend/business semantic change.
+
+If adoption requires widening the shared tooltip contract or changing functional semantics, mark REPORT048 `BLOCKED` instead of expanding scope.
 
 ## Product migration roadmap
 
@@ -169,7 +185,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-047` — `DONE`
-- `DS2-REPORT-048 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — UNBOUNDED`
+- `DS2-REPORT-048 — Treasury shared chart-tooltip adoption` — `READY — BOUNDED`
 - further Reports/Analytics convergence beyond REPORT048 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
