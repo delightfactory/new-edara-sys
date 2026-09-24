@@ -2,97 +2,96 @@
 
 ## Reviewed baseline
 
-- Run date/time: `2026-09-24 09:24 Africa/Cairo`.
+- Run date/time: `2026-09-24 10:16 Africa/Cairo`.
 - Development branch: `design-system-v2-development`.
 - Exact feature baseline / Development HEAD at branch creation: `44c4324a2733d770d031862b4f207fcc18a9f2e9`.
+- Exact Development HEAD inspected this run: `63a79168f21abad932c4a12964c5366297109166`.
+- Development drift from feature baseline is governance-only: `DESIGN_QA_STATE.md` + `DESIGN_DIRECTOR_STATE.md`; no product/shared-component overlap.
 - Active slice: `DS2-REPORT-047 — Sales shared chart-tooltip adoption`.
-- Representative surface: `src/pages/reports/SalesPage.tsx` → existing page-local `CustomTooltip` used by both ready Sales charts.
 - Feature branch: `ds2-report-047-sales-chart-tooltip-adoption`.
 - Draft PR: `#95 — DS2-REPORT-047: adopt shared Sales chart tooltip`, base `design-system-v2-development`.
-- Exact implementation/test PR HEAD before this owned-state write: `2a3ee9decb69a6d5763a408bb33d7f98ed38aca8`.
-- Disposition: `REVIEW — FRESH EXACT-HEAD DESIGN QA + PRODUCT DESIGN REVIEW REQUIRED`.
+- QA-blocked exact PR HEAD before repair: `1f0a76bd5922d90b245c11297446681d48f89d54`.
+- Exact implementation/test repair HEAD before this owned-state write: `acfd1c7b5f5ee759d464db232c1b786f7266d4ee`.
+- Disposition: `REVIEW — QA BLOCKER REPAIRED; FRESH EXACT-HEAD DESIGN QA + PRODUCT DESIGN REVIEW REQUIRED`.
 - Evidence: `TESTS_AUTHORED_NOT_EXECUTED`.
 - Build/test/lint/runtime/preview/release PASS: not claimed.
 
 ## Independent implementation judgment
 
-Sales still carried a local tooltip surface/anatomy that duplicated the shared `ChartTooltip` proven in REPORT046. The correct bounded move is adoption only: keep the Sales Recharts adapter and all report truth in `SalesPage`, while delegating neutral tooltip presentation/anatomy to the existing shared pattern.
+The REPORT047 product implementation remains correct and bounded: Sales keeps Recharts payload interpretation, ordering, series identity, currency formatting, value direction and all chart/business/trust meaning, while the existing shared `ChartTooltip` owns presentation only.
 
-No shared API widening is required. The existing `ChartTooltip` contract already expresses Sales' label, ordered rows, caller series colors, formatted values and explicit value direction, so changing shared CSS/tokens/breakpoints or adjacent report consumers would be unnecessary scope expansion.
+Design QA's blocker on HEAD `1f0a76bd...` was valid and confined to the focused test artifact, not product code. The Sales test compared `HTMLElement.style.color` against raw hex values, while the already-integrated shared `ChartTooltip.test.tsx` establishes CSSOM-normalized RGB values for the same inline-style path.
 
-## Material implementation progress
+The smallest correct repair is therefore test-only normalization. No product/shared component change is justified.
 
-- Completed the mandatory shared-memory bootstrap in the prescribed order and inspected issue #27, exact Development HEAD and all open PRs targeting Development.
-- Independently inspected current Sales source/tests and the shared `ChartTooltip`, then compared the result against Product Design, QA, Integration and Team Memory state.
-- Confirmed REPORT047 is fresh `READY — BOUNDED`, no competing implementation PR existed, and Development remained exactly `44c4324a2733d770d031862b4f207fcc18a9f2e9` at branch creation and again before PR creation.
-- Created `ds2-report-047-sales-chart-tooltip-adoption` from that exact SHA.
-- Replaced only the page-local tooltip markup with shared `ChartTooltip`; the local `CustomTooltip` remains the Recharts adapter and keeps the existing `active` / `payload?.length` guard.
-- Preserved caller-owned payload order, `p.name`, `p.color`, `fmt(p.value) + ' ج.م'` output and explicit LTR value direction.
-- Preserved both existing `Tooltip content={<CustomTooltip />}` integrations.
-- Exported the local `CustomTooltip` adapter solely so focused tests can inspect the adapter contract directly; runtime chart behavior is unchanged.
-- Extended Sales test artifacts to inspect both Sales payload shapes and shared tooltip anatomy at 390 / 900 / 1440 widths, plus both ready chart tooltip consumers at those widths.
-- Kept existing regression coverage for MetricGrid/KPIs, first/second chart state precedence, blocked/empty/loading isolation, 240px/200px geometry, chart data mapping/margins and exact Area/Bar series contracts.
-- Opened Draft PR #95 targeting only `design-system-v2-development`.
+## Material progress this run
 
-## Scope / files / shared patterns touched
+- Completed the mandatory bootstrap in the required order and inspected issue #27, exact Development HEAD and all open PRs targeting Development.
+- Confirmed PR #95 is the single active implementation PR and remains `OPEN / DRAFT` targeting `design-system-v2-development`.
+- Read fresh Design QA and Product Design states before modifying the PR; both agree the product direction is sound and the blocker is the color-representation assertion only.
+- Independently checked the exact failing assertion against integrated `src/components/patterns/ChartTooltip.test.tsx`, which expects CSSOM-normalized RGB.
+- Repaired only `src/pages/reports/SalesPage.test.tsx`:
+  - added a local test-only hex -> CSSOM RGB expectation map for `#2563eb`, `#dc2626`, `#0284c7`;
+  - changed the focused tooltip color assertion to compare rendered `row.style.color` with those normalized expectations;
+  - preserved the caller payload hex colors themselves and all product/runtime code unchanged.
+- Repair commit: `acfd1c7b5f5ee759d464db232c1b786f7266d4ee` (`test(ds2): normalize Sales tooltip color expectations`).
+- Development has advanced only through peer governance state files since the feature baseline, so no merge-sync/rebase was performed solely for governance drift.
 
-Product/test files:
-- `src/pages/reports/SalesPage.tsx` — Sales tooltip presentation adoption only; no shared component changes.
+## Scope / files / patterns touched
+
+Material repair this run:
+- `src/pages/reports/SalesPage.test.tsx` — focused CSSOM color expectation correction only.
+- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md` — owned lifecycle/handoff state.
+
+REPORT047 product scope remains:
+- `src/pages/reports/SalesPage.tsx` — existing Sales `CustomTooltip` delegates neutral presentation to shared `ChartTooltip`.
 - `src/pages/reports/SalesPage.test.tsx` — focused adapter/device/state regression coverage.
 
-Governance:
-- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md` (owned file only).
+Explicitly unchanged by this repair:
+- `src/pages/reports/SalesPage.tsx` product code;
+- shared `ChartTooltip` implementation/API/tests/CSS;
+- `ChartPanel`, `StatePanel`, `MetricGrid`, tokens and breakpoints;
+- all other report tooltip consumers;
+- chart data, mapping, axes, margins, colors, gradients, series, geometry and Trust/Freshness;
+- query/cache/calculation/permission/RBAC/RLS/routing/export/print/validation/backend/business semantics.
 
-Explicitly unchanged:
-- shared `ChartTooltip` implementation/API/CSS;
-- `ChartPanel`, `StatePanel`, `MetricGrid`, tokens and canonical breakpoints;
-- Treasury, Product Performance, Rep Performance and every other tooltip consumer;
-- ReportFilterBar/date/query/cache semantics;
-- chart data mapping, calculations, axes, margins, palettes, gradients, series identity, Trust/Freshness and business meaning;
-- DB/migrations/RPC/services/RBAC/RLS/route guards/permissions/validation/export/print/workflow/backend semantics.
+## Device / state / accessibility coverage preserved
 
-## Device / state / accessibility coverage
-
-- **Mobile 390:** same shared RTL tooltip grammar; caller values remain LTR/bidi-isolated; no device-specific tooltip fork.
-- **Tablet 900:** same touch-first shared tooltip presentation with no accidental Desktop-only fallback or breakpoint addition.
-- **Desktop 1440:** compact analytical density and existing Recharts trigger contract remain unchanged.
-- **First chart states:** exact `isBlocked -> dailyLoading -> empty -> ready`; 240px geometry; exact blocked/empty Arabic copy; Trust/Freshness unchanged.
-- **Second chart states:** exact `dailyLoading -> empty -> ready`; 200px geometry; exact empty Arabic copy; no new BLOCKED/trust semantics.
-- **Accessibility:** tooltip remains informational/passive. No action, click target, focus target, tab stop, role, live region or keyboard-only interaction was introduced.
+- **Mobile 390 / Tablet 900 / Desktop 1440:** same shared RTL tooltip grammar, same caller-owned labels/order/colors/currency formatting and explicit LTR values; no device-specific fork.
+- **First Sales chart:** exact `isBlocked -> dailyLoading -> empty -> ready`, 240px geometry, Arabic blocked/empty copy and Trust/Freshness preserved.
+- **Second Sales chart:** exact `dailyLoading -> empty -> ready`, 200px geometry, Arabic empty copy preserved; no BLOCKED/trust semantics added.
+- **Accessibility:** tooltip remains passive/informational with no action, focus target, tab stop, role or live region.
+- The repair changes only how the test reads browser-normalized inline color strings; runtime presentation semantics are unchanged.
 
 ## Evidence / execution honesty
 
-Evidence is `TESTS_AUTHORED_NOT_EXECUTED`.
+Evidence remains `TESTS_AUTHORED_NOT_EXECUTED`.
 
-A sandbox filesystem check found no project `package.json` under `/mnt/data`, `/home/oai/share`, `/workspace`, `/workspaces` or `/tmp`; therefore no approved local project runtime was available to execute `npm test`, `npm run build` or `npm run lint`.
+No approved local project checkout/runtime is available in this run, so `npm test`, `npm run build` and `npm run lint` were not executed. No GitHub Actions/hosted CI was triggered or used as evidence. No Vercel/preview branch or `main` activity occurred.
 
-No GitHub Actions/hosted CI was triggered or used as evidence. No Vercel deployment, preview-branch activity or `main` activity occurred. Source-level self-review found no known TypeScript/build blocker in the bounded change, but no executed test/build/lint/runtime PASS is claimed.
+Source-level self-review found the repaired expectation consistent with the integrated shared `ChartTooltip` test contract. No executed PASS is claimed.
 
-## Preserve / risks
+## Risks / current blocker status
 
-Preserve exactly:
-- shared `ChartTooltip` remains presentation-only;
-- Sales remains owner of Recharts payload interpretation, row order, labels, colors, currency formatting, value direction and all chart/business/trust semantics;
-- first chart 240px state/ready contract and second chart 200px state/ready contract;
-- all non-Sales tooltip consumers unchanged;
-- no shared-contract widening in REPORT047.
-
-Remaining risk is independent exact-head Design QA/Product Design review plus unexecuted local/runtime evidence. Any later PR-head movement invalidates exact-head approvals.
+- The specific QA blocker on HEAD `1f0a76bd...` has been repaired in source on commit `acfd1c7b...`.
+- Because PR HEAD moved, all prior exact-head review dispositions are stale for integration purposes.
+- Fresh Design QA must independently review the exact current PR HEAD after this state write and may issue GREEN-DEV only if no other blocker remains.
+- Product Design must likewise re-review the same exact current PR HEAD before integration.
+- Unexecuted local/runtime evidence remains an accepted development risk under the current test policy.
 
 ## Peer-state comparison
 
-- **Product Design Director:** fresh and aligned; REPORT047 is explicitly bounded to Sales adoption of existing `ChartTooltip` for both current charts with no shared-contract widening.
-- **Design QA:** Development state is lifecycle-historical through REPORT046; no REPORT047 exact-head disposition exists yet.
-- **Development Integrator:** current through REPORT046 and records no competing REPORT047 integration blocker.
-- **Team Memory:** current through REPORT046 and identifies duplicated page-local chart tooltips as bounded adoption debt; its unbounded REPORT047 placeholder is superseded by the fresher Product Design boundary/workstream update.
-- **Decision Log / North Star:** aligned with shared-system-before-page-local invention, Arabic-first responsive composition and strict UI-only functional isolation.
+- **Design QA:** fresh blocker was valid; requested exactly this test-only normalization and no product/shared change.
+- **Product Design Director:** aligned; implementation direction remains accepted in principle, but exact-head acceptance is withheld until the QA repair is re-reviewed.
+- **Development Integrator / Team Memory:** lifecycle-current through REPORT046; no competing REPORT047 integration action should occur until fresh exact-head gates exist.
+- **Decision Log / North Star:** still aligned with shared-system-before-page-local invention and strict UI-only functional isolation.
 
-Current contradiction classification: `NONE` from UI Production.
+Current contradiction classification: `NONE`.
 
 ### Cross-role handoff
 - **To:** Design QA and Product Design Director; Development Integrator only after fresh exact-head approvals.
-- **What changed:** REPORT047 migrates the existing Sales `CustomTooltip` presentation onto shared `ChartTooltip` for both Sales charts; Draft PR #95 is open.
-- **Preserve:** caller-owned payload interpretation/order/labels/colors/`fmt(value) + ' ج.م'`/LTR direction; first chart `isBlocked -> dailyLoading -> empty -> ready` with 240px geometry and Trust/Freshness; second chart `dailyLoading -> empty -> ready` with 200px geometry and no BLOCKED/trust semantics; all chart data/axes/margins/series and all non-Sales tooltip consumers unchanged.
-- **Need from you:** independently review the exact current PR #95 HEAD after this owned-state write. Design QA should issue or withhold fresh `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`; Product Design should independently accept or block that same exact HEAD. Any later PR-head movement invalidates those gates.
-- **Blocker level:** `NONE` from UI Production; independent review pending.
-- **Baseline:** Development/feature baseline `44c4324a2733d770d031862b4f207fcc18a9f2e9`; implementation/test PR HEAD before this state write `2a3ee9decb69a6d5763a408bb33d7f98ed38aca8`; Draft PR `#95`; feature branch `ds2-report-047-sales-chart-tooltip-adoption`.
+- **What changed:** repaired the sole QA blocker by normalizing Sales tooltip test color expectations to the CSSOM RGB representation already established by shared `ChartTooltip` tests; product code is unchanged.
+- **Preserve:** shared `ChartTooltip` API/CSS/tokens unchanged; Sales caller-owned payload order/labels/colors/`${fmt(value)} ج.م`/LTR direction; first chart `isBlocked -> dailyLoading -> empty -> ready` + 240px + Trust/Freshness; second chart `dailyLoading -> empty -> ready` + 200px with no BLOCKED/trust; all data/query/permission/backend/business contracts.
+- **Need from you:** re-review the exact current PR #95 HEAD after this state write. QA should issue or withhold fresh `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`; Product Design should independently close out that same exact HEAD. Do not reuse approval from `1f0a76bd...`.
+- **Blocker level:** `NONE` from UI Production after repair; fresh review gates pending.
+- **Baseline:** feature baseline `44c4324a2733d770d031862b4f207fcc18a9f2e9`; Development inspected `63a79168f21abad932c4a12964c5366297109166`; repair HEAD before this state write `acfd1c7b5f5ee759d464db232c1b786f7266d4ee`; Draft PR `#95`.
