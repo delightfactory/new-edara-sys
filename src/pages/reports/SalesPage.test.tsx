@@ -143,6 +143,12 @@ const readyDailyRow = {
   tax_amount: 175,
 }
 
+const cssColorByHex: Record<string, string> = {
+  '#2563eb': 'rgb(37, 99, 235)',
+  '#dc2626': 'rgb(220, 38, 38)',
+  '#0284c7': 'rgb(2, 132, 199)',
+}
+
 describe('Sales report composition', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -350,7 +356,7 @@ describe('Sales report composition', () => {
         expect(tooltip.getAttribute('dir')).toBe('rtl')
         expect(within(tooltip).getByText('2026-09-19')).not.toBeNull()
         expect(rows.map(row => row.querySelector('.ds-chart-tooltip__item-label')?.textContent)).toEqual(payload.map(item => item.name))
-        expect(rows.map(row => row.style.color)).toEqual(payload.map(item => item.color))
+        expect(rows.map(row => row.style.color)).toEqual(payload.map(item => cssColorByHex[item.color]))
         expect(values.map(value => value.textContent)).toEqual(payload.map(item => `${item.value.toLocaleString('en-US')} ج.م`))
         expect(values.map(value => value.getAttribute('dir'))).toEqual(['ltr', 'ltr'])
         expect(tooltip.querySelector('button, a, input, select, textarea, [tabindex]:not([tabindex="-1"])')).toBeNull()
