@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, render, screen, within } from '@testing-library/react'
-import RepPerformancePage from './RepPerformancePage'
+import RepPerformancePage, { CustomTooltip } from './RepPerformancePage'
 
 const mocks = vi.hoisted(() => ({
   useSystemTrustState: vi.fn(),
@@ -293,6 +293,7 @@ describe('Rep Performance comparison ChartPanel convergence', () => {
     expect(within(panel).getByTestId('skeleton-card').getAttribute('data-height')).toBe('300')
     expect(panel.querySelector('.ds-state-panel')).toBeNull()
     expect(within(panel).queryByTestId('bar-chart')).toBeNull()
+    expect(mocks.tooltip).not.toHaveBeenCalled()
 
     mocks.useRepPerformanceTable.mockReturnValue({ data: [], isLoading: false })
     rerender(<RepPerformancePage />)
@@ -306,6 +307,68 @@ describe('Rep Performance comparison ChartPanel convergence', () => {
     expect(state.querySelector('.ds-state-panel__action')).toBeNull()
     expect(state.getAttribute('aria-live')).toBeNull()
     expect(within(panel).queryByTestId('bar-chart')).toBeNull()
+    expect(mocks.tooltip).not.toHaveBeenCalled()
+  })
+
+  it('keeps the Rep Performance tooltip inactive and empty-payload guard unchanged', () => {
+    const view = render(<CustomTooltip active={false} label="مندوب اختباري" payload={[
+      { name: 'الإيراد الصافى', value: 1234, color: '#2563eb' },
+    ]} />)
+
+    expect(view.container.firstChild).toBeNull()
+
+    view.rerender(<CustomTooltip active label="مندوب اختباري" payload={[]} />)
+    expect(view.container.firstChild).toBeNull()
+  })
+
+  it('delegates Rep Performance tooltip presentation to shared ChartTooltip while preserving heading, row order, caller colors, currency formatting, and LTR values', () => {
+    const label = 'اسم مندوب عربي طويل جداً للتحقق من احتواء النص داخل أداة الرسم بدون إنشاء معالجة خاصة بالصفحة'
+    const payload = [
+      { name: 'الإيراد الصافى', value: 1234, color: '#2563eb' },
+      { name: 'المرتجعات', value: 250, color: '#dc2626' },
+    ]
+
+    for (const width of [390, 900, 1440]) {
+      setViewport(width)
+      const view = render(<CustomTooltip active label={label} payload={payload} />)
+      const tooltip = view.container.querySelector('.ds-chart-tooltip') as HTMLElement
+      const tooltipRows = Array.from(tooltip.querySelectorAll('.ds-chart-tooltip__row')) as HTMLElement[]
+      const values = tooltipRows.map(row => row.querySelector('.ds-chart-tooltip__value') as HTMLElement)
+
+      expect(tooltip).not.toBeNull()
+      expect(tooltip.getAttribute('dir')).toBe('rtl')
+      expect(tooltip.querySelector('.ds-chart-tooltip__label')?.textContent).toBe(label)
+      expect(tooltipRows.map(row => row.querySelector('.ds-chart-tooltip__item-label')?.textContent)).toEqual([
+        'الإيراد الصافى',
+        'المرتجعات',
+      ])
+      expect(tooltipRows.map(row => row.style.color)).toEqual([
+        'rgb(37, 99, 235)',
+        'rgb(220, 38, 38)',
+      ])
+      expect(values.map(value => value.textContent)).toEqual(['1,234 ج.م', '250 ج.م'])
+      expect(values.map(value => value.getAttribute('dir'))).toEqual(['ltr', 'ltr'])
+      expect(tooltip.querySelector('button, a, input, select, textarea, [tabindex]:not([tabindex="-1"])')).toBeNull()
+      expect(tooltip.getAttribute('aria-live')).toBeNull()
+      expect(tooltip.getAttribute('role')).toBeNull()
+
+      view.unmount()
+    }
+  })
+
+  it('keeps shared tooltip content wired into the ready Rep Performance chart at Mobile, Tablet, and Desktop widths', () => {
+    for (const width of [390, 900, 1440]) {
+      setViewport(width)
+      const view = render(<RepPerformancePage />)
+      const latestTooltipCall = mocks.tooltip.mock.calls[mocks.tooltip.mock.calls.length - 1][0]
+      const latestResponsiveCall = mocks.responsiveContainer.mock.calls[mocks.responsiveContainer.mock.calls.length - 1][0]
+
+      expect(latestTooltipCall.content).toBeTruthy()
+      expect(latestResponsiveCall).toMatchObject({ width: '100%', height: 600 })
+      expect(getChartPanel().querySelector('.ds-state-panel')).toBeNull()
+
+      view.unmount()
+    }
   })
 
   it('preserves top-15 order/mapping and the dynamic responsive chart height', () => {
