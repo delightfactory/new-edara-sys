@@ -96,19 +96,45 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-051 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
-Status: `READY — UNBOUNDED`.
-Owner role for immediate next action: Product Design Director.
+### DS2-REPORT-051 — Churn Risk shared chart-tooltip adoption
+Status: `READY — BOUNDED`.
+Owner role for immediate next action: UI Production Engineer.
 
-Product Design must inspect representative remaining Reports/Analytics surfaces on the exact latest `design-system-v2-development` baseline and record exactly one smallest dependency-safe presentation-only concern before UI Production begins product-code work.
+Representative surface:
+- `src/pages/reports/ChurnRiskPage.tsx` → the default Recharts tooltip inside `توزيع تصنيف العملاء`.
 
-The next concern must:
-- preserve REPORT001-050 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
-- prefer existing shared V2 primitives/patterns, strengthening a shared contract only when a real consumer proves the need;
-- stay bounded to one coherent concern and representative surface;
-- keep remaining Work/Field convergence, shared component-depth work, Settings/Admin and Global Dark/RTL/accessibility/legacy cleanup explicit in the roadmap.
+System intent:
+- replace only Recharts' default tooltip presentation with the already-proven shared `ChartTooltip`;
+- keep chart-library payload interpretation in a Churn Risk caller adapter;
+- keep the current segment/category label, exact row label `عملاء`, count formatting through the existing `FMT`, caller-provided pie-series color and explicit LTR numeric value direction caller-owned;
+- do not widen `ChartTooltip` API/CSS/tokens/breakpoints and do not introduce a second tooltip grammar.
 
-Implementation is not authorized until Product Design records the exact bounded REPORT051 concern from the then-current Development HEAD.
+Acceptance boundary:
+- preserve the exact chart presence rule `!statsLoading && pieData.length > 0`; do not add a loading/empty chart surface where none exists;
+- preserve `ResponsiveContainer width="100%" height={260}`;
+- preserve exact pie data/order, `dataKey="value"`, `nameKey="name"`, `cx="50%"`, `cy="50%"`, `innerRadius={60}`, `outerRadius={100}`, `paddingAngle={2}`;
+- preserve the exact five caller colors `#f59e0b`, `#10b981`, `#3b82f6`, `#f97316`, `#ef4444` and the existing `Legend`;
+- preserve `ChartPanel` title and Trust/Freshness action behavior;
+- preserve report-header filters, KPI summary, responsive customer-detail collection/table/cards, blocked/loading/empty precedence and all query/trust/business semantics;
+- Mobile 390 / Tablet 900 / Desktop 1440 use the same shared RTL passive tooltip grammar with long-Arabic containment; numeric counts remain LTR/bidi-safe;
+- tooltip remains informational only: no focus target, tab stop, `role`, `aria-live` or keyboard/action semantics.
+
+Focused test expectations:
+- inactive / empty-payload adapter guards;
+- exact category heading, one-row `عملاء` label, existing count formatting and caller color pass-through;
+- browser/CSSOM-normalized color assertion for representative `#f59e0b -> rgb(245, 158, 11)`;
+- shared-tooltip adoption at 390 / 900 / 1440 and long-Arabic/passive anatomy;
+- no ready chart/tooltip leakage while stats are loading or all pie values are zero;
+- unchanged 260px geometry, pie data/order/keys/radii/padding/colors, legend and Trust/Freshness presence rules.
+
+Explicitly excluded:
+- Target Attainment or any other report tooltip;
+- `ChartTooltip` implementation/API/tests/CSS/tokens/breakpoints;
+- `ChartPanel`, `MetricGrid`, `ResponsiveCollection`, `StatePanel`, `Card`, `KeyValueList` or other shared-pattern changes;
+- Churn Risk filter controls, KPI metrics, detail collection/table/cards, export/print/navigation;
+- any hook/query/cache/RPC/Supabase/calculation/trust/permission/RBAC/RLS/routing/validation/backend/business change.
+
+If the existing shared `ChartTooltip` cannot serve this chart unchanged, or preserving current chart semantics requires functional change, mark REPORT051 `BLOCKED` rather than widening scope.
 
 ## Product migration roadmap
 
@@ -160,7 +186,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-050` — `DONE`
-- `DS2-REPORT-051 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — UNBOUNDED`
+- `DS2-REPORT-051 — Churn Risk shared chart-tooltip adoption` — `READY — BOUNDED`
 - further Reports/Analytics convergence beyond REPORT051 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
