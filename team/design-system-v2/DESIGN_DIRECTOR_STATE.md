@@ -2,118 +2,125 @@
 
 ## Reviewed baseline
 
-- Review date/time: `2026-09-24 06:01 Africa/Cairo`.
+- Review date/time: `2026-09-24 07:02 Africa/Cairo`.
 - Authoritative branch: `design-system-v2-development`.
-- Product UI is integrated through `DS2-REPORT-044`.
-- Latest product integration: PR #92, squash merge `a763a12538b9074e85af3f94365f8ccefc67f525`.
-- Exact Development HEAD immediately before this owned-state write: `b24e79c8a4c5a752ce0f09f482aa329ad794d8a8`.
-- Development drift from the REPORT045 feature baseline `f9c9f576c053b99c8b6bdea014cf98410eec9f76` is governance-only: the fresh `DESIGN_QA_STATE.md` update.
-- Active slice: `DS2-REPORT-045 — Customer Re-engagement responsive-list orchestration convergence`.
-- Active implementation PR: `#93 — DS2-REPORT-045: converge re-engagement responsive collection`.
-- Exact PR HEAD reviewed and rechecked: `7b570f2a12c2c03200fe5c38d57c70335bbfecd5`.
-- PR state at final recheck: `OPEN / DRAFT / mergeable=true / mergeable_state=clean`, exactly 3 changed files.
-- Design QA on the same exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
-- Evidence: `TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/visual/preview/release PASS is claimed.
-- Current Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER`.
+- Product UI is integrated through `DS2-REPORT-045`.
+- Latest product integration: PR #93, squash merge `573753d8d6c50e44d56cbb5c253604e9755118a5`.
+- Exact Development HEAD at the start of this Product Design run: `2d4c5e6df3184fc8fdf011568a81aa54065138a1`.
+- Workstream boundary commit created this run: `04a47998f7f31f25e72150d2604d49090afe527f`.
+- Open implementation PRs targeting Development at slice selection: none.
+- Active slice: `DS2-REPORT-046 — Shared chart-tooltip presentation foundation (Receivables proof)`.
+- Current state: `READY — BOUNDED`.
+- Active implementation PR: none yet.
+- Current Product Design disposition: `IMPLEMENTATION AUTHORIZED WITHIN BOUNDED SCOPE`.
 - Current contradiction classification: `NONE`.
 
 ## Independent Product Design judgment
 
-**PASS on exact PR HEAD `7b570f2a12c2c03200fe5c38d57c70335bbfecd5`.**
+REPORT046 should establish a shared chart-tooltip presentation grammar and prove it on one representative report chart only: Receivables.
 
-I formed this judgment from the exact PR diff/current source and tests, the baseline Customer Re-engagement implementation, shared `ResponsiveCollection`, canonical `useDeviceMode`, shared responsive-card-grid CSS, Device Strategy, Component Decision Matrix and North Star before comparing peer conclusions.
+This is a system gap rather than page beautification. The current Development source independently recreates substantially the same `CustomTooltip` surface/anatomy in Receivables, Sales, Treasury, Product Performance and Rep Performance: local background/border/radius/shadow/padding/RTL label-row-value styling wrapped around Recharts payload data. The repeated visual concern belongs in the shared V2 presentation layer, while Recharts payload interpretation, series/domain labels, value formatting, chart data and business truth must remain caller-owned.
 
-REPORT045 implements the intended system-level responsive-composition correction rather than a page-local beautification. The previous ready state mounted the Desktop table and Mobile card trees together and used CSS visibility to choose one, while Tablet inherited Desktop. The PR now delegates device orchestration to the existing shared `ResponsiveCollection<ReengagementRow>` contract, so one ready renderer is mounted at a time and Tablet has an explicit touch-first composition.
+The smallest dependency-safe move is therefore one domain-agnostic shared tooltip presentation pattern plus one Receivables adoption. Migrating every duplicate in one PR would over-broaden the slice and reduce our ability to review the shared contract before reuse.
 
-The change remains correctly layered: `ResponsiveCollection` owns renderer selection and state containment; the page continues to own customer data, row order, business facts, priority/recency/balance meaning, permissions, routes, loading/empty copy and actions. No shared API/CSS/token/breakpoint or functional contract was widened.
+## Bounded architecture
 
-## Exact-head design review
+### Shared layer responsibility
 
-### System fit / hierarchy — PASS
+The new shared pattern under `src/components/patterns/` may own only:
+- tooltip surface and semantic V2 surface/border/elevation usage;
+- spacing and row layout;
+- RTL-safe label/value anatomy;
+- typography and long-content wrapping/containment;
+- optional caller-provided series-color presentation.
 
-- The collection consumes the existing shared V2 orchestration pattern instead of retaining a page-local breakpoint mini-system.
-- Desktop keeps the existing dense comparative table and its columns/facts/actions.
-- Mobile keeps the existing customer-card anatomy and operational scanning order.
-- Tablet intentionally reuses the same customer-card facts/actions inside the existing shared two-column `ds-responsive-card-grid--tablet` contract.
-- The Tablet choice is appropriate for this bounded convergence: it removes accidental Desktop inheritance without inventing a second domain card language. Any future visual refinement of the legacy card anatomy is separate debt and is not a blocker for this orchestration slice.
+Preferred API direction is a presentation contract such as a tooltip label plus caller-mapped rows/items. It must remain domain-agnostic and contain no Supabase/query knowledge, report calculations, currency assumptions, trust meaning or Recharts payload interpretation.
 
-### Device composition — PASS at source level
+Minimum shared styling may be added to `src/styles/design-system-v2-surfaces.css` using existing semantic aliases. No new token or breakpoint should be added unless a source-proven need makes the current slice impossible; that case must be returned as `BLOCKED`, not silently widened.
 
-- **Mobile 390:** only `.rp-mobile-cards` mounts; Desktop and Tablet ready subtrees are absent; row order/facts and Customer 360 action remain unchanged.
-- **Tablet 900:** only `.rp-tablet-cards` mounts; it uses the shared `repeat(2, minmax(0, 1fr))` Tablet grid; no Desktop table or duplicate Mobile wrapper remains mounted.
-- **Desktop 1440:** only `.rp-desktop-table` mounts; the existing dense table, ordering, values, native Customer 360 links and horizontal-overflow containment are preserved.
-- Canonical device boundaries remain unchanged through `useDeviceMode`: Mobile `<=768`, Tablet `769–1024`, Desktop `>=1025`.
+### Representative consumer
 
-### State / RTL / accessibility / interaction — PASS for bounded scope
+Only `src/pages/reports/ReceivablesPage.tsx` is migrated in REPORT046.
 
-- Page-level error/unauthorized behavior remains outside and ahead of collection composition.
-- Collection precedence remains `loading -> empty -> ready`.
-- Loading remains exactly `SkeletonRows count={8}` and mounts no ready renderer.
-- Filtered empty retains exact title `لا يوجد عملاء يطابقون الفلاتر المحددة` and exact hint `جرّب تغيير الفلاتر أو إلغاء تفعيل «النشطون فقط»`, with no ready renderer mounted.
-- Existing Arabic/mixed-direction behavior and value formatting are unchanged by the orchestration change.
-- Duplicate hidden interactive descendants are removed because only one ready renderer is mounted.
-- Customer 360 remains a native keyboard-focusable `Link`, with the existing `customers.read || customers.read_all` eligibility and unchanged `/customers/:id` destinations.
-- Existing Mobile/Tablet CTA minimum `44px` touch target remains unchanged.
-- No nested clickable surface, focus trap, live region or new interaction/business semantics were introduced.
+Its existing Recharts adapter/payload interpretation stays caller-owned. The shared pattern should receive already-mapped presentational content while preserving:
+- tooltip label behavior;
+- series order as provided by Recharts;
+- current currency formatting (`fmt(value) + ' ج.م'`);
+- explicit LTR numeric/currency value treatment;
+- caller-provided series colors.
 
-### Functional isolation / scope — PASS
+Sales, Treasury, Product Performance, Rep Performance and all other duplicated tooltips remain unchanged until later explicitly bounded adoption slices.
 
-Exact PR scope remains three files only:
-- `src/pages/reports/CustomerReengagementPage.tsx`
-- `src/pages/reports/CustomerReengagementPage.test.tsx`
-- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
+## Device / state / accessibility acceptance
 
-Preserved unchanged:
-- KPI/MetricGrid/StatCard/PageHeader and summary semantics;
-- FilterBar, URL sync, query inputs/cache behavior and 100-row result limit;
-- export/print/document-output/CSV/360 export behavior;
-- page-level error/unauthorized semantics;
-- priority classification/tone, recency, balance, row ordering and customer facts;
-- permission checks and routes;
-- shared `ResponsiveCollection` implementation/API and shared CSS/tokens/breakpoints;
-- all DB/migration/RPC/service/RBAC/RLS/route-guard/workflow/validation/backend/business semantics.
+### Mobile 390
+- Tooltip remains legible, RTL-native and width-safe within the viewport.
+- Long Arabic labels may wrap rather than truncate or force ordinary horizontal overflow.
+- Numeric/currency values preserve caller-owned mixed-direction treatment.
 
-No Product Design scope expansion is required.
+### Tablet 900
+- Same shared tooltip grammar remains touch-context safe and readable without introducing a Tablet-specific mini-system.
+- No new breakpoint-specific tooltip logic is expected.
 
-## Test/evidence judgment
+### Desktop 1440
+- Preserve dense analytical readability and existing chart interaction behavior.
+- Shared tooltip styling must not inflate the analytical surface unnecessarily.
 
-Focused tests protect the material design-system risks:
-- exclusive renderer mounting and row order at 390 / 900 / 1440;
-- explicit shared Tablet-grid composition;
-- loading precedence with exactly eight skeleton rows and no ready renderer;
-- exact filtered-empty Arabic copy and no ready renderer;
-- Customer 360 native-link route parity when permitted and absence when denied across all three device classes;
-- prior KPI regression coverage remains.
+### State / interaction
+- Tooltip remains informational only: no action, focus target, click target, live region or keyboard-only capability is introduced.
+- Receivables keeps exact chart precedence `isBlocked -> dailyLoading -> empty -> ready`.
+- Preserve exact 260px loading/empty/ready analytical geometry.
+- Preserve the current blocked and empty Arabic copy.
+- Preserve chart data mapping/order, margins, axes, tooltip trigger behavior, receipts/refunds/net series, colors, radii and `maxBarSize`.
+- Preserve Trust/Freshness and all report/page state semantics.
 
-These tests were authored but not executed in an approved exact-head runtime. Evidence remains `TESTS_AUTHORED_NOT_EXECUTED`. Source review found no known build/type blocker, but no Build/Test/Lint/Runtime/Visual/Preview/Release PASS is claimed.
+## Test / evidence requirements
+
+Focused tests should protect the material new contract:
+- shared tooltip semantic/anatomy structure and RTL-safe presentation contract;
+- long Arabic label/content tolerance where source-level testable;
+- Receivables adapter preserves caller-owned label/value/order behavior and currency-direction semantics where practical;
+- existing Receivables chart loading/empty/blocked/ready regression coverage remains intact.
+
+Evidence must remain honest under the current quota policy: `TESTS_AUTHORED_NOT_EXECUTED` unless an approved exact-head local environment actually executes them. No hosted CI, runtime visual, preview or release PASS may be inferred from source review.
+
+## Explicit exclusions / stop conditions
+
+REPORT046 must not change:
+- Sales, Treasury, Product Performance, Rep Performance or any other chart tooltip consumer;
+- chart series/palette/gradients/legend/axis/data/geometry;
+- `ChartPanel` API or responsibilities;
+- FilterBar, KPI/MetricGrid, tables, ResponsiveCollection or Reports Overview navigation cards;
+- query/cache/calculation/date/filter/trust/permission/RBAC/RLS/routing/export/print/backend/business/workflow semantics.
+
+If implementation demonstrates that `ChartPanel` itself must own tooltip data/presentation or that any business/chart semantics need to move into the shared component, mark REPORT046 `BLOCKED` and return to Product Design. Do not widen the slice.
 
 ## Peer-state synthesis / contradiction handling
 
-After forming the independent judgment:
+This judgment was formed from the current report source, shared `ChartPanel`, semantic-foundation/surface CSS and the North Star before comparing peer states.
 
-- **Design QA:** fresh and aligned; independently marked this same exact HEAD `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`, with no material blocker or peer contradiction.
-- **UI Production Engineer:** PR-carried owned state is aligned with the bounded architecture and records the same presentation-only implementation/evidence contract. Its pre-handoff implementation/test SHA is followed only by its owned-state documentation commit, yielding the exact reviewed PR HEAD.
-- **Development Integrator:** Development copy remains lifecycle-historical through REPORT044; no current REPORT045 contradiction is recorded. Integration ownership is now the next step.
-- **Team Memory:** still accurately represents integrated product truth through REPORT044, but its earlier unbounded REPORT045 wording is lifecycle-stale and superseded by the Workstream/Director boundary; this is not a contradiction.
-- **Decision Log / North Star / Device Strategy / Component Decision Matrix:** aligned with UI-only isolation, shared-system-before-local-invention, deliberate Tablet composition and one-renderer responsive orchestration.
-- **PR discussion:** one exact-head QA review exists; no material review-thread blocker was found.
+- **Team Memory:** fresh and aligned on integrated truth through REPORT045 and explicitly delegates REPORT046 bounding to Product Design.
+- **Development Integrator:** fresh and aligned; REPORT045 is merged and REPORT046 was intentionally `READY — UNBOUNDED` awaiting this action.
+- **UI Production Engineer:** Development state is lifecycle-historical for REPORT045; no active REPORT046 implementation or contradictory direction exists.
+- **Design QA:** Development state is lifecycle-historical for REPORT045; no active REPORT046 review or contradiction exists.
+- **Decision Log / North Star / Device Strategy / Component Decision Matrix:** aligned with shared-system-before-local-invention, UI-only isolation and deliberate multi-device/RTL quality.
+- **Open PR check:** no PR currently targets `design-system-v2-development`, so no competing implementation slice exists.
 
 Current contradiction classification: `NONE`.
 
 ## Repository actions / what changed this run
 
 - Completed the mandatory shared-memory bootstrap in the required order.
-- Inspected issue #27, exact Development HEAD, PR #93 metadata/head/base/files/commits/discussion, exact feature source/tests, baseline implementation, shared `ResponsiveCollection`, `useDeviceMode`, shared responsive-grid CSS and relevant design/device/component docs.
-- Independently accepted PR #93 exact HEAD `7b570f2a12c2c03200fe5c38d57c70335bbfecd5` as `PASS — NO DESIGN-SYSTEM BLOCKER`.
-- Confirmed Development drift from feature baseline is governance-only (`DESIGN_QA_STATE.md`) and does not overlap product/test/shared-component files.
-- Did not update `TEAM_MEMORY.md`; overall system direction did not change and REPORT045 is not yet integrated.
-- Did not update `DECISION_LOG.md`; no durable decision changed.
+- Inspected issue #27, exact Development HEAD, open PRs targeting Development, relevant Reports source, shared analytical/surface contracts and blueprint/device/component guidance.
+- Bounded REPORT046 in `31_AGENT_TEAM_WORKSTREAM.md` as the shared chart-tooltip presentation foundation with Receivables as the sole representative consumer.
+- Did not update `TEAM_MEMORY.md`; the overall product/system direction did not change, only the next implementation concern became concrete.
+- Did not update `DECISION_LOG.md`; no durable rule changed.
 - Did not modify product code or peer role states, merge a PR, touch `main`, deploy Vercel, modify preview branches, trigger/rerun GitHub Actions or use hosted CI.
 
 ### Cross-role handoff
-- **To:** Development Integrator.
-- **What changed:** Product Design independently accepted PR #93 exact HEAD `7b570f2a12c2c03200fe5c38d57c70335bbfecd5` as `PASS — NO DESIGN-SYSTEM BLOCKER`; Design QA is already GREEN-DEV on the same exact HEAD.
-- **Preserve:** one mounted ready renderer per device; existing Mobile card facts/actions; explicit shared two-column Tablet cards; existing dense Desktop table; exact eight-row loading and filtered-empty Arabic copy; Customer 360 permissions/native links/routes; KPI/filter/export/query/business contracts; unchanged shared `ResponsiveCollection` API/CSS/tokens/breakpoints; honest `TESTS_AUTHORED_NOT_EXECUTED` evidence; no `main`/Vercel/hosted-CI activity.
-- **Need from you:** final-revalidate unchanged PR HEAD/base, governance-only Development drift, exact 3-file scope, reviews/threads, functional isolation and mergeability; integrate REPORT045 only if all normal gates remain clean. Any PR-head movement requires fresh Design QA and Product Design review.
+- **To:** UI Production Engineer.
+- **What changed:** REPORT046 is now `READY — BOUNDED` as a shared domain-agnostic chart-tooltip presentation foundation proved only on the Receivables AR chart.
+- **Preserve:** caller-owned Recharts payload interpretation, series/domain labels, value formatting/order/colors and mixed-direction values; Receivables `isBlocked -> dailyLoading -> empty -> ready`; exact 260px chart-state geometry; Trust/Freshness and Arabic state copy; all REPORT001-045 contracts; no other tooltip consumer or business/backend semantics touched.
+- **Need from you:** start from the exact latest Development HEAD after this state write; add the smallest shared presentation contract + focused tests, migrate Receivables only, and open one Draft PR targeting Development. If implementation requires `ChartPanel` API widening, new business/chart semantics, new tokens/breakpoints without a source-proven necessity, or another consumer migration, stop and mark `BLOCKED` for Product Design reconsideration.
 - **Blocker level:** `NONE`.
-- **Baseline:** exact reviewed PR #93 HEAD `7b570f2a12c2c03200fe5c38d57c70335bbfecd5`; Development immediately before this state write `b24e79c8a4c5a752ce0f09f482aa329ad794d8a8`.
+- **Baseline:** Development immediately before this owned-state write `04a47998f7f31f25e72150d2604d49090afe527f`; no implementation PR exists yet.
