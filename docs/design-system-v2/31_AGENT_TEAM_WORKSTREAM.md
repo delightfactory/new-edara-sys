@@ -95,25 +95,56 @@ The development branch includes semantic foundations, responsive shell/navigatio
 
 ## Current single READY slice
 
-### DS2-REPORT-050 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
-Status: `READY — UNBOUNDED`.
-Owner role for immediate next action: Product Design Director.
+### DS2-REPORT-050 — Rep Performance shared chart-tooltip adoption
+Status: `READY — BOUNDED`.
+Owner role for immediate next action: UI Production Engineer.
+Representative surface: `src/pages/reports/RepPerformancePage.tsx` — the local Recharts `CustomTooltip` used by `مقارنة المندوبين — أعلى 15` only.
+Development source baseline inspected by Product Design: `0980f86c44564ab35a4453464e5711a1a0e0915c`.
 
 ### System-pattern intent
 
-Product Design Director must inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline and record exactly one smallest dependency-safe presentation-only concern before UI Production begins. Prefer an existing shared V2 primitive/pattern; strengthen a shared contract only when a real consumer proves the gap.
+Remove the remaining Rep Performance page-local tooltip presentation mini-system by adopting the already-proven shared `ChartTooltip` presentation/anatomy. This is an adjacent bounded adoption, not a chart redesign and not permission to widen the shared tooltip contract.
 
-### Required boundary for Product Design
+Shared ownership boundary:
+- shared `ChartTooltip` owns only neutral surface, spacing, RTL structure, wrapping and passive informational row/value anatomy;
+- Rep Performance retains Recharts `active` / payload gating, caller heading, payload order, `p.name`, `p.color`, exact `${fmt(p.value)} ج.م` formatting, explicit LTR value direction, trigger wiring and all analytical/business/trust meaning.
 
-- Name one representative surface/file and one coherent presentation concern only.
-- Preserve REPORT001-049 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics.
-- Preserve current shared component responsibility boundaries; do not move report/domain truth into visual primitives.
-- Record explicit Mobile/Tablet/Desktop, Arabic/RTL, state and accessibility acceptance where relevant.
-- Record focused test-artifact expectations and explicit exclusions before implementation.
-- Keep shared component-depth work, remaining Field/Work debt, Settings/Admin and Global convergence visible in the roadmap.
-- Do not turn REPORT050 into broad multi-page report beautification.
+### Acceptance boundary
 
-Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
+- Preserve chart state precedence exactly as `tableLoading -> empty -> ready`.
+- Preserve the 300px loading skeleton and the 300px compact empty-state containment/copy.
+- Preserve `rows.slice(0, 15)` and exact mapping `{ name: rep_name, revenue: net_revenue, returns: returns_value }`.
+- Preserve ready chart geometry exactly: `ResponsiveContainer width="100%" height={Math.max(chartData.length * 40, 200)}`.
+- Preserve vertical `BarChart` layout and margins `{ top: 4, left: 10, right: 20, bottom: 0 }`.
+- Preserve Cartesian grid, X axis numeric formatter, Y axis `dataKey="name"` / width 120 and all current tick/axis behavior.
+- Preserve both series exactly: revenue `#2563eb`, radius `[0,3,3,0]`, `maxBarSize={20}`; returns `#dc2626`, radius `[0,3,3,0]`, `maxBarSize={10}`; preserve their existing Arabic names and order.
+- Preserve TrustStateBadge/FreshnessIndicator presence rule and all existing report summary/detail composition.
+- Mobile 390 / Tablet 900 / Desktop 1440 must use the same shared RTL tooltip grammar with no new breakpoint or device fork.
+- Long Arabic heading/series labels must remain wrap-safe inside the shared tooltip without ordinary viewport overflow; monetary values remain explicitly LTR.
+- Tooltip remains passive/informational: no action, focus target, tab stop, `role`, `aria-live` or new keyboard contract.
+
+### Focused test-artifact expectation
+
+Extend `src/pages/reports/RepPerformancePage.test.tsx` to cover, at minimum:
+- inactive and empty-payload adapter guards;
+- shared tooltip heading, exact row order/labels, exact currency formatting and LTR value direction;
+- caller colors using browser/CSSOM-normalized expectations: `#2563eb -> rgb(37, 99, 235)` and `#dc2626 -> rgb(220, 38, 38)`;
+- representative ready wiring at 390 / 900 / 1440 widths;
+- no tooltip leakage into loading/empty branches;
+- preserved top-15 mapping, dynamic height, margins/grid/axes and both Bar contracts.
+
+Evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved local runtime actually executes the tests.
+
+### Explicit exclusions / stop condition
+
+Excluded from REPORT050:
+- any change to shared `ChartTooltip` implementation/API/tests/CSS, semantic tokens or breakpoints;
+- `ChartPanel`, `MetricGrid`, `StatePanel`, `ResponsiveCollection`, `Card`, `KeyValueList` or other shared-pattern changes;
+- Rep Performance page header, `ReportFilterBar`, summary metrics, detail table/cards/responsive orchestration, rank/return-rate styling or trust semantics;
+- every other report/page tooltip consumer;
+- query/hooks/cache/RPC/Supabase, calculations, permissions, RBAC/RLS, routing, validation, export/print, backend, workflow or business semantics.
+
+If Rep Performance cannot adopt the existing shared `ChartTooltip` unchanged, or any functional/report semantic change becomes necessary, mark REPORT050 `BLOCKED` rather than widening the slice.
 
 ## Product migration roadmap
 
@@ -165,7 +196,7 @@ Open only when a real migrated screen proves the recurring gap:
 
 ### I. Reports / Analytics
 - `DS2-REPORT-001` through `DS2-REPORT-049` — `DONE`
-- `DS2-REPORT-050 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — UNBOUNDED`
+- `DS2-REPORT-050 — Rep Performance shared chart-tooltip adoption` — `READY — BOUNDED`
 - further Reports/Analytics convergence beyond REPORT050 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
