@@ -2,93 +2,116 @@
 
 ## Reviewed baseline
 
-- Review date/time: `2026-09-24 15:57 Africa/Cairo`.
+- Review date/time: `2026-09-24 16:59 Africa/Cairo`.
 - Authoritative branch: `design-system-v2-development`.
-- Exact Development HEAD before this owned-state write: `151a5eae1d55f0e6ce889e48f458db0af4c2185e`.
-- Integrated product baseline: through `DS2-REPORT-048`, squash merge `9eb5489a00631f1cc7b9377893e7b0a1ebb560d6`.
-- Active slice: `DS2-REPORT-049 — Product Performance shared chart-tooltip adoption`.
-- Active implementation PR: `#97` (`OPEN / DRAFT`).
-- Exact implementation HEAD reviewed: `426bb9a76ad968d670473150e35ef4cfeb43372e`.
-- PR base SHA: `e2e71ec4423e98ad7e665b81939b70a54d060cb6`.
-- Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER` on the exact implementation HEAD above.
-- Design QA disposition on the same exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
-- Evidence label: `TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/visual PASS is claimed.
+- Exact Development HEAD at the start of Product Design inspection: `0980f86c44564ab35a4453464e5711a1a0e0915c`.
+- Exact Development HEAD before this owned-state write: `c41f7b1789862eb21394fa222561627482c707e4`.
+- Integrated product baseline: through `DS2-REPORT-049`, squash merge `055aa6587ff2f08e9e89cbf604c15d58b46c86ff` from PR #97.
+- Active slice: `DS2-REPORT-050 — Rep Performance shared chart-tooltip adoption`.
+- Slice status: `READY — BOUNDED`.
+- Active implementation PR: none.
 - Current contradiction classification: `NONE`.
 
 ## Independent Product Design judgment
 
-I independently reviewed the current PR source and diff before using peer state as corroboration. REPORT049 remains a valid system-convergence slice rather than page-local beautification.
+I formed the next-slice judgment from the exact latest Development source before using peer states as corroboration.
 
-The implementation removes Product Performance's duplicated local tooltip presentation and reuses the already-proven shared `ChartTooltip` without widening its public contract. The ownership boundary remains correct:
+The smallest dependency-safe Reports concern now is Rep Performance's remaining page-local Recharts `CustomTooltip` in `src/pages/reports/RepPerformancePage.tsx`. The local implementation duplicates the same neutral surface, RTL anatomy, spacing, caller color and LTR monetary-value presentation already proven as shared `ChartTooltip` grammar in Receivables and adopted by Sales, Treasury and Product Performance.
 
-- the shared component owns presentation/anatomy only: surface, spacing, RTL structure, wrapping and passive informational rendering;
-- Product Performance retains Recharts `active`/payload interpretation, payload order, heading/labels, caller series color, exact monetary formatting and LTR value direction;
-- no business, trust, query, permission, backend or analytical semantics moved into the Design System.
+This is therefore a system-convergence slice, not page beautification: remove one duplicate presentation mini-system while keeping chart-library/domain/business truth at the caller boundary. No new shared capability is required by the inspected source. The existing `ChartTooltip` contract is sufficient and must remain unchanged.
 
-This is the intended North-Star direction: one reusable Arabic-first visual grammar with domain truth left at the caller boundary.
+## REPORT050 bounded contract
 
-## Exact-head Product Design verification
+### Representative surface
 
-### System/component coherence
+`src/pages/reports/RepPerformancePage.tsx` — only the local `CustomTooltip` used by the `مقارنة المندوبين — أعلى 15` chart.
 
-- `ProductPerformancePage.tsx` imports and uses the existing shared `ChartTooltip`.
-- The page-local `CustomTooltip` mini-system is removed.
-- `ChartTooltip.tsx` itself is unchanged by the PR; there is no shared API/CSS/token/breakpoint widening.
-- Rep Performance and every other tooltip consumer remain outside this slice.
+### Shared/caller responsibility boundary
 
-### Preserved functional/chart truth
+Shared `ChartTooltip` owns only:
+- neutral tooltip surface and spacing;
+- RTL-safe structure and long-content containment;
+- passive informational label/row/value presentation.
 
-Source review confirms preservation of the bounded contract:
+Rep Performance must continue to own:
+- Recharts `active` / payload gating;
+- caller heading/label;
+- payload row order;
+- `p.name` and `p.color`;
+- exact `${fmt(p.value)} ج.م` formatting;
+- explicit LTR value direction;
+- Recharts trigger wiring;
+- all analytical, trust and business meaning.
 
-- chart flow remains `tableLoading -> empty -> ready`;
-- ready chart remains contained at 240px with `ResponsiveContainer width="100%"`;
-- chart source remains `tableRows.slice(0, 15)`;
-- product-name chart labels retain the existing 20-character visual truncation;
-- margins, Cartesian grid, X/Y axes and tick behavior remain unchanged;
-- the single revenue Bar remains `dataKey="revenue"`, name `الإيرادات`, fill `#2563eb`, radius `[3, 3, 0, 0]`, `maxBarSize={32}`;
-- tooltip values remain caller-formatted as `${fmt(Number(value || 0))} ج.م` with explicit LTR value direction;
-- Trust/Freshness, report metrics and the existing responsive detail collection are untouched;
-- no DB/RPC/service/query-cache/RBAC/RLS/permission/route/calculation/validation/export/print/backend/business-semantic change is present.
+### Device / state / accessibility acceptance
 
-### Device / Arabic / accessibility fit
+- Mobile 390 / Tablet 900 / Desktop 1440 use the same shared RTL tooltip grammar; no breakpoint or device-specific fork is added.
+- Long Arabic heading/series labels remain wrap-safe without ordinary viewport overflow; monetary values remain LTR.
+- Tooltip stays passive/informational with no action, focus target, tab stop, `role`, `aria-live` or new keyboard contract.
+- Preserve chart state precedence exactly as `tableLoading -> empty -> ready`.
+- Preserve the 300px loading skeleton and 300px compact empty-state containment/copy.
+- Preserve ready geometry `ResponsiveContainer width="100%" height={Math.max(chartData.length * 40, 200)}`.
 
-The shared tooltip remains one device-independent RTL grammar for Mobile 390 / Tablet 900 / Desktop 1440. Existing shared presentation provides long-Arabic containment, while the caller keeps monetary values bidi-safe via LTR direction. The tooltip remains passive/informational and introduces no action, focus target, tab stop or live-region behavior.
+### Exact chart truth to preserve
 
-Focused tests authored in the PR cover adapter guards, heading/row/color/currency/LTR behavior, CSSOM-normalized `#2563eb -> rgb(37, 99, 235)`, representative 390/900/1440 wiring, loading/empty isolation and preserved chart contracts. Under the validation policy these remain authored evidence only, not executed PASS evidence.
+- `rows.slice(0, 15)` and mapping `{ name: rep_name, revenue: net_revenue, returns: returns_value }`.
+- Vertical `BarChart` layout and margins `{ top: 4, left: 10, right: 20, bottom: 0 }`.
+- Existing Cartesian grid, numeric X-axis formatter, Y-axis `dataKey="name"`, width 120 and current tick/axis behavior.
+- Revenue Bar remains first with current Arabic name, `#2563eb`, radius `[0,3,3,0]`, `maxBarSize={20}`.
+- Returns Bar remains second with current Arabic name, `#dc2626`, radius `[0,3,3,0]`, `maxBarSize={10}`.
+- TrustStateBadge/FreshnessIndicator presence rule and all summary/detail composition remain unchanged.
 
-## PR / peer-state synthesis
+### Focused test expectations
 
-- PR #97 remains `OPEN / DRAFT` on exact HEAD `426bb9a76ad968d670473150e35ef4cfeb43372e`.
-- PR scope is exactly 3 files: Product Performance page, its focused test, and UI Production's owned state.
-- GitHub reports the PR mergeable/clean at review time.
-- There are no inline review threads.
-- Design QA independently reviewed the same exact implementation HEAD and returned `GREEN-DEV + SOURCE_REVIEW_PASS`, with `TESTS_AUTHORED_NOT_EXECUTED` evidence.
-- Development drift from PR base to pre-write Development HEAD is governance-only: Design QA state recording; no intervening product-code drift was found.
-- UI Production and Design QA states align with this Product Design judgment.
-- Integration state is lifecycle-stale from REPORT048, not contradictory; Integrator has not yet performed REPORT049 final revalidation.
-- Team Memory / Decision Log / North Star remain directionally aligned and require no update because no durable system rule changed.
+`src/pages/reports/RepPerformancePage.test.tsx` should add/adjust focused source tests for:
+- inactive / empty-payload adapter guards;
+- shared tooltip heading, exact row order/labels, exact currency formatting and LTR value direction;
+- browser/CSSOM-normalized caller colors: `#2563eb -> rgb(37, 99, 235)` and `#dc2626 -> rgb(220, 38, 38)`;
+- representative ready wiring at 390 / 900 / 1440;
+- no tooltip leakage into loading/empty branches;
+- preserved top-15 mapping, dynamic height, margins/grid/axes and both Bar contracts.
 
-Current contradiction classification: `NONE`.
+Evidence remains `TESTS_AUTHORED_NOT_EXECUTED` unless an approved local runtime actually executes the tests.
+
+## Explicit exclusions / stop condition
+
+REPORT050 must not change:
+- shared `ChartTooltip` implementation/API/tests/CSS, semantic tokens or breakpoints;
+- `ChartPanel`, `MetricGrid`, `StatePanel`, `ResponsiveCollection`, `Card`, `KeyValueList` or other shared patterns;
+- page header, `ReportFilterBar`, summary metrics, detail table/cards/responsive orchestration, rank/return-rate styling or trust semantics;
+- another report or tooltip consumer;
+- hooks/query/cache/RPC/Supabase, calculations, permissions, RBAC/RLS, routing, validation, export/print, backend, workflow or business semantics.
+
+If Rep Performance cannot adopt existing `ChartTooltip` unchanged, or any functional/report semantic change becomes necessary, REPORT050 becomes `BLOCKED` rather than expanding scope.
+
+## Peer-state synthesis
+
+- `TEAM_MEMORY.md` is current through REPORT049 and explicitly hands REPORT050 bounding to Product Design; aligned.
+- Prior `DESIGN_DIRECTOR_STATE.md`, `UI_IMPLEMENTATION_STATE.md` and `DESIGN_QA_STATE.md` are lifecycle-stale from REPORT049; their retained responsibility boundaries are compatible but they are not current approval evidence for REPORT050.
+- `INTEGRATION_STATE.md` is current through REPORT049 and correctly records REPORT050 as the single unbounded next roadmap item; this run supplies the missing boundary.
+- Decision Log and North Star remain aligned: shared system before page-local invention, Arabic-first multi-device behavior and strict UI-only functional isolation.
+- No material peer-state contradiction exists. No Team Memory or Decision Log update is warranted because no overall design/system direction or durable rule changed.
 
 ## Repository actions this run
 
 - Completed the mandatory shared-memory bootstrap in the required order.
-- Inspected issue #27, current Development HEAD, the only open PR targeting Development, PR files, review submission/thread state, current Product Performance source/tests, shared `ChartTooltip`, and relevant component/device/decision guidance.
-- Performed fresh independent Product Design exact-head review of PR #97.
-- Recorded Product Design PASS only in this owned specialist state.
-- Did not modify Product code, Workstream, peer role-state files, Team Memory or Decision Log.
-- Did not merge, touch `main`, deploy Vercel, modify preview branches, trigger/rerun GitHub Actions or use hosted CI.
+- Inspected issue #27, current Development HEAD, open PRs targeting Development, relevant component/migration/device guidance, shared `ChartTooltip` contract/tests, Product Performance proof adoption, and current Rep Performance source/tests.
+- Rechecked immediately before bounding that no implementation PR targeted `design-system-v2-development`.
+- Updated `31_AGENT_TEAM_WORKSTREAM.md` to make REPORT050 exactly one `READY — BOUNDED` implementation slice.
+- Updated only this owned specialist state after that material design action.
+- Did not modify Team Memory or Decision Log.
+- Did not implement Product code, merge, touch `main`, deploy Vercel, modify preview branches, trigger/rerun GitHub Actions or use hosted CI.
 
 ## What changed since previous state
 
-- REPORT049 progressed from bounded/awaiting implementation to an implemented PR with independent Design QA GREEN on the same exact HEAD.
-- Product Design now gives `PASS — NO DESIGN-SYSTEM BLOCKER` on exact implementation HEAD `426bb9a76ad968d670473150e35ef4cfeb43372e`.
-- No Design System contract or durable architectural direction changed.
+- REPORT049 is now integrated and the previous Product Design review state is consumed/stale.
+- REPORT050 moved from `READY — UNBOUNDED` to `READY — BOUNDED` as Rep Performance shared chart-tooltip adoption.
+- The shared `ChartTooltip` responsibility boundary itself did not change.
 
 ### Cross-role handoff
-- **To:** Development Integrator.
-- **What changed:** PR #97 / REPORT049 now has aligned exact-head UI Production, Design QA and Product Design evidence; Product Design has no design-system blocker on HEAD `426bb9a76ad968d670473150e35ef4cfeb43372e`.
-- **Preserve:** exact 3-file implementation scope; shared `ChartTooltip` unchanged; caller-owned payload/label/color/`${fmt(value)} ج.م`/LTR semantics; `tableLoading -> empty -> ready`; 240px/top-15/truncation/chart geometry and revenue Bar; Trust/Freshness; all query/permission/backend/business contracts.
-- **Need from you:** revalidate the unchanged PR HEAD/base, current Development drift, mergeability, reviews/threads, exact scope and functional isolation. If all gates remain clean, integrate REPORT049 into `design-system-v2-development` under the Integration role's merge policy. Do not reuse these approvals if the implementation HEAD changes.
+- **To:** UI Production Engineer; Design QA after a stable Draft PR exists.
+- **What changed:** REPORT050 is now implementation-ready as one bounded Rep Performance tooltip-presentation adoption using the existing shared `ChartTooltip` unchanged.
+- **Preserve:** caller-owned `active`/payload guard, heading/order/`p.name`/`p.color`/`${fmt(p.value)} ج.م`/LTR semantics; exact `tableLoading -> empty -> ready`; 300px loading/empty containment; top-15 mapping; dynamic ready height; vertical chart margins/grid/axes; exact revenue/returns Bar order/colors/radii/max sizes; Trust/Freshness; all summary/detail/query/permission/backend/business contracts.
+- **Need from you:** branch from the latest `design-system-v2-development`, implement only REPORT050, add focused adapter/device/state/chart regression tests including CSSOM-normalized blue/red color assertions, and open exactly one Draft PR targeting Development. If shared `ChartTooltip` must change, stop and mark `BLOCKED`.
 - **Blocker level:** `NONE`.
-- **Baseline:** PR #97 exact HEAD `426bb9a76ad968d670473150e35ef4cfeb43372e`; PR base `e2e71ec4423e98ad7e665b81939b70a54d060cb6`; pre-state-write Development HEAD `151a5eae1d55f0e6ce889e48f458db0af4c2185e`.
+- **Baseline:** source baseline inspected `0980f86c44564ab35a4453464e5711a1a0e0915c`; Workstream boundary commit / pre-state-write Development HEAD `c41f7b1789862eb21394fa222561627482c707e4`.
