@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { cloneElement, isValidElement, type ReactElement, type ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import ReceivablesPage from './ReceivablesPage'
@@ -89,7 +89,22 @@ vi.mock('recharts', () => ({
   ),
   XAxis: () => null,
   YAxis: () => null,
-  Tooltip: () => null,
+  Tooltip: ({ content }: { content?: ReactNode }) => {
+    if (!content || !isValidElement(content)) return null
+    return (
+      <div data-testid="recharts-tooltip">
+        {cloneElement(content as ReactElement<Record<string, unknown>>, {
+          active: true,
+          label: '2026-09-18',
+          payload: [
+            { dataKey: 'receipts', name: 'إيصالات', color: '#2563eb', value: 120 },
+            { dataKey: 'refunds', name: 'مردودات', color: '#dc2626', value: 20 },
+            { dataKey: 'net', name: 'صافي', color: '#16a34a', value: 100 },
+          ],
+        })}
+      </div>
+    )
+  },
   CartesianGrid: () => null,
 }))
 
@@ -98,6 +113,13 @@ const arTrust = {
   last_completed_at: '2026-09-19T00:00:00Z',
   is_stale: false,
 }
+
+const readyDaily = [{
+  sale_date: '2026-09-18',
+  receipt_amount: 120,
+  refund_amount: 20,
+  net_cohort: 100,
+}]
 
 function getChartPanel() {
   return screen.getByRole('heading', { level: 2, name: 'تحصيلات AR مجمّعة بتاريخ البيع الأصلي' }).closest('.ds-chart-panel') as HTMLElement
@@ -215,15 +237,7 @@ describe('Receivables report composition', () => {
   })
 
   it('preserves the AR chart data mapping, 260px container, margins and all three series contracts', () => {
-    mocks.useARDailyTotals.mockReturnValue({
-      data: [{
-        sale_date: '2026-09-18',
-        receipt_amount: 120,
-        refund_amount: 20,
-        net_cohort: 100,
-      }],
-      isLoading: false,
-    })
+    mocks.useARDailyTotals.mockReturnValue({ data: readyDaily, isLoading: false })
 
     render(<ReceivablesPage />)
 
@@ -248,5 +262,26 @@ describe('Receivables report composition', () => {
     expect(within(panel).getByTestId('bar-net')).toMatchObject({
       dataset: expect.objectContaining({ name: 'صافي', fill: '#16a34a', radius: '[3,3,0,0]', maxBarSize: '20' }),
     })
+  })
+
+  it.each([390, 900, 1440])('uses the shared passive RTL tooltip at %ipx while preserving caller-owned order, currency formatting and series colors', width => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: width })
+    mocks.useARDailyTotals.mockReturnValue({ data: readyDaily, isLoading: false })
+
+    render(<ReceivablesPage />)
+
+    const panel = getChartPanel()
+    const tooltip = within(panel).getByTestId('recharts-tooltip').querySelector('.ds-chart-tooltip') as HTMLElement
+    expect(tooltip).not.toBeNull()
+    expect(tooltip.getAttribute('dir')).toBe('rtl')
+    expect(within(tooltip).getByText('2026-09-18')).not.toBeNull()
+
+    const rows = Array.from(tooltip.querySelectorAll('.ds-chart-tooltip__row')) as HTMLElement[]
+    expect(rows.map(row => row.querySelector('.ds-chart-tooltip__item-label')?.textContent)).toEqual(['إيصالات', 'مردودات', 'صافي'])
+    expect(rows.map(row => row.querySelector('.ds-chart-tooltip__value')?.textContent)).toEqual(['120 ج.م', '20 ج.م', '100 ج.م'])
+    expect(rows.map(row => row.querySelector('.ds-chart-tooltip__value')?.getAttribute('dir'))).toEqual(['ltr', 'ltr', 'ltr'])
+    expect(rows.map(row => row.style.color)).toEqual(['rgb(37, 99, 235)', 'rgb(220, 38, 38)', 'rgb(22, 163, 74)'])
+    expect(tooltip.getAttribute('aria-live')).toBeNull()
+    expect(tooltip.querySelector('button, a, input, select, textarea, [tabindex]:not([tabindex="-1"])')).toBeNull()
   })
 })
