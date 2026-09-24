@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
-import TreasuryPage from './TreasuryPage'
+import TreasuryPage, { CustomTooltip } from './TreasuryPage'
 
 const mocks = vi.hoisted(() => ({
   useSystemTrustState: vi.fn(),
@@ -97,7 +97,9 @@ vi.mock('recharts', () => ({
   YAxis: ({ tickFormatter, tickLine, axisLine }: { tickFormatter: (value: number) => string; tickLine: boolean; axisLine: boolean }) => (
     <g data-testid="y-axis" data-formatted={tickFormatter(1234)} data-tick-line={String(tickLine)} data-axis-line={String(axisLine)} />
   ),
-  Tooltip: () => <g data-testid="chart-tooltip" />,
+  Tooltip: ({ content }: { content?: ReactNode }) => (
+    <g data-testid="chart-tooltip" data-has-content={String(Boolean(content))} />
+  ),
   CartesianGrid: ({ strokeDasharray, stroke, vertical }: { strokeDasharray: string; stroke: string; vertical: boolean }) => (
     <g data-testid="cartesian-grid" data-dash={strokeDasharray} data-stroke={stroke} data-vertical={String(vertical)} />
   ),
@@ -110,6 +112,27 @@ const treasuryTrust = {
   status: 'OK',
   last_completed_at: '2026-09-20T00:00:00Z',
   is_stale: false,
+}
+
+function setViewport(width: number) {
+  Object.defineProperty(window, 'innerWidth', {
+    configurable: true,
+    writable: true,
+    value: width,
+  })
+}
+
+const readyDailyRow = {
+  treasury_date: '2026-09-20',
+  gross_inflow: 120,
+  gross_outflow: 20,
+  net_cashflow: 100,
+}
+
+const cssColorByHex: Record<string, string> = {
+  '#16a34a': 'rgb(22, 163, 74)',
+  '#dc2626': 'rgb(220, 38, 38)',
+  '#2563eb': 'rgb(37, 99, 235)',
 }
 
 describe('Treasury daily cashflow chart composition', () => {
@@ -215,7 +238,7 @@ describe('Treasury daily cashflow chart composition', () => {
   it('keeps blocked state first with exact copy and 280px body even when daily data is loading', () => {
     mocks.useTrustForComponent.mockReturnValue({ ...treasuryTrust, status: 'BLOCKED' })
     mocks.useTreasuryDailyTotals.mockReturnValue({
-      data: [{ treasury_date: '2026-09-20', gross_inflow: 120, gross_outflow: 20, net_cashflow: 100 }],
+      data: [readyDailyRow],
       isLoading: true,
     })
 
@@ -228,6 +251,7 @@ describe('Treasury daily cashflow chart composition', () => {
     expect(within(panel).getByText('يظهر عند اكتمال المطابقة مع سجلات الخزائن والعُهد')).not.toBeNull()
     expect(within(panel).queryByTestId('skeleton-card')).toBeNull()
     expect(within(panel).queryByTestId('area-chart')).toBeNull()
+    expect(within(panel).queryByTestId('chart-tooltip')).toBeNull()
   })
 
   it('keeps loading ahead of empty with the exact 280px skeleton contract', () => {
@@ -238,6 +262,7 @@ describe('Treasury daily cashflow chart composition', () => {
     const panel = screen.getByRole('heading', { level: 2, name: 'التدفق النقدي اليومي' }).closest('.ds-chart-panel') as HTMLElement
     expect(within(panel).getByTestId('skeleton-card').getAttribute('data-height')).toBe('280')
     expect(within(panel).queryByText('لا توجد تدفقات خزينية في هذه الفترة')).toBeNull()
+    expect(within(panel).queryByTestId('chart-tooltip')).toBeNull()
   })
 
   it('keeps the exact empty copy and 280px height after loading resolves', () => {
@@ -247,13 +272,72 @@ describe('Treasury daily cashflow chart composition', () => {
     const empty = within(panel).getByText('لا توجد تدفقات خزينية في هذه الفترة')
 
     expect(empty.style.height).toBe('280px')
+    expect(within(panel).queryByTestId('chart-tooltip')).toBeNull()
+  })
+
+  it('keeps the Treasury tooltip inactive and empty-payload guard unchanged', () => {
+    const view = render(<CustomTooltip active={false} label="2026-09-20" payload={[
+      { name: 'داخل', value: 120, color: '#16a34a' },
+    ]} />)
+
+    expect(view.container.firstChild).toBeNull()
+
+    view.rerender(<CustomTooltip active label="2026-09-20" payload={[]} />)
+    expect(view.container.firstChild).toBeNull()
+  })
+
+  it('delegates Treasury tooltip presentation to shared ChartTooltip while preserving label, row order, colors, currency formatting, and LTR values', () => {
+    const payload = [
+      { name: 'داخل', value: 1234, color: '#16a34a' },
+      { name: 'مستردّ', value: 200, color: '#dc2626' },
+      { name: 'صافي', value: 1034, color: '#2563eb' },
+    ]
+
+    for (const width of [390, 900, 1440]) {
+      setViewport(width)
+      const view = render(<CustomTooltip active label="2026-09-20" payload={payload} />)
+      const tooltip = view.container.querySelector('.ds-chart-tooltip') as HTMLElement
+      const rows = Array.from(tooltip.querySelectorAll('.ds-chart-tooltip__row')) as HTMLElement[]
+      const values = rows.map(row => row.querySelector('.ds-chart-tooltip__value') as HTMLElement)
+
+      expect(tooltip).not.toBeNull()
+      expect(tooltip.getAttribute('dir')).toBe('rtl')
+      expect(within(tooltip).getByText('2026-09-20')).not.toBeNull()
+      expect(rows.map(row => row.querySelector('.ds-chart-tooltip__item-label')?.textContent)).toEqual(payload.map(item => item.name))
+      expect(rows.map(row => row.style.color)).toEqual(payload.map(item => cssColorByHex[item.color]))
+      expect(values.map(value => value.textContent)).toEqual(['1,234 ج.م', '200 ج.م', '1,034 ج.م'])
+      expect(values.map(value => value.getAttribute('dir'))).toEqual(['ltr', 'ltr', 'ltr'])
+      expect(tooltip.querySelector('button, a, input, select, textarea, [tabindex]:not([tabindex="-1"])')).toBeNull()
+      expect(tooltip.getAttribute('aria-live')).toBeNull()
+      expect(tooltip.getAttribute('role')).toBeNull()
+
+      view.unmount()
+    }
+  })
+
+  it('keeps shared tooltip content wired into the ready Treasury chart at Mobile, Tablet, and Desktop widths', () => {
+    mocks.useTreasuryDailyTotals.mockReturnValue({ data: [readyDailyRow], isLoading: false })
+
+    for (const width of [390, 900, 1440]) {
+      setViewport(width)
+      const view = render(<TreasuryPage />)
+      const panel = screen.getByRole('heading', { level: 2, name: 'التدفق النقدي اليومي' }).closest('.ds-chart-panel') as HTMLElement
+      const tooltip = within(panel).getByTestId('chart-tooltip')
+
+      expect(tooltip.getAttribute('data-has-content')).toBe('true')
+      expect(within(panel).getByTestId('responsive-container').getAttribute('data-height')).toBe('280')
+      expect(within(panel).getByTestId('area-chart')).not.toBeNull()
+      expect(within(panel).queryByText('لا توجد تدفقات خزينية في هذه الفترة')).toBeNull()
+
+      view.unmount()
+    }
   })
 
   it('preserves caller ordering, chart mapping, 100% containment, margins and core axes/grid/reference contracts', () => {
     mocks.useTreasuryDailyTotals.mockReturnValue({
       data: [
         { treasury_date: '2026-09-19', gross_inflow: 80, gross_outflow: 10, net_cashflow: 70 },
-        { treasury_date: '2026-09-20', gross_inflow: 120, gross_outflow: 20, net_cashflow: 100 },
+        readyDailyRow,
       ],
       isLoading: false,
     })
@@ -274,12 +358,12 @@ describe('Treasury daily cashflow chart composition', () => {
     expect(within(panel).getByTestId('x-axis').dataset).toMatchObject({ key: 'date', tickLine: 'false', axisLine: 'false' })
     expect(within(panel).getByTestId('y-axis').dataset).toMatchObject({ formatted: '1,234', tickLine: 'false', axisLine: 'false' })
     expect(within(panel).getByTestId('reference-line').dataset).toMatchObject({ y: '0', stroke: 'var(--border-primary)', dash: '4 4' })
-    expect(within(panel).getByTestId('chart-tooltip')).not.toBeNull()
+    expect(within(panel).getByTestId('chart-tooltip').getAttribute('data-has-content')).toBe('true')
   })
 
   it('preserves all three area-series and gradient color/opacity contracts', () => {
     mocks.useTreasuryDailyTotals.mockReturnValue({
-      data: [{ treasury_date: '2026-09-20', gross_inflow: 120, gross_outflow: 20, net_cashflow: 100 }],
+      data: [readyDailyRow],
       isLoading: false,
     })
 
