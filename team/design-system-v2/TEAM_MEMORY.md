@@ -3,11 +3,11 @@
 ## Current truth
 
 - Authoritative integration branch: `design-system-v2-development`.
-- Product UI is integrated through `DS2-REPORT-049`.
-- Current integrated product HEAD / squash merge: `055aa6587ff2f08e9e89cbf604c15d58b46c86ff` from PR #97.
-- Exact reviewed implementation HEAD: `426bb9a76ad968d670473150e35ef4cfeb43372e`.
-- Current single READY roadmap item: `DS2-REPORT-050 — Next bounded Reports metrics/charts/tables/responsive-composition convergence`.
-- REPORT050 is intentionally unbounded: Product Design Director must inspect the exact latest Development baseline and record exactly one smallest dependency-safe presentation-only concern before UI Production begins.
+- Product UI is integrated through `DS2-REPORT-050`.
+- Current integrated product HEAD / squash merge: `22983eff7ce4d11113c2b10de5468bb33bb86936` from PR #98.
+- Exact reviewed implementation HEAD: `007d1174c09f1808a261fa49b133e4201d25ca68`.
+- Current single READY roadmap item: `DS2-REPORT-051 — Next bounded Reports metrics/charts/tables/responsive-composition convergence`.
+- REPORT051 is intentionally unbounded: Product Design Director must inspect the exact latest Development baseline and record exactly one smallest dependency-safe presentation-only concern before UI Production begins.
 - `main` remains frozen until explicit owner approval.
 - Vercel preview remains user-requested only.
 - GitHub Actions / hosted CI remain forbidden for normal Design System development.
@@ -29,58 +29,58 @@ Development now includes:
 - shared `SectionHeader` hierarchy/action anatomy proven on Reports Overview section headings while report copy/navigation/data truth remain caller-owned;
 - representative report detail collections using shared responsive collection grammar while preserving dense semantic Desktop tables;
 - Customer Re-engagement using shared `ResponsiveCollection` to mount exactly one ready renderer per device: Mobile cards, explicit touch-first Tablet cards, or dense Desktop table;
-- shared domain-agnostic `ChartTooltip` presentation grammar proven on Receivables and adopted by Sales, Treasury and Product Performance while Recharts/domain/business semantics remain caller-owned;
+- shared domain-agnostic `ChartTooltip` presentation grammar proven on Receivables and adopted by Sales, Treasury, Product Performance and Rep Performance while Recharts/domain/business semantics remain caller-owned;
 - Design System North Star, test policy, role-state handoff protocol, Team Memory and durable Decision Log.
 
 ## Latest completed slice
 
-`DS2-REPORT-049 — Product Performance shared chart-tooltip adoption`
+`DS2-REPORT-050 — Rep Performance shared chart-tooltip adoption`
 
 Result:
-- PR #97 exact reviewed HEAD `426bb9a76ad968d670473150e35ef4cfeb43372e` received `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
+- PR #98 exact reviewed HEAD `007d1174c09f1808a261fa49b133e4201d25ca68` received `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
 - Product Design independently closed out the same exact HEAD as `PASS — NO DESIGN-SYSTEM BLOCKER`.
 - Evidence remains honestly labeled `TESTS_AUTHORED_NOT_EXECUTED`; no exact-head local build/test/lint/runtime/preview/release PASS is claimed.
-- Squash merge commit: `055aa6587ff2f08e9e89cbf604c15d58b46c86ff`.
-- Product Performance now delegates only revenue-chart tooltip presentation/anatomy to existing shared `ChartTooltip`; its local Recharts adapter retains active/payload gating, heading, payload order, labels, caller series color, exact `${fmt(value)} ج.م` formatting and explicit LTR values.
-- Exact `tableLoading -> empty -> ready`, 240px analytical geometry, 100% responsive containment, top-15 selection, 20-character visual product-name truncation, margins, grid/axes, revenue Bar, Trust/Freshness and the responsive detail collection remain unchanged.
-- Shared `ChartTooltip` API/CSS/tokens/breakpoints remain unchanged; Receivables, Sales, Treasury and Product Performance are now bounded consumers.
+- Squash merge commit: `22983eff7ce4d11113c2b10de5468bb33bb86936`.
+- Rep Performance now delegates only the `مقارنة المندوبين — أعلى 15` tooltip presentation/anatomy to existing shared `ChartTooltip`; its local Recharts adapter retains active/payload gating, heading, payload order, labels, caller series colors, exact `${fmt(p.value)} ج.م` formatting and explicit LTR values.
+- Exact `tableLoading -> empty -> ready`, 300px loading/empty containment, top-15 mapping, dynamic ready height, vertical layout/margins/grid/axes, revenue/returns series order/colors/radii/max sizes, Trust/Freshness and responsive detail composition remain unchanged.
+- Shared `ChartTooltip` API/CSS/tokens/breakpoints remain unchanged; Receivables, Sales, Treasury, Product Performance and Rep Performance are now bounded consumers.
 - Development drift from the feature baseline before merge was governance-only in Design QA and Product Design state files; no product/test/shared-component overlap existed.
 
 ## Current single READY roadmap item
 
-`DS2-REPORT-050 — Next bounded Reports metrics/charts/tables/responsive-composition convergence`
+`DS2-REPORT-051 — Next bounded Reports metrics/charts/tables/responsive-composition convergence`
 
 Intent:
 - Product Design Director inspects representative remaining Reports/Analytics surfaces on the exact latest Development baseline before implementation;
 - select exactly one smallest dependency-safe presentation-only concern and name its representative surface/file plus explicit acceptance/exclusion boundary;
 - prefer existing shared V2 primitives/patterns, or strengthen a shared contract only when a real consumer demonstrates the need;
-- preserve REPORT001-049 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
+- preserve REPORT001-050 contracts and all analytics/query/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business semantics;
 - preserve Settings/Admin, Global convergence, remaining Work and Field debt and shared component-depth work in the roadmap;
-- do not turn REPORT050 into broad multi-page report beautification.
+- do not turn REPORT051 into broad multi-page report beautification.
 
 Implementation is not authorized until Product Design records the exact bounded concern from the then-current Development HEAD.
 
 ## Latest role positions
 
 ### Product Design Director
-- Accepted REPORT049 exact PR HEAD `426bb9a76ad968d670473150e35ef4cfeb43372e` as `PASS — NO DESIGN-SYSTEM BLOCKER`.
+- Accepted REPORT050 exact PR HEAD `007d1174c09f1808a261fa49b133e4201d25ca68` as `PASS — NO DESIGN-SYSTEM BLOCKER`.
 - No current `BLOCKING` contradiction exists for the integrated slice.
-- That acceptance is consumed by REPORT049 integration; next responsibility is to inspect the exact latest Development baseline and bound one smallest safe REPORT050 concern.
+- That acceptance is consumed by REPORT050 integration; next responsibility is to inspect the exact latest Development baseline and bound one smallest safe REPORT051 concern.
 
 ### UI Production Engineer
-- REPORT049 implementation is integrated.
-- Its PR-carried owned state records REPORT049 implementation/evidence and is consumed by integration; it is not authorization to begin REPORT050.
-- Must not begin REPORT050 product code until Product Design records the exact boundary from the latest Development HEAD.
+- REPORT050 implementation is integrated.
+- Its PR-carried owned state records REPORT050 implementation/evidence and is consumed by integration; it is not authorization to begin REPORT051.
+- Must not begin REPORT051 product code until Product Design records the exact boundary from the latest Development HEAD.
 
 ### Design QA
-- Issued exact-head `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` on `426bb9a76ad968d670473150e35ef4cfeb43372e` with `TESTS_AUTHORED_NOT_EXECUTED`.
+- Issued exact-head `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` on `007d1174c09f1808a261fa49b133e4201d25ca68` with `TESTS_AUTHORED_NOT_EXECUTED`.
 - Found no known source-visible build/type blocker, material review thread, functional-isolation breach or deployment/workflow drift on the merged exact HEAD.
-- That approval is consumed by the merge and cannot be reused for REPORT050.
+- That approval is consumed by the merge and cannot be reused for REPORT051.
 
 ### Development Integrator
-- Revalidated PR #97 base/head, exact-head QA gate, exact-head Product Design closeout, empty review threads, exact three-file UI/Test/Governance scope, governance-only Development drift, mergeability and functional isolation.
-- Transitioned the Draft PR to Ready without moving its HEAD and squash-merged with expected-head protection as `055aa6587ff2f08e9e89cbf604c15d58b46c86ff`.
-- Marked REPORT049 DONE and advanced exactly one roadmap item, REPORT050, to READY for Product Design bounding.
+- Revalidated PR #98 base/head, exact-head QA gate, exact-head Product Design closeout, empty review threads, exact three-file UI/Test/Governance scope, governance-only Development drift, mergeability and functional isolation.
+- Transitioned the Draft PR to Ready without moving its HEAD and squash-merged with expected-head protection as `22983eff7ce4d11113c2b10de5468bb33bb86936`.
+- Marked REPORT050 DONE and advanced exactly one roadmap item, REPORT051, to READY for Product Design bounding.
 
 ## Invariants to preserve
 
@@ -107,11 +107,11 @@ Implementation is not authorized until Product Design records the exact bounded 
 
 ## Known evidence / risks
 
-- Development evidence through REPORT049 remains source-level: no exact-head executed test suite, local build/lint, runtime visual pass or release approval is claimed.
+- Development evidence through REPORT050 remains source-level: no exact-head executed test suite, local build/lint, runtime visual pass or release approval is claimed.
 - Hosted CI quota protection remains active; absence of GitHub Actions/status checks is expected.
 - Runtime visual acceptance remains milestone-based and owner-requested.
-- REPORT050 is intentionally a roadmap-level placeholder and must be decomposed by Product Design into one smallest representative presentation concern before implementation.
-- Shared `ChartTooltip` now has bounded consumers in Receivables, Sales, Treasury and Product Performance; duplicated page-local tooltips remain adoption debt and must be migrated only through future bounded slices.
+- REPORT051 is intentionally a roadmap-level placeholder and must be decomposed by Product Design into one smallest representative presentation concern before implementation.
+- Shared `ChartTooltip` now has bounded consumers in Receivables, Sales, Treasury, Product Performance and Rep Performance; duplicated page-local tooltips remain adoption debt and must be migrated only through future bounded slices.
 - Reports Overview navigation cards retain legacy interactive-surface/touch/action debt; neutral shared `Card` does not currently own whole-card navigation semantics, so this needs a separately bounded concern if selected later.
 - Remaining report tables, chart surfaces, dense responsive composition, loading/empty/error states, export/print and broader FilterBar grammar still need later bounded convergence; no business semantics may move into the Design System.
 - Further Work detail/feedback/management convergence and Field create/detail convergence remain debt.
@@ -120,8 +120,8 @@ Implementation is not authorized until Product Design records the exact bounded 
 
 ## Reusable patterns learned
 
-- REPORT049 reinforces that an adjacent report chart can adopt a proven shared presentation-only `ChartTooltip` without widening the shared contract or moving caller analytical truth into the Design System.
-- REPORT048 established the same bounded-adoption pattern on Treasury after the shared tooltip was proven on Receivables and Sales.
+- REPORT050 reinforces that repeated page-local chart-tooltip anatomy should converge through bounded adoption of the proven shared `ChartTooltip` while caller chart/domain truth remains local.
+- REPORT049 established the same bounded-adoption pattern on Product Performance after Receivables, Sales and Treasury.
 - REPORT047 confirmed focused tests must use browser/CSSOM representation contracts when asserting inline colors; deterministic test mismatches are real GREEN-DEV blockers even when runtime product code appears source-clean.
 - REPORT046 established repeated chart-tooltip visual anatomy as a shared domain-agnostic presentation contract while chart-library adapters and report/business truth stay in callers.
 - A representative proof consumer is preferable to mass migration: prove the shared contract first, then adopt on adjacent surfaces through separately bounded slices.
@@ -135,6 +135,6 @@ Implementation is not authorized until Product Design records the exact bounded 
 
 ## Next handoff
 
-Product Design Director should inspect representative remaining Reports/Analytics surfaces on the exact latest `design-system-v2-development` baseline and record exactly one smallest dependency-safe REPORT050 presentation concern, including representative file/surface and explicit acceptance/exclusion boundary. Preserve REPORT001-049 contracts, all analytics/query/calculation/trust/permission/routing/export/print/backend/business semantics, and keep Settings/Admin, Global, remaining Work/Field and shared-component roadmap intact.
+Product Design Director should inspect representative remaining Reports/Analytics surfaces on the exact latest `design-system-v2-development` baseline and record exactly one smallest dependency-safe REPORT051 presentation concern, including representative file/surface and explicit acceptance/exclusion boundary. Preserve REPORT001-050 contracts, all analytics/query/calculation/trust/permission/routing/export/print/backend/business semantics, and keep Settings/Admin, Global, remaining Work/Field and shared-component roadmap intact.
 
 UI Production Engineer should bootstrap only after that boundary is recorded and implement one coherent concern from the exact then-current Development HEAD. Design QA should independently review the future exact stable PR HEAD. Development Integrator should no-op until a future PR receives fresh `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` and all normal gates pass.
