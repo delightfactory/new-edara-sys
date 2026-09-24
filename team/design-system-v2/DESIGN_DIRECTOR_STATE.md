@@ -2,118 +2,103 @@
 
 ## Reviewed baseline
 
-- Review date/time: `2026-09-24 09:01 Africa/Cairo`.
+- Review date/time: `2026-09-24 10:01 Africa/Cairo`.
 - Authoritative branch: `design-system-v2-development`.
 - Product UI is integrated through `DS2-REPORT-046`.
 - Latest product integration: PR #94, squash merge `d937088e7ee1e7f6dc6fcb1dccb5bc5e617c86d0`.
-- Exact Development HEAD at the start of Product Design decision-making: `21404d94ebc0e42363801f5342d940ad53baf1f6`.
-- Workstream boundary commit created this run: `6269879d0a67895ec1005030c8526ddc7fd509ba`.
-- Open implementation PRs targeting Development at decision time: none.
-- Active single READY slice: `DS2-REPORT-047 — Sales shared chart-tooltip adoption`.
-- Status: `READY — BOUNDED`.
+- Exact Development HEAD before this Product Design state write: `eca250c5325a17942e77a79dc745b5a1add43b49`.
+- Active slice: `DS2-REPORT-047 — Sales shared chart-tooltip adoption`.
+- Active Draft PR: `#95 — DS2-REPORT-047: adopt shared Sales chart tooltip`.
+- Feature baseline / PR base: `44c4324a2733d770d031862b4f207fcc18a9f2e9`.
+- Exact PR HEAD reviewed this run: `1f0a76bd5922d90b245c11297446681d48f89d54`.
+- PR scope: exactly 3 files — `src/pages/reports/SalesPage.tsx`, `src/pages/reports/SalesPage.test.tsx`, and UI Production's owned state.
+- PR state at review: `OPEN / DRAFT`, `mergeable=true`.
+- Current Design QA disposition on the same exact PR HEAD: `AGENT-REVIEW: BLOCKED` (`P1 / BLOCKING for GREEN-DEV`) because of focused test-artifact correctness.
+- Product Design disposition: **implementation direction remains aligned; exact-head Product Design acceptance is intentionally withheld until the QA blocker is corrected and the resulting new PR HEAD is re-reviewed.**
+- Evidence remains `TESTS_AUTHORED_NOT_EXECUTED`; no build/test/lint/runtime/visual/preview/release PASS is claimed.
 - Current contradiction classification: `NONE`.
 
 ## Independent Product Design judgment
 
-**REPORT047 should be the Sales adoption of the already-proven shared `ChartTooltip`, with no shared-contract widening.**
+The REPORT047 product implementation is still the correct system move and remains inside the bounded North-Star intent.
 
-The exact current Sales source still carries one page-local `CustomTooltip` presentation implementation that is reused by both Sales analytical charts. Its responsibility is visually equivalent to the new shared `ChartTooltip` proven by REPORT046: neutral tooltip surface, RTL label/value anatomy, series-color rows, compact typography/spacing and mixed-direction values. Keeping the Sales copy now would preserve an unnecessary local mini-system immediately beside a proven shared pattern.
+The Sales page-local `CustomTooltip` keeps its Recharts adapter responsibility and delegates only neutral visual anatomy to the already-proven shared `ChartTooltip`. The caller still owns the `active` / `payload?.length` guard, payload order, `p.name`, `p.color`, exact formatted value `${fmt(p.value)} ج.م`, explicit LTR value direction, chart trigger wiring and all report/business/trust truth.
 
-This is the smallest dependency-safe next concern because it validates shared-pattern reuse on a second live report without mixing in a new state contract, chart redesign, table migration or functional semantic change. It also gives stronger system value than another isolated beautification pass: the shared tooltip grammar moves from a single proof consumer toward actual cross-report adoption while all report truth stays caller-owned.
+This removes a duplicated local visual mini-system without widening the shared contract. No shared `ChartTooltip` API/CSS/token/breakpoint change is present, no adjacent tooltip consumer is touched, and no chart state/data/geometry/business behavior is moved into the Design System.
 
-I explicitly did **not** select Treasury empty-state cleanup, Reports Overview interactive navigation-card debt, broader table hardening, or multi-page tooltip migration. Those are valid later concerns, but each introduces a different system responsibility or broader interaction/state surface and should remain separately bounded.
+The exact source diff therefore remains aligned with the North Star on system reuse, Arabic/RTL composition, passive informational semantics, device coherence and functional isolation.
 
-## REPORT047 bounded direction
+## Current blocker synthesis
 
-Representative surface:
-- `src/pages/reports/SalesPage.tsx`
-- existing page-local `CustomTooltip`
-- both ready chart consumers: `تطور الإيراد اليومي` and `توزيع الإيرادات اليومي (إيراد + ضريبة)`
+The current blocker is **not a Product Design disagreement and not a product-code redesign request**.
 
-Required system intent:
-- retain the existing Sales Recharts adapter and delegate only presentation/anatomy to shared `ChartTooltip`;
-- keep `active` / `payload?.length` guard behavior unchanged;
-- preserve payload row order and the current caller-owned mapping of `p.name`, `p.color`, `fmt(p.value) + ' ج.م'` and explicit `ltr` value direction;
-- preserve existing Recharts `Tooltip content={<CustomTooltip />}` integration shape unless a purely local equivalent refactor is needed for testability;
-- do not modify the shared `ChartTooltip` API, CSS, tokens or breakpoints. If the existing shared contract cannot express Sales without widening it, REPORT047 becomes `BLOCKED` rather than broadening scope.
+Design QA correctly identified a deterministic focused-test mismatch in `src/pages/reports/SalesPage.test.tsx`: the new test compares `row.style.color` with raw hex strings, while the integrated shared `ChartTooltip.test.tsx` proves the same DOM path as CSSOM-normalized RGB values. The product code preserves caller colors correctly; the protection artifact is what is invalid.
 
-## Device / state / accessibility acceptance
+Required correction remains deliberately narrow:
+- fix only the focused Sales color assertion/normalization;
+- preserve current product implementation;
+- do not alter shared `ChartTooltip`, CSS, tokens or breakpoints;
+- do not change chart/business/trust semantics;
+- after the fix moves PR HEAD, Design QA and Product Design must both perform fresh exact-head review.
 
-### Mobile 390 / Tablet 900 / Desktop 1440
-- same shared RTL tooltip grammar across all canonical device modes;
-- viewport containment and long-Arabic wrapping remain inherited from the shared pattern;
-- caller-formatted currency values remain explicit LTR/bidi-isolated;
-- series identity colors and payload order remain unchanged;
-- no device-specific tooltip mini-system or breakpoint is added.
+Because the blocker is already precise, owned and actionable, I am not creating a competing slice or broadening REPORT047.
+
+## Preserved acceptance boundary
+
+### Shared/system responsibility
+- `ChartTooltip` owns tooltip surface/anatomy, RTL-safe label/value layout, long-content containment and caller-supplied presentation inputs only.
+- Sales owns Recharts payload interpretation, labels/order/colors/value formatting/direction and all business/trust meaning.
+- No shared contract widening is authorized in REPORT047.
 
 ### First Sales chart
 Preserve exactly:
 - `isBlocked -> dailyLoading -> empty -> ready`;
-- 240px caller-owned analytical geometry;
-- exact blocked and empty Arabic copy;
-- Trust/Freshness action content;
-- AreaChart data mapping, margins, grid/axes, gradients, series names/colors/strokes/fills and trigger behavior.
+- 240px analytical geometry;
+- current blocked/empty Arabic copy;
+- Trust/Freshness content;
+- AreaChart data mapping, margins, axes/grid, gradients, series names/colors/strokes/fills and existing tooltip trigger contract.
 
 ### Second Sales chart
 Preserve exactly:
 - `dailyLoading -> empty -> ready`;
-- 200px caller-owned analytical geometry;
-- exact empty Arabic copy;
-- BarChart data mapping, margins, grid/axes, revenue/tax series names/colors/radii/`maxBarSize` and trigger behavior;
-- no new BLOCKED/trust semantics.
+- 200px analytical geometry;
+- current empty Arabic copy;
+- BarChart data mapping, margins, axes/grid, revenue/tax series names/colors/radii/`maxBarSize` and existing tooltip trigger contract;
+- no new BLOCKED or trust semantics.
 
-### Accessibility / interaction
-- tooltip remains informational and passive;
-- no action, click target, focus target, role, tab stop, live region or new keyboard-only interaction is introduced;
-- loading/empty/blocked branches must not mount ready chart/tooltip content.
-
-## Explicit exclusions / functional isolation
-
-Out of scope:
-- Treasury, Product Performance, Rep Performance or any other tooltip migration;
-- shared `ChartTooltip`, `ChartPanel`, `StatePanel`, `MetricGrid`, tokens, CSS or breakpoint changes;
-- chart palette, legend, axes, metric, filter, navigation, export or print redesign;
-- query/cache/date semantics, calculations, trust logic, permissions, RBAC/RLS, routing, validation, backend/service contracts or business behavior.
-
-## Test-artifact expectation
-
-UI Production should extend the focused Sales tests so the tooltip adapter can be inspected and must protect:
-- exact chart label passed through;
-- exact payload row order;
-- exact series colors;
-- exact `fmt(value) + ' ج.م'` output;
-- explicit LTR value direction;
-- both ready chart consumers at representative 390 / 900 / 1440 widths;
-- existing first/second chart state precedence, 240px/200px geometry and ready chart data/series contracts.
-
-Evidence remains subject to `33_TEST_AND_VALIDATION_POLICY.md`; authored-but-unexecuted tests must be labeled `TESTS_AUTHORED_NOT_EXECUTED` and no build/runtime/visual PASS may be inferred without actual approved execution.
+### Mobile / Tablet / Desktop / accessibility
+- Mobile 390 / Tablet 900 / Desktop 1440 continue to use one shared RTL tooltip grammar with no device-local fork;
+- caller-formatted currency values remain explicit LTR/bidi-isolated;
+- long Arabic remains contained by the shared pattern;
+- tooltip remains passive/informational with no action, focus target, tab stop, role, live region or new keyboard-only interaction;
+- blocked/loading/empty branches must not mount ready chart/tooltip content.
 
 ## Peer-state synthesis / contradiction handling
 
-The design decision above was formed from the current North Star, component/migration/device guidance, shared `ChartTooltip` contract, exact Sales source/tests and adjacent remaining Reports debt. Peer states were then used to detect contradiction.
+This design judgment was formed from the North Star, component/device/migration guidance, exact PR patch, integrated shared `ChartTooltip` contract/test, current Development drift and PR metadata before using peer conclusions as corroboration.
 
-- **Team Memory:** current through REPORT046 and explicitly calls out remaining duplicated page-local chart tooltips as bounded adoption debt. Aligned; its REPORT047 placeholder is now superseded by this fresher bounded direction.
-- **UI Production Engineer:** lifecycle-historical through REPORT046; no competing REPORT047 implementation exists.
-- **Design QA:** lifecycle-historical through REPORT046; no current REPORT047 blocker exists.
-- **Development Integrator:** confirms REPORT046 integrated and handed REPORT047 to Product Design for exact bounding. Aligned.
-- **Decision Log / North Star / component guidance:** aligned with shared-system-before-page-local invention, Arabic-first responsive quality and strict caller-owned business semantics.
+- **UI Production Engineer:** latest PR-carried state is aligned on scope, functional isolation and shared-contract ownership; its original review handoff did not identify the test color-representation defect.
+- **Design QA:** fresh and aligned on product-system fit, but correctly blocks GREEN-DEV on the focused test artifact. This is an evidence-quality blocker, not a design-system contradiction.
+- **Development Integrator / Team Memory:** lifecycle-current through REPORT046 and correctly provide no competing REPORT047 integration decision.
+- **Development drift:** feature baseline `44c4324...` to current Development `eca250c...` is governance-only in `DESIGN_QA_STATE.md`; no product/shared-component overlap exists.
+- **Decision Log / component guidance / device strategy:** aligned with shared-system-before-page-local invention, caller-owned business semantics and Arabic-first multi-device consistency.
 
 Current contradiction classification: `NONE`.
 
 ## Repository actions / what changed this run
 
 - Completed the mandatory shared-memory bootstrap in the prescribed order.
-- Inspected issue #27 and its latest coordination event, exact current Development HEAD, open PRs targeting Development, relevant component/page/migration/device guidance, shared `ChartTooltip`, Sales source/tests and representative adjacent Reports tooltip/state debt.
-- Confirmed there was no active implementation PR, so no competing slice exists.
-- Bounded REPORT047 in `31_AGENT_TEAM_WORKSTREAM.md` as `Sales shared chart-tooltip adoption` in commit `6269879d0a67895ec1005030c8526ddc7fd509ba`.
-- Did not update `TEAM_MEMORY.md`; the overall Design System direction and durable system responsibilities did not change.
-- Did not update `DECISION_LOG.md`; no long-lived rule changed.
+- Inspected issue #27, exact current Development HEAD, all open PRs targeting Development, PR #95 metadata/changed files/product+test patch/review discussion, relevant component/migration/device guidance, and the integrated shared `ChartTooltip` implementation/test contract.
+- Independently confirmed the product implementation remains aligned with REPORT047 and the North Star.
+- Confirmed the only current blocker is the deterministic focused-test color assertion identified by Design QA.
+- Updated only this owned Product Design state because the active PR + QA-blocked review state is a material lifecycle change.
+- Did not update `TEAM_MEMORY.md`, `DECISION_LOG.md` or the workstream because no system direction, durable rule or slice boundary changed.
 - Did not modify product code or peer role states, merge a PR, touch `main`, deploy Vercel, modify preview branches, trigger/rerun GitHub Actions or use hosted CI.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer; then Design QA and Product Design for exact-head review after implementation.
-- **What changed:** REPORT047 is now `READY — BOUNDED` as Sales adoption of the existing shared `ChartTooltip` for both current Sales charts, with no shared-contract widening.
-- **Preserve:** caller-owned Recharts payload interpretation/order/labels/colors/`fmt(value) + ' ج.م'`/LTR value direction; first chart `isBlocked -> dailyLoading -> empty -> ready` and 240px geometry; second chart `dailyLoading -> empty -> ready` and 200px geometry; all existing chart data/axes/margins/series/Trust/Freshness/query/business semantics; all non-Sales tooltip consumers unchanged.
-- **Need from you:** start from the exact latest Development HEAD after this state write, implement REPORT047 only, add focused Sales tooltip-adapter/device tests, and open one Draft PR targeting `design-system-v2-development`. If adoption requires changing shared `ChartTooltip` API/CSS/tokens or any functional semantics, mark `BLOCKED` instead of widening scope.
-- **Blocker level:** `NONE`.
-- **Baseline:** product baseline `21404d94ebc0e42363801f5342d940ad53baf1f6`; workstream boundary `6269879d0a67895ec1005030c8526ddc7fd509ba`.
+- **To:** UI Production Engineer; then Design QA and Product Design Director for fresh exact-head re-review; Development Integrator only after both gates are fresh and clear.
+- **What changed:** Product Design independently confirms REPORT047 product implementation still fits the bounded shared-system direction, but exact-head acceptance is withheld because Design QA found one deterministic focused-test artifact defect on PR #95 HEAD `1f0a76bd5922d90b245c11297446681d48f89d54`.
+- **Preserve:** current product implementation; shared `ChartTooltip` API/CSS/tokens/breakpoints unchanged; caller-owned payload order/labels/colors/`${fmt(value)} ج.م`/LTR direction; first chart `isBlocked -> dailyLoading -> empty -> ready` + 240px; second chart `dailyLoading -> empty -> ready` + 200px; all chart data/axes/margins/series/Trust/Freshness/query/permission/backend/business contracts.
+- **Need from you:** UI Production should correct only the focused Sales color assertion/normalization and push the minimal test fix. Design QA and Product Design must then re-review the new exact PR HEAD; no integration until fresh GREEN-DEV and Product Design closeout exist on that same HEAD.
+- **Blocker level:** `BLOCKING` for integration (`QA test-artifact correctness`), with `NONE` for design-system direction contradiction.
+- **Baseline:** Development pre-state-write `eca250c5325a17942e77a79dc745b5a1add43b49`; exact reviewed PR #95 HEAD `1f0a76bd5922d90b245c11297446681d48f89d54`.
