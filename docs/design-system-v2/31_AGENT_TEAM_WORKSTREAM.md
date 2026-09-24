@@ -38,17 +38,17 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-043`.
+Product UI is integrated through `DS2-REPORT-044`.
 
 Latest product integration:
-- PR: `#91 — DS2-REPORT-043: converge Treasury semantic notice on AlertPanel`
-- Exact reviewed PR HEAD: `932457d5cf34c0eaa17404614f697bc5cf100eb3`
-- Squash merge commit: `c9e28bd2b98bbf65d4d916e114cebb6cdcb86bf4`
+- PR: `#92 — DS2-REPORT-044: converge Overview section headers`
+- Exact reviewed PR HEAD: `2f6afc096ed8ef6864ee3c661b9cd8190bea953c`
+- Squash merge commit: `a763a12538b9074e85af3f94365f8ccefc67f525`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design exact-head closeout: `PASS — NO DESIGN-SYSTEM BLOCKER`
 - Runtime/preview/release evidence: not claimed
 
-The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, representative Customers/Sales/Inventory/Procurement/Finance/HR/Field/Work migrations, Reports route/date/filter convergence, shared `ChartPanel`, shared `MetricGrid`, shared `StatePanel`, shared `AlertPanel`, shared V2 `Field` controls in representative report headers, and responsive detail-collection proofs using `ResponsiveCollection + Card + KeyValueList` while preserving dense Desktop comparison and caller-owned business truth.
+The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, representative Customers/Sales/Inventory/Procurement/Finance/HR/Field/Work migrations, Reports route/date/filter convergence, shared `ChartPanel`, `MetricGrid`, `StatePanel`, `AlertPanel`, `SectionHeader`, shared V2 Field controls in representative report headers, and responsive detail-collection proofs using `ResponsiveCollection + Card + KeyValueList` while preserving dense Desktop comparison and caller-owned business truth.
 
 ## Completed slices
 
@@ -89,56 +89,31 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - `DS2-REPORT-041 — Sales revenue-chart empty-state convergence` — `DONE` — PR #89 — reviewed HEAD `1f3195250b9d6f964389090efc3acd8c7bdcc85a` — merge `b334b07e93b7551839772d6a5cbbdb53089df06b` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-042 — Sales revenue/tax bar-chart empty-state convergence` — `DONE` — PR #90 — reviewed HEAD `dbabddc56743f2d448bbefbab4998b6f0b98e9bb` — merge `f7479859fe5c3233c3082bad2e97c0a004213f4c` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-043 — Treasury semantic-contract notice AlertPanel convergence` — `DONE` — PR #91 — reviewed HEAD `932457d5cf34c0eaa17404614f697bc5cf100eb3` — merge `c9e28bd2b98bbf65d4d916e114cebb6cdcb86bf4` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
+- `DS2-REPORT-044 — Reports Overview section-header convergence` — `DONE` — PR #92 — reviewed HEAD `2f6afc096ed8ef6864ee3c661b9cd8190bea953c` — merge `a763a12538b9074e85af3f94365f8ccefc67f525` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 
-## REPORT043 system result
+## REPORT044 system result
 
-- Treasury's static semantic-contract notice now uses the existing shared `AlertPanel tone="info"` instead of a page-local rgba/border/padding/emoji information surface.
-- The notice remains in the exact same hierarchy position immediately after the page header/filter area and before `SystemHealthBar`.
-- Disclosure meaning and exact technical literals remain unchanged: `مطابق لسجلات الخزينة`, `vault_transactions / custody_transactions`, and `net_cashflow`, with technical literals preserved as inline `<code>`.
-- The notice remains passive and static: no `announce`, action slot, click target, explicit focus target or live-region behavior was introduced; the shared default icon remains decorative/aria-hidden.
-- Treasury chart precedence `isBlocked -> dailyLoading -> empty -> ready`, 280px analytical geometry, blocked/empty/ready renderers, Recharts contract, Trust/Freshness action area, KPI `MetricGrid` / `MetricCard`, filters and `SystemHealthBar` remain unchanged.
-- No shared `AlertPanel` API/CSS/token/breakpoint widening and no query/cache/aggregation/calculation/trust/permission/RBAC/RLS/routing/export/print/backend/business/workflow behavior change occurred.
-- Focused regression tests were authored but not executed under the hosted-CI quota policy.
+- `المؤشرات الرئيسية` and `صحة قاعدة العملاء` now consume the existing shared `SectionHeader` rather than page-local heading/alignment grammar.
+- Both titles remain semantic `h2` headings through `headingLevel={2}`.
+- `عرض التفاصيل ←` remains a native keyboard-focusable `Link` to `/reports/customers` in the shared action slot.
+- Existing `var(--space-3)` section-to-content spacing, both MetricGrid/MetricCard clusters, summary/customer loading branches, `SystemHealthBar`, trust/freshness/domain wiring and the complete navigation shortcut grid remain unchanged.
+- No shared `SectionHeader` API/CSS/token/breakpoint widening occurred.
+- No analytics/query/cache/calculation/date/filter/permission/RBAC/RLS/routing/export/print/backend/business/workflow semantics changed.
+- Focused tests were authored but not executed under the hosted-CI quota policy.
 
 ## Current single READY slice
 
-### DS2-REPORT-044 — Reports Overview section-header convergence
-Status: `READY — BOUNDED`.
-Owner role for immediate next action: UI Production Engineer.
+### DS2-REPORT-045 — Next bounded Reports metrics/charts/tables/responsive-composition convergence
+Status: `READY — UNBOUNDED`.
+Owner role for immediate next action: Product Design Director.
 
-Representative surface:
-- `src/pages/reports/OverviewPage.tsx` only.
-- Concern is limited to the two page-local section-heading compositions: `المؤشرات الرئيسية`, and `صحة قاعدة العملاء` plus its existing `عرض التفاصيل ←` link action.
+Product Design must inspect representative remaining Reports/Analytics surfaces on the exact latest Development baseline and select exactly one smallest dependency-safe presentation-only concern. The boundary must name the representative file/surface, acceptance criteria, explicit exclusions and evidence expectations before UI Production begins.
 
-System-pattern intent:
-- replace those local heading/alignment wrappers with the existing shared `SectionHeader` pattern, keeping semantic heading level `h2`;
-- use `SectionHeader` as presentation/hierarchy only; do not widen its API/CSS/tokens/breakpoints and do not move any report/domain meaning into the Design System;
-- remove only the duplicated local section-header layout/typography grammar demonstrated by this representative page.
-
-Acceptance:
-- `المؤشرات الرئيسية` remains the first section title above the existing four-column `MetricGrid` contract;
-- `صحة قاعدة العملاء` remains the customer-health section title, and the existing `Link` text `عرض التفاصيل ←` continues to navigate to `/reports/customers` as the independent SectionHeader action;
-- both titles remain real `h2` headings in the document hierarchy;
-- Mobile 390, Tablet 900 and Desktop 1440 retain readable Arabic wrapping, no new clipping/ordinary horizontal overflow, and no hidden/duplicated action tree; the shared mobile SectionHeader wrapping contract is used rather than page-local device CSS;
-- the customer-details link remains keyboard-focusable and semantically a link; no nested interactive surface or live-region behavior is introduced;
-- focused `OverviewPage.test.tsx` coverage must protect shared `.ds-section-header` anatomy, exact titles/heading level, second-header action/link destination, and preserve the existing MetricGrid/loading regression assertions;
-- evidence remains honestly labeled `TESTS_AUTHORED_NOT_EXECUTED` unless an approved local runtime actually executes it.
-
-Explicit exclusions / preserve exactly:
-- top page header/title/subtitle and `ReportFilterBar` composition;
-- `SystemHealthBar`, all trust/freshness/domain wiring and report hooks;
-- both existing `MetricGrid` contracts, every `MetricCard`, the four-card loading branch, and the customer-health single `SkeletonCard height={120}` loading branch;
-- the entire report navigation grid, legacy `edara-card` navigation-surface debt, shortcut icons/accent colors/routes/copy, and any future interactive-navigation-card grammar;
-- Customer Re-engagement and every other report page;
-- shared `SectionHeader` implementation/CSS/tokens/breakpoints;
-- all analytics/query/cache/calculation/date/filter/permission/RBAC/RLS/routing/export/print/backend/business/workflow semantics.
-
-Why this concern now:
-- `SectionHeader` already has a sound Arabic/RTL-responsive contract with mobile wrapping and a dedicated action slot, so this is a dependency-safe system convergence rather than a new page-local invention;
-- the adjacent Overview navigation-card debt is deliberately deferred because the neutral shared `Card` contract explicitly carries no click/navigation semantics; solving whole-card navigation/focus/touch presentation deserves its own separately bounded interaction concern rather than being smuggled into this slice;
-- Customer Re-engagement remains broader and mixes filters, status semantics, output/export and operational actions, so it is not the smallest next dependency-safe concern.
-
-Product Design bounded this slice from Development baseline `6180f9b346d64a041091d6d5916f980bb49c5e63`. UI Production must branch from the exact latest `design-system-v2-development` HEAD after these governance writes and implement this concern only. If implementation reveals a need to change shared `SectionHeader` behavior or any functional semantics, mark the slice `BLOCKED` instead of widening it.
+Preserve exactly:
+- all REPORT001-044 integrated contracts and shared-system ownership boundaries;
+- all analytics/query/cache/calculation/date/filter/trust/permission/RBAC/RLS/routing/export/print/backend/business/workflow semantics;
+- Settings/Admin, Global convergence, remaining Work and Field debt, and the shared component-depth program in the roadmap;
+- one concern per implementation PR; no broad multi-page report beautification.
 
 ## Product migration roadmap
 
@@ -189,9 +164,9 @@ Open only when a real migrated screen proves the recurring gap:
 - further Work detail/feedback/management convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
 
 ### I. Reports / Analytics
-- `DS2-REPORT-001` through `DS2-REPORT-043` — `DONE`
-- `DS2-REPORT-044 — Reports Overview section-header convergence` — `READY — BOUNDED`
-- further Reports/Analytics convergence beyond REPORT044 — `BACKLOG` / each concern must be bounded separately
+- `DS2-REPORT-001` through `DS2-REPORT-044` — `DONE`
+- `DS2-REPORT-045 — Next bounded Reports metrics/charts/tables/responsive-composition convergence` — `READY — UNBOUNDED`
+- further Reports/Analytics convergence beyond REPORT045 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
