@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
-import SalesPage from './SalesPage'
+import SalesPage, { CustomTooltip } from './SalesPage'
 
 const mocks = vi.hoisted(() => ({
   useSystemTrustState: vi.fn(),
@@ -95,7 +95,9 @@ vi.mock('recharts', () => ({
   ),
   XAxis: () => null,
   YAxis: () => null,
-  Tooltip: () => null,
+  Tooltip: ({ content }: { content?: ReactNode }) => (
+    <div data-testid="recharts-tooltip" data-has-content={String(Boolean(content))} />
+  ),
   CartesianGrid: () => null,
   BarChart: ({ children, data, margin }: { children: ReactNode; data: unknown; margin: unknown }) => (
     <div data-testid="bar-chart" data-chart-data={JSON.stringify(data)} data-margin={JSON.stringify(margin)}>{children}</div>
@@ -132,6 +134,19 @@ function getFirstPanel() {
 
 function getSecondPanel() {
   return screen.getByRole('heading', { level: 2, name: 'توزيع الإيرادات اليومي (إيراد + ضريبة)' }).closest('.ds-chart-panel') as HTMLElement
+}
+
+const readyDailyRow = {
+  sale_date: '2026-09-19',
+  net_revenue: 1250,
+  returns_value: 75,
+  tax_amount: 175,
+}
+
+const cssColorByHex: Record<string, string> = {
+  '#2563eb': 'rgb(37, 99, 235)',
+  '#dc2626': 'rgb(220, 38, 38)',
+  '#0284c7': 'rgb(2, 132, 199)',
 }
 
 describe('Sales report composition', () => {
@@ -307,21 +322,78 @@ describe('Sales report composition', () => {
     expect(within(firstPanel).getByTestId('skeleton-card').getAttribute('data-height')).toBe('240')
     expect(firstPanel.querySelector('.ds-state-panel')).toBeNull()
     expect(within(firstPanel).queryByTestId('area-chart')).toBeNull()
+    expect(within(firstPanel).queryByTestId('recharts-tooltip')).toBeNull()
 
     expect(within(secondPanel).getByTestId('skeleton-card').getAttribute('data-height')).toBe('200')
     expect(secondPanel.querySelector('.ds-state-panel')).toBeNull()
     expect(within(secondPanel).queryByTestId('bar-chart')).toBeNull()
     expect(within(secondPanel).queryByTestId('responsive-container')).toBeNull()
+    expect(within(secondPanel).queryByTestId('recharts-tooltip')).toBeNull()
+  })
+
+  it('delegates Sales tooltip presentation to shared ChartTooltip while preserving caller label, row order, colors, currency formatting, and LTR values', () => {
+    const payloads = [
+      [
+        { name: 'الإيراد الصافي', value: 1250, color: '#2563eb' },
+        { name: 'المرتجعات', value: 75, color: '#dc2626' },
+      ],
+      [
+        { name: 'الإيراد', value: 1250, color: '#2563eb' },
+        { name: 'الضريبة', value: 175, color: '#0284c7' },
+      ],
+    ]
+
+    for (const width of [390, 900, 1440]) {
+      setViewport(width)
+
+      for (const payload of payloads) {
+        const view = render(<CustomTooltip active label="2026-09-19" payload={payload} />)
+        const tooltip = view.container.querySelector('.ds-chart-tooltip') as HTMLElement
+        const rows = Array.from(tooltip.querySelectorAll('.ds-chart-tooltip__row')) as HTMLElement[]
+        const values = rows.map(row => row.querySelector('.ds-chart-tooltip__value') as HTMLElement)
+
+        expect(tooltip).not.toBeNull()
+        expect(tooltip.getAttribute('dir')).toBe('rtl')
+        expect(within(tooltip).getByText('2026-09-19')).not.toBeNull()
+        expect(rows.map(row => row.querySelector('.ds-chart-tooltip__item-label')?.textContent)).toEqual(payload.map(item => item.name))
+        expect(rows.map(row => row.style.color)).toEqual(payload.map(item => cssColorByHex[item.color]))
+        expect(values.map(value => value.textContent)).toEqual(payload.map(item => `${item.value.toLocaleString('en-US')} ج.م`))
+        expect(values.map(value => value.getAttribute('dir'))).toEqual(['ltr', 'ltr'])
+        expect(tooltip.querySelector('button, a, input, select, textarea, [tabindex]:not([tabindex="-1"])')).toBeNull()
+        expect(tooltip.getAttribute('aria-live')).toBeNull()
+        expect(tooltip.getAttribute('role')).toBeNull()
+
+        view.unmount()
+      }
+    }
+  })
+
+  it('keeps tooltip content wired into both ready Sales charts at Mobile, Tablet, and Desktop widths', () => {
+    mocks.useSalesDailyTotals.mockReturnValue({ data: [readyDailyRow], isLoading: false })
+
+    for (const width of [390, 900, 1440]) {
+      setViewport(width)
+      const view = render(<SalesPage />)
+      const firstPanel = getFirstPanel()
+      const secondPanel = getSecondPanel()
+
+      const firstTooltip = within(firstPanel).getByTestId('recharts-tooltip')
+      const secondTooltip = within(secondPanel).getByTestId('recharts-tooltip')
+
+      expect(firstTooltip.getAttribute('data-has-content')).toBe('true')
+      expect(secondTooltip.getAttribute('data-has-content')).toBe('true')
+      expect(within(firstPanel).getByTestId('responsive-container').getAttribute('data-height')).toBe('240')
+      expect(within(secondPanel).getByTestId('responsive-container').getAttribute('data-height')).toBe('200')
+      expect(firstPanel.querySelector('.ds-state-panel')).toBeNull()
+      expect(secondPanel.querySelector('.ds-state-panel')).toBeNull()
+
+      view.unmount()
+    }
   })
 
   it('preserves the first chart data mapping, 240px container, margins and exact revenue/returns series contract', () => {
     mocks.useSalesDailyTotals.mockReturnValue({
-      data: [{
-        sale_date: '2026-09-19',
-        net_revenue: 1250,
-        returns_value: 75,
-        tax_amount: 175,
-      }],
+      data: [readyDailyRow],
       isLoading: false,
     })
 
@@ -362,12 +434,7 @@ describe('Sales report composition', () => {
 
   it('preserves the second chart data mapping, 200px container, margins and exact revenue/tax series contract', () => {
     mocks.useSalesDailyTotals.mockReturnValue({
-      data: [{
-        sale_date: '2026-09-19',
-        net_revenue: 1250,
-        returns_value: 75,
-        tax_amount: 175,
-      }],
+      data: [readyDailyRow],
       isLoading: false,
     })
 

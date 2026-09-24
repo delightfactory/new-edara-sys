@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useSystemTrustState, useTrustForComponent } from '@/hooks/useSystemTrustState'
 import { useSalesDailyTotals, useSalesSummary } from '@/hooks/useSalesGrain'
 import MetricCard from '@/components/reports/MetricCard'
@@ -6,6 +6,7 @@ import MetricGrid from '@/components/patterns/MetricGrid'
 import SkeletonCard from '@/components/reports/SkeletonCard'
 import SystemHealthBar from '@/components/reports/SystemHealthBar'
 import ChartPanel from '@/components/patterns/ChartPanel'
+import ChartTooltip from '@/components/patterns/ChartTooltip'
 import StatePanel from '@/components/patterns/StatePanel'
 import ReportFilterBar, { type DateRange } from '@/components/reports/ReportFilterBar'
 import TrustStateBadge from '@/components/reports/TrustStateBadge'
@@ -21,18 +22,19 @@ const FMT = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
 const fmt = (n: number | undefined | null) => n != null ? FMT.format(n) : '—'
 const fmtCur = (n: number | undefined | null) => n != null ? fmt(n) + ' ج.م' : '—'
 
-function CustomTooltip({ active, payload, label }: any) {
+export function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null
   return (
-    <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-primary)', borderRadius: 'var(--radius-md)', padding: '10px 14px', fontSize: '12px', boxShadow: 'var(--shadow-md)', direction: 'rtl' }}>
-      <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>{label}</div>
-      {payload.map((p: any) => (
-        <div key={p.name} style={{ color: p.color, display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
-          <span>{p.name}</span>
-          <span style={{ fontWeight: 600, direction: 'ltr' }}>{fmt(p.value)} ج.م</span>
-        </div>
-      ))}
-    </div>
+    <ChartTooltip
+      label={label}
+      items={payload.map((p: any) => ({
+        key: p.name,
+        label: p.name,
+        value: `${fmt(p.value)} ج.م`,
+        color: p.color,
+        valueDirection: 'ltr' as const,
+      }))}
+    />
   )
 }
 
