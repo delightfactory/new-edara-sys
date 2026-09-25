@@ -2,66 +2,63 @@
 
 ## Reviewed baseline
 
-- Review date: `2026-09-24`.
+- Review date: `2026-09-25`.
 - Development branch: `design-system-v2-development`.
-- Development HEAD immediately before merge: `634ba7b3c006bc4a59c6c9ca37a8971fdb0872c9`.
-- Completed slice: `DS2-REPORT-050 — Rep Performance shared chart-tooltip adoption`.
-- Merged PR: `#98 — DS2-REPORT-050: adopt shared Rep Performance chart tooltip`.
-- Feature baseline / original PR base SHA: `c31fe3eefff3f0551d6b643085e3e1a4542852f5`.
-- Exact reviewed implementation HEAD: `007d1174c09f1808a261fa49b133e4201d25ca68`.
-- Squash merge commit: `22983eff7ce4d11113c2b10de5468bb33bb86936`.
-- Design QA: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS` on the exact merged HEAD.
-- Evidence: `TESTS_AUTHORED_NOT_EXECUTED`; no executed build/test/lint/runtime/visual/preview/release PASS is claimed.
-- Product Design: exact-head `PASS — NO DESIGN-SYSTEM BLOCKER` on `007d1174c09f1808a261fa49b133e4201d25ca68`.
-- Current integration disposition: `MERGED — REPORT050 DONE`.
-- Next single READY roadmap item: `DS2-REPORT-051 — Next bounded Reports metrics/charts/tables/responsive-composition convergence`.
+- Exact Development HEAD before this state write: `a1a9af3d837f7c762e9906a64d883aae35aea59c`.
+- Current slice: `DS2-REPORT-051 — Churn Risk shared chart-tooltip adoption`.
+- Product Design state: `READY — BOUNDED`; no Design-System contradiction is recorded for the slice.
+- Feature branch: `ds2-report-051-churn-risk-chart-tooltip-adoption`.
+- Feature baseline: `a5fe116aa3bda27b0ddc71cb60c4b1cf458d7122`.
+- Exact feature-branch HEAD observed this run: `74a61461fafc35083bddc6f1c150c245b75a2458`.
+- Active PR targeting `design-system-v2-development`: none.
+- Current integration disposition: `BLOCKED — NO INTEGRATABLE PR / UI PRODUCTION REPOSITORY-WRITE BLOCKER`.
+- Evidence: no REPORT051 review evidence exists; `GREEN-DEV`, `SOURCE_REVIEW_PASS`, and `TESTS_AUTHORED_NOT_EXECUTED` are not claimed for REPORT051.
 
 ## Integrator decision
 
-**MERGED.** PR #98 passed every explicit Development integration gate on exact HEAD `007d1174c09f1808a261fa49b133e4201d25ca68`.
+**NO MERGE.** REPORT051 has not reached an integratable review state.
 
-Validated immediately before integration:
-- base ref exactly `design-system-v2-development`;
-- PR HEAD remained exactly `007d1174c09f1808a261fa49b133e4201d25ca68` through Draft-to-Ready transition and merge;
-- GitHub reported the PR mergeable and the Draft-to-Ready transition did not move its HEAD;
-- exact-head Design QA marker `AGENT-REVIEW: GREEN-DEV` with `SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`;
-- Product Design exact-head closeout `PASS — NO DESIGN-SYSTEM BLOCKER` on the same SHA;
-- review-thread list was empty and no later material PR blocker existed;
-- no current role-state file recorded a still-current `BLOCKING` contradiction for REPORT050;
-- no known source-visible build/type failure was outstanding;
-- exact-head combined commit status contained zero reported statuses and check runs contained zero checks; absence of hosted CI is expected under quota policy and no Actions were triggered or rerun;
-- changed-file scope was exactly three files: `src/pages/reports/RepPerformancePage.tsx`, focused `src/pages/reports/RepPerformancePage.test.tsx`, and UI Production Engineer's owned state;
-- product diff was presentation-only: the existing Rep Performance Recharts adapter delegates tooltip surface/anatomy to the already-integrated shared `ChartTooltip`;
-- caller-owned active/payload gating, heading, payload order, labels, series colors, exact currency formatting, explicit LTR value direction, chart trigger wiring, chart data/configuration, state precedence, Trust/Freshness and business meaning remain unchanged;
-- shared `ChartTooltip` API/CSS/tokens/breakpoints remain unchanged;
-- no DB/migration/RPC/service/query/cache/calculation/trust/RBAC/RLS/permission/routing/validation/export/print/workflow/backend/business change and no workflow/deployment-enabling change occurred.
+Revalidated this run:
+- the mandatory shared-memory bootstrap was completed from the authoritative Development branch;
+- issue #27 and all current role-state handoffs were inspected;
+- Product Design has bounded REPORT051 to the Churn Risk `توزيع تصنيف العملاء` tooltip and records no product-design blocker;
+- no open PR targets `design-system-v2-development`;
+- the REPORT051 feature branch exists, but its current diff against Development contains only `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`;
+- the feature-branch UI Production state records `BLOCKED — REPOSITORY WRITE TOOLING`: intended product/test edits were prepared but repository code-file writes were rejected before connector execution;
+- therefore no product/test implementation commit, Draft PR, exact-head Design QA review, `AGENT-REVIEW: GREEN-DEV`, `SOURCE_REVIEW_PASS`, or honest test-artifact label exists for REPORT051;
+- the branch is now behind current Development by governance/unrelated test changes and must be reconciled by UI Production before a future exact-head review;
+- no GitHub Actions were triggered or rerun, no hosted CI was used, no Vercel/preview branch was touched, and `main` was not touched.
 
-Development advanced from feature baseline `c31fe3eefff3f0551d6b643085e3e1a4542852f5` to final pre-merge HEAD `634ba7b3c006bc4a59c6c9ca37a8971fdb0872c9` only through governance updates to `DESIGN_QA_STATE.md` and `DESIGN_DIRECTOR_STATE.md`; those commits did not overlap product/test/shared-component files, so exact-head approvals remained valid.
+Because the merge prerequisites are absent, the Integrator must not manufacture review evidence, implement the slice itself, widen scope, or advance REPORT052.
 
-PR #98 was transitioned from Draft to Ready without moving its exact HEAD and squash-merged with expected-head protection as `22983eff7ce4d11113c2b10de5468bb33bb86936`.
+## Persistent blocker
 
-## Integrated system result
+UI Production cannot currently complete the bounded REPORT051 implementation through the available repository code-write path.
 
-REPORT050 extends the proven shared chart-tooltip presentation grammar to Rep Performance without moving analytical truth into the Design System:
-- the `مقارنة المندوبين — أعلى 15` chart tooltip now renders through shared `ChartTooltip`;
-- the local Recharts adapter still owns `active` / payload gating, heading, payload order, `p.name`, `p.color`, exact `${fmt(p.value)} ج.م` formatting and explicit LTR value direction;
-- exact `tableLoading -> empty -> ready`, 300px loading/empty containment, top-15 mapping, dynamic ready height, vertical layout/margins/grid/axes, both revenue/returns series contracts and Trust/Freshness remain unchanged;
-- shared `ChartTooltip` remains domain-agnostic and unchanged; Receivables, Sales, Treasury, Product Performance and Rep Performance are now bounded consumers while adjacent report convergence remains future separately-bounded work.
+The feature branch records:
+- no product/test file successfully modified;
+- no focused test artifact committed;
+- no PR opened;
+- blocker level `BLOCKING`;
+- explicit instruction to continue the same slice/branch only when an approved repository code-write path is available.
 
-No durable rule changed or was superseded, so `DECISION_LOG.md` remains unchanged.
+This is a material coordination blocker, not normal in-progress work, so the integration disposition is recorded here and issue #27 should carry one concise persistent-blocker note.
 
-## Queue continuity
+## Development drift observed
 
-Exactly one dependency-safe roadmap item advanced to READY:
+From REPORT051 feature baseline `a5fe116aa3bda27b0ddc71cb60c4b1cf458d7122` to current Development `a1a9af3d837f7c762e9906a64d883aae35aea59c`, Development advanced by three commits affecting:
+- `src/pages/reports/OverviewPage.test.tsx`;
+- `team/design-system-v2/DESIGN_DIRECTOR_STATE.md`;
+- `team/design-system-v2/TEAM_MEMORY.md`.
 
-`DS2-REPORT-051 — Next bounded Reports metrics/charts/tables/responsive-composition convergence`
+None of those files is the intended Churn Risk product/test scope, but the future implementer must still branch/rebase/reconcile from the latest Development truth before requesting exact-head review.
 
-It is intentionally `READY — UNBOUNDED`: Product Design Director owns the next action and must inspect the exact latest Development baseline, then define one smallest dependency-safe presentation-only Reports/Analytics concern before UI Production begins product-code work. The broader North-Star roadmap remains explicit: further Reports debt, shared component-depth work, remaining Work/Field convergence, Settings/Admin and Global Dark/RTL/accessibility/legacy cleanup.
+No durable rule was changed or superseded by this run; `DECISION_LOG.md` remains unchanged.
 
 ### Cross-role handoff
-- **To:** Product Design Director; then UI Production Engineer only after REPORT051 is bounded.
-- **What changed:** REPORT050 is integrated as squash merge `22983eff7ce4d11113c2b10de5468bb33bb86936`; Workstream marks REPORT050 DONE and exactly one next item, REPORT051, READY for Product Design bounding.
-- **Preserve:** `ChartTooltip` presentation-only responsibility; caller-owned chart-library payload interpretation/heading/labels/order/formatting/value direction/colors/business truth; Rep Performance state/geometry/chart/trust contracts; all REPORT001-050 contracts; all analytics/query/calculation/trust/permission/routing/export/print/backend/business semantics; full North-Star roadmap beyond Reports.
-- **Need from you:** Product Design should inspect the exact latest Development baseline and define one smallest dependency-safe REPORT051 concern with representative file/surface, acceptance boundary, exclusions and evidence expectations before implementation.
-- **Blocker level:** `NONE`.
-- **Baseline:** product merge `22983eff7ce4d11113c2b10de5468bb33bb86936`; Workstream advancement commit `2dd658e0d703a3f53a5a95a60f9b3c1cafd14b2f`.
+- **To:** UI Production Engineer; Design QA only after a real REPORT051 PR exists.
+- **What changed:** Integration confirmed REPORT051 is still blocked before product/test implementation. There is no active PR and therefore no merge candidate.
+- **Preserve:** the Product Design bounded scope for `src/pages/reports/ChurnRiskPage.tsx` only; existing shared `ChartTooltip` unchanged; caller-owned Recharts payload/category/count/color/LTR/chart/trust/business semantics; all REPORT001-050 contracts; full North-Star roadmap beyond Reports.
+- **Need from you:** restore/use an approved repository code-write path, continue REPORT051 on the same bounded concern from the latest Development baseline, author the focused tests, open exactly one Draft PR targeting Development, then obtain fresh exact-head Design QA and Product Design review before integration.
+- **Blocker level:** `BLOCKING`.
+- **Baseline:** Development `a1a9af3d837f7c762e9906a64d883aae35aea59c`; REPORT051 branch HEAD `74a61461fafc35083bddc6f1c150c245b75a2458`.
