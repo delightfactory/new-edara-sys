@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
-import ChurnRiskPage from './ChurnRiskPage'
+import ChurnRiskPage, { CustomTooltip } from './ChurnRiskPage'
 
 const mocks = vi.hoisted(() => ({
   useSystemTrustState: vi.fn(),
