@@ -133,16 +133,16 @@ describe('Reports Overview summary metric composition', () => {
     expect(sectionHeaders).toHaveLength(2)
 
     const summaryHeading = getByRole('heading', { level: 2, name: 'المؤشرات الرئيسية' })
-    expect(summaryHeading).toHaveClass('ds-section-header__title')
+    expect(summaryHeading.className).toContain('ds-section-header__title')
     expect(summaryHeading.closest('.ds-section-header')).toBe(sectionHeaders[0])
 
     const customerHeading = getByRole('heading', { level: 2, name: 'صحة قاعدة العملاء' })
-    expect(customerHeading).toHaveClass('ds-section-header__title')
+    expect(customerHeading.className).toContain('ds-section-header__title')
     const customerHeader = customerHeading.closest('.ds-section-header') as HTMLElement
     expect(customerHeader).toBe(sectionHeaders[1])
 
     const detailsLink = within(customerHeader).getByRole('link', { name: 'عرض التفاصيل ←' })
-    expect(detailsLink).toHaveAttribute('href', '/reports/customers')
+    expect(detailsLink.getAttribute('href')).toBe('/reports/customers')
     expect(detailsLink.closest('.ds-section-header__action')).not.toBeNull()
   })
 
@@ -193,11 +193,11 @@ describe('Reports Overview summary metric composition', () => {
       'متوسط قيمة العميل',
     ])
     expect(cards.map(card => card.textContent)).toEqual(['12', '250 ج.م'])
-    expect(cards[0]).toHaveAttribute('data-secondary-label', 'خامدون')
-    expect(cards[0]).toHaveAttribute('data-secondary-value', '3')
-    expect(cards[1]).toHaveAttribute('data-subtitle', 'آخر 90 يوماً')
-    expect(cards[1]).toHaveAttribute('data-secondary-label', 'متوسط أيام الخمود')
-    expect(cards[1]).toHaveAttribute('data-secondary-value', '18 يوم')
+    expect(cards[0].getAttribute('data-secondary-label')).toBe('خامدون')
+    expect(cards[0].getAttribute('data-secondary-value')).toBe('3')
+    expect(cards[1].getAttribute('data-subtitle')).toBe('آخر 90 يوماً')
+    expect(cards[1].getAttribute('data-secondary-label')).toBe('متوسط أيام الخمود')
+    expect(cards[1].getAttribute('data-secondary-value')).toBe('18 يوم')
   })
 
   it('preserves customer trust, freshness, stale state and domain wiring on both customer-health cards', () => {
@@ -212,10 +212,10 @@ describe('Reports Overview summary metric composition', () => {
     const cards = within(customerGrid).getAllByTestId('report-metric-card')
 
     cards.forEach(card => {
-      expect(card).toHaveAttribute('data-status', 'SUCCESS')
-      expect(card).toHaveAttribute('data-last-completed-at', '2026-09-21T12:00:00Z')
-      expect(card).toHaveAttribute('data-is-stale', 'true')
-      expect(card).toHaveAttribute('data-domain', 'customers')
+      expect(card.getAttribute('data-status')).toBe('SUCCESS')
+      expect(card.getAttribute('data-last-completed-at')).toBe('2026-09-21T12:00:00Z')
+      expect(card.getAttribute('data-is-stale')).toBe('true')
+      expect(card.getAttribute('data-domain')).toBe('customers')
     })
   })
 
@@ -238,7 +238,7 @@ describe('Reports Overview summary metric composition', () => {
 
     const skeletons = getAllByTestId('skeleton-card')
     expect(skeletons).toHaveLength(1)
-    expect(skeletons[0]).toHaveAttribute('data-height', '120')
+    expect(skeletons[0].getAttribute('data-height')).toBe('120')
 
     const readyCards = within(metricGrids[0] as HTMLElement).getAllByTestId('report-metric-card')
     expect(readyCards.map(card => card.getAttribute('data-label'))).not.toContain('إجمالي العملاء النشطين')
