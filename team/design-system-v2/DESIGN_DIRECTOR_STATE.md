@@ -2,88 +2,108 @@
 
 ## Reviewed baseline
 
-- Review date/time: `2026-09-24 21:02 Africa/Cairo`.
+- Review date/time: `2026-09-30`.
 - Authoritative branch: `design-system-v2-development`.
-- Exact Development HEAD immediately before this state write: `69e7c6e654d116b41ff6817c0069221c44b31db3`.
+- Exact Development HEAD immediately before this state write: `4754734da066835795f99c54768f4a118b73a9b2`.
 - Product UI integrated through `DS2-REPORT-050`; latest product merge remains `22983eff7ce4d11113c2b10de5468bb33bb86936` from PR #98.
-- Current single slice: `DS2-REPORT-051 — Churn Risk shared chart-tooltip adoption`.
-- State: `READY — BOUNDED`.
-- Workstream boundary commit: `a5fe116aa3bda27b0ddc71cb60c4b1cf458d7122`.
-- Active implementation PR targeting Development: none.
-- Product Design disposition: `READY — NO DESIGN-SYSTEM BLOCKER`.
+- Current slice: `DS2-REPORT-051 — Churn Risk shared chart-tooltip adoption`.
+- Active implementation PR: `#100 — DS2-REPORT-051: adopt shared Churn Risk chart tooltip`.
+- Exact PR HEAD independently reviewed and rechecked before this state write: `8af587a2b6ecf03fde3903290d8bbfab3cf8b0a5`.
+- Changed-file scope: exactly 3 files — Churn Risk page, focused Churn Risk test, and UI Production owned state.
+- Product Design disposition: `PASS — NO DESIGN-SYSTEM BLOCKER`.
+- QA disposition on the same exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
+- Evidence: `TESTS_AUTHORED_NOT_EXECUTED`; no Build/Test/Lint/Runtime/Visual/Preview/Release PASS is claimed.
 - Current contradiction classification: `NONE`.
 
 ## Independent Product Design judgment
 
-I reviewed the exact latest Churn Risk source/tests, the integrated shared `ChartTooltip` source/tests/CSS, REPORT046 foundation scope, current Reports convergence and the North Star before comparing peer states.
+I formed this judgment from the exact PR #100 diff/source/tests, current shared `ChartTooltip` contract, the North Star, device/RTL/state requirements and REPORT051 boundary before using peer conclusions as corroboration.
 
-REPORT051 is the correct smallest next system-level slice. Churn Risk's `توزيع تصنيف العملاء` already uses shared report patterns, but its Pie chart still uses Recharts' default tooltip renderer. That leaves a library-default presentation island inside an otherwise converged analytics surface.
+**PASS on exact PR HEAD `8af587a2b6ecf03fde3903290d8bbfab3cf8b0a5`.**
 
-The existing shared `ChartTooltip` can serve this consumer unchanged. It owns only neutral surface, spacing, RTL-safe structure and long-content containment; Churn Risk must retain chart payload interpretation and all domain meaning.
+REPORT051 correctly removes the remaining Recharts-default tooltip presentation island from `توزيع تصنيف العملاء` without moving Churn Risk analytical or business truth into the Design System.
 
-## Locked REPORT051 boundary
+The implementation keeps a local Churn Risk adapter for Recharts payload interpretation and delegates only neutral tooltip presentation/anatomy to the existing shared `ChartTooltip`. No shared API/CSS/token/breakpoint widening is required or present.
 
-Representative surface:
-- `src/pages/reports/ChurnRiskPage.tsx` → `توزيع تصنيف العملاء`.
+## Exact-head design/system findings
 
-Implement only:
-- replace the default Recharts tooltip presentation with existing shared `ChartTooltip`;
-- keep a local Churn Risk adapter for `active`/payload gating and payload interpretation;
-- keep caller ownership of category heading, exact row label `عملاء`, existing `FMT` count formatting, pie-series color and explicit LTR value direction.
+### System fit and responsibility boundary — PASS
 
-Preserve exactly:
-- chart presence rule `!statsLoading && pieData.length > 0`; do not add loading/empty chart UI;
+The PR preserves caller ownership of:
+- `!active || !payload?.length` gating;
+- category heading from the Pie payload;
+- exact row label `عملاء`;
+- existing `FMT` count formatting;
+- caller-provided Pie color;
+- explicit LTR numeric direction;
+- every chart, trust, filter, KPI, detail, query and business semantic.
+
+The shared `ChartTooltip` remains presentation-only: RTL container, label/items anatomy, caller color presentation and bidi-safe value direction.
+
+### Functional isolation — PASS
+
+No DB/migration/RPC/service/query-cache/RBAC/RLS/permission/route/calculation/trust/validation/export/print/backend/workflow/business contract changed.
+
+Changed files remain exactly:
+- `src/pages/reports/ChurnRiskPage.tsx`;
+- `src/pages/reports/ChurnRiskPage.test.tsx`;
+- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`.
+
+### Device / RTL / Arabic / accessibility — PASS at source level
+
+- Mobile 390 / Tablet 900 / Desktop 1440 use one shared tooltip grammar with no device fork.
+- Shared tooltip root remains `dir="rtl"`.
+- Numeric counts remain explicit `dir="ltr"`, preserving mixed-direction readability.
+- Focused tests exercise a deliberately long Arabic category and verify passive tooltip anatomy.
+- No action, focus target, tab stop, `role`, `aria-live` or keyboard interaction was introduced.
+- Caller Pie colors remain data/category identity and are not reclassified as semantic status colors.
+
+### State / geometry / hierarchy — PASS
+
+Preserved exactly:
+- chart presence rule `!statsLoading && pieData.length > 0`;
+- no new loading/empty chart surface;
 - `ResponsiveContainer width="100%" height={260}`;
-- exact Pie data/order, `dataKey="value"`, `nameKey="name"`, center/radii/padding;
-- colors `#f59e0b`, `#10b981`, `#3b82f6`, `#f97316`, `#ef4444`;
-- current Legend, ChartPanel title and Trust/Freshness action behavior;
-- header filters, KPI summary, responsive detail collection/table/cards and all query/trust/business semantics.
+- exact Pie data/order and `dataKey="value"` / `nameKey="name"`;
+- `cx="50%"`, `cy="50%"`, `innerRadius={60}`, `outerRadius={100}`, `paddingAngle={2}`;
+- exact five caller colors `#f59e0b`, `#10b981`, `#3b82f6`, `#f97316`, `#ef4444`;
+- Legend, ChartPanel title, Trust/Freshness action behavior;
+- header filters, KPI summary and responsive customer-detail composition/state precedence.
 
-Device/accessibility:
-- Mobile 390 / Tablet 900 / Desktop 1440 use one shared RTL passive tooltip grammar;
-- long Arabic remains contained/wrappable;
-- numeric counts remain LTR/bidi-safe;
-- no focus target, tab stop, `role`, `aria-live` or action/keyboard contract is added.
+### Test-artifact quality — PASS by source review
 
-Focused tests:
-- inactive / empty-payload adapter guards;
-- exact category heading + one-row `عملاء` label + existing count formatting + caller color;
-- CSSOM-normalized representative color `#f59e0b -> rgb(245, 158, 11)`;
-- shared tooltip at 390 / 900 / 1440 and long-Arabic/passive anatomy;
-- no chart/tooltip leakage during stats loading or zero pie data;
-- unchanged 260px geometry, pie contracts, colors, Legend and Trust/Freshness behavior.
+Focused tests now protect:
+- inactive / empty-payload guards;
+- exact category / `عملاء` / count / caller-color / LTR mapping;
+- CSSOM-normalized `#f59e0b -> rgb(245, 158, 11)`;
+- long Arabic and passive RTL anatomy;
+- representative 390 / 900 / 1440 adoption;
+- no chart/tooltip leakage while stats load or every Pie segment is zero;
+- exact 260px geometry and Pie/Legend/Trust-Freshness contracts.
 
-Explicit exclusions:
-- any other report tooltip;
-- shared `ChartTooltip` implementation/API/tests/CSS/tokens/breakpoints;
-- other shared-pattern changes;
-- Churn Risk filters/KPIs/detail collection/export/print/navigation;
-- any hook/query/cache/RPC/Supabase/calculation/trust/permission/RBAC/RLS/routing/validation/backend/business change.
-
-If exact adoption requires widening the shared tooltip contract or changing functional semantics, REPORT051 is `BLOCKED`.
+Evidence remains honestly labeled `TESTS_AUTHORED_NOT_EXECUTED`.
 
 ## Peer-state synthesis
 
-- UI Production state still documents integrated REPORT050; lifecycle-stale but not contradictory.
-- Design QA state is consumed REPORT050 evidence; no REPORT051 QA exists yet.
-- Integration state correctly hands REPORT051 to Product Design for bounding; that handoff is now satisfied.
-- TEAM_MEMORY was stale as REPORT051 unbounded. It is now synchronized with the bounded Workstream in commit `69e7c6e654d116b41ff6817c0069221c44b31db3`.
-- Decision Log / North Star / test policy remain aligned; no durable decision changed.
+- **Design QA:** fresh and aligned; issued exact-head `GREEN-DEV + SOURCE_REVIEW_PASS` on `8af587a2...`.
+- **UI Production:** Development-branch state is lifecycle-stale from REPORT050, but PR #100 carries the fresh REPORT051 owned-state change and bounded product/test implementation.
+- **Development Integrator:** state is lifecycle-stale and records the superseded no-PR/repository-write blocker. PR #100 now exists and has exact-head QA plus Product Design acceptance; the old blocker is not current.
+- **Team Memory / Workstream:** REPORT051 boundary and system invariants remain aligned. Some lifecycle prose anticipating future implementation is stale but does not contradict the current PR.
+- **Issue #27:** body is historically stale, but its event stream is the correct surface for this closeout.
+- No current material cross-role contradiction exists.
 
 ## Repository actions this run
 
-- Completed the mandatory shared-memory bootstrap in order.
-- Inspected issue #27, current Development state and open PRs; no implementation PR is open.
-- Verified Development was exactly `a5fe116aa3bda27b0ddc71cb60c4b1cf458d7122` before Team Memory sync.
-- Re-inspected Churn Risk source/tests and the shared tooltip contract/CSS.
-- Kept the Workstream unchanged because its REPORT051 boundary is already correct.
-- Updated Team Memory only to remove the material stale unbounded direction.
-- Did not modify Product code, Decision Log, `main`, Vercel, preview branches, workflows or GitHub Actions.
+- Completed the mandatory bootstrap in the required order.
+- Inspected issue #27, current Development HEAD, open PRs, PR #100 metadata/diff/files/reviews/threads, exact PR source/tests, and shared `ChartTooltip` source/tests.
+- Rechecked PR #100 immediately before this state write: `OPEN / DRAFT / mergeable=true`, exact HEAD unchanged at `8af587a2b6ecf03fde3903290d8bbfab3cf8b0a5`, exactly 3 changed files.
+- Verified current Development HEAD before this write: `4754734da066835795f99c54768f4a118b73a9b2`; drift from PR base is one governance-only Design QA state commit.
+- Did not modify Product code, peer state files, Team Memory, Decision Log, `main`, preview branches, Vercel or GitHub Actions.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer; Design QA after a stable PR HEAD.
-- **What changed:** REPORT051 is fully bounded as Churn Risk Pie-chart adoption of the existing presentation-only shared `ChartTooltip`, and shared memory is synchronized.
-- **Preserve:** ready-only chart presence, 260px geometry, exact Pie data/order/keys/radii/padding/colors, Legend, Trust/Freshness behavior, caller-owned category/`عملاء`/FMT/color/LTR semantics, all header/KPI/detail composition and all functional contracts; shared `ChartTooltip` remains unchanged.
-- **Need from you:** start from the exact latest Development HEAD, implement REPORT051 only, add focused adapter/device/state/chart tests, and open one Draft PR targeting `design-system-v2-development`. Mark `BLOCKED` if shared-contract widening is required.
+- **To:** Development Integrator.
+- **What changed:** REPORT051 now has Product Design exact-head acceptance on PR #100 HEAD `8af587a2b6ecf03fde3903290d8bbfab3cf8b0a5`, aligned with Design QA `GREEN-DEV + SOURCE_REVIEW_PASS`.
+- **Preserve:** shared `ChartTooltip` API/CSS/tokens/breakpoints unchanged; caller-owned guard/category/`عملاء`/FMT/color/LTR semantics; ready-only chart presence; exact 260px Pie geometry/data/order/keys/radii/padding/colors; Legend and Trust/Freshness; all header/KPI/detail/query/permission/backend/business contracts.
+- **Need from you:** revalidate unchanged PR HEAD/base, governance-only Development drift, reviews/threads, mergeability, exact 3-file scope and functional isolation; merge into `design-system-v2-development` only if all normal gates remain clean.
 - **Blocker level:** `NONE`.
-- **Baseline:** pre-state-write Development HEAD `69e7c6e654d116b41ff6817c0069221c44b31db3`; Workstream boundary `a5fe116aa3bda27b0ddc71cb60c4b1cf458d7122`.
+- **Baseline:** Development before state write `4754734da066835795f99c54768f4a118b73a9b2`; exact reviewed PR #100 HEAD `8af587a2b6ecf03fde3903290d8bbfab3cf8b0a5`.
