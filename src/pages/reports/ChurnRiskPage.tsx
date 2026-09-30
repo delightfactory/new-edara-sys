@@ -6,6 +6,7 @@ import SystemHealthBar from '@/components/reports/SystemHealthBar'
 import TrustStateBadge from '@/components/reports/TrustStateBadge'
 import FreshnessIndicator from '@/components/reports/FreshnessIndicator'
 import ChartPanel from '@/components/patterns/ChartPanel'
+import ChartTooltip from '@/components/patterns/ChartTooltip'
 import MetricGrid from '@/components/patterns/MetricGrid'
 import StatCard from '@/components/patterns/StatCard'
 import ResponsiveCollection from '@/components/patterns/ResponsiveCollection'
@@ -20,6 +21,23 @@ const today = toISO(new Date())
 const FMT = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
 const fmt    = (n: number | undefined | null) => n != null ? FMT.format(n) : '—'
 const fmtCur = (n: number | undefined | null) => n != null ? fmt(n) + ' ج.م' : '—'
+
+export function CustomTooltip({ active, payload }: any) {
+  if (!active || !payload?.length) return null
+  const item = payload[0]
+  return (
+    <ChartTooltip
+      label={item.name}
+      items={[{
+        key: 'customers',
+        label: 'عملاء',
+        value: FMT.format(item.value),
+        color: item.color,
+        valueDirection: 'ltr',
+      }]}
+    />
+  )
+}
 
 const RISK_CONFIG = {
   VIP:     { label: 'VIP',         color: '#f59e0b', bg: '#f59e0b18' },
@@ -175,7 +193,7 @@ export default function ChurnRiskPage() {
               <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={2}>
                 {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
               </Pie>
-              <Tooltip formatter={(v: any) => [FMT.format(v), 'عملاء']} />
+              <Tooltip content={<CustomTooltip />} />
               <Legend />
             </PieChart>
           </ResponsiveContainer>
