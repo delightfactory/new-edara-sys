@@ -8,6 +8,9 @@ const mocks = vi.hoisted(() => ({
   useTrustForComponent: vi.fn(),
   useCustomerRiskSummary: vi.fn(),
   useCustomerRiskList: vi.fn(),
+  responsiveContainer: vi.fn(),
+  pie: vi.fn(),
+  tooltip: vi.fn(),
 }))
 
 vi.mock('@/hooks/useSystemTrustState', () => ({
@@ -37,49 +40,20 @@ vi.mock('@/components/reports/FreshnessIndicator', () => ({
 }))
 
 vi.mock('recharts', () => ({
-  ResponsiveContainer: ({ children, width, height }: { children: ReactNode; width: string; height: number }) => (
-    <div data-testid="responsive-container" data-width={width} data-height={height}>{children}</div>
-  ),
+  ResponsiveContainer: ({ children, ...props }: { children: ReactNode } & Record<string, unknown>) => {
+    mocks.responsiveContainer(props)
+    return <div data-testid="responsive-container">{children}</div>
+  },
   PieChart: ({ children }: { children: ReactNode }) => <div data-testid="pie-chart">{children}</div>,
-  Pie: ({
-    children,
-    data,
-    dataKey,
-    nameKey,
-    cx,
-    cy,
-    innerRadius,
-    outerRadius,
-    paddingAngle,
-  }: {
-    children: ReactNode
-    data: unknown
-    dataKey: string
-    nameKey: string
-    cx: string
-    cy: string
-    innerRadius: number
-    outerRadius: number
-    paddingAngle: number
-  }) => (
-    <div
-      data-testid="pie"
-      data-data={JSON.stringify(data)}
-      data-data-key={dataKey}
-      data-name-key={nameKey}
-      data-cx={cx}
-      data-cy={cy}
-      data-inner-radius={innerRadius}
-      data-outer-radius={outerRadius}
-      data-padding-angle={paddingAngle}
-    >
-      {children}
-    </div>
-  ),
+  Pie: ({ children, ...props }: { children: ReactNode } & Record<string, unknown>) => {
+    mocks.pie(props)
+    return <div data-testid="pie">{children}</div>
+  },
   Cell: ({ fill }: { fill: string }) => <span data-testid="pie-cell" data-fill={fill} />,
-  Tooltip: ({ formatter }: { formatter?: (value: number) => unknown }) => (
-    <span data-testid="tooltip" data-format={JSON.stringify(formatter?.(7))} />
-  ),
+  Tooltip: (props: Record<string, unknown>) => {
+    mocks.tooltip(props)
+    return null
+  },
   Legend: () => <span data-testid="legend" />,
 }))
 
@@ -233,6 +207,7 @@ describe('ChurnRisk pie chart composition', () => {
 
     expect(emptyRender.container.querySelector('.ds-chart-panel')).toBeNull()
     expect(screen.queryByRole('heading', { level: 2, name: 'توزيع تصنيف العملاء' })).toBeNull()
+    expect(mocks.tooltip).not.toHaveBeenCalled()
   })
 
   it('keeps trust and freshness controls absent when riskTrust is unavailable', () => {
@@ -245,36 +220,81 @@ describe('ChurnRisk pie chart composition', () => {
     expect(within(panel).queryByTestId('freshness-indicator')).toBeNull()
   })
 
-  it('preserves the 260px pie container, filtered data, geometry, colors, tooltip and legend contracts', () => {
-    render(<ChurnRiskPage />)
+  it('keeps the Churn Risk tooltip inactive and empty-payload guard unchanged', () => {
+    const view = render(<CustomTooltip active={false} payload={[
+      { name: 'VIP', value: 1234, color: '#f59e0b' },
+    ]} />)
 
-    const panel = screen.getByRole('heading', { level: 2, name: 'توزيع تصنيف العملاء' }).closest('.ds-chart-panel') as HTMLElement
-    const responsive = within(panel).getByTestId('responsive-container')
-    const pie = within(panel).getByTestId('pie')
-    const cells = within(panel).getAllByTestId('pie-cell')
+    expect(view.container.firstChild).toBeNull()
 
-    expect(responsive.dataset).toMatchObject({ width: '100%', height: '260' })
-    expect(JSON.parse(pie.getAttribute('data-data') ?? '[]')).toEqual([
-      { name: 'VIP', value: 5 },
-      { name: 'مخلص', value: 4 },
-      { name: 'متفاعل', value: 3 },
-      { name: 'معرض للخطر', value: 2 },
-      { name: 'خامد', value: 1 },
-    ])
-    expect(pie.dataset).toMatchObject({
-      dataKey: 'value',
-      nameKey: 'name',
-      cx: '50%',
-      cy: '50%',
-      innerRadius: '60',
-      outerRadius: '100',
-      paddingAngle: '2',
-    })
-    expect(cells.map(cell => cell.getAttribute('data-fill'))).toEqual([
-      '#f59e0b', '#10b981', '#3b82f6', '#f97316', '#ef4444',
-    ])
-    expect(within(panel).getByTestId('tooltip').getAttribute('data-format')).toBe(JSON.stringify(['7', 'عملاء']))
-    expect(within(panel).getByTestId('legend')).not.toBeNull()
+    view.rerender(<CustomTooltip active payload={[]} />)
+    expect(view.container.firstChild).toBeNull()
+  })
+
+  it('delegates Churn Risk tooltip presentation to shared ChartTooltip while preserving category, customer label, count formatting, color, LTR values, and passive anatomy', () => {
+    const longCategory = 'تصنيف عملاء عربي طويل جداً للتحقق من احتواء النص داخل أداة الرسم بدون إنشاء معالجة خاصة بالصفحة'
+    const payload = [
+      { name: longCategory, value: 1234, color: '#f59e0b' },
+    ]
+
+    for (const width of [390, 900, 1440]) {
+      setViewport(width)
+      const view = render(<CustomTooltip active payload={payload} />)
+      const tooltip = view.container.querySelector('.ds-chart-tooltip') as HTMLElement
+      const tooltipRow = tooltip.querySelector('.ds-chart-tooltip__row') as HTMLElement
+      const value = tooltipRow.querySelector('.ds-chart-tooltip__value') as HTMLElement
+
+      expect(tooltip).not.toBeNull()
+      expect(tooltip.getAttribute('dir')).toBe('rtl')
+      expect(tooltip.querySelector('.ds-chart-tooltip__label')?.textContent).toBe(longCategory)
+      expect(tooltipRow.querySelector('.ds-chart-tooltip__item-label')?.textContent).toBe('عملاء')
+      expect(tooltipRow.style.color).toBe('rgb(245, 158, 11)')
+      expect(value.textContent).toBe('1,234')
+      expect(value.getAttribute('dir')).toBe('ltr')
+      expect(tooltip.querySelector('button, a, input, select, textarea, [tabindex]:not([tabindex="-1"])')).toBeNull()
+      expect(tooltip.getAttribute('aria-live')).toBeNull()
+      expect(tooltip.getAttribute('role')).toBeNull()
+
+      view.unmount()
+    }
+  })
+
+  it('preserves the 260px pie container, filtered data, geometry, colors, shared tooltip wiring and legend contracts across device widths', () => {
+    for (const width of [390, 900, 1440]) {
+      setViewport(width)
+      const view = render(<ChurnRiskPage />)
+
+      const panel = screen.getByRole('heading', { level: 2, name: 'توزيع تصنيف العملاء' }).closest('.ds-chart-panel') as HTMLElement
+      const cells = within(panel).getAllByTestId('pie-cell')
+      const responsiveProps = mocks.responsiveContainer.mock.calls[mocks.responsiveContainer.mock.calls.length - 1][0]
+      const pieProps = mocks.pie.mock.calls[mocks.pie.mock.calls.length - 1][0]
+      const tooltipProps = mocks.tooltip.mock.calls[mocks.tooltip.mock.calls.length - 1][0]
+
+      expect(responsiveProps).toMatchObject({ width: '100%', height: 260 })
+      expect(pieProps.data).toEqual([
+        { name: 'VIP', value: 5 },
+        { name: 'مخلص', value: 4 },
+        { name: 'متفاعل', value: 3 },
+        { name: 'معرض للخطر', value: 2 },
+        { name: 'خامد', value: 1 },
+      ])
+      expect(pieProps).toMatchObject({
+        dataKey: 'value',
+        nameKey: 'name',
+        cx: '50%',
+        cy: '50%',
+        innerRadius: 60,
+        outerRadius: 100,
+        paddingAngle: 2,
+      })
+      expect(cells.map(cell => cell.getAttribute('data-fill'))).toEqual([
+        '#f59e0b', '#10b981', '#3b82f6', '#f97316', '#ef4444',
+      ])
+      expect(tooltipProps.content).toBeTruthy()
+      expect(within(panel).getByTestId('legend')).not.toBeNull()
+
+      view.unmount()
+    }
   })
 })
 
