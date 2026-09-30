@@ -2,63 +2,88 @@
 
 ## Reviewed baseline
 
-- Review date: `2026-09-25`.
+- Review date: `2026-09-30`.
 - Development branch: `design-system-v2-development`.
-- Exact Development HEAD before this state write: `a1a9af3d837f7c762e9906a64d883aae35aea59c`.
+- Exact Development HEAD before this state write: `cfb88f9a20bd7c8e0699f2d01a2d2420ac3b7347`.
 - Current slice: `DS2-REPORT-051 — Churn Risk shared chart-tooltip adoption`.
-- Product Design state: `READY — BOUNDED`; no Design-System contradiction is recorded for the slice.
-- Feature branch: `ds2-report-051-churn-risk-chart-tooltip-adoption`.
-- Feature baseline: `a5fe116aa3bda27b0ddc71cb60c4b1cf458d7122`.
-- Exact feature-branch HEAD observed this run: `74a61461fafc35083bddc6f1c150c245b75a2458`.
-- Active PR targeting `design-system-v2-development`: none.
-- Current integration disposition: `BLOCKED — NO INTEGRATABLE PR / UI PRODUCTION REPOSITORY-WRITE BLOCKER`.
-- Evidence: no REPORT051 review evidence exists; `GREEN-DEV`, `SOURCE_REVIEW_PASS`, and `TESTS_AUTHORED_NOT_EXECUTED` are not claimed for REPORT051.
+- Active PR: `#100 — DS2-REPORT-051: adopt shared Churn Risk chart tooltip`.
+- PR base: `design-system-v2-development`.
+- PR base SHA: `186db3679f08e00550959cedf64cddaf4af65ac2`.
+- Exact current PR HEAD: `8af587a2b6ecf03fde3903290d8bbfab3cf8b0a5`.
+- PR state: `OPEN / DRAFT / mergeable=true`.
+- Changed-file scope: exactly 3 files — Churn Risk page, focused Churn Risk test, and UI Production owned state.
+- Design QA on exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
+- Product Design on exact HEAD: `PASS — NO DESIGN-SYSTEM BLOCKER`.
+- Evidence: `TESTS_AUTHORED_NOT_EXECUTED`.
+- Build/Test/Lint/Runtime/Visual/Preview/Release PASS: not claimed.
+- Current integration disposition: `READY_FOR_MERGE — NOT MERGED THIS RUN BY OWNER INSTRUCTION`.
 
-## Integrator decision
+## Integrator readiness decision
 
-**NO MERGE.** REPORT051 has not reached an integratable review state.
+**READY FOR MERGE, but intentionally not merged in this run.**
 
-Revalidated this run:
-- the mandatory shared-memory bootstrap was completed from the authoritative Development branch;
-- issue #27 and all current role-state handoffs were inspected;
-- Product Design has bounded REPORT051 to the Churn Risk `توزيع تصنيف العملاء` tooltip and records no product-design blocker;
-- no open PR targets `design-system-v2-development`;
-- the REPORT051 feature branch exists, but its current diff against Development contains only `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`;
-- the feature-branch UI Production state records `BLOCKED — REPOSITORY WRITE TOOLING`: intended product/test edits were prepared but repository code-file writes were rejected before connector execution;
-- therefore no product/test implementation commit, Draft PR, exact-head Design QA review, `AGENT-REVIEW: GREEN-DEV`, `SOURCE_REVIEW_PASS`, or honest test-artifact label exists for REPORT051;
-- the branch is now behind current Development by governance/unrelated test changes and must be reconciled by UI Production before a future exact-head review;
-- no GitHub Actions were triggered or rerun, no hosted CI was used, no Vercel/preview branch was touched, and `main` was not touched.
+The previous no-PR / repository-write blocker at feature HEAD `74a61461...` is superseded by the actual PR #100 implementation and exact-head review evidence.
 
-Because the merge prerequisites are absent, the Integrator must not manufacture review evidence, implement the slice itself, widen scope, or advance REPORT052.
+Independent revalidation confirms:
 
-## Persistent blocker
+- PR #100 still targets exactly `design-system-v2-development`.
+- Exact PR HEAD is unchanged at `8af587a2b6ecf03fde3903290d8bbfab3cf8b0a5`.
+- GitHub reports `mergeable=true`.
+- Design QA review is anchored to the same exact HEAD and records `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
+- Product Design review is anchored to the same exact HEAD and records `PASS — NO DESIGN-SYSTEM BLOCKER`.
+- Evidence remains honestly labeled `TESTS_AUTHORED_NOT_EXECUTED`; no runtime/build/test/lint/visual/preview/release PASS is inferred.
+- There are no inline review threads.
+- Combined commit status contains no statuses, which is expected under the hosted-CI quota policy and is not treated as a blocker.
+- The PR diff is exactly:
+  - `src/pages/reports/ChurnRiskPage.tsx`
+  - `src/pages/reports/ChurnRiskPage.test.tsx`
+  - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
+- No DB/migration/RPC/service/query-cache/RBAC/RLS/permission/routing/validation/calculation/trust/backend/workflow/business/deployment change is present.
+- Shared `ChartTooltip` implementation/API/tests/CSS/tokens/breakpoints remain unchanged.
 
-UI Production cannot currently complete the bounded REPORT051 implementation through the available repository code-write path.
+## Base drift / conflict assessment
 
-The feature branch records:
-- no product/test file successfully modified;
-- no focused test artifact committed;
-- no PR opened;
-- blocker level `BLOCKING`;
-- explicit instruction to continue the same slice/branch only when an approved repository code-write path is available.
+The PR was created from base SHA `186db3679f08e00550959cedf64cddaf4af65ac2`.
 
-This is a material coordination blocker, not normal in-progress work, so the integration disposition is recorded here and issue #27 should carry one concise persistent-blocker note.
+Current Development advanced by exactly two governance-only commits to `cfb88f9a20bd7c8e0699f2d01a2d2420ac3b7347`, affecting only:
 
-## Development drift observed
+- `team/design-system-v2/DESIGN_QA_STATE.md`
+- `team/design-system-v2/DESIGN_DIRECTOR_STATE.md`
 
-From REPORT051 feature baseline `a5fe116aa3bda27b0ddc71cb60c4b1cf458d7122` to current Development `a1a9af3d837f7c762e9906a64d883aae35aea59c`, Development advanced by three commits affecting:
-- `src/pages/reports/OverviewPage.test.tsx`;
-- `team/design-system-v2/DESIGN_DIRECTOR_STATE.md`;
-- `team/design-system-v2/TEAM_MEMORY.md`.
+The PR changes neither file. Therefore:
 
-None of those files is the intended Churn Risk product/test scope, but the future implementer must still branch/rebase/reconcile from the latest Development truth before requesting exact-head review.
+- there is no changed-file overlap between Development drift and PR #100;
+- GitHub reports the PR mergeable;
+- no rebase or conflict-resolution commit is required before merge;
+- the safe merge plan is to recheck the exact HEAD immediately before merge and use expected-head protection. If the HEAD or base-relevant files move, stop and revalidate.
 
-No durable rule was changed or superseded by this run; `DECISION_LOG.md` remains unchanged.
+## Scope / system contract preserved
+
+REPORT051 remains bounded to Churn Risk Pie tooltip presentation only:
+
+- caller retains active/payload interpretation;
+- caller retains category heading, exact `عملاء` label, existing `FMT` count formatting, caller Pie color and explicit LTR numeric direction;
+- exact chart presence rule remains `!statsLoading && pieData.length > 0`;
+- exact 260px geometry, Pie data/order/keys/radii/padding/colors, Legend and Trust/Freshness behavior remain unchanged;
+- header filters, KPI summary, responsive detail collection/table/cards and all query/permission/backend/business contracts remain unchanged;
+- shared `ChartTooltip` remains presentation-only and is not widened.
+
+## Merge plan for the next Integrator action
+
+When merge execution is authorized:
+
+1. Re-fetch PR #100 and verify exact HEAD is still `8af587a2b6ecf03fde3903290d8bbfab3cf8b0a5`.
+2. Recheck base is exactly `design-system-v2-development`, `mergeable=true`, review threads remain clear, and no new BLOCKING role-state contradiction exists.
+3. Do not trigger GitHub Actions or Vercel and do not touch `main`.
+4. Squash-merge PR #100 using expected-head SHA protection.
+5. Only after a successful merge: mark REPORT051 DONE, advance exactly one next dependency-safe slice to READY, update Team Memory and Integration State, and add the normal issue #27 integration note.
+
+No merge was executed in this run by explicit owner instruction.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer; Design QA only after a real REPORT051 PR exists.
-- **What changed:** Integration confirmed REPORT051 is still blocked before product/test implementation. There is no active PR and therefore no merge candidate.
-- **Preserve:** the Product Design bounded scope for `src/pages/reports/ChurnRiskPage.tsx` only; existing shared `ChartTooltip` unchanged; caller-owned Recharts payload/category/count/color/LTR/chart/trust/business semantics; all REPORT001-050 contracts; full North-Star roadmap beyond Reports.
-- **Need from you:** restore/use an approved repository code-write path, continue REPORT051 on the same bounded concern from the latest Development baseline, author the focused tests, open exactly one Draft PR targeting Development, then obtain fresh exact-head Design QA and Product Design review before integration.
-- **Blocker level:** `BLOCKING`.
-- **Baseline:** Development `a1a9af3d837f7c762e9906a64d883aae35aea59c`; REPORT051 branch HEAD `74a61461fafc35083bddc6f1c150c245b75a2458`.
+- **To:** Development Integrator on the next merge-authorized run.
+- **What changed:** the stale no-PR/tooling blocker is retired; PR #100 is a fully reviewed, mergeable REPORT051 candidate on exact HEAD `8af587a2b6ecf03fde3903290d8bbfab3cf8b0a5`.
+- **Preserve:** exact 3-file scope; unchanged shared `ChartTooltip` contract; all caller-owned Churn Risk chart/trust/business semantics; evidence label `TESTS_AUTHORED_NOT_EXECUTED`.
+- **Need from you:** perform only the final unchanged-head/base/thread/mergeability/role-state recheck, then squash-merge if still clean and merge execution is authorized.
+- **Blocker level:** `NONE`.
+- **Baseline:** Development before this state write `cfb88f9a20bd7c8e0699f2d01a2d2420ac3b7347`; exact reviewed PR #100 HEAD `8af587a2b6ecf03fde3903290d8bbfab3cf8b0a5`.
