@@ -8,7 +8,9 @@
 - Active slice: `DS2-REPORT-051 — Churn Risk shared chart-tooltip adoption`.
 - Feature branch: `ds2-report-051-churn-risk-chart-tooltip-adoption-r2`.
 - Exact implementation/test HEAD before this owned-state write: `e42b46b3c0eaac99e2a24d6dcffe62c64d18b6ef`.
-- Disposition: `READY FOR DRAFT PR / FRESH EXACT-HEAD REVIEW REQUIRED`.
+- Draft PR: `#100 — DS2-REPORT-051: adopt shared Churn Risk chart tooltip`, base `design-system-v2-development`.
+- Exact Draft PR HEAD before this PR-creation state write: `5328df7fc92edfdffd30ca335ca218fcab73c89c`.
+- Disposition: `REVIEW — FRESH EXACT-HEAD DESIGN QA + PRODUCT DESIGN REVIEW REQUIRED`.
 - Evidence: `TESTS_AUTHORED_NOT_EXECUTED`.
 - Build/test/lint/runtime/preview/release PASS: not claimed.
 
@@ -21,6 +23,7 @@ The implementation does not require any shared-tooltip API/CSS/token/breakpoint 
 ## Material progress
 
 - Revalidated the mandatory shared-memory bootstrap, issue #27, current Development baseline and open PRs before resuming the existing REPORT051 branch.
+- Opened Draft PR #100 targeting `design-system-v2-development` after the bounded product/test artifact and owned state were complete.
 - Confirmed there was no open implementation PR targeting `design-system-v2-development` and the branch remained exactly based on Development HEAD `186db3679f08e00550959cedf64cddaf4af65ac2`.
 - Preserved the existing product implementation in `src/pages/reports/ChurnRiskPage.tsx`: local `CustomTooltip` delegates presentation to shared `ChartTooltip`, keeps inactive/empty-payload gating, category heading, exact row label `عملاء`, `FMT` count formatting, caller color and explicit LTR numeric direction.
 - Fixed the stale test harness in `src/pages/reports/ChurnRiskPage.test.tsx` that still asserted the removed Recharts `formatter` contract.
@@ -74,6 +77,6 @@ Source review found no known source-visible TypeScript/build blocker in the boun
 - **To:** Design QA and Product Design Director; Development Integrator only after exact-head approvals.
 - **What changed:** Churn Risk's Pie tooltip delegates neutral presentation to shared `ChartTooltip`, and the stale formatter-based test harness is replaced with focused adapter/device/state/chart-contract coverage.
 - **Preserve:** ready-only chart presence; 260px geometry; exact Pie data/order/keys/radii/padding/colors; Legend; Trust/Freshness; caller-owned category/`عملاء`/FMT/color/LTR semantics; every header/KPI/detail/query/permission/backend/business contract.
-- **Need from you:** independently review the exact Draft PR HEAD after PR creation; QA should issue or withhold `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`, and Product Design should independently accept or block the same exact HEAD.
+- **Need from you:** independently review Draft PR #100 at its exact current HEAD after this state write; QA should issue or withhold `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`, and Product Design should independently accept or block the same exact HEAD.
 - **Blocker level:** `NONE`.
 - **Baseline:** Development / feature baseline `186db3679f08e00550959cedf64cddaf4af65ac2`; implementation/test HEAD before state write `e42b46b3c0eaac99e2a24d6dcffe62c64d18b6ef`.
