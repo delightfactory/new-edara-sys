@@ -4,91 +4,102 @@
 
 - Review date: `2026-10-01`.
 - Authoritative branch: `design-system-v2-development`.
-- Exact Development HEAD before this state write: `725b4a4b59ed8eebf9c8d3c8c05a2de8a6866e9e`.
+- Exact Development HEAD before this state write: `2568dc29a09fd2ec84bef2a92ae0e439671a47be`.
 - Product UI integrated through: `DS2-REPORT-051`.
-- Latest product integration: PR #100, reviewed HEAD `8af587a2b6ecf03fde3903290d8bbfab3cf8b0a5`, squash `27d37f6d4c3a2ab184f9c7f47f86e637af6835f6`.
-- Current single implementation slice: `DS2-REPORT-052 — Target Attainment shared chart-tooltip adoption`.
-- REPORT052 status: `READY — BOUNDED`.
-- Active implementation PR targeting Development: none.
-- Other open Development PR: `#101 — ci: validate explicit final candidates on DS2 development`, a governance/CI Draft, not a product implementation slice.
-- PR #101 current observed HEAD: `f73c95fd56382820f57ec272677812446187db28`; GitHub currently reports `OPEN / DRAFT / mergeable=true`.
-- Product Design disposition: `READY — NO DESIGN-SYSTEM BLOCKER`.
-- Current contradiction classification: `WATCH — governance PR #101 must be reviewed/reconciled on its own merits, but it does not block starting the one READY implementation slice`.
+- Active implementation slice: `DS2-REPORT-052 — Target Attainment shared chart-tooltip adoption`.
+- Feature branch: `ds2-report-052-target-attainment-chart-tooltip-adoption`.
+- Exact feature HEAD independently inspected: `642099f4456d7c4eedf2af0c9ef01045e7f1ccbd`.
+- Branch relation before this state write: ahead 4 / behind 0 from Development; exact diff is 3 files.
+- Draft implementation PR for REPORT052: none.
+- Other open Development PR: `#101 — ci: validate explicit final candidates on DS2 development`, governance/CI only, Draft, HEAD `510d1204783c7464a3a54c3e9ccb32f0e349413a`, GitHub `mergeable=true / mergeable_state=unstable`.
+- Product Design disposition on the current REPORT052 feature HEAD: `PREFLIGHT PASS — NO DESIGN-SYSTEM BLOCKER`.
+- Evidence: `SOURCE_REVIEW_PASS` at Product Design preflight level + `TESTS_AUTHORED_NOT_EXECUTED`; no build/test/lint/runtime/visual/preview/release PASS is claimed.
 
 ## Independent Product Design judgment
 
-I re-reviewed the current Target Attainment source/tests and the shared `ChartTooltip` contract against the North Star before using peer-state conclusions.
+REPORT052 has materially advanced beyond the Development-branch lifecycle records. The current feature HEAD contains both the bounded Target Attainment tooltip adoption and a focused test artifact. The implementation remains aligned with the North Star and does not require shared-component widening or functional change.
 
-REPORT052 remains the correct smallest next system-level slice. Target Attainment's `نسبة الإنجاز — المندوبون الفرديون` chart is already inside shared `ChartPanel` grammar, but still exposes Recharts' default tooltip presentation. The existing shared `ChartTooltip` can absorb that presentation island unchanged while Target Attainment retains every analytical, trust and business semantic.
+This is not Final Product Design acceptance because no Draft implementation PR exists yet and no fresh Design QA exact-head review exists for REPORT052.
 
-No functional change or shared-tooltip widening is required.
+### Exact scope reviewed
 
-## Locked REPORT052 boundary
+Changed product/test files:
+- `src/pages/reports/TargetAttainmentPage.tsx`
+- `src/pages/reports/TargetAttainmentPage.chart-tooltip.test.tsx`
 
-Representative surface:
-- `src/pages/reports/TargetAttainmentPage.tsx` → `نسبة الإنجاز — المندوبون الفرديون`.
+Owned lifecycle file on the feature branch:
+- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
-Implement only:
-- replace the Recharts default tooltip presentation with the existing shared `ChartTooltip`;
-- keep a local Target Attainment adapter for active/payload gating and Recharts payload interpretation;
-- keep caller ownership of representative name heading, exact row label `الإنجاز`, percentage formatting, caller achievement color and explicit LTR value direction.
+The page:
+- imports the existing shared `ChartTooltip`;
+- adds a local Recharts `CustomTooltip` adapter with inactive / empty-payload guards;
+- keeps the representative name as heading;
+- keeps the exact row label `الإنجاز`;
+- keeps percentage formatting and explicit `ltr` value direction;
+- keeps caller-owned achievement threshold colors;
+- wires `<Tooltip content={<CustomTooltip />} />`;
+- does not modify `ChartTooltip` implementation/API/tests/CSS/tokens/breakpoints.
 
-Preserve exactly:
-- chart presence rule `chartData.length > 0`; do not add loading/empty chart UI;
-- `individualRows = rows.filter(r => r.scope === 'individual' && r.rep_name)`;
-- chart mapping `{ name: r.rep_name!, pct: Math.round(r.achievement_pct ?? 0) }`;
-- `ResponsiveContainer width="100%" height={Math.max(chartData.length * 40, 200)}`;
-- vertical `BarChart`, margins `{ top: 4, left: 10, right: 40, bottom: 0 }`, grid, X/Y axes, percentage tick/domain behavior and `ReferenceLine x={100}`;
-- `Bar dataKey="pct" name="الإنجاز%" radius={[0, 3, 3, 0]} maxBarSize={20}`;
-- caller `barColor` thresholds/colors: `>=100 -> #10b981`, `>=80 -> #f59e0b`, otherwise `#ef4444`;
-- ChartPanel title/description, Trust/Freshness action behavior, header filters, KPI summary, responsive target-detail collection/table/cards, blocked/loading/empty precedence and all query/trust/business semantics.
+### Preserved analytical / business contracts
 
-Device/accessibility:
-- Mobile 390 / Tablet 900 / Desktop 1440 use the same shared RTL passive tooltip grammar;
-- long Arabic representative names remain contained/wrappable;
-- percentage values remain explicit LTR/bidi-safe;
-- tooltip stays informational only: no action, focus target, tab stop, `role`, `aria-live` or keyboard contract.
+Source review confirms the existing Target Attainment contracts remain intact:
+- chart presence: `chartData.length > 0`;
+- individual filtering: `rows.filter(r => r.scope === 'individual' && r.rep_name)`;
+- rounded chart mapping: `Math.round(r.achievement_pct ?? 0)`;
+- responsive height: `Math.max(chartData.length * 40, 200)`;
+- vertical BarChart and margins `{ top: 4, left: 10, right: 40, bottom: 0 }`;
+- grid, X/Y axes, percentage ticks/domain and `ReferenceLine x={100}`;
+- Bar `dataKey="pct"`, `name="الإنجاز%"`, radius `[0, 3, 3, 0]`, `maxBarSize={20}`;
+- threshold colors `>=100 -> #10b981`, `>=80 -> #f59e0b`, otherwise `#ef4444`;
+- ChartPanel title/description and Trust/Freshness action behavior;
+- header filters, KPI summary, responsive target-detail collection/table/cards, blocked/loading/empty precedence and all query/trust/business semantics.
 
-Focused tests must protect:
-- inactive / empty-payload adapter guards;
-- exact representative heading + one-row `الإنجاز` label + preserved percentage formatting + caller color + LTR direction;
-- CSSOM-normalized representative achievement color evidence;
-- 390 / 900 / 1440 shared-tooltip adoption and long-Arabic/passive anatomy;
-- no chart/tooltip leakage when `chartData.length === 0`;
-- unchanged individual filtering, rounded mapping, dynamic height, layout/margins/grid/axes/reference-line/bar/color contracts and Trust/Freshness presence rules.
+No DB/migration/RPC/service/query-cache/RBAC/RLS/permission/routing/calculation/validation/workflow/backend/business change is present in the feature diff.
 
-Explicit exclusions:
-- any other report tooltip/chart;
-- shared `ChartTooltip` implementation/API/tests/CSS/tokens/breakpoints;
-- `ChartPanel`, `ResponsiveCollection`, `Card`, `KeyValueList`, `MetricCard` or other shared-pattern changes;
-- Target Attainment filter-control convergence, KPI cards, detail collection/table/cards, export/print/navigation;
-- any hook/query/cache/RPC/Supabase/calculation/trust/permission/RBAC/RLS/routing/validation/backend/business change.
+## Device / RTL / accessibility judgment
 
-If the existing shared `ChartTooltip` cannot serve unchanged, or preserving current chart semantics requires functional change, REPORT052 becomes `BLOCKED` rather than broadened.
+- The same shared passive tooltip grammar is used at 390 / 900 / 1440 with no device fork.
+- Long Arabic representative names are compatible with the existing shared tooltip CSS: bounded max inline size plus `overflow-wrap:anywhere`.
+- Percentage values remain explicit LTR/bidi-isolated through the shared pattern.
+- Tooltip remains informational only: no focus target, tab stop, role, aria-live or action semantics were introduced.
+- No new page-local tooltip language or shared visual primitive was created.
 
-## Peer-state synthesis / contradiction resolution
+## Test-artifact judgment
 
-- **Team Memory:** lifecycle-stale through REPORT050/REPORT051 and requires synchronization to REPORT051 integrated + REPORT052 READY.
-- **UI Production:** lifecycle-stale from REPORT051 implementation; no REPORT052 implementation PR exists yet.
-- **Design QA:** lifecycle-stale from REPORT051 exact-head approval; no REPORT052 review exists yet.
-- **Development Integrator:** correctly records REPORT051 integrated and REPORT052 READY, but its baseline `5dbf4e7...` is stale versus current Development `725b4a4...`. It also treats PR #101 as blocking creation of a second Development PR under a "one-active-PR" rule.
-- **Authoritative contract synthesis:** `AGENTS.md` and the Workstream require one active **implementation slice** at a time, not one open PR of any type. PR #101 is a separate governance/CI proposal and does not touch Target Attainment or `ChartTooltip`. Therefore it is **not an implementation blocker** for REPORT052.
-- PR #101 remains `WATCH`: it overlaps governance files (including the Workstream) and proposes CI-policy changes. It must be reviewed/reconciled separately and must not be merged by scheduled Product Design work. If it later changes Development before REPORT052 review/integration, REPORT052 must reconcile to the then-current base and receive fresh exact-head review.
-- The prior Integrator `BLOCKING` classification is therefore bounded to **integration of PR #101 itself**, not to beginning REPORT052.
-- Current material design-system contradiction after this synthesis: `NONE`.
+The new focused test artifact now exists on exact HEAD `642099f4456d7c4eedf2af0c9ef01045e7f1ccbd` and protects:
+- inactive / empty-payload guards;
+- representative heading, exact `الإنجاز` row label, percentage value, caller color and LTR direction;
+- CSSOM-normalized success color;
+- shared RTL/passive anatomy and long Arabic at 390 / 900 / 1440;
+- individual-only filtering and rounded mapping;
+- dynamic height, chart layout/margins, grid, axes, reference line, Bar contract and all three threshold colors;
+- chart absence when individual chart data is empty;
+- Trust/Freshness action presence rules.
+
+The tests were not executed in an approved exact-head runtime. Evidence is therefore `TESTS_AUTHORED_NOT_EXECUTED`.
+
+## Peer-state synthesis / contradictions
+
+- **Team Memory:** direction remains correct (REPORT052 is the single bounded product slice), but lifecycle text saying UI Production should start REPORT052 is now stale because implementation/test artifacts already exist on the feature branch.
+- **UI Production State:** materially stale on the feature branch. It records HEAD `1b3c17cf5b7bedc089093014ac4c5816eca6ea1b` and `BLOCKED — TEST ARTIFACT WRITE REJECTED`. That blocker is superseded by later commit `642099f...`, which successfully added the focused test artifact.
+- **Design QA State:** still REPORT051 and therefore not approval evidence for REPORT052.
+- **Integration State:** lifecycle-stale versus current Development and PR #101. Its rule that unrelated governance PR #101 blocks starting a product implementation PR is not supported by the authoritative one-active-implementation-slice contract.
+- **PR #101:** remains a separate governance/CI concern. Its authorized hosted attempt failed application tests, so its own final validation/integration remains blocked. That does not create a Design-System blocker for REPORT052.
+- Current material product-design contradiction after synthesis: `NONE`.
+- Current lifecycle gap: `WATCH` — UI Production must refresh its owned state and open the single Draft REPORT052 PR before exact-head QA/final Product Design closeout.
 
 ## Repository actions this run
 
 - Completed the mandatory shared-memory bootstrap in order.
-- Inspected issue #27, current Development HEAD, open PRs and PR #101 diff/metadata.
-- Re-inspected Target Attainment source/tests and the shared `ChartTooltip` contract.
-- Confirmed the Workstream currently has exactly one READY implementation item: REPORT052; Reports roadmap correctly marks REPORT001-051 DONE.
+- Inspected issue #27, current Development HEAD, all open PRs targeting Development and current PR #101 metadata.
+- Re-inspected relevant component/device/migration blueprints.
+- Independently reviewed REPORT052 exact feature HEAD, three-file diff, Target Attainment source/test artifact, shared `ChartTooltip` source/test and shared tooltip CSS.
 - Did not implement product code, merge any PR, touch `main`, deploy Vercel, modify preview branches, trigger/rerun GitHub Actions or use hosted CI.
 
 ### Cross-role handoff
-- **To:** UI Production Engineer; Development Integrator and Design QA for awareness.
-- **What changed:** Product Design confirms REPORT052 remains the single READY implementation slice and explicitly bounds PR #101 as a separate governance WATCH, not an implementation-start blocker.
-- **Preserve:** REPORT052 exact bounded contract above; shared `ChartTooltip` unchanged; all Target Attainment chart/filter/KPI/detail/query/trust/business semantics; PR #101 remains separate and must not be merged or used to trigger CI by this role.
-- **Need from you:** UI Production may start REPORT052 from the exact latest Development HEAD and open one Draft implementation PR. Design QA should review only its future exact stable HEAD. Integrator should treat PR #101's merge blocker separately and re-evaluate any base drift before future integration.
-- **Blocker level:** `NONE` for REPORT052 implementation; `WATCH` for governance PR #101; PR #101's own integration remains separately blocked pending governance review.
-- **Baseline:** Development `725b4a4b59ed8eebf9c8d3c8c05a2de8a6866e9e`; governance PR #101 HEAD `f73c95fd56382820f57ec272677812446187db28`.
+- **To:** UI Production Engineer; Design QA and Development Integrator for awareness.
+- **What changed:** REPORT052 is now source-and-test complete on exact feature HEAD `642099f4456d7c4eedf2af0c9ef01045e7f1ccbd`; the prior test-write blocker is superseded, and Product Design preflight finds no Design-System blocker.
+- **Preserve:** shared `ChartTooltip` unchanged; all Target Attainment chart/filter/KPI/detail/query/trust/business semantics and exact chart contracts above; evidence honesty; no backend/workflow scope expansion.
+- **Need from you:** UI Production must update its owned state to the actual feature HEAD and open exactly one Draft REPORT052 PR targeting Development. Design QA then performs fresh exact-head review; Product Design gives final closeout only on that stable PR HEAD. Integrator acts only after same-head gates and drift revalidation.
+- **Blocker level:** `NONE` for REPORT052 product/design scope; `WATCH` for stale UI lifecycle state / missing Draft PR; PR #101 remains separately blocked for its own integration.
+- **Baseline:** Development `2568dc29a09fd2ec84bef2a92ae0e439671a47be`; REPORT052 feature HEAD `642099f4456d7c4eedf2af0c9ef01045e7f1ccbd`; governance PR #101 HEAD `510d1204783c7464a3a54c3e9ccb32f0e349413a`.
