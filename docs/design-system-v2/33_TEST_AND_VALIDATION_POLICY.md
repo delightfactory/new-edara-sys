@@ -2,7 +2,18 @@
 
 ## Status
 
-GitHub Actions / hosted CI is intentionally unavailable to the Design System V2 agent workstream until the owner explicitly lifts this restriction.
+Normal Design System V2 development remains under the hosted-CI quota freeze.
+On 2026-10-01 the owner authorized one narrow exception: explicit final-candidate
+validation via `pull_request: ready_for_review` targeting Development. Follow
+`.github/FINAL_CANDIDATE_CI.md`; scheduled agents must keep PRs draft and may not
+request this transition without owner final-candidate authorization. This
+exception supersedes the blanket prohibitions below only for the frozen final
+candidate. It does not authorize dispatch, normal push/synchronize execution,
+deployment, or any change/merge to `main`.
+
+Before final-candidate integration, require successful hosted evidence on the
+exact unchanged head and base in addition to the source-review gates. A newer
+head/base invalidates acceptance and needs a fresh authorized ready transition.
 
 This is a cost/quota governance decision, not permission to lower the quality bar.
 
@@ -18,7 +29,10 @@ Design System agents MUST NOT:
 - use GitHub Actions as a substitute for local/static review
 - merge a PR because a previous unrelated workflow happened to be green
 
-The development branch workflow configuration additionally restricts Work Management PR CI to base `main`, so PRs targeting `design-system-v2-development` do not consume Actions quota.
+The development workflow now runs only for the explicit ready transition on
+`design-system-v2-development`; opened/push/synchronize events do not run it.
+The unchanged default-branch workflow still has automatic main-targeted PR and
+`feature/work-management` push behavior outside this authorized branch scope.
 
 ## Test authoring is still mandatory
 

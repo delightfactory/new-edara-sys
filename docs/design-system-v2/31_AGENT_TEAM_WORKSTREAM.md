@@ -34,6 +34,13 @@ Before material action every role reads Team Memory, all four role states, the D
 
 Hosted GitHub Actions remain forbidden while quota protection is active. Focused tests are still authored. Normal development evidence is exact-head `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + an honest execution label. A known build/type failure blocks integration.
 
+Owner exception dated 2026-10-01: `.github/FINAL_CANDIDATE_CI.md` permits one
+explicit ready transition for a frozen final candidate, with successful exact
+head/base CI required before final-candidate integration. Scheduled agents keep
+PRs draft and must not perform the former automatic Draft-to-Ready step without
+owner final-candidate authorization. Normal development, dispatch and deployment
+remain excluded; DS2 `main` remains frozen.
+
 Vercel preview remains owner-requested only. Scheduled agents never merge to `main`.
 
 ## Current integrated baseline

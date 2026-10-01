@@ -125,10 +125,22 @@ The full protocol is authoritative in `34_AGENT_TEAM_COMMUNICATION_PROTOCOL.md`.
 
 GitHub Actions quota is intentionally protected.
 
+Owner-authorized exception (2026-10-01): final-candidate validation may run once
+on an explicit `pull_request: ready_for_review` transition targeting
+`design-system-v2-development`, following `.github/FINAL_CANDIDATE_CI.md`.
+This supersedes only the absolute ban for that frozen final candidate. Normal
+scheduled work must stay in draft and must not mark PRs ready, dispatch/rerun CI,
+or trigger hosted validation as part of its loop. Before an owner-authorized
+integration, require successful evidence for the exact current head and base;
+`GREEN-DEV` source review alone is not final-candidate CI evidence. The
+Integrator's former automatic Draft-to-Ready transition now requires explicit
+owner final-candidate authorization because it consumes hosted quota.
+Main isolation, deployment restrictions and all other safeguards remain active.
+
 Agents MUST NOT:
 
 - trigger, rerun or dispatch GitHub Actions
-- modify workflow rules to make development PRs consume Actions
+- modify workflow rules to make ordinary development events consume Actions
 - create temporary CI workflows
 - use hosted CI as part of the normal autonomous loop
 
