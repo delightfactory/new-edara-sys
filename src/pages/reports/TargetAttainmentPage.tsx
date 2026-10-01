@@ -8,6 +8,7 @@ import TrustStateBadge from '@/components/reports/TrustStateBadge'
 import FreshnessIndicator from '@/components/reports/FreshnessIndicator'
 import ResponsiveCollection from '@/components/patterns/ResponsiveCollection'
 import ChartPanel from '@/components/patterns/ChartPanel'
+import ChartTooltip from '@/components/patterns/ChartTooltip'
 import Card from '@/components/patterns/Card'
 import KeyValueList from '@/components/patterns/KeyValueList'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine, Cell } from 'recharts'
@@ -108,6 +109,24 @@ function barColor(pct: number) {
   return '#ef4444'
 }
 
+export function CustomTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null
+  const item = payload[0]
+  const pct = Number(item.value)
+  return (
+    <ChartTooltip
+      label={label}
+      items={[{
+        key: 'achievement',
+        label: 'الإنجاز',
+        value: `${item.value}%`,
+        color: barColor(pct),
+        valueDirection: 'ltr',
+      }]}
+    />
+  )
+}
+
 export default function TargetAttainmentPage() {
   const [asOfDate, setAsOfDate] = useState(today)
   const [scope, setScope]       = useState<string | undefined>(undefined)
@@ -198,7 +217,7 @@ export default function TargetAttainmentPage() {
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" horizontal={false} />
               <XAxis type="number" tickFormatter={v => v + '%'} tick={{ fontSize: 10, fill: 'var(--text-muted)', fontFamily: 'var(--font-sans)' }} tickLine={false} axisLine={false} domain={[0, 'dataMax + 10']} />
               <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 11, fill: 'var(--text-primary)', fontFamily: 'var(--font-sans)' }} tickLine={false} axisLine={false} />
-              <Tooltip formatter={(v: any) => [v + '%', 'الإنجاز']} />
+              <Tooltip content={<CustomTooltip />} />
               <ReferenceLine x={100} stroke="var(--color-warning)" strokeDasharray="4 4" strokeWidth={2} />
               <Bar dataKey="pct" name="الإنجاز%" radius={[0, 3, 3, 0]} maxBarSize={20}>
                 {chartData.map((entry, i) => (

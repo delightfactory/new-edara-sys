@@ -2,81 +2,70 @@
 
 ## Reviewed baseline
 
-- Run date/time: `2026-09-30`.
+- Run date: `2026-10-01`.
 - Development branch: `design-system-v2-development`.
-- Exact feature baseline / Development HEAD: `186db3679f08e00550959cedf64cddaf4af65ac2`.
-- Active slice: `DS2-REPORT-051 — Churn Risk shared chart-tooltip adoption`.
-- Feature branch: `ds2-report-051-churn-risk-chart-tooltip-adoption-r2`.
-- Exact implementation/test HEAD before this owned-state write: `e42b46b3c0eaac99e2a24d6dcffe62c64d18b6ef`.
-- Draft PR: `#100 — DS2-REPORT-051: adopt shared Churn Risk chart tooltip`, base `design-system-v2-development`.
-- Exact Draft PR HEAD before this PR-creation state write: `5328df7fc92edfdffd30ca335ca218fcab73c89c`.
-- Disposition: `REVIEW — FRESH EXACT-HEAD DESIGN QA + PRODUCT DESIGN REVIEW REQUIRED`.
-- Evidence: `TESTS_AUTHORED_NOT_EXECUTED`.
-- Build/test/lint/runtime/preview/release PASS: not claimed.
+- Exact Development baseline before REPORT052: `2568dc29a09fd2ec84bef2a92ae0e439671a47be`.
+- Active slice: `DS2-REPORT-052 — Target Attainment shared chart-tooltip adoption`.
+- Feature branch: `ds2-report-052-target-attainment-chart-tooltip-adoption`.
+- Original product/test artifact HEAD: `642099f4456d7c4eedf2af0c9ef01045e7f1ccbd`.
+- Exact PR HEAD before this local qualification/test-strengthening state write: `9927391c3a57ce06c83f50559e09b114ee82601a`.
+- Development observed during qualification: `99d32ace8d1ac39080a737dd787b4e792e3d078c`.
+- Draft PR: [#103](https://github.com/delightfactory/new-edara-sys/pull/103), targeting `design-system-v2-development`.
+- Disposition: `DRAFT PR — LOCAL TEST STRENGTHENING; FRESH EXACT-HEAD REVIEW REQUIRED AFTER PUBLICATION`.
+- Evidence: bounded `LOCAL_EXECUTION_PASS` for focused tests/type-check only; no full-app build/lint or runtime-visual PASS.
 
 ## Independent implementation judgment
 
-REPORT051 is correctly bounded to the Churn Risk Pie chart in `توزيع تصنيف العملاء`. The page keeps ownership of Recharts payload interpretation and all domain truth while the existing shared `ChartTooltip` owns only neutral presentation/anatomy.
-
-The implementation does not require any shared-tooltip API/CSS/token/breakpoint widening and does not change query, trust, permission, validation, routing, cache, backend or business semantics.
+REPORT052 remains correctly bounded. Existing shared `ChartTooltip` serves Target Attainment unchanged. The implementation delegates only tooltip presentation/anatomy while retaining local Recharts payload interpretation, representative heading, exact `الإنجاز` row label, percentage formatting, achievement threshold color and explicit LTR numeric direction.
 
 ## Material progress
 
-- Revalidated the mandatory shared-memory bootstrap, issue #27, current Development baseline and open PRs before resuming the existing REPORT051 branch.
-- Opened Draft PR #100 targeting `design-system-v2-development` after the bounded product/test artifact and owned state were complete.
-- Confirmed there was no open implementation PR targeting `design-system-v2-development` and the branch remained exactly based on Development HEAD `186db3679f08e00550959cedf64cddaf4af65ac2`.
-- Preserved the existing product implementation in `src/pages/reports/ChurnRiskPage.tsx`: local `CustomTooltip` delegates presentation to shared `ChartTooltip`, keeps inactive/empty-payload gating, category heading, exact row label `عملاء`, `FMT` count formatting, caller color and explicit LTR numeric direction.
-- Fixed the stale test harness in `src/pages/reports/ChurnRiskPage.test.tsx` that still asserted the removed Recharts `formatter` contract.
-- Added focused coverage for:
-  - inactive / empty-payload adapter guards;
-  - exact category heading, one-row `عملاء` label, `FMT` count formatting and caller color;
-  - CSSOM-normalized `#f59e0b -> rgb(245, 158, 11)`;
-  - shared RTL/passive tooltip anatomy with long Arabic at 390 / 900 / 1440;
-  - explicit LTR numeric value direction;
-  - no chart/tooltip leakage while stats are loading or every pie value is zero;
-  - unchanged 260px responsive geometry, filtered pie data/order, keys, center/radii/padding, exact five colors, shared tooltip wiring and Legend.
+- Product source was already implemented on the feature branch:
+  - existing shared `ChartTooltip` import;
+  - local exported `CustomTooltip` with inactive/empty-payload guard;
+  - `<Tooltip content={<CustomTooltip />}/>` wiring;
+  - unchanged chart, filter, trust and business semantics.
+- Focused test artifact is now committed:
+  - `src/pages/reports/TargetAttainmentPage.chart-tooltip.test.tsx`
+  - covers adapter guards, RTL/passive anatomy, 390/900/1440 widths, long Arabic labels, CSSOM caller color, LTR percentage values, empty chart behavior, mapping/filtering, geometry, axes, reference line, bars, colors and Trust/Freshness rules.
+- The original artifact was previously `TESTS_AUTHORED_NOT_EXECUTED`; local qualification below now supplies bounded execution evidence. No browser/runtime-visual PASS is claimed.
 
-## Scope / files touched
+## Scope
 
-Product/test scope:
-- `src/pages/reports/ChurnRiskPage.tsx`
-- `src/pages/reports/ChurnRiskPage.test.tsx`
-- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md` — owned lifecycle/handoff state only.
+Files touched:
+- `src/pages/reports/TargetAttainmentPage.tsx`
+- `src/pages/reports/TargetAttainmentPage.chart-tooltip.test.tsx`
+- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
 
-Explicitly unchanged:
-- shared `ChartTooltip` implementation/API/tests/CSS/tokens/breakpoints;
-- `ChartPanel`, `MetricGrid`, `ResponsiveCollection`, `StatePanel`, `Card`, `KeyValueList` and other shared patterns;
-- Target Attainment and every other report tooltip;
-- Churn Risk filters, KPI semantics, detail collection/table/cards, export/print/navigation;
-- hooks/query/cache/RPC/Supabase/calculations/trust/permissions/RBAC/RLS/routing/validation/backend/business semantics.
+Unchanged:
+- shared `ChartTooltip` API/CSS/tokens/breakpoints;
+- backend/query/cache/RPC/trust/permission/business semantics;
+- Actions, Vercel and `main`.
 
-## Device / state / accessibility coverage
+## Local qualification and coverage strengthening
 
-- Mobile 390 / Tablet 900 / Desktop 1440 use the same shared RTL tooltip grammar with no breakpoint fork.
-- Long Arabic category text is exercised through shared tooltip anatomy.
-- Count remains bidi-safe with `dir="ltr"`.
-- Tooltip remains passive/informational: no focus target, tab stop, role, aria-live or keyboard/action semantics.
-- Exact chart presence rule remains `!statsLoading && pieData.length > 0`; no new loading/empty chart surface is introduced.
-- Exact `ResponsiveContainer width="100%" height={260}`, Pie data/order/keys/center/radii/padding, five colors, Legend and Trust/Freshness presence rules remain preserved.
+On 2026-10-01, exact-head source files and their focused import closure were reconstructed through read-only GitHub file retrieval. Original Git blob hashes were verified. No source/type stubs were introduced; repository tests retain their existing data-hook and Recharts mocks.
 
-## Evidence / execution honesty
+Dependencies were installed from the unchanged committed package-lock.json using `npm ci --cache .npm-cache --ignore-scripts --no-audit --no-fund`. Toolchain: Node 24.19.0, React/React DOM 18.3.1, TypeScript 5.6.3, Vitest 2.1.9, Vite 6.4.1, jsdom 25.0.1.
 
-Evidence is `TESTS_AUTHORED_NOT_EXECUTED`.
+Executed checks:
+- Exact-head original: 3 focused files / 12 tests passed.
+- Local test-strengthening candidate: the same 3 files / 23 tests passed (17 tooltip, 4 detail, 2 chart-panel).
+- Test command: `npm test -- src/pages/reports/TargetAttainmentPage.chart-tooltip.test.tsx src/pages/reports/TargetAttainmentChartPanel.test.tsx src/pages/reports/TargetAttainmentPage.test.tsx --maxWorkers=1 --minWorkers=1`.
+- Focused type command: `./node_modules/.bin/tsc --noEmit -p tsconfig.json`, using the unchanged repository compiler options over the fetched source closure. This is NOT whole-application type/build evidence because unrelated application source was not materialized.
+- `npm run lint` could not execute: `eslint: not found` (exit 127); eslint is absent from the committed package/lock dependencies. Lint is unverified; dependencies/configuration were not altered to hide this limitation.
+- Actual Chromium launch failed at `socket() failed: Operation not permitted`. No runtime layout, screenshot, viewport-edge placement, overlap or responsive visual acceptance is claimed. Width loops are simulated DOM/prop contracts only.
+- No hosted CI, remote deployment, production/backend access or main activity was used.
 
-The current sandbox has no project checkout/runtime, so `npm test`, `npm run build` and `npm run lint` were not executed. Hosted GitHub Actions were not triggered or used. No Vercel/preview deployment and no `main` activity occurred.
+Only focused tests changed in this qualification. Product source and shared component bytes remain identical to the exact PR HEAD. New assertions protect actual `CustomTooltip` element wiring and rendered content, all threshold boundaries (0/79/80/99/100/105), absent/null payloads, minimum 200px geometry, passive tabindex/contenteditable absence, initial loading without cached rows, and the existing cached-chart behavior during BLOCKED/FAILED trust and loading. The latter preserves existing semantics; it does not change trust or chart eligibility.
 
-Source review found no known source-visible TypeScript/build blocker in the bounded diff. This is not an executed PASS claim.
+Original-head reviews do not automatically approve the strengthened candidate. Fresh same-head review is needed if this test/state candidate is published.
 
-## Risks / blocker status
+## Cross-role handoff
 
-- Fresh independent Design QA and Product Design review are required on the exact final Draft PR HEAD.
-- Runtime/build/test evidence remains intentionally unclaimed.
-- If exact review finds that preserving current Pie semantics requires shared-tooltip widening or functional change, REPORT051 must be marked `BLOCKED` rather than broadening scope.
-
-### Cross-role handoff
-- **To:** Design QA and Product Design Director; Development Integrator only after exact-head approvals.
-- **What changed:** Churn Risk's Pie tooltip delegates neutral presentation to shared `ChartTooltip`, and the stale formatter-based test harness is replaced with focused adapter/device/state/chart-contract coverage.
-- **Preserve:** ready-only chart presence; 260px geometry; exact Pie data/order/keys/radii/padding/colors; Legend; Trust/Freshness; caller-owned category/`عملاء`/FMT/color/LTR semantics; every header/KPI/detail/query/permission/backend/business contract.
-- **Need from you:** independently review Draft PR #100 at its exact current HEAD after this state write; QA should issue or withhold `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`, and Product Design should independently accept or block the same exact HEAD.
+- **To:** Design QA and Product Design Director.
+- **What changed:** Draft PR #103 exists; focused tests were executed and strengthened locally without changing product bytes.
+- **Preserve:** Target Attainment chart contracts, filters, thresholds, trust behavior and shared tooltip boundaries.
+- **Need from you:** review the final exact Draft PR HEAD after test/state publication; preserve the limited execution scope and remaining lint/runtime gaps.
 - **Blocker level:** `NONE`.
-- **Baseline:** Development / feature baseline `186db3679f08e00550959cedf64cddaf4af65ac2`; implementation/test HEAD before state write `e42b46b3c0eaac99e2a24d6dcffe62c64d18b6ef`.
+- **Baseline:** original `2568dc29a09fd2ec84bef2a92ae0e439671a47be`; product artifact `642099f4456d7c4eedf2af0c9ef01045e7f1ccbd`; qualified PR HEAD `9927391c3a57ce06c83f50559e09b114ee82601a`; observed Development `99d32ace8d1ac39080a737dd787b4e792e3d078c`.
