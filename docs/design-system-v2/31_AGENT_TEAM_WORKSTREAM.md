@@ -188,9 +188,9 @@ Open only when a real migrated screen proves the recurring gap:
 - further Work detail/feedback/management convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
 
 ### I. Reports / Analytics
-- `DS2-REPORT-001` through `DS2-REPORT-050` — `DONE`
-- `DS2-REPORT-051 — Churn Risk shared chart-tooltip adoption` — `READY — BOUNDED`
-- further Reports/Analytics convergence beyond REPORT051 — `BACKLOG` / each concern must be bounded separately
+- `DS2-REPORT-001` through `DS2-REPORT-051` — `DONE`
+- `DS2-REPORT-052 — Target Attainment shared chart-tooltip adoption` — `READY — BOUNDED`
+- further Reports/Analytics convergence beyond REPORT052 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
