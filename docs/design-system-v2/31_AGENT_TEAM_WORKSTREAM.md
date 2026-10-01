@@ -38,17 +38,19 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-051`.
+Product UI is integrated through `DS2-REPORT-052`.
+
+Source baseline audited on 2026-10-01: `13e4fd9434e841a5ade7601c28254c3ad05e811b` on `design-system-v2-development`.
 
 Latest product integration:
-- PR: `#100 — DS2-REPORT-051: adopt shared Churn Risk chart tooltip`
-- Exact reviewed PR HEAD: `8af587a2b6ecf03fde3903290d8bbfab3cf8b0a5`
-- Squash merge commit: `27d37f6d4c3a2ab184f9c7f47f86e637af6835f6`
-- Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
+- PR: `#103 — DS2-REPORT-052: adopt shared Target Attainment chart tooltip`
+- Exact reviewed PR HEAD: `c6d3f940e69451b0e80e68cc17dbc7c7c9bbd5ab`
+- Squash merge commit: `0c858b7b71ae1142f53cf7a152533f94ca7d8a13`
+- Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + bounded `LOCAL_EXECUTION_PASS`: 23/23 focused tests and focused fetched-source-closure TypeScript check PASS on the reviewed candidate
 - Product Design exact-head closeout: `PASS — NO DESIGN-SYSTEM BLOCKER`
-- Runtime/preview/release evidence: not claimed
+- Evidence limits: hooks/Recharts mocked; no full-application build/lint, browser runtime, visual, preview or release PASS claimed
 
-The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, representative Customers/Sales/Inventory/Procurement/Finance/HR/Field/Work migrations, Reports route/date/filter convergence, shared `ChartPanel`, `ChartTooltip`, `MetricGrid`, `StatePanel`, `AlertPanel`, `SectionHeader`, shared V2 Field controls in representative report headers, responsive detail-collection proofs, Customer Re-engagement single-renderer `ResponsiveCollection` orchestration across Mobile/Tablet/Desktop, and shared `ChartTooltip` adoption in Receivables, Sales, Treasury, Product Performance, Rep Performance and Churn Risk while preserving caller-owned analytical/business truth.
+The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, representative Customers/Sales/Inventory/Procurement/Finance/HR/Field/Work migrations, Reports route/date/filter convergence, shared `ChartPanel`, `ChartTooltip`, `MetricGrid`, `StatePanel`, `AlertPanel`, `SectionHeader`, shared V2 Field controls in representative report headers, responsive detail-collection proofs, Customer Re-engagement single-renderer `ResponsiveCollection` orchestration across Mobile/Tablet/Desktop, and shared `ChartTooltip` adoption in Receivables, Sales, Treasury, Product Performance, Rep Performance, Churn Risk and Target Attainment while preserving caller-owned analytical/business truth.
 
 ## Completed slices
 
@@ -87,6 +89,8 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - `DS2-REPORT-050 — Rep Performance shared chart-tooltip adoption` — `DONE` — PR #98 — reviewed HEAD `007d1174c09f1808a261fa49b133e4201d25ca68` — merge `22983eff7ce4d11113c2b10de5468bb33bb86936` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-051 — Churn Risk shared chart-tooltip adoption` — `DONE` — PR #100 — reviewed HEAD `8af587a2b6ecf03fde3903290d8bbfab3cf8b0a5` — merge `27d37f6d4c3a2ab184f9c7f47f86e637af6835f6` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 
+- `DS2-REPORT-052 — Target Attainment shared chart-tooltip adoption` — `DONE` — PR #103 — reviewed HEAD `c6d3f940e69451b0e80e68cc17dbc7c7c9bbd5ab` — merge `0c858b7b71ae1142f53cf7a152533f94ca7d8a13` — `GREEN-DEV + SOURCE_REVIEW_PASS` plus bounded 23/23 focused tests and focused source-closure TypeScript PASS — Product Design PASS; no full-app/runtime/visual/release qualification.
+
 ## REPORT051 system result
 
 - Churn Risk now delegates only the `توزيع تصنيف العملاء` Pie-tooltip presentation/anatomy to the existing shared domain-agnostic `ChartTooltip`.
@@ -95,11 +99,13 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - Shared `ChartTooltip` API/CSS/tokens/breakpoints were not widened; Receivables, Sales, Treasury, Product Performance, Rep Performance and Churn Risk are now bounded consumers.
 - Focused Churn Risk adapter/device/state/chart regression tests were authored but not executed under the hosted-CI quota policy.
 
-## Current single READY slice
+## Historical REPORT052 boundary — completed, not active
+
+The original scope below is retained for traceability; its implementation is complete. Do not restart it.
 
 ### DS2-REPORT-052 — Target Attainment shared chart-tooltip adoption
-Status: `READY — BOUNDED`.
-Owner role for immediate next action: UI Production Engineer.
+Status: `DONE — INTEGRATED`.
+No implementation action remains for this slice.
 
 Representative surface:
 - `src/pages/reports/TargetAttainmentPage.tsx` → the default Recharts tooltip inside `نسبة الإنجاز — المندوبون الفرديون`.
@@ -137,7 +143,66 @@ Explicitly excluded:
 - Target Attainment filter-control convergence, KPI cards, detail collection/table/cards, export/print/navigation;
 - any hook/query/cache/RPC/Supabase/calculation/trust/permission/RBAC/RLS/routing/validation/backend/business change.
 
-If the existing shared `ChartTooltip` cannot serve this chart unchanged, or preserving current chart semantics requires functional change, mark REPORT052 `BLOCKED` rather than widening scope.
+Historical stop rule: if the existing shared `ChartTooltip` could not serve this chart unchanged, or preserving current chart semantics required functional change, REPORT052 was to become `BLOCKED` rather than widen scope.
+
+## REPORT052 result and tooltip-track closure
+
+- Target Attainment now uses the existing shared `ChartTooltip` through its caller-owned adapter; percentage formatting, achievement thresholds/colors, LTR values, chart geometry, presence and trust/business semantics remain unchanged.
+- Full source inventory at the audited baseline covers all 23 non-test TSX files under `src/pages/reports/`, including profitability subpages. All eight Recharts `<Tooltip>` mounts across seven pages use adapters rendering the existing shared `ChartTooltip`: Receivables (1), Sales (2), Treasury (1), Product Performance (1), Rep Performance (1), Churn Risk (1), Target Attainment (1).
+- No remaining chart-tooltip adoption candidate was found in this Reports source inventory. This closes the current adoption track only; it is not a runtime/visual audit, a claim about charts outside this directory, or completion of Reports/Analytics or Design System V2.
+- The earlier Director selection `Reports chart-tooltip convergence follow-up audit` is superseded by this completed source inventory and the concrete next surface below. Do not create a no-op tooltip implementation or reselect Target Attainment.
+
+## Current single READY slice
+
+### DS2-REPORT-053 — Visit Reports filter-field convergence
+Status: `READY — BOUNDED`.
+Owner role for immediate next action: UI Production Engineer after the Workstream/Product Design owner adopts this boundary.
+
+Actor and benefit:
+- Field supervisors and managers narrowing visit reports by branch, representative, purpose, status, recording quality and contact outcome receive the same Arabic-first labelled native-select grammar and touch sizing as other migrated screens, without changing which visits are returned.
+
+Evidenced gap and exact surface:
+- `src/pages/reports/VisitReportsPage.tsx`, only the six bare `<label><select className="form-input">` controls within `.visit-report-filter-grid` (audited lines 629–677).
+- Existing `src/components/ui/Select.tsx` already composes a native select through `Field`, forwards the existing value/onChange/options and supplies unique label/control relationships; no new shared component/API is needed.
+- `src/pages/reports/VisitReportsPage.css` currently adds local label grammar and a 42px minimum to this grid. Remove only `.visit-report-filter-grid label` and `.visit-report-filter-grid select` declarations so existing shared Field/Select styling owns label/control anatomy and standard/touch sizing. Preserve the grid/container and all media-query composition.
+
+Implementation file allowlist:
+- `src/pages/reports/VisitReportsPage.tsx`: import existing `Select`; replace only those six label/select pairs with labelled V2 `Select`, keeping native option children and handlers intact.
+- `src/pages/reports/VisitReportsPage.css`: only removal of the two obsolete descendant rules named above; no breakpoint, grid, other selector, token or global stylesheet change.
+- `src/pages/reports/VisitReportsPage.test.tsx`: extend focused integration coverage; preserve existing assertions.
+- UI Production Engineer's own `team/design-system-v2/UI_IMPLEMENTATION_STATE.md` for exact-head evidence/handoff.
+
+Acceptance boundary:
+- Preserve exact Arabic labels and option labels/order/values, including empty-string “all” choices; branch IDs/names, employee IDs/full names, purpose exclusion of `unspecified`, all status/quality mappings, and `summary?.contact_results ?? []` mapping.
+- Preserve current six controlled string states and every handler's exact setter plus `resetPage()` call. Empty values still become `undefined` only in the existing caller filter object.
+- Preserve visibility: branch/representative/purpose in every tab; visit status only in `visits` or `quality`; recording quality/contact result only in `visits`.
+- Preserve `changeTab`: page resets to 1; leaving `visits` clears recording quality/contact result; leaving both `visits` and `quality` clears visit status. Do not add dependent-filter resets, loading locks or new validation.
+- Preserve date `ReportFilterBar`, grid order and current responsive layout (390: one column; 900: two columns; 1440: four columns), query keys/functions/enabled conditions/page size/exception mode, data-hook options, permission checks, export payload/CSV, summary metrics and every report/collection loading/error/empty/ready branch.
+- Use existing native keyboard/focus behavior and one programmatically associated visible Arabic label per control, with unique IDs and no duplicate wrapping label. No added live region, custom popup, focus trap, required state or new tab stop.
+- Existing shared control sizing applies: standard 42px and touch minimum 44px through canonical V2 tokens at <=1024px. Long Arabic labels/options and RTL must remain usable without widening the page; preserve native select behavior rather than inventing a popup.
+
+Concrete focused acceptance tests:
+1. Within the filter section, assert three labelled native selects on overview/surveys, four on quality and six on visits; migrated controls render `.ds-field` / `.form-select` and unique label htmlFor/control IDs. Survey template/question controls are excluded and unchanged.
+2. Assert exact option value/text/order/defaults for all six controls, including branch/employee fixtures, absence of `unspecified`, all status/quality choices, dynamic contact results and empty contact-results fallback.
+3. Select and clear every filter; assert existing service mock arguments retain exact value vs `undefined` semantics. From page 2, changing a filter returns the existing rows request to page 1 with pageSize 25; date range and other filter values are preserved.
+4. Exercise visits -> quality -> overview -> visits and surveys transitions: preserve visibility, cleared/persisted filter values, page reset and `exceptionsOnly` / query enablement semantics. Repeat a selection/clear to catch stale state or duplicate controls.
+5. At simulated widths 390/900/1440 and long Arabic branch/employee/contact strings, assert the same single filter control tree, exact labels, value retention and no duplicate IDs. Check stylesheet/source contract retains the existing grid/media rules and shared touch token path; do not label DOM width loops as visual geometry evidence.
+6. Retain and run the existing Visit Reports tests for Desktop table, Mobile/Tablet single renderer, ten-fact order, drill-down destinations, quality facts, loading/error/empty, pagination and survey loading. Add focused assertions that export permission visibility and current filter payload construction have not changed where practical; do not invoke live export/backend services.
+7. Verify diff is limited to the allowlist and the two local CSS-rule removals. Run focused local tests and scoped/full type checks only when an approved runtime is available; record exact command/HEAD and scope. A source inspection is not an executed PASS, and a known type/build failure blocks integration.
+
+Explicit exclusions:
+- All chart/tooltip work and all Target Attainment changes.
+- Survey-template/question selectors outside the filter grid, tabs, ReportFilterBar, metrics, report tables/cards, state notices, output/export behavior and navigation.
+- Shared Select/Field/component implementation/tests/APIs, global CSS/tokens/breakpoints and unrelated page-local styling.
+- Hooks/queries/cache/services/RPC/Supabase, permissions/RBAC/RLS, validation, workflow, calculations and business semantics.
+- Hosted CI, Vercel, main, schedule or governance-policy changes.
+
+Dependencies and handoff:
+- Existing Select/Field and global V2 form styles are integrated; no shared-layer prerequisite is missing.
+- REPORT052 is DONE. At audit time only governance PR #101 was open against Development; it overlaps Workstream/policy files, not this product surface. Recheck live branch/PR overlap before adoption and implementation; preserve its separate governance review and quota restrictions.
+- Director/Workstream owner adopts this boundary and reconciles its owned state; Integrator/Director reconciles stale Team Memory through authorized ownership. Do not overwrite QA or Implementer states as a substitute.
+- UI Production branches from the exact latest Development HEAD, implements only this slice and opens one Draft PR. Fresh same-head Design QA/Product Design review precedes Development-only integration.
+- If existing Select cannot preserve these contracts unchanged, or an overlapping active implementation/product-behavior dependency appears, report the exact blocker instead of widening scope.
 
 ## Product migration roadmap
 
@@ -188,9 +253,9 @@ Open only when a real migrated screen proves the recurring gap:
 - further Work detail/feedback/management convergence beyond WORK003 — `BACKLOG` / explicitly bounded only
 
 ### I. Reports / Analytics
-- `DS2-REPORT-001` through `DS2-REPORT-051` — `DONE`
-- `DS2-REPORT-052 — Target Attainment shared chart-tooltip adoption` — `READY — BOUNDED`
-- further Reports/Analytics convergence beyond REPORT052 — `BACKLOG` / each concern must be bounded separately
+- `DS2-REPORT-001` through `DS2-REPORT-052` — `DONE`
+- `DS2-REPORT-053 — Visit Reports filter-field convergence` — `READY — BOUNDED`
+- further Reports/Analytics convergence beyond REPORT053 — `BACKLOG` / each concern must be bounded separately
 
 ### J. Settings / Administration
 - `DS2-ADMIN-001` Users/roles/settings/audit surfaces — `BACKLOG`
