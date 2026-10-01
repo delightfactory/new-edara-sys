@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { cloneElement, isValidElement, type ReactElement, type ReactNode } from 'react'
 import { act, render, screen, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import TargetAttainmentPage, { CustomTooltip } from './TargetAttainmentPage'
@@ -135,15 +135,17 @@ describe('Target Attainment shared chart tooltip adoption', () => {
     setDefaultMocks()
   })
 
-  it('keeps inactive and empty-payload adapter guards', () => {
+  it('keeps inactive, absent, null and empty-payload adapter guards', () => {
     const view = render(<CustomTooltip active={false} label="مندوب اختباري" payload={[{ value: 105 }]} />)
     expect(view.container.firstChild).toBeNull()
 
-    view.rerender(<CustomTooltip active label="مندوب اختباري" payload={[]} />)
-    expect(view.container.firstChild).toBeNull()
+    for (const payload of [undefined, null, []]) {
+      view.rerender(<CustomTooltip active label="مندوب اختباري" payload={payload} />)
+      expect(view.container.firstChild).toBeNull()
+    }
   })
 
-  it('uses shared RTL passive anatomy at Mobile, Tablet and Desktop while preserving caller-owned percentage semantics', () => {
+  it('uses shared RTL passive DOM anatomy for simulated viewport widths while preserving caller-owned percentage semantics', () => {
     for (const width of [390, 900, 1440]) {
       setViewport(width)
       const view = render(<CustomTooltip active label={longRepName} payload={[{ value: 105 }]} />)
@@ -157,7 +159,9 @@ describe('Target Attainment shared chart tooltip adoption', () => {
       expect(row.style.color).toBe('rgb(16, 185, 129)')
       expect(value.textContent).toBe('105%')
       expect(value.getAttribute('dir')).toBe('ltr')
-      expect(tooltip.querySelector('button, a, input, select, textarea')).toBeNull()
+      expect(tooltip.querySelector('button, a, input, select, textarea, [tabindex], [contenteditable]')).toBeNull()
+      expect(tooltip.hasAttribute('tabindex')).toBe(false)
+      expect(tooltip.hasAttribute('contenteditable')).toBe(false)
       expect(tooltip.getAttribute('aria-live')).toBeNull()
       expect(tooltip.getAttribute('role')).toBeNull()
 
@@ -208,7 +212,8 @@ describe('Target Attainment shared chart tooltip adoption', () => {
       strokeDasharray: '4 4',
       strokeWidth: 2,
     })
-    expect(mocks.tooltip.mock.calls[0][0].content).toBeTruthy()
+    expect(isValidElement(mocks.tooltip.mock.calls[0][0].content)).toBe(true)
+    expect(mocks.tooltip.mock.calls[0][0].content.type).toBe(CustomTooltip)
     expect(mocks.bar.mock.calls[0][0]).toMatchObject({
       dataKey: 'pct',
       name: 'الإنجاز%',
@@ -220,12 +225,16 @@ describe('Target Attainment shared chart tooltip adoption', () => {
     ])
   })
 
-  it('keeps shared tooltip wiring stable across 390, 900 and 1440 widths', () => {
+  it('keeps shared tooltip wiring stable across 390, 900 and 1440 simulated widths', () => {
     for (const width of [390, 900, 1440]) {
+      mocks.tooltip.mockClear()
+      mocks.responsiveContainer.mockClear()
       setViewport(width)
       const view = render(<TargetAttainmentPage />)
 
-      expect(mocks.tooltip.mock.calls[mocks.tooltip.mock.calls.length - 1][0].content).toBeTruthy()
+      expect(mocks.tooltip).toHaveBeenCalled()
+      expect(mocks.responsiveContainer).toHaveBeenCalled()
+      expect(mocks.tooltip.mock.calls[mocks.tooltip.mock.calls.length - 1][0].content.type).toBe(CustomTooltip)
       expect(mocks.responsiveContainer.mock.calls[mocks.responsiveContainer.mock.calls.length - 1][0]).toMatchObject({
         width: '100%',
         height: 240,
@@ -245,6 +254,60 @@ describe('Target Attainment shared chart tooltip adoption', () => {
 
     expect(view.container.querySelector('.ds-chart-panel')).toBeNull()
     expect(mocks.tooltip).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    [0, 'rgb(239, 68, 68)'],
+    [79, 'rgb(239, 68, 68)'],
+    [80, 'rgb(245, 158, 11)'],
+    [99, 'rgb(245, 158, 11)'],
+    [100, 'rgb(16, 185, 129)'],
+    [105, 'rgb(16, 185, 129)'],
+  ])('keeps adapter percentage and threshold color for %s', (percentage, color) => {
+    const view = render(<CustomTooltip active label={longRepName} payload={[{ value: percentage }]} />)
+    const row = view.container.querySelector('.ds-chart-tooltip__row') as HTMLElement
+    expect(row.style.color).toBe(color)
+    expect(row.querySelector('.ds-chart-tooltip__value')?.textContent).toBe(`${percentage}%`)
+    expect(row.querySelector('.ds-chart-tooltip__value')?.getAttribute('dir')).toBe('ltr')
+  })
+
+  it('renders the actual Recharts content element through the shared adapter', () => {
+    const page = render(<TargetAttainmentPage />)
+    const content = mocks.tooltip.mock.calls[0][0].content as ReactElement
+    expect(content.type).toBe(CustomTooltip)
+    page.unmount()
+    const view = render(cloneElement(content, {
+      active: true, label: longRepName, payload: [{ value: 80 }],
+    }))
+    expect(view.container.querySelector('.ds-chart-tooltip__label')?.textContent).toBe(longRepName)
+    expect(view.container.querySelector('.ds-chart-tooltip__item-label')?.textContent).toBe('الإنجاز')
+    expect(view.container.querySelector('.ds-chart-tooltip__value')?.textContent).toBe('80%')
+    expect((view.container.querySelector('.ds-chart-tooltip__row') as HTMLElement).style.color).toBe('rgb(245, 158, 11)')
+  })
+
+  it('preserves the minimum 200px height for a single individual row', () => {
+    mocks.useTargetAttainmentTable.mockReturnValue({ data: [chartRows[0]], isLoading: false })
+    render(<TargetAttainmentPage />)
+    expect(mocks.responsiveContainer.mock.calls[0][0]).toMatchObject({ width: '100%', height: 200 })
+  })
+
+  it.each(['BLOCKED', 'FAILED'])('preserves cached chart data during %s trust and loading', status => {
+    mocks.useTrustForComponent.mockReturnValue({ status, is_stale: true })
+    mocks.useTargetAttainmentSummary.mockReturnValue({ data: undefined, isLoading: true })
+    mocks.useTargetAttainmentTable.mockReturnValue({ data: chartRows, isLoading: true })
+    render(<TargetAttainmentPage />)
+    expect(getChartPanel()).not.toBeNull()
+    expect(mocks.tooltip.mock.calls[0][0].content.type).toBe(CustomTooltip)
+    expect(screen.getByText('بيانات الأهداف محجوبة')).toBeTruthy()
+  })
+
+  it('keeps chart absent during initial loading with no cached rows', () => {
+    mocks.useTargetAttainmentSummary.mockReturnValue({ data: undefined, isLoading: true })
+    mocks.useTargetAttainmentTable.mockReturnValue({ data: undefined, isLoading: true })
+    const view = render(<TargetAttainmentPage />)
+    expect(view.container.querySelector('.ds-chart-panel')).toBeNull()
+    expect(mocks.tooltip).not.toHaveBeenCalled()
+    expect(screen.getAllByTestId('skeleton-card')).toHaveLength(4)
   })
 
   it('preserves trust and freshness action presence rules', () => {
