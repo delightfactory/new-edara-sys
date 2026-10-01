@@ -38,17 +38,17 @@ Vercel preview remains owner-requested only. Scheduled agents never merge to `ma
 
 ## Current integrated baseline
 
-Product UI is integrated through `DS2-REPORT-050`.
+Product UI is integrated through `DS2-REPORT-051`.
 
 Latest product integration:
-- PR: `#98 — DS2-REPORT-050: adopt shared Rep Performance chart tooltip`
-- Exact reviewed PR HEAD: `007d1174c09f1808a261fa49b133e4201d25ca68`
-- Squash merge commit: `22983eff7ce4d11113c2b10de5468bb33bb86936`
+- PR: `#100 — DS2-REPORT-051: adopt shared Churn Risk chart tooltip`
+- Exact reviewed PR HEAD: `8af587a2b6ecf03fde3903290d8bbfab3cf8b0a5`
+- Squash merge commit: `27d37f6d4c3a2ab184f9c7f47f86e637af6835f6`
 - Evidence: `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + `TESTS_AUTHORED_NOT_EXECUTED`
 - Product Design exact-head closeout: `PASS — NO DESIGN-SYSTEM BLOCKER`
 - Runtime/preview/release evidence: not claimed
 
-The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, representative Customers/Sales/Inventory/Procurement/Finance/HR/Field/Work migrations, Reports route/date/filter convergence, shared `ChartPanel`, `ChartTooltip`, `MetricGrid`, `StatePanel`, `AlertPanel`, `SectionHeader`, shared V2 Field controls in representative report headers, responsive detail-collection proofs, Customer Re-engagement single-renderer `ResponsiveCollection` orchestration across Mobile/Tablet/Desktop, and shared `ChartTooltip` adoption in Receivables, Sales, Treasury, Product Performance and Rep Performance while preserving caller-owned analytical/business truth.
+The development branch includes semantic foundations, responsive shell/navigation/form/collection/action patterns, Dashboard V2, representative Customers/Sales/Inventory/Procurement/Finance/HR/Field/Work migrations, Reports route/date/filter convergence, shared `ChartPanel`, `ChartTooltip`, `MetricGrid`, `StatePanel`, `AlertPanel`, `SectionHeader`, shared V2 Field controls in representative report headers, responsive detail-collection proofs, Customer Re-engagement single-renderer `ResponsiveCollection` orchestration across Mobile/Tablet/Desktop, and shared `ChartTooltip` adoption in Receivables, Sales, Treasury, Product Performance, Rep Performance and Churn Risk while preserving caller-owned analytical/business truth.
 
 ## Completed slices
 
@@ -85,56 +85,59 @@ The development branch includes semantic foundations, responsive shell/navigatio
 - `DS2-REPORT-048 — Treasury shared chart-tooltip adoption` — `DONE` — PR #96 — reviewed HEAD `e8c718b8eb3f8be5df54627714a15166d8bd63ce` — merge `9eb5489a00631f1cc7b9377893e7b0a1ebb560d6` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-049 — Product Performance shared chart-tooltip adoption` — `DONE` — PR #97 — reviewed HEAD `426bb9a76ad968d670473150e35ef4cfeb43372e` — merge `055aa6587ff2f08e9e89cbf604c15d58b46c86ff` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 - `DS2-REPORT-050 — Rep Performance shared chart-tooltip adoption` — `DONE` — PR #98 — reviewed HEAD `007d1174c09f1808a261fa49b133e4201d25ca68` — merge `22983eff7ce4d11113c2b10de5468bb33bb86936` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
+- `DS2-REPORT-051 — Churn Risk shared chart-tooltip adoption` — `DONE` — PR #100 — reviewed HEAD `8af587a2b6ecf03fde3903290d8bbfab3cf8b0a5` — merge `27d37f6d4c3a2ab184f9c7f47f86e637af6835f6` — `GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED` — Product Design PASS.
 
-## REPORT050 system result
+## REPORT051 system result
 
-- Rep Performance now delegates only the `مقارنة المندوبين — أعلى 15` comparison-chart tooltip presentation/anatomy to the existing shared domain-agnostic `ChartTooltip`.
-- Rep Performance retains caller ownership of `active` / payload gating, heading, payload order, `p.name`, `p.color`, exact `${fmt(p.value)} ج.م` formatting, explicit LTR values, Recharts trigger wiring and all analytical/business/trust truth.
-- Exact `tableLoading -> empty -> ready`, 300px loading/empty containment, top-15 mapping, dynamic ready height, vertical chart layout/margins/grid/axes, exact revenue/returns series order/colors/radii/max sizes and Trust/Freshness remain unchanged.
-- Shared `ChartTooltip` API/CSS/tokens/breakpoints were not widened; Receivables, Sales, Treasury, Product Performance and Rep Performance are now bounded consumers.
-- Focused Rep Performance adapter/device/state/chart regression tests were authored but not executed under the hosted-CI quota policy.
+- Churn Risk now delegates only the `توزيع تصنيف العملاء` Pie-tooltip presentation/anatomy to the existing shared domain-agnostic `ChartTooltip`.
+- Churn Risk retains caller ownership of active/payload gating, category heading, exact `عملاء` row label, `FMT` count formatting, caller Pie color, explicit LTR numeric direction and all analytical/trust/business truth.
+- Exact ready-only chart presence, 260px geometry, Pie data/order/keys/radii/padding/colors, Legend, Trust/Freshness, report filters, KPI summary and responsive detail composition remain unchanged.
+- Shared `ChartTooltip` API/CSS/tokens/breakpoints were not widened; Receivables, Sales, Treasury, Product Performance, Rep Performance and Churn Risk are now bounded consumers.
+- Focused Churn Risk adapter/device/state/chart regression tests were authored but not executed under the hosted-CI quota policy.
 
 ## Current single READY slice
 
-### DS2-REPORT-051 — Churn Risk shared chart-tooltip adoption
+### DS2-REPORT-052 — Target Attainment shared chart-tooltip adoption
 Status: `READY — BOUNDED`.
 Owner role for immediate next action: UI Production Engineer.
 
 Representative surface:
-- `src/pages/reports/ChurnRiskPage.tsx` → the default Recharts tooltip inside `توزيع تصنيف العملاء`.
+- `src/pages/reports/TargetAttainmentPage.tsx` → the default Recharts tooltip inside `نسبة الإنجاز — المندوبون الفرديون`.
 
 System intent:
-- replace only Recharts' default tooltip presentation with the already-proven shared `ChartTooltip`;
-- keep chart-library payload interpretation in a Churn Risk caller adapter;
-- keep the current segment/category label, exact row label `عملاء`, count formatting through the existing `FMT`, caller-provided pie-series color and explicit LTR numeric value direction caller-owned;
+- replace only the default Recharts tooltip presentation with the already-proven shared `ChartTooltip`;
+- keep chart-library payload interpretation in a local Target Attainment adapter;
+- keep the current representative name heading, exact row label `الإنجاز`, percentage formatting, caller achievement color and explicit LTR numeric direction caller-owned;
 - do not widen `ChartTooltip` API/CSS/tokens/breakpoints and do not introduce a second tooltip grammar.
 
 Acceptance boundary:
-- preserve the exact chart presence rule `!statsLoading && pieData.length > 0`; do not add a loading/empty chart surface where none exists;
-- preserve `ResponsiveContainer width="100%" height={260}`;
-- preserve exact pie data/order, `dataKey="value"`, `nameKey="name"`, `cx="50%"`, `cy="50%"`, `innerRadius={60}`, `outerRadius={100}`, `paddingAngle={2}`;
-- preserve the exact five caller colors `#f59e0b`, `#10b981`, `#3b82f6`, `#f97316`, `#ef4444` and the existing `Legend`;
-- preserve `ChartPanel` title and Trust/Freshness action behavior;
-- preserve report-header filters, KPI summary, responsive customer-detail collection/table/cards, blocked/loading/empty precedence and all query/trust/business semantics;
-- Mobile 390 / Tablet 900 / Desktop 1440 use the same shared RTL passive tooltip grammar with long-Arabic containment; numeric counts remain LTR/bidi-safe;
+- preserve the exact chart presence rule `chartData.length > 0`; do not add loading/empty chart UI where none exists;
+- preserve `individualRows = rows.filter(r => r.scope === 'individual' && r.rep_name)`;
+- preserve chart mapping `{ name: r.rep_name!, pct: Math.round(r.achievement_pct ?? 0) }`;
+- preserve `ResponsiveContainer width="100%" height={Math.max(chartData.length * 40, 200)}`;
+- preserve vertical `BarChart` layout, margins `{ top: 4, left: 10, right: 40, bottom: 0 }`, grid, X/Y axes, percentage tick/domain behavior and `ReferenceLine x={100}`;
+- preserve `Bar dataKey="pct" name="الإنجاز%" radius={[0, 3, 3, 0]} maxBarSize={20}`;
+- preserve caller `barColor` thresholds/colors: `>=100 -> #10b981`, `>=80 -> #f59e0b`, otherwise `#ef4444`;
+- preserve ChartPanel title/description, Trust/Freshness action behavior, report-header filters, KPI summary, responsive target-detail collection/table/cards, blocked/loading/empty precedence and all query/trust/business semantics;
+- Mobile 390 / Tablet 900 / Desktop 1440 use the same shared RTL passive tooltip grammar with long-Arabic representative-name containment; percentage values remain LTR/bidi-safe;
 - tooltip remains informational only: no focus target, tab stop, `role`, `aria-live` or keyboard/action semantics.
 
 Focused test expectations:
 - inactive / empty-payload adapter guards;
-- exact category heading, one-row `عملاء` label, existing count formatting and caller color pass-through;
-- browser/CSSOM-normalized color assertion for representative `#f59e0b -> rgb(245, 158, 11)`;
+- exact representative heading, one-row `الإنجاز` label, preserved percentage formatting, caller achievement color and LTR direction;
+- CSSOM-normalized representative achievement color evidence;
 - shared-tooltip adoption at 390 / 900 / 1440 and long-Arabic/passive anatomy;
-- no ready chart/tooltip leakage while stats are loading or all pie values are zero;
-- unchanged 260px geometry, pie data/order/keys/radii/padding/colors, legend and Trust/Freshness presence rules.
+- no chart/tooltip leakage when `chartData.length === 0`;
+- unchanged individual-only filtering, rounded chart mapping, dynamic height, layout/margins/grid/axes/reference-line/bar/color contracts and Trust/Freshness presence rules.
 
 Explicitly excluded:
-- Target Attainment or any other report tooltip;
+- any other report tooltip or chart;
 - `ChartTooltip` implementation/API/tests/CSS/tokens/breakpoints;
-- `ChartPanel`, `MetricGrid`, `ResponsiveCollection`, `StatePanel`, `Card`, `KeyValueList` or other shared-pattern changes;
-- Churn Risk filter controls, KPI metrics, detail collection/table/cards, export/print/navigation;
+- `ChartPanel`, `ResponsiveCollection`, `Card`, `KeyValueList`, `MetricCard` or other shared-pattern changes;
+- Target Attainment filter-control convergence, KPI cards, detail collection/table/cards, export/print/navigation;
 - any hook/query/cache/RPC/Supabase/calculation/trust/permission/RBAC/RLS/routing/validation/backend/business change.
 
-If the existing shared `ChartTooltip` cannot serve this chart unchanged, or preserving current chart semantics requires functional change, mark REPORT051 `BLOCKED` rather than widening scope.
+If the existing shared `ChartTooltip` cannot serve this chart unchanged, or preserving current chart semantics requires functional change, mark REPORT052 `BLOCKED` rather than widening scope.
 
 ## Product migration roadmap
 
