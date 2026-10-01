@@ -31,7 +31,8 @@ and the check names `Test and build` and `Clean install (Windows)` are retained.
 
 `pull_request` runs are eligible for native PR status evaluation. Checkout is
 pinned to the event's `github.sha`, the synthetic PR merge snapshot. The guard
-verifies its two parents are the recorded target base and candidate head, and
+reads raw commit parent headers (valid even at a depth-one shallow boundary),
+verifies the two parents are the recorded target base and candidate head, and
 queries GitHub before and after validation to reject a moved head/base,
 retargeted PR, closed PR or draft PR. Native job check identity is managed by
 GitHub; we do not publish success to another SHA or manufacture a status.
@@ -60,7 +61,7 @@ availability on the default branch. No skip-ci or path-filter workaround is used
 ## Local verification and cost
 
 Run `node --test .github/scripts/final-candidate.test.cjs` and validate the YAML
-with `actionlint` before publishing. These tests verify the candidate guard;
+with `actionlint` before publishing. These tests include a real depth-one Git merge checkout and verify the candidate guard;
 they do not execute application tests/build or Windows dependency installation. Hosted validation is one
 deliberate candidate run, repeated only after candidate changes or a justified
 retry. Ordinary development events request zero runs under this workflow.
@@ -71,7 +72,7 @@ References: [PR check eligibility and stale checks](https://docs.github.com/en/p
 
 ## Development-only scope and remaining behavior
 
-This change is based on Development `27d37f6d4c3a2ab184f9c7f47f86e637af6835f6`
+This change is based on Development `2568dc29a09fd2ec84bef2a92ae0e439671a47be`
 and targets only `design-system-v2-development`. Its existing workflow already
 excluded ordinary development PRs; this adds a deliberate final-candidate route,
 not a measured reduction from their previous zero-run behavior. Path filters are

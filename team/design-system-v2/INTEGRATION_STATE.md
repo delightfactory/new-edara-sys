@@ -2,88 +2,79 @@
 
 ## Reviewed baseline
 
-- Review date: `2026-09-30`.
-- Development branch: `design-system-v2-development`.
-- Exact Development HEAD before this state write: `cfb88f9a20bd7c8e0699f2d01a2d2420ac3b7347`.
-- Current slice: `DS2-REPORT-051 — Churn Risk shared chart-tooltip adoption`.
-- Active PR: `#100 — DS2-REPORT-051: adopt shared Churn Risk chart tooltip`.
-- PR base: `design-system-v2-development`.
-- PR base SHA: `186db3679f08e00550959cedf64cddaf4af65ac2`.
-- Exact current PR HEAD: `8af587a2b6ecf03fde3903290d8bbfab3cf8b0a5`.
-- PR state: `OPEN / DRAFT / mergeable=true`.
-- Changed-file scope: exactly 3 files — Churn Risk page, focused Churn Risk test, and UI Production owned state.
-- Design QA on exact HEAD: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
-- Product Design on exact HEAD: `PASS — NO DESIGN-SYSTEM BLOCKER`.
-- Evidence: `TESTS_AUTHORED_NOT_EXECUTED`.
-- Build/Test/Lint/Runtime/Visual/Preview/Release PASS: not claimed.
-- Current integration disposition: `READY_FOR_MERGE — NOT MERGED THIS RUN BY OWNER INSTRUCTION`.
+- Review date: `2026-10-01`.
+- Authoritative branch: `design-system-v2-development`.
+- Exact Development HEAD: `5dbf4e7bd12bd404fb22026a39d739f245524b58`.
+- Product UI integrated through: `DS2-REPORT-051`.
+- REPORT051 merge: PR #100, exact reviewed HEAD `8af587a2b6ecf03fde3903290d8bbfab3cf8b0a5`, squash `27d37f6d4c3a2ab184f9c7f47f86e637af6835f6`.
+- REPORT051 evidence: `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS + TESTS_AUTHORED_NOT_EXECUTED`; Product Design PASS; no Runtime/Preview/Release PASS claimed.
+- Current single READY product slice from the Workstream: `DS2-REPORT-052 — Target Attainment shared chart-tooltip adoption` (`READY — BOUNDED`).
+- Single open PR targeting Development: `#101 — ci: validate explicit final candidates on DS2 development`.
+- PR #101 exact HEAD: `f73c95fd56382820f57ec272677812446187db28`.
+- PR #101 current state: `OPEN / DRAFT / mergeable=false`.
+- Current integration disposition: `BLOCKED — PR #101 DOES NOT SATISFY INTEGRATION GATES`.
 
-## Integrator readiness decision
+## Integrator decision
 
-**READY FOR MERGE, but intentionally not merged in this run.**
+**NO MERGE.**
 
-The previous no-PR / repository-write blocker at feature HEAD `74a61461...` is superseded by the actual PR #100 implementation and exact-head review evidence.
+PR #101 is not an implementation slice and does not satisfy the Development Integrator gates.
 
 Independent revalidation confirms:
 
-- PR #100 still targets exactly `design-system-v2-development`.
-- Exact PR HEAD is unchanged at `8af587a2b6ecf03fde3903290d8bbfab3cf8b0a5`.
-- GitHub reports `mergeable=true`.
-- Design QA review is anchored to the same exact HEAD and records `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`.
-- Product Design review is anchored to the same exact HEAD and records `PASS — NO DESIGN-SYSTEM BLOCKER`.
-- Evidence remains honestly labeled `TESTS_AUTHORED_NOT_EXECUTED`; no runtime/build/test/lint/visual/preview/release PASS is inferred.
-- There are no inline review threads.
-- Combined commit status contains no statuses, which is expected under the hosted-CI quota policy and is not treated as a blocker.
-- The PR diff is exactly:
-  - `src/pages/reports/ChurnRiskPage.tsx`
-  - `src/pages/reports/ChurnRiskPage.test.tsx`
-  - `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
-- No DB/migration/RPC/service/query-cache/RBAC/RLS/permission/routing/validation/calculation/trust/backend/workflow/business/deployment change is present.
-- Shared `ChartTooltip` implementation/API/tests/CSS/tokens/breakpoints remain unchanged.
+- base is `design-system-v2-development`, but the PR is currently `mergeable=false`;
+- exact HEAD remains `f73c95fd56382820f57ec272677812446187db28`;
+- there are no submitted reviews and no inline review threads;
+- there is no `AGENT-REVIEW: GREEN-DEV` for this exact HEAD;
+- there is no `SOURCE_REVIEW_PASS` or accepted execution-evidence label for this exact HEAD;
+- combined commit status contains no statuses;
+- the diff changes eight governance/CI files:
+  - `.github/FINAL_CANDIDATE_CI.md`
+  - `.github/scripts/final-candidate.cjs`
+  - `.github/scripts/final-candidate.test.cjs`
+  - `.github/workflows/work-management-ci.yml`
+  - `AGENTS.md`
+  - `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md`
+  - `docs/design-system-v2/33_TEST_AND_VALIDATION_POLICY.md`
+  - `team/design-system-v2/DECISION_LOG.md`;
+- the PR intentionally changes workflow behavior so a `ready_for_review` transition on Development can request hosted CI. That is an unexpected workflow/CI-enabling change under the currently integrated operating contract, which still forbids hosted CI for normal DS2 development and requires the Integrator not to trigger or rely on it;
+- therefore the PR cannot be merged by this Integrator under the current exact-head gates.
 
-## Base drift / conflict assessment
+## Base drift / mergeability
 
-The PR was created from base SHA `186db3679f08e00550959cedf64cddaf4af65ac2`.
+PR #101 was opened from Development `27d37f6d4c3a2ab184f9c7f47f86e637af6835f6`.
 
-Current Development advanced by exactly two governance-only commits to `cfb88f9a20bd7c8e0699f2d01a2d2420ac3b7347`, affecting only:
+Development has since advanced by one commit:
 
-- `team/design-system-v2/DESIGN_QA_STATE.md`
-- `team/design-system-v2/DESIGN_DIRECTOR_STATE.md`
+- `5dbf4e7bd12bd404fb22026a39d739f245524b58` — `docs(ds2): bound REPORT052 Target Attainment tooltip adoption`.
 
-The PR changes neither file. Therefore:
+That commit changes `docs/design-system-v2/31_AGENT_TEAM_WORKSTREAM.md`, which PR #101 also changes. GitHub currently reports `mergeable=false`. The branch must not be force-reconciled by the Integrator; the PR owner/reviewer must first decide how the CI-governance proposal should coexist with the newer REPORT052 Workstream truth.
 
-- there is no changed-file overlap between Development drift and PR #100;
-- GitHub reports the PR mergeable;
-- no rebase or conflict-resolution commit is required before merge;
-- the safe merge plan is to recheck the exact HEAD immediately before merge and use expected-head protection. If the HEAD or base-relevant files move, stop and revalidate.
+## Current product-workstream truth
 
-## Scope / system contract preserved
+REPORT051 is complete and integrated.
 
-REPORT051 remains bounded to Churn Risk Pie tooltip presentation only:
+The current Workstream now identifies exactly one product slice as implementation-ready:
 
-- caller retains active/payload interpretation;
-- caller retains category heading, exact `عملاء` label, existing `FMT` count formatting, caller Pie color and explicit LTR numeric direction;
-- exact chart presence rule remains `!statsLoading && pieData.length > 0`;
-- exact 260px geometry, Pie data/order/keys/radii/padding/colors, Legend and Trust/Freshness behavior remain unchanged;
-- header filters, KPI summary, responsive detail collection/table/cards and all query/permission/backend/business contracts remain unchanged;
-- shared `ChartTooltip` remains presentation-only and is not widened.
+`DS2-REPORT-052 — Target Attainment shared chart-tooltip adoption` — `READY — BOUNDED`.
 
-## Merge plan for the next Integrator action
+The bounded product direction is valid, but UI Production should not create a competing implementation PR while PR #101 remains the single active PR targeting Development under the one-active-PR operating rule.
 
-When merge execution is authorized:
+A minor documentation inconsistency remains in the Workstream roadmap subsection, where an older line still labels REPORT051 as READY despite the integrated-baseline and completed-slice sections correctly marking REPORT051 DONE and REPORT052 READY. This does not authorize changing product scope in this Integrator run.
 
-1. Re-fetch PR #100 and verify exact HEAD is still `8af587a2b6ecf03fde3903290d8bbfab3cf8b0a5`.
-2. Recheck base is exactly `design-system-v2-development`, `mergeable=true`, review threads remain clear, and no new BLOCKING role-state contradiction exists.
-3. Do not trigger GitHub Actions or Vercel and do not touch `main`.
-4. Squash-merge PR #100 using expected-head SHA protection.
-5. Only after a successful merge: mark REPORT051 DONE, advance exactly one next dependency-safe slice to READY, update Team Memory and Integration State, and add the normal issue #27 integration note.
+## Actions this run
 
-No merge was executed in this run by explicit owner instruction.
+- Completed the mandatory shared-memory bootstrap from current Development.
+- Inspected issue #27 and the single active Development PR.
+- Revalidated PR #101 metadata, exact HEAD, reviews, threads, changed-file scope, status evidence and current Development drift.
+- Did not merge PR #101.
+- Did not trigger/rerun GitHub Actions, use hosted CI, deploy Vercel, modify preview branches, touch `main`, or modify feature/product code.
+- Updated only this owned Integration State because the integration disposition materially changed from stale REPORT051 pre-merge readiness to current PR #101 blocked integration truth.
 
 ### Cross-role handoff
-- **To:** Development Integrator on the next merge-authorized run.
-- **What changed:** the stale no-PR/tooling blocker is retired; PR #100 is a fully reviewed, mergeable REPORT051 candidate on exact HEAD `8af587a2b6ecf03fde3903290d8bbfab3cf8b0a5`.
-- **Preserve:** exact 3-file scope; unchanged shared `ChartTooltip` contract; all caller-owned Churn Risk chart/trust/business semantics; evidence label `TESTS_AUTHORED_NOT_EXECUTED`.
-- **Need from you:** perform only the final unchanged-head/base/thread/mergeability/role-state recheck, then squash-merge if still clean and merge execution is authorized.
-- **Blocker level:** `NONE`.
-- **Baseline:** Development before this state write `cfb88f9a20bd7c8e0699f2d01a2d2420ac3b7347`; exact reviewed PR #100 HEAD `8af587a2b6ecf03fde3903290d8bbfab3cf8b0a5`.
+- **To:** Product Design Director / owner of PR #101 governance proposal; UI Production after the active-PR blockage is cleared.
+- **What changed:** REPORT051 is already integrated; REPORT052 is now bounded and READY, but PR #101 is the sole active Development PR and is currently `mergeable=false`, unreviewed, and changes CI/workflow policy.
+- **Preserve:** REPORT051 integrated evidence; REPORT052 bounded product scope; current prohibition on Integrator-triggered hosted CI, Vercel and `main`; one-active-PR rule.
+- **Need from you:** resolve PR #101 through its own governance review/reconciliation or close it; do not ask the Integrator to merge it without exact-head review evidence and a clean, current base.
+- **Blocker level:** `BLOCKING` for integration of PR #101 and for starting a competing Development PR.
+- **Baseline:** Development `5dbf4e7bd12bd404fb22026a39d739f245524b58`; PR #101 HEAD `f73c95fd56382820f57ec272677812446187db28`.

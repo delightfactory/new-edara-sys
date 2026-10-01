@@ -17,14 +17,14 @@ head/base invalidates acceptance and needs a fresh authorized ready transition.
 
 This is a cost/quota governance decision, not permission to lower the quality bar.
 
-## Absolute rule
+## Normal development and retry restrictions
 
 Design System agents MUST NOT:
 
-- trigger GitHub Actions intentionally
-- rerun a failed or canceled GitHub Actions workflow
+- trigger GitHub Actions during normal development; only an explicitly owner-authorized final-candidate ready transition is permitted
+- rerun a failed or canceled GitHub Actions workflow without separate explicit owner authorization
 - use workflow dispatch
-- change workflow triggers to make development PRs run CI
+- change workflow triggers to make opened, push or synchronize events run CI
 - create temporary CI workflows
 - use GitHub Actions as a substitute for local/static review
 - merge a PR because a previous unrelated workflow happened to be green
@@ -60,7 +60,9 @@ Every reviewed slice must distinguish evidence accurately.
 
 Means the reviewer inspected the exact HEAD and found no material source-level blocker in scope, contracts, TypeScript reasoning, permissions, state coverage, responsive composition or test intent.
 
-This is sufficient for controlled merge into `design-system-v2-development` when all other development gates pass.
+This passes the source-review gate for a draft candidate. It is not sufficient
+for merge: integration also requires the owner-authorized final-candidate run
+and successful evidence for the unchanged current head and base.
 
 It is NOT equivalent to an executed build or test suite.
 
@@ -82,6 +84,14 @@ Typical project commands are:
 
 Do not claim this evidence from source inspection alone.
 
+### `FINAL_CANDIDATE_CI_PASS`
+
+Requires an actual successful `pull_request: ready_for_review` run of all existing
+jobs on the exact frozen candidate. Record the run URL/ID, candidate head, base
+and tested merge snapshot from the guard summaries. It does not imply visual,
+preview or release acceptance. Missing, skipped, failed or stale checks do not
+qualify; a head/base change requires a fresh authorized candidate transition.
+
 ### `MANUAL_PREVIEW_BUILD_PASS`
 
 May only be claimed after the owner explicitly asks for a preview and the dedicated preview branch completes a Vercel build successfully for the frozen development baseline.
@@ -94,7 +104,7 @@ Requires actual visual/runtime inspection on representative devices/viewports an
 
 ## Development merge gate
 
-A UI PR may merge into `design-system-v2-development` without hosted CI only when all of the following are true:
+A UI PR may integrate into `design-system-v2-development` only when all of the following are true:
 
 1. exact-head `SOURCE_REVIEW_PASS`
 2. scope and functional-isolation gates pass
@@ -102,12 +112,18 @@ A UI PR may merge into `design-system-v2-development` without hosted CI only whe
 4. no known build/type failure is outstanding
 5. no unresolved material review blocker exists
 6. the PR does not target `main`
+7. the owner explicitly authorizes the frozen final-candidate ready transition
+8. all existing jobs succeed on the unchanged candidate with `FINAL_CANDIDATE_CI_PASS`
+9. immediately before merge, the reviewed head and tested base remain current; use expected-head merge protection and serialize the base recheck/integration
 
 The reviewer marker for this state is:
 
 `AGENT-REVIEW: GREEN-DEV`
 
-This means safe enough to integrate into the isolated development workstream. It does not mean release-ready.
+This means the exact head passes source review. It does not authorize integration
+by itself, establish an executed PASS, or mean release-ready. The final-candidate
+CI and owner authorization gates above remain mandatory. A current owner
+instruction forbidding merge always takes precedence.
 
 ## Build failure behavior
 

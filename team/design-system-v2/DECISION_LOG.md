@@ -36,11 +36,11 @@ Use this file only for durable decisions future agents must preserve unless expl
 
 ## DS2-DEC-005 — Hosted CI quota protection
 - **Date:** 2026-09-15
-- **Decision:** Design System development agents must not trigger/rerun GitHub Actions or rely on hosted CI. Development PR workflow execution is prevented by branch targeting policy; tests are still authored and evidence is labeled honestly.
+- **Decision:** Normal Design System development must not trigger/rerun GitHub Actions. Tests are still authored and evidence is labeled honestly. Explicit final-candidate validation and integration now follow DS2-DEC-009.
 - **Reason:** GitHub Actions quota has been exceeded/exhausted; uncontrolled CI would halt useful work without adding proportional value.
 - **Affected area:** testing, review, workflow configuration.
 - **Owner:** Project owner / Design System governance.
-- **Status:** ACTIVE
+- **Status:** ACTIVE for normal development; the absolute execution ban and source-only integration model are superseded narrowly by DS2-DEC-009.
 
 ## DS2-DEC-006 — UI-only functional isolation
 - **Date:** 2026-09-15
