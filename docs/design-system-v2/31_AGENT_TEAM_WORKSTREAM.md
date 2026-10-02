@@ -158,11 +158,19 @@ Historical stop rule: if the existing shared `ChartTooltip` could not serve this
 - No remaining chart-tooltip adoption candidate was found in this Reports source inventory. This closes the current adoption track only; it is not a runtime/visual audit, a claim about charts outside this directory, or completion of Reports/Analytics or Design System V2.
 - The earlier Director selection `Reports chart-tooltip convergence follow-up audit` is superseded by this completed source inventory and the concrete next surface below. Do not create a no-op tooltip implementation or reselect Target Attainment.
 
-## Current single READY slice
+## Current single active slice
 
 ### DS2-REPORT-053 — Visit Reports filter-field convergence
-Status: `READY — BOUNDED`.
-Owner role for immediate next action: UI Production Engineer after the Workstream/Product Design owner adopts this boundary.
+Status: `REVIEW — BOUNDED`.
+Owner role for immediate next action: Design QA. Development Integrator acts only after same-head `AGENT-REVIEW: GREEN-DEV`.
+
+Current review checkpoint:
+- Draft PR: `#104 — DS2-REPORT-053: converge Visit Reports filter fields`, targeting `design-system-v2-development`.
+- Exact implementation HEAD: `02d17d9adcb79ff15b5cbd6b1546c80d1e7b0da5`; current Development coordination HEAD before this Workstream write: `24e94ba4aebacee271daffb3c7d93a55edb0b9a6`.
+- Product Design exact-head disposition: `PASS — NO DESIGN-SYSTEM BLOCKER`, recorded in `team/design-system-v2/DESIGN_DIRECTOR_STATE.md`.
+- Design QA exact-head review is still pending; no REPORT053 `GREEN-DEV` exists yet. Do not integrate and do not start a competing product slice while PR #104 is active.
+- Evidence remains bounded: baseline `8/8` and candidate `22/22` focused tests PASS plus focused source-closure TypeScript PASS; no full-app build/lint PASS and no browser/runtime visual/RTL/overflow PASS are claimed.
+- A Vercel bot created an automatic Preview for PR #104 despite `DS2-DEC-004 — Manual preview only`. Product Design did not trigger or use it as evidence; treat it as governance `WATCH`, not runtime/visual qualification.
 
 Actor and benefit:
 - Field supervisors and managers narrowing visit reports by branch, representative, purpose, status, recording quality and contact outcome receive the same Arabic-first labelled native-select grammar and touch sizing as other migrated screens, without changing which visits are returned.
