@@ -1,71 +1,58 @@
 # UI Implementation State
 
-## Reviewed baseline
+## Current candidate and baseline
 
-- Run date: `2026-10-01`.
-- Development branch: `design-system-v2-development`.
-- Exact Development baseline before REPORT052: `2568dc29a09fd2ec84bef2a92ae0e439671a47be`.
-- Active slice: `DS2-REPORT-052 — Target Attainment shared chart-tooltip adoption`.
-- Feature branch: `ds2-report-052-target-attainment-chart-tooltip-adoption`.
-- Original product/test artifact HEAD: `642099f4456d7c4eedf2af0c9ef01045e7f1ccbd`.
-- Exact PR HEAD before this local qualification/test-strengthening state write: `9927391c3a57ce06c83f50559e09b114ee82601a`.
-- Development observed during qualification: `99d32ace8d1ac39080a737dd787b4e792e3d078c`.
-- Draft PR: [#103](https://github.com/delightfactory/new-edara-sys/pull/103), targeting `design-system-v2-development`.
-- Disposition: `DRAFT PR — LOCAL TEST STRENGTHENING; FRESH EXACT-HEAD REVIEW REQUIRED AFTER PUBLICATION`.
-- Evidence: bounded `LOCAL_EXECUTION_PASS` for focused tests/type-check only; no full-app build/lint or runtime-visual PASS.
+- Date: 2026-10-01.
+- Active slice: `DS2-REPORT-053 — Visit Reports filter-field convergence`.
+- Exact implementation baseline: `9b308ffc959cf1925047b23074da4ea8999319e9` on `design-system-v2-development` after Director/Workstream adoption.
+- Reserved feature branch: `ds2-report-053-visit-report-filter-field-convergence`, created by the coordinator at that baseline.
+- Later coordinator-reported Development `0bec40e03599d2bcf9664cff3284c7fd833e1877` adds the Workstream execution claim only; no product baseline change is incorporated into this local candidate.
+- Disposition: local candidate prepared; awaiting independent exact-candidate review and authorized publication. This implementer has not published a commit/PR or issued independent approval.
 
-## Independent implementation judgment
+## Previous slice
 
-REPORT052 remains correctly bounded. Existing shared `ChartTooltip` serves Target Attainment unchanged. The implementation delegates only tooltip presentation/anatomy while retaining local Recharts payload interpretation, representative heading, exact `الإنجاز` row label, percentage formatting, achievement threshold color and explicit LTR numeric direction.
+REPORT052 is integrated: PR #103, reviewed head `c6d3f940e69451b0e80e68cc17dbc7c7c9bbd5ab`, merge `0c858b7b71ae1142f53cf7a152533f94ca7d8a13`. Its recorded 23/23 focused tests and source-closure tsc evidence remain limited; no full-app build/lint or runtime visual qualification is inferred. Target Attainment and chart/tooltip work are excluded from this slice.
 
-## Material progress
+## Implementation judgment and scope
 
-- Product source was already implemented on the feature branch:
-  - existing shared `ChartTooltip` import;
-  - local exported `CustomTooltip` with inactive/empty-payload guard;
-  - `<Tooltip content={<CustomTooltip />}/>` wiring;
-  - unchanged chart, filter, trust and business semantics.
-- Focused test artifact is now committed:
-  - `src/pages/reports/TargetAttainmentPage.chart-tooltip.test.tsx`
-  - covers adapter guards, RTL/passive anatomy, 390/900/1440 widths, long Arabic labels, CSSOM caller color, LTR percentage values, empty chart behavior, mapping/filtering, geometry, axes, reference line, bars, colors and Trust/Freshness rules.
-- The original artifact was previously `TESTS_AUTHORED_NOT_EXECUTED`; local qualification below now supplies bounded execution evidence. No browser/runtime-visual PASS is claimed.
+Existing V2 Select composes a native select through Field and preserves the six controlled value/onChange/option contracts unchanged. No shared API expansion is needed. The original controls already had implicit wrapping labels; this work converges their grammar and sizing, rather than claiming that they were unlabelled.
 
-## Scope
+Changed files:
+- `src/pages/reports/VisitReportsPage.tsx`: import existing Select and replace only six label/select pairs inside the filter grid.
+- `src/pages/reports/VisitReportsPage.css`: remove only `.visit-report-filter-grid label` and `.visit-report-filter-grid select` rules.
+- `src/pages/reports/VisitReportsPage.test.tsx`: retain existing regression assertions and extend focused acceptance coverage.
+- This owned UI implementation state.
 
-Files touched:
-- `src/pages/reports/TargetAttainmentPage.tsx`
-- `src/pages/reports/TargetAttainmentPage.chart-tooltip.test.tsx`
-- `team/design-system-v2/UI_IMPLEMENTATION_STATE.md`
+Preserved:
+- Exact Arabic labels, all option text/value/order/defaults, dynamic branch/employee/contact options and purpose exclusion of unspecified.
+- Existing six controlled states, setters and resetPage calls; empty-to-undefined conversion remains caller-owned.
+- Tab-specific filter visibility, tab clearing, page reset, query keys/functions/enabled conditions, page size 25 and quality exceptionsOnly.
+- Date range, employee lookup options, permissions, CSV/export payload, survey-specific selectors, report metrics/tables/cards/states and navigation.
+- Existing grid breakpoints and all shared Select/Field/CSS/tokens. No service/query/RPC/DB/business changes.
 
-Unchanged:
-- shared `ChartTooltip` API/CSS/tokens/breakpoints;
-- backend/query/cache/RPC/trust/permission/business semantics;
-- Actions, Vercel and `main`.
+## Executed local evidence
 
-## Local qualification and coverage strengthening
+Source and focused import closure were fetched at exact baseline or reused only after matching that baseline's Git tree blob hashes. No source/type stubs were introduced. The identical committed package-lock.json was verified against the existing installed dependency workspace; its node_modules was reused without package/version changes.
 
-On 2026-10-01, exact-head source files and their focused import closure were reconstructed through read-only GitHub file retrieval. Original Git blob hashes were verified. No source/type stubs were introduced; repository tests retain their existing data-hook and Recharts mocks.
+- Baseline: `npm test -- src/pages/reports/VisitReportsPage.test.tsx --maxWorkers=1 --minWorkers=1` passed 8/8 existing tests.
+- Candidate: the same command passed 22/22 tests (8 retained + 14 new cases).
+- Baseline and candidate: `./node_modules/.bin/tsc --noEmit -p tsconfig.json` passed using unchanged compiler options over the materialized source closure.
+- This is bounded `LOCAL_EXECUTION_PASS` for tests/focused types only. The whole application was not materialized or built; no full-app type/build PASS is claimed.
+- `npm run lint` could not execute: eslint is absent from the committed dependency set (`eslint: not found`, exit 127). No dependency/configuration was altered to conceal this gap.
 
-Dependencies were installed from the unchanged committed package-lock.json using `npm ci --cache .npm-cache --ignore-scripts --no-audit --no-fund`. Toolchain: Node 24.19.0, React/React DOM 18.3.1, TypeScript 5.6.3, Vitest 2.1.9, Vite 6.4.1, jsdom 25.0.1.
+Acceptance coverage uses the real page, native Select/Field, ReportFilterBar and React Query, with data-service/hook/auth boundaries mocked. It covers exact options and associated unique labels; selection/clear/reselection of every filter from page 2 with exact payload/page reset; common-filter persistence and conditional-filter clearing through visits/quality/overview/surveys; query enablement; export permission visibility and mock service payload; absent/empty contact results; long Arabic selections at simulated 390/900/1440; and preserved CSS grid/shared standard/touch token contracts.
 
-Executed checks:
-- Exact-head original: 3 focused files / 12 tests passed.
-- Local test-strengthening candidate: the same 3 files / 23 tests passed (17 tooltip, 4 detail, 2 chart-panel).
-- Test command: `npm test -- src/pages/reports/TargetAttainmentPage.chart-tooltip.test.tsx src/pages/reports/TargetAttainmentChartPanel.test.tsx src/pages/reports/TargetAttainmentPage.test.tsx --maxWorkers=1 --minWorkers=1`.
-- Focused type command: `./node_modules/.bin/tsc --noEmit -p tsconfig.json`, using the unchanged repository compiler options over the fetched source closure. This is NOT whole-application type/build evidence because unrelated application source was not materialized.
-- `npm run lint` could not execute: `eslint: not found` (exit 127); eslint is absent from the committed package/lock dependencies. Lint is unverified; dependencies/configuration were not altered to hide this limitation.
-- Actual Chromium launch failed at `socket() failed: Operation not permitted`. No runtime layout, screenshot, viewport-edge placement, overlap or responsive visual acceptance is claimed. Width loops are simulated DOM/prop contracts only.
-- No hosted CI, remote deployment, production/backend access or main activity was used.
+The original desktop ten-fact table, mobile/tablet single-renderer, drill-down, quality fact, loading/error/empty, pagination and survey-loading tests remain. CSS checks and simulated widths are DOM/source evidence, not measured layout or visual acceptance. No browser launch was retried; prior runtime restrictions were not bypassed. No RUNTIME_VISUAL_PASS, real backend validation, hosted Actions, Vercel or main activity is claimed.
 
-Only focused tests changed in this qualification. Product source and shared component bytes remain identical to the exact PR HEAD. New assertions protect actual `CustomTooltip` element wiring and rendered content, all threshold boundaries (0/79/80/99/100/105), absent/null payloads, minimum 200px geometry, passive tabindex/contenteditable absence, initial loading without cached rows, and the existing cached-chart behavior during BLOCKED/FAILED trust and loading. The latter preserves existing semantics; it does not change trust or chart eligibility.
+## Peer context and risks
 
-Original-head reviews do not automatically approve the strengthened candidate. Fresh same-head review is needed if this test/state candidate is published.
+Director/Workstream have adopted REPORT053. Older Team Memory/peer lifecycle text still referring to REPORT052 READY or generic follow-up is superseded for this bounded assignment, not rewritten by this implementer. Coordinator owns live branch overlap/drift checks and publication. Fresh independent candidate review, then exact published-head review, are still required. Lint, full-app build and runtime visual evidence remain unqualified.
 
 ## Cross-role handoff
 
-- **To:** Design QA and Product Design Director.
-- **What changed:** Draft PR #103 exists; focused tests were executed and strengthened locally without changing product bytes.
-- **Preserve:** Target Attainment chart contracts, filters, thresholds, trust behavior and shared tooltip boundaries.
-- **Need from you:** review the final exact Draft PR HEAD after test/state publication; preserve the limited execution scope and remaining lint/runtime gaps.
-- **Blocker level:** `NONE`.
-- **Baseline:** original `2568dc29a09fd2ec84bef2a92ae0e439671a47be`; product artifact `642099f4456d7c4eedf2af0c9ef01045e7f1ccbd`; qualified PR HEAD `9927391c3a57ce06c83f50559e09b114ee82601a`; observed Development `99d32ace8d1ac39080a737dd787b4e792e3d078c`.
+- **To:** Design QA and Product Design Director; coordinator for publication after review.
+- **What changed:** Six Visit Reports filters now use unchanged shared Select/Field; only two obsolete local CSS rules removed; focused behavioral coverage expanded.
+- **Preserve:** six filter and tab contracts, date/query/export/permission/business semantics, survey-specific controls, grid breakpoints, shared components/styles, and Development-only boundaries.
+- **Need from you:** independently review exact final candidate bytes and test evidence; revalidate live branch/base before publication and review the resulting exact PR head.
+- **Blocker level:** `WATCH` for pending independent review and unqualified lint/full-app/runtime gates; no known focused test/type failure remains.
+- **Baseline:** `9b308ffc959cf1925047b23074da4ea8999319e9`; later Workstream-only claim `0bec40e03599d2bcf9664cff3284c7fd833e1877`; local candidate has no commit SHA yet.
