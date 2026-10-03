@@ -3,11 +3,14 @@
 ## Current truth
 
 - Authoritative integration branch: `design-system-v2-development`.
-- Product UI is integrated through `DS2-REPORT-051`.
-- Latest product integration: PR #100, reviewed HEAD `8af587a2b6ecf03fde3903290d8bbfab3cf8b0a5`, squash merge `27d37f6d4c3a2ab184f9c7f47f86e637af6835f6`.
-- Current single READY implementation slice: `DS2-REPORT-052 — Target Attainment shared chart-tooltip adoption` (`READY — BOUNDED`).
-- REPORT052 may start from the exact latest Development baseline. It is limited to the default Recharts tooltip inside `src/pages/reports/TargetAttainmentPage.tsx` → `نسبة الإنجاز — المندوبون الفرديون`, using existing shared `ChartTooltip` unchanged.
-- PR #101 (`ci: validate explicit final candidates on DS2 development`) is a separate governance/CI Draft, not a product implementation slice. It is `WATCH` for governance/base-drift purposes and does not block starting REPORT052. Its own integration remains separately gated by governance review.
+- Product UI is integrated through `DS2-REPORT-052 — Target Attainment shared chart-tooltip adoption`.
+- Latest product integration: PR #103, reviewed HEAD `c6d3f940e69451b0e80e68cc17dbc7c7c9bbd5ab`, squash merge `0c858b7b71ae1142f53cf7a152533f94ca7d8a13`.
+- Current single active implementation slice: `DS2-REPORT-053 — Visit Reports filter-field convergence` (`REVIEW — BOUNDED`) on Draft PR #104.
+- Exact REPORT053 PR HEAD: `02d17d9adcb79ff15b5cbd6b1546c80d1e7b0da5`.
+- Product Design disposition on that exact HEAD: `PASS — NO DESIGN-SYSTEM BLOCKER`.
+- Fresh same-head Design QA is still pending; no REPORT053 `AGENT-REVIEW: GREEN-DEV` exists yet and integration is not authorized.
+- Development coordination baseline observed before this memory reconciliation: `103708dfc1fc55bf0af8c775d83ed165a5c7518f`.
+- PR #101 (`ci: validate explicit final candidates on DS2 development`) remains a separate governance/CI Draft and does not overlap the REPORT053 product surface.
 - `main` remains frozen until explicit owner approval.
 - Vercel preview remains user-requested only.
 - Hosted GitHub Actions remain forbidden for normal Design System development under the currently integrated policy.
@@ -21,94 +24,81 @@ Development includes:
 - Dashboard V2 and representative Customers, Sales, Inventory, Procurement, Finance, HR, Field and Work migrations;
 - Reports route/date/filter convergence;
 - shared `ChartPanel`, `ChartTooltip`, `MetricGrid`, `StatePanel`, `AlertPanel`, `SectionHeader`, Field controls and responsive collection grammar;
-- shared domain-agnostic `ChartTooltip` adoption in Receivables, Sales, Treasury, Product Performance, Rep Performance and Churn Risk while each caller retains chart-library/domain/business semantics.
+- shared `ChartTooltip` adoption in Receivables, Sales, Treasury, Product Performance, Rep Performance, Churn Risk and Target Attainment while each caller retains chart-library/domain/business semantics.
 
 ## Latest completed slice
 
-`DS2-REPORT-051 — Churn Risk shared chart-tooltip adoption`
-
-Result:
-- exact reviewed PR #100 HEAD `8af587a2b6ecf03fde3903290d8bbfab3cf8b0a5`;
-- `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`;
-- Product Design `PASS — NO DESIGN-SYSTEM BLOCKER`;
-- evidence `TESTS_AUTHORED_NOT_EXECUTED`;
-- squash merge `27d37f6d4c3a2ab184f9c7f47f86e637af6835f6`;
-- Churn Risk now delegates only Pie-tooltip presentation/anatomy to shared `ChartTooltip`;
-- caller-owned active/payload gating, category heading, `عملاء`, `FMT`, caller Pie color, LTR numeric direction, ready-only chart presence, 260px geometry, Pie data/order/keys/radii/padding/colors, Legend, Trust/Freshness, filters/KPIs/detail/query/business semantics remain unchanged;
-- shared `ChartTooltip` API/CSS/tokens/breakpoints were not widened.
-
-## Current single READY slice
-
 `DS2-REPORT-052 — Target Attainment shared chart-tooltip adoption`
 
-Representative surface:
-- `src/pages/reports/TargetAttainmentPage.tsx` → default Recharts tooltip in `نسبة الإنجاز — المندوبون الفرديون`.
+Result:
+- exact reviewed PR #103 HEAD `c6d3f940e69451b0e80e68cc17dbc7c7c9bbd5ab`;
+- `AGENT-REVIEW: GREEN-DEV + SOURCE_REVIEW_PASS`;
+- Product Design `PASS — NO DESIGN-SYSTEM BLOCKER`;
+- bounded focused evidence: 23/23 tests and focused source-closure TypeScript PASS;
+- squash merge `0c858b7b71ae1142f53cf7a152533f94ca7d8a13`;
+- Target Attainment now delegates tooltip presentation/anatomy to shared `ChartTooltip` while preserving caller payload interpretation, representative heading, percentage formatting, threshold colors, LTR values, chart geometry, presence, Trust/Freshness and business semantics;
+- full Reports source inventory found no remaining chart-tooltip adoption candidate in the audited Reports TSX set, so that bounded tooltip-adoption track is closed;
+- no full-app build/lint/runtime/visual/release qualification is inferred.
 
-Implement only:
-- replace default tooltip presentation with existing shared `ChartTooltip`;
-- keep a local caller adapter for `active` / payload interpretation;
-- keep representative-name heading, exact row label `الإنجاز`, percentage formatting, caller achievement color and explicit LTR value direction caller-owned.
+## Current active slice
+
+`DS2-REPORT-053 — Visit Reports filter-field convergence`
+
+Current lifecycle:
+- Status: `REVIEW — BOUNDED`.
+- Draft PR: #104 targeting `design-system-v2-development`.
+- Exact HEAD: `02d17d9adcb79ff15b5cbd6b1546c80d1e7b0da5`.
+- PR is currently open, draft and mergeable; four changed files only.
+- Product Design exact-head review: `PASS — NO DESIGN-SYSTEM BLOCKER`.
+- Design QA exact-head review: pending.
+
+System intent:
+- converge only the six Visit Reports native filter selectors onto existing shared `Select`/`Field`;
+- remove only the obsolete page-local label/select rules inside `.visit-report-filter-grid`;
+- do not widen shared component APIs or create a new filter primitive.
 
 Preserve exactly:
-- chart presence `chartData.length > 0`;
-- `individualRows = rows.filter(r => r.scope === 'individual' && r.rep_name)`;
-- chart mapping `{ name: r.rep_name!, pct: Math.round(r.achievement_pct ?? 0) }`;
-- `ResponsiveContainer width="100%" height={Math.max(chartData.length * 40, 200)}`;
-- vertical BarChart layout and margins `{ top: 4, left: 10, right: 40, bottom: 0 }`;
-- grid, X/Y axes, percentage tick/domain behavior and `ReferenceLine x={100}`;
-- `Bar dataKey="pct" name="الإنجاز%" radius={[0, 3, 3, 0]} maxBarSize={20}`;
-- caller `barColor` thresholds/colors `>=100 -> #10b981`, `>=80 -> #f59e0b`, otherwise `#ef4444`;
-- ChartPanel title/description, Trust/Freshness, report filters, KPI summary, responsive target detail composition, state precedence and all query/trust/business semantics.
+- Arabic labels, option text/order/values and empty-string “all” options;
+- six controlled filter states, setters and every `resetPage()` call;
+- empty-string to `undefined` conversion in the existing caller filter object;
+- tab-specific visibility and clearing rules;
+- date range, query keys/functions/enabled conditions, page size 25, `exceptionsOnly`, employee/branch lookups, export permission/payload and survey-specific selectors;
+- loading/error/empty/ready report composition and all backend/business semantics;
+- existing responsive grid composition across Mobile/Tablet/Desktop;
+- native select keyboard/focus behavior, one associated visible label per control and shared V2 standard/touch sizing.
 
-Device/accessibility:
-- same shared RTL passive tooltip grammar at 390 / 900 / 1440;
-- long Arabic representative names remain wrappable;
-- percentage values remain LTR/bidi-safe;
-- no focus target, tab stop, role, aria-live or keyboard/action semantics added.
-
-Focused tests:
-- inactive / empty-payload guards;
-- exact representative heading / `الإنجاز` / percentage / caller-color / LTR mapping;
-- CSSOM-normalized caller-color evidence;
-- 390 / 900 / 1440 adoption and long-Arabic/passive anatomy;
-- no chart/tooltip leakage when `chartData.length === 0`;
-- unchanged individual filtering, rounded mapping, dynamic height, layout/margins/grid/axes/reference-line/bar/color and Trust/Freshness contracts.
-
-Explicit exclusions:
-- any other report tooltip/chart;
-- shared `ChartTooltip` implementation/API/tests/CSS/tokens/breakpoints;
-- other shared-pattern changes;
-- Target Attainment filter-control convergence, KPI cards, detail collection/table/cards, export/print/navigation;
-- any hook/query/cache/RPC/Supabase/calculation/trust/permission/RBAC/RLS/routing/validation/backend/business change.
-
-If existing `ChartTooltip` cannot serve unchanged, or preserving current chart semantics requires functional change, REPORT052 becomes `BLOCKED` rather than broadened.
+Evidence boundary:
+- baseline focused suite: 8/8 PASS;
+- candidate focused suite: 22/22 PASS;
+- focused source-closure TypeScript PASS;
+- no full-app build/lint PASS and no browser/runtime visual/RTL/overflow PASS.
 
 ## Latest role positions
 
 ### Product Design Director
-- REPORT052 is the correct smallest next system-level slice.
-- Product Design disposition: `READY — NO DESIGN-SYSTEM BLOCKER`.
-- PR #101 is a governance/CI WATCH, not an implementation-start blocker.
-- No current material Design-System contradiction exists.
+- REPORT053 is aligned with the North Star and the Reports/Analytics filter-grammar roadmap.
+- Exact-head disposition: `PASS — NO DESIGN-SYSTEM BLOCKER`.
+- No competing implementation slice should start while PR #104 remains active.
+- Automatic Vercel Preview presence is governance `WATCH` only and is not accepted runtime/visual evidence.
 
 ### UI Production Engineer
-- Development-branch role state is lifecycle-stale from REPORT051.
-- Next action is to start REPORT052 from the exact latest Development HEAD, implement only the bounded tooltip adoption and open one Draft implementation PR targeting Development.
+- REPORT053 product/test artifact is published on PR #104.
+- Shared `Select`/`Field` is unchanged; only the six filters and two obsolete local CSS rules are touched in product code.
+- Bounded focused execution evidence is recorded; full-app/lint/runtime evidence remains unqualified.
 
 ### Design QA
-- Latest state is consumed REPORT051 approval.
-- Fresh exact-head review is required for the future REPORT052 implementation PR.
+- Repository state still records consumed REPORT052 approval and is stale for REPORT053.
+- Fresh exact-head review of PR #104 HEAD `02d17d9...` is required before integration.
 
 ### Development Integrator
-- Correctly records REPORT051 integrated and REPORT052 READY.
-- Its blocker on PR #101 applies to integration of that governance PR itself.
-- Product Design does not extend that blocker to starting REPORT052 because the authoritative operating contract limits concurrent implementation slices, not unrelated governance PRs.
-- Future REPORT052 integration must reconcile any Development drift and receive fresh exact-head gates.
+- Repository state correctly closes REPORT052 but predates REPORT053.
+- For REPORT053, Integrator must wait for same-head `GREEN-DEV`, then revalidate exact HEAD/base/mergeability/drift/scope/review threads and functional isolation before any Development-only merge.
 
 ## Invariants to preserve
 
 - UI work must not alter business behavior or backend contracts.
 - Shared visual primitives/patterns own presentation and interaction mechanics, never business eligibility, calculations, workflow or state-machine meaning.
+- `Select` remains the approved native selector for small stable option sets; `Field` owns label/help/error relationships and shared field anatomy.
 - `ChartTooltip` owns presentation/anatomy only; callers retain chart-library payload interpretation, domain labels/order, value formatting/direction, series colors, data, trust and business meaning.
 - `ChartPanel` owns neutral analytical surface/frame and section hierarchy only.
 - `ResponsiveCollection` owns device renderer selection/orchestration and generic collection states only.
@@ -119,21 +109,23 @@ If existing `ChartTooltip` cannot serve unchanged, or preserving current chart s
 
 ## Known evidence / risks
 
-- Evidence through REPORT051 remains source-level; no exact-head executed build/test/lint/runtime/preview/release PASS is claimed.
+- REPORT053 still lacks fresh same-head Design QA; this is the next real gate.
+- PR #104 is behind current Development only by coordination/state documentation; current comparison shows no overlap with its product/test files.
+- A Vercel bot created a Preview for PR #104 despite `DS2-DEC-004 — Manual preview only`. Product Design did not trigger or use it as evidence. Treat as governance `WATCH`, not runtime/visual qualification.
+- PR #101 remains separate governance work and must not be used to trigger normal hosted CI or broaden REPORT053.
 - Runtime visual acceptance remains milestone-based and owner-requested.
-- PR #101 proposes a governance/CI policy change and overlaps governance files including Workstream/Test Policy/Decision Log. It must be reconciled separately and may create future base drift.
-- Remaining Reports/Analytics convergence still includes report filter/search grammar, dense tables, state/error/offline convergence, export/print, and other bounded shared-pattern adoption.
+- Remaining Reports/Analytics convergence still includes filter/search grammar, dense tables, state/error/offline convergence, export/print and other bounded shared-pattern adoption.
 - Settings/Admin and global Dark/RTL/accessibility/legacy cleanup remain future roadmap phases.
 
 ## Reusable patterns learned
 
-- Repeated page-local chart-tooltip anatomy should converge through bounded adoption of the proven shared `ChartTooltip` while caller chart/domain truth stays local.
+- Repeated page-local form-control grammar should converge onto existing shared `Select`/`Field` when the native control contract already fits; do not invent a new page-local selector or widen shared APIs unnecessarily.
+- Form convergence must preserve caller-owned query/filter semantics, state resets, permission/export behavior and tab-specific eligibility.
+- Simulated viewport tests are source/DOM evidence only, not runtime visual geometry proof.
 - A representative proof consumer is preferable to mass migration.
-- Caller-provided chart colors can remain series identity without becoming Design System semantic-status colors.
-- Mixed-direction analytical values remain caller-directed while shared tooltip anatomy provides RTL containment and bidi isolation.
 - Shared state presentation must not homogenize caller-owned state truth.
 - Agent communication remains: independent judgment -> peer-state comparison -> structured handoff -> synthesis/integration.
 
 ## Next handoff
 
-UI Production Engineer should start REPORT052 from the exact latest `design-system-v2-development` HEAD, implement only the bounded Target Attainment tooltip adoption, author focused tests and open one Draft implementation PR targeting Development. PR #101 remains separate governance work and must not be merged or used to trigger hosted CI by Product Design. Design QA should review only the future exact stable REPORT052 PR HEAD; Development Integrator should revalidate all gates and any base drift before merge.
+Design QA should perform a fresh independent exact-head review of PR #104 HEAD `02d17d9adcb79ff15b5cbd6b1546c80d1e7b0da5` and record evidence honestly. If and only if that exact HEAD receives `AGENT-REVIEW: GREEN-DEV`, Development Integrator should perform the final Development-only integration checks. No second product slice should start before REPORT053 is resolved.
