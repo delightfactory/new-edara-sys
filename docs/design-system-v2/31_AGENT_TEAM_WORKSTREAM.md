@@ -25,7 +25,7 @@ Authorities:
 | Product Design Director | System identity, architecture, next slice, design quality | every 2 hours | No | No | No |
 | UI Production Engineer | Implement/repair the single active UI slice | hourly | UI-only | No | No |
 | Design QA | Independent exact-head review | hourly | No | No | No |
-| Development Integrator | Merge GREEN-DEV PR and advance queue | hourly | No feature work | Development only | No |
+| Development Integrator | Integrate reviewed, validated final candidate and advance queue | hourly | No feature work | Development only | No |
 
 `BACKLOG -> READY -> IN_PROGRESS -> REVIEW -> GREEN-DEV -> DONE`
 
@@ -38,7 +38,23 @@ Before material action every role reads Team Memory, all four role states, the D
 
 ## GitHub Actions / preview policy
 
-Hosted GitHub Actions remain forbidden while quota protection is active. Focused tests are still authored. Normal development evidence is exact-head `AGENT-REVIEW: GREEN-DEV` + `SOURCE_REVIEW_PASS` + an honest execution label. A known build/type failure blocks integration.
+Hosted GitHub Actions remain off during normal development. Focused tests are
+still authored. Draft-review evidence is exact-head `AGENT-REVIEW: GREEN-DEV` +
+`SOURCE_REVIEW_PASS` + an honest execution label. These source-review markers
+alone do not authorize integration. A known build/type failure blocks it.
+
+Owner exception dated 2026-10-01: `.github/FINAL_CANDIDATE_CI.md` permits one
+explicit ready transition for a frozen final candidate, with successful exact
+head/base CI required before final-candidate integration. Scheduled agents keep
+PRs draft and must not perform the former automatic Draft-to-Ready step without
+owner final-candidate authorization. Normal development, dispatch and deployment
+remain excluded; DS2 `main` remains frozen.
+
+Integration requires all existing jobs to succeed for the reviewed head/base and
+tested merge snapshot, followed by a fresh identity check and expected-head merge
+protection. Record `FINAL_CANDIDATE_CI_PASS` separately from source/visual evidence.
+Missing, stale, skipped or failed CI blocks integration; an owner prohibition on
+merge remains binding even after successful validation.
 
 Vercel preview remains owner-requested only. Scheduled agents never merge to `main`.
 

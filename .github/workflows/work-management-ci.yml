@@ -1,30 +1,15 @@
 name: Work Management CI
 
 on:
-  push:
-    branches:
-      - feature/work-management
   pull_request:
-    # Design System V2 development PRs target `design-system-v2-development`.
-    # Keep GitHub Actions off that workstream while Actions quota is intentionally
-    # conserved. CI remains available for PRs whose base is `main`.
+    # Owner-authorized final candidates only; normal development stays off CI.
+    types: [ready_for_review]
     branches:
-      - main
-    paths:
-      - 'src/features/work/**'
-      - 'src/pages/work/**'
-      - 'src/lib/permissions/work.ts'
-      - 'src/components/layout/BottomNav.tsx'
-      - 'src/App.tsx'
-      - 'src/__tests__/work-management*'
-      - 'supabase/migrations/*work_management*'
-      - 'vercel.json'
-      - '.github/workflows/work-management-ci.yml'
-      - 'package.json'
-      - 'package-lock.json'
+      - design-system-v2-development
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: work-management-${{ github.ref }}
@@ -44,6 +29,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Verify final candidate before validation
+        run: node .github/scripts/final-candidate.cjs design-system-v2-development
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -60,6 +52,11 @@ jobs:
       - name: Type-check and build
         run: npm run build
 
+      - name: Verify final candidate after validation
+        run: node .github/scripts/final-candidate.cjs design-system-v2-development
+        env:
+          GH_TOKEN: ${{ github.token }}
+
   clean-install-windows:
     name: Clean install (Windows)
     runs-on: windows-latest
@@ -68,6 +65,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Verify final candidate before validation
+        run: node .github/scripts/final-candidate.cjs design-system-v2-development
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -77,3 +81,8 @@ jobs:
 
       - name: Clean install from committed lockfile
         run: npm ci --no-audit --no-fund
+
+      - name: Verify final candidate after validation
+        run: node .github/scripts/final-candidate.cjs design-system-v2-development
+        env:
+          GH_TOKEN: ${{ github.token }}
