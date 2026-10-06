@@ -125,10 +125,23 @@ The full protocol is authoritative in `34_AGENT_TEAM_COMMUNICATION_PROTOCOL.md`.
 
 GitHub Actions quota is intentionally protected.
 
+Owner-authorized exception (2026-10-01): final-candidate validation may run once
+on an explicit `pull_request: ready_for_review` transition targeting
+`design-system-v2-development`, following `.github/FINAL_CANDIDATE_CI.md`.
+This supersedes only the absolute ban for that frozen final candidate. Normal
+scheduled work must stay in draft and must not mark PRs ready, dispatch/rerun CI,
+or trigger hosted validation as part of its loop. Before an owner-authorized
+integration, require successful evidence for the exact current head and base;
+`GREEN-DEV` source review alone is not final-candidate CI evidence. The
+Integrator's former automatic Draft-to-Ready transition now requires explicit
+owner final-candidate authorization because it consumes hosted quota.
+Main isolation, deployment restrictions and all other safeguards remain active.
+
 Agents MUST NOT:
 
-- trigger, rerun or dispatch GitHub Actions
-- modify workflow rules to make development PRs consume Actions
+- trigger GitHub Actions except the explicitly owner-authorized final-candidate ready transition
+- rerun or dispatch GitHub Actions without separate explicit owner authorization
+- modify workflow rules to make ordinary development events consume Actions
 - create temporary CI workflows
 - use hosted CI as part of the normal autonomous loop
 
@@ -261,7 +274,7 @@ Must not:
 - target `main`
 - merge its own PR
 - deploy previews
-- trigger GitHub Actions
+- trigger GitHub Actions during normal implementation; final-candidate authorization is governed by section 6
 - begin a second slice while its current PR is unresolved
 - accept a merely compiling result when hierarchy, responsive behavior or system consistency is materially weak
 - mutate peer role-state files
@@ -290,7 +303,7 @@ May request changes or mark exact HEAD `AGENT-REVIEW: GREEN-DEV` per the test po
 
 Maintains Design QA State with exact reviewed HEAD, professional findings, evidence level and cross-role handoff.
 
-Must not merge, deploy, trigger GitHub Actions, claim execution evidence it does not have, or overwrite another role state.
+Must not merge, deploy, trigger normal-development GitHub Actions, claim execution evidence it does not have, or overwrite another role state. An explicitly authorized final-candidate transition follows section 6.
 
 ### Development Integrator
 
@@ -299,10 +312,19 @@ Owns controlled merge into `design-system-v2-development` only and continuity of
 May merge only when:
 - PR base is `design-system-v2-development`
 - exact current HEAD has `AGENT-REVIEW: GREEN-DEV`
+- the owner has authorized final-candidate validation and the explicit ready transition
+- all existing CI jobs succeeded for the exact current head/base and tested merge snapshot per `.github/FINAL_CANDIDATE_CI.md`
 - no unresolved material review blocker exists
 - no role-state file records a still-current BLOCKING contradiction for the slice
 - diff contains no forbidden backend/functional change
 - exact reviewed HEAD has not moved
+- the target base is unchanged from validation; recheck both identities immediately before an expected-head-protected merge
+
+`GREEN-DEV` is a source-review gate, not merge authorization or executed CI evidence.
+Missing, stale, skipped or failed final-candidate checks block integration. Historical
+role-state descriptions of source-only merging or automatic Draft-to-Ready steps
+do not override sections 6 and 11. This contract never authorizes a merge when the
+owner's current task instruction prohibits it.
 
 After merge:
 - mark slice DONE
@@ -326,7 +348,8 @@ For each slice, record at minimum:
 7. Test Artifact Gate — focused tests added/updated for material risk, or explicit rationale why none are needed.
 8. Evidence Honesty Gate — executed vs non-executed evidence is accurately labeled.
 9. Cross-role Context Gate — peer states were read and material contradictions addressed.
-10. Review Gate — reviewer marks exact HEAD `GREEN-DEV`.
+10. Review Gate - reviewer marks exact HEAD `GREEN-DEV`.
+11. Final Candidate Gate - owner-authorized ready transition and successful exact-head/base hosted validation before integration; normal draft review does not execute hosted CI.
 
 No gate may be bypassed by weakening tests or changing unrelated behavior.
 

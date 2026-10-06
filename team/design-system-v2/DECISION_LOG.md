@@ -36,11 +36,11 @@ Use this file only for durable decisions future agents must preserve unless expl
 
 ## DS2-DEC-005 — Hosted CI quota protection
 - **Date:** 2026-09-15
-- **Decision:** Design System development agents must not trigger/rerun GitHub Actions or rely on hosted CI. Development PR workflow execution is prevented by branch targeting policy; tests are still authored and evidence is labeled honestly.
+- **Decision:** Normal Design System development must not trigger/rerun GitHub Actions. Tests are still authored and evidence is labeled honestly. Explicit final-candidate validation and integration now follow DS2-DEC-009.
 - **Reason:** GitHub Actions quota has been exceeded/exhausted; uncontrolled CI would halt useful work without adding proportional value.
 - **Affected area:** testing, review, workflow configuration.
 - **Owner:** Project owner / Design System governance.
-- **Status:** ACTIVE
+- **Status:** ACTIVE for normal development; the absolute execution ban and source-only integration model are superseded narrowly by DS2-DEC-009.
 
 ## DS2-DEC-006 — UI-only functional isolation
 - **Date:** 2026-09-15
@@ -65,3 +65,11 @@ Use this file only for durable decisions future agents must preserve unless expl
 - **Affected area:** autonomous workstream communication and handoffs.
 - **Owner:** Project owner / Product Design Director.
 - **Status:** ACTIVE
+
+## DS2-DEC-009 - Explicit final-candidate validation
+- **Date:** 2026-10-01
+- **Decision:** The owner authorizes hosted CI only for the frozen final version intended for integration, via `pull_request: ready_for_review` targeting `design-system-v2-development`. Ordinary pushes, opened PRs and synchronizations must not run the development workflow. Scheduled agents keep PRs draft and require explicit owner final-candidate authorization before marking ready; this replaces the former automatic Draft-to-Ready step.
+- **Reason/evidence:** Owner request to conserve Actions quota; native PR-event job checks remain eligible for PR status evaluation, unlike `workflow_dispatch`. Guards and final reviewer rechecks bind evidence to the exact current candidate head, base and tested merge snapshot. A newer head/base invalidates acceptance.
+- **Affected area:** Development workflow, final review and integration; `.github/FINAL_CANDIDATE_CI.md` is the invocation/verification contract. DS2 main/protection/deployment rules remain unchanged. Default-main automatic workflows remain a known residual outside this authorization.
+- **Owner:** Project owner.
+- **Status:** ACTIVE; narrowly supersedes DS2-DEC-005's absolute execution ban for an explicitly authorized final candidate only. Normal autonomous hosted-CI prohibition remains active.
