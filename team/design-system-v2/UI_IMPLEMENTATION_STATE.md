@@ -1,68 +1,60 @@
 # UI Implementation State
 
-## Current published candidate
+## Current published PR104 status (non-historical)
 
 - Date: 2026-10-06.
 - Active slice: `DS2-REPORT-053 — Visit Reports filter-field convergence`.
 - Feature branch: `ds2-report-053-visit-report-filter-field-convergence`.
 - Draft PR: `#104 — DS2-REPORT-053: converge Visit Reports filter fields`.
 - PR URL: https://github.com/delightfactory/new-edara-sys/pull/104
-- Exact implementation baseline: `9b308ffc959cf1925047b23074da4ea8999319e9`.
-- Published PR HEAD: `02d17d9adcb79ff15b5cbd6b1546c80d1e7b0da5`.
-- Development preflight recorded in PR: `0bec40e03599d2bcf9664cff3284c7fd833e1877`; later Development movement is not treated as product-byte evidence.
-- Previous local-candidate wording describing unpublished/no-SHA state is historical only; it is superseded by this published PR identity.
+- Current review target: PR #104 live published HEAD `02d17d9adcb79ff15b5cbd6b1546c80d1e7b0da5`.
+- This SHA is the execution artifact recorded for the state publication update, not a self-referential state SHA.
+- No Product/Test bytes changed by this state-only correction.
 
-## Previous slice
+Reviewers must use the live PR HEAD for same-head review. The historical qualification record below is preserved as provenance only and is not a declaration of current approval.
 
-REPORT052 is integrated through PR #103. No REPORT052 product/test bytes are part of this slice.
+---
 
-## Implementation judgment and scope
+# Historical qualification record — preserved, not authoritative for current PR state
 
-REPORT053 is a bounded convergence of the six native Visit Reports filter controls onto existing V2 Select/Field. No shared API expansion is required and no business semantics changed.
+## Current candidate and baseline (historical)
 
-Changed files in PR #104:
+- Date: 2026-10-01.
+- Active slice: `DS2-REPORT-053 — Visit Reports filter-field convergence`.
+- Exact implementation baseline: `9b308ffc959cf1925047b23074da4ea8999319e9` on `design-system-v2-development` after Director/Workstream adoption.
+- Reserved feature branch: `ds2-report-053-visit-report-filter-field-convergence`, created by the coordinator at that baseline.
+- Later coordinator-reported Development `0bec40e03599d2bcf9664cff3284c7fd833e1877` adds the Workstream execution claim only; no product baseline change is incorporated into this historical candidate.
+- Disposition: historical candidate preparation record; not current publication identity.
+
+## Historical evidence and scope
+
+Existing V2 Select composes a native select through Field and preserves the six controlled value/onChange/option contracts unchanged. No shared API expansion was required. The original controls had implicit wrapping labels; this work converged their grammar and sizing.
+
+Historical changed files:
 - `src/pages/reports/VisitReportsPage.tsx`
 - `src/pages/reports/VisitReportsPage.css`
 - `src/pages/reports/VisitReportsPage.test.tsx`
-- this owned UI implementation state only.
+- owned UI implementation state only.
 
-Preserved:
-- exact Arabic labels, options, values, defaults, controlled handlers and reset behavior;
-- tab visibility and clearing rules;
-- query payloads, page reset behavior, export permissions/payload and report states;
-- survey-specific controls and business/report semantics;
-- shared Select/Field contracts and existing styles/tokens.
+Preserved historical boundaries:
+- Exact Arabic labels, option text/value/order/defaults, dynamic branch/employee/contact options.
+- Existing six controlled states, setters, resets and empty-to-undefined conversion.
+- Tab visibility, tab clearing, query keys/functions/enabled conditions, page size 25 and quality exceptionsOnly.
+- Date range, employee lookup options, permissions, CSV/export payload, survey-specific selectors, report metrics/tables/cards/states and navigation.
+- Existing grid breakpoints and shared Select/Field/CSS/tokens.
 
-Removed only obsolete local filter label/select CSS rules. No DB, service, query, RPC, permission, RBAC/RLS, validation or workflow changes.
+## Historical execution evidence
 
-## Evidence
-
-- Original focused suite: `8/8 PASS`.
-- Candidate focused suite: `22/22 PASS` with original tests retained.
-- Command: `npm test -- src/pages/reports/VisitReportsPage.test.tsx --maxWorkers=1 --minWorkers=1`.
-- Source-closure type evidence: `./node_modules/.bin/tsc --noEmit -p tsconfig.json` PASS.
-- `npm run lint` unavailable: eslint missing from unchanged committed dependencies, exit 127.
+- Baseline focused suite: `npm test -- src/pages/reports/VisitReportsPage.test.tsx --maxWorkers=1 --minWorkers=1` passed `8/8`.
+- Candidate focused suite: same command passed `22/22` tests.
+- Source closure type evidence: `./node_modules/.bin/tsc --noEmit -p tsconfig.json` passed.
+- `npm run lint` unavailable: eslint absent from unchanged committed dependencies, exit 127.
 - Final local manifest SHA256: `fe5477666d3c5173206c21bcb3cdd683027fde83ea835492cf6f0f858f48b977`.
-- Evidence remains bounded local execution only. No hosted CI, Vercel, main activity, full application build, or runtime visual PASS claimed.
-- Tests and source closure remain as previously qualified; no test bytes changed by this state-only update.
+- Evidence remains bounded local execution only. No hosted CI, Vercel, main activity, full application build or runtime visual PASS was claimed.
 
-## Device / state coverage
+## Historical handoff
 
-- Existing responsive/filter contracts preserved.
-- Long Arabic selections and simulated 390/900/1440 coverage are test evidence only, not browser visual acceptance.
-- Loading/error/empty/report/tab/export behavior preserved.
-
-## Current risks
-
-- Fresh exact-published-head Design QA and Product Design recheck required.
-- This role does not issue GREEN-DEV.
-- Lint/full-app build/runtime visual qualification remain unclaimed.
-
-## Cross-role handoff
-
-- To: Design QA, Product Design Director, Development Integrator after review.
-- What changed: corrected owned state identity from historical unpublished candidate wording to published PR #104 artifact identity only.
-- Preserve: all Visit Reports product/test evidence, boundaries and exclusions above.
-- Need from you: review exact PR HEAD `02d17d9adcb79ff15b5cbd6b1546c80d1e7b0da5`; do not infer approval from this state update.
+- To: Design QA, Product Design Director, Development Integrator.
+- Preserve: Visit Reports product/test evidence, boundaries and exclusions.
+- Need: independent review of the live PR HEAD, not inference from historical qualification.
 - Blocker level: `WATCH` pending independent review.
-- Baseline: `9b308ffc959cf1925047b23074da4ea8999319e9`; PR HEAD `02d17d9adcb79ff15b5cbd6b1546c80d1e7b0da5`.
