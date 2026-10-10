@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, URL as NodeURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-const stylesPath = fileURLToPath(new URL('../../styles/design-system-v2-transaction.css', import.meta.url))
+const stylesPath = fileURLToPath(new NodeURL('../../styles/design-system-v2-transaction.css', import.meta.url))
 const styles = readFileSync(stylesPath, 'utf8')
 
 describe('TransactionHeader overflow presentation contract', () => {

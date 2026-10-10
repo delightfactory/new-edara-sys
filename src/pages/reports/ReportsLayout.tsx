@@ -30,7 +30,9 @@ export default function ReportsLayout() {
 
   // الصفحات التشغيلية المستقلة عن analytics engine
   // تعمل دائماً بغض النظر عن حالة analytics — لا تمر بـ AnalyticsGate
-  const isOperationalPage = !!useMatch('/reports/reengagement') || !!useMatch('/reports/visits')
+  const reengagementMatch = useMatch('/reports/reengagement')
+  const visitsMatch = useMatch('/reports/visits')
+  const isOperationalPage = !!reengagementMatch || !!visitsMatch
 
   const permittedTabs = TABS
     .filter(tab => tab.permissions.some(permission => can(permission)))

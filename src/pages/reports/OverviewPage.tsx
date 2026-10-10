@@ -33,8 +33,9 @@ export default function OverviewPage() {
 
   const salesTrust = useTrustForComponent(trustRows, 'fact_sales_daily_grain')
   const revTrust   = useTrustForComponent(trustRows, 'fact_sales_daily_grain.revenue')
-  const trsTrust   = useTrustForComponent(trustRows, 'fact_treasury_cashflow_daily.net_collection')
-    ?? useTrustForComponent(trustRows, 'fact_treasury_cashflow_daily')
+  const netCollectionTrust = useTrustForComponent(trustRows, 'fact_treasury_cashflow_daily.net_collection')
+  const aggregateTreasuryTrust = useTrustForComponent(trustRows, 'fact_treasury_cashflow_daily')
+  const trsTrust = netCollectionTrust ?? aggregateTreasuryTrust
   const arTrust    = useTrustForComponent(trustRows, 'fact_ar_collections_attributed_to_origin_sale_date')
   const custTrust  = useTrustForComponent(trustRows, 'snapshot_customer_health')
 

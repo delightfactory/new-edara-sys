@@ -47,8 +47,9 @@ export default function TreasuryPage() {
   const { data: summary, isLoading: summaryLoading } = useTreasurySummary(filters)
 
   // Trust naming: backend stores metric key as net_collection, fact column is net_cashflow (P2 fix — match fact column)
-  const trsTrust = useTrustForComponent(trustRows, 'fact_treasury_cashflow_daily.net_collection')
-    ?? useTrustForComponent(trustRows, 'fact_treasury_cashflow_daily')
+  const netCollectionTrust = useTrustForComponent(trustRows, 'fact_treasury_cashflow_daily.net_collection')
+  const aggregateTreasuryTrust = useTrustForComponent(trustRows, 'fact_treasury_cashflow_daily')
+  const trsTrust = netCollectionTrust ?? aggregateTreasuryTrust
 
   const isBlocked = trsTrust?.status === 'BLOCKED' || trsTrust?.status === 'FAILED'
 

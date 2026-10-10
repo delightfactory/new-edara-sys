@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, URL as NodeURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-const sourcePath = fileURLToPath(new URL('./WorkHubPage.tsx', import.meta.url))
+const sourcePath = fileURLToPath(new NodeURL('./WorkHubPage.tsx', import.meta.url))
 const source = readFileSync(sourcePath, 'utf8')
-const workCssPath = fileURLToPath(new URL('./work.css', import.meta.url))
+const workCssPath = fileURLToPath(new NodeURL('./work.css', import.meta.url))
 const workCss = readFileSync(workCssPath, 'utf8')
 
 describe('WorkHubPage V2 source contract', () => {

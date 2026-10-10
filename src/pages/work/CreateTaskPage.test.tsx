@@ -97,7 +97,7 @@ describe('CreateTaskPage V2 composition', () => {
 
     const title = screen.getByLabelText(/عنوان المهمة/) as HTMLInputElement
     const outcome = screen.getByLabelText(/النتيجة المتوقعة/) as HTMLTextAreaElement
-    const nextAction = screen.getByLabelText(/الإجراء التالي/) as HTMLInputElement
+    const nextAction = screen.getByLabelText(/^الإجراء التالي\s*\*?$/) as HTMLInputElement
     const owner = screen.getByLabelText(/المسؤول النهائي/) as HTMLSelectElement
     const assignee = screen.getByLabelText(/المكلف الحالي/) as HTMLSelectElement
 

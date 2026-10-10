@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, URL as NodeURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-const sourcePath = fileURLToPath(new URL('./ActivityForm.tsx', import.meta.url))
+const sourcePath = fileURLToPath(new NodeURL('./ActivityForm.tsx', import.meta.url))
 const source = readFileSync(sourcePath, 'utf8')
-const stylesheetPath = fileURLToPath(new URL('../../styles/field-activity-form-v2.css', import.meta.url))
+const stylesheetPath = fileURLToPath(new NodeURL('../../styles/field-activity-form-v2.css', import.meta.url))
 const stylesheet = readFileSync(stylesheetPath, 'utf8')
 
 describe('ActivityForm V2 composition contract', () => {

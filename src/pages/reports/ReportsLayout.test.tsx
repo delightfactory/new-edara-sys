@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -87,6 +87,34 @@ describe('ReportsLayout route sub-navigation', () => {
 
     expect(screen.getByTestId('analytics-gate')).not.toBeNull()
     expect(screen.getByText('محتوى التقرير')).not.toBeNull()
+  })
+
+  it('preserves hook order and analytics eligibility while navigating the same mounted layout', () => {
+    const errors = vi.spyOn(console, 'error')
+    try {
+      renderAt('/reports/reengagement')
+      const shell = screen.getByRole('navigation', { name: 'أقسام التقارير' }).closest('.reports-shell')
+      expect(screen.queryByTestId('analytics-gate')).toBeNull()
+
+      for (const [label, gated] of [
+        ['الزيارات', false],
+        ['المبيعات', true],
+        ['الزيارات', false],
+        ['إعادة الاستهداف', false],
+      ] as const) {
+        fireEvent.click(screen.getByRole('link', { name: label }))
+        expect(screen.getByRole('navigation', { name: 'أقسام التقارير' }).closest('.reports-shell')).toBe(shell)
+        expect(screen.queryByTestId('analytics-gate') !== null).toBe(gated)
+        expect(screen.getByText('محتوى التقرير')).not.toBeNull()
+      }
+
+      const hookOrderErrors = errors.mock.calls.filter(args =>
+        /change in the order of Hooks|Rendered (more|fewer) hooks/i.test(args.map(String).join(' ')),
+      )
+      expect(hookOrderErrors).toEqual([])
+    } finally {
+      errors.mockRestore()
+    }
   })
 
   it.each(['/reports/visits', '/reports/reengagement'])('keeps %s outside AnalyticsGate', path => {

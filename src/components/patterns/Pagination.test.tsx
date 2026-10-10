@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, URL as NodeURL } from 'node:url'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import Pagination from './Pagination'
 
-const stylesheetPath = fileURLToPath(new URL('../../styles/design-system-v2-pagination.css', import.meta.url))
+const stylesheetPath = fileURLToPath(new NodeURL('../../styles/design-system-v2-pagination.css', import.meta.url))
 const stylesheet = readFileSync(stylesheetPath, 'utf8')
 
 describe('Pagination', () => {

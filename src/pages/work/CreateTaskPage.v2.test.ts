@@ -1,11 +1,12 @@
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, URL as NodeURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-const sourcePath = fileURLToPath(new URL('./CreateTaskPage.tsx', import.meta.url))
+const sourcePath = fileURLToPath(new NodeURL('./CreateTaskPage.tsx', import.meta.url))
 const source = readFileSync(sourcePath, 'utf8')
-const formsCssPath = fileURLToPath(new URL('../../styles/design-system-v2-forms.css', import.meta.url))
-const formsCss = readFileSync(formsCssPath, 'utf8')
+const formsCssPath = fileURLToPath(new NodeURL('../../styles/design-system-v2-forms.css', import.meta.url))
+// Git checkouts may use CRLF; source contracts assert CSS content rather than line endings.
+const formsCss = readFileSync(formsCssPath, 'utf8').replace(/\r\n/g, '\n')
 
 describe('CreateTaskPage V2 source contract', () => {
   it('adopts the shared V2 form grammar and retires local Create Task shells', () => {

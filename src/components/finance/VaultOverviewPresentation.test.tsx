@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, URL as NodeURL } from 'node:url'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type { AppAction } from '@/components/patterns/ActionRegistry'
 import { VaultCard, VaultSummary } from './VaultOverviewPresentation'
 
-const stylesPath = fileURLToPath(new URL('../../styles/design-system-v2-surfaces.css', import.meta.url))
+const stylesPath = fileURLToPath(new NodeURL('../../styles/design-system-v2-surfaces.css', import.meta.url))
 const styles = readFileSync(stylesPath, 'utf8')
 
 const baseSummary = {

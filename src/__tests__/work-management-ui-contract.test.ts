@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { getVisibleMobilePrimaryDestinations, MOBILE_PRIMARY_ITEMS } from '@/navigation/mobile'
 
 const read = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf8')
 
@@ -35,9 +36,17 @@ describe('operational Work UI architecture', () => {
   })
 
   it('makes Work a primary mobile destination without bypassing permissions', () => {
-    expect(bottomNav).toContain("id: 'work'")
-    expect(bottomNav).toContain("path: '/work'")
-    expect(bottomNav).toContain("'work.items.read_own', 'work.items.read_team', 'work.items.read_all'")
+    expect(bottomNav).toContain('getVisibleMobilePrimaryDestinations({ can, canAny })')
+    expect(MOBILE_PRIMARY_ITEMS.find(item => item.destinationId === 'work')?.permission)
+      .toEqual(['work.items.read_own', 'work.items.read_team', 'work.items.read_all'])
+    const visibleWork = (allowed: string[]) => getVisibleMobilePrimaryDestinations({
+      can: permission => allowed.includes(permission),
+      canAny: permissions => permissions.some(permission => allowed.includes(permission)),
+    }).find(item => item.id === 'work')
+    expect(visibleWork([])).toBeUndefined()
+    for (const permission of ['work.items.read_own', 'work.items.read_team', 'work.items.read_all']) {
+      expect(visibleWork([permission])).toMatchObject({ path: '/work', mobilePrimary: true })
+    }
   })
 
   it('exposes permission-scoped Work destinations in the desktop sidebar', () => {
@@ -103,10 +112,16 @@ describe('operational Work UI architecture', () => {
   })
 
   it('keeps task creation outcome-driven and distinguishes accountability from execution', () => {
-    expect(createTask).toContain('النتيجة المتوقعة *')
-    expect(createTask).toContain('المسؤول النهائي *')
-    expect(createTask).toContain('المكلف الحالي *')
-    expect(createTask).toContain('الإجراء التالي *')
+    for (const [id, label] of [
+      ['work-outcome', 'النتيجة المتوقعة'],
+      ['work-owner', 'المسؤول النهائي'],
+      ['work-assignee', 'المكلف الحالي'],
+      ['work-next-action', 'الإجراء التالي'],
+    ]) {
+      const field = createTask.match(new RegExp(`<Field\\s+id="${id}"([\\s\\S]*?)\\n\\s*>`))?.[1]
+      expect(field).toContain(label)
+      expect(field).toMatch(/\brequired\b/)
+    }
     expect(createTask).toContain('acknowledgementRequired: acknowledgementRequired && !assigneeIsSelf')
   })
 
@@ -135,6 +150,6 @@ describe('operational Work UI architecture', () => {
   })
 
   it('prevents automatic Vercel deployments from the feature branch', () => {
-    expect(vercelConfig).toContain('"feature/work-management": false')
+    expect(JSON.parse(vercelConfig).git.deploymentEnabled).toBe(false)
   })
 })

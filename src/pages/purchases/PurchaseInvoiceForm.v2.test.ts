@@ -1,12 +1,12 @@
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, URL as NodeURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-const sourcePath = fileURLToPath(new URL('./PurchaseInvoiceForm.tsx', import.meta.url))
+const sourcePath = fileURLToPath(new NodeURL('./PurchaseInvoiceForm.tsx', import.meta.url))
 const source = readFileSync(sourcePath, 'utf8')
-const shellStylesPath = fileURLToPath(new URL('../../styles/purchase-invoice-v2.css', import.meta.url))
+const shellStylesPath = fileURLToPath(new NodeURL('../../styles/purchase-invoice-v2.css', import.meta.url))
 const shellStyles = readFileSync(shellStylesPath, 'utf8')
-const mainStylesPath = fileURLToPath(new URL('../../styles/main.css', import.meta.url))
+const mainStylesPath = fileURLToPath(new NodeURL('../../styles/main.css', import.meta.url))
 const mainStyles = readFileSync(mainStylesPath, 'utf8')
 
 describe('PurchaseInvoiceForm V2 shell contract', () => {

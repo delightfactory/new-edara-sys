@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, URL as NodeURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-const sourcePath = fileURLToPath(new URL('./PurchaseInvoicesPage.tsx', import.meta.url))
+const sourcePath = fileURLToPath(new NodeURL('./PurchaseInvoicesPage.tsx', import.meta.url))
 const source = readFileSync(sourcePath, 'utf8')
 
 describe('PurchaseInvoicesPage V2 composition contract', () => {

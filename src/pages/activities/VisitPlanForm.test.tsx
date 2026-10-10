@@ -149,7 +149,7 @@ vi.mock('@/hooks/useCustomerBranches', () => ({
 
 // Mock لـ VisitPlanItemEditor — نعيد عرض مدخلاته لفحص تكامل الوالد
 vi.mock('./components/VisitPlanItemEditor', () => ({
-  default: (props: {
+  default: function MockVisitPlanItemEditor(props: {
     customer: { customerName: string; customerId: string; sequence: number; customerBranchId: string | null; customerBranchName: string | null; customerBranchResolved: boolean; priority: string; purposeType: string; plannedTime: string; estimatedDuration: number }
     index: number
     total: number
@@ -167,7 +167,7 @@ vi.mock('./components/VisitPlanItemEditor', () => ({
       resolved: boolean,
       hasCoordinates: boolean | null
     ) => void
-  }) => {
+  }) {
     useEffect(() => {
       if (props.isExpanded && props.customer.customerBranchId && !props.customer.customerBranchResolved) {
         props.onBranchSelectionChange(
