@@ -23,7 +23,8 @@ const testState = vi.hoisted(() => ({
 
 vi.mock('@/stores/auth-store', () => ({
   useAuthStore: (selector: (state: unknown) => unknown) => selector({
-    profile: { full_name: 'أحمد محمد' },
+    profile: { id: 'synthetic-dashboard-user', full_name: 'أحمد محمد' },
+    permissions: [...testState.permissions],
     can: (permission: string) => testState.permissions.has(permission),
   }),
 }))

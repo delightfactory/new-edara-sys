@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, type QueryFunctionContext } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/auth-store'
 import { supabase } from '@/lib/supabase/client'
 import {
@@ -35,13 +35,29 @@ interface SalesStats {
   deliveredToday: number
 }
 
-async function fetchOverviewStats(): Promise<OverviewStats> {
+function fetchPendingSalesCount() {
+  return supabase.from('sales_orders').select('id', { count: 'estimated', head: true }).in('status', ['confirmed', 'partially_delivered'])
+}
+
+function pendingSalesCount({ client, queryKey }: QueryFunctionContext) {
+  // Refetches with existing data must request a fresh count, even during another refresh.
+  if (client.getQueryData(queryKey) !== undefined) return fetchPendingSalesCount()
+  return client.fetchQuery({
+    queryKey: ['dashboard-pending-sales', ...queryKey.slice(1)],
+    queryFn: async () => fetchPendingSalesCount(),
+    staleTime: 0,
+    gcTime: 0,
+    retry: false,
+  })
+}
+
+async function fetchOverviewStats(pendingCount: ReturnType<typeof pendingSalesCount>): Promise<OverviewStats> {
   const [customers, products, warehouses, stock, salesPending, purchasePending, lowStock] = await Promise.all([
     supabase.from('customers').select('id', { count: 'estimated', head: true }).eq('is_active', true),
     supabase.from('products').select('id', { count: 'estimated', head: true }).eq('is_active', true),
     supabase.from('warehouses').select('id', { count: 'estimated', head: true }).eq('is_active', true),
     supabase.from('stock').select('id', { count: 'estimated', head: true }),
-    supabase.from('sales_orders').select('id', { count: 'estimated', head: true }).in('status', ['confirmed', 'partially_delivered']),
+    pendingCount,
     supabase.from('purchase_invoices').select('id', { count: 'estimated', head: true }).eq('status', 'pending'),
     supabase.rpc('get_low_stock', {
       p_warehouse_id: null, p_offset: 0, p_limit: 1,
@@ -64,14 +80,14 @@ async function fetchOverviewStats(): Promise<OverviewStats> {
   }
 }
 
-async function fetchSalesStats(): Promise<SalesStats> {
+async function fetchSalesStats(pendingCount: ReturnType<typeof pendingSalesCount>): Promise<SalesStats> {
   const today = new Date().toISOString().split('T')[0]
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
 
   const [todayOrders, monthOrders, pendingOrders, deliveredToday] = await Promise.all([
     supabase.from('sales_orders').select('total_amount').gte('created_at', today).eq('status', 'delivered'),
     supabase.from('sales_orders').select('total_amount').gte('created_at', monthStart).eq('status', 'delivered'),
-    supabase.from('sales_orders').select('id', { count: 'estimated', head: true }).in('status', ['confirmed', 'partially_delivered']),
+    pendingCount,
     supabase.from('sales_orders').select('id', { count: 'estimated', head: true }).gte('created_at', today).eq('status', 'delivered'),
   ])
 
@@ -96,10 +112,13 @@ function MetricValue({ loading, children }: { loading?: boolean; children: React
 export default function DashboardPage() {
   const profile = useAuthStore(s => s.profile)
   const can = useAuthStore(s => s.can)
+  const permissions = useAuthStore(s => s.permissions)
+  const permissionKey = [...new Set(permissions)].sort()
 
   const { data: overview, isLoading: loadingOverview } = useQuery({
-    queryKey: ['dashboard-overview'],
-    queryFn: fetchOverviewStats,
+    queryKey: ['dashboard-overview', profile?.id, permissionKey],
+    queryFn: context => fetchOverviewStats(pendingSalesCount(context)),
+    enabled: !!profile?.id,
     staleTime: 60_000,
   })
 
@@ -108,9 +127,9 @@ export default function DashboardPage() {
   const canViewInventory = can('inventory.read')
 
   const { data: salesStats, isLoading: loadingSales } = useQuery({
-    queryKey: ['dashboard-sales'],
-    queryFn: fetchSalesStats,
-    enabled: canViewSales,
+    queryKey: ['dashboard-sales', profile?.id, permissionKey],
+    queryFn: context => fetchSalesStats(pendingSalesCount(context)),
+    enabled: !!profile?.id && canViewSales,
     staleTime: 60_000,
   })
 
