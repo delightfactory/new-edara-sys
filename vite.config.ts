@@ -108,6 +108,12 @@ export default defineConfig({
         ],
       },
 
+      // injectManifest uses its own glob options. Keep its default asset
+      // types and include the local Cairo fonts in the generated precache.
+      injectManifest: {
+        globPatterns: ['**/*.{js,wasm,css,html,woff2}'],
+      },
+
       // Workbox config (for precaching + cache cleanup)
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
