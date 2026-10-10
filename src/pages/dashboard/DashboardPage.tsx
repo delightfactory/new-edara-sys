@@ -36,18 +36,19 @@ interface SalesStats {
 }
 
 async function fetchOverviewStats(): Promise<OverviewStats> {
-  const [customers, products, warehouses, stock, salesPending, purchasePending] = await Promise.all([
+  const [customers, products, warehouses, stock, salesPending, purchasePending, lowStock] = await Promise.all([
     supabase.from('customers').select('id', { count: 'estimated', head: true }).eq('is_active', true),
     supabase.from('products').select('id', { count: 'estimated', head: true }).eq('is_active', true),
     supabase.from('warehouses').select('id', { count: 'estimated', head: true }).eq('is_active', true),
     supabase.from('stock').select('id', { count: 'estimated', head: true }),
     supabase.from('sales_orders').select('id', { count: 'estimated', head: true }).in('status', ['confirmed', 'partially_delivered']),
     supabase.from('purchase_invoices').select('id', { count: 'estimated', head: true }).eq('status', 'pending'),
+    supabase.rpc('get_low_stock', {
+      p_warehouse_id: null, p_offset: 0, p_limit: 1,
+    }),
   ])
 
-  const { data: lowStockRows } = await supabase.rpc('get_low_stock', {
-    p_warehouse_id: null, p_offset: 0, p_limit: 1,
-  })
+  const { data: lowStockRows } = lowStock
   const lowStockCount = (lowStockRows && lowStockRows.length > 0)
     ? Number((lowStockRows as any[])[0].total_count)
     : 0
