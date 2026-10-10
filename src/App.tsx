@@ -12,7 +12,7 @@ import PWAUpdateManager from '@/components/pwa/PWAUpdateBanner'
 import ScrollToTopButton from '@/components/shared/ScrollToTop'
 
 // Auth Pages
-import LoginPage from '@/pages/auth/LoginPage'
+const LoginPage = lazy(() => import('@/pages/auth/LoginPage'))
 import UnauthorizedPage from '@/pages/auth/UnauthorizedPage'
 import DashboardPage from '@/pages/dashboard/DashboardPage'
 import ReportsRedirect from '@/pages/reports/ReportsRedirect'
@@ -182,7 +182,7 @@ export default function App() {
         <AuthProvider>
           <ErrorBoundary>
             <Routes>
-              <Route path="/login" element={<LoginPage />} />
+              <Route path="/login" element={<Suspense fallback={<LazyFallback />}><LoginPage /></Suspense>} />
               <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
               <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
