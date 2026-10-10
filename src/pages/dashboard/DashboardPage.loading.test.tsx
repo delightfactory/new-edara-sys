@@ -55,12 +55,17 @@ function pendingSalesRequests(requests = pendingRequests) {
     && request.url.searchParams.get('status') === 'in.(confirmed,partially_delivered)')
 }
 
+function fixtureCount(request: PendingRequest) {
+  const table = request.url.pathname.split('/').pop()!
+  if (table === 'purchase_invoices') return request.url.searchParams.get('status') === 'eq.draft' ? 2 : 0
+  return counts[table]
+}
+
 async function completeRequests(requests: PendingRequest[], pendingCount = 4) {
   await act(async () => {
     for (const request of requests) {
       if (request.init?.method === 'HEAD') {
-        const table = request.url.pathname.split('/').pop()!
-        const count = pendingSalesRequests([request]).length ? pendingCount : counts[table]
+        const count = pendingSalesRequests([request]).length ? pendingCount : fixtureCount(request)
         request.resolve(new Response(null, { status: 200, headers: { 'content-range': `*/${count}` } }))
       } else {
         const rows = request.url.pathname.endsWith('/get_low_stock') ? [{ total_count: '3' }] : [{ total_amount: 125 }]
@@ -83,8 +88,7 @@ function lowStockRequest() {
 async function resolveCounts(missingCounts = false) {
   await act(async () => {
     for (const request of countRequests()) {
-      const table = request.url.pathname.split('/').pop()!
-      const headers: Record<string, string> = missingCounts ? {} : { 'content-range': `*/${counts[table]}` }
+      const headers: Record<string, string> = missingCounts ? {} : { 'content-range': `*/${fixtureCount(request)}` }
       request.resolve(new Response(null, { status: 200, headers }))
     }
   })
@@ -160,6 +164,18 @@ describe('Dashboard overview network loading', () => {
     expect(screen.getByText('طلبات بيع تحتاج تنفيذ')).toBeTruthy()
     expect(screen.getByText('فواتير مشتريات معلقة')).toBeTruthy()
     expect(screen.queryByLabelText('جاري تحميل القيمة')).toBeNull()
+  })
+
+  it('counts only unreceived purchase drafts in the follow-up row', async () => {
+    renderDashboard()
+    await waitFor(() => expect(new Set(countRequests().map(request => request.url.pathname)).size).toBe(6))
+    await resolveCounts()
+    await resolveLowStock([])
+    await waitFor(() => expect(screen.getByText('فواتير مشتريات معلقة')).toBeTruthy())
+    const row = screen.getByText('فواتير مشتريات معلقة').closest('.db-v2__follow-row')!
+    expect(within(row as HTMLElement).getByText('2')).toBeTruthy()
+    const purchase = countRequests().find(request => request.url.pathname === '/rest/v1/purchase_invoices')!
+    expect(purchase.url.searchParams.get('status')).toBe('eq.draft')
   })
 
   it.each([[], null])('retains zero fallbacks for absent counts and low-stock response %j', async rows => {

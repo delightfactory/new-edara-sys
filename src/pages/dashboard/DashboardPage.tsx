@@ -58,7 +58,7 @@ async function fetchOverviewStats(pendingCount: ReturnType<typeof pendingSalesCo
     supabase.from('warehouses').select('id', { count: 'estimated', head: true }).eq('is_active', true),
     supabase.from('stock').select('id', { count: 'estimated', head: true }),
     pendingCount,
-    supabase.from('purchase_invoices').select('id', { count: 'estimated', head: true }).eq('status', 'pending'),
+    supabase.from('purchase_invoices').select('id', { count: 'estimated', head: true }).eq('status', 'draft'),
     supabase.rpc('get_low_stock', {
       p_warehouse_id: null, p_offset: 0, p_limit: 1,
     }),
