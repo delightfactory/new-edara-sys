@@ -83,3 +83,17 @@ This slice is qualified for continued local user testing. It does not declare th
 entire application/resale edition certified or authorize production release.
 Any production promotion must carry the migration and feature configuration together
 and undergo the already required final release review.
+
+## Directions follow-up
+
+The execution page now keeps a secondary directions action visible before start and
+across active-visit tabs. Valid visit destination snapshots take precedence over main
+customer coordinates; an assigned branch without valid destination coordinates never
+falls back to the main address. Both coordinates must be finite/in range; zero is valid.
+Absent/invalid locations show a disabled action and an explicit request to record the
+location. Google Maps links contain the destination only and open with `noopener
+noreferrer`. No location, GPS policy, or database record was changed for this slice.
+The synthetic UAT customers intentionally have no coordinates; their missing-location
+message was verified in the real local phone view. Five destination regression cases
+and active-tab visibility supplement the execution tests. Claude reviewed the supplied
+bounded UX proposal (PASS); this was not a fresh source audit by Claude.

@@ -886,6 +886,7 @@ describe('VisitExecutionMode UI Integration Tests (Atomic Mode)', () => {
     // Default active tab is "checklists" — identity must still be visible, not hidden on the customer tab only.
     expect(screen.getByRole('tab', { name: /الاستبيانات والإثبات/ }).getAttribute('aria-selected')).toBe('true')
     expect(screen.getByRole('heading', { name: 'عميل 1' }).closest('[hidden]')).toBeNull()
+    expect(screen.getByRole('link', { name: 'التوجيه إلى العميل' }).closest('[hidden]')).toBeNull()
   })
 
   it('shows a concise contextual instruction before starting', () => {
@@ -937,6 +938,34 @@ describe('VisitExecutionMode UI Integration Tests (Atomic Mode)', () => {
     // so it must remain visible after switching to the customer tab.
     expect(screen.getByText(/أنت خارج النطاق الجغرافي المسموح به للعميل/)).toBeDefined()
     expect(screen.getByText(/أنت خارج النطاق الجغرافي المسموح به للعميل/).closest('[hidden]')).toBeNull()
+  })
+
+  it.each([
+    { name: 'customer coordinates including zero', patch: { customer: { id: 'cust-1', name: 'عميل 1', code: 'C001', phone: null, latitude: 0, longitude: 31 } }, label: 'التوجيه إلى العميل', destination: '0,31' },
+    { name: 'branch snapshot before main customer', patch: { customer_branch_id: 'branch-1', expected_location_source: 'customer_branch', expected_lat: 30.2, expected_lng: 31.3 }, label: 'التوجيه إلى فرع العميل', destination: '30.2,31.3' },
+    { name: 'missing customer coordinates', patch: { customer: { id: 'cust-1', name: 'عميل 1', code: 'C001', phone: null, latitude: null, longitude: null } }, label: 'التوجيه إلى العميل', destination: null },
+    { name: 'branch without snapshot does not fall back to main customer', patch: { customer_branch_id: 'branch-1', expected_location_source: 'customer_branch' }, label: 'التوجيه إلى فرع العميل', destination: null },
+    { name: 'invalid or incomplete coordinates', patch: { customer: { id: 'cust-1', name: 'عميل 1', code: 'C001', phone: null, latitude: 91, longitude: null } }, label: 'التوجيه إلى العميل', destination: null },
+  ])('makes pre-start directions clear: $name', ({ patch, label, destination }) => {
+    mockItemsData = [{ ...mockItemsData[0], ...patch } as VisitPlanItem]
+    vi.mocked(useVisitExecutionSession).mockReturnValue({
+      session: null, pendingOps: [], loading: false, error: null,
+      startVisit: vi.fn(), completeVisit: vi.fn(), skipVisit: vi.fn(),
+      retryOperation: vi.fn(), discardFailedOperation: vi.fn(),
+      saveChecklistDraft: vi.fn(), saveGpsExceptionReason: vi.fn(), reloadFromDb: vi.fn()
+    } as unknown as ReturnType<typeof useVisitExecutionSession>)
+    render(<VisitExecutionMode />)
+    if (destination) {
+      const link = screen.getByRole('link', { name: label })
+      expect(link.getAttribute('href')).toBe(`https://www.google.com/maps/dir/?api=1&destination=${destination}`)
+      expect(link.getAttribute('rel')).toBe('noopener noreferrer')
+      expect(link.closest('[hidden]')).toBeNull()
+    } else {
+      expect(screen.queryByRole('link', { name: label })).toBeNull()
+      expect((screen.getByRole('button', { name: label }) as HTMLButtonElement).disabled).toBe(true)
+      expect(screen.getByText(/غير مسجّل أو غير صالح/)).toBeDefined()
+    }
+    expect((screen.getByRole('button', { name: 'بدء الزيارة' }) as HTMLButtonElement).disabled).toBe(false)
   })
 
   it('renders blocker screen when VISITS_ATOMIC_EXECUTION is false', () => {

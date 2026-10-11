@@ -51,6 +51,23 @@ const PURPOSE_LABELS: Record<string, string> = {
   promotion: 'ترويج', followup: 'متابعة', service: 'خدمة',
 }
 
+function getVisitDestination(item: VisitPlanItem | undefined) {
+  if (!item) return null
+  const validPair = (lat: number | null | undefined, lng: number | null | undefined) =>
+    typeof lat === 'number' && Number.isFinite(lat) && Math.abs(lat) <= 90 &&
+    typeof lng === 'number' && Number.isFinite(lng) && Math.abs(lng) <= 180
+
+  if (validPair(item.expected_lat, item.expected_lng)) {
+    return `${item.expected_lat},${item.expected_lng}`
+  }
+  // A branch visit must never silently route the rep to the customer's main location.
+  if (item.customer_branch_id || item.expected_location_source === 'customer_branch') return null
+  if (validPair(item.customer?.latitude, item.customer?.longitude)) {
+    return `${item.customer?.latitude},${item.customer?.longitude}`
+  }
+  return null
+}
+
 export function collectCurrentChecklistResponses(
   drafts: LocalVisitSession['checklistDrafts'] | undefined,
   templates: ChecklistTemplate[]
@@ -114,6 +131,9 @@ export default function VisitExecutionMode() {
 
   const currentIndex = currentItem ? sortedItems.indexOf(currentItem) : -1
   const nextItem = currentIndex >= 0 ? sortedItems[currentIndex + 1] : null
+  const destination = getVisitDestination(currentItem)
+  const isBranchDestination = !!currentItem?.customer_branch_id || currentItem?.expected_location_source === 'customer_branch'
+  const directionsLabel = isBranchDestination ? 'التوجيه إلى فرع العميل' : 'التوجيه إلى العميل'
 
   const [localBlobs, setLocalBlobs] = useState<LocalBlobRecord[]>([])
   const profile = useAuthStore(s => s.profile)
@@ -534,15 +554,6 @@ export default function VisitExecutionMode() {
     }
   }, [skipModal, id, skipReason, skipCustom, atomic, isPendingActive, isStarting, completing])
 
-  // ── Navigate to Google Maps
-  const openNavigation = useCallback((item: VisitPlanItem) => {
-    const cust = item.customer
-    if (!cust) return
-    if (cust.latitude && cust.longitude) {
-      window.open(`https://www.google.com/maps/dir/?api=1&destination=${cust.latitude},${cust.longitude}`, '_blank')
-    }
-  }, [])
-
   // ── Blocker Page
   if (!VISITS_ATOMIC_EXECUTION) {
     return (
@@ -795,6 +806,24 @@ export default function VisitExecutionMode() {
               </div>
             )}
 
+            <div className="vem-directions">
+              {destination ? (
+                <a className="vem-nav-btn" href={`https://www.google.com/maps/dir/?api=1&destination=${destination}`}
+                  target="_blank" rel="noopener noreferrer">
+                  <Navigation size={18} /> {directionsLabel}
+                </a>
+              ) : (
+                <>
+                  <button className="vem-nav-btn" type="button" disabled aria-describedby="visit-location-unavailable">
+                    <MapPin size={18} /> {directionsLabel}
+                  </button>
+                  <p id="visit-location-unavailable" className="vem-location-hint" role="status">
+                    موقع {isBranchDestination ? 'فرع العميل' : 'العميل'} غير مسجّل أو غير صالح. اطلب من الإدارة تحديده قبل التوجه.
+                  </p>
+                </>
+              )}
+            </div>
+
             {/* Tab Panel 1: العميل والتوجه */}
             <div id="vem-tab-customer" role="tabpanel" hidden={isActive && activeTab !== 'customer'} className="vem-card-body">
               {/* Phone */}
@@ -802,17 +831,6 @@ export default function VisitExecutionMode() {
                 <a href={`tel:${currentItem.customer.phone}`} className="vem-card-row vem-card-phone">
                   <Phone size={14} /> {currentItem.customer.phone}
                 </a>
-              )}
-
-              {/* Location */}
-              {(currentItem.customer?.latitude || currentItem.customer?.longitude) && (
-                <div className="vem-card-row">
-                  <MapPin size={14} />
-                  <span>موقع محدد</span>
-                  <button className="vem-nav-btn" onClick={() => openNavigation(currentItem)}>
-                    <Navigation size={14} /> توجه
-                  </button>
-                </div>
               )}
 
               {/* Purpose */}
@@ -1166,10 +1184,16 @@ export default function VisitExecutionMode() {
         }
         .vem-card-phone { color: var(--color-primary); text-decoration: none; min-height: 44px; }
         .vem-nav-btn {
-          display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px;
-          border-radius: var(--radius-sm); border: 1px solid var(--border-primary);
-          background: var(--bg-surface); cursor: pointer; min-height: 44px;
+          display: flex; align-items: center; justify-content: center; gap: var(--space-2);
+          padding: var(--space-3); inline-size: 100%; box-sizing: border-box;
+          border-radius: var(--radius-md); border: 1px solid var(--border-primary);
+          background: var(--bg-surface); color: var(--color-primary); min-height: 44px;
+          font: inherit; font-weight: 600; text-decoration: none;
         }
+        .vem-nav-btn:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+        .vem-nav-btn:disabled { color: var(--text-muted); cursor: not-allowed; }
+        .vem-directions { margin-block-end: var(--space-3); }
+        .vem-location-hint { color: var(--text-muted); font-size: var(--text-sm); line-height: 1.7; margin-block: var(--space-2) 0; }
         .vem-priority-badge {
           background: rgba(239, 68, 68, 0.1); color: rgb(239, 68, 68);
           font-size: 10px; font-weight: 700; padding: 1px 4px; border-radius: 4px;
