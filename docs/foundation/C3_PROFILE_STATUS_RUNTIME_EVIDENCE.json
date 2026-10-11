@@ -1,0 +1,221 @@
+{
+  "status": "PASS",
+  "parentSha": "996d4e13a834ef3d890968fcad4b97d78a3e295b",
+  "migration": {
+    "path": "supabase/migrations/20261011040000_active_profile_permission_gate.sql",
+    "sha256": "f7ff2377457a914e71e7c51211511d3c77b4b77d132c5b22783e87b49741b35e"
+  },
+  "canonicalFixtureGuard": {
+    "path": "supabase/migrations/02f_hotfixes.sql",
+    "sourceSha256": "89dc593df62ecb56f8061ee9fe201a277bf6ec2330194f37f112724ba2991b18",
+    "statementSha256": "31c2e49eb1c027e06397b05578126db3001140534e3be0cf01495fb34ce126b5"
+  },
+  "before": [
+    {
+      "status": "active",
+      "rows": 2,
+      "permission": true,
+      "sameJwt": true
+    },
+    {
+      "status": "inactive",
+      "rows": 2,
+      "permission": true,
+      "sameJwt": true,
+      "selfReactivationDenied": true
+    },
+    {
+      "status": "suspended",
+      "rows": 2,
+      "permission": true,
+      "sameJwt": true,
+      "selfReactivationDenied": true
+    },
+    {
+      "status": "active",
+      "rows": 2,
+      "permission": true,
+      "sameJwt": true
+    }
+  ],
+  "after": [
+    {
+      "status": "active",
+      "rows": 2,
+      "permission": true,
+      "sameJwt": true
+    },
+    {
+      "status": "inactive",
+      "rows": 0,
+      "permission": false,
+      "sameJwt": true,
+      "selfReactivationDenied": true
+    },
+    {
+      "status": "suspended",
+      "rows": 0,
+      "permission": false,
+      "sameJwt": true,
+      "selfReactivationDenied": true
+    },
+    {
+      "status": "active",
+      "rows": 2,
+      "permission": true,
+      "sameJwt": true
+    }
+  ],
+  "functionCases": [
+    {
+      "name": "wildcard grants",
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "explicit deny beats wildcard",
+      "expected": false,
+      "passed": true
+    },
+    {
+      "name": "expired deny falls back to wildcard",
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "active role grants",
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "expired grant does not grant",
+      "expected": false,
+      "passed": true
+    },
+    {
+      "name": "null user denies",
+      "expected": false,
+      "passed": true
+    },
+    {
+      "name": "missing profile denies",
+      "expected": false,
+      "passed": true
+    },
+    {
+      "name": "disabled role denies",
+      "expected": false,
+      "passed": true
+    },
+    {
+      "name": "no role retains explicit grant",
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "no role expired grant denies",
+      "expected": false,
+      "passed": true
+    },
+    {
+      "name": "inactive wildcard denies",
+      "expected": false,
+      "passed": true
+    },
+    {
+      "name": "suspended explicit grant denies",
+      "expected": false,
+      "passed": true
+    },
+    {
+      "name": "inactive explicit grant without role denies",
+      "expected": false,
+      "passed": true
+    }
+  ],
+  "requests": [
+    {
+      "path": "/auth/v1/token",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "path": "/rest/v1/customers",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/rest/v1/customers",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/rest/v1/profiles",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "path": "/rest/v1/customers",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/rest/v1/profiles",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "path": "/rest/v1/customers",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/rest/v1/customers",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/rest/v1/customers",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/rest/v1/profiles",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "path": "/rest/v1/customers",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/rest/v1/profiles",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "path": "/rest/v1/customers",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/auth/v1/logout",
+      "method": "POST",
+      "status": 204
+    }
+  ],
+  "limitations": [
+    "Permission-gated customers API and core permission function only; self-profile discovery remains intentionally accessible",
+    "Synthetic local platform, not production or all business workflows"
+  ],
+  "idempotent": true,
+  "ownerAndAclUnchanged": true,
+  "originalFunctionRestoreVerified": true,
+  "cleanup": {
+    "fixtureFingerprintRestored": true,
+    "fetchRestored": true,
+    "canonicalGuardKept": true,
+    "qualifiedMigrationKept": true
+  }
+}

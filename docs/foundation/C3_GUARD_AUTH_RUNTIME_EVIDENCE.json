@@ -1,0 +1,193 @@
+{
+  "status": "PASS",
+  "sha": "996d4e13a834ef3d890968fcad4b97d78a3e295b",
+  "owner": "edara-c3-compose-20261011",
+  "cases": [
+    "Anonymous real guard redirects protected route to login",
+    "Actual active B customer access and financial route denial",
+    "Explicit finance deny overrides wildcard in actual route guard",
+    "No role denies role capability while existing explicit grant keeps OR route accessible",
+    "No role plus expired grant yields no permissions and denies OR route",
+    "Actual inactive profile retires session/cache and denies protected route",
+    "Actual suspended profile retires session/cache and denies protected route",
+    "Restored active profile and role/grant resume permitted route"
+  ],
+  "requests": [
+    {
+      "phase": "active-b",
+      "path": "/auth/v1/token",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "phase": "active-b",
+      "path": "/rest/v1/rpc/get_my_profile",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "phase": "active-b",
+      "path": "/rest/v1/rpc/get_my_permission_denials",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "phase": "active-b",
+      "path": "/auth/v1/logout",
+      "method": "POST",
+      "status": 204
+    },
+    {
+      "phase": "wildcard-deny",
+      "path": "/auth/v1/token",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "phase": "wildcard-deny",
+      "path": "/rest/v1/rpc/get_my_profile",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "phase": "wildcard-deny",
+      "path": "/rest/v1/rpc/get_my_permission_denials",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "phase": "wildcard-deny",
+      "path": "/auth/v1/logout",
+      "method": "POST",
+      "status": 204
+    },
+    {
+      "phase": "no-role",
+      "path": "/auth/v1/token",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "phase": "no-role",
+      "path": "/rest/v1/rpc/get_my_profile",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "phase": "no-role",
+      "path": "/rest/v1/rpc/get_my_permission_denials",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "phase": "no-role",
+      "path": "/auth/v1/logout",
+      "method": "POST",
+      "status": 204
+    },
+    {
+      "phase": "no-permissions",
+      "path": "/auth/v1/token",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "phase": "no-permissions",
+      "path": "/rest/v1/rpc/get_my_profile",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "phase": "no-permissions",
+      "path": "/rest/v1/rpc/get_my_permission_denials",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "phase": "no-permissions",
+      "path": "/auth/v1/logout",
+      "method": "POST",
+      "status": 204
+    },
+    {
+      "phase": "inactive",
+      "path": "/auth/v1/token",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "phase": "inactive",
+      "path": "/rest/v1/rpc/get_my_profile",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "phase": "inactive",
+      "path": "/auth/v1/logout",
+      "method": "POST",
+      "status": 204
+    },
+    {
+      "phase": "suspended",
+      "path": "/auth/v1/token",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "phase": "suspended",
+      "path": "/rest/v1/rpc/get_my_profile",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "phase": "suspended",
+      "path": "/auth/v1/logout",
+      "method": "POST",
+      "status": 204
+    },
+    {
+      "phase": "restored-active",
+      "path": "/auth/v1/token",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "phase": "restored-active",
+      "path": "/rest/v1/rpc/get_my_profile",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "phase": "restored-active",
+      "path": "/rest/v1/rpc/get_my_permission_denials",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "phase": "restored-active",
+      "path": "/auth/v1/logout",
+      "method": "POST",
+      "status": 204
+    }
+  ],
+  "sourceHashes": {
+    "src/components/layout/AuthProvider.tsx": "426a0b3a8f664199df9eb1fa7e928406bc9442255bcedf7f7c19f1c7a14c3376",
+    "src/components/layout/ProtectedRoute.tsx": "efc9bb0507525623e58628badd6b643ca78873b821fb869b8c5055f9cc90fac2",
+    "src/lib/services/auth.ts": "6a901bdeb832a34e2bf6d5cdac2d1c09174ba57d95958d8c8fdf564b6d416c96",
+    "src/stores/auth-store.ts": "04a86393c581c377a39eaee70d35d39604a57dcfaad64e52fc60db7fb2d8acda",
+    "src/stores/notification-store.ts": "84c37ae62a580d23055d05fe5547aa68a9f17a5fca978b87bf7c5f862cf37c72",
+    "src/lib/query-client.ts": "f914ca09034114b646f1778796b3cdca4b6b7917cd61a552f883ebb46c590c3c",
+    "src/lib/supabase/client.ts": "2ac923f7b21d53f9380af4c3f1b63de05ea6ce1bd0de18d83410e1c17c9ec0b8"
+  },
+  "violations": [],
+  "cleanup": {
+    "contextClosed": true,
+    "browserExited": true,
+    "frontendClosed": true,
+    "platformKeptForNextQualification": true
+  },
+  "limitations": [
+    "Production Auth component/service/store with real Auth/RLS; not full App/dashboard/business/offline qualification",
+    "Test-only route composition using real ProtectedRoute; not full App/pages; no SDK/service/store mocks or fabricated HTTP responses"
+  ]
+}

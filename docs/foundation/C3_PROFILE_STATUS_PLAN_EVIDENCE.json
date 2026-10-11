@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "scope": "One synthetic authenticated customers read under actual RLS; no production latency inference",
+  "rows": 2,
+  "planningMs": 0.592,
+  "executionMs": 2.552,
+  "initPlans": [
+    {
+      "node": "Result",
+      "name": "InitPlan 2",
+      "loops": 1
+    },
+    {
+      "node": "Result",
+      "name": "InitPlan 4",
+      "loops": 1
+    },
+    {
+      "node": "Result",
+      "name": "InitPlan 5",
+      "loops": 1
+    }
+  ]
+}
