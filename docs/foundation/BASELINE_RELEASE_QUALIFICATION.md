@@ -1,5 +1,7 @@
 # Frozen baseline release qualification — 2026-10-12
 
+Historical pre-promotion qualification record. Current publication and owner-approved targeted recovery are recorded in [BASELINE_PRODUCTION_RELEASE.md](BASELINE_PRODUCTION_RELEASE.md).
+
 Disposition: **ISOLATED_LOCAL_RELEASE_CANDIDATE_REVIEWED**. User UAT and production
 promotion gates remain open. Production adoption is not approved or executed.
 Application source: `d7fdc527f3dc087f5f0c30b464df31ee481c8483`.

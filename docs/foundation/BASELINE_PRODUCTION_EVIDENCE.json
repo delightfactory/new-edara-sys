@@ -1,0 +1,152 @@
+{
+  "status": "PRODUCTION_DEPLOYED_VERIFIED",
+  "date": "2026-10-12",
+  "domain": "https://edara.delight-world.com",
+  "sourceSha": "d7fdc527f3dc087f5f0c30b464df31ee481c8483",
+  "deployment": "dpl_99LWy3BshNvwX6Tb9X4smnmp72GC",
+  "previousDeployment": "dpl_Aa1KTwZFaBj9fj766JtTHMgLr6Ld",
+  "supabaseProject": "ozthzccqudrudicnneuu",
+  "rollbackRehearsal": {
+    "status": "PASS",
+    "productionFunctions": 25,
+    "originalRelations": [
+      "products",
+      "stock"
+    ],
+    "migrations": 10,
+    "applyFromProductionContracts": true,
+    "reverseToProductionContracts": true,
+    "all158PublicRowsUnchanged": true,
+    "productionMutated": false,
+    "rollbackSha256": "64a62fab9a7cc32b7ceadce8ca6e94326a78894fc21d72fa3846ac738a37ff4e",
+    "qualificationRestored": true
+  },
+  "objectVerification": {
+    "status": "PASS",
+    "functions": 26,
+    "relations": [
+      "products",
+      "stock",
+      "stock_read_safe"
+    ],
+    "functionDifferences": [],
+    "relationDifferences": [],
+    "scope": "Actual production function bodies, owners, effective grants; table/view/column ACLs vs rehearsed candidate"
+  },
+  "newObjectEnvironmentDifferences": [
+    "New objects owned by postgres in production vs supabase_admin in isolated clone",
+    "Backend service_role receives default view grants in production; client grants unchanged"
+  ],
+  "liveVerification": {
+    "status": "PASS",
+    "origin": "https://edara.delight-world.com",
+    "expectedDeployment": "dpl_99LWy3BshNvwX6Tb9X4smnmp72GC",
+    "sourceSha": "d7fdc527f3dc087f5f0c30b464df31ee481c8483",
+    "checks": [
+      {
+        "path": "/login",
+        "status": 200,
+        "newBundle": true,
+        "securityHeaders": true
+      },
+      {
+        "path": "/sales/orders",
+        "status": 200,
+        "newBundle": true,
+        "securityHeaders": true
+      },
+      {
+        "path": "/activities/visit-plans/new",
+        "status": 200,
+        "newBundle": true,
+        "securityHeaders": true
+      },
+      {
+        "path": "/settings/company",
+        "status": 200,
+        "newBundle": true,
+        "securityHeaders": true
+      }
+    ],
+    "asset": {
+      "path": "/assets/index-Dxb7-ugj.js",
+      "status": 200,
+      "sha256": "aa7e60675ff9113719bf6128458356e9d4bfbe8e21b2ffff1d55311e4128d2ca",
+      "productionApiCorrect": true,
+      "immutable": true
+    },
+    "serviceWorker": {
+      "status": 200,
+      "cacheControl": "no-cache, no-store, must-revalidate",
+      "sha256": "d9cc136e3573a743af80bc96db27cea2fa732013091092fd3aaec75821e2a2cf"
+    }
+  },
+  "actualMigrationLedger": [
+    {
+      "version": "20261011230649",
+      "name": "low_stock_scope_hardening"
+    },
+    {
+      "version": "20261011230652",
+      "name": "stock_cost_read_hardening"
+    },
+    {
+      "version": "20261011230656",
+      "name": "active_profile_permission_gate"
+    },
+    {
+      "version": "20261011230658",
+      "name": "workflow_rpc_access_hardening"
+    },
+    {
+      "version": "20261011230723",
+      "name": "atomic_purchase_return_draft"
+    },
+    {
+      "version": "20261011230726",
+      "name": "financial_rpc_access_hardening"
+    },
+    {
+      "version": "20261011230729",
+      "name": "payment_allocation_access_hardening"
+    },
+    {
+      "version": "20261011230733",
+      "name": "product_cost_read_hardening"
+    },
+    {
+      "version": "20261011230737",
+      "name": "notification_count_access_hardening"
+    },
+    {
+      "version": "20261011230742",
+      "name": "fix_visit_closed_plan_generated_column_guard"
+    }
+  ],
+  "claudeMechanismReview": {
+    "status": "PASS",
+    "connection": "direct Claude Pro",
+    "type": "Supplied mechanism/evidence review; tools disabled"
+  },
+  "readOnlyRoleChecks": {
+    "actualPasswordLoginUAT": false,
+    "adminCostPermission": true,
+    "adminProfile": true,
+    "stockSafeRead": true,
+    "unreadAndLowStockRpcs": true,
+    "representativeCostsHidden": true,
+    "representativeProfile": true
+  },
+  "browser": {
+    "legacyCachedScriptInitiallyObserved": true,
+    "userCacheCleared": false,
+    "diagnosticServiceWorkerBypassReset": true,
+    "newScriptObserved": "index-Dxb7-ugj.js"
+  },
+  "userPreview5180Healthy": true,
+  "userDatabaseMutated": false,
+  "productionMetadataMutated": true,
+  "businessRowsMutatedByRelease": false,
+  "fullDatabaseBackupClaimed": false,
+  "tag": "baseline-delight-2026-10-12"
+}

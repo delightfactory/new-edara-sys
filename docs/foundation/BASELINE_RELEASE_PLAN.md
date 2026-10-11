@@ -1,6 +1,6 @@
 # Baseline release package and rollback — 2026-10-12
 
-Status: preparation and isolated qualification; production promotion requires owner approval.
+Status: published after explicit owner approval; see BASELINE_PRODUCTION_RELEASE.md for the executed record. The sequences below describe the controlled release procedure.
 Application source is frozen at `d7fdc527f3dc087f5f0c30b464df31ee481c8483` on
 `codex/baseline-ui-polish`. Later documentation commits do not change that application.
 This release does not merge DS2 governance work, deferred AI operations or resale changes.
@@ -9,7 +9,7 @@ This release does not merge DS2 governance work, deferred AI operations or resal
 
 - Production: `edara.delight-world.com`, Vercel project
   `prj_lxOEu9ZLCgeKdlJbIj2Rt4YMWBEF`, team `team_AYQTvxuQJ1EepKxDVhzjX1ew`.
-- Read-only observed production deployment: `dpl_Aa1KTwZFaBj9fj766JtTHMgLr6Ld`,
+- Pre-release production deployment retained for rollback: `dpl_Aa1KTwZFaBj9fj766JtTHMgLr6Ld`,
   source `main` / `d0d5f35429463219e575d4e306464ea24ebed776`.
 - Production Supabase: `ozthzccqudrudicnneuu`.
 - Qualification: owned `edara-qualification-20261011`, API `127.0.0.1:60451`,
@@ -31,13 +31,11 @@ This release does not merge DS2 governance work, deferred AI operations or resal
 6. Stop at reviewable release candidate; await user UAT outcome and production approval.
    No additional redesign/refactor or repeated green-test loops belong to this release.
 
-## Promotion sequence — not executed
+## Promotion sequence — executed record linked above
 
 1. Recheck exact project/domain/deployment/database identities and hashes. Refresh the
    captured production catalog; invalidate this package if contracts changed.
-2. Obtain a fresh recoverable production backup/PITR checkpoint and verify restore
-   availability. Current saved function/ACL catalogs are not a full database backup.
-   Record backup identity privately. Do not proceed without it.
+2. Capture fresh production definitions, owners, view options and affected function/table/column ACLs. For this metadata-only release, the owner approved the targeted snapshot plus tested rollback as the recovery gate; this was executed and qualified. A full business-data backup was not taken or claimed. Any future data/schema migration must establish its own appropriate recovery gate.
 3. Prepare a manual protected deployment from the frozen source, with production-specific
    build variables. Verify `VITE_SUPABASE_URL` names the production project and its matching
    public anon key, `VITE_VISITS_ATOMIC_EXECUTION=true`, and
@@ -54,7 +52,7 @@ This release does not merge DS2 governance work, deferred AI operations or resal
    READY alone is insufficient. Check admin and representative workflows with authorized
    accounts, Realtime and PWA update; avoid artificial financial production postings.
 
-## Rollback sequence — approval required, not executed
+## Rollback sequence — prepared, not executed
 
 Trigger: reproducible release regression in login/permissions, normal business workflows,
 visits, cost visibility or asset/PWA delivery. Pause affected writes and preserve incident
