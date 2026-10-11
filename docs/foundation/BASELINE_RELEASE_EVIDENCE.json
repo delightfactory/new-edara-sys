@@ -1,5 +1,5 @@
 {
-  "status": "ISOLATED_LOCAL_RELEASE_CANDIDATE",
+  "status": "ISOLATED_LOCAL_RELEASE_CANDIDATE_REVIEWED",
   "applicationSourceSha": "d7fdc527f3dc087f5f0c30b464df31ee481c8483",
   "build": {
     "status": "PASS",
@@ -261,12 +261,74 @@
     "afterRealtimeRestart": "4->5"
   },
   "claudeFinalReview": {
-    "readOnlyViolation": false,
-    "status": "UNAVAILABLE",
-    "cause": "Agent Router returned 402 budget pool quota exhausted"
+    "status": "PASS",
+    "authMethod": "claude.ai",
+    "apiProvider": "firstParty",
+    "subscriptionType": "pro",
+    "settingSources": "none",
+    "routerUsed": false,
+    "scope": "Embedded ten migrations, release/rollback plan and latest visits source/test diff",
+    "applicationSourceSha": "d7fdc527f3dc087f5f0c30b464df31ee481c8483",
+    "packageDocumentSha": "4353c7533a981f6e2866d5232077c008ac7bc87c",
+    "toolsDisabled": true,
+    "turns": 1,
+    "blockingFindings": 0,
+    "independentHashRecomputation": false,
+    "codexHashVerification": "PASS",
+    "briefSha256": "cda80f9348d0f09a17e7a960e76ddf84cdc18b64e326f0355b84a4f1fb25c256",
+    "resultArtifactSha256": "9208cf864c9486c6f862794d363fc1f8d6083a2c70a095e512e4d7ca241e9b1c",
+    "globalConfigurationChanged": false,
+    "nonblockingSuggestion": "Consistent schema qualification/search_path in two existing function definitions deferred; tested SQL hashes preserved"
   },
   "productionMutated": false,
   "hostedPreviewQualified": false,
   "userUAT": "PENDING",
-  "productionApproval": "REQUIRED"
+  "productionApproval": "REQUIRED",
+  "staticDeploymentSmoke": {
+    "status": "PASS",
+    "scope": "Isolated immutable static deployment, existing exact-source qualification retained",
+    "checks": [
+      {
+        "route": "/login",
+        "status": 200,
+        "spaIndexExact": true,
+        "securityHeaders": true
+      },
+      {
+        "route": "/sales/orders",
+        "status": 200,
+        "spaIndexExact": true,
+        "securityHeaders": true
+      },
+      {
+        "route": "/activities/visit-plans/new",
+        "status": 200,
+        "spaIndexExact": true,
+        "securityHeaders": true
+      },
+      {
+        "route": "/settings/company",
+        "status": 200,
+        "spaIndexExact": true,
+        "securityHeaders": true
+      },
+      {
+        "route": "/sw.js",
+        "status": 200,
+        "cacheNoStore": true,
+        "artifactExact": true
+      },
+      {
+        "route": "/assets/index-Bl5rt-Iw.js",
+        "status": 200,
+        "immutable": true,
+        "artifactExact": true
+      },
+      {
+        "missingAsset404": true
+      }
+    ],
+    "productionMutated": false,
+    "userPreviewMutated": false
+  }
 }

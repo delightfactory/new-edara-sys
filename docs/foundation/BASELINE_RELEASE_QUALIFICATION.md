@@ -1,7 +1,7 @@
 # Frozen baseline release qualification — 2026-10-12
 
-Disposition: **ISOLATED_LOCAL_RELEASE_CANDIDATE**. User UAT and final independent
-release review remain open. Production adoption is not approved or executed.
+Disposition: **ISOLATED_LOCAL_RELEASE_CANDIDATE_REVIEWED**. User UAT and production
+promotion gates remain open. Production adoption is not approved or executed.
 Application source: `d7fdc527f3dc087f5f0c30b464df31ee481c8483`.
 
 | Gate | Executed result |
@@ -19,7 +19,7 @@ Application source: `d7fdc527f3dc087f5f0c30b464df31ee481c8483`.
 | Offline shell | New build login shell loads after tab-scoped network disable; networking restored PASS |
 | Cleanup / restore rehearsal | Pre-test custom dump restored successfully; all 158 public-table counts/content fingerprints match; synthetic Auth users removed; candidate contracts rechecked PASS |
 | User local environment | 5180 and its separate Auth API healthy; its database untouched |
-| Claude final package review | NOT EXECUTED: CLI authenticated through api-key helper to Agent Router; provider returned 402 budget quota exhausted |
+| Claude final package review | PASS through direct Claude Pro OAuth; settings sources excluded Router; embedded package/source diff only, no tools or independent hash recomputation |
 
 The first test command supplied only `--maxWorkers=2`; Vitest rejected conflicting
 default minimum workers before executing any tests. Setting both min/max workers
@@ -40,9 +40,33 @@ loopback configuration and must not be promoted to production.
 This closes bounded local Realtime/PWA checks on the latest visits/directions source.
 It does not prove the root cause of the historical intermittent Realtime incident,
 exhaustive device/offline field behavior, or completion of the full DS2/resale roadmap.
-Independent final release review, owner UAT, fresh recoverable production backup,
+Owner UAT, fresh recoverable production backup,
 target-specific deployment smoke and explicit production approval remain separate gates.
 
 See [release and rollback plan](BASELINE_RELEASE_PLAN.md),
 [exact SQL manifest](BASELINE_RELEASE_MIGRATIONS.json), and
 [sanitized evidence](BASELINE_RELEASE_EVIDENCE.json).
+
+## Direct Claude release review
+
+The earlier Agent Router attempt failed with a quota error. A separate run using
+`claude --setting-sources ''` found the existing Claude Pro OAuth login and completed
+one read-only review through the first-party connection. No global settings were
+changed, no new credential was entered, and built-in tools/MCP connectors were disabled.
+
+Claude reviewed the embedded exact-source ten SQL migrations, release/rollback plan,
+and latest visits source/test diff against the previous qualified baseline. Result:
+PASS, no blocking findings. This is a bounded supplied-source review, not a fresh
+runtime test by Claude or an exhaustive review of the whole application. Codex verified
+source-archive, service-worker and all ten migration hashes; Claude did not recompute them.
+
+A non-blocking suggestion to align schema qualification/search_path in two functions
+is deferred: it does not justify changing tested SQL bytes or expanding this release.
+The review's security observations are source judgments, not a fresh production RLS
+or schema-creation-privilege audit.
+
+Additional current immutable-build smoke passed four SPA deep links, exact JS/SW
+bytes, security headers, no-store SW caching, immutable asset caching and missing-asset
+404 handling. Only the loopback CSP addition differs for the owned local API; no hosted
+Vercel/TLS proof is inferred. Temporary servers were retired and user preview 5180
+remains available. No application, migration, production or user-database change was made.
