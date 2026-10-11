@@ -1,0 +1,100 @@
+{
+  "status": "LOCAL_QUALIFIED_CANDIDATE",
+  "date": "2026-10-11",
+  "testedSourceSha": "192c55b3c08da452ed23c478e4c88a82b7a1782e",
+  "srcTree": "8bc273e3e3e19c6226aeec468ee94df780da7e01",
+  "workflowCaseCount": 18,
+  "actualWorkflowRequestCount": 72,
+  "workflows": [
+    {
+      "name": "sale",
+      "status": "PASS",
+      "cases": [
+        "Actual service creates saved numbered draft with embedded reference relations",
+        "Insufficient-stock confirmation rejects atomically without reservation or status change",
+        "Authorized real service confirmation and retry reserve once",
+        "Saved credit delivery reduces quantity/value, posts balanced 111 debit/credit, AR100; retry has no second effect",
+        "Saved full credit return restores quantity/value and AR, posts balanced reversal; retry has no second effect"
+      ],
+      "requestCount": 23,
+      "sourceHashes": {
+        "src/lib/services/sales.ts": "f9f294df7bc1c3cd32a52090a4ad4a3494e0956eb6a9daa50228d62458ec3bb9",
+        "src/lib/supabase/client.ts": "2ac923f7b21d53f9380af4c3f1b63de05ea6ce1bd0de18d83410e1c17c9ec0b8"
+      },
+      "publicFixtureRestored": true,
+      "sequencesMayAdvance": true
+    },
+    {
+      "name": "purchase",
+      "status": "PASS",
+      "cases": [
+        "Actual service saves numbered purchase with two units20 plus landed4, total44",
+        "Receipt uses real base-unit conversion and owner stock helper: quantity12 value154 WAC12.8333; repeated receipt rejects with no second effect",
+        "Financial bill records AP44 and balanced44 journal; repeated billing rejects with no second effect",
+        "Overstock return rejected atomically without stock, ledger, journal or header mutation",
+        "Atomic draft edit replaces items and totals; invalid quantity and forbidden status reject with exact persisted rollback",
+        "Anonymous and restricted actual service edits denied without data changes",
+        "Confirmed return cannot be edited through atomic draft RPC",
+        "Return reduces AP40 leaving landed4, removes stock at current WAC with variance14.33, balanced40 journal; repeated confirmation rejects with no second effect"
+      ],
+      "requestCount": 26,
+      "sourceHashes": {
+        "src/lib/services/purchases.ts": "7e7931ec3c722d4da947bec0226487825ea47b1d8a2f4b56c039f113815f3859",
+        "src/lib/services/purchase-returns.ts": "e07d9e4248d1c972f77ceb57a59a7c0fbb439b384f0977efa274d170132298b1",
+        "src/lib/supabase/client.ts": "2ac923f7b21d53f9380af4c3f1b63de05ea6ce1bd0de18d83410e1c17c9ec0b8"
+      },
+      "publicFixtureRestored": true,
+      "sequencesMayAdvance": true
+    },
+    {
+      "name": "cash-sale",
+      "status": "PASS",
+      "cases": [
+        "Actual service creates saved numbered draft with embedded reference relations",
+        "Insufficient-stock confirmation rejects atomically without reservation or status change",
+        "Authorized real service confirmation and retry reserve once",
+        "Saved cash delivery reduces quantity/value, posts balanced111, custody100 and AR0; retry has no second effect",
+        "Saved full cash return restores quantity/value, refunds custody to0, posts balanced111 reversal; retry has no second effect"
+      ],
+      "requestCount": 23,
+      "sourceHashes": {
+        "src/lib/services/sales.ts": "f9f294df7bc1c3cd32a52090a4ad4a3494e0956eb6a9daa50228d62458ec3bb9",
+        "src/lib/supabase/client.ts": "2ac923f7b21d53f9380af4c3f1b63de05ea6ce1bd0de18d83410e1c17c9ec0b8"
+      },
+      "publicFixtureRestored": true,
+      "sequencesMayAdvance": true
+    }
+  ],
+  "restore": {
+    "status": "PASS",
+    "owner": "edara-qualification-20261011",
+    "archiveSha256": "898b09a23206f95c8f01219701421645fec44d3525ef9c942a1d9ee55c5be17b",
+    "publicTables": 158,
+    "authTablesIncluded": true,
+    "functionDefinitionsIncluded": true,
+    "restores": 2,
+    "syntheticSentinelRemoved": true,
+    "originalArchiveDataReproduced": true,
+    "loginAfterRestore": true,
+    "activeCron": 0,
+    "queuedHTTP": 0,
+    "sourceRuntimeMutated": false,
+    "productionMutated": false
+  },
+  "independentReview": {
+    "provider": "Claude Code",
+    "sessionId": "609c7c06-502e-4424-9823-3e7e2af91cde",
+    "status": "completed",
+    "readOnlyViolation": false,
+    "verdict": "PASS for bounded local candidate only",
+    "reviewerExecutedTests": false
+  },
+  "limits": [
+    "VAT0 representative financial workflows only",
+    "Not all119pages visually accepted",
+    "Historical intermittent two-user stock Realtime requires target preview verification",
+    "Changed-build PWA upgrade requires target verification",
+    "Archive lacks historic Storage binaries; restored operating data from August",
+    "No production mutation or deployment; AI and resale deferred"
+  ]
+}
