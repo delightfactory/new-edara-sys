@@ -1,0 +1,278 @@
+{
+  "migration": {
+    "migration": "20261011021422_low_stock_scope_hardening.sql",
+    "sha256": "c0a612080a429d4bb89d3b977f73b08110ce806f9223895ef6224a6ed6a183a7",
+    "reviewSession": "0b35e2d4-c7c9-48ff-825d-3fc07b808d7e",
+    "parentSha": "932d1d9d4de818643eddbfa684a3281418203f31"
+  },
+  "rootPostCleanup": "2 Auth users|4 original overrides|roles active|anon execute false|authenticated execute true",
+  "realSdk": {
+    "status": "RPC_SECURITY_QUALIFIED_WITH_SEPARATE_COST_GATE",
+    "owner": "edara-c3-compose-20261011",
+    "migrationSha256": "c0a612080a429d4bb89d3b977f73b08110ce806f9223895ef6224a6ed6a183a7",
+    "cases": [
+      "Real anonymous RPC rejected with SQL42501 after revoking PUBLIC and anon execute",
+      "Signed-in identity without inventory access gets no rows or count",
+      "Wildcard authorized scope retains all rows, original fields/units/reserved threshold and genuine costs",
+      "Manager and member scope restricts rows/count; foreign warehouse excluded; cost fields withheld as NULL",
+      "Pagination/window count/sort calculated after authorization filter, including empty page",
+      "Active financial grant reveals genuine costs; explicit deny and expired grant withhold them",
+      "Financial deny overrides wildcard without hiding authorized quantities",
+      "Read-all/scoped OR contract and active/expired inventory overrides respected without global leakage",
+      "Inactive role contributes no inventory access; original role restored"
+    ],
+    "requests": [
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_my_profile",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_my_profile",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 401
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/stock",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/stock",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_my_profile",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      }
+    ],
+    "remainingFindings": [
+      {
+        "id": "C3-SEC-DIRECT-STOCK-COST",
+        "confirmed": true,
+        "ownScopeCostRows": 3,
+        "financeViewCostsGranted": false,
+        "productionNotTested": true,
+        "gate": "C6 cost API closure required; not solved by this RPC change"
+      }
+    ],
+    "scope": "get_low_stock RPC authorization/cost contract only; full platform financial-cost confidentiality remains open",
+    "before": {
+      "anonymousRows": 3,
+      "anonymousCostsExposed": true,
+      "definitionSha256": "365008055fdd10d9ab2050f515ed9c1ef17cad721c4878998d504dc7a884e83d",
+      "privileges": "true|true"
+    },
+    "dryParseRollbackRestored": true,
+    "afterDefinitionSha256": "1916dc5be13be3183efa396f29f7c857e4a607b034fc109c21de68ce755b1437",
+    "idempotentReapply": true,
+    "cleanup": {
+      "temporaryOverridesRemoved": true,
+      "originalRoleActive": true,
+      "ownedPlatformKeptForNextQualification": true
+    }
+  },
+  "serviceQualifierSha256": "b0f6f95383b125b47aabd7cb4faf7b1e7ea6686c517c4c93e003481206103e4b",
+  "qualifierSha256": "6efa85e36c6eaa426ba8bf1d5f4ff99c0faa190233c6811125e0924832efbdb9",
+  "productionService": {
+    "status": "PASS",
+    "cases": [
+      "Actual application service propagates real anonymous RPC denial",
+      "Actual service maps authorized row/unit/cost fields and count/page contracts",
+      "Actual service returns empty authorized result for restricted account without fabricating network success",
+      "Actual service preserves masked costs and scoped/foreign warehouse result shapes"
+    ],
+    "requests": [
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 401
+      },
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      }
+    ],
+    "sourceHashes": {
+      "src/lib/services/inventory.ts": "90126a40ee0cf02e02069af1880c8ff8b863af0b96d9a33f5c23f4a9167e795e",
+      "src/lib/supabase/client.ts": "2ac923f7b21d53f9380af4c3f1b63de05ea6ce1bd0de18d83410e1c17c9ec0b8"
+    },
+    "violations": [],
+    "scope": "Unchanged production inventory service and Supabase client via Vite SSR, real Auth/RPC; not browser/UI/full App qualification",
+    "cleanup": {
+      "temporaryOverrideRemoved": true,
+      "viteServerClosed": true,
+      "globalFetchRestored": true,
+      "productionSourcesUnchanged": true
+    }
+  },
+  "finalReview": {
+    "exitCode": 0,
+    "readOnlyViolation": false,
+    "verdict": "PASS",
+    "sessionId": "668536e1-4222-4ab5-a137-8d6c0a9ef378"
+  }
+}
