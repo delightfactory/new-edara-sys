@@ -18,6 +18,7 @@ import Card from '@/components/patterns/Card'
 import KeyValueList, { type KeyValueItem } from '@/components/patterns/KeyValueList'
 import StatCard from '@/components/patterns/StatCard'
 import StatusBadge, { type SemanticTone } from '@/components/patterns/StatusBadge'
+import './SalesOrderCard.css'
 
 export const SALES_ORDER_STATUS_LABELS: Record<SalesOrderStatus, string> = {
   draft: 'مسودة',
@@ -172,20 +173,14 @@ export function SalesOrderCard({ summary, mode, onOpen, onMap, onCall }: SalesOr
     ? undefined
     : Math.max(0, Math.min(100, progressSource))
 
-  const metadata: KeyValueItem[] = [
+  const secondaryMeta: KeyValueItem[] = [
     { key: 'date', label: 'التاريخ', value: summary.orderDate },
-    { key: 'total', label: 'الإجمالي', value: summary.total, emphasis: 'strong' },
-    { key: 'paid', label: 'المدفوع', value: summary.paid },
   ]
-
-  if (summary.outstanding != null) {
-    metadata.push({ key: 'outstanding', label: 'المتبقي', value: summary.outstanding, emphasis: 'strong' })
-  }
   if (summary.paymentTerms != null) {
-    metadata.push({ key: 'payment', label: 'الدفع', value: summary.paymentTerms })
+    secondaryMeta.push({ key: 'payment', label: 'الدفع', value: summary.paymentTerms })
   }
   if (summary.representative != null) {
-    metadata.push({ key: 'rep', label: 'المندوب', value: summary.representative })
+    secondaryMeta.push({ key: 'rep', label: 'المندوب', value: summary.representative })
   }
 
   return (
@@ -230,9 +225,36 @@ export function SalesOrderCard({ summary, mode, onOpen, onMap, onCall }: SalesOr
         </div>
       </div>
 
-      <div style={{ marginBlockStart: 'var(--space-3)' }}>
-        <KeyValueList items={metadata} columns={mode === 'tablet' ? 3 : 2} compact />
+      <div className="sales-order-card__total">
+        <p className="sales-order-card__total-label">الإجمالي</p>
+        <p className="sales-order-card__total-value">{summary.total}</p>
       </div>
+
+      <div
+        className={
+          summary.outstanding != null
+            ? 'sales-order-card__money-row'
+            : 'sales-order-card__money-row sales-order-card__money-row--single'
+        }
+      >
+        <div className="sales-order-card__money-cell">
+          <p className="sales-order-card__money-label">المدفوع</p>
+          <p className="sales-order-card__money-value">{summary.paid}</p>
+        </div>
+        {summary.outstanding != null && (
+          <div className="sales-order-card__money-cell">
+            <p className="sales-order-card__money-label">المتبقي</p>
+            <p className="sales-order-card__money-value">{summary.outstanding}</p>
+          </div>
+        )}
+      </div>
+
+      <KeyValueList
+        items={secondaryMeta}
+        columns={mode === 'tablet' ? 3 : 2}
+        compact
+        className="sales-order-card__meta-grid"
+      />
 
       {displayedPaidPercent != null && boundedProgressPercent != null && (
         <div style={{ marginBlockStart: 'var(--space-3)' }}>
