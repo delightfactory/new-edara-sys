@@ -1,0 +1,260 @@
+{
+  "observedAtUtc": "2026-10-11T01:36:14.1698192Z",
+  "applicationParent": "cf28a4fa63c073a74ebf90d1e15529dca0f65d7c",
+  "platform": {
+    "owner": "edara-c3-compose-20261011",
+    "stage": "one owned start",
+    "status": "PLATFORM_HEALTHY_APPLICATION_UNSEEDED",
+    "containers": [
+      {
+        "name": "/edara-c3-compose-20261011-api-gw-1",
+        "service": "api-gw",
+        "health": "healthy"
+      },
+      {
+        "name": "/edara-c3-compose-20261011-auth-1",
+        "service": "auth",
+        "health": "healthy"
+      },
+      {
+        "name": "/edara-c3-compose-20261011-rest-1",
+        "service": "rest",
+        "health": "healthy"
+      },
+      {
+        "name": "/edara-c3-compose-20261011-db-1",
+        "service": "db",
+        "health": "healthy"
+      }
+    ],
+    "publishedPorts": [
+      {
+        "port": "8000/tcp",
+        "HostIp": "127.0.0.1",
+        "HostPort": "59431"
+      },
+      {
+        "port": "5432/tcp",
+        "HostIp": "127.0.0.1",
+        "HostPort": "59432"
+      }
+    ],
+    "images": [
+      {
+        "image": "supabase/postgres:17.6.1.136",
+        "id": "sha256:f371b5f3f2ac0a05703f33d6e6134515fb2498cab708fb948a0aeb7481467c00",
+        "digests": [
+          "supabase/postgres@sha256:f371b5f3f2ac0a05703f33d6e6134515fb2498cab708fb948a0aeb7481467c00"
+        ]
+      },
+      {
+        "image": "supabase/gotrue:v2.196.0",
+        "id": "sha256:c0c25187a6b835e65a6f6e6c6b39d090e832d40e6de5186f2c038e0411944232",
+        "digests": [
+          "supabase/gotrue@sha256:c0c25187a6b835e65a6f6e6c6b39d090e832d40e6de5186f2c038e0411944232",
+          "public.ecr.aws/supabase/gotrue@sha256:c0c25187a6b835e65a6f6e6c6b39d090e832d40e6de5186f2c038e0411944232"
+        ]
+      },
+      {
+        "image": "postgrest/postgrest:v14.17",
+        "id": "sha256:c9dc201e555f5d8e37e7f39cdd4df0229774996e213bfd7de8d10ac609030f2c",
+        "digests": [
+          "postgrest/postgrest@sha256:c9dc201e555f5d8e37e7f39cdd4df0229774996e213bfd7de8d10ac609030f2c"
+        ]
+      },
+      {
+        "image": "envoyproxy/envoy:v1.39.1",
+        "id": "sha256:57e14a549d7bd43c8d3f6d03e8cfa653e037d4b38e133acd9b54f38c524401b4",
+        "digests": [
+          "envoyproxy/envoy@sha256:57e14a549d7bd43c8d3f6d03e8cfa653e037d4b38e133acd9b54f38c524401b4"
+        ]
+      }
+    ],
+    "cleanup": null,
+    "gateway": {
+      "authHealth": 200,
+      "anonymousOpenApiDenied": 403,
+      "adminRestDiscovery": 200
+    },
+    "database": {
+      "realAuthSchema": true,
+      "realAuthUidFunction": true,
+      "authUsers": 0,
+      "publicApplicationTables": 0
+    }
+  },
+  "sql": {
+    "status": "AUTH_CANONICAL_APPLIED_USERS_UNSEEDED",
+    "sqlSha256": "9b975b96433688e8079666e3d3a51a817d50c353f6d6e2e3e76383f906e8f893",
+    "dryParseRolledBack": true,
+    "applicationTables": 8,
+    "allRlsEnabled": true,
+    "authUsers": 0,
+    "fixtureGrantsSeparate": true,
+    "limitation": "Auth-only subset; dashboard/financial/inventory acceptance remains open"
+  },
+  "auth": {
+    "status": "PASS",
+    "checks": [
+      "real Admin API users and password login",
+      "self profile, active grant/deny and expired override semantics",
+      "anonymous and cross-user RLS/RPC rejection",
+      "own timestamp write only; forged user metadata cannot widen server scope",
+      "inactive role excluded while active explicit grant remains",
+      "real refresh/getUser/logout/session retirement"
+    ],
+    "calls": [
+      {
+        "path": "/auth/v1/admin/users",
+        "method": "POST",
+        "status": 200,
+        "elapsedMs": 162.312
+      },
+      {
+        "path": "/auth/v1/admin/users",
+        "method": "POST",
+        "status": 200,
+        "elapsedMs": 109.22070000000008
+      },
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200,
+        "elapsedMs": 133.2237
+      },
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200,
+        "elapsedMs": 133.61609999999996
+      },
+      {
+        "path": "/rest/v1/rpc/get_my_profile",
+        "method": "POST",
+        "status": 200,
+        "elapsedMs": 9.232600000000048
+      },
+      {
+        "path": "/rest/v1/rpc/get_my_profile",
+        "method": "POST",
+        "status": 200,
+        "elapsedMs": 5.130300000000034
+      },
+      {
+        "path": "/rest/v1/rpc/get_my_permission_denials",
+        "method": "POST",
+        "status": 200,
+        "elapsedMs": 4.272499999999809
+      },
+      {
+        "path": "/rest/v1/rpc/get_my_permission_denials",
+        "method": "POST",
+        "status": 200,
+        "elapsedMs": 3.7295000000001437
+      },
+      {
+        "path": "/rest/v1/rpc/get_user_permissions",
+        "method": "POST",
+        "status": 400,
+        "elapsedMs": 5.843899999999849
+      },
+      {
+        "path": "/rest/v1/rpc/get_my_permission_denials",
+        "method": "POST",
+        "status": 401,
+        "elapsedMs": 3.8052999999999884
+      },
+      {
+        "path": "/rest/v1/rpc/get_user_permissions",
+        "method": "POST",
+        "status": 401,
+        "elapsedMs": 3.2346999999999753
+      },
+      {
+        "path": "/rest/v1/profiles",
+        "method": "GET",
+        "status": 200,
+        "elapsedMs": 4.694700000000012
+      },
+      {
+        "path": "/rest/v1/profiles",
+        "method": "GET",
+        "status": 200,
+        "elapsedMs": 4.392800000000079
+      },
+      {
+        "path": "/rest/v1/profiles",
+        "method": "PATCH",
+        "status": 200,
+        "elapsedMs": 5.975599999999986
+      },
+      {
+        "path": "/rest/v1/profiles",
+        "method": "PATCH",
+        "status": 200,
+        "elapsedMs": 5.039499999999862
+      },
+      {
+        "path": "/auth/v1/user",
+        "method": "PUT",
+        "status": 200,
+        "elapsedMs": 79.49199999999996
+      },
+      {
+        "path": "/rest/v1/profiles",
+        "method": "GET",
+        "status": 200,
+        "elapsedMs": 6.263400000000047
+      },
+      {
+        "path": "/rest/v1/rpc/get_my_profile",
+        "method": "POST",
+        "status": 200,
+        "elapsedMs": 4.05619999999999
+      },
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200,
+        "elapsedMs": 81.11950000000024
+      },
+      {
+        "path": "/auth/v1/user",
+        "method": "GET",
+        "status": 200,
+        "elapsedMs": 49.15440000000035
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204,
+        "elapsedMs": 59.07109999999966
+      },
+      {
+        "path": "/rest/v1/rpc/get_my_permission_denials",
+        "method": "POST",
+        "status": 401,
+        "elapsedMs": 18.287900000000263
+      }
+    ],
+    "limitations": [
+      "Bounded Auth/RLS canonical subset, not managed-production schema equivalence",
+      "Actual application loadSession/provider/browser path and dashboard still need real-backend qualification",
+      "Saved financial/inventory workflows and restore remain C6"
+    ]
+  },
+  "rejectionCodes": {
+    "status": "PASS",
+    "ownProfilePositive": true,
+    "crossUserCode": "P0001",
+    "anonymousPermissionCode": "42501",
+    "anonymousDenialCode": "42501",
+    "signedOutCode": "42501",
+    "scope": "Specific SQL authorization failures, not transport errors or missing RPC success"
+  },
+  "review": {
+    "sessionId": "c964ad93-81c0-47ab-9bac-efcc4852c27f",
+    "verdict": "PASS",
+    "readOnlyViolation": false
+  }
+}

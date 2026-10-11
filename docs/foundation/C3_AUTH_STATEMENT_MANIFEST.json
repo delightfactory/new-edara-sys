@@ -1,0 +1,82 @@
+[
+  {
+    "name": "foundation-before-business-seeds",
+    "file": "01_foundation.sql",
+    "sourceSha256": "75bd460c1b0cfeab8ba7254c517c0422c00aed8aea62cef011f1931f9955169f",
+    "firstLine": 8,
+    "lastLine": 366,
+    "startByte": 263,
+    "endByteExclusive": 14560,
+    "sha256": "447fa5e8ef249e2aa51489a74e5182a6d64720ebd83a3fa273df029d7335c03b"
+  },
+  {
+    "name": "current-permission-check",
+    "file": "03g_performance_hardening.sql",
+    "sourceSha256": "0bfb6d4583df25ef80baec29c99c0fea2f1cf823bb102b0e20478c5e2368a784",
+    "firstLine": 28,
+    "lastLine": 56,
+    "startByte": 2144,
+    "endByteExclusive": 3095,
+    "sha256": "358e225dc4caf2f17ffbc500fe4aea27c6369d52159c7aec48f236d0fa6bbb0f"
+  },
+  {
+    "name": "current-permissions-and-self-denials-with-grants",
+    "file": "20260726131028_user_permission_overrides_management.sql",
+    "sourceSha256": "3a492dde5f85c9fa32ed2b417a9fde08ca0fb7e4273ea3257a5fb771863b36b6",
+    "firstLine": 18,
+    "lastLine": 98,
+    "startByte": 834,
+    "endByteExclusive": 3509,
+    "sha256": "ed79fc842d8e23d70748d22df4648508d4e2ab630c20632d3f686673a7043aab"
+  },
+  {
+    "name": "current-profile-policies",
+    "file": "66_rls_initplan_safe.sql",
+    "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+    "firstLine": 911,
+    "lastLine": 917,
+    "startByte": 53091,
+    "endByteExclusive": 53543,
+    "sha256": "ff6ba2b6480a300c3967ef7b3961fabfdc9f641ee84c3ec0f2a13c89f0fbf783"
+  },
+  {
+    "name": "current-role-permission-policies",
+    "file": "66_rls_initplan_safe.sql",
+    "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+    "firstLine": 995,
+    "lastLine": 1009,
+    "startByte": 57855,
+    "endByteExclusive": 58682,
+    "sha256": "89b2708b2ce2e041502803a214ecc717ae718f9d076a8fe75d3f6af5eb622d7a"
+  },
+  {
+    "name": "current-role-policies",
+    "file": "66_rls_initplan_safe.sql",
+    "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+    "firstLine": 1013,
+    "lastLine": 1027,
+    "startByte": 58836,
+    "endByteExclusive": 59579,
+    "sha256": "8d83500a28fea8d267f8e84ee3ab23a56162647f2accfc918b271c29abaa7cd2"
+  },
+  {
+    "name": "current-override-policies",
+    "file": "66_rls_initplan_safe.sql",
+    "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+    "firstLine": 1374,
+    "lastLine": 1380,
+    "startByte": 82804,
+    "endByteExclusive": 83296,
+    "sha256": "30b3dadecc0b6b4a1396fc4d480c3319410301723774d011c68f81ce722148d4"
+  },
+  {
+    "name": "current-user-role-policies",
+    "file": "66_rls_initplan_safe.sql",
+    "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+    "firstLine": 1384,
+    "lastLine": 1398,
+    "startByte": 83440,
+    "endByteExclusive": 84294,
+    "sha256": "1ef3da7310ce81fe3688f53ebc67d347835cdf605c040715739d084ee4d1d136"
+  }
+]
