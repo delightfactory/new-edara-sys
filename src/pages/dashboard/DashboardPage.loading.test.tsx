@@ -239,7 +239,9 @@ describe('Dashboard overview network loading', () => {
     expect(pendingRequests).toHaveLength(10)
     const request = pendingSalesRequests()[0]
     expect(request.url.searchParams.get('select')).toBe('id')
-    expect(new Headers(request.init?.headers).get('prefer')).toBe('count=estimated')
+    for (const countRequest of countRequests()) {
+      expect(new Headers(countRequest.init?.headers).get('prefer')).toBe('count=exact')
+    }
     expect(metric('طلبات معلقة').getByLabelText('جاري تحميل القيمة')).toBeTruthy()
     expect(metric('طلبات محددة').getByLabelText('جاري تحميل القيمة')).toBeTruthy()
     const salesOnly = pendingRequests.filter(candidate => candidate.url.pathname === '/rest/v1/sales_orders')

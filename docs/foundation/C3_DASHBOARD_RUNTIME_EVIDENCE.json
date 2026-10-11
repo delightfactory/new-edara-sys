@@ -1,0 +1,451 @@
+{
+  "estimatedFailure": {
+    "status": "FAIL",
+    "owner": "edara-c3-compose-20261011",
+    "checks": [],
+    "findings": [],
+    "requests": [
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200,
+        "elapsedMs": 118.52109999999993
+      },
+      {
+        "path": "/rest/v1/rpc/get_my_profile",
+        "method": "POST",
+        "status": 200,
+        "elapsedMs": 8.819899999999961
+      },
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200,
+        "elapsedMs": 104.14480000000003
+      },
+      {
+        "path": "/rest/v1/rpc/get_my_profile",
+        "method": "POST",
+        "status": 200,
+        "elapsedMs": 4.053099999999972
+      },
+      {
+        "path": "/rest/v1/customers",
+        "method": "HEAD",
+        "status": 206,
+        "elapsedMs": 11.965799999999945
+      },
+      {
+        "path": "/rest/v1/products",
+        "method": "HEAD",
+        "status": 206,
+        "elapsedMs": 7.369699999999966
+      },
+      {
+        "path": "/rest/v1/warehouses",
+        "method": "HEAD",
+        "status": 206,
+        "elapsedMs": 11.326000000000022
+      },
+      {
+        "path": "/rest/v1/stock",
+        "method": "HEAD",
+        "status": 206,
+        "elapsedMs": 9.970699999999965
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "HEAD",
+        "status": 200,
+        "elapsedMs": 11.66459999999995
+      },
+      {
+        "path": "/rest/v1/purchase_invoices",
+        "method": "HEAD",
+        "status": 200,
+        "elapsedMs": 12.685299999999984
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204,
+        "elapsedMs": 66.08439999999996
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204,
+        "elapsedMs": 64.53289999999993
+      }
+    ],
+    "scope": "Actual canonical header/read/RLS only, not financial posting/full App/candidate qualification",
+    "failure": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  {\n+   customers: 35,\n-   customers: 2,\n    draftPurchases: 2,\n    pendingSales: 2,\n+   products: 90,\n+   stock: 275,\n+   warehouses: 175\n-   products: 2,\n-   stock: 4,\n-   warehouses: 3\n  }\n",
+    "cleanup": {
+      "temporaryPermissionOverridesRemoved": false,
+      "temporaryRoleDeleteGrantRetired": false,
+      "syntheticRowsKeptForNextQualification": true
+    }
+  },
+  "scripts": {
+    "sdkQualification": "37b1ba61129d7a1dfd2ef521021984882f3142f393cf41c625408fb8dc45b7ca",
+    "extraction": "8c23988a63977ba55fe00728084fa5bbb4ce9f206f9acaf3f5d8611744e54f89"
+  },
+  "schema": {
+    "status": "SCHEMA_READY_SECURITY_UNREMEDIATED",
+    "owner": "edara-c3-compose-20261011",
+    "newTables": 20,
+    "totalTables": 28,
+    "allPublicTablesRls": true,
+    "realAuthUsers": 2,
+    "dryParseRollbackPreservedPrior": true,
+    "canonicalSha256": "477b295f61e8e6d6858cf8e9685dd45e65dd607f5f12219c81024250e13471aa",
+    "fixtureGrantsSha256": "03158d91eae52079730d2fff0fdc9a52bbe595ba12a79baac1c60fbaa77a4a8b",
+    "groups": 32,
+    "lowStockAnonExecute": true,
+    "reviewSession": "845f9080-9c1a-4a3d-8556-24f7786cf734",
+    "scope": "Canonical read/header/FK contract only; no financial posting or full schema acceptance"
+  },
+  "parentSha": "af266274af9ba2ac7e9da6ce11c074d023e2b4a5",
+  "realSdk": {
+    "status": "READ_QUALIFICATION_WITH_CONFIRMED_SECURITY_FINDING",
+    "owner": "edara-c3-compose-20261011",
+    "countMode": "exact",
+    "checks": [
+      "Real header constraints and dashboard count/revenue filters; draft purchases, active records, delivered-only revenue",
+      "RLS own customer/order scope, restricted inventory deny and anonymous table deny with positive authenticated reads",
+      "Generated available quantity, reserved threshold and low-stock total_count/pagination; current RPC security failure reproduced separately",
+      "Warehouse RLS manager_id and warehouse_managers membership paths, no recursion, while current RPC leaks foreign scope",
+      "roles_delete uses auth.roles.delete; real update-only deletion denied and authorized deletion persisted; previous source concern was false"
+    ],
+    "findings": [
+      {
+        "id": "C3-SEC-LOW-STOCK",
+        "severity": "high",
+        "confirmed": true,
+        "anonymousTableRows": 0,
+        "anonymousRpcRows": 3,
+        "restrictedTableRows": 0,
+        "restrictedRpcRows": 3,
+        "costFieldsReturned": true,
+        "source": "02f_hotfixes.sql167-219",
+        "productionExposureNotTested": true,
+        "scopedForeignWarehouseRpcRows": 1
+      }
+    ],
+    "requests": [
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200,
+        "elapsedMs": 111.73169999999982
+      },
+      {
+        "path": "/rest/v1/rpc/get_my_profile",
+        "method": "POST",
+        "status": 200,
+        "elapsedMs": 6.141399999999976
+      },
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200,
+        "elapsedMs": 100.47029999999995
+      },
+      {
+        "path": "/rest/v1/rpc/get_my_profile",
+        "method": "POST",
+        "status": 200,
+        "elapsedMs": 4.070799999999963
+      },
+      {
+        "path": "/rest/v1/customers",
+        "method": "HEAD",
+        "status": 200,
+        "elapsedMs": 7.5296000000003005
+      },
+      {
+        "path": "/rest/v1/products",
+        "method": "HEAD",
+        "status": 200,
+        "elapsedMs": 4.3703999999997905
+      },
+      {
+        "path": "/rest/v1/warehouses",
+        "method": "HEAD",
+        "status": 200,
+        "elapsedMs": 5.659700000000157
+      },
+      {
+        "path": "/rest/v1/stock",
+        "method": "HEAD",
+        "status": 200,
+        "elapsedMs": 5.436999999999898
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "HEAD",
+        "status": 200,
+        "elapsedMs": 5.477699999999913
+      },
+      {
+        "path": "/rest/v1/purchase_invoices",
+        "method": "HEAD",
+        "status": 200,
+        "elapsedMs": 5.188799999999901
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "GET",
+        "status": 200,
+        "elapsedMs": 5.920399999999972
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "GET",
+        "status": 200,
+        "elapsedMs": 4.416999999999916
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "HEAD",
+        "status": 200,
+        "elapsedMs": 5.267800000000079
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "GET",
+        "status": 200,
+        "elapsedMs": 4.664700000000266
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "GET",
+        "status": 200,
+        "elapsedMs": 4.461499999999887
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "HEAD",
+        "status": 200,
+        "elapsedMs": 4.567599999999857
+      },
+      {
+        "path": "/rest/v1/customers",
+        "method": "HEAD",
+        "status": 200,
+        "elapsedMs": 13.258600000000115
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "HEAD",
+        "status": 200,
+        "elapsedMs": 5.716100000000097
+      },
+      {
+        "path": "/rest/v1/stock",
+        "method": "GET",
+        "status": 200,
+        "elapsedMs": 6.045800000000327
+      },
+      {
+        "path": "/rest/v1/warehouses",
+        "method": "GET",
+        "status": 200,
+        "elapsedMs": 4.793500000000222
+      },
+      {
+        "path": "/rest/v1/customers",
+        "method": "GET",
+        "status": 200,
+        "elapsedMs": 4.423000000000229
+      },
+      {
+        "path": "/rest/v1/products",
+        "method": "GET",
+        "status": 200,
+        "elapsedMs": 5.160100000000057
+      },
+      {
+        "path": "/rest/v1/warehouses",
+        "method": "GET",
+        "status": 200,
+        "elapsedMs": 4.4891999999999825
+      },
+      {
+        "path": "/rest/v1/warehouse_managers",
+        "method": "GET",
+        "status": 200,
+        "elapsedMs": 4.8827000000001135
+      },
+      {
+        "path": "/rest/v1/stock",
+        "method": "GET",
+        "status": 200,
+        "elapsedMs": 4.364500000000135
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "GET",
+        "status": 200,
+        "elapsedMs": 4.208499999999731
+      },
+      {
+        "path": "/rest/v1/purchase_invoices",
+        "method": "GET",
+        "status": 200,
+        "elapsedMs": 4.002200000000357
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200,
+        "elapsedMs": 4.426500000000033
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200,
+        "elapsedMs": 4.8081999999999425
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200,
+        "elapsedMs": 4.452300000000378
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200,
+        "elapsedMs": 4.281199999999899
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200,
+        "elapsedMs": 4.309699999999793
+      },
+      {
+        "path": "/rest/v1/rpc/get_my_profile",
+        "method": "POST",
+        "status": 200,
+        "elapsedMs": 6.196899999999914
+      },
+      {
+        "path": "/rest/v1/warehouses",
+        "method": "GET",
+        "status": 200,
+        "elapsedMs": 6.000799999999799
+      },
+      {
+        "path": "/rest/v1/stock",
+        "method": "GET",
+        "status": 200,
+        "elapsedMs": 5.974800000000414
+      },
+      {
+        "path": "/rest/v1/warehouse_managers",
+        "method": "HEAD",
+        "status": 200,
+        "elapsedMs": 8.588600000000042
+      },
+      {
+        "path": "/rest/v1/purchase_invoices",
+        "method": "HEAD",
+        "status": 200,
+        "elapsedMs": 5.124300000000403
+      },
+      {
+        "path": "/rest/v1/rpc/get_low_stock",
+        "method": "POST",
+        "status": 200,
+        "elapsedMs": 5.056500000000142
+      },
+      {
+        "path": "/rest/v1/roles",
+        "method": "GET",
+        "status": 200,
+        "elapsedMs": 11.565800000000309
+      },
+      {
+        "path": "/rest/v1/roles",
+        "method": "DELETE",
+        "status": 200,
+        "elapsedMs": 10.789600000000064
+      },
+      {
+        "path": "/rest/v1/roles",
+        "method": "DELETE",
+        "status": 200,
+        "elapsedMs": 9.16019999999935
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204,
+        "elapsedMs": 63.66290000000026
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204,
+        "elapsedMs": 75.9377999999997
+      }
+    ],
+    "scope": "Actual canonical header/read/RLS only, not financial posting/full App/candidate qualification",
+    "adminCounts": {
+      "customers": 2,
+      "products": 2,
+      "warehouses": 3,
+      "stock": 4,
+      "pendingSales": 2,
+      "draftPurchases": 2
+    },
+    "adminRevenue": {
+      "today": 300,
+      "month": 700,
+      "deliveredToday": 1
+    },
+    "restrictedRevenue": {
+      "today": 300,
+      "month": 300,
+      "deliveredToday": 1
+    },
+    "roleDeletePrivilegeInitiallyPresent": true,
+    "roleDelete": {
+      "updateWithoutDeleteRejected": true,
+      "positiveWildcardDeletePersisted": true,
+      "canonicalPolicyRequiresDelete": true
+    },
+    "cleanup": {
+      "temporaryPermissionOverridesRemoved": true,
+      "temporaryRoleDeleteGrantRetired": false,
+      "syntheticRowsKeptForNextQualification": true
+    }
+  },
+  "productGates": {
+    "productionDirtyFileHashes": {
+      "src/pages/dashboard/DashboardPage.loading.test.tsx": "8b33ef74617441336749b5ebf4ca3518b3f882a8907934c53a9d8447b3b9c9b2",
+      "src/pages/dashboard/DashboardPage.tsx": "08555ba3cc0e46f616dc7287e81da59e3e2ec4a84751d6a8c97dd60b71be841e"
+    },
+    "syntheticBrowserStatus": "PASS",
+    "builds": 2,
+    "lintExitCode": 0,
+    "focusedTests": 17,
+    "syntheticBrowserCases": 12,
+    "focusedTestFiles": 2,
+    "syntheticBrowserCleanup": {
+      "errors": [],
+      "browserExited": true,
+      "httpListenerRetired": true
+    },
+    "forcedTypeExitCode": 0
+  },
+  "finalReview": {
+    "verdict": "PASS",
+    "exitCode": 0,
+    "sessionId": "f05ea723-b9cf-4be1-9540-2a65b75569aa",
+    "readOnlyViolation": false
+  },
+  "rootPostQualificationSchemaAssertion": "2 real Auth users|28 public tables|all RLS|0 temporary products/procurement/auth overrides|0 disposable role"
+}

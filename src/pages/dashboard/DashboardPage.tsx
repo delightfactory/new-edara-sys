@@ -37,7 +37,7 @@ interface SalesStats {
 }
 
 function fetchPendingSalesCount() {
-  return supabase.from('sales_orders').select('id', { count: 'estimated', head: true }).in('status', ['confirmed', 'partially_delivered'])
+  return supabase.from('sales_orders').select('id', { count: 'exact', head: true }).in('status', ['confirmed', 'partially_delivered'])
 }
 
 function pendingSalesCount({ client, queryKey }: QueryFunctionContext) {
@@ -54,12 +54,12 @@ function pendingSalesCount({ client, queryKey }: QueryFunctionContext) {
 
 async function fetchOverviewStats(pendingCount: ReturnType<typeof pendingSalesCount>): Promise<OverviewStats> {
   const [customers, products, warehouses, stock, salesPending, purchasePending, lowStock] = await Promise.all([
-    supabase.from('customers').select('id', { count: 'estimated', head: true }).eq('is_active', true),
-    supabase.from('products').select('id', { count: 'estimated', head: true }).eq('is_active', true),
-    supabase.from('warehouses').select('id', { count: 'estimated', head: true }).eq('is_active', true),
-    supabase.from('stock').select('id', { count: 'estimated', head: true }),
+    supabase.from('customers').select('id', { count: 'exact', head: true }).eq('is_active', true),
+    supabase.from('products').select('id', { count: 'exact', head: true }).eq('is_active', true),
+    supabase.from('warehouses').select('id', { count: 'exact', head: true }).eq('is_active', true),
+    supabase.from('stock').select('id', { count: 'exact', head: true }),
     pendingCount,
-    supabase.from('purchase_invoices').select('id', { count: 'estimated', head: true }).eq('status', 'draft'),
+    supabase.from('purchase_invoices').select('id', { count: 'exact', head: true }).eq('status', 'draft'),
     supabase.rpc('get_low_stock', {
       p_warehouse_id: null, p_offset: 0, p_limit: 1,
     }),
@@ -93,7 +93,7 @@ async function fetchSalesStats(pendingCount: ReturnType<typeof pendingSalesCount
     supabase.from('sales_orders').select('total_amount').gte('created_at', today).eq('status', 'delivered'),
     supabase.from('sales_orders').select('total_amount').gte('created_at', monthStart).eq('status', 'delivered'),
     pendingCount,
-    supabase.from('sales_orders').select('id', { count: 'estimated', head: true }).gte('created_at', today).eq('status', 'delivered'),
+    supabase.from('sales_orders').select('id', { count: 'exact', head: true }).gte('created_at', today).eq('status', 'delivered'),
   ])
 
   for (const result of [todayOrders, monthOrders, pendingOrders, deliveredToday]) {
