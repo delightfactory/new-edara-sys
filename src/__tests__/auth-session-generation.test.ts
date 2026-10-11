@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { loadSession, signOut } from '@/lib/services/auth'
 import { useAuthStore } from '@/stores/auth-store'
+import { supabase } from '@/lib/supabase/client'
+import { syntheticAuthSession, syntheticTokenActor } from './synthetic-auth'
 
 interface PendingRequest {
   path: string
@@ -33,7 +35,12 @@ async function finishLoad(index: number, actor: string, task: Promise<void>) {
   await task
 }
 
-beforeEach(() => {
+async function setActor(id: string) {
+  const { error } = await supabase.auth.setSession(syntheticAuthSession(id))
+  expect(error).toBeNull()
+}
+
+beforeEach(async () => {
   useAuthStore.getState().reset()
   requests = []
   vi.useFakeTimers()
@@ -42,6 +49,14 @@ beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn((input: string | URL | Request, init?: RequestInit) => {
     const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input.href : input.url)
     const method = init?.method ?? 'GET'
+    if (url.origin === 'https://example.supabase.co' && url.pathname === '/auth/v1/user' && method === 'GET') {
+      return Promise.resolve(new Response(JSON.stringify({ user: syntheticAuthSession(syntheticTokenActor(init?.headers).sub).user }), {
+        status: 200, headers: { 'content-type': 'application/json' },
+      }))
+    }
+    if (url.origin === 'https://example.supabase.co' && url.pathname === '/auth/v1/logout' && method === 'POST') {
+      return Promise.resolve(new Response(null, { status: 204 }))
+    }
     const allowed = method === 'POST' && ['/rest/v1/rpc/get_my_profile', '/rest/v1/rpc/get_my_permission_denials'].includes(url.pathname)
       || method === 'PATCH' && url.pathname === '/rest/v1/profiles'
     if (url.origin !== 'https://example.supabase.co' || !allowed) {
@@ -49,6 +64,7 @@ beforeEach(() => {
     }
     return new Promise<Response>((resolve, reject) => requests.push({ path: url.pathname, search: url.search, method, resolve, reject }))
   }))
+  await setActor('actor-a')
 })
 
 afterEach(() => {
@@ -62,6 +78,7 @@ describe('auth load generations through the real SDK', () => {
   it('drops an old profile after a newer load has published', async () => {
     const oldTask = loadSession()
     const oldRequest = await requestAt(0, '/rest/v1/rpc/get_my_profile')
+    await setActor('actor-b')
     const newTask = loadSession()
     await finishLoad(1, 'actor-b', newTask)
     reply(oldRequest, profile('actor-a'))
@@ -77,6 +94,7 @@ describe('auth load generations through the real SDK', () => {
     const oldTask = loadSession()
     reply(await requestAt(0, '/rest/v1/rpc/get_my_profile'), profile('actor-a'))
     const oldDenials = await requestAt(1, '/rest/v1/rpc/get_my_permission_denials')
+    await setActor('actor-b')
     const newTask = loadSession()
     await finishLoad(2, 'actor-b', newTask)
     reply(oldDenials, [{ permission: '!actor-b.read' }])
@@ -88,6 +106,7 @@ describe('auth load generations through the real SDK', () => {
   it('drops late errors and finally without completing a newer pending load', async () => {
     const oldTask = loadSession()
     const oldRequest = await requestAt(0, '/rest/v1/rpc/get_my_profile')
+    await setActor('actor-b')
     const newTask = loadSession()
     await requestAt(1, '/rest/v1/rpc/get_my_profile')
     oldRequest.reject(new Error('synthetic old failure'))
@@ -101,6 +120,7 @@ describe('auth load generations through the real SDK', () => {
   it('does not retry a failed obsolete profile request', async () => {
     const oldTask = loadSession()
     const oldRequest = await requestAt(0, '/rest/v1/rpc/get_my_profile')
+    await setActor('actor-b')
     const newTask = loadSession()
     await finishLoad(1, 'actor-b', newTask)
     reply(oldRequest, { code: '503', message: 'Service unavailable' }, 503)
@@ -152,5 +172,39 @@ describe('auth load generations through the real SDK', () => {
     expect(requests).toHaveLength(1)
     expect(useAuthStore.getState().hasSession).toBe(false)
     expect(useAuthStore.getState().isInitialized).toBe(false)
+  })
+
+  it('detects a real SDK actor change even without a mounted auth subscriber', async () => {
+    const task = loadSession()
+    const pending = await requestAt(0, '/rest/v1/rpc/get_my_profile')
+    await setActor('actor-b')
+    reply(pending, profile('actor-a'))
+    await task
+    expect(requests).toHaveLength(1)
+    expect(useAuthStore.getState().profile).toBeNull()
+    expect(useAuthStore.getState().sessionUserId).toBe('actor-b')
+    expect(useAuthStore.getState().profileLoadError).toBe('session_changed')
+    expect(useAuthStore.getState().isLoading).toBe(false)
+    expect(useAuthStore.getState().isInitialized).toBe(true)
+  })
+
+  it('does not retry an old actor RPC after the SDK actor changes without a subscriber', async () => {
+    const task = loadSession()
+    const pending = await requestAt(0, '/rest/v1/rpc/get_my_profile')
+    await setActor('actor-b')
+    reply(pending, { code: '503', message: 'Service unavailable' }, 503)
+    await task
+    await vi.advanceTimersByTimeAsync(450)
+    expect(requests).toHaveLength(1)
+    expect(useAuthStore.getState().sessionUserId).toBe('actor-b')
+  })
+
+  it('does not issue the delayed PATCH after the SDK actor changed without a new load', async () => {
+    const task = loadSession()
+    await finishLoad(0, 'actor-a', task)
+    await setActor('actor-b')
+    await vi.advanceTimersByTimeAsync(2100)
+    expect(requests.filter(request => request.method === 'PATCH')).toHaveLength(0)
+    expect(useAuthStore.getState().sessionUserId).toBe('actor-b')
   })
 })

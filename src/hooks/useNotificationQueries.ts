@@ -16,6 +16,7 @@ import {
 import { NotificationsAPI } from '@/lib/notifications/api'
 import { notificationKeys } from '@/lib/notifications/query-keys'
 import { useNotificationStore } from '@/stores/notification-store'
+import { useAuthStore } from '@/stores/auth-store'
 import type {
   Notification,
   NotificationCategory,
@@ -28,6 +29,22 @@ import type {
 // QUERIES
 // ============================================================
 
+// Actor transitions retire notification callbacks; same-actor profile refresh
+// does not retire legitimate optimistic updates or their rollback.
+function useActorGuard() {
+  const actorId = useAuthStore(s => s.profile?.id)
+  const identityGeneration = useAuthStore(s => s.identityGeneration)
+  return () => {
+    const state = useAuthStore.getState()
+    return !!actorId && state.isIdentityVerified && state.sessionUserId === actorId
+      && state.profile?.id === actorId && state.identityGeneration === identityGeneration
+  }
+}
+
+function requireCurrentActor(isCurrent: () => boolean) {
+  if (!isCurrent()) throw new Error('تغيّرت جلسة الدخول. أعد المحاولة.')
+}
+
 /**
  * Live unread count badge — hydrated from DB and kept in sync via
  * Realtime (GlobalRealtimeManager increments store on INSERT).
@@ -35,12 +52,15 @@ import type {
  * Realtime is unavailable (SSR, network issues, etc.).
  */
 export function useUnreadCountQuery() {
+  const isCurrentActor = useActorGuard()
   return useQuery({
     queryKey: notificationKeys.unreadCount(),
     queryFn: async () => {
       const count = await NotificationsAPI.getUnreadCount()
       // Sync store so NotificationBell and Sidebar badge always match
-      useNotificationStore.getState().setUnreadCount(count)
+      if (isCurrentActor()) {
+        useNotificationStore.getState().setUnreadCount(count)
+      }
       return count
     },
     staleTime: 30_000,
@@ -109,14 +129,20 @@ export function usePushDevicesQuery() {
  * network call completes, then rolls back on error.
  */
 export function useMarkAsReadMutation() {
+  const isCurrentActor = useActorGuard()
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) => NotificationsAPI.markAsRead(id),
+    mutationFn: (id: string) => {
+      requireCurrentActor(isCurrentActor)
+      return NotificationsAPI.markAsRead(id)
+    },
 
     onMutate: async (id: string) => {
+      requireCurrentActor(isCurrentActor)
       // Cancel in-flight refetches so they don't overwrite our optimistic update
       await queryClient.cancelQueries({ queryKey: notificationKeys.all })
+      requireCurrentActor(isCurrentActor)
 
       // Snapshot previous cache states for rollback
       const previousLists = queryClient.getQueriesData<{ data: Notification[] }>({
@@ -160,6 +186,7 @@ export function useMarkAsReadMutation() {
     },
 
     onError: (_err, _id, context) => {
+      if (!isCurrentActor()) return
       // Roll back all mutated caches
       if (context?.previousLists) {
         for (const [key, value] of context.previousLists) {
@@ -176,6 +203,7 @@ export function useMarkAsReadMutation() {
     },
 
     onSettled: () => {
+      if (!isCurrentActor()) return
       queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() })
     },
   })
@@ -186,13 +214,17 @@ export function useMarkAsReadMutation() {
  * Resets store + nukes all notification cache entries.
  */
 export function useMarkAllAsReadMutation() {
+  const isCurrentActor = useActorGuard()
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (category?: NotificationCategory) =>
-      NotificationsAPI.markAllAsRead(category),
+    mutationFn: (category?: NotificationCategory) => {
+      requireCurrentActor(isCurrentActor)
+      return NotificationsAPI.markAllAsRead(category)
+    },
 
     onSuccess: () => {
+      if (!isCurrentActor()) return
       queryClient.invalidateQueries({ queryKey: notificationKeys.all })
       useNotificationStore.getState().resetUnread()
     },
@@ -203,14 +235,20 @@ export function useMarkAllAsReadMutation() {
  * Archive a notification with optimistic removal from all list caches.
  */
 export function useArchiveMutation() {
+  const isCurrentActor = useActorGuard()
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) => NotificationsAPI.archiveNotification(id),
+    mutationFn: (id: string) => {
+      requireCurrentActor(isCurrentActor)
+      return NotificationsAPI.archiveNotification(id)
+    },
 
     onMutate: async (id: string) => {
+      requireCurrentActor(isCurrentActor)
       // Cancel all notification queries (lists AND recent) to prevent stale overwrites
       await queryClient.cancelQueries({ queryKey: notificationKeys.all })
+      requireCurrentActor(isCurrentActor)
 
       const previousLists = queryClient.getQueriesData<{ data: Notification[] }>({
         queryKey: notificationKeys.lists(),
@@ -255,6 +293,7 @@ export function useArchiveMutation() {
     },
 
     onError: (_err, _id, context) => {
+      if (!isCurrentActor()) return
       if (context?.previousLists) {
         for (const [key, value] of context.previousLists) {
           queryClient.setQueryData(key, value)
@@ -268,6 +307,7 @@ export function useArchiveMutation() {
     },
 
     onSettled: () => {
+      if (!isCurrentActor()) return
       queryClient.invalidateQueries({ queryKey: notificationKeys.lists() })
       queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() })
     },
@@ -278,15 +318,21 @@ export function useArchiveMutation() {
  * Save notification preferences with optimistic update.
  */
 export function useUpdatePreferencesMutation() {
+  const isCurrentActor = useActorGuard()
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: (
       partial: Partial<Omit<NotificationPreferences, 'userId' | 'createdAt' | 'updatedAt'>>,
-    ) => NotificationsAPI.updatePreferences(partial),
+    ) => {
+      requireCurrentActor(isCurrentActor)
+      return NotificationsAPI.updatePreferences(partial)
+    },
 
     onMutate: async partial => {
+      requireCurrentActor(isCurrentActor)
       await queryClient.cancelQueries({ queryKey: notificationKeys.preferences() })
+      requireCurrentActor(isCurrentActor)
       const previous = queryClient.getQueryData<NotificationPreferences>(
         notificationKeys.preferences(),
       )
@@ -300,12 +346,14 @@ export function useUpdatePreferencesMutation() {
     },
 
     onError: (_err, _partial, context) => {
+      if (!isCurrentActor()) return
       if (context?.previous) {
         queryClient.setQueryData(notificationKeys.preferences(), context.previous)
       }
     },
 
     onSettled: () => {
+      if (!isCurrentActor()) return
       queryClient.invalidateQueries({ queryKey: notificationKeys.preferences() })
     },
   })
@@ -318,13 +366,19 @@ export function useUpdatePreferencesMutation() {
  * BUG-10: exposes deleteNotification() API method which had no hook.
  */
 export function useDeleteMutation() {
+  const isCurrentActor = useActorGuard()
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) => NotificationsAPI.deleteNotification(id),
+    mutationFn: (id: string) => {
+      requireCurrentActor(isCurrentActor)
+      return NotificationsAPI.deleteNotification(id)
+    },
 
     onMutate: async (id: string) => {
+      requireCurrentActor(isCurrentActor)
       await queryClient.cancelQueries({ queryKey: notificationKeys.all })
+      requireCurrentActor(isCurrentActor)
 
       // Snapshot for rollback
       const previousLists = queryClient.getQueriesData<{ data: Notification[] }>({
@@ -348,6 +402,7 @@ export function useDeleteMutation() {
     },
 
     onError: (_err, _id, context) => {
+      if (!isCurrentActor()) return
       if (context?.previousLists) {
         for (const [key, value] of context.previousLists) {
           queryClient.setQueryData(key, value)
@@ -356,6 +411,7 @@ export function useDeleteMutation() {
     },
 
     onSettled: () => {
+      if (!isCurrentActor()) return
       queryClient.invalidateQueries({ queryKey: notificationKeys.lists() })
     },
   })

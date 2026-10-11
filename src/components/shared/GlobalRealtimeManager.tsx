@@ -73,13 +73,17 @@ export default function GlobalRealtimeManager() {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const flushInvalidations = useCallback(() => {
+    if (useAuthStore.getState().profile?.id !== profileId) {
+      pendingKeys.current.clear()
+      return
+    }
     if (pendingKeys.current.size === 0) return
     const keys = [...pendingKeys.current]
     pendingKeys.current.clear()
     keys.forEach(key => {
       queryClient.invalidateQueries({ queryKey: [key] })
     })
-  }, [queryClient])
+  }, [profileId, queryClient])
 
   const scheduleInvalidation = useCallback((queryKeys: string[]) => {
     queryKeys.forEach(k => pendingKeys.current.add(k))
@@ -102,6 +106,7 @@ export default function GlobalRealtimeManager() {
         'postgres_changes',
         { event: '*', schema: 'public', table },
         () => {
+          if (useAuthStore.getState().profile?.id !== profileId) return
           const queryKeys = TABLE_QUERY_MAP[table]
           if (queryKeys) {
             scheduleInvalidation(queryKeys)
@@ -146,6 +151,7 @@ export default function GlobalRealtimeManager() {
           filter: `user_id=eq.${userId}`,
         },
         (payload) => {
+          if (useAuthStore.getState().profile?.id !== userId) return
           const notification = payload.new as NotificationRow
 
           // 1. تحديث unread count في الـ store فوراً
@@ -183,7 +189,7 @@ export default function GlobalRealtimeManager() {
                   toast.dismiss(t)
                   const actionUrl = resolveNotificationUrlFromRow(notification)
                   if (actionUrl) {
-                    // Navigate using location (GlobalRealtimeManager is outside BrowserRouter)
+                    // Preserve notification navigation through the application URL.
                     window.location.href = actionUrl
                   } else {
                     useNotificationStore.getState().setPanelOpen(true)
@@ -282,6 +288,7 @@ export default function GlobalRealtimeManager() {
         }
       )
       .subscribe((status) => {
+        if (useAuthStore.getState().profile?.id !== userId) return
         const notifStore = useNotificationStore.getState()
         if (status === 'SUBSCRIBED') {
           notifStore.setRealtimeStatus('connected')

@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { queryClient } from '@/lib/query-client'
 import { Toaster } from 'sonner'
 import { lazy, Suspense } from 'react'
 
@@ -156,18 +157,6 @@ const AllocationQualityPage = lazy(() => import('@/pages/reports/profitability/A
 // Output & Documents
 const DocumentPreviewRoute = lazy(() => import('@/features/output/components/DocumentPreviewRoute'))
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      staleTime: 2 * 60_000,
-      gcTime: 10 * 60_000,
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: false,
-    },
-  },
-})
-
 const LazyFallback = () => (
   <div style={{ padding: 'var(--space-6)' }}>
     {[1,2,3,4,5].map(i => <div key={i} className="skeleton skeleton-row" />)}
@@ -177,9 +166,9 @@ const LazyFallback = () => (
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <GlobalRealtimeManager />
       <BrowserRouter>
         <AuthProvider>
+          <GlobalRealtimeManager />
           <ErrorBoundary>
             <Routes>
               <Route path="/login" element={<Suspense fallback={<LazyFallback />}><LoginPage /></Suspense>} />

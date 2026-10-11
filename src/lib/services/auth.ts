@@ -1,5 +1,8 @@
 import { supabase } from '@/lib/supabase/client'
-import { useAuthStore, saveAuthCache } from '@/stores/auth-store'
+import { useAuthStore, saveAuthCache, clearAuthCache } from '@/stores/auth-store'
+import { useNotificationStore } from '@/stores/notification-store'
+import { queryClient } from '@/lib/query-client'
+import { toast } from 'sonner'
 import type { MyProfile } from '@/lib/types/auth'
 import { captureError, trackAuthFailure, setUserContext } from '@/lib/monitoring/sentry'
 
@@ -68,7 +71,7 @@ async function requestMyProfile() {
   return supabase.rpc('get_my_profile').single<MyProfile>()
 }
 
-async function requestMyProfileWithRetry(isCurrent: () => boolean) {
+async function requestMyProfileWithRetry(hasCurrentIdentity: () => Promise<boolean>) {
   try {
     const firstAttempt = await requestMyProfile()
     if (!isRetryableProfileError(firstAttempt.error)) return firstAttempt
@@ -76,9 +79,9 @@ async function requestMyProfileWithRetry(isCurrent: () => boolean) {
     if (!isNetworkError(error)) throw error
   }
 
-  if (!isCurrent()) return null
+  if (!await hasCurrentIdentity()) return null
   await waitForProfileRetry()
-  if (!isCurrent()) return null
+  if (!await hasCurrentIdentity()) return null
   return requestMyProfile()
 }
 
@@ -101,8 +104,16 @@ export async function signOut() {
   const store = useAuthStore.getState()
   store.reset()
   store.setInitialized(true)
+  clearSessionData()
   setUserContext(null)
   await supabase.auth.signOut()
+}
+
+/** Retire client data on an actor boundary; server mutations are not canceled. */
+export function clearSessionData() {
+  queryClient.clear()
+  useNotificationStore.setState({ unreadCount: 0, isPanelOpen: false, realtimeChannelStatus: 'disconnected' })
+  toast.dismiss()
 }
 
 /**
@@ -117,17 +128,47 @@ export async function signOut() {
  *
  * في الحالتين الأخيرتين: hasSession=true لتفعيل retry الحالي في AuthProvider
  */
-export async function loadSession() {
+export async function loadSession(expectedActorId?: string) {
   const store = useAuthStore.getState()
-  const generation = store.beginSessionLoad()
+  let generation = store.beginSessionLoad()
   const isCurrent = () => useAuthStore.getState().sessionGeneration === generation
 
   try {
-    // طلب واحد مباشر بدلاً من طلبين متسلسلين
-    // get_my_profile() ستفشل بـ PGRST error إذا لم يكن هناك session
-    const result = await requestMyProfileWithRetry(isCurrent)
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+    if (!isCurrent()) return
+    if (sessionError) throw sessionError
+    const actorId = sessionData.session?.user.id ?? null
+    const transition = store.acceptSessionIdentity(actorId)
+    generation = transition.generation
+    if (!isCurrent()) return
+    if (transition.changed) clearSessionData()
+    if (!actorId) return
+    if (expectedActorId !== undefined && expectedActorId !== actorId) {
+      store.setProfileLoadError('session_changed')
+      return
+    }
+
+    const hasCurrentIdentity = async () => {
+      if (!isCurrent()) return false
+      const { data: live, error } = await supabase.auth.getSession()
+      if (!isCurrent()) return false
+      if (error) throw error
+      const liveId = live.session?.user.id ?? null
+      if (liveId === actorId) return true
+      store.acceptSessionIdentity(liveId)
+      clearSessionData()
+      if (liveId) {
+        store.setLoading(false)
+        store.setInitialized(true)
+        store.setProfileLoadError('session_changed')
+      }
+      return false
+    }
+
+    const result = await requestMyProfileWithRetry(hasCurrentIdentity)
     if (!isCurrent() || !result) return
     const { data, error } = result
+    if (!await hasCurrentIdentity()) return
 
     if (error) {
       // حالات auth الحقيقية: لا جلسة أو JWT منتهٍ أو ممنوع
@@ -138,6 +179,7 @@ export async function loadSession() {
         error.message?.includes('session')
       ) {
         store.reset()
+        clearSessionData()
         store.setInitialized(true)
         setUserContext(null)
         return
@@ -160,10 +202,20 @@ export async function loadSession() {
       return
     }
 
+    if (data.id !== actorId) {
+      clearAuthCache()
+      store.setProfile(null)
+      store.setPermissions([])
+      store.setProfileLoadError('identity_mismatch')
+      clearSessionData()
+      return
+    }
+
     if (data.status !== 'active') {
       trackAuthFailure('account_inactive', { status: data.status })
       store.reset()
       store.setInitialized(true)
+      clearSessionData()
       setUserContext(null)
       await supabase.auth.signOut()
       return
@@ -175,6 +227,7 @@ export async function loadSession() {
     const { data: denialRows, error: denialError } = await supabase
       .rpc('get_my_permission_denials')
     if (!isCurrent()) return
+    if (!await hasCurrentIdentity()) return
     if (denialError) {
       captureError(denialError, { stage: 'load_session_permission_denials' })
     }
@@ -195,11 +248,12 @@ export async function loadSession() {
     // لتجنب تنافس الطلبات عند تسجيل الدخول
     setTimeout(() => {
       if (!isCurrent()) return
-      supabase
-        .from('profiles')
-        .update({ last_login_at: new Date().toISOString() })
-        .eq('id', data.id)
-        .then()
+      void (async () => {
+        if (!await hasCurrentIdentity()) return
+        await supabase.from('profiles').update({ last_login_at: new Date().toISOString() }).eq('id', actorId)
+      })().catch(error => {
+        if (isCurrent()) captureError(error, { stage: 'load_session_login_timestamp' })
+      })
     }, 2000)
 
   } catch (err) {

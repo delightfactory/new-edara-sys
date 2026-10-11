@@ -4,6 +4,10 @@ import type { MyProfile } from '@/lib/types/auth'
 interface AuthState {
   sessionGeneration: number
   beginSessionLoad: () => number
+  sessionUserId: string | null
+  identityGeneration: number
+  isIdentityVerified: boolean
+  acceptSessionIdentity: (id: string | null) => { generation: number; changed: boolean }
   profile: MyProfile | null
   permissions: string[]
   isLoading: boolean
@@ -30,7 +34,7 @@ interface AuthState {
 
 // ─── Session Cache (sessionStorage) ───────────────────────────────────────────
 // يُحسّن تجربة العودة للتطبيق بعد تبديل التطبيقات أو إعادة تحميل الصفحة.
-// sessionStorage (لا localStorage): تُمسح عند إغلاق التاب، لا أثر أمني.
+// تُمسح عند إغلاق التاب؛ لا تُعرض قبل مطابقة هوية جلسة SDK.
 // ⚠️ الصلاحيات لا تُخزن في localStorage أبداً — sessionStorage فقط.
 
 const CACHE_KEY = 'edara_auth_v1'
@@ -70,12 +74,32 @@ const _cached = readAuthCache()
 // ─── Store ─────────────────────────────────────────────────────────────────────
 export const useAuthStore = create<AuthState>()((set, get) => ({
   sessionGeneration: 0,
+  sessionUserId: null,
+  identityGeneration: 0,
+  isIdentityVerified: false,
+  acceptSessionIdentity: (sessionUserId) => {
+    const state = get()
+    const previousId = state.isIdentityVerified ? state.sessionUserId : state.profile?.id ?? null
+    const changed = sessionUserId === null || previousId !== sessionUserId
+    const generation = state.sessionGeneration + (changed ? 1 : 0)
+    if (changed) clearAuthCache()
+    set({
+      sessionUserId, isIdentityVerified: true, sessionGeneration: generation,
+      identityGeneration: state.identityGeneration + (changed ? 1 : 0),
+      hasSession: sessionUserId !== null,
+      ...(changed ? { profile: null, permissions: [], profileLoadError: null } : {}),
+      ...(sessionUserId === null
+        ? { isLoading: false, isInitialized: true }
+        : changed ? { isLoading: true, isInitialized: false } : {}),
+    })
+    return { generation, changed }
+  },
   beginSessionLoad: () => {
     const sessionGeneration = get().sessionGeneration + 1
     set({ sessionGeneration, isLoading: true, profileLoadError: null })
     return sessionGeneration
   },
-  // إذا وُجد cache: ابدأ بحالة جاهزة فوراً بدون spinner
+  // يحتفظ بالكاش لحين مطابقة الهوية؛ AuthProvider يحجب العرض قبلها.
   profile:          _cached?.profile      ?? null,
   permissions:      _cached?.permissions  ?? [],
   isLoading:        !_cached,   // لا spinner إذا عندنا cache
@@ -105,6 +129,9 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     clearAuthCache()
     set({
       sessionGeneration: get().sessionGeneration + 1,
+      sessionUserId: null,
+      identityGeneration: get().identityGeneration + 1,
+      isIdentityVerified: true,
       profile: null,
       permissions: [],
       isLoading: false,
