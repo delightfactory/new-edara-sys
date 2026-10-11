@@ -72,18 +72,6 @@
   gap: var(--space-3);
 }
 
-.visit-report-filter-grid label {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  color: var(--text-secondary);
-  font-weight: 600;
-}
-
-.visit-report-filter-grid select {
-  min-height: 42px;
-}
-
 .visit-report-metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

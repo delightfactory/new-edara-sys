@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import ReportFilterBar, { type DateRange } from '@/components/reports/ReportFilterBar'
 import Button from '@/components/ui/Button'
+import Select from '@/components/ui/Select'
 import ResponsiveCollection from '@/components/patterns/ResponsiveCollection'
 import Card from '@/components/patterns/Card'
 import KeyValueList from '@/components/patterns/KeyValueList'
@@ -626,54 +627,36 @@ export default function VisitReportsPage() {
       <section className="edara-card visit-report-filters" aria-label="فلاتر التقرير">
         <ReportFilterBar value={range} onChange={value => { setRange(value); resetPage() }} />
         <div className="visit-report-filter-grid">
-          <label>
-            الفرع
-            <select className="form-input" value={branchId} onChange={event => { setBranchId(event.target.value); resetPage() }}>
-              <option value="">كل الفروع</option>
-              {branches.map(branch => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
-            </select>
-          </label>
-          <label>
-            المندوب
-            <select className="form-input" value={employeeId} onChange={event => { setEmployeeId(event.target.value); resetPage() }}>
-              <option value="">كل المندوبين</option>
-              {employees.map(employee => <option key={employee.id} value={employee.id}>{employee.full_name}</option>)}
-            </select>
-          </label>
-          <label>
-            غرض الزيارة
-            <select className="form-input" value={purposeType} onChange={event => { setPurposeType(event.target.value); resetPage() }}>
-              <option value="">كل الأغراض</option>
-              {Object.entries(PURPOSE_LABELS).filter(([key]) => key !== 'unspecified').map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
-              ))}
-            </select>
-          </label>
+          <Select label="الفرع" value={branchId} onChange={event => { setBranchId(event.target.value); resetPage() }}>
+            <option value="">كل الفروع</option>
+            {branches.map(branch => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
+          </Select>
+          <Select label="المندوب" value={employeeId} onChange={event => { setEmployeeId(event.target.value); resetPage() }}>
+            <option value="">كل المندوبين</option>
+            {employees.map(employee => <option key={employee.id} value={employee.id}>{employee.full_name}</option>)}
+          </Select>
+          <Select label="غرض الزيارة" value={purposeType} onChange={event => { setPurposeType(event.target.value); resetPage() }}>
+            <option value="">كل الأغراض</option>
+            {Object.entries(PURPOSE_LABELS).filter(([key]) => key !== 'unspecified').map(([key, label]) => (
+              <option key={key} value={key}>{label}</option>
+            ))}
+          </Select>
           {(tab === 'visits' || tab === 'quality') ? (
-            <label>
-              حالة الزيارة
-              <select className="form-input" value={visitStatus} onChange={event => { setVisitStatus(event.target.value); resetPage() }}>
-                <option value="">كل الحالات</option>
-                {Object.entries(STATUS_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-              </select>
-            </label>
+            <Select label="حالة الزيارة" value={visitStatus} onChange={event => { setVisitStatus(event.target.value); resetPage() }}>
+              <option value="">كل الحالات</option>
+              {Object.entries(STATUS_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+            </Select>
           ) : null}
           {tab === 'visits' ? (
             <>
-              <label>
-                جودة التسجيل
-                <select className="form-input" value={recordingQuality} onChange={event => { setRecordingQuality(event.target.value); resetPage() }}>
-                  <option value="">كل أنواع التسجيل</option>
-                  {Object.entries(QUALITY_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-                </select>
-              </label>
-              <label>
-                نتيجة التواصل
-                <select className="form-input" value={contactResult} onChange={event => { setContactResult(event.target.value); resetPage() }}>
-                  <option value="">كل النتائج</option>
-                  {(summary?.contact_results ?? []).map(result => <option key={result.label} value={result.label}>{result.label}</option>)}
-                </select>
-              </label>
+              <Select label="جودة التسجيل" value={recordingQuality} onChange={event => { setRecordingQuality(event.target.value); resetPage() }}>
+                <option value="">كل أنواع التسجيل</option>
+                {Object.entries(QUALITY_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+              </Select>
+              <Select label="نتيجة التواصل" value={contactResult} onChange={event => { setContactResult(event.target.value); resetPage() }}>
+                <option value="">كل النتائج</option>
+                {(summary?.contact_results ?? []).map(result => <option key={result.label} value={result.label}>{result.label}</option>)}
+              </Select>
             </>
           ) : null}
         </div>

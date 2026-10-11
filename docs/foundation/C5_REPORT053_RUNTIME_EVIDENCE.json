@@ -1,0 +1,620 @@
+{
+  "status": "PASS",
+  "parentSha": "3146ae2da2a779a3f1880af18830fac8b9865ac3",
+  "sourceHead": "63f08985bda6019db069590518ed6632445cb173",
+  "sourceHashes": {
+    "src/pages/reports/VisitReportsPage.tsx": "4cdeb3632a7fe5d651e82deba097f19109e84afc2444e282eff492824e4302b2",
+    "src/pages/reports/VisitReportsPage.css": "abd78b995db604926b3d7d20b312aaf6451189687aa3f2e3211ab04ebd66cf6a",
+    "src/pages/reports/VisitReportsPage.test.tsx": "9e0527434f3dc40114ac994b371b07c89dc51cfbfbc63d9594a4022b734c457f"
+  },
+  "cases": [
+    {
+      "width": 390,
+      "theme": "light",
+      "geometry": {
+        "direction": "rtl",
+        "columns": 1,
+        "bodyWidth": 390,
+        "viewport": 390,
+        "controls": [
+          {
+            "id": "field-r2",
+            "labels": 1,
+            "labelTarget": "field-r2",
+            "x": 29,
+            "right": 361,
+            "width": 332,
+            "height": 44,
+            "value": "branch-1",
+            "color": "rgb(17, 24, 39)",
+            "background": "rgb(247, 248, 251)"
+          },
+          {
+            "id": "field-r3",
+            "labels": 1,
+            "labelTarget": "field-r3",
+            "x": 29,
+            "right": 361,
+            "width": 332,
+            "height": 44,
+            "value": "employee-1",
+            "color": "rgb(17, 24, 39)",
+            "background": "rgb(252, 252, 253)"
+          },
+          {
+            "id": "field-r4",
+            "labels": 1,
+            "labelTarget": "field-r4",
+            "x": 29,
+            "right": 361,
+            "width": 332,
+            "height": 44,
+            "value": "",
+            "color": "rgb(17, 24, 39)",
+            "background": "rgb(247, 248, 251)"
+          },
+          {
+            "id": "field-r5",
+            "labels": 1,
+            "labelTarget": "field-r5",
+            "x": 29,
+            "right": 361,
+            "width": 332,
+            "height": 44,
+            "value": "",
+            "color": "rgb(17, 24, 39)",
+            "background": "rgb(247, 248, 251)"
+          },
+          {
+            "id": "field-r6",
+            "labels": 1,
+            "labelTarget": "field-r6",
+            "x": 29,
+            "right": 361,
+            "width": 332,
+            "height": 44,
+            "value": "",
+            "color": "rgb(17, 24, 39)",
+            "background": "rgb(247, 248, 251)"
+          },
+          {
+            "id": "field-r7",
+            "labels": 1,
+            "labelTarget": "field-r7",
+            "x": 29,
+            "right": 361,
+            "width": 332,
+            "height": 44,
+            "value": "تمت مقابلة المسؤول والاتفاق على متابعة تفصيلية طويلة خلال الزيارة القادمة",
+            "color": "rgb(17, 24, 39)",
+            "background": "rgb(247, 248, 251)"
+          }
+        ]
+      },
+      "nativeFocus": {
+        "tag": "SELECT",
+        "id": "field-r2",
+        "label": "الفرع"
+      },
+      "keyboard": true,
+      "permissionVisibility": true,
+      "filterPageReset": true,
+      "tabVisibility": true
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "geometry": {
+        "direction": "rtl",
+        "columns": 1,
+        "bodyWidth": 390,
+        "viewport": 390,
+        "controls": [
+          {
+            "id": "field-r2",
+            "labels": 1,
+            "labelTarget": "field-r2",
+            "x": 29,
+            "right": 361,
+            "width": 332,
+            "height": 44,
+            "value": "branch-1",
+            "color": "rgb(230, 237, 243)",
+            "background": "rgb(16, 20, 26)"
+          },
+          {
+            "id": "field-r3",
+            "labels": 1,
+            "labelTarget": "field-r3",
+            "x": 29,
+            "right": 361,
+            "width": 332,
+            "height": 44,
+            "value": "employee-1",
+            "color": "rgb(230, 237, 243)",
+            "background": "rgb(13, 17, 23)"
+          },
+          {
+            "id": "field-r4",
+            "labels": 1,
+            "labelTarget": "field-r4",
+            "x": 29,
+            "right": 361,
+            "width": 332,
+            "height": 44,
+            "value": "",
+            "color": "rgb(230, 237, 243)",
+            "background": "rgb(13, 17, 23)"
+          },
+          {
+            "id": "field-r5",
+            "labels": 1,
+            "labelTarget": "field-r5",
+            "x": 29,
+            "right": 361,
+            "width": 332,
+            "height": 44,
+            "value": "",
+            "color": "rgb(230, 237, 243)",
+            "background": "rgb(13, 17, 23)"
+          },
+          {
+            "id": "field-r6",
+            "labels": 1,
+            "labelTarget": "field-r6",
+            "x": 29,
+            "right": 361,
+            "width": 332,
+            "height": 44,
+            "value": "",
+            "color": "rgb(230, 237, 243)",
+            "background": "rgb(13, 17, 23)"
+          },
+          {
+            "id": "field-r7",
+            "labels": 1,
+            "labelTarget": "field-r7",
+            "x": 29,
+            "right": 361,
+            "width": 332,
+            "height": 44,
+            "value": "تمت مقابلة المسؤول والاتفاق على متابعة تفصيلية طويلة خلال الزيارة القادمة",
+            "color": "rgb(230, 237, 243)",
+            "background": "rgb(13, 17, 23)"
+          }
+        ]
+      },
+      "nativeFocus": {
+        "tag": "SELECT",
+        "id": "field-r2",
+        "label": "الفرع"
+      },
+      "keyboard": true,
+      "permissionVisibility": true,
+      "filterPageReset": true,
+      "tabVisibility": true
+    },
+    {
+      "width": 900,
+      "theme": "light",
+      "geometry": {
+        "direction": "rtl",
+        "columns": 2,
+        "bodyWidth": 900,
+        "viewport": 900,
+        "controls": [
+          {
+            "id": "field-r2",
+            "labels": 1,
+            "labelTarget": "field-r2",
+            "x": 456,
+            "right": 867,
+            "width": 411,
+            "height": 44,
+            "value": "branch-1",
+            "color": "rgb(17, 24, 39)",
+            "background": "rgb(247, 248, 251)"
+          },
+          {
+            "id": "field-r3",
+            "labels": 1,
+            "labelTarget": "field-r3",
+            "x": 33,
+            "right": 444,
+            "width": 411,
+            "height": 44,
+            "value": "employee-1",
+            "color": "rgb(17, 24, 39)",
+            "background": "rgb(248, 249, 251)"
+          },
+          {
+            "id": "field-r4",
+            "labels": 1,
+            "labelTarget": "field-r4",
+            "x": 456,
+            "right": 867,
+            "width": 411,
+            "height": 44,
+            "value": "",
+            "color": "rgb(17, 24, 39)",
+            "background": "rgb(247, 248, 251)"
+          },
+          {
+            "id": "field-r5",
+            "labels": 1,
+            "labelTarget": "field-r5",
+            "x": 33,
+            "right": 444,
+            "width": 411,
+            "height": 48,
+            "value": "",
+            "color": "rgb(17, 24, 39)",
+            "background": "rgb(247, 248, 251)"
+          },
+          {
+            "id": "field-r6",
+            "labels": 1,
+            "labelTarget": "field-r6",
+            "x": 456,
+            "right": 867,
+            "width": 411,
+            "height": 48,
+            "value": "",
+            "color": "rgb(17, 24, 39)",
+            "background": "rgb(247, 248, 251)"
+          },
+          {
+            "id": "field-r7",
+            "labels": 1,
+            "labelTarget": "field-r7",
+            "x": 33,
+            "right": 444,
+            "width": 411,
+            "height": 48,
+            "value": "تمت مقابلة المسؤول والاتفاق على متابعة تفصيلية طويلة خلال الزيارة القادمة",
+            "color": "rgb(17, 24, 39)",
+            "background": "rgb(247, 248, 251)"
+          }
+        ]
+      },
+      "nativeFocus": {
+        "tag": "SELECT",
+        "id": "field-r2",
+        "label": "الفرع"
+      },
+      "keyboard": true,
+      "permissionVisibility": true,
+      "filterPageReset": true,
+      "tabVisibility": true
+    },
+    {
+      "width": 900,
+      "theme": "dark",
+      "geometry": {
+        "direction": "rtl",
+        "columns": 2,
+        "bodyWidth": 900,
+        "viewport": 900,
+        "controls": [
+          {
+            "id": "field-r2",
+            "labels": 1,
+            "labelTarget": "field-r2",
+            "x": 456,
+            "right": 867,
+            "width": 411,
+            "height": 44,
+            "value": "branch-1",
+            "color": "rgb(230, 237, 243)",
+            "background": "rgb(26, 30, 37)"
+          },
+          {
+            "id": "field-r3",
+            "labels": 1,
+            "labelTarget": "field-r3",
+            "x": 33,
+            "right": 444,
+            "width": 411,
+            "height": 44,
+            "value": "employee-1",
+            "color": "rgb(230, 237, 243)",
+            "background": "rgb(17, 22, 28)"
+          },
+          {
+            "id": "field-r4",
+            "labels": 1,
+            "labelTarget": "field-r4",
+            "x": 456,
+            "right": 867,
+            "width": 411,
+            "height": 44,
+            "value": "",
+            "color": "rgb(230, 237, 243)",
+            "background": "rgb(13, 17, 23)"
+          },
+          {
+            "id": "field-r5",
+            "labels": 1,
+            "labelTarget": "field-r5",
+            "x": 33,
+            "right": 444,
+            "width": 411,
+            "height": 48,
+            "value": "",
+            "color": "rgb(230, 237, 243)",
+            "background": "rgb(13, 17, 23)"
+          },
+          {
+            "id": "field-r6",
+            "labels": 1,
+            "labelTarget": "field-r6",
+            "x": 456,
+            "right": 867,
+            "width": 411,
+            "height": 48,
+            "value": "",
+            "color": "rgb(230, 237, 243)",
+            "background": "rgb(13, 17, 23)"
+          },
+          {
+            "id": "field-r7",
+            "labels": 1,
+            "labelTarget": "field-r7",
+            "x": 33,
+            "right": 444,
+            "width": 411,
+            "height": 48,
+            "value": "تمت مقابلة المسؤول والاتفاق على متابعة تفصيلية طويلة خلال الزيارة القادمة",
+            "color": "rgb(230, 237, 243)",
+            "background": "rgb(13, 17, 23)"
+          }
+        ]
+      },
+      "nativeFocus": {
+        "tag": "SELECT",
+        "id": "field-r2",
+        "label": "الفرع"
+      },
+      "keyboard": true,
+      "permissionVisibility": true,
+      "filterPageReset": true,
+      "tabVisibility": true
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "geometry": {
+        "direction": "rtl",
+        "columns": 4,
+        "bodyWidth": 1440,
+        "viewport": 1440,
+        "controls": [
+          {
+            "id": "field-r2",
+            "labels": 1,
+            "labelTarget": "field-r2",
+            "x": 1072.5,
+            "right": 1407,
+            "width": 334.5,
+            "height": 42,
+            "value": "branch-1",
+            "color": "rgb(17, 24, 39)",
+            "background": "rgb(248, 249, 251)"
+          },
+          {
+            "id": "field-r3",
+            "labels": 1,
+            "labelTarget": "field-r3",
+            "x": 726,
+            "right": 1060.5,
+            "width": 334.5,
+            "height": 42,
+            "value": "employee-1",
+            "color": "rgb(17, 24, 39)",
+            "background": "rgb(250, 250, 252)"
+          },
+          {
+            "id": "field-r4",
+            "labels": 1,
+            "labelTarget": "field-r4",
+            "x": 379.5,
+            "right": 714,
+            "width": 334.5,
+            "height": 42,
+            "value": "",
+            "color": "rgb(17, 24, 39)",
+            "background": "rgb(247, 248, 251)"
+          },
+          {
+            "id": "field-r5",
+            "labels": 1,
+            "labelTarget": "field-r5",
+            "x": 33,
+            "right": 367.5,
+            "width": 334.5,
+            "height": 48,
+            "value": "",
+            "color": "rgb(17, 24, 39)",
+            "background": "rgb(247, 248, 251)"
+          },
+          {
+            "id": "field-r6",
+            "labels": 1,
+            "labelTarget": "field-r6",
+            "x": 1072.5,
+            "right": 1407,
+            "width": 334.5,
+            "height": 48,
+            "value": "",
+            "color": "rgb(17, 24, 39)",
+            "background": "rgb(247, 248, 251)"
+          },
+          {
+            "id": "field-r7",
+            "labels": 1,
+            "labelTarget": "field-r7",
+            "x": 726,
+            "right": 1060.5,
+            "width": 334.5,
+            "height": 48,
+            "value": "تمت مقابلة المسؤول والاتفاق على متابعة تفصيلية طويلة خلال الزيارة القادمة",
+            "color": "rgb(17, 24, 39)",
+            "background": "rgb(247, 248, 251)"
+          }
+        ]
+      },
+      "nativeFocus": {
+        "tag": "SELECT",
+        "id": "field-r2",
+        "label": "الفرع"
+      },
+      "keyboard": true,
+      "permissionVisibility": true,
+      "filterPageReset": true,
+      "tabVisibility": true
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "geometry": {
+        "direction": "rtl",
+        "columns": 4,
+        "bodyWidth": 1440,
+        "viewport": 1440,
+        "controls": [
+          {
+            "id": "field-r2",
+            "labels": 1,
+            "labelTarget": "field-r2",
+            "x": 1072.5,
+            "right": 1407,
+            "width": 334.5,
+            "height": 42,
+            "value": "branch-1",
+            "color": "rgb(230, 237, 243)",
+            "background": "rgb(13, 17, 23)"
+          },
+          {
+            "id": "field-r3",
+            "labels": 1,
+            "labelTarget": "field-r3",
+            "x": 726,
+            "right": 1060.5,
+            "width": 334.5,
+            "height": 42,
+            "value": "employee-1",
+            "color": "rgb(230, 237, 243)",
+            "background": "rgb(14, 18, 24)"
+          },
+          {
+            "id": "field-r4",
+            "labels": 1,
+            "labelTarget": "field-r4",
+            "x": 379.5,
+            "right": 714,
+            "width": 334.5,
+            "height": 42,
+            "value": "",
+            "color": "rgb(230, 237, 243)",
+            "background": "rgb(13, 17, 23)"
+          },
+          {
+            "id": "field-r5",
+            "labels": 1,
+            "labelTarget": "field-r5",
+            "x": 33,
+            "right": 367.5,
+            "width": 334.5,
+            "height": 48,
+            "value": "",
+            "color": "rgb(230, 237, 243)",
+            "background": "rgb(13, 17, 23)"
+          },
+          {
+            "id": "field-r6",
+            "labels": 1,
+            "labelTarget": "field-r6",
+            "x": 1072.5,
+            "right": 1407,
+            "width": 334.5,
+            "height": 48,
+            "value": "",
+            "color": "rgb(230, 237, 243)",
+            "background": "rgb(13, 17, 23)"
+          },
+          {
+            "id": "field-r7",
+            "labels": 1,
+            "labelTarget": "field-r7",
+            "x": 726,
+            "right": 1060.5,
+            "width": 334.5,
+            "height": 48,
+            "value": "تمت مقابلة المسؤول والاتفاق على متابعة تفصيلية طويلة خلال الزيارة القادمة",
+            "color": "rgb(230, 237, 243)",
+            "background": "rgb(13, 17, 23)"
+          }
+        ]
+      },
+      "nativeFocus": {
+        "tag": "SELECT",
+        "id": "field-r2",
+        "label": "الفرع"
+      },
+      "keyboard": true,
+      "permissionVisibility": true,
+      "filterPageReset": true,
+      "tabVisibility": true
+    }
+  ],
+  "screenshots": [
+    {
+      "path": "evidence/c5-report053/c5-report053-390-light.png",
+      "sha256": "d70813265cc5920b04d2a45d45f37d3a8d65c27570faccd9cb22a556356ea6c2"
+    },
+    {
+      "path": "evidence/c5-report053/c5-report053-390-dark.png",
+      "sha256": "950ffa8bff9f2746940da78b2aa0c93aa843499ece809c68d9459316d54ff93c"
+    },
+    {
+      "path": "evidence/c5-report053/c5-report053-900-light.png",
+      "sha256": "25e6aec2a325f49879f29bde472255dd0944e696708f2eff21fe0d64f282fa17"
+    },
+    {
+      "path": "evidence/c5-report053/c5-report053-900-dark.png",
+      "sha256": "07bfe11cf3c372b5c0b18ed670bae1b351735bd225800ac4caced2c8ee396cf0"
+    },
+    {
+      "path": "evidence/c5-report053/c5-report053-1440-light.png",
+      "sha256": "57c7addb6f47d3988a3917442618f0c9347c5de0d3926577ffcb3f959114ab97"
+    },
+    {
+      "path": "evidence/c5-report053/c5-report053-1440-dark.png",
+      "sha256": "b7027b45f4cba5bba3cae8925278a4b6a62f33e8c7827cf6ad0153c45210c7ce"
+    }
+  ],
+  "violations": [],
+  "limitations": [
+    "Actual VisitReportsPage, shared components, styles, React Query and permission store; mocked report services/branch and employee hooks with existing synthetic test fixtures",
+    "Isolated page composition, not whole App, real report RPC/Auth/business/offline qualification; no production requests"
+  ],
+  "cleanup": {
+    "contextClosed": true,
+    "browserClosed": true,
+    "serverClosed": true
+  },
+  "sourceGitBlobs": {
+    "src/pages/reports/VisitReportsPage.tsx": "d14daf7ffd8b6ca270940d9f26ad91a32b1e0976",
+    "src/pages/reports/VisitReportsPage.css": "e80819b4e05f92f3a6ce78dd283b61832f4f963b",
+    "src/pages/reports/VisitReportsPage.test.tsx": "d019bd727f5a0f643fe6b7b8a3bd6962cab809e0"
+  },
+  "ds2Base": "440b07bc59c4b2c086911b078c1c723a29f441a9",
+  "rootVisualReview": {
+    "sixScreenshotsInspected": true,
+    "scope": "Six migrated selectors, long Arabic selections, RTL grid and focus ring; isolated page composition",
+    "remaining": [
+      "Native date calendar indicators are dark against dark fields; shared native-control dark appearance remains a C5 follow-up",
+      "No full App/shell/overlay/dialog/business workflow visual qualification"
+    ]
+  }
+}
