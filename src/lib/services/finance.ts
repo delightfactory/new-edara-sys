@@ -345,7 +345,7 @@ export async function createManualJournalEntry(
     description: l.description || null,
   }))
 
-  const { data, error } = await supabase.rpc('create_manual_journal_entry', {
+  const { data, error } = await supabase.rpc('create_ui_manual_journal_entry', {
     p_description: entry.description,
     p_entry_date: entry.entry_date || new Date().toISOString().split('T')[0],
     p_source_type: entry.source_type || 'manual',

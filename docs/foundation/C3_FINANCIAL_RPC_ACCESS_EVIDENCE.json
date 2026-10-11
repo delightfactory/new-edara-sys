@@ -1,0 +1,946 @@
+{
+  "parentSha": "57b042c38e16d6ba160de2e048e338cc9741f450",
+  "before": {
+    "status": "OBSERVED_SECURITY_BYPASS",
+    "owner": "edara-c3-compose-20261011",
+    "parentSha": "57b042c38e16d6ba160de2e048e338cc9741f450",
+    "scope": "Actual loopback pre-fix stock-cost, custody and journal writer probes; synthetic only, no production/browser or overall security acceptance",
+    "requests": [
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/update_stock_wac",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/deduct_stock_at_wac",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/add_custody_transaction",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/create_manual_journal_entry",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/create_ui_manual_journal_entry",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/update_stock_wac",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/deduct_stock_at_wac",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/add_custody_transaction",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/create_manual_journal_entry",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/create_ui_manual_journal_entry",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      }
+    ],
+    "findings": [
+      {
+        "rpc": "update_stock_wac",
+        "identity": "anonymous",
+        "writeObserved": true,
+        "quantityDelta": 1,
+        "valueDelta": 11
+      },
+      {
+        "rpc": "deduct_stock_at_wac",
+        "identity": "anonymous",
+        "writeObserved": true,
+        "quantityDelta": -1,
+        "valueDelta": -11
+      },
+      {
+        "rpc": "add_custody_transaction",
+        "identity": "anonymous",
+        "writeObserved": true,
+        "custodyOwnedByDifferentUser": false
+      },
+      {
+        "rpc": "create_manual_journal_entry",
+        "identity": "anonymous",
+        "writeObserved": true,
+        "balancedJournalStored": true,
+        "anonymousManagerIdentityAccepted": true
+      },
+      {
+        "rpc": "create_ui_manual_journal_entry",
+        "identity": "anonymous",
+        "writeObserved": true,
+        "balancedJournalStored": true,
+        "anonymousManagerIdentityAccepted": true
+      },
+      {
+        "rpc": "update_stock_wac",
+        "identity": "restricted",
+        "writeObserved": true,
+        "quantityDelta": 1,
+        "valueDelta": 11
+      },
+      {
+        "rpc": "deduct_stock_at_wac",
+        "identity": "restricted",
+        "writeObserved": true,
+        "quantityDelta": -1,
+        "valueDelta": -11
+      },
+      {
+        "rpc": "add_custody_transaction",
+        "identity": "restricted",
+        "writeObserved": true,
+        "custodyOwnedByDifferentUser": true
+      },
+      {
+        "rpc": "create_manual_journal_entry",
+        "identity": "restricted",
+        "writeObserved": true,
+        "balancedJournalStored": true,
+        "anonymousManagerIdentityAccepted": false
+      },
+      {
+        "rpc": "create_ui_manual_journal_entry",
+        "identity": "restricted",
+        "writeObserved": true,
+        "balancedJournalStored": true,
+        "anonymousManagerIdentityAccepted": false
+      }
+    ],
+    "publicFixtureRestored": true,
+    "authLoginMetadataExpected": true
+  },
+  "migration": {
+    "status": "PASS",
+    "owner": "edara-c3-compose-20261011",
+    "migration": "supabase/migrations/20261011070000_financial_rpc_access_hardening.sql",
+    "migrationSha256": "a79608b27c271c287757119b710721805e8dab4f23229c7df045e6f1783038c9",
+    "scope": "Thirteen exact function ACLs plus actor/permission guard in the UI journal wrapper only; owned synthetic database, no hosted migration or overall financial security acceptance",
+    "targetSignatures": [
+      "update_stock_wac(uuid,uuid,numeric,numeric,text,text,uuid,uuid)",
+      "deduct_stock_at_wac(uuid,uuid,numeric,text,text,uuid,uuid)",
+      "add_custody_transaction(uuid,text,numeric,uuid,text,uuid,text,uuid)",
+      "create_manual_journal_entry(text,date,text,uuid,jsonb,uuid)",
+      "create_ui_manual_journal_entry(text,date,text,uuid,jsonb,uuid)",
+      "deliver_sales_order(uuid,uuid,text,text,uuid,uuid,numeric,boolean,text,text,date)",
+      "confirm_sales_return(uuid,uuid,uuid,uuid)",
+      "receive_purchase_invoice(uuid,uuid)",
+      "bill_purchase_invoice(uuid,uuid,uuid,text)",
+      "pay_supplier(uuid,uuid,numeric,text,uuid,text)",
+      "cancel_purchase_invoice(uuid,uuid)",
+      "confirm_purchase_return(uuid,uuid)",
+      "confirm_payment_receipt(uuid,text,uuid,text,uuid)"
+    ],
+    "rollbackExactAclRestored": true,
+    "allOtherFunctionBodiesPreserved": true,
+    "allOwnersAndDefinerFlagsPreserved": true,
+    "changedBodyOnly": "create_ui_manual_journal_entry",
+    "unrelatedFunctionAclsPreserved": true,
+    "tableColumnAclsAndRlsPoliciesPreserved": true,
+    "publicTables": 48,
+    "applied": true,
+    "idempotentReapplication": true,
+    "claudeSession": "2494a3dc-2d66-430d-8dd2-074748c485ae",
+    "reviewReadOnlyViolation": false
+  },
+  "candidateManifest": {
+    "sourceWrapperFile": "60_finance_field_guards.sql",
+    "sourceWrapperStatementSha256": "39343a1c96bc627c3f5ba088548857361b05dfebc8a11768749f64a6edaa4a01",
+    "migrationSha256": "a79608b27c271c287757119b710721805e8dab4f23229c7df045e6f1783038c9",
+    "internals": [
+      "update_stock_wac(uuid,uuid,numeric,numeric,text,text,uuid,uuid)",
+      "deduct_stock_at_wac(uuid,uuid,numeric,text,text,uuid,uuid)",
+      "add_custody_transaction(uuid,text,numeric,uuid,text,uuid,text,uuid)",
+      "create_manual_journal_entry(text,date,text,uuid,jsonb,uuid)"
+    ],
+    "entries": [
+      "create_ui_manual_journal_entry(text,date,text,uuid,jsonb,uuid)",
+      "deliver_sales_order(uuid,uuid,text,text,uuid,uuid,numeric,boolean,text,text,date)",
+      "confirm_sales_return(uuid,uuid,uuid,uuid)",
+      "receive_purchase_invoice(uuid,uuid)",
+      "bill_purchase_invoice(uuid,uuid,uuid,text)",
+      "pay_supplier(uuid,uuid,numeric,text,uuid,text)",
+      "cancel_purchase_invoice(uuid,uuid)",
+      "confirm_purchase_return(uuid,uuid)",
+      "confirm_payment_receipt(uuid,text,uuid,text,uuid)"
+    ],
+    "changedBodyOnly": "create_ui_manual_journal_entry"
+  },
+  "after": {
+    "status": "PASS",
+    "owner": "edara-c3-compose-20261011",
+    "parentSha": "57b042c38e16d6ba160de2e048e338cc9741f450",
+    "scope": "Actual loopback post-fix internal-writer, public-entry and journal actor/permission probes; synthetic only, no production/browser or overall security acceptance",
+    "requests": [
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/update_stock_wac",
+        "method": "POST",
+        "status": 401
+      },
+      {
+        "path": "/rest/v1/rpc/deduct_stock_at_wac",
+        "method": "POST",
+        "status": 401
+      },
+      {
+        "path": "/rest/v1/rpc/add_custody_transaction",
+        "method": "POST",
+        "status": 401
+      },
+      {
+        "path": "/rest/v1/rpc/create_manual_journal_entry",
+        "method": "POST",
+        "status": 401
+      },
+      {
+        "path": "/rest/v1/rpc/create_ui_manual_journal_entry",
+        "method": "POST",
+        "status": 401
+      },
+      {
+        "path": "/rest/v1/rpc/update_stock_wac",
+        "method": "POST",
+        "status": 403
+      },
+      {
+        "path": "/rest/v1/rpc/deduct_stock_at_wac",
+        "method": "POST",
+        "status": 403
+      },
+      {
+        "path": "/rest/v1/rpc/add_custody_transaction",
+        "method": "POST",
+        "status": 403
+      },
+      {
+        "path": "/rest/v1/rpc/create_manual_journal_entry",
+        "method": "POST",
+        "status": 403
+      },
+      {
+        "path": "/rest/v1/rpc/create_ui_manual_journal_entry",
+        "method": "POST",
+        "status": 403
+      },
+      {
+        "path": "/rest/v1/rpc/deliver_sales_order",
+        "method": "POST",
+        "status": 401
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_sales_return",
+        "method": "POST",
+        "status": 401
+      },
+      {
+        "path": "/rest/v1/rpc/receive_purchase_invoice",
+        "method": "POST",
+        "status": 401
+      },
+      {
+        "path": "/rest/v1/rpc/bill_purchase_invoice",
+        "method": "POST",
+        "status": 401
+      },
+      {
+        "path": "/rest/v1/rpc/pay_supplier",
+        "method": "POST",
+        "status": 401
+      },
+      {
+        "path": "/rest/v1/rpc/cancel_purchase_invoice",
+        "method": "POST",
+        "status": 401
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_purchase_return",
+        "method": "POST",
+        "status": 401
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_payment_receipt",
+        "method": "POST",
+        "status": 401
+      },
+      {
+        "path": "/rest/v1/rpc/create_ui_manual_journal_entry",
+        "method": "POST",
+        "status": 403
+      },
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/create_manual_journal_entry",
+        "method": "POST",
+        "status": 403
+      },
+      {
+        "path": "/rest/v1/rpc/create_ui_manual_journal_entry",
+        "method": "POST",
+        "status": 403
+      },
+      {
+        "path": "/rest/v1/rpc/create_ui_manual_journal_entry",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/create_ui_manual_journal_entry",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/create_ui_manual_journal_entry",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/rest/v1/rpc/create_ui_manual_journal_entry",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      }
+    ],
+    "findings": [
+      {
+        "identity": "anonymous",
+        "originalFiveWriterCallsDenied": true
+      },
+      {
+        "identity": "restricted",
+        "originalFiveWriterCallsDenied": true
+      },
+      {
+        "rpc": "deliver_sales_order",
+        "anonymousExecuteDeniedBeforeRowLookup": true
+      },
+      {
+        "rpc": "confirm_sales_return",
+        "anonymousExecuteDeniedBeforeRowLookup": true
+      },
+      {
+        "rpc": "receive_purchase_invoice",
+        "anonymousExecuteDeniedBeforeRowLookup": true
+      },
+      {
+        "rpc": "bill_purchase_invoice",
+        "anonymousExecuteDeniedBeforeRowLookup": true
+      },
+      {
+        "rpc": "pay_supplier",
+        "anonymousExecuteDeniedBeforeRowLookup": true
+      },
+      {
+        "rpc": "cancel_purchase_invoice",
+        "anonymousExecuteDeniedBeforeRowLookup": true
+      },
+      {
+        "rpc": "confirm_purchase_return",
+        "anonymousExecuteDeniedBeforeRowLookup": true
+      },
+      {
+        "rpc": "confirm_payment_receipt",
+        "anonymousExecuteDeniedBeforeRowLookup": true
+      },
+      {
+        "case": "restrictedJournalActorSpoofDenied",
+        "denied": true
+      },
+      {
+        "case": "authorizedJournal",
+        "explicitUserId": true,
+        "verifiedActorStored": true,
+        "balanced": true
+      },
+      {
+        "case": "authorizedJournal",
+        "explicitUserId": false,
+        "verifiedActorStored": true,
+        "balanced": true
+      },
+      {
+        "case": "originalControlAccountAndBalanceGuardsPreserved",
+        "deniedWithoutMutation": true
+      }
+    ],
+    "publicFixtureRestored": true,
+    "authLoginMetadataExpected": true
+  },
+  "actualFinanceService": {
+    "status": "PASS",
+    "owner": "edara-c3-compose-20261011",
+    "parentSha": "57b042c38e16d6ba160de2e048e338cc9741f450",
+    "scope": "Actual unchanged UI journal service and rerouted legacy service via Vite SSR, Auth/PostgREST; no browser or overall financial workflow acceptance",
+    "cases": [
+      "Actual UI service propagates backend restricted permission denial without writing",
+      "Both actual service exports use guarded UI RPC and return full balanced journal/account/profile relations",
+      "Legacy export also preserves UI control-account refusal without data changes"
+    ],
+    "requests": [
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/create_ui_manual_journal_entry",
+        "method": "POST",
+        "status": 403
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/create_ui_manual_journal_entry",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/journal_entries",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/create_ui_manual_journal_entry",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/journal_entries",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/create_ui_manual_journal_entry",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      }
+    ],
+    "sourceHashes": {
+      "src/lib/services/finance.ts": "10edea3855cfa7066481510bb361ee937e2a9438108139ea5de5d11455b16543",
+      "src/lib/supabase/client.ts": "2ac923f7b21d53f9380af4c3f1b63de05ea6ce1bd0de18d83410e1c17c9ec0b8"
+    },
+    "publicFixtureRestored": true
+  },
+  "creditOwnerRegression": {
+    "status": "PASS",
+    "scope": "Actual unchanged sales service via Vite SSR and owned Auth/PostgREST, saved credit sale/return; no browser, VAT/cash/procurement/release acceptance",
+    "owner": "edara-c3-compose-20261011",
+    "cases": [
+      "Actual service creates saved numbered draft with embedded reference relations",
+      "Insufficient-stock confirmation rejects atomically without reservation or status change",
+      "Authorized real service confirmation and retry reserve once",
+      "Saved credit delivery reduces quantity/value, posts balanced 111 debit/credit, AR100; retry has no second effect",
+      "Saved full credit return restores quantity/value and AR, posts balanced reversal; retry has no second effect"
+    ],
+    "requests": [
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/sales_order_items",
+        "method": "DELETE",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/sales_order_items",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/sales_order_items",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "PATCH",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_sales_order",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/rest/v1/sales_order_items",
+        "method": "DELETE",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/sales_order_items",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/sales_order_items",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "PATCH",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_sales_order",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_sales_order",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/deliver_sales_order",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/deliver_sales_order",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/sales_returns",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/sales_return_items",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/sales_returns",
+        "method": "PATCH",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_sales_return",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_sales_return",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      }
+    ],
+    "sourceHashes": {
+      "src/lib/services/sales.ts": "7e7328445232dca887ba4909a534961841fd5b307448d15206cc93952fcbce72",
+      "src/lib/supabase/client.ts": "2ac923f7b21d53f9380af4c3f1b63de05ea6ce1bd0de18d83410e1c17c9ec0b8"
+    },
+    "publicFixtureRestored": true,
+    "sequencesMayAdvance": true,
+    "harnessOriginalBaseSha": "60e8dbfcbe24f6e6d76b79e7243f2034018ce991",
+    "qualificationParentSha": "57b042c38e16d6ba160de2e048e338cc9741f450"
+  },
+  "purchaseOwnerRegression": {
+    "status": "PASS",
+    "scope": "Actual unchanged purchase services via Vite SSR and owned Auth/PostgREST, saved received/billed purchase and return with landed costs; no browser, VAT/cash/cancellation/release acceptance",
+    "owner": "edara-c3-compose-20261011",
+    "cases": [
+      "Actual service saves numbered purchase with two units20 plus landed4, total44",
+      "Receipt uses real base-unit conversion and owner stock helper: quantity12 value154 WAC12.8333; repeated receipt rejects with no second effect",
+      "Financial bill records AP44 and balanced44 journal; repeated billing rejects with no second effect",
+      "Overstock return rejected atomically without stock, ledger, journal or header mutation",
+      "Atomic draft edit replaces items and totals; invalid quantity and forbidden status reject with exact persisted rollback",
+      "Anonymous and restricted actual service edits denied without data changes",
+      "Confirmed return cannot be edited through atomic draft RPC",
+      "Return reduces AP40 leaving landed4, removes stock at current WAC with variance14.33, balanced40 journal; repeated confirmation rejects with no second effect"
+    ],
+    "requests": [
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/purchase_invoices",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/purchase_invoice_items",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/purchase_invoices",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/receive_purchase_invoice",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/receive_purchase_invoice",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/rest/v1/rpc/bill_purchase_invoice",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/bill_purchase_invoice",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/rest/v1/purchase_returns",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/purchase_return_items",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/purchase_returns",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_purchase_return",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/rest/v1/rpc/update_purchase_return_draft",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/purchase_returns",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/update_purchase_return_draft",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/rest/v1/rpc/update_purchase_return_draft",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/update_purchase_return_draft",
+        "method": "POST",
+        "status": 401
+      },
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/update_purchase_return_draft",
+        "method": "POST",
+        "status": 403
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_purchase_return",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_purchase_return",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/rest/v1/rpc/update_purchase_return_draft",
+        "method": "POST",
+        "status": 500
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      }
+    ],
+    "sourceHashes": {
+      "src/lib/services/purchases.ts": "7e7931ec3c722d4da947bec0226487825ea47b1d8a2f4b56c039f113815f3859",
+      "src/lib/services/purchase-returns.ts": "e07d9e4248d1c972f77ceb57a59a7c0fbb439b384f0977efa274d170132298b1",
+      "src/lib/supabase/client.ts": "2ac923f7b21d53f9380af4c3f1b63de05ea6ce1bd0de18d83410e1c17c9ec0b8"
+    },
+    "publicFixtureRestored": true,
+    "sequencesMayAdvance": true,
+    "harnessOriginalBaseSha": "60e8dbfcbe24f6e6d76b79e7243f2034018ce991",
+    "qualificationParentSha": "57b042c38e16d6ba160de2e048e338cc9741f450"
+  },
+  "cashInitialAttempt": {
+    "status": "FAIL",
+    "owner": "edara-c3-compose-20261011",
+    "scope": "Test expected delivered instead of canonical fully-paid completed; cleanup initially blocked by confirmed receipt FK, no product changes",
+    "observedOrderStatus": "completed",
+    "incorrectExpectedStatus": "delivered",
+    "confirmedReceiptObserved": true,
+    "cleanupForeignKey": "payment_receipts_sales_order_id_fkey",
+    "all48PublicRowsRestoredAfterCorrection": true,
+    "beforeDigestsReconstructedFromFirstOrderedSqlOutputBatch": true
+  },
+  "cashOwnerRegression": {
+    "status": "PASS",
+    "scope": "Actual unchanged sales service via Vite SSR and owned Auth/PostgREST, saved cash sale/custody refund; no browser, VAT/procurement/release acceptance",
+    "owner": "edara-c3-compose-20261011",
+    "cases": [
+      "Actual service creates saved numbered draft with embedded reference relations",
+      "Insufficient-stock confirmation rejects atomically without reservation or status change",
+      "Authorized real service confirmation and retry reserve once",
+      "Saved cash delivery reduces quantity/value, posts balanced111, custody100 and AR0; retry has no second effect",
+      "Saved full cash return restores quantity/value, refunds custody to0, posts balanced111 reversal; retry has no second effect"
+    ],
+    "requests": [
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/sales_order_items",
+        "method": "DELETE",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/sales_order_items",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/sales_order_items",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "PATCH",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_sales_order",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/rest/v1/sales_order_items",
+        "method": "DELETE",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/sales_order_items",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/sales_order_items",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "PATCH",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_sales_order",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_sales_order",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/deliver_sales_order",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/deliver_sales_order",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/sales_returns",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/sales_return_items",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/sales_returns",
+        "method": "PATCH",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_sales_return",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_sales_return",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      }
+    ],
+    "sourceHashes": {
+      "src/lib/services/sales.ts": "7e7328445232dca887ba4909a534961841fd5b307448d15206cc93952fcbce72",
+      "src/lib/supabase/client.ts": "2ac923f7b21d53f9380af4c3f1b63de05ea6ce1bd0de18d83410e1c17c9ec0b8"
+    },
+    "publicFixtureRestored": true,
+    "sequencesMayAdvance": true,
+    "harnessOriginalBaseSha": "60e8dbfcbe24f6e6d76b79e7243f2034018ce991",
+    "qualificationParentSha": "57b042c38e16d6ba160de2e048e338cc9741f450"
+  },
+  "gates": {
+    "forcedTypeExit": 0,
+    "lintExit": 0,
+    "buildExit": 0,
+    "testExit": 0,
+    "testFiles": 141,
+    "testsPassed": 1074,
+    "precacheEntries": 284,
+    "precacheKiB": 4276.57
+  },
+  "finalReview": {
+    "sessionId": "2e25d9b4-f8a1-4b79-8999-7b0bc091f2a5",
+    "verdict": "UNAVAILABLE_NO_FINAL_VERDICT",
+    "attempts": [
+      "error_max_turns",
+      "timeout"
+    ],
+    "readOnlyViolation": false,
+    "contractReview": "GO",
+    "codexDiffAndSourceParity": "PASS"
+  }
+}
