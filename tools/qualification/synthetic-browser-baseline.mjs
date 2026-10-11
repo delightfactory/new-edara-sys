@@ -19,7 +19,7 @@ let server
 let runDirectory
 const report = {
   requireCairo: options['require-cairo'] === true,
-  limitations: ['Synthetic HTTP/Realtime only; no real DB/RLS/Auth authorization or business acceptance', 'Service workers blocked; PWA/offline/update behavior unqualified', 'Synthetic render/request timings are not production latency or p95'],
+  limitations: ['Synthetic HTTP/Realtime only; no real DB/RLS/Auth authorization or business acceptance', options.pwa ? 'SW-enabled shell/update qualification; offline API success is not claimed' : 'Service workers blocked; PWA/offline/update behavior unqualified', 'Synthetic render/request timings are not production latency or p95'],
   scenarios: [], safety: {}, cleanup: {},
 }
 
@@ -41,8 +41,8 @@ async function sourceEnvNames(directory) {
   return names
 }
 
-async function buildCandidate(flag, origin) {
-  const dist = resolve(runDirectory, `dist-sidebar-${flag}`)
+async function buildCandidate(flag, origin, version) {
+  const dist = resolve(runDirectory, version ? `dist-pwa-${version}` : `dist-sidebar-${flag}`)
   const inert = {
     VITE_SUPABASE_URL: origin, VITE_SUPABASE_ANON_KEY: 'synthetic-inert-anon-key',
     VITE_SENTRY_DSN: '', VITE_VAPID_PUBLIC_KEY: '', VITE_VISITS_ATOMIC_EXECUTION: 'false',
@@ -51,6 +51,8 @@ async function buildCandidate(flag, origin) {
   const consumed = await sourceEnvNames(resolve(root, 'src'))
   assert.deepEqual([...consumed].sort(), Object.keys(inert).sort(), 'Unreviewed VITE variable; stop before building')
   await build({ root, envFile: false, envPrefix: [], cacheDir: resolve(runDirectory, 'vite-cache'),
+    // Test-only marker changes the real HTML precache revision for an update.
+    ...(version ? { plugins: [{ name: 'qualification-version', transformIndexHtml: html => html.replace('</head>', `<meta name="qualification-version" content="${version}"></head>`) }] } : {}),
     define: Object.fromEntries(Object.entries(inert).map(([name, value]) => [`import.meta.env.${name}`, JSON.stringify(value)])),
     build: { outDir: dist, emptyOutDir: false },
   })
@@ -60,10 +62,27 @@ async function buildCandidate(flag, origin) {
   return dist
 }
 
-async function serveCandidate(port, currentDist) {
+async function serveCandidate(port, currentDist, pwaEvidence) {
   const types = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2', '.webmanifest': 'application/manifest+json', '.ico': 'image/x-icon' }
   server = createServer(async (request, response) => {
     const pathname = decodeURIComponent(new URL(request.url, `http://127.0.0.1:${port}`).pathname)
+    const event = pwaEvidence ? { path: pathname, method: request.method, phase: pwaEvidence.phase, startedMs: performance.now(), bytes: 0, worker: request.headers['service-worker'] === 'script' } : null
+    if (event) pwaEvidence.requests.push(event)
+    if (pwaEvidence && /^\/(rest|auth)\/v1\//.test(pathname)) {
+      try {
+        const chunks = []
+        for await (const chunk of request) chunks.push(chunk)
+        const body = Buffer.concat(chunks).toString('utf8')
+        const fixture = fixtureResponse({ url: () => `http://127.0.0.1:${port}${request.url}`, method: () => request.method, postDataJSON: () => JSON.parse(body) }, { kind: 'pwa' }, pwaEvidence.fixtureState)
+        response.writeHead(fixture.status, { ...fixture.headers, 'cache-control': 'no-store' })
+        response.end(fixture.body)
+        Object.assign(event, { status: fixture.status, bytes: Buffer.byteLength(fixture.body ?? ''), completedMs: performance.now() })
+      } catch (error) {
+        pwaEvidence.boundaryFailures.push(error.message)
+        response.writeHead(403); response.end()
+      }
+      return
+    }
     const path = resolve(currentDist(), `.${pathname}`)
     if ((path !== currentDist() && !path.startsWith(`${currentDist()}${sep}`)) || !['GET', 'HEAD'].includes(request.method)) {
       response.writeHead(403); response.end(); return
@@ -74,6 +93,7 @@ async function serveCandidate(port, currentDist) {
       }
       const assetPath = extname(path) ? path : resolve(currentDist(), 'index.html')
       const bytes = await readFile(assetPath)
+      if (event) Object.assign(event, { status: 200, bytes: bytes.length, completedMs: performance.now() })
       response.writeHead(200, { 'content-type': types[extname(assetPath)] ?? 'application/octet-stream', 'cache-control': 'no-store' })
       response.end(request.method === 'HEAD' ? undefined : bytes)
     } catch {
@@ -81,6 +101,101 @@ async function serveCandidate(port, currentDist) {
     }
   })
   await new Promise((resolveListen, reject) => { server.once('error', reject); server.listen(port, '127.0.0.1', resolveListen) })
+}
+
+async function runPwa(origin, switchDist, nextDist, evidence) {
+  report.scenarios.push(evidence)
+  const context = await browser.newContext({ viewport: { width: 900, height: 900 }, serviceWorkers: 'allow' })
+  const page = await context.newPage()
+  const pageErrors = []
+  const navigations = []
+  let documentLoads = 0
+  evidence.navigations = navigations
+  page.on('domcontentloaded', () => { documentLoads += 1 })
+  page.on('pageerror', error => pageErrors.push(error.message))
+  page.on('framenavigated', frame => { if (frame === page.mainFrame()) navigations.push(frame.url()) })
+  context.on('request', request => {
+    if (new URL(request.url()).origin !== origin) evidence.boundaryFailures.push(`External HTTP ${request.method()}`)
+  })
+  await context.route('**/*', async route => {
+    if (new URL(route.request().url()).origin !== origin) { await route.abort(); return }
+    await route.continue()
+  })
+  await context.routeWebSocket('**/*', socket => {
+    const url = new URL(socket.url())
+    if (url.origin !== origin.replace('http:', 'ws:') || url.pathname !== '/realtime/v1/websocket') {
+      evidence.boundaryFailures.push('External or unknown WebSocket'); socket.close(); return
+    }
+    socket.onMessage(message => {
+      try { const reply = realtimeReply(message); if (reply) socket.send(reply) }
+      catch (error) { evidence.boundaryFailures.push(error.message); socket.close() }
+    })
+  })
+  await context.addInitScript(session => {
+    // Seed only the first document; later reloads exercise actual SDK storage.
+    if (!localStorage.getItem('sb-127-auth-token')) localStorage.setItem('sb-127-auth-token', JSON.stringify(session))
+  }, syntheticSession())
+  try {
+    evidence.phase = 'cold'
+    const coldStart = performance.now()
+    await page.goto(origin, { waitUntil: 'domcontentloaded' })
+    await expect(page.getByText('3 صنف على وشك النفاد', { exact: true })).toBeVisible({ timeout: 15_000 })
+    evidence.coldReadyMs = performance.now() - coldStart
+    evidence.coldRequestsAtReady = evidence.requests.length
+    await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller), { timeout: 30_000 }).toBe(true)
+    evidence.cache = await page.evaluate(async () => {
+      const names = await caches.keys()
+      const urls = (await Promise.all(names.map(async name => (await (await caches.open(name)).keys()).map(request => request.url)))).flat()
+      return { names, entries: urls.length, apiEntries: urls.filter(url => /\/(rest|auth)\/v1\//.test(url)).length }
+    })
+    assert.ok(evidence.cache.entries > 0, 'SW has no actual cached assets')
+    assert.equal(evidence.cache.apiEntries, 0, 'Authenticated API leaked into SW cache')
+    evidence.coldTotalStaticBytes = evidence.requests.filter(event => event.phase === 'cold' && !/^\/(rest|auth)\//.test(event.path)).reduce((sum, event) => sum + event.bytes, 0)
+    evidence.phase = 'warm'
+    const warmStart = performance.now()
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await expect(page.getByText('3 صنف على وشك النفاد', { exact: true })).toBeVisible()
+    evidence.warmReadyMs = performance.now() - warmStart
+    await navigateToCustomers(page, { width: 900, sidebar: true }, evidence)
+    await expect(page.getByText(customerName, { exact: true }).first()).toBeVisible()
+    evidence.phase = 'offline'
+    await context.setOffline(true)
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await expect(page.getByPlaceholder('بحث بالاسم أو الكود أو الهاتف...')).toBeVisible()
+    assert.equal(await page.evaluate(() => !!navigator.serviceWorker.controller), true)
+    evidence.offlineDeepRoute = 'customers shell restored under active controller; API success not claimed'
+    await context.setOffline(false)
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await expect(page.getByText(customerName, { exact: true }).first()).toBeVisible()
+    const search = page.getByPlaceholder('بحث بالاسم أو الكود أو الهاتف...')
+    await search.fill('شركة الاختبار')
+    const originalTimeOrigin = await page.evaluate(() => performance.timeOrigin)
+    const documentCount = documentLoads
+    evidence.phase = 'update-install'
+    switchDist(nextDist)
+    await page.evaluate(async () => { const registration = await navigator.serviceWorker.ready; await registration.update() })
+    await expect.poll(() => page.evaluate(async () => !!(await navigator.serviceWorker.ready).waiting), { timeout: 30_000 }).toBe(true)
+    await expect(page.getByRole('button', { name: 'تحديث الآن', exact: true })).toBeVisible()
+    await expect(search).toHaveValue('شركة الاختبار')
+    assert.equal(await page.evaluate(() => performance.timeOrigin), originalTimeOrigin, 'Waiting update reloaded without user action')
+    assert.equal(documentLoads, documentCount, 'Waiting update replaced the document')
+    evidence.waitingUpdatePreservedInput = true
+    evidence.phase = 'update-activate'
+    await page.getByRole('button', { name: 'تحديث الآن', exact: true }).click()
+    await expect(page.locator('meta[name="qualification-version"]')).toHaveAttribute('content', 'b')
+    await expect(page.getByPlaceholder('بحث بالاسم أو الكود أو الهاتف...')).toBeVisible()
+    // Allow the manager's existing 3s fallback to reveal a duplicate reload.
+    await page.waitForTimeout(3500)
+    evidence.activationNavigations = documentLoads - documentCount
+    assert.equal(evidence.activationNavigations, 1, 'Explicit update caused more than one navigation')
+    assert.deepEqual(evidence.boundaryFailures, [])
+    assert.deepEqual(pageErrors, [])
+    evidence.status = 'PASS'
+  } catch (error) {
+    evidence.status = 'FAIL'
+    evidence.failure = error.message
+    await page.screenshot({ path: resolve(runDirectory, 'pwa-failure.png'), fullPage: true })
+  } finally { await context.close() }
 }
 
 async function installBoundary(context, origin, scenario, evidence) {
@@ -274,6 +389,7 @@ async function runBaseline() {
   const { chromium } = await import(pathToFileURL(resolve(options.playwright, 'index.mjs')).href)
   ;({ expect } = await import(pathToFileURL(resolve(options.playwright, 'test.mjs')).href))
   report.gitSha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim()
+  report.harnessSha256 = createHash('sha256').update(await readFile(fileURLToPath(import.meta.url))).digest('hex')
   browserServer = await chromium.launchServer({ headless: true, host: '127.0.0.1' })
   browser = await chromium.connect(browserServer.wsEndpoint())
   report.browser = browser.version()
@@ -293,11 +409,12 @@ async function runBaseline() {
   const sentinelBefore = process.env.VITE_QUALIFICATION_SENTINEL
   process.env.VITE_QUALIFICATION_SENTINEL = `INHERITED-DO-NOT-BUNDLE-${randomUUID()}`
   let distOn, distOff
-  try { distOn = await buildCandidate(true, origin); distOff = await buildCandidate(false, origin) }
+  try { distOn = await buildCandidate(true, origin, options.pwa ? 'a' : undefined); distOff = await buildCandidate(options.pwa ? true : false, origin, options.pwa ? 'b' : undefined) }
   finally { if (sentinelBefore === undefined) delete process.env.VITE_QUALIFICATION_SENTINEL; else process.env.VITE_QUALIFICATION_SENTINEL = sentinelBefore }
   report.safety.inheritedViteSentinelAbsent = true
   let currentDist = distOn
-  await serveCandidate(port, () => currentDist)
+  const pwaEvidence = options.pwa ? { name: 'pwa-cold-warm-offline-update-900', phase: 'setup', requests: [], boundaryFailures: [], fixtureState: { profileAttempts: 0 } } : undefined
+  await serveCandidate(port, () => currentDist, pwaEvidence)
   const safetyContext = await browser.newContext({ serviceWorkers: 'block' })
   const safetyEvidence = { boundaryFailures: [], requests: [] }
   await installBoundary(safetyContext, origin, { kind: 'signedout' }, safetyEvidence)
@@ -314,6 +431,13 @@ async function runBaseline() {
   assert.deepEqual(safetyEvidence.boundaryFailures, ['HTTP GET /blocked', 'Unqualified fixture: GET /rest/v1/unqualified', 'WebSocket /blocked-socket'])
   report.safety.externalHttpWebSocketAndUnknownFixtureAborted = true
   await safetyContext.close()
+  if (pwaEvidence) {
+    await runPwa(origin, dist => { currentDist = dist }, distOff, pwaEvidence)
+    const changed = execFileSync('git', ['ls-files', '--modified', '--others', '--exclude-standard'], { cwd: root, encoding: 'utf8' }).trim().split(/\r?\n/).filter(Boolean)
+    report.dirtyFileHashes = Object.fromEntries(await Promise.all(changed.map(async path => [path, createHash('sha256').update(await readFile(resolve(root, path))).digest('hex')])))
+    report.status = pwaEvidence.status
+    return
+  }
   const scenarios = [
     ...[390, 900, 1440, 360].map(width => ({ name: `admin-${width}-sidebar-on`, kind: 'admin', width, sidebar: true, dark: width === 1440 })),
     { name: 'limited-390', kind: 'limited', width: 390, sidebar: true },

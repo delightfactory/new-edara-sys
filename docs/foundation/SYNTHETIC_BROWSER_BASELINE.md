@@ -15,6 +15,8 @@ node tools/qualification/synthetic-browser-baseline.mjs --preflight --playwright
 node tools/qualification/synthetic-browser-baseline.mjs --playwright "$playwrightPackage" --out "$artifactRoot" --port 5197
 # Optional, for a separately prepared local-Cairo candidate:
 node tools/qualification/synthetic-browser-baseline.mjs --playwright "$playwrightPackage" --out "$artifactRoot" --port 5197 --require-cairo
+# Separate SW-enabled shell/update scenario (does not run the 12-case matrix):
+node tools/qualification/synthetic-browser-baseline.mjs --pwa --playwright "$playwrightPackage" --out "$artifactRoot" --port 5197
 ```
 
 The CLI does not install packages or browsers. An occupied port fails without stopping its owner. Builds and screenshots go into a fresh external run directory. `report.json` records the exact Git SHA, dirty file hashes, browser version, synthetic profile identifier, sidebar flags, request methods/paths/status/timing, views, failures and cleanup evidence. Auth headers, JWTs and profile responses are not logged. Synthetic SDK session storage is initialized in a fresh browser context; application auth/profile state is established by the real lifecycle.
@@ -26,6 +28,14 @@ Both sidebar builds use `envFile:false`, `envPrefix:[]` and explicitly defined i
 The bounded matrix covers dashboard loading/completion and the authorized Customers list at 390, 900, 1440 and 360 pixels, plus desktop legacy-sidebar parity; actual UI links verify SPA navigation without a document reload. It also covers explicit permission denial taking precedence over wildcard access, profile-unavailable/retry through the visible button, inactive/signed-out redirection, a desktop dark/long-Arabic case and a separate warm reload. Deferred responses prove low-stock starts before six count requests complete and that loading remains until low-stock completes. Screenshots disable animations for stable capture; document overflow and uncaught browser errors are checked. Browser and owned HTTP listener retirement are checked in `finally`, including failed runs.
 
 `--require-cairo` is off by default. When enabled, every normal capture first loads actual Cairo FontFaces for400/500/600/700 with Arabic and Latin text, awaits `document.fonts.ready`, and requires nonempty returned faces whose normalized family is Cairo and whose status is loaded. Each view records weights, face counts, families and loading status. A fallback font or `document.fonts.check` result alone cannot satisfy this gate. The option does not change fixtures, fonts or application code; it requires a separately prepared candidate and independent execution.
+
+## SW-enabled qualification mode
+
+`--pwa` runs a separate900px scenario with actual service workers allowed. The original mode continues to block workers. Both modes run the same independent static404 and unknown/external HTTP/WebSocket rejection probes. In PWA mode the owned127 server itself also enforces the existing synthetic API contract; worker-handled fetches do not rely on Playwright routing to supply an API response. This is synthetic transport, not real Auth/RLS.
+
+Two same-source, sidebar-enabled production builds differ only by a test-only HTML meta marker. Their real precache revision changes, so `registration.update()` must install a waiting worker. The scenario verifies actual controller/CacheStorage, zero REST/Auth cache entries, cold and warm dashboard readiness, Customers shell after an offline reload, return online, preservation of the real Customers search field while an update waits, and explicit Arabic update action activating the new HTML with exactly one document load. Search URL changes within a document are recorded but do not count as reloads. Camera/file recovery, every unsaved business form, persisted transactions and offline API success remain outside this scenario.
+
+`coldReadyMs`/`warmReadyMs` measure this synthetic browser journey, not production latency or speedup. `coldRequestsAtReady` is the server request count at readiness, including setup probes and concurrently started worker requests; it is not a critical-resource classification. `coldTotalStaticBytes` sums served static payload bytes during first navigation plus initial worker installation, including any duplicate first-load/precache transfers. Request phase/path/timing/bytes distinguish background installation from later warm/offline/update activity. These local uncompressed payload counts are not CDN transfer measurements. The report records harness SHA256 and dirty source hashes as well as its Git parent; qualifying a dirty harness does not qualify a different committed tree without checking those hashes.
 
 ## Original baseline findings (historical)
 
