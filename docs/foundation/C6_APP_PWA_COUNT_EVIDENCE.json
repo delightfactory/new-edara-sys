@@ -1,0 +1,635 @@
+{
+  "scope": "Bounded original notification dependency, count hardening, actual App PWA and finite local current-build timing samples. No overall baseline/release acceptance.",
+  "dependency": {
+    "status": "PASS",
+    "owner": "edara-c3-compose-20261011",
+    "source": "supabase/migrations/42_notification_system.sql",
+    "sourceSha256": "a39818d1526e3aa608897cc3c14fea00f8841b9962490f53114e3bd245db117f",
+    "verificationFile": "supabase/verification/baseline_notification_count_dependency.sql",
+    "verificationSha256": "d09e5f9d3ab44621e7f8ddb41570a06890cda54ba7788a1c2607423f88791749",
+    "statements": [
+      {
+        "startByte": 1915,
+        "endByte": 2325,
+        "sha256": "6098f73da6dd37f7b25d9b096d3017c2fa8e014de686b1bda4638e0d37c43157"
+      },
+      {
+        "startByte": 2328,
+        "endByte": 2575,
+        "sha256": "e71f3e498b1c96c3e2d804983f8fae53a9ce967facfaf6fc3f78f34a8a306d8d"
+      },
+      {
+        "startByte": 3587,
+        "endByte": 4485,
+        "sha256": "58983cdd2bdf5edb1774ee7242795db24494a68625596dec5060dff2b4e5cc4e"
+      },
+      {
+        "startByte": 5284,
+        "endByte": 6661,
+        "sha256": "88230f651936b0f8e2106726a8dbaecbb718c069b203ea3c1b0b0509917d9a98"
+      },
+      {
+        "startByte": 15798,
+        "endByte": 15871,
+        "sha256": "e51fe5a201e62ae9d23c39a54d18043e0d9decf87aad155455ef26377e5f6a41"
+      },
+      {
+        "startByte": 15873,
+        "endByte": 15946,
+        "sha256": "3037f6ba7fda78b614eae1564304209c981936027b26e7b03c3ffe492ed6b580"
+      },
+      {
+        "startByte": 16248,
+        "endByte": 16360,
+        "sha256": "6d9782a45c8671c12b5454bd5687f08a2ac414d398330c50e8dfc1c2bf0249fe"
+      },
+      {
+        "startByte": 16427,
+        "endByte": 16535,
+        "sha256": "9165feba2f0ea4cb5f39bf3806367966e8e03d8d7a9c40400ea8b37d3d3c25a8"
+      },
+      {
+        "startByte": 18647,
+        "endByte": 19043,
+        "sha256": "b0ff7a52acfb766492502a8b6505b68f2ccbf27c4dabc1bb05e31adadda76966"
+      },
+      {
+        "startByte": 21962,
+        "endByte": 22050,
+        "sha256": "a4f7ba51acf2aeb4ca7d918494168cda97065297959227aa83f2bf03ffda14cd"
+      }
+    ],
+    "rollbackRestoredAbsence": true,
+    "existing48RowsFunctionsAclsPoliciesUnchanged": true,
+    "publicTablesAfter": 50,
+    "scope": "Local unread count dependency only; no full notification or security acceptance",
+    "limitations": [
+      "Original RPC permits arbitrary p_user_id; PUBLIC execution retained exactly from source42.",
+      "No table grants, dispatch, mutations, push or notification Realtime qualified."
+    ]
+  },
+  "before": {
+    "status": "PASS_WITH_SECURITY_GAP",
+    "cases": [
+      {
+        "identity": "manager",
+        "ownCount": 2,
+        "readArchivedExpiredExcluded": true
+      },
+      {
+        "identity": "restricted",
+        "ownCount": 1,
+        "readArchivedExpiredExcluded": true
+      },
+      {
+        "identity": "anonymous",
+        "arbitraryUserCountObserved": 2,
+        "securityAccepted": false
+      }
+    ],
+    "calls": [
+      {
+        "path": "/auth/v1/token",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_unread_notifications_count",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_unread_notifications_count",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/logout",
+        "status": 204
+      },
+      {
+        "path": "/auth/v1/token",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_unread_notifications_count",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_unread_notifications_count",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/logout",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/get_unread_notifications_count",
+        "status": 200
+      }
+    ],
+    "notificationsRestored": true
+  },
+  "database": {
+    "status": "PASS",
+    "migration": "supabase/migrations/20261011100000_notification_count_access_hardening.sql",
+    "migrationSha256": "8def0b07076a8afc95cbab9a6fe9604b97f53a46e1273c784381c32675f73dfd",
+    "rollbackBodyOwnerAclRestored": true,
+    "idempotence": true,
+    "otherFunctionsTableColumnAclsRlsPoliciesUnchanged": true,
+    "appliedOwnedLocalOnly": true
+  },
+  "api": {
+    "status": "PASS",
+    "cases": [
+      {
+        "identity": "manager",
+        "ownCount": 2,
+        "readArchivedExpiredExcluded": true
+      },
+      {
+        "identity": "manager",
+        "crossUserCount": 0
+      },
+      {
+        "identity": "restricted",
+        "ownCount": 1,
+        "readArchivedExpiredExcluded": true
+      },
+      {
+        "identity": "restricted",
+        "crossUserCount": 0
+      },
+      {
+        "identity": "anonymous",
+        "denied": true
+      },
+      {
+        "identity": "service_role",
+        "arbitraryUserCountsPreserved": true
+      }
+    ],
+    "calls": [
+      {
+        "path": "/auth/v1/token",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_unread_notifications_count",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_unread_notifications_count",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_unread_notifications_count",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/logout",
+        "status": 204
+      },
+      {
+        "path": "/auth/v1/token",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_unread_notifications_count",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_unread_notifications_count",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_unread_notifications_count",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/logout",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/get_unread_notifications_count",
+        "status": 401
+      },
+      {
+        "path": "/rest/v1/rpc/get_unread_notifications_count",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/get_unread_notifications_count",
+        "status": 200
+      }
+    ],
+    "notificationsRestored": true
+  },
+  "pwa": {
+    "status": "PASS",
+    "parentSha": "c53d6960a4eaf269f2ef19e7a08dfed0c8457236",
+    "scope": "Actual App and real owned Auth/API, active SW, warm/offline/reconnect and explicit same-assets SW update. No cold comparison, offline business data/write, Realtime or production speed acceptance.",
+    "cases": [
+      "Actual protected product route redirects to real login and returns to the original form after Auth",
+      "Actual App Service Worker controls the page",
+      "Actual authenticated form shell reloads offline; business data/write availability not asserted",
+      "SW caches contain frontend assets only; no Auth/REST API requests",
+      "Byte-distinct identical-source SW waits for explicit update action; exactly one navigation and original route preserved"
+    ],
+    "requests": [
+      {
+        "stage": "actual-login",
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "actual-login",
+        "path": "/rest/v1/rpc/get_my_profile",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "actual-login",
+        "path": "/rest/v1/rpc/get_my_permission_denials",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "actual-login",
+        "path": "/rest/v1/rpc/get_unread_notifications_count",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "actual-login",
+        "path": "/rest/v1/product_categories",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "actual-login",
+        "path": "/rest/v1/brands",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "actual-login",
+        "path": "/rest/v1/units",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "update",
+        "path": "/rest/v1/rpc/get_unread_notifications_count",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "update",
+        "path": "/rest/v1/product_categories",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "update",
+        "path": "/rest/v1/brands",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "update",
+        "path": "/rest/v1/units",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "update",
+        "path": "/rest/v1/rpc/get_my_profile",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "update",
+        "path": "/rest/v1/rpc/get_my_permission_denials",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "update",
+        "path": "/rest/v1/rpc/get_unread_notifications_count",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "update",
+        "path": "/rest/v1/product_categories",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "update",
+        "path": "/rest/v1/brands",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "update",
+        "path": "/rest/v1/units",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "update",
+        "path": "/rest/v1/rpc/get_my_profile",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "update",
+        "path": "/rest/v1/rpc/get_my_permission_denials",
+        "method": "POST",
+        "status": 200
+      }
+    ],
+    "externalRequests": [],
+    "pageErrors": [],
+    "screenshots": [],
+    "timings": [
+      {
+        "label": "Warm authenticated form reload 1",
+        "milliseconds": 189
+      },
+      {
+        "label": "Warm authenticated form reload 2",
+        "milliseconds": 156
+      },
+      {
+        "label": "Warm authenticated form reload 3",
+        "milliseconds": 155
+      },
+      {
+        "label": "Offline shell and cached verified profile reload",
+        "milliseconds": 137
+      },
+      {
+        "label": "Reconnected form reload",
+        "milliseconds": 146
+      }
+    ],
+    "sourceHashes": {
+      "src/main.tsx": "403dd769f975606db53dfa09534442b20df4823edd1491e4a1d8351d4957cd0d",
+      "src/App.tsx": "99c28a5c207f5246d4ab7be63161d2162fd82cc8cd63a235aab60dcbc10ba235",
+      "src/components/layout/AuthProvider.tsx": "426a0b3a8f664199df9eb1fa7e928406bc9442255bcedf7f7c19f1c7a14c3376",
+      "src/pages/auth/LoginPage.tsx": "c8b3fa9cff70e87399bb2724b164d55b746765988fb591aeab1174a3c3ab16fe",
+      "src/pages/products/ProductFormPage.tsx": "0e5674fd71c02f1f94d8103718b6c0ac8a4ee28f50dfa29888e52a852c8540e3",
+      "src/lib/services/products.ts": "5b58358492ffd9d00fb701d3fda81287abb4ede52a331244fcd336ba97b23fca",
+      "src/lib/supabase/client.ts": "2ac923f7b21d53f9380af4c3f1b63de05ea6ce1bd0de18d83410e1c17c9ec0b8",
+      "vite.config.ts": "9153b77595ac722ebf83666baf699ade927755479b2a885ba7452d1647353f1c"
+    },
+    "publicFixtureRestored": true,
+    "cachedRequestCount": 284
+  },
+  "performance": {
+    "status": "PASS",
+    "parentSha": "c53d6960a4eaf269f2ef19e7a08dfed0c8457236",
+    "scope": "Finite current-build cold/warm and first/repeat document route samples, same synthetic role/data. No prior-version or production speed comparison, business completion, Realtime or full baseline acceptance.",
+    "cases": [
+      "Actual protected product route redirects to real login and returns to the original form after Auth",
+      "Three fresh-cache authenticated form boots and matched SW-controlled reloads; same build, role, data, viewport and loopback host",
+      "First/repeat customer route reaches actual heading; document navigation timing, not client route click or data-completion timing"
+    ],
+    "requests": [
+      {
+        "stage": "actual-login",
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "actual-login",
+        "path": "/rest/v1/rpc/get_my_profile",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "actual-login",
+        "path": "/rest/v1/rpc/get_my_permission_denials",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "actual-login",
+        "path": "/rest/v1/rpc/get_unread_notifications_count",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "actual-login",
+        "path": "/rest/v1/product_categories",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "actual-login",
+        "path": "/rest/v1/brands",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "actual-login",
+        "path": "/rest/v1/units",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "cold-warm-1",
+        "path": "/rest/v1/rpc/get_my_profile",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "cold-warm-1",
+        "path": "/rest/v1/rpc/get_my_permission_denials",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "cold-warm-1",
+        "path": "/rest/v1/rpc/get_unread_notifications_count",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "cold-warm-1",
+        "path": "/rest/v1/product_categories",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "cold-warm-1",
+        "path": "/rest/v1/brands",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "cold-warm-1",
+        "path": "/rest/v1/units",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "performance",
+        "path": "/rest/v1/profiles",
+        "method": "PATCH",
+        "status": 204
+      },
+      {
+        "stage": "cold-warm-1",
+        "path": "/rest/v1/profiles",
+        "method": "PATCH",
+        "status": 204
+      },
+      {
+        "stage": "cold-warm-2",
+        "path": "/rest/v1/rpc/get_my_profile",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "cold-warm-2",
+        "path": "/rest/v1/rpc/get_my_permission_denials",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "cold-warm-2",
+        "path": "/rest/v1/rpc/get_unread_notifications_count",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "cold-warm-2",
+        "path": "/rest/v1/product_categories",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "cold-warm-2",
+        "path": "/rest/v1/brands",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "cold-warm-2",
+        "path": "/rest/v1/units",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "cold-warm-2",
+        "path": "/rest/v1/profiles",
+        "method": "PATCH",
+        "status": 204
+      },
+      {
+        "stage": "cold-warm-3",
+        "path": "/rest/v1/rpc/get_my_profile",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "cold-warm-3",
+        "path": "/rest/v1/rpc/get_my_permission_denials",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "cold-warm-3",
+        "path": "/rest/v1/rpc/get_unread_notifications_count",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "cold-warm-3",
+        "path": "/rest/v1/product_categories",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "cold-warm-3",
+        "path": "/rest/v1/brands",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "cold-warm-3",
+        "path": "/rest/v1/units",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "cold-warm-3",
+        "path": "/rest/v1/profiles",
+        "method": "PATCH",
+        "status": 204
+      }
+    ],
+    "externalRequests": [],
+    "pageErrors": [],
+    "screenshots": [],
+    "timings": [
+      {
+        "label": "Cold authenticated form assets 1",
+        "milliseconds": 388
+      },
+      {
+        "label": "Warm authenticated form assets 1",
+        "milliseconds": 152
+      },
+      {
+        "label": "Cold authenticated form assets 2",
+        "milliseconds": 406
+      },
+      {
+        "label": "Warm authenticated form assets 2",
+        "milliseconds": 180
+      },
+      {
+        "label": "Cold authenticated form assets 3",
+        "milliseconds": 365
+      },
+      {
+        "label": "Warm authenticated form assets 3",
+        "milliseconds": 146
+      },
+      {
+        "label": "First customer route document navigation",
+        "milliseconds": 239
+      },
+      {
+        "label": "Repeat customer route document navigation",
+        "milliseconds": 150
+      }
+    ],
+    "sourceHashes": {
+      "src/main.tsx": "403dd769f975606db53dfa09534442b20df4823edd1491e4a1d8351d4957cd0d",
+      "src/App.tsx": "99c28a5c207f5246d4ab7be63161d2162fd82cc8cd63a235aab60dcbc10ba235",
+      "src/components/layout/AuthProvider.tsx": "426a0b3a8f664199df9eb1fa7e928406bc9442255bcedf7f7c19f1c7a14c3376",
+      "src/pages/auth/LoginPage.tsx": "c8b3fa9cff70e87399bb2724b164d55b746765988fb591aeab1174a3c3ab16fe",
+      "src/pages/products/ProductFormPage.tsx": "0e5674fd71c02f1f94d8103718b6c0ac8a4ee28f50dfa29888e52a852c8540e3",
+      "src/lib/services/products.ts": "5b58358492ffd9d00fb701d3fda81287abb4ede52a331244fcd336ba97b23fca",
+      "src/lib/supabase/client.ts": "2ac923f7b21d53f9380af4c3f1b63de05ea6ce1bd0de18d83410e1c17c9ec0b8",
+      "vite.config.ts": "9153b77595ac722ebf83666baf699ade927755479b2a885ba7452d1647353f1c"
+    },
+    "publicFixtureRestored": true
+  },
+  "productionCatalog": {
+    "scope": "Read-only selected production catalog; no user data or RPC invoked",
+    "projectId": "ozthzccqudrudicnneuu",
+    "rows": [
+      {
+        "signature": "get_unread_notifications_count(uuid)",
+        "definition": "CREATE OR REPLACE FUNCTION public.get_unread_notifications_count(p_user_id uuid DEFAULT auth.uid())\n RETURNS integer\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\n  SELECT COUNT(*)::integer\r\n  FROM public.notifications\r\n  WHERE user_id = p_user_id\r\n    AND is_read    = false\r\n    AND is_archived = false\r\n    AND (expires_at IS NULL OR expires_at > now());\r\n$function$\n",
+        "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+      }
+    ]
+  }
+}
