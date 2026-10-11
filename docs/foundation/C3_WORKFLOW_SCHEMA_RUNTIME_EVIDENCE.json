@@ -1,0 +1,197 @@
+{
+  "dryRun": {
+    "status": "PASS",
+    "parentSha": "ce9d9db76d0e5b028a34366383fdc37f92fc1472",
+    "owner": "edara-c3-compose-20261011",
+    "scope": "Latest targeted dependency DDL and structural semantics plus canonical reference policies on owned restored clone, transaction ROLLBACK; no persisted workflow, synthetic API grants, security acceptance, browser or release claim",
+    "sqlSha256": "6370b4a754d1036f1d90bed934cac1367a2cae351b83ce3aab56ba828c2e0f9f",
+    "referencePolicySqlSha256": "c58e17b9cf2a6a88e6cd3dea76c89da5a3b1fbc10df167299b113b8516c614b4",
+    "referencePolicies": 29,
+    "canonicalStatements": 350,
+    "newTables": 20,
+    "totalTablesDuringTransaction": 48,
+    "functionSignatures": 46,
+    "priorPermissionAndStockFunctionsPreserved": true,
+    "allPublicTablesRls": true,
+    "latestPayrollVaultConstraintPreserved": true,
+    "rollbackFunctionParity": true,
+    "rollbackTableAclAndPolicyParity": true,
+    "originalPublicRowsAndFunctionsUnchanged": true,
+    "cloneRowsUnchangedAfterRollback": true,
+    "temporaryDatabaseRetired": true
+  },
+  "localApplication": {
+    "status": "CANONICAL_APPLIED_SYNTHETIC_SECURITY_OPEN",
+    "parentSha": "ce9d9db76d0e5b028a34366383fdc37f92fc1472",
+    "owner": "edara-c3-compose-20261011",
+    "canonicalSqlSha256": "6370b4a754d1036f1d90bed934cac1367a2cae351b83ce3aab56ba828c2e0f9f",
+    "referencePolicySqlSha256": "c58e17b9cf2a6a88e6cd3dea76c89da5a3b1fbc10df167299b113b8516c614b4",
+    "publicTables": 48,
+    "allPublicTablesRls": true,
+    "originalAuthAndRoleRowsPreserved": true,
+    "originalPublicColumnValuesPreserved": true,
+    "priorStockViewAndTableColumnAclPreserved": true,
+    "priorPermissionAndStockRpcBodiesPreserved": true,
+    "reviewSession": "2494a3dc-2d66-430d-8dd2-074748c485ae",
+    "scope": "Owned synthetic local source dependency extension; not production migration, financial/API/browser/security/final-SHA qualification",
+    "syntheticExposureApplied": true,
+    "syntheticExposureSha256": "a1bc920fe488046732986e97d266d8231e337899e7a7f9bee96f0546ac8a93d2",
+    "syntheticExposureScope": {
+      "references": [
+        "areas",
+        "branches",
+        "brands",
+        "cities",
+        "custody_accounts",
+        "customer_branches",
+        "governorates",
+        "price_lists",
+        "product_categories",
+        "shipping_companies",
+        "suppliers",
+        "units",
+        "vaults",
+        "product_units",
+        "price_list_items",
+        "price_list_assignments",
+        "chart_of_accounts"
+      ],
+      "reads": [
+        "customer_ledger",
+        "supplier_ledger",
+        "journal_entries",
+        "journal_entry_lines",
+        "payment_receipts",
+        "vault_transactions",
+        "custody_transactions",
+        "stock_movements",
+        "sales_order_due_date_history"
+      ],
+      "drafts": [
+        "sales_orders",
+        "sales_order_items",
+        "sales_returns",
+        "sales_return_items",
+        "purchase_invoices",
+        "purchase_invoice_items",
+        "purchase_returns",
+        "purchase_return_items"
+      ],
+      "role": "authenticated",
+      "noAnonOrPublicTableGrants": true,
+      "noRlsDisabled": true,
+      "noServiceRoleFrontend": true
+    }
+  },
+  "securityBefore": {
+    "status": "OBSERVED_SECURITY_BYPASS",
+    "owner": "edara-c3-compose-20261011",
+    "scope": "Actual loopback Auth/PostgREST pre-fix security probes against canonical functions; synthetic only, no browser/full workflow/release acceptance",
+    "requests": [
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/vaults",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/reserve_stock",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/unreserve_stock",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/reserve_stock",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/unreserve_stock",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_sales_order",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_sales_order",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/cancel_sales_order",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/add_vault_transaction",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/add_vault_transaction",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      }
+    ],
+    "findings": [
+      {
+        "case": "direct_stock_reservation_without_permission",
+        "identity": "anonymous",
+        "reserveHttpSuccess": true,
+        "observedDelta": 1,
+        "unreserveRestoredQuantity": true
+      },
+      {
+        "case": "direct_stock_reservation_without_permission",
+        "identity": "restricted",
+        "reserveHttpSuccess": true,
+        "observedDelta": 1,
+        "unreserveRestoredQuantity": true
+      },
+      {
+        "case": "anonymous_spoofed_manager_business_rpc",
+        "identity": "anonymous",
+        "confirmChangedPersistedStatus": true,
+        "reservedDelta": 1,
+        "confirmRetryDidNotDoubleReserve": true,
+        "cancelRestoredQuantity": true
+      },
+      {
+        "case": "direct_financial_write_with_spoofed_manager",
+        "identity": "restricted",
+        "vaultReadDeniedToRestricted": true,
+        "financialMovementStored": true,
+        "increment": 1,
+        "attributedToDifferentActor": true
+      },
+      {
+        "case": "direct_financial_write_with_spoofed_manager",
+        "identity": "anonymous",
+        "vaultReadDeniedToRestricted": true,
+        "financialMovementStored": true,
+        "increment": 1,
+        "attributedToDifferentActor": false
+      }
+    ],
+    "publicFixtureRestored": true,
+    "localLoginRetired": true,
+    "authLoginMetadataExpected": true
+  },
+  "combinedVerificationSqlSha256": "4a1f4621d29ab47625593119d2a2477d3a4a048c2b19d47775be677ca737c4de"
+}

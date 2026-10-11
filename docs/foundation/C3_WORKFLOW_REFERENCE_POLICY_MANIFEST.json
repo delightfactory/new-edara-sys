@@ -1,0 +1,296 @@
+{
+  "scope": "Exact canonical66 policies for existing reference tables required by real workflow services; no grants or DB changes, preserve Auth/customers/products/warehouse/stock current policy gates",
+  "sqlSha256": "c58e17b9cf2a6a88e6cd3dea76c89da5a3b1fbc10df167299b113b8516c614b4",
+  "manifest": [
+    {
+      "table": "areas",
+      "policy": "areas_read",
+      "file": "66_rls_initplan_safe.sql",
+      "firstLine": 70,
+      "startByte": 3603,
+      "endByteExclusive": 3739,
+      "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+      "statementSha256": "b58b2d9288fbf9688f0cd4bc03b6597c6149880b5bf1223639c4e7000f3b0911"
+    },
+    {
+      "table": "areas",
+      "policy": "areas_write",
+      "file": "66_rls_initplan_safe.sql",
+      "firstLine": 74,
+      "startByte": 3743,
+      "endByteExclusive": 3916,
+      "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+      "statementSha256": "e2408e8a03752e6d2d2bba902690e2cc769f82ad0f535d91b41be4215df1f2aa"
+    },
+    {
+      "table": "branches",
+      "policy": "branches_read",
+      "file": "66_rls_initplan_safe.sql",
+      "firstLine": 90,
+      "startByte": 4600,
+      "endByteExclusive": 4784,
+      "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+      "statementSha256": "d31337e1092b7befa18acf0f58ae3dc2d9d122226a387af0481586ffffb74223"
+    },
+    {
+      "table": "branches",
+      "policy": "branches_write",
+      "file": "66_rls_initplan_safe.sql",
+      "firstLine": 94,
+      "startByte": 4788,
+      "endByteExclusive": 4973,
+      "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+      "statementSha256": "9ff388f33c945e714e0ba9d14281dc5a8e83a61abec35e722b4782f092cbb0b0"
+    },
+    {
+      "table": "brands",
+      "policy": "brands_read",
+      "file": "66_rls_initplan_safe.sql",
+      "firstLine": 100,
+      "startByte": 5127,
+      "endByteExclusive": 5303,
+      "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+      "statementSha256": "7794e9e811f6b878ef8f4fd6c6edab8b55b74b726e17176ba53159f583e1467e"
+    },
+    {
+      "table": "brands",
+      "policy": "brands_write",
+      "file": "66_rls_initplan_safe.sql",
+      "firstLine": 104,
+      "startByte": 5307,
+      "endByteExclusive": 5484,
+      "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+      "statementSha256": "c5d162623764ebf25f26d3788e1b1057ea0259b0a31f5d4b1b8e6309e3da19e1"
+    },
+    {
+      "table": "cities",
+      "policy": "cities_read",
+      "file": "66_rls_initplan_safe.sql",
+      "firstLine": 297,
+      "startByte": 18017,
+      "endByteExclusive": 18157,
+      "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+      "statementSha256": "9c5c7261acff6d20dc0f50f535eec0d754e54b8714337638eb58c9a4640a2007"
+    },
+    {
+      "table": "custody_accounts",
+      "policy": "custody_read",
+      "file": "66_rls_initplan_safe.sql",
+      "firstLine": 313,
+      "startByte": 18863,
+      "endByteExclusive": 19113,
+      "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+      "statementSha256": "97166e06d70e5858dfa80c896e90c38d315529c04b2d0216cf69a72cd949f1c4"
+    },
+    {
+      "table": "custody_accounts",
+      "policy": "custody_write",
+      "file": "66_rls_initplan_safe.sql",
+      "firstLine": 317,
+      "startByte": 19117,
+      "endByteExclusive": 19323,
+      "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+      "statementSha256": "a452a14339214032f114cccf3de6f1e81818fb09fc2a8d829b9d9edb56769feb"
+    },
+    {
+      "table": "customer_branches",
+      "policy": "customer_branches_delete",
+      "file": "66_rls_initplan_safe.sql",
+      "firstLine": 335,
+      "startByte": 20173,
+      "endByteExclusive": 20400,
+      "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+      "statementSha256": "62869153a9fcda2b2074587518b1c1d7ee9e07dace625e6ab6283a60b450645e"
+    },
+    {
+      "table": "customer_branches",
+      "policy": "customer_branches_insert",
+      "file": "66_rls_initplan_safe.sql",
+      "firstLine": 339,
+      "startByte": 20404,
+      "endByteExclusive": 20714,
+      "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+      "statementSha256": "f7fdc2644f7f6796f046f774560667197db069e21883deeb99c2445e7c382962"
+    },
+    {
+      "table": "customer_branches",
+      "policy": "customer_branches_modify",
+      "file": "66_rls_initplan_safe.sql",
+      "firstLine": 343,
+      "startByte": 20718,
+      "endByteExclusive": 20945,
+      "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+      "statementSha256": "c9bd4ae0d4755047a385ec5a70af491996894c9a80045df6dd18c4a3369524ae"
+    },
+    {
+      "table": "customer_branches",
+      "policy": "customer_branches_read",
+      "file": "66_rls_initplan_safe.sql",
+      "firstLine": 347,
+      "startByte": 20949,
+      "endByteExclusive": 21374,
+      "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+      "statementSha256": "891ec85192460ff6da33da9bbf51c2d9f189a9d977a1032bf45968d1046f9d0e"
+    },
+    {
+      "table": "governorates",
+      "policy": "geo_read",
+      "file": "66_rls_initplan_safe.sql",
+      "firstLine": 436,
+      "startByte": 26302,
+      "endByteExclusive": 26448,
+      "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+      "statementSha256": "76ca8d35764de79dcfe78e7cde6d23ec2d394e2e2bd29b2a69a2fa1f6b480e57"
+    },
+    {
+      "table": "price_lists",
+      "policy": "price_lists_read",
+      "file": "66_rls_initplan_safe.sql",
+      "firstLine": 851,
+      "startByte": 49813,
+      "endByteExclusive": 50012,
+      "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+      "statementSha256": "4926a2da9f27cbe680afdf4f4b82bc87067cc938edfe1e27eb6b3256090cf2d2"
+    },
+    {
+      "table": "price_lists",
+      "policy": "price_lists_write",
+      "file": "66_rls_initplan_safe.sql",
+      "firstLine": 855,
+      "startByte": 50016,
+      "endByteExclusive": 50216,
+      "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+      "statementSha256": "368ac91f289dbbf782eaa8a3e1e6cb16b4abf0349adf4e30fa9b5292129c0dbf"
+    },
+    {
+      "table": "product_categories",
+      "policy": "categories_read",
+      "file": "66_rls_initplan_safe.sql",
+      "firstLine": 881,
+      "startByte": 51442,
+      "endByteExclusive": 51650,
+      "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+      "statementSha256": "dce29eea9e019d0579fa337a53a60fd3fd07d3a5adcaaa21652bdb94d6d961ca"
+    },
+    {
+      "table": "product_categories",
+      "policy": "categories_write",
+      "file": "66_rls_initplan_safe.sql",
+      "firstLine": 885,
+      "startByte": 51654,
+      "endByteExclusive": 51865,
+      "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+      "statementSha256": "4716663587b7f013d7bcc9de3d28af8303f9aedf69ddb833670daa0ea5795ac0"
+    },
+    {
+      "table": "shipping_companies",
+      "policy": "shipping_read",
+      "file": "66_rls_initplan_safe.sql",
+      "firstLine": 1087,
+      "startByte": 63302,
+      "endByteExclusive": 63470,
+      "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+      "statementSha256": "68f651321335b0098567a6b65f92f9db49041d5a7291e20dbb0e679a28feb69b"
+    },
+    {
+      "table": "shipping_companies",
+      "policy": "shipping_write",
+      "file": "66_rls_initplan_safe.sql",
+      "firstLine": 1091,
+      "startByte": 63474,
+      "endByteExclusive": 63685,
+      "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+      "statementSha256": "4974acae9ac1028beb7fdbad8307822a81fef8ce58c875bfb2c05b135e1dbe17"
+    },
+    {
+      "table": "suppliers",
+      "policy": "suppliers_delete",
+      "file": "66_rls_initplan_safe.sql",
+      "firstLine": 1205,
+      "startByte": 71452,
+      "endByteExclusive": 71647,
+      "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+      "statementSha256": "8b8a5ced89fe5da143413528d856720bc1923806a62e236908ccc128985ae096"
+    },
+    {
+      "table": "suppliers",
+      "policy": "suppliers_read",
+      "file": "66_rls_initplan_safe.sql",
+      "firstLine": 1209,
+      "startByte": 71651,
+      "endByteExclusive": 71840,
+      "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+      "statementSha256": "07bff4499912c148776684a1d009153d9ebae3cfcd92b51ca3c6c2dd32e25eab"
+    },
+    {
+      "table": "suppliers",
+      "policy": "suppliers_update",
+      "file": "66_rls_initplan_safe.sql",
+      "firstLine": 1213,
+      "startByte": 71844,
+      "endByteExclusive": 72039,
+      "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+      "statementSha256": "9d5a871de25a5e26fde5102440cf100fdede7ea8c77632799316cf0d56a95311"
+    },
+    {
+      "table": "suppliers",
+      "policy": "suppliers_write",
+      "file": "66_rls_initplan_safe.sql",
+      "firstLine": 1217,
+      "startByte": 72043,
+      "endByteExclusive": 72241,
+      "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+      "statementSha256": "69249913b025d0fe4659d0b129ea11211e443a846878bf1ae3bcd5eaa7b788fa"
+    },
+    {
+      "table": "units",
+      "policy": "units_read",
+      "file": "66_rls_initplan_safe.sql",
+      "firstLine": 1364,
+      "startByte": 82375,
+      "endByteExclusive": 82511,
+      "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+      "statementSha256": "cd9e90d40a1113d995ed64243184944e2a59f88f8051f5e66d434e9d863b5578"
+    },
+    {
+      "table": "units",
+      "policy": "units_write",
+      "file": "66_rls_initplan_safe.sql",
+      "firstLine": 1368,
+      "startByte": 82515,
+      "endByteExclusive": 82688,
+      "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+      "statementSha256": "60eb6643e6defb77f5284a9a8ca67ad5eb19376c2fbaf0b8c20927f1b377baf6"
+    },
+    {
+      "table": "vaults",
+      "policy": "vaults_insert",
+      "file": "66_rls_initplan_safe.sql",
+      "firstLine": 1414,
+      "startByte": 85203,
+      "endByteExclusive": 85396,
+      "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+      "statementSha256": "3d5602c28df9498536ddabb315e77f74e42ac13023fb124819475042f739f0e1"
+    },
+    {
+      "table": "vaults",
+      "policy": "vaults_read",
+      "file": "66_rls_initplan_safe.sql",
+      "firstLine": 1418,
+      "startByte": 85400,
+      "endByteExclusive": 85712,
+      "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+      "statementSha256": "2716ea534cca8d4ee6e40a979f5ed405b92e7e0695acd401d466f0d733ada25f"
+    },
+    {
+      "table": "vaults",
+      "policy": "vaults_update",
+      "file": "66_rls_initplan_safe.sql",
+      "firstLine": 1422,
+      "startByte": 85716,
+      "endByteExclusive": 85904,
+      "sourceSha256": "c863bf8de672bbee90221c5d2c3dd6dba62aff7f2e5a5c64eef23690d8da6350",
+      "statementSha256": "3cf4762d229eae1b059c2ded44931dbffb41e335fcd7cb868c1aab6536785f45"
+    }
+  ]
+}
