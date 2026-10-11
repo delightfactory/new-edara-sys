@@ -55,6 +55,8 @@ function mockPermissions(
 
   vi.mocked(useAuthStore).mockImplementation((selector?: (state: StoreState) => unknown) => {
     const state: StoreState = {
+      sessionGeneration: 0,
+      beginSessionLoad: vi.fn().mockReturnValue(0),
       profile: { id: profileId } as unknown as StoreState['profile'],
       permissions: Array.isArray(permissions) ? permissions : [],
       isLoading: false,

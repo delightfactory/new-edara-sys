@@ -38,7 +38,7 @@ vi.mock('@/lib/supabase/client', () => ({
 // نستخدم الـ store الحقيقي (الأعلى) ونتحقق من حالته مباشرةً
 
 // Import AFTER mocking
-const { loadSession } = await import('@/lib/services/auth')
+const { loadSession, signOut } = await import('@/lib/services/auth')
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -52,6 +52,23 @@ beforeEach(() => {
 // اختبارات عدم الخروج عند أخطاء الشبكة / Abort
 // ─────────────────────────────────────────────────────────────────────────────
 describe('loadSession() — transient network errors do NOT trigger logout', () => {
+
+  it('invalidates an in-flight load before a delayed SDK signOut completes', async () => {
+    let finishProfile!: (value: unknown) => void
+    let finishSignOut!: () => void
+    mockRpcSingle.mockImplementationOnce(() => new Promise(resolve => { finishProfile = resolve }))
+    mockSignOut.mockImplementationOnce(() => new Promise<void>(resolve => { finishSignOut = resolve }))
+    const oldLoad = loadSession()
+    const logout = signOut()
+    expect(useAuthStore.getState().hasSession).toBe(false)
+    expect(useAuthStore.getState().isInitialized).toBe(true)
+    finishProfile({ data: { id: 'old-actor', status: 'active', permissions: ['*'] }, error: null })
+    await oldLoad
+    expect(useAuthStore.getState().profile).toBeNull()
+    expect(mockDenialsRpc).not.toHaveBeenCalled()
+    finishSignOut()
+    await logout
+  })
 
   it('retries a failed profile fetch once before exposing an error', async () => {
     mockRpcSingle

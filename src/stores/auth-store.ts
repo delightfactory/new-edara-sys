@@ -2,6 +2,8 @@ import { create } from 'zustand'
 import type { MyProfile } from '@/lib/types/auth'
 
 interface AuthState {
+  sessionGeneration: number
+  beginSessionLoad: () => number
   profile: MyProfile | null
   permissions: string[]
   isLoading: boolean
@@ -67,6 +69,12 @@ const _cached = readAuthCache()
 
 // ─── Store ─────────────────────────────────────────────────────────────────────
 export const useAuthStore = create<AuthState>()((set, get) => ({
+  sessionGeneration: 0,
+  beginSessionLoad: () => {
+    const sessionGeneration = get().sessionGeneration + 1
+    set({ sessionGeneration, isLoading: true, profileLoadError: null })
+    return sessionGeneration
+  },
   // إذا وُجد cache: ابدأ بحالة جاهزة فوراً بدون spinner
   profile:          _cached?.profile      ?? null,
   permissions:      _cached?.permissions  ?? [],
@@ -96,6 +104,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   reset: () => {
     clearAuthCache()
     set({
+      sessionGeneration: get().sessionGeneration + 1,
       profile: null,
       permissions: [],
       isLoading: false,

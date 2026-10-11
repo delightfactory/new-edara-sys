@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
-import { useAuthStore, saveAuthCache, clearAuthCache } from '@/stores/auth-store'
+import { useAuthStore, saveAuthCache } from '@/stores/auth-store'
 import type { MyProfile } from '@/lib/types/auth'
 import { captureError, trackAuthFailure, setUserContext } from '@/lib/monitoring/sentry'
 
@@ -68,7 +68,7 @@ async function requestMyProfile() {
   return supabase.rpc('get_my_profile').single<MyProfile>()
 }
 
-async function requestMyProfileWithRetry() {
+async function requestMyProfileWithRetry(isCurrent: () => boolean) {
   try {
     const firstAttempt = await requestMyProfile()
     if (!isRetryableProfileError(firstAttempt.error)) return firstAttempt
@@ -76,7 +76,9 @@ async function requestMyProfileWithRetry() {
     if (!isNetworkError(error)) throw error
   }
 
+  if (!isCurrent()) return null
   await waitForProfileRetry()
+  if (!isCurrent()) return null
   return requestMyProfile()
 }
 
@@ -96,10 +98,11 @@ export async function signIn(email: string, password: string) {
  * تسجيل الخروج
  */
 export async function signOut() {
-  clearAuthCache()
-  await supabase.auth.signOut()
-  useAuthStore.getState().reset()
+  const store = useAuthStore.getState()
+  store.reset()
+  store.setInitialized(true)
   setUserContext(null)
+  await supabase.auth.signOut()
 }
 
 /**
@@ -116,13 +119,15 @@ export async function signOut() {
  */
 export async function loadSession() {
   const store = useAuthStore.getState()
-  store.setLoading(true)
-  store.setProfileLoadError(null)
+  const generation = store.beginSessionLoad()
+  const isCurrent = () => useAuthStore.getState().sessionGeneration === generation
 
   try {
     // طلب واحد مباشر بدلاً من طلبين متسلسلين
     // get_my_profile() ستفشل بـ PGRST error إذا لم يكن هناك session
-    const { data, error } = await requestMyProfileWithRetry()
+    const result = await requestMyProfileWithRetry(isCurrent)
+    if (!isCurrent() || !result) return
+    const { data, error } = result
 
     if (error) {
       // حالات auth الحقيقية: لا جلسة أو JWT منتهٍ أو ممنوع
@@ -157,10 +162,10 @@ export async function loadSession() {
 
     if (data.status !== 'active') {
       trackAuthFailure('account_inactive', { status: data.status })
-      await supabase.auth.signOut()
       store.reset()
       store.setInitialized(true)
       setUserContext(null)
+      await supabase.auth.signOut()
       return
     }
 
@@ -169,6 +174,7 @@ export async function loadSession() {
     // even if this UX synchronization request fails temporarily.
     const { data: denialRows, error: denialError } = await supabase
       .rpc('get_my_permission_denials')
+    if (!isCurrent()) return
     if (denialError) {
       captureError(denialError, { stage: 'load_session_permission_denials' })
     }
@@ -188,6 +194,7 @@ export async function loadSession() {
     // تحديث last_login_at بدون انتظار — fire and forget مع قليل من التأخير
     // لتجنب تنافس الطلبات عند تسجيل الدخول
     setTimeout(() => {
+      if (!isCurrent()) return
       supabase
         .from('profiles')
         .update({ last_login_at: new Date().toISOString() })
@@ -196,6 +203,7 @@ export async function loadSession() {
     }, 2000)
 
   } catch (err) {
+    if (!isCurrent()) return
     // ─── catch: أخطاء عابرة أو غير متوقعة ───
     // لا نستدعي store.reset() هنا أبداً —
     // reset() يعني logout وهو غير مقبول لأخطاء الشبكة
@@ -205,8 +213,10 @@ export async function loadSession() {
     store.setProfileLoadError(errorCode)
     store.setHasSession(true) // نفترض وجود جلسة لتفعيل retry في AuthProvider
   } finally {
-    store.setLoading(false)
-    store.setInitialized(true)
+    if (isCurrent()) {
+      store.setLoading(false)
+      store.setInitialized(true)
+    }
   }
 }
 
