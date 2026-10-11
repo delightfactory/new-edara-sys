@@ -1,11 +1,15 @@
 ﻿import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ArrowRight, Save, Loader2, Trash2, Plus, Edit, Check, Clock, AlertTriangle, CreditCard, Building, Users as UsersIcon, Bell } from 'lucide-react'
+import { Save, Loader2, Trash2, Plus, Edit, Check, Clock, AlertTriangle, CreditCard, Building, Users as UsersIcon, Bell, User, MapPin } from 'lucide-react'
 import { getSupplier, createSupplier, updateSupplier, getSupplierContacts, saveSupplierContact, deleteSupplierContact, getPaymentReminders, createPaymentReminder, updatePaymentReminderStatus } from '@/lib/services/suppliers'
 import { getGovernorates, getCities } from '@/lib/services/geography'
 import { useAuthStore } from '@/stores/auth-store'
 import type { SupplierInput, SupplierContact, SupplierPaymentReminder, Governorate, City } from '@/lib/types/master-data'
+import PageHeader from '@/components/shared/PageHeader'
+import FormSection from '@/components/patterns/FormSection'
+import FormGrid from '@/components/patterns/FormGrid'
+import FormActions from '@/components/patterns/FormActions'
 
 export default function SupplierFormPage() {
   const { id } = useParams()
@@ -152,14 +156,11 @@ export default function SupplierFormPage() {
 
   return (
     <div className="page-container animate-enter">
-      <div className="page-header">
-        <div className="page-header-info">
-          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/suppliers')} style={{ marginBottom: 'var(--space-2)' }}>
-            <ArrowRight size={14} /> العودة للموردين
-          </button>
-          <h1 className="page-title">{isEdit ? form.name || 'تفاصيل المورد' : 'إضافة مورد جديد'}</h1>
-        </div>
-      </div>
+      <PageHeader
+        title={isEdit ? form.name || 'تفاصيل المورد' : 'إضافة مورد جديد'}
+        backPath="/suppliers"
+        backLabel="العودة للموردين"
+      />
 
       {/* ═══════ Summary Card ═══════ */}
       {isEdit && (
@@ -206,76 +207,87 @@ export default function SupplierFormPage() {
 
       {tab === 'info' && (
         <form onSubmit={handleSubmit}>
-          <div className="edara-card" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-4)' }}>
-            <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 700, marginBottom: 'var(--space-5)' }}>المعلومات الأساسية</h2>
-            <div className="grid grid-2 gap-4">
-              <div className="form-group">
-                <label className="form-label required">اسم المورد</label>
-                <input className="form-input" value={form.name} onChange={e => updateField('name', e.target.value)} autoFocus />
-              </div>
-              <div className="form-group">
-                <label className="form-label">النوع</label>
-                <input className="form-input" value={form.type || ''} onChange={e => updateField('type', e.target.value)} placeholder="مصنع / موزع / ..." />
-              </div>
-              <div className="form-group">
-                <label className="form-label">الهاتف</label>
-                <input className="form-input" dir="ltr" value={form.phone || ''} onChange={e => updateField('phone', e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">البريد</label>
-                <input type="email" className="form-input" dir="ltr" value={form.email || ''} onChange={e => updateField('email', e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">المحافظة</label>
-                <select className="form-select" value={form.governorate_id || ''} onChange={e => handleGovChange(e.target.value)}>
-                  <option value="">اختر</option>
-                  {governorates.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">المدينة</label>
-                <select className="form-select" value={form.city_id || ''} onChange={e => updateField('city_id', e.target.value || null)} disabled={!cities.length}>
-                  <option value="">اختر</option>
-                  {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">الرقم الضريبي</label>
-                <input className="form-input" dir="ltr" value={form.tax_number || ''} onChange={e => updateField('tax_number', e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">الحساب البنكي</label>
-                <input className="form-input" dir="ltr" value={form.bank_account || ''} onChange={e => updateField('bank_account', e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">طريقة الدفع</label>
-                <select className="form-select" value={form.payment_terms || 'cash'} onChange={e => updateField('payment_terms', e.target.value)}>
-                  <option value="cash">نقدي</option>
-                  <option value="credit">آجل</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">حد الائتمان</label>
-                <input type="number" className="form-input" dir="ltr" min={0} value={form.credit_limit} onChange={e => updateField('credit_limit', +e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">أيام السداد</label>
-                <input type="number" className="form-input" dir="ltr" min={0} value={form.credit_days} onChange={e => updateField('credit_days', +e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">الرصيد الافتتاحي</label>
-                <input type="number" className="form-input" dir="ltr" step={0.01} value={form.opening_balance} onChange={e => updateField('opening_balance', +e.target.value)} />
-              </div>
-            </div>
+          <div className="grid gap-4">
+            <FormSection title="المعلومات الأساسية" icon={<User size={18} />}>
+              <FormGrid columns={2}>
+                <div className="form-group">
+                  <label className="form-label required" htmlFor="supplier-name">اسم المورد</label>
+                  <input id="supplier-name" className="form-input" value={form.name} onChange={e => updateField('name', e.target.value)} autoFocus />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="supplier-type">النوع</label>
+                  <input id="supplier-type" className="form-input" value={form.type || ''} onChange={e => updateField('type', e.target.value)} placeholder="مصنع / موزع / ..." />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="supplier-phone">الهاتف</label>
+                  <input id="supplier-phone" className="form-input" dir="ltr" value={form.phone || ''} onChange={e => updateField('phone', e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="supplier-email">البريد</label>
+                  <input id="supplier-email" type="email" className="form-input" dir="ltr" value={form.email || ''} onChange={e => updateField('email', e.target.value)} />
+                </div>
+              </FormGrid>
+            </FormSection>
+
+            <FormSection title="العنوان" icon={<MapPin size={18} />}>
+              <FormGrid columns={2}>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="supplier-governorate">المحافظة</label>
+                  <select id="supplier-governorate" className="form-select" value={form.governorate_id || ''} onChange={e => handleGovChange(e.target.value)}>
+                    <option value="">اختر</option>
+                    {governorates.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="supplier-city">المدينة</label>
+                  <select id="supplier-city" className="form-select" value={form.city_id || ''} onChange={e => updateField('city_id', e.target.value || null)} disabled={!cities.length}>
+                    <option value="">اختر</option>
+                    {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+              </FormGrid>
+            </FormSection>
+
+            <FormSection title="البيانات المالية" icon={<CreditCard size={18} />}>
+              <FormGrid columns={2}>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="supplier-tax-number">الرقم الضريبي</label>
+                  <input id="supplier-tax-number" className="form-input" dir="ltr" value={form.tax_number || ''} onChange={e => updateField('tax_number', e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="supplier-bank-account">الحساب البنكي</label>
+                  <input id="supplier-bank-account" className="form-input" dir="ltr" value={form.bank_account || ''} onChange={e => updateField('bank_account', e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="supplier-payment-terms">طريقة الدفع</label>
+                  <select id="supplier-payment-terms" className="form-select" value={form.payment_terms || 'cash'} onChange={e => updateField('payment_terms', e.target.value)}>
+                    <option value="cash">نقدي</option>
+                    <option value="credit">آجل</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="supplier-credit-limit">حد الائتمان</label>
+                  <input id="supplier-credit-limit" type="number" className="form-input" dir="ltr" min={0} value={form.credit_limit} onChange={e => updateField('credit_limit', +e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="supplier-credit-days">أيام السداد</label>
+                  <input id="supplier-credit-days" type="number" className="form-input" dir="ltr" min={0} value={form.credit_days} onChange={e => updateField('credit_days', +e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="supplier-opening-balance">الرصيد الافتتاحي</label>
+                  <input id="supplier-opening-balance" type="number" className="form-input" dir="ltr" step={0.01} value={form.opening_balance} onChange={e => updateField('opening_balance', +e.target.value)} />
+                </div>
+              </FormGrid>
+            </FormSection>
           </div>
 
-          <div className="flex justify-between" style={{ paddingTop: 'var(--space-4)' }}>
-            <button type="button" className="btn btn-secondary" onClick={() => navigate('/suppliers')}>إلغاء</button>
-            <button type="submit" className="btn btn-primary btn-lg" disabled={saving}>
+          <FormActions align="between">
+            <button type="button" className="btn btn-secondary btn-touch" onClick={() => navigate('/suppliers')}>إلغاء</button>
+            <button type="submit" className="btn btn-primary btn-lg btn-touch" disabled={saving}>
               {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
               {saving ? 'جاري الحفظ...' : isEdit ? 'تحديث' : 'حفظ المورد'}
             </button>
-          </div>
+          </FormActions>
         </form>
       )}
 

@@ -14,7 +14,7 @@ describe('CustomerFormPage V2 composition contract', () => {
     expect(source).toContain('<form onSubmit={handleSubmit}>')
     expect(source).toContain('<FormSection title="المعلومات الأساسية"')
     expect(source).toContain('<FormGrid columns={3}>')
-    expect(source).toContain('<FormActions align="between" stickyOnMobile>')
+    expect(source).toContain('<FormActions align="between">')
   })
 
   it('preserves the credit permission and customer-creation side effects', () => {

@@ -358,35 +358,35 @@ export default function CustomerFormPage() {
         <FormSection title="المعلومات الأساسية" icon={<User size={18} />}>
           <FormGrid columns={2}>
             <div className="form-group">
-              <label className="form-label required">اسم العميل</label>
-              <input className="form-input" value={form.name} onChange={e => updateForm('name', e.target.value)} autoFocus />
+              <label className="form-label required" htmlFor="customer-name">اسم العميل</label>
+              <input id="customer-name" className="form-input" value={form.name} onChange={e => updateForm('name', e.target.value)} autoFocus />
             </div>
             <div className="form-group">
-              <label className="form-label">نوع العميل</label>
-              <select className="form-select" value={form.type} onChange={e => updateForm('type', e.target.value)}>
+              <label className="form-label" htmlFor="customer-type">نوع العميل</label>
+              <select id="customer-type" className="form-select" value={form.type} onChange={e => updateForm('type', e.target.value)}>
                 <option value="retail">تجزئة</option>
                 <option value="wholesale">جملة</option>
                 <option value="distributor">موزع</option>
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">الهاتف</label>
-              <input className="form-input" type="tel" inputMode="tel" dir="ltr" enterKeyHint="next"
+              <label className="form-label" htmlFor="customer-phone">الهاتف</label>
+              <input id="customer-phone" className="form-input" type="tel" inputMode="tel" dir="ltr" enterKeyHint="next"
                 value={form.phone || ''} onChange={e => updateForm('phone', e.target.value)} placeholder="الهاتف الأرضي" />
             </div>
             <div className="form-group">
-              <label className="form-label">الجوال</label>
-              <input className="form-input" type="tel" inputMode="tel" dir="ltr" enterKeyHint="next"
+              <label className="form-label" htmlFor="customer-mobile">الجوال</label>
+              <input id="customer-mobile" className="form-input" type="tel" inputMode="tel" dir="ltr" enterKeyHint="next"
                 value={form.mobile || ''} onChange={e => updateForm('mobile', e.target.value)} placeholder="رقم الجوال" />
             </div>
             <div className="form-group">
-              <label className="form-label">البريد الإلكتروني</label>
-              <input type="email" inputMode="email" className="form-input" dir="ltr" enterKeyHint="next"
+              <label className="form-label" htmlFor="customer-email">البريد الإلكتروني</label>
+              <input id="customer-email" type="email" inputMode="email" className="form-input" dir="ltr" enterKeyHint="next"
                 value={form.email || ''} onChange={e => updateForm('email', e.target.value)} placeholder="email@example.com" />
             </div>
             <div className="form-group">
-              <label className="form-label">الرقم الضريبي</label>
-              <input className="form-input" dir="ltr" value={form.tax_number || ''} onChange={e => updateForm('tax_number', e.target.value)} placeholder="رقم التسجيل الضريبي" />
+              <label className="form-label" htmlFor="customer-tax-number">الرقم الضريبي</label>
+              <input id="customer-tax-number" className="form-input" dir="ltr" value={form.tax_number || ''} onChange={e => updateForm('tax_number', e.target.value)} placeholder="رقم التسجيل الضريبي" />
             </div>
           </FormGrid>
         </FormSection>
@@ -394,30 +394,30 @@ export default function CustomerFormPage() {
         <FormSection title="العنوان" icon={<MapPin size={18} />}>
           <FormGrid columns={3}>
             <div className="form-group">
-              <label className="form-label">المحافظة</label>
-              <select className="form-select" value={form.governorate_id || ''} onChange={e => handleGovChange(e.target.value)}>
+              <label className="form-label" htmlFor="customer-governorate">المحافظة</label>
+              <select id="customer-governorate" className="form-select" value={form.governorate_id || ''} onChange={e => handleGovChange(e.target.value)}>
                 <option value="">اختر المحافظة</option>
                 {governorates.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">المدينة</label>
-              <select className="form-select" value={form.city_id || ''} onChange={e => handleCityChange(e.target.value)} disabled={!cities.length}>
+              <label className="form-label" htmlFor="customer-city">المدينة</label>
+              <select id="customer-city" className="form-select" value={form.city_id || ''} onChange={e => handleCityChange(e.target.value)} disabled={!cities.length}>
                 <option value="">اختر المدينة</option>
                 {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">المنطقة</label>
-              <select className="form-select" value={form.area_id || ''} onChange={e => updateForm('area_id', e.target.value || null)} disabled={!areas.length}>
+              <label className="form-label" htmlFor="customer-area">المنطقة</label>
+              <select id="customer-area" className="form-select" value={form.area_id || ''} onChange={e => updateForm('area_id', e.target.value || null)} disabled={!areas.length}>
                 <option value="">اختر المنطقة</option>
                 {areas.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select>
             </div>
           </FormGrid>
           <div className="form-group" style={{ marginTop: 'var(--space-4)' }}>
-            <label className="form-label">العنوان التفصيلي</label>
-            <textarea className="form-textarea" rows={2} value={form.address || ''} onChange={e => updateForm('address', e.target.value)} placeholder="الشارع، رقم المبنى، الطابق..." />
+            <label className="form-label" htmlFor="customer-address">العنوان التفصيلي</label>
+            <textarea id="customer-address" className="form-textarea" rows={2} value={form.address || ''} onChange={e => updateForm('address', e.target.value)} placeholder="الشارع، رقم المبنى، الطابق..." />
           </div>
           <div className="gps-row" style={{ marginTop: 'var(--space-4)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
@@ -443,8 +443,8 @@ export default function CustomerFormPage() {
         <FormSection title="شروط الدفع والائتمان" icon={<CreditCard size={18} />}>
           <FormGrid columns={3}>
             <div className="form-group">
-              <label className="form-label">طريقة الدفع</label>
-              <select className="form-select" value={form.payment_terms} onChange={e => updateForm('payment_terms', e.target.value)}>
+              <label className="form-label" htmlFor="customer-payment-terms">طريقة الدفع</label>
+              <select id="customer-payment-terms" className="form-select" value={form.payment_terms} onChange={e => updateForm('payment_terms', e.target.value)}>
                 <option value="cash">نقدي</option>
                 <option value="credit">آجل</option>
                 <option value="mixed">مختلط</option>
@@ -453,26 +453,26 @@ export default function CustomerFormPage() {
             <PermissionGuard permission="finance.credit.manage" mode="disable"
               disabledTitle="فقط مدير المالية يمكنه تعديل حد الائتمان">
               <div className="form-group">
-                <label className="form-label">حد الائتمان</label>
-                <input type="number" inputMode="decimal" enterKeyHint="next" className="form-input" dir="ltr"
+                <label className="form-label" htmlFor="customer-credit-limit">حد الائتمان</label>
+                <input id="customer-credit-limit" type="number" inputMode="decimal" enterKeyHint="next" className="form-input" dir="ltr"
                   min={0} step={100} value={form.credit_limit} onChange={e => updateForm('credit_limit', +e.target.value)} />
               </div>
             </PermissionGuard>
             <div className="form-group">
-              <label className="form-label">أيام السداد</label>
-              <input type="number" inputMode="decimal" enterKeyHint="next" className="form-input" dir="ltr"
+              <label className="form-label" htmlFor="customer-credit-days">أيام السداد</label>
+              <input id="customer-credit-days" type="number" inputMode="decimal" enterKeyHint="next" className="form-input" dir="ltr"
                 min={0} value={form.credit_days} onChange={e => updateForm('credit_days', +e.target.value)} />
             </div>
             <div className="form-group">
-              <label className="form-label">الرصيد الافتتاحي</label>
-              <input type="number" inputMode="decimal" enterKeyHint="done" className="form-input" dir="ltr"
+              <label className="form-label" htmlFor="customer-opening-balance">الرصيد الافتتاحي</label>
+              <input id="customer-opening-balance" type="number" inputMode="decimal" enterKeyHint="done" className="form-input" dir="ltr"
                 step={0.01} value={form.opening_balance} onChange={e => updateForm('opening_balance', +e.target.value)} />
             </div>
           </FormGrid>
           <FormGrid columns={2} style={{ marginTop: 'var(--space-4)' }}>
             <div className="form-group">
-              <label className="form-label">قائمة الأسعار</label>
-              <select className="form-select" value={form.price_list_id || ''} onChange={e => updateForm('price_list_id', e.target.value || null)}>
+              <label className="form-label" htmlFor="customer-price-list">قائمة الأسعار</label>
+              <select id="customer-price-list" className="form-select" value={form.price_list_id || ''} onChange={e => updateForm('price_list_id', e.target.value || null)}>
                 <option value="">بدون (القائمة الافتراضية)</option>
                 {priceLists.filter(pl => pl.is_active).map(pl => (
                   <option key={pl.id} value={pl.id}>{pl.name}{pl.is_default ? ' ⭐' : ''}</option>
@@ -480,8 +480,8 @@ export default function CustomerFormPage() {
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">المندوب المسؤول</label>
-              <select className="form-select" value={form.assigned_rep_id || ''} onChange={e => updateForm('assigned_rep_id', e.target.value || null)}>
+              <label className="form-label" htmlFor="customer-assigned-rep">المندوب المسؤول</label>
+              <select id="customer-assigned-rep" className="form-select" value={form.assigned_rep_id || ''} onChange={e => updateForm('assigned_rep_id', e.target.value || null)}>
                 <option value="">بدون مندوب</option>
                 {reps.map(r => <option key={r.id} value={r.id}>{r.full_name}</option>)}
               </select>
@@ -508,8 +508,8 @@ export default function CustomerFormPage() {
               </div>
               {createDefaults.createBranch && (
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label" style={{ fontSize: 'var(--text-xs)' }}>اسم الفرع <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(يتزامن مع اسم العميل)</span></label>
-                  <input className="form-input" value={createDefaults.branchName}
+                  <label className="form-label" style={{ fontSize: 'var(--text-xs)' }} htmlFor="customer-default-branch-name">اسم الفرع <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(يتزامن مع اسم العميل)</span></label>
+                  <input id="customer-default-branch-name" className="form-input" value={createDefaults.branchName}
                     onChange={e => setCreateDefaults(d => ({ ...d, branchName: e.target.value, branchNameManual: true }))} placeholder="يأخذ اسم العميل تلقائياً" />
                 </div>
               )}
@@ -528,23 +528,23 @@ export default function CustomerFormPage() {
               {createDefaults.createContact && (
                 <FormGrid columns={2} compact>
                   <div className="form-group">
-                    <label className="form-label" style={{ fontSize: 'var(--text-xs)' }}>اسم جهة الاتصال</label>
-                    <input className="form-input" value={createDefaults.contactName}
+                    <label className="form-label" style={{ fontSize: 'var(--text-xs)' }} htmlFor="customer-default-contact-name">اسم جهة الاتصال</label>
+                    <input id="customer-default-contact-name" className="form-input" value={createDefaults.contactName}
                       onChange={e => setCreateDefaults(d => ({ ...d, contactName: e.target.value }))} placeholder="مثال: أحمد محمد" />
                   </div>
                   <div className="form-group">
-                    <label className="form-label" style={{ fontSize: 'var(--text-xs)' }}>الوظيفة</label>
-                    <input className="form-input" value={createDefaults.contactRole}
+                    <label className="form-label" style={{ fontSize: 'var(--text-xs)' }} htmlFor="customer-default-contact-role">الوظيفة</label>
+                    <input id="customer-default-contact-role" className="form-input" value={createDefaults.contactRole}
                       onChange={e => setCreateDefaults(d => ({ ...d, contactRole: e.target.value }))} placeholder="مدير المشتريات" />
                   </div>
                   <div className="form-group">
-                    <label className="form-label" style={{ fontSize: 'var(--text-xs)' }}>هاتف جهة الاتصال</label>
-                    <input className="form-input" dir="ltr" value={createDefaults.contactPhone}
+                    <label className="form-label" style={{ fontSize: 'var(--text-xs)' }} htmlFor="customer-default-contact-phone">هاتف جهة الاتصال</label>
+                    <input id="customer-default-contact-phone" className="form-input" dir="ltr" value={createDefaults.contactPhone}
                       onChange={e => setCreateDefaults(d => ({ ...d, contactPhone: e.target.value }))} placeholder="يستخدم جوال العميل إن ترك فارغاً" />
                   </div>
                   <div className="form-group">
-                    <label className="form-label" style={{ fontSize: 'var(--text-xs)' }}>بريد جهة الاتصال</label>
-                    <input className="form-input" dir="ltr" value={createDefaults.contactEmail}
+                    <label className="form-label" style={{ fontSize: 'var(--text-xs)' }} htmlFor="customer-default-contact-email">بريد جهة الاتصال</label>
+                    <input id="customer-default-contact-email" className="form-input" dir="ltr" value={createDefaults.contactEmail}
                       onChange={e => setCreateDefaults(d => ({ ...d, contactEmail: e.target.value }))} placeholder="يستخدم بريد العميل إن ترك فارغاً" />
                   </div>
                 </FormGrid>
@@ -565,9 +565,9 @@ export default function CustomerFormPage() {
         </FormSection>
       </div>
 
-      <FormActions align="between" stickyOnMobile>
-        <button type="button" className="btn btn-secondary" onClick={() => navigate('/customers')}>إلغاء</button>
-        <button type="submit" className="btn btn-primary btn-lg" disabled={saving}>
+      <FormActions align="between">
+        <button type="button" className="btn btn-secondary btn-touch" onClick={() => navigate('/customers')}>إلغاء</button>
+        <button type="submit" className="btn btn-primary btn-lg btn-touch" disabled={saving}>
           {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
           {saving ? 'جاري الحفظ...' : isEdit ? 'تحديث' : 'حفظ العميل'}
         </button>
