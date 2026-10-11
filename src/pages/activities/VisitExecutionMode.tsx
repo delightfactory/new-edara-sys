@@ -20,6 +20,7 @@ import {
 import useGeoPermission from '@/hooks/useGeoPermission'
 import type { ChecklistTemplate, VisitPlanItem, VisitCompletionChecklistResponseInput } from '@/lib/types/activities'
 import GeoPermissionBanner from '@/components/shared/GeoPermissionBanner'
+import GeoPermissionDialog from '@/components/shared/GeoPermissionDialog'
 import VisitTimer from '@/components/shared/VisitTimer'
 import ChecklistForm from '@/components/shared/ChecklistForm'
 import Button from '@/components/ui/Button'
@@ -632,6 +633,12 @@ export default function VisitExecutionMode() {
       </div>
 
       {/* ── GPS Banner ── */}
+      <GeoPermissionDialog
+        open={showGeoDialog}
+        context="visit"
+        onAllow={handleGeoDialogAllow}
+        onDismiss={() => setShowGeoDialog(false)}
+      />
       <GeoPermissionBanner
         showOnPrompt={false}
         contextMessage="تسجيل الزيارة يتطلب تحديد موقعك للتحقق من وصولك لموقع العميل"

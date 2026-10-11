@@ -711,6 +711,52 @@ describe('VisitExecutionMode UI Integration Tests (Atomic Mode)', () => {
     await waitFor(() => expect(startVisit).toHaveBeenCalledWith('item-1', null, null))
   })
 
+  it.each(['granted', 'denied', 'unavailable', 'timeout'])('continues the permission dialog once when location is %s', async (result) => {
+    mockGeo.status = 'prompt'
+    let resolveLocation!: (value: unknown) => void
+    mockGeo.requestLocation.mockImplementation(() => new Promise(resolve => { resolveLocation = resolve }))
+    const startVisit = vi.fn().mockResolvedValue({ ok: true })
+    vi.mocked(useVisitExecutionSession).mockReturnValue({
+      session: null, pendingOps: [], loading: false, error: null,
+      startVisit, completeVisit: vi.fn(), skipVisit: vi.fn(),
+      retryOperation: vi.fn(), discardFailedOperation: vi.fn(),
+      saveChecklistDraft: vi.fn(), saveGpsExceptionReason: vi.fn(), reloadFromDb: vi.fn()
+    } as unknown as ReturnType<typeof useVisitExecutionSession>)
+    render(<VisitExecutionMode />)
+    fireEvent.click(screen.getByText('بدء الزيارة'))
+    expect(screen.getByText('تسجيل الزيارة يحتاج موقعك')).toBeDefined()
+    expect(mockGeo.requestLocation).not.toHaveBeenCalled()
+    expect(startVisit).not.toHaveBeenCalled()
+    const allow = screen.getByText('📍 السماح وبدء الزيارة')
+    fireEvent.click(allow)
+    fireEvent.click(allow)
+    expect(mockGeo.requestLocation).toHaveBeenCalledTimes(1)
+    resolveLocation(result === 'granted'
+      ? { ok: true, coords: { lat: 30, lng: 31, accuracy: 10 } }
+      : { ok: false, reason: result })
+    await waitFor(() => expect(startVisit).toHaveBeenCalledTimes(1))
+    expect(startVisit).toHaveBeenCalledWith('item-1', result === 'granted' ? { lat: 30, lng: 31, accuracy: 10 } : null, result === 'granted' ? 10 : null)
+  })
+
+  it('dismisses the permission explanation without requesting location or starting, and can reopen it', () => {
+    mockGeo.status = 'prompt'
+    const startVisit = vi.fn()
+    vi.mocked(useVisitExecutionSession).mockReturnValue({
+      session: null, pendingOps: [], loading: false, error: null,
+      startVisit, completeVisit: vi.fn(), skipVisit: vi.fn(),
+      retryOperation: vi.fn(), discardFailedOperation: vi.fn(),
+      saveChecklistDraft: vi.fn(), saveGpsExceptionReason: vi.fn(), reloadFromDb: vi.fn()
+    } as unknown as ReturnType<typeof useVisitExecutionSession>)
+    render(<VisitExecutionMode />)
+    fireEvent.click(screen.getByText('بدء الزيارة'))
+    fireEvent.click(screen.getByText('لاحقاً'))
+    expect(screen.queryByText('تسجيل الزيارة يحتاج موقعك')).toBeNull()
+    expect(mockGeo.requestLocation).not.toHaveBeenCalled()
+    expect(startVisit).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByText('بدء الزيارة'))
+    expect(screen.getByText('تسجيل الزيارة يحتاج موقعك')).toBeDefined()
+  })
+
   it('blocks field execution when the plan belongs to another employee', () => {
     mockCurrentEmployee = { id: 'emp-other' }
     vi.mocked(useVisitExecutionSession).mockReturnValue({
