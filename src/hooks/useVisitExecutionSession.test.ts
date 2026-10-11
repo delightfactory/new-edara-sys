@@ -2126,12 +2126,10 @@ describe('useVisitExecutionSession Hook Core Logic', () => {
       unmount()
 
       const { result: restoredResult } = renderHook(() => useVisitExecutionSession('plan-123', serverItems, true))
-      await act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 50))
+      await waitFor(() => {
+        expect(restoredResult.current.session).not.toBeNull()
+        expect(restoredResult.current.session?.itemId).toBe('item-1')
       })
-
-      expect(restoredResult.current.session).not.toBeNull()
-      expect(restoredResult.current.session?.itemId).toBe('item-1')
     })
 
     it('useVisitExecutionSession: local photos, replacement, remount restore, and complete Visit safety gate', async () => {

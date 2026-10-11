@@ -117,7 +117,7 @@ export async function createProduct(input: ProductInput) {
   const { data, error } = await supabase
     .from('products')
     .insert(input)
-    .select()
+    .select('id, sku, name, barcode, category_id, brand_id, base_unit_id, selling_price, tax_rate, description, image_url, is_active, min_stock_level, created_at, updated_at')
     .single()
   if (error) throw error
   return data as Product
@@ -131,7 +131,7 @@ export async function updateProduct(id: string, input: Partial<ProductInput>) {
     .from('products')
     .update(input)
     .eq('id', id)
-    .select()
+    .select('id, sku, name, barcode, category_id, brand_id, base_unit_id, selling_price, tax_rate, description, image_url, is_active, min_stock_level, created_at, updated_at')
     .single()
   if (error) throw error
   return data as Product

@@ -1,0 +1,331 @@
+{
+  "status": "CHECKPOINT_NOT_RELEASE_QUALIFIED",
+  "scope": "Owned synthetic HTTP/API validation only; no production change, browser acceptance or full baseline acceptance",
+  "gates": {
+    "lint": "PASS before and after test-only edit",
+    "type": "PASS forced and incremental",
+    "isolatedVisitTests": "35 PASS",
+    "firstFullSuite": "1073 PASS, 1 FAIL: terminal-start restoration fixed wait",
+    "nextAction": "Diagnose remaining observable timing assertion without weakening behavior; no further rerun before user resumes",
+    "correctedFullSuite": "1073 PASS, 1 FAIL: temporary session pending start, line 451",
+    "build": "PASS before test-only edit"
+  },
+  "parentSha": "6c36e320cf7b88908424a48e02d7635c0b4f7041",
+  "reviews": {
+    "test-delta-review": {
+      "isError": null,
+      "result": null,
+      "sessionId": null,
+      "readOnlyViolation": false
+    },
+    "final-review": {
+      "isError": null,
+      "result": null,
+      "sessionId": null,
+      "readOnlyViolation": false
+    }
+  },
+  "reports": {
+    "dependency": {
+      "status": "PASS",
+      "owner": "edara-c3-compose-20261011",
+      "scope": "Five exact source84 statements: existing metric RPC, grant, cost-write guard and trigger; owned only",
+      "source": "supabase/migrations/84_inventory_wac_read_layer.sql",
+      "sourceSha256": "87e468d2a70bc482ad974e9fc10dc5d9a39e09e25a143a8dbb1943f695764afb",
+      "statements": [
+        {
+          "label": "get_product_cost_metrics",
+          "startByte": 393,
+          "endByte": 2770,
+          "startLine": 8,
+          "endLine": 74,
+          "sha256": "549ec55741f3f44697300e2fcc9206801a9a2de53b9bbe4cc9f9e01a1912ba9e"
+        },
+        {
+          "label": "guard_product_cost_price",
+          "startByte": 3087,
+          "endByte": 4005,
+          "startLine": 83,
+          "endLine": 108,
+          "sha256": "c8cd1ca2134007a5c6ba35a543b0a6b6f9bc4657844633394ceaca08232a1b86"
+        },
+        {
+          "label": "metric-grant",
+          "startByte": 2774,
+          "endByte": 2850,
+          "startLine": 76,
+          "endLine": 76,
+          "sha256": "f71bbe3581557c9e5cc816e4c5d36664a76b0b6a93bf7bbd978ef192921b8bc3"
+        },
+        {
+          "label": "guard-trigger-drop",
+          "startByte": 4041,
+          "endByte": 4105,
+          "startLine": 111,
+          "endLine": 111,
+          "sha256": "262da4775a0cbf63510ae02d5d7191aee48204f5d6c8763a098ed5cd3dfb29d8"
+        },
+        {
+          "label": "guard-trigger-create",
+          "startByte": 4107,
+          "endByte": 4250,
+          "startLine": 112,
+          "endLine": 114,
+          "sha256": "f1bfe15601a1ff397b5e32153433259f295bedb3332819092fe1a384945f7fcc"
+        }
+      ],
+      "verificationFile": "supabase/verification/baseline_product_cost_dependency.sql",
+      "verificationSha256": "753701e63b3cf6491d30fd5a92fba82d69eaff77602b08870e4ba64119edf82a",
+      "rollbackRestoredAbsenceAndCatalog": true,
+      "unrelatedFunctionsUnchanged": true,
+      "tableColumnAclsRlsUnchanged": true,
+      "appliedLocally": true
+    },
+    "acl": {
+      "status": "PASS",
+      "owner": "edara-c3-compose-20261011",
+      "migration": "supabase/migrations/20261011090000_product_cost_read_hardening.sql",
+      "migrationSha256": "1f4e799e5accc52d48dc695db1e7a3a840e95138e612ebc80e40fb6c7e202124",
+      "scope": "Two product financial columns protected, existing metric RPC anonymous ACL removed; no bodies/business/write/RLS changes",
+      "nonfinancialColumns": [
+        "id",
+        "sku",
+        "name",
+        "barcode",
+        "category_id",
+        "brand_id",
+        "base_unit_id",
+        "selling_price",
+        "tax_rate",
+        "description",
+        "image_url",
+        "is_active",
+        "min_stock_level",
+        "created_at",
+        "updated_at"
+      ],
+      "rollbackExactAclsRestored": true,
+      "idempotentReapplication": true,
+      "allFunctionBodiesOwnersDefinerFlagsPreserved": true,
+      "unrelatedFunctionAclsPreserved": true,
+      "tableWriteGrantsAndRlsPreserved": true,
+      "serviceRolePreserved": true
+    },
+    "service": {
+      "status": "PASS",
+      "owner": "edara-c3-compose-20261011",
+      "parentSha": "6c36e320cf7b88908424a48e02d7635c0b4f7041",
+      "scope": "Actual product services with safe write return projections and existing financial metrics via Vite SSR, Auth/PostgREST; no browser or overall financial workflow acceptance",
+      "cases": [
+        "Anonymous direct financial-column read and cost RPC denied42501",
+        "Restricted reader keeps actual list/detail shapes without costs; raw costs/star/predicates denied42501 and existing financial service returns empty permission result",
+        "Actual restricted zero-cost create and nonfinancial update return safe data; existing cost values preserved and original cost-write trigger rejects unauthorized change atomically",
+        "Grant enables original financial RPC, explicit deny and expired grant disable it; raw table costs stay denied even with finance grant; no-stock WAC stays null",
+        "Manager reads reference/last-purchase costs through existing RPC and actual create/update works with authorized cost changes; ordinary returned products remain nonfinancial"
+      ],
+      "requests": [
+        {
+          "path": "/rest/v1/products",
+          "method": "GET",
+          "status": 401
+        },
+        {
+          "path": "/rest/v1/rpc/get_product_cost_metrics",
+          "method": "POST",
+          "status": 401
+        },
+        {
+          "path": "/auth/v1/token",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "path": "/auth/v1/user",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/rest/v1/products",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/rest/v1/products",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/rest/v1/rpc/get_product_cost_metrics",
+          "method": "POST",
+          "status": 400
+        },
+        {
+          "path": "/rest/v1/products",
+          "method": "GET",
+          "status": 403
+        },
+        {
+          "path": "/rest/v1/products",
+          "method": "GET",
+          "status": 403
+        },
+        {
+          "path": "/rest/v1/products",
+          "method": "GET",
+          "status": 403
+        },
+        {
+          "path": "/rest/v1/products",
+          "method": "GET",
+          "status": 403
+        },
+        {
+          "path": "/rest/v1/products",
+          "method": "POST",
+          "status": 201
+        },
+        {
+          "path": "/rest/v1/products",
+          "method": "PATCH",
+          "status": 200
+        },
+        {
+          "path": "/rest/v1/products",
+          "method": "PATCH",
+          "status": 400
+        },
+        {
+          "path": "/rest/v1/rpc/get_product_cost_metrics",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "path": "/rest/v1/products",
+          "method": "GET",
+          "status": 403
+        },
+        {
+          "path": "/rest/v1/rpc/get_product_cost_metrics",
+          "method": "POST",
+          "status": 400
+        },
+        {
+          "path": "/rest/v1/rpc/get_product_cost_metrics",
+          "method": "POST",
+          "status": 400
+        },
+        {
+          "path": "/auth/v1/logout",
+          "method": "POST",
+          "status": 204
+        },
+        {
+          "path": "/auth/v1/token",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "path": "/auth/v1/user",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/rest/v1/products",
+          "method": "GET",
+          "status": 403
+        },
+        {
+          "path": "/rest/v1/rpc/get_product_cost_metrics",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "path": "/rest/v1/products",
+          "method": "POST",
+          "status": 201
+        },
+        {
+          "path": "/rest/v1/rpc/get_product_cost_metrics",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "path": "/rest/v1/products",
+          "method": "PATCH",
+          "status": 200
+        },
+        {
+          "path": "/rest/v1/rpc/get_product_cost_metrics",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "path": "/rest/v1/products",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/auth/v1/logout",
+          "method": "POST",
+          "status": 204
+        }
+      ],
+      "sourceHashes": {
+        "src/lib/services/products.ts": "5b58358492ffd9d00fb701d3fda81287abb4ede52a331244fcd336ba97b23fca",
+        "src/lib/supabase/client.ts": "2ac923f7b21d53f9380af4c3f1b63de05ea6ce1bd0de18d83410e1c17c9ec0b8"
+      },
+      "publicFixtureRestored": true
+    },
+    "before": {
+      "status": "OBSERVED_COST_READ_BYPASS",
+      "owner": "edara-c3-compose-20261011",
+      "parentSha": "6c36e320cf7b88908424a48e02d7635c0b4f7041",
+      "scope": "Owned loopback product cost read probes only; no production",
+      "requests": [
+        {
+          "path": "/auth/v1/token",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "path": "/rest/v1/products",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/rest/v1/products",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/rest/v1/products",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "path": "/auth/v1/logout",
+          "method": "POST",
+          "status": 204
+        }
+      ],
+      "cases": [
+        {
+          "identity": "restricted-products-reader-without-finance",
+          "directCostReadObserved": true,
+          "costPrice": 37.5,
+          "lastPurchasePrice": 37.1234
+        },
+        {
+          "identity": "restricted-products-reader-without-finance",
+          "costPredicateInferenceObserved": true
+        },
+        {
+          "identity": "anonymous",
+          "rlsStillHidesRows": true
+        }
+      ],
+      "publicFixtureRestored": true,
+      "authLoginMetadataExpected": true
+    }
+  }
+}
