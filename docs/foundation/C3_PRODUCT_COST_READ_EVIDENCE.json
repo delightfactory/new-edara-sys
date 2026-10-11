@@ -1,5 +1,5 @@
 {
-  "status": "CHECKPOINT_NOT_RELEASE_QUALIFIED",
+  "status": "PASS_PRODUCT_COST_HTTP_SLICE_ONLY",
   "scope": "Owned synthetic HTTP/API validation only; no production change, browser acceptance or full baseline acceptance",
   "gates": {
     "lint": "PASS before and after test-only edit",
@@ -327,5 +327,22 @@
       "publicFixtureRestored": true,
       "authLoginMetadataExpected": true
     }
+  },
+  "resumeQualification": {
+    "scope": "Historical failed runs above are retained; current local slice gates pass, unified App/Realtime/performance/restore and release acceptance remain open",
+    "type": "PASS",
+    "testDelta": "Replace remaining fixed50ms wait in temporary pending-start scenario with default waitFor around same assertion; no production hook, mocks, timeout, fixtures or scheduler changes",
+    "parentCheckpoint": "1446892673674618ce8135c0bbe26f0f9f5e5e17",
+    "fullSuite": "141 files / 1074 tests PASS",
+    "lint": "PASS",
+    "focusedTests": "35 PASS",
+    "build": "Prior production build PASS; subsequent delta is test-only",
+    "claude": {
+      "finalMessage": "`waitFor` is already imported and used identically elsewhere in this file (lines 2403, 732, 760), so the pattern is consistent with the codebase's existing testing convention — not a new or weakened approach.\n\nPASS. The delta is a pure mechanical swap of a fixed 50ms sleep + immediate assertion for `waitFor` polling the same assertion (`result.current.session` not null). This strengthens rather than weakens the test: it removes a race condition where a fixed sleep could be too short under load (which is exactly what the flaky failure in the full suite showed), and replaces it with retry-until-true-or-timeout semantics that match how `waitFor` is used throughout the rest of this same file. No production code, mocks, fixtures, or timing/scheduler behavior changed; the assertion being checked is identical. No hidden regression-weakening or production issue is introduced by this diff.",
+      "status": "completed",
+      "sessionId": "1f8c81ea-7735-48c5-8add-81aa39647b17",
+      "readOnlyViolation": false
+    },
+    "testSha256": "8531a79724215112f3a569fba05cf2088ca3078b5f4fc4b47bb92e9caa6616ad"
   }
 }

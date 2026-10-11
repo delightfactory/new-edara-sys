@@ -444,11 +444,9 @@ describe('useVisitExecutionSession Hook Core Logic', () => {
 
     const { result } = renderHook(() => useVisitExecutionSession('plan-123', serverItems, true))
 
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 50))
+    await waitFor(() => {
+      expect(result.current.session).not.toBeNull()
     })
-
-    expect(result.current.session).not.toBeNull()
   })
 
   it('deletes temporary session when start operation fails permanently and does not return after discard', async () => {
