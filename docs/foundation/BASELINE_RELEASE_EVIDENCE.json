@@ -1,0 +1,272 @@
+{
+  "status": "ISOLATED_LOCAL_RELEASE_CANDIDATE",
+  "applicationSourceSha": "d7fdc527f3dc087f5f0c30b464df31ee481c8483",
+  "build": {
+    "status": "PASS",
+    "sourceSha": "d7fdc527f3dc087f5f0c30b464df31ee481c8483",
+    "sourceArchiveSha256": "e8279d0684896449a7356e10c84e371f64255a011349d47242355a6f9f09b1b2",
+    "lockSha256": "82d489bd8febcc82a302e7a4c57e5af5954525133ac87385a3764f00e4d09ddb",
+    "swSha256": "ba028a049819f77b75b6094804e4450ddf9042e2c05e2b1ed1b0f30de5ec9686",
+    "indexSha256": "13117e7a83c59462ad5da8c136a6a5dff754bdcfd3c3a52a5632dec1aff9b0d8",
+    "apiOrigin": "http://127.0.0.1:60451",
+    "atomicVisits": true,
+    "envFilesLoaded": false,
+    "productionMutated": false,
+    "migrationCount": 10
+  },
+  "contracts": {
+    "status": "PASS",
+    "productionProject": "ozthzccqudrudicnneuu",
+    "productionReadOnly": true,
+    "comparedFunctions": 25,
+    "grantOnlyBodiesUnchanged": true,
+    "additiveFunctions": [
+      "update_purchase_return_draft"
+    ],
+    "rows": [
+      {
+        "identity": "private.trg_visit_plans_state_machine()",
+        "productionDefinitionSha256": "d7a348c07b90228de8f9f326d5f90feb91f6e6d17225cee1ef372c949e09624d",
+        "candidateDefinitionSha256": "27c83bc69f545e012e532a049cccfbc6a51d4836bca0034b4845678eed223435",
+        "sameBody": false,
+        "ownerPreserved": true,
+        "aclChanged": false
+      },
+      {
+        "identity": "public.add_custody_transaction(p_custody_id uuid, p_type text, p_amount numeric, p_vault_id uuid, p_ref_type text, p_ref_id uuid, p_description text, p_user_id uuid)",
+        "productionDefinitionSha256": "9b2a51fde377fdd16cc88c6befb01374999d48da4ae6f9076c1c3d51f18e9fff",
+        "candidateDefinitionSha256": "9b2a51fde377fdd16cc88c6befb01374999d48da4ae6f9076c1c3d51f18e9fff",
+        "sameBody": true,
+        "ownerPreserved": true,
+        "aclChanged": true
+      },
+      {
+        "identity": "public.add_vault_transaction(p_vault_id uuid, p_type text, p_amount numeric, p_ref_type text, p_ref_id uuid, p_description text, p_user_id uuid)",
+        "productionDefinitionSha256": "f8a264fb0a53b6a9ccf3b00ca3abe7c48c97012ab14d51b6358c2d232d8a7783",
+        "candidateDefinitionSha256": "f8a264fb0a53b6a9ccf3b00ca3abe7c48c97012ab14d51b6358c2d232d8a7783",
+        "sameBody": true,
+        "ownerPreserved": true,
+        "aclChanged": true
+      },
+      {
+        "identity": "public.allocate_payment_to_invoices(p_customer_id uuid, p_amount numeric, p_source_type text, p_source_id uuid, p_user_id uuid)",
+        "productionDefinitionSha256": "b2344bcd6fef9848fd28c7f4a91ffd80c84d4be70d08ac70cb438fdc2b43d5dc",
+        "candidateDefinitionSha256": "b2344bcd6fef9848fd28c7f4a91ffd80c84d4be70d08ac70cb438fdc2b43d5dc",
+        "sameBody": true,
+        "ownerPreserved": true,
+        "aclChanged": true
+      },
+      {
+        "identity": "public.allocate_payment_to_invoices(p_customer_id uuid, p_amount numeric, p_source_type text, p_source_id uuid, p_user_id uuid, p_target_order_id uuid)",
+        "productionDefinitionSha256": "5fc73c2b4cc67f180b4a025b75e50f0d4dc06f498b9b1238dff09dd12644e343",
+        "candidateDefinitionSha256": "5fc73c2b4cc67f180b4a025b75e50f0d4dc06f498b9b1238dff09dd12644e343",
+        "sameBody": true,
+        "ownerPreserved": true,
+        "aclChanged": true
+      },
+      {
+        "identity": "public.bill_purchase_invoice(p_invoice_id uuid, p_user_id uuid, p_vault_id uuid, p_payment_method text)",
+        "productionDefinitionSha256": "af753bc1e0c3d61f23195e81da2fe0107632531af67902d004928d9253d38d85",
+        "candidateDefinitionSha256": "af753bc1e0c3d61f23195e81da2fe0107632531af67902d004928d9253d38d85",
+        "sameBody": true,
+        "ownerPreserved": true,
+        "aclChanged": true
+      },
+      {
+        "identity": "public.cancel_purchase_invoice(p_invoice_id uuid, p_user_id uuid)",
+        "productionDefinitionSha256": "e1f4209baf8ad4c61c627492b29c540b286e333ffef1e9529c94d97d0ed799d0",
+        "candidateDefinitionSha256": "e1f4209baf8ad4c61c627492b29c540b286e333ffef1e9529c94d97d0ed799d0",
+        "sameBody": true,
+        "ownerPreserved": true,
+        "aclChanged": true
+      },
+      {
+        "identity": "public.cancel_sales_order(p_order_id uuid, p_user_id uuid, p_reason text)",
+        "productionDefinitionSha256": "257031230452c96208cf270eb130f0f0118a637008a4e452d4e64e0d9dc50d4d",
+        "candidateDefinitionSha256": "257031230452c96208cf270eb130f0f0118a637008a4e452d4e64e0d9dc50d4d",
+        "sameBody": true,
+        "ownerPreserved": true,
+        "aclChanged": true
+      },
+      {
+        "identity": "public.check_permission(p_user_id uuid, p_permission text)",
+        "productionDefinitionSha256": "2d3f10644a8977f26672fa72e9b8853f7aa1642b55898cb24414566b0ea5f7d9",
+        "candidateDefinitionSha256": "e1ae6be9ec86049ee92db8f764474b64661d55239abea3faedf0198ee2e2ee35",
+        "sameBody": false,
+        "ownerPreserved": true,
+        "aclChanged": false
+      },
+      {
+        "identity": "public.confirm_payment_receipt(p_receipt_id uuid, p_action text, p_vault_id uuid, p_reason text, p_user_id uuid)",
+        "productionDefinitionSha256": "1cc0902a6736c2929b5aa2c973de3599955e0113906d00803ac840d4263cd45e",
+        "candidateDefinitionSha256": "1cc0902a6736c2929b5aa2c973de3599955e0113906d00803ac840d4263cd45e",
+        "sameBody": true,
+        "ownerPreserved": true,
+        "aclChanged": true
+      },
+      {
+        "identity": "public.confirm_purchase_return(p_return_id uuid, p_user_id uuid)",
+        "productionDefinitionSha256": "289fa9446af406f94040d62ef670bdd129fd03838a1323f23f71ea11f2c8d0eb",
+        "candidateDefinitionSha256": "289fa9446af406f94040d62ef670bdd129fd03838a1323f23f71ea11f2c8d0eb",
+        "sameBody": true,
+        "ownerPreserved": true,
+        "aclChanged": true
+      },
+      {
+        "identity": "public.confirm_sales_order(p_order_id uuid, p_user_id uuid)",
+        "productionDefinitionSha256": "5067089edf44ccf670a5d697816b1740a7bb1974623327f75ddb743feb4823c1",
+        "candidateDefinitionSha256": "5067089edf44ccf670a5d697816b1740a7bb1974623327f75ddb743feb4823c1",
+        "sameBody": true,
+        "ownerPreserved": true,
+        "aclChanged": true
+      },
+      {
+        "identity": "public.confirm_sales_return(p_return_id uuid, p_user_id uuid, p_custody_id uuid, p_vault_id uuid)",
+        "productionDefinitionSha256": "73cdd5402d0ec4f6d525d27723e4917ba30b350859831d078ffb4bfa75d95825",
+        "candidateDefinitionSha256": "73cdd5402d0ec4f6d525d27723e4917ba30b350859831d078ffb4bfa75d95825",
+        "sameBody": true,
+        "ownerPreserved": true,
+        "aclChanged": true
+      },
+      {
+        "identity": "public.create_auto_journal_entry(p_source_type text, p_source_id uuid, p_description text, p_debit_account text, p_credit_account text, p_amount numeric, p_user_id uuid)",
+        "productionDefinitionSha256": "e7356b5ab5d7868a305bca832eef1aad0eb0e43b59b5c8bfd6512ddf871dd568",
+        "candidateDefinitionSha256": "e7356b5ab5d7868a305bca832eef1aad0eb0e43b59b5c8bfd6512ddf871dd568",
+        "sameBody": true,
+        "ownerPreserved": true,
+        "aclChanged": true
+      },
+      {
+        "identity": "public.create_manual_journal_entry(p_description text, p_entry_date date, p_source_type text, p_source_id uuid, p_lines jsonb, p_user_id uuid)",
+        "productionDefinitionSha256": "149641ac35751097a5cf43123ea70a249f8cee2ae080c1328a207724e51cf6ce",
+        "candidateDefinitionSha256": "149641ac35751097a5cf43123ea70a249f8cee2ae080c1328a207724e51cf6ce",
+        "sameBody": true,
+        "ownerPreserved": true,
+        "aclChanged": true
+      },
+      {
+        "identity": "public.create_ui_manual_journal_entry(p_description text, p_entry_date date, p_source_type text, p_source_id uuid, p_lines jsonb, p_user_id uuid)",
+        "productionDefinitionSha256": "ec665ea2a4895dbb9e071ef0c5bc003f320a7f716266daf23b10a357d27edd21",
+        "candidateDefinitionSha256": "91cd050613cca818c8b19ce1588339a51b7dd1da3ab120a38354d6cf2971da24",
+        "sameBody": false,
+        "ownerPreserved": true,
+        "aclChanged": true
+      },
+      {
+        "identity": "public.deliver_sales_order(p_order_id uuid, p_user_id uuid, p_payment_terms text, p_payment_method text, p_vault_id uuid, p_custody_id uuid, p_cash_amount numeric, p_override_credit boolean, p_bank_reference text, p_check_number text, p_check_date date)",
+        "productionDefinitionSha256": "103fd062c3fd9155f311e0782e1571ea1961fa4e067d58e7050287a6f3004b23",
+        "candidateDefinitionSha256": "103fd062c3fd9155f311e0782e1571ea1961fa4e067d58e7050287a6f3004b23",
+        "sameBody": true,
+        "ownerPreserved": true,
+        "aclChanged": true
+      },
+      {
+        "identity": "public.get_low_stock(p_warehouse_id uuid, p_offset integer, p_limit integer)",
+        "productionDefinitionSha256": "c43c79c332dcf25e5399985230e694cbd049c177fd6b2141e6c7a1568a6833ec",
+        "candidateDefinitionSha256": "3879ff5d8435cbe2cd8cdd7db34dfe13cd990db06305b8673b0672e4e75ca9a7",
+        "sameBody": false,
+        "ownerPreserved": true,
+        "aclChanged": true
+      },
+      {
+        "identity": "public.get_product_cost_metrics(p_product_ids uuid[])",
+        "productionDefinitionSha256": "7232f359d2b5d0cf303bedee3aa5775bc63afd959c43d1a8a94e32c1f314e303",
+        "candidateDefinitionSha256": "7232f359d2b5d0cf303bedee3aa5775bc63afd959c43d1a8a94e32c1f314e303",
+        "sameBody": true,
+        "ownerPreserved": true,
+        "aclChanged": true
+      },
+      {
+        "identity": "public.get_unread_notifications_count(p_user_id uuid)",
+        "productionDefinitionSha256": "58030209c86f6336a3a2c5b83955d5605d04c8124c475a6f11cb0023ce9fd9c4",
+        "candidateDefinitionSha256": "f258bf15e708d70898bce27a64e7ceb7e8f9281760e773ae00033912580da8e6",
+        "sameBody": false,
+        "ownerPreserved": true,
+        "aclChanged": true
+      },
+      {
+        "identity": "public.pay_supplier(p_invoice_id uuid, p_user_id uuid, p_amount numeric, p_payment_method text, p_vault_id uuid, p_notes text)",
+        "productionDefinitionSha256": "6a824948f8ec546e055c113e5357f7d6bc09c9fa534a490e10cb88ce399dda6a",
+        "candidateDefinitionSha256": "6a824948f8ec546e055c113e5357f7d6bc09c9fa534a490e10cb88ce399dda6a",
+        "sameBody": true,
+        "ownerPreserved": true,
+        "aclChanged": true
+      },
+      {
+        "identity": "public.receive_purchase_invoice(p_invoice_id uuid, p_user_id uuid)",
+        "productionDefinitionSha256": "b6c9807c7a289d61e59e05da98629824ed8eee974188df47bfd0e0ffe995728d",
+        "candidateDefinitionSha256": "b6c9807c7a289d61e59e05da98629824ed8eee974188df47bfd0e0ffe995728d",
+        "sameBody": true,
+        "ownerPreserved": true,
+        "aclChanged": true
+      },
+      {
+        "identity": "public.reserve_stock(p_warehouse_id uuid, p_product_id uuid, p_qty numeric)",
+        "productionDefinitionSha256": "a39b2f6354bdb65518450a3b3d842905247c26ba4bafede07bc2c2f5da1ffaee",
+        "candidateDefinitionSha256": "a39b2f6354bdb65518450a3b3d842905247c26ba4bafede07bc2c2f5da1ffaee",
+        "sameBody": true,
+        "ownerPreserved": true,
+        "aclChanged": true
+      },
+      {
+        "identity": "public.unreserve_stock(p_warehouse_id uuid, p_product_id uuid, p_qty numeric)",
+        "productionDefinitionSha256": "7ea32b78b9fc0b5cfba60e8b270f5f0df59ac05c8a72e6cd89e62f91aab7f8eb",
+        "candidateDefinitionSha256": "7ea32b78b9fc0b5cfba60e8b270f5f0df59ac05c8a72e6cd89e62f91aab7f8eb",
+        "sameBody": true,
+        "ownerPreserved": true,
+        "aclChanged": true
+      },
+      {
+        "identity": "public.update_stock_wac(p_warehouse_id uuid, p_product_id uuid, p_qty_in numeric, p_unit_cost numeric, p_movement_type text, p_reference_type text, p_reference_id uuid, p_user_id uuid)",
+        "productionDefinitionSha256": "b8a3cebaf2cbb3280b468887f3ddd199b0662d19d7f617cf44ca697e09947602",
+        "candidateDefinitionSha256": "b8a3cebaf2cbb3280b468887f3ddd199b0662d19d7f617cf44ca697e09947602",
+        "sameBody": true,
+        "ownerPreserved": true,
+        "aclChanged": true
+      }
+    ]
+  },
+  "cleanup": {
+    "status": "PASS",
+    "owner": "edara-qualification-20261011",
+    "archiveSha256": "39ba7cd1796385e01a07b541d3fed9a049323ffb9902adaa30a567f8e3764ff6",
+    "publicTables": 158,
+    "allPublicCountsAndDigestsRestored": true,
+    "syntheticAuthUsersRemoved": true,
+    "realtimeRetired": true,
+    "authRestHealthy": true,
+    "user5180Healthy": true,
+    "userDatabaseMutated": false,
+    "productionMutated": false
+  },
+  "fullSuite": {
+    "tests": 1093,
+    "status": "PASS",
+    "maxWorkers": 2,
+    "files": 142,
+    "minWorkers": 2
+  },
+  "lint": "PASS",
+  "types": "PASS",
+  "browser": {
+    "otherTabActivationPreservesDraft": true,
+    "offlineLoginShell": true,
+    "automaticStockRefresh": "3->4",
+    "testServersRetired": true,
+    "ownedTabsClosed": true,
+    "networkRestored": true,
+    "pwaOldScript": "index-C1Hu6q19.js",
+    "pwaCandidateScript": "index-Bl5rt-Iw.js",
+    "laterPreservesDraft": true,
+    "afterRealtimeRestart": "4->5"
+  },
+  "claudeFinalReview": {
+    "readOnlyViolation": false,
+    "status": "UNAVAILABLE",
+    "cause": "Agent Router returned 402 budget pool quota exhausted"
+  },
+  "productionMutated": false,
+  "hostedPreviewQualified": false,
+  "userUAT": "PENDING",
+  "productionApproval": "REQUIRED"
+}

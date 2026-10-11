@@ -1,6 +1,6 @@
 {
   "status": "UNAPPLIED_TO_PRODUCTION",
-  "candidateBranch": "codex/baseline-completion",
+  "candidateBranch": "codex/baseline-ui-polish",
   "applyPolicy": "Named files only, in order, after fresh target contract review, rollback preparation and explicit release approval. Fixture SQL excluded.",
   "migrations": [
     {
@@ -38,6 +38,11 @@
     {
       "path": "supabase/migrations/20261011100000_notification_count_access_hardening.sql",
       "sha256": "8def0b07076a8afc95cbab9a6fe9604b97f53a46e1273c784381c32675f73dfd"
+    },
+    {
+      "path": "supabase/migrations/20261011190839_fix_visit_closed_plan_generated_column_guard.sql",
+      "sha256": "b93432b250aa15230e162e06faed515930d1d0cd4cc78fc93e742d47876e7fea"
     }
-  ]
+  ],
+  "applicationSourceSha": "d7fdc527f3dc087f5f0c30b464df31ee481c8483"
 }
