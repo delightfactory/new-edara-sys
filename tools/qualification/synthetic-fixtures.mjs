@@ -54,6 +54,9 @@ export function fixtureResponse(request, scenario, state) {
   if (method === 'POST' && path === '/rest/v1/rpc/get_low_stock') {
     const body = request.postDataJSON()
     if (body.p_warehouse_id !== null || body.p_offset !== 0 || body.p_limit !== 1) throw new Error('Unexpected low-stock contract')
+    if (scenario.kind === 'dashboard-error' && scenario.errorGroup === 'overview' && !state.allowDashboardRecovery) {
+      return reply({ code: '503', message: 'Synthetic dashboard unavailable' }, 503)
+    }
     return reply([{ total_count: '3' }])
   }
   if (method === 'POST' && path === '/auth/v1/logout') return { status: 204 }
@@ -65,7 +68,12 @@ export function fixtureResponse(request, scenario, state) {
     return { status: 200, headers: { 'content-range': `*/${counts[table]}` } }
   }
   if (method === 'GET' && table === 'sales_orders' && url.searchParams.get('select') === 'total_amount'
-    && url.searchParams.get('status') === 'eq.delivered' && url.searchParams.has('created_at')) return reply([{ total_amount: 100 }])
+    && url.searchParams.get('status') === 'eq.delivered' && url.searchParams.has('created_at')) {
+    if (scenario.kind === 'dashboard-error' && scenario.errorGroup === 'sales' && !state.allowDashboardRecovery) {
+      return reply({ code: '503', message: 'Synthetic sales unavailable' }, 503)
+    }
+    return reply([{ total_amount: 100 }])
+  }
   if (method === 'GET' && table === 'targets' && url.searchParams.get('is_active') === 'eq.true') return reply([], 200, { 'content-range': '*/0' })
   if (method === 'GET' && table === 'customers' && url.searchParams.get('is_active') === 'eq.true'
     && url.searchParams.get('select')?.includes('assigned_rep:profiles')) return reply([customer], 200, { 'content-range': '0-0/1' })

@@ -52,3 +52,8 @@ The SW still precaches all generated build assets. A lazy import can reduce the 
 - Service workers are blocked. PWA, offline, update, push and device acceptance remain open.
 - A completed journey, source review or successful build does not approve a production release.
 - No product source, dependency, workflow, migration, deployment or production configuration is changed by this slice.
+
+## C1 — Dashboard failure/retry successor
+The dashboard now propagates SDK errors into each existing query group. Failed initial groups show Arabic error/retry instead of healthy zero metrics; cached failed refreshes explicitly label last successful values as not updated. Groups remain independent, filters/counts/actor-scoped keys unchanged, and automatic group retries disabled.
+The runner adds three actual error/retry journeys at390/900/1440 to the original nine-case matrix. Root executed the combined12-case matrix, both sidebar builds and Cairo/strict boundary/cleanup checks successfully; visually checked phone error, tablet independent-group error and desktop recovered state. Full138 files/1026 tests, lint and forced TypeScript passed. Synthetic HTTP remains a frontend boundary test, not real Auth/RLS or financial/offline release qualification.
+Direct Claude review initially questioned pending-retry query status. Installed query-core fetchState and exact-candidate execution resolved it without changing the frozen source; the resumed review returned PASS/SAFE YES. No shared component/API or production schema was changed.

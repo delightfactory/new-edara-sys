@@ -16,6 +16,7 @@ import StatCard from '@/components/patterns/StatCard'
 import AlertPanel from '@/components/patterns/AlertPanel'
 import StatePanel from '@/components/patterns/StatePanel'
 import StatusBadge from '@/components/patterns/StatusBadge'
+import Button from '@/components/ui/Button'
 import './dashboard-v2.css'
 
 interface OverviewStats {
@@ -64,6 +65,10 @@ async function fetchOverviewStats(pendingCount: ReturnType<typeof pendingSalesCo
     }),
   ])
 
+  for (const result of [customers, products, warehouses, stock, salesPending, purchasePending, lowStock]) {
+    if (result.error) throw result.error
+  }
+
   const { data: lowStockRows } = lowStock
   const lowStockCount = (lowStockRows && lowStockRows.length > 0)
     ? Number((lowStockRows as any[])[0].total_count)
@@ -91,6 +96,10 @@ async function fetchSalesStats(pendingCount: ReturnType<typeof pendingSalesCount
     supabase.from('sales_orders').select('id', { count: 'estimated', head: true }).gte('created_at', today).eq('status', 'delivered'),
   ])
 
+  for (const result of [todayOrders, monthOrders, pendingOrders, deliveredToday]) {
+    if (result.error) throw result.error
+  }
+
   const todayRevenue = (todayOrders.data || []).reduce((s, o) => s + (o.total_amount || 0), 0)
   const monthRevenue = (monthOrders.data || []).reduce((s, o) => s + (o.total_amount || 0), 0)
 
@@ -115,22 +124,24 @@ export default function DashboardPage() {
   const permissions = useAuthStore(s => s.permissions)
   const permissionKey = [...new Set(permissions)].sort()
 
-  const { data: overview, isLoading: loadingOverview } = useQuery({
+  const { data: overview, isLoading: loadingOverview, isError: overviewError, isFetching: fetchingOverview, refetch: refetchOverview } = useQuery({
     queryKey: ['dashboard-overview', profile?.id, permissionKey],
     queryFn: context => fetchOverviewStats(pendingSalesCount(context)),
     enabled: !!profile?.id,
     staleTime: 60_000,
+    retry: false,
   })
 
   const canViewSales = can('sales.read')
   const canViewFinance = can('finance.read') || can('finance.view_costs')
   const canViewInventory = can('inventory.read')
 
-  const { data: salesStats, isLoading: loadingSales } = useQuery({
+  const { data: salesStats, isLoading: loadingSales, isError: salesError, isFetching: fetchingSales, refetch: refetchSales } = useQuery({
     queryKey: ['dashboard-sales', profile?.id, permissionKey],
     queryFn: context => fetchSalesStats(pendingSalesCount(context)),
     enabled: !!profile?.id && canViewSales,
     staleTime: 60_000,
+    retry: false,
   })
 
   const hour = new Date().getHours()
@@ -145,6 +156,15 @@ export default function DashboardPage() {
 
       <GoalCommandCenter />
 
+      {overviewError && (
+        <StatePanel
+          kind="error"
+          title="تعذّر تحميل مؤشرات النظام"
+          description={overview ? 'القيم المعروضة من آخر تحميل ناجح ولم تُحدّث.' : 'لم نتمكن من تحميل المؤشرات. أعد المحاولة.'}
+          action={<Button variant="secondary" touchTarget loading={fetchingOverview} onClick={() => { if (!fetchingOverview) void refetchOverview() }}>إعادة تحميل المؤشرات</Button>}
+        />
+      )}
+      {(!overviewError || overview) && (
       <div className="db-v2__kpi-grid" aria-label="مؤشرات النظام الرئيسية">
         <StatCard
           label="العملاء النشطون"
@@ -187,11 +207,21 @@ export default function DashboardPage() {
           />
         )}
       </div>
+      )}
 
       {canViewSales && (
         <Card padding="lg">
           <div className="db-v2__section">
             <SectionHeader icon={<TrendingUp size={18} />} title="إيرادات المبيعات" />
+            {salesError && (
+              <StatePanel
+                kind="error"
+                title="تعذّر تحميل مؤشرات المبيعات"
+                description={salesStats ? 'القيم المعروضة من آخر تحميل ناجح ولم تُحدّث.' : 'لم نتمكن من تحميل مؤشرات المبيعات. أعد المحاولة.'}
+                action={<Button variant="secondary" touchTarget loading={fetchingSales} onClick={() => { if (!fetchingSales) void refetchSales() }}>إعادة تحميل المبيعات</Button>}
+              />
+            )}
+            {(!salesError || salesStats) && (
             <div className="db-v2__sales-grid">
               <StatCard
                 label="إيرادات اليوم"
@@ -218,6 +248,7 @@ export default function DashboardPage() {
                 tone="info"
               />
             </div>
+            )}
           </div>
         </Card>
       )}

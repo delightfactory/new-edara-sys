@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth-store'
@@ -207,16 +207,27 @@ describe('Dashboard overview network loading', () => {
     expect(screen.getByText('مرحباً بك')).toBeTruthy()
   })
 
-  it('preserves the existing SDK transport-error fallback without fabricating low-stock rows', async () => {
+  it('shows an overview error instead of healthy zeros and recovers on one explicit retry', async () => {
     renderDashboard()
     await waitFor(() => expect(new Set(countRequests().map(request => request.url.pathname)).size).toBe(6))
     await resolveCounts()
     await waitFor(() => expect(lowStockRequest()).toBeDefined())
     await act(async () => lowStockRequest().reject(new TypeError('Synthetic network failure')))
-    await waitFor(() => expect(metric('العملاء النشطون').getByText('12')).toBeTruthy())
+    await waitFor(() => expect(screen.getByText('تعذّر تحميل مؤشرات النظام')).toBeTruthy())
+    expect(screen.queryByText('العملاء النشطون')).toBeNull()
     expect(screen.queryByText('تنبيهات المخزون')).toBeNull()
-    // PostgREST returns an error result rather than rejecting; Dashboard already ignores it.
-    expect(queryClient.getQueryData(dashboardKey('overview'))).toMatchObject({ lowStockItems: 0 })
+    expect(queryClient.getQueryData(dashboardKey('overview'))).toBeUndefined()
+    await waitFor(() => expect(metric('إيرادات اليوم').getByText('0.00')).toBeTruthy())
+    const requestStart = pendingRequests.length
+    const retry = screen.getByRole('button', { name: 'إعادة تحميل المؤشرات' })
+    fireEvent.click(retry)
+    await waitFor(() => expect(metric('العملاء النشطون').getByLabelText('جاري تحميل القيمة')).toBeTruthy())
+    expect(screen.queryByRole('button', { name: 'إعادة تحميل المؤشرات' })).toBeNull()
+    await waitFor(() => expect(pendingRequests.slice(requestStart)).toHaveLength(7))
+    await completeRequests(pendingRequests.slice(requestStart))
+    await waitFor(() => expect(metric('العملاء النشطون').getByText('12')).toBeTruthy())
+    expect(screen.queryByText('تعذّر تحميل مؤشرات النظام')).toBeNull()
+    expect(metric('أصناف منخفضة').getByText('3')).toBeTruthy()
     expect(screen.getByText('طلبات بيع تحتاج تنفيذ')).toBeTruthy()
   })
 
@@ -240,15 +251,51 @@ describe('Dashboard overview network loading', () => {
     expect(queryClient.getQueryData(dashboardKey('sales'))).toMatchObject({ todayRevenue: 125, monthRevenue: 125, pendingOrders: 9 })
   })
 
-  it('preserves shared pending-count transport failure as zero in both groups', async () => {
+  it('reports a shared pending-count failure in both groups without zero metrics', async () => {
     renderDashboard()
     await waitFor(() => expect(countRequests()).toHaveLength(7))
     const request = pendingSalesRequests()[0]
     await act(async () => request.reject(new TypeError('Synthetic pending-count failure')))
     await completeRequests(pendingRequests.filter(candidate => candidate !== request))
-    await waitFor(() => expect(metric('طلبات معلقة').getByText('0')).toBeTruthy())
-    expect(metric('طلبات محددة').getByText('0')).toBeTruthy()
-    expect(queryClient.getQueryData(dashboardKey('sales'))).toMatchObject({ pendingOrders: 0 })
+    await waitFor(() => expect(screen.getByText('تعذّر تحميل مؤشرات النظام')).toBeTruthy())
+    expect(screen.getByText('تعذّر تحميل مؤشرات المبيعات')).toBeTruthy()
+    expect(screen.queryByText('طلبات معلقة')).toBeNull()
+    expect(screen.queryByText('طلبات محددة')).toBeNull()
+    expect(queryClient.getQueryData(dashboardKey('sales'))).toBeUndefined()
+  })
+
+  it.each([false, true])('keeps overview independent when sales HTTP fails, cached=%s', async cached => {
+    deferRevenue = true
+    renderDashboard()
+    await waitFor(() => expect(pendingRequests).toHaveLength(10))
+    if (cached) {
+      await completeRequests([...pendingRequests])
+      await waitFor(() => expect(metric('إيرادات اليوم').getByText('125.00')).toBeTruthy())
+      const previousCount = pendingRequests.length
+      act(() => { void queryClient.refetchQueries({ queryKey: dashboardKey('sales'), exact: true }) })
+      await waitFor(() => expect(pendingRequests.slice(previousCount)).toHaveLength(4))
+      const refreshed = pendingRequests.slice(previousCount)
+      const failed = refreshed.find(request => request.init?.method !== 'HEAD')!
+      await act(async () => failed.resolve(new Response(JSON.stringify({ code: '42501', message: 'Synthetic denied' }), {
+        status: 403, headers: { 'content-type': 'application/json' },
+      })))
+      await completeRequests(refreshed.filter(request => request !== failed))
+    } else {
+      const failed = pendingRequests.find(request => request.url.pathname === '/rest/v1/sales_orders' && request.init?.method !== 'HEAD')!
+      await act(async () => failed.resolve(new Response(JSON.stringify({ code: '503', message: 'Synthetic unavailable' }), {
+        status: 503, headers: { 'content-type': 'application/json' },
+      })))
+      await completeRequests(pendingRequests.filter(request => request !== failed))
+    }
+    await waitFor(() => expect(screen.getByText('تعذّر تحميل مؤشرات المبيعات')).toBeTruthy())
+    expect(metric('العملاء النشطون').getByText('12')).toBeTruthy()
+    expect(screen.queryByText('تعذّر تحميل مؤشرات النظام')).toBeNull()
+    if (cached) {
+      expect(metric('إيرادات اليوم').getByText('125.00')).toBeTruthy()
+      expect(screen.getByText('القيم المعروضة من آخر تحميل ناجح ولم تُحدّث.')).toBeTruthy()
+    } else {
+      expect(screen.queryByText('إيرادات اليوم')).toBeNull()
+    }
   })
 
   it('requests fresh counts for independent and overlapping refetches with existing data', async () => {

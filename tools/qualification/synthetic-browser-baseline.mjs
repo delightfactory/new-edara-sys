@@ -84,7 +84,7 @@ async function serveCandidate(port, currentDist) {
 }
 
 async function installBoundary(context, origin, scenario, evidence) {
-  const state = { profileAttempts: 0, allowProfileRecovery: false }
+  const state = { profileAttempts: 0, allowProfileRecovery: false, allowDashboardRecovery: false }
   const deferred = []
   const requestEvents = new WeakMap()
   context.on('response', response => {
@@ -210,6 +210,22 @@ async function runScenario(origin, scenario) {
         await expect(page.getByLabel('جاري تحميل القيمة').first()).toBeVisible()
         boundary.deferred.find(entry => entry.event.path === '/rest/v1/rpc/get_low_stock').release()
       }
+      if (scenario.kind === 'dashboard-error') {
+        const overviewFailed = scenario.errorGroup === 'overview'
+        const title = overviewFailed ? 'تعذّر تحميل مؤشرات النظام' : 'تعذّر تحميل مؤشرات المبيعات'
+        await expect(page.getByText(title, { exact: true })).toBeVisible()
+        const healthyLabel = overviewFailed ? 'إيرادات اليوم' : 'العملاء النشطون'
+        const hiddenLabel = overviewFailed ? 'العملاء النشطون' : 'إيرادات اليوم'
+        await expect(page.getByText(healthyLabel, { exact: true })).toBeVisible()
+        await expect(page.getByText(hiddenLabel, { exact: true })).toHaveCount(0)
+        assert.equal(evidence.requests.filter(request => request.status === 503).length, overviewFailed ? 1 : 2, 'Unexpected automatic dashboard retries')
+        await screenshot(page, 'dashboard-error', evidence)
+        boundary.state.allowDashboardRecovery = true
+        await page.getByRole('button', { name: overviewFailed ? 'إعادة تحميل المؤشرات' : 'إعادة تحميل المبيعات', exact: true }).click()
+        await expect(page.getByText(title, { exact: true })).toHaveCount(0)
+        await expect(page.getByText(hiddenLabel, { exact: true })).toBeVisible()
+        evidence.dashboardRetry = 'actual group retry button; failed metrics absent; independent group visible; recovered'
+      }
       if (scenario.kind === 'limited') {
         await expect(page.getByText('مرحباً بك', { exact: true })).toBeVisible()
         await expect(page.getByText('تنبيهات المخزون', { exact: true })).toHaveCount(0)
@@ -239,7 +255,7 @@ async function runScenario(origin, scenario) {
     evidence.journeyStatus = 'PASS'
     assert.deepEqual(evidence.boundaryFailures, [], 'Unexpected HTTP/WebSocket boundary')
     assert.deepEqual(evidence.pageErrors, [], 'Uncaught browser errors')
-    const allowedErrors = scenario.kind === 'retry' ? /503|\[Sentry no-op\]/ : scenario.kind === 'signedout' ? /406/ : /^$/
+    const allowedErrors = scenario.kind === 'retry' ? /503|\[Sentry no-op\]/ : scenario.kind === 'dashboard-error' ? /503/ : scenario.kind === 'signedout' ? /406/ : /^$/
     assert.ok(evidence.consoleErrors.every(message => allowedErrors.test(message)), `Unexpected console errors: ${evidence.consoleErrors.join('; ')}`)
     evidence.status = 'PASS'
   } catch (error) {
@@ -305,6 +321,7 @@ async function runBaseline() {
     { name: 'inactive-360', kind: 'inactive', width: 360, sidebar: true },
     { name: 'signedout-360', kind: 'signedout', width: 360, sidebar: true },
     { name: 'admin-1440-sidebar-off', kind: 'admin', width: 1440, sidebar: false },
+    ...[390, 900, 1440].map(width => ({ name: `dashboard-error-${width}`, kind: 'dashboard-error', errorGroup: width === 900 ? 'sales' : 'overview', width, sidebar: true })),
   ]
   for (const scenario of scenarios) {
     currentDist = scenario.sidebar ? distOn : distOff
