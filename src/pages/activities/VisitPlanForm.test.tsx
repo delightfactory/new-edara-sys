@@ -6,7 +6,7 @@ import { validateVisitPlanItems } from './visitPlanFormValidation'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
 import { PERMISSIONS } from '@/lib/permissions/constants'
-import { useVisitPlanTemplates, useVisitPlans } from '@/hooks/useQueryHooks'
+import { useCurrentEmployee, useVisitPlanTemplates, useVisitPlans } from '@/hooks/useQueryHooks'
 import { VisitRpcTransportError } from '@/lib/services/activities'
 import type { VisitRpcResult, CreateVisitPlanAtomicResult } from '@/lib/types/activities'
 
@@ -94,10 +94,10 @@ const mockUseVisitPlans = vi.fn(() =>
 vi.mock('@/hooks/useQueryHooks', () => ({
   useCreateVisitPlan: () => ({ mutate: mockCreatePlanMutate, mutateAsync: mockCreatePlanMutateAsync }),
   useAddVisitPlanItem: () => ({ mutate: mockAddVisitPlanItemMutate, mutateAsync: mockAddVisitPlanItemMutateAsync }),
-  useCurrentEmployee: () => ({
+  useCurrentEmployee: vi.fn(() => ({
     data: { id: 'emp-123', full_name: 'المندوب الحالي' },
     isLoading: false
-  }),
+  })),
   useHREmployees: () => ({
     data: {
       data: [
@@ -226,6 +226,14 @@ vi.mock('@/lib/config/features', () => ({
 }))
 
 describe('VisitPlanWizard - Phase 2a Creation', () => {
+  it('does not report another employee’s daily plan as a conflict before selecting an employee', () => {
+    vi.mocked(useCurrentEmployee).mockReturnValueOnce({ data: undefined, isLoading: false } as unknown as ReturnType<typeof useCurrentEmployee>)
+    mockUseVisitPlans.mockReturnValue({ data: { data: [{ id: 'other-employee-plan' }] }, isLoading: false } as unknown as VisitPlansReturnType)
+    render(<VisitPlanWizard />)
+    expect(screen.queryByText(/يوجد بالفعل خطة يومية لهذا الموظف/)).toBeNull()
+    expect((screen.getByRole('button', { name: 'التالي' }) as HTMLButtonElement).disabled).toBe(true)
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     mockIsAtomic = true

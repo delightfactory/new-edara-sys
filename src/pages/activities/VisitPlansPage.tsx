@@ -1,3 +1,4 @@
+import './VisitsWorkflow.css'
 import { useState, useMemo, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth-store'
@@ -210,7 +211,7 @@ export default function VisitPlansPage() {
   // ── Custom Loading Skeleton
   if (loading) {
     return (
-      <div className="page-container animate-enter">
+      <div className="page-container visits-workflow animate-enter">
         <PageHeader
           title="خطط الزيارات"
           subtitle="متابعة وإعداد خطط الزيارات اليومية والأسبوعية للمندوبين الميدانيين."
@@ -248,7 +249,7 @@ export default function VisitPlansPage() {
   // ── Custom Error State
   if (error) {
     return (
-      <div className="page-container animate-enter">
+      <div className="page-container visits-workflow animate-enter">
         <PageHeader
           title="خطط الزيارات"
           subtitle="متابعة وإعداد خطط الزيارات اليومية والأسبوعية للمندوبين الميدانيين."
@@ -265,7 +266,7 @@ export default function VisitPlansPage() {
   }
 
   return (
-    <div className="page-container animate-enter">
+    <div className="page-container visits-workflow animate-enter">
       <PageHeader
         title="خطط الزيارات"
         subtitle="متابعة وإعداد خطط الزيارات اليومية والأسبوعية للمندوبين الميدانيين."

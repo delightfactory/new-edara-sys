@@ -354,7 +354,14 @@ describe('VisitPlanDetail - Execution Actions', () => {
     fireEvent.change(screen.getByPlaceholderText('اكتب سبب إعادة الجدولة...'), { target: { value: 'طلب العميل' } })
     fireEvent.click(screen.getByRole('button', { name: 'تأكيد إعادة الجدولة' }))
 
-    expect(toast.success).toHaveBeenCalledWith(expect.stringContaining('خطة مسودة تحتاج الاعتماد'))
+    expect(toast.success).toHaveBeenCalledWith(expect.stringContaining('خطة مسودة تحتاج الاعتماد'), {
+      action: { label: 'فتح خطة اليوم الجديد', onClick: expect.any(Function) },
+    })
+    const options = vi.mocked(toast.success).mock.calls.at(-1)?.[1]
+    if (options?.action && typeof options.action === 'object' && 'onClick' in options.action) {
+      options.action.onClick({} as React.MouseEvent<HTMLButtonElement>)
+    }
+    expect(mockNavigate).toHaveBeenCalledWith('/activities/visit-plans/target-plan-1')
   })
 
   it('uses atomic close missed RPC when VISITS_ATOMIC_EXECUTION=true', async () => {

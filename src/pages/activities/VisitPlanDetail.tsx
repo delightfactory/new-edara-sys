@@ -1,3 +1,4 @@
+import './VisitsWorkflow.css'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   useVisitPlan, useVisitPlanItems,
@@ -482,10 +483,17 @@ export default function VisitPlanDetail() {
             // Older server versions do not return target_plan_status. Treat that
             // response conservatively as a draft until the completion migration lands.
             const needsConfirmation = result.data?.target_plan_status !== 'confirmed'
+            const targetPlanId = result.data?.target_plan_id
             toast.success(
               needsConfirmation
                 ? `تمت إعادة الجدولة إلى ${dateLabel} داخل خطة مسودة تحتاج الاعتماد`
-                : `تمت إعادة الجدولة إلى ${dateLabel} داخل الخطة المعتمدة`
+                : `تمت إعادة الجدولة إلى ${dateLabel} داخل الخطة المعتمدة`,
+              targetPlanId ? {
+                action: {
+                  label: 'فتح خطة اليوم الجديد',
+                  onClick: () => navigate(`/activities/visit-plans/${targetPlanId}`),
+                },
+              } : undefined,
             )
             setRescheduleItem(null)
             setRescheduleTime('')
@@ -777,7 +785,7 @@ export default function VisitPlanDetail() {
   // ── Loading
   if (planLoading) {
     return (
-      <div className="page-container animate-enter">
+      <div className="page-container visits-workflow animate-enter">
         <div className="edara-card" style={{ padding: 'var(--space-6)' }}>
           {[1, 2, 3].map(i => (
             <div key={i} className="skeleton" style={{ height: 24, marginBottom: 'var(--space-3)', width: `${80 - i * 15}%` }} />
@@ -789,7 +797,7 @@ export default function VisitPlanDetail() {
 
   if (!plan) {
     return (
-      <div className="page-container animate-enter">
+      <div className="page-container visits-workflow animate-enter">
         <div className="empty-state" style={{ padding: 'var(--space-8)' }}>
           <p className="empty-state-title">لم يتم العثور على الخطة</p>
           <Button variant="secondary" onClick={() => navigate('/activities/visit-plans')}>العودة</Button>
@@ -802,7 +810,7 @@ export default function VisitPlanDetail() {
   const highPriority = pendingItems.filter(i => i.priority === 'high')
 
   return (
-    <div className="page-container animate-enter">
+    <div className="page-container visits-workflow animate-enter">
       <PageHeader
         title={`خطة زيارات — ${fmtDate(plan.plan_date)}`}
         subtitle={plan.employee?.full_name}
@@ -811,15 +819,15 @@ export default function VisitPlanDetail() {
           { label: fmtDate(plan.plan_date) },
         ]}
         actions={
-          <div className="flex gap-2">
-            {/* زر بدء التنفيذ */}
+          <div className="vp-header-actions">
+            {/* زر بدء/متابعة التنفيذ */}
             {canExecute && (
               <Button
                 onClick={() => navigate(`/activities/visit-plans/${id}/execute`)}
                 icon={<Play size={16} />}
                 style={{ background: 'var(--color-success)', borderColor: 'var(--color-success)' }}
               >
-                بدء التنفيذ
+                {plan.status === 'in_progress' ? 'متابعة التنفيذ' : 'بدء التنفيذ'}
               </Button>
             )}
 
@@ -967,6 +975,11 @@ export default function VisitPlanDetail() {
       </div>
 
       {/* ── Plan Items ───────────────────────────────────────────── */}
+      {canExecute && pendingItems.length > 0 && (
+        <p className="vp-order-hint">
+          افتح تنفيذ الخطة لمتابعة الزيارة الجارية أو أول زيارة معلّقة حسب ترتيب المسار.
+        </p>
+      )}
       <div className="vp-items">
         {itemsLoading ? (
           [1, 2, 3].map(i => <CardSkeleton key={i} />)
@@ -1030,6 +1043,7 @@ export default function VisitPlanDetail() {
               <PlanItemCard
                 item={item}
                 type="visit"
+                startLabel="فتح تنفيذ الخطة"
                 onStart={canExecute && item.status === 'pending' ? () => navigate(
                   `/activities/visit-plans/${id}/execute`
                 ) : undefined}
@@ -1396,6 +1410,7 @@ export default function VisitPlanDetail() {
           </p>
           <div className="vp-modal-hint">
             💡 إعادة الجدولة تُغيّر حالة هذا البند إلى "معاد جدولته" ولا تحذف البند الأصلي.
+            {VISITS_ATOMIC_EXECUTION && <p>إذا لم توجد خطة في اليوم الجديد، تُنشأ كمسودة تحتاج اعتمادًا قبل التنفيذ.</p>}
           </div>
           <div className="form-group">
             <label className="form-label">التاريخ الجديد <span className="form-required">*</span></label>
@@ -1633,6 +1648,12 @@ export default function VisitPlanDetail() {
         .vp-summary-item { text-align: center; }
         .vp-summary-value { font-size: var(--text-xl); font-weight: 700; }
         .vp-summary-label { font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px; }
+        .vp-order-hint {
+          margin: var(--space-3) 0 0;
+          font-size: var(--text-xs);
+          color: var(--text-muted);
+          line-height: 1.6;
+        }
         .vp-alert-high {
           display: flex;
           align-items: center;

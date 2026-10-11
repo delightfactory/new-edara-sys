@@ -855,6 +855,88 @@ describe('VisitExecutionMode UI Integration Tests (Atomic Mode)', () => {
 
     expect(screen.getByText(/تنشيط العميل أو المنتج/)).toBeDefined()
     expect(screen.getByText('إنهاء الزيارة').closest('button')?.disabled).toBe(true)
+    // UX: a one-line reason next to the disabled finish button, derived from the same gating.
+    expect(screen.getByText('أكمل الاستبيانات الإلزامية في تبويب الاستبيانات أولاً.')).toBeDefined()
+  })
+
+  it('keeps the current customer identity visible while the checklists tab is active', () => {
+    vi.mocked(useVisitExecutionSession).mockReturnValue({
+      session: {
+        userId: 'test-user-123',
+        planId: 'plan-123',
+        itemId: 'item-1',
+        serverStartedAt: '2026-07-06T19:00:00Z',
+        clientStartedAt: '2026-07-06T19:00:00Z',
+        startGPS: { lat: 30, lng: 31 },
+        startGPSAccuracy: 10,
+        gpsValidationStatus: 'passed',
+        checklistDrafts: {},
+        gpsExceptionReason: null,
+        updatedAt: Date.now(),
+        expiresAt: Date.now() + 1000
+      },
+      pendingOps: [], loading: false, error: null,
+      startVisit: vi.fn(), completeVisit: vi.fn(), skipVisit: vi.fn(),
+      retryOperation: vi.fn(), discardFailedOperation: vi.fn(),
+      saveChecklistDraft: vi.fn(), saveGpsExceptionReason: vi.fn(), reloadFromDb: vi.fn()
+    } as unknown as ReturnType<typeof useVisitExecutionSession>)
+
+    render(<VisitExecutionMode />)
+
+    // Default active tab is "checklists" — identity must still be visible, not hidden on the customer tab only.
+    expect(screen.getByRole('tab', { name: /الاستبيانات والإثبات/ }).getAttribute('aria-selected')).toBe('true')
+    expect(screen.getByRole('heading', { name: 'عميل 1' }).closest('[hidden]')).toBeNull()
+  })
+
+  it('shows a concise contextual instruction before starting', () => {
+    vi.mocked(useVisitExecutionSession).mockReturnValue({
+      session: null,
+      pendingOps: [], loading: false, error: null,
+      startVisit: vi.fn(), completeVisit: vi.fn(), skipVisit: vi.fn(),
+      retryOperation: vi.fn(), discardFailedOperation: vi.fn(),
+      saveChecklistDraft: vi.fn(), saveGpsExceptionReason: vi.fn(), reloadFromDb: vi.fn()
+    } as unknown as ReturnType<typeof useVisitExecutionSession>)
+
+    render(<VisitExecutionMode />)
+
+    expect(screen.getByText('اضغط "بدء الزيارة" لتسجيل موقعك والانتقال إلى الاستبيانات.')).toBeDefined()
+  })
+
+  it('shows the GPS exception block on the customer tab too, not only on checklists', () => {
+    const mockSession = {
+      userId: 'test-user-123',
+      planId: 'plan-123',
+      itemId: 'item-1',
+      serverStartedAt: '2026-07-06T19:00:00Z',
+      clientStartedAt: '2026-07-06T19:00:00Z',
+      startGPS: { lat: 30, lng: 31 },
+      startGPSAccuracy: 10,
+      gpsValidationStatus: 'failed_distance' as any,
+      checklistDrafts: {},
+      gpsExceptionReason: null,
+      updatedAt: Date.now(),
+      expiresAt: Date.now() + 1000
+    }
+
+    vi.mocked(useVisitExecutionSession).mockReturnValue({
+      session: mockSession,
+      pendingOps: [], loading: false, error: null,
+      startVisit: vi.fn(), completeVisit: vi.fn(), skipVisit: vi.fn(),
+      retryOperation: vi.fn(), discardFailedOperation: vi.fn(),
+      saveChecklistDraft: vi.fn(), saveGpsExceptionReason: vi.fn(), reloadFromDb: vi.fn()
+    } as unknown as ReturnType<typeof useVisitExecutionSession>)
+
+    render(<VisitExecutionMode />)
+
+    expect(screen.getByText(/أنت خارج النطاق الجغرافي المسموح به للعميل/)).toBeDefined()
+    expect(screen.getByText(/أنت خارج النطاق الجغرافي المسموح به للعميل/).closest('[hidden]')).toBeNull()
+
+    fireEvent.click(screen.getByRole('tab', { name: /العميل والتوجه/ }))
+
+    // The GPS exception block now lives outside the tab-hidden checklist panel,
+    // so it must remain visible after switching to the customer tab.
+    expect(screen.getByText(/أنت خارج النطاق الجغرافي المسموح به للعميل/)).toBeDefined()
+    expect(screen.getByText(/أنت خارج النطاق الجغرافي المسموح به للعميل/).closest('[hidden]')).toBeNull()
   })
 
   it('renders blocker screen when VISITS_ATOMIC_EXECUTION is false', () => {

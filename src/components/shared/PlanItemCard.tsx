@@ -8,6 +8,8 @@ interface PlanItemCardProps {
   onSkip?: () => void
   onViewActivity?: () => void
   disabled?: boolean
+  /** Override the start button label (defaults preserved for existing call/visit consumers) */
+  startLabel?: string
 }
 
 const STATUS_ICON: Record<PlanItemStatus, string> = {
@@ -44,6 +46,7 @@ export default function PlanItemCard({
   onSkip,
   onViewActivity,
   disabled,
+  startLabel,
 }: PlanItemCardProps) {
   const isDone    = item.status === 'completed' || item.status === 'skipped' || item.status === 'missed'
   const isActive  = item.status === 'in_progress'
@@ -87,7 +90,7 @@ export default function PlanItemCard({
           <div className="pic-actions">
             {onStart && (
               <button className="btn btn--primary btn--sm" onClick={onStart} type="button">
-                {type === 'visit' ? '▶ بدء الزيارة' : '▶ بدء المكالمة'}
+                {startLabel ?? (type === 'visit' ? '▶ بدء الزيارة' : '▶ بدء المكالمة')}
               </button>
             )}
             {onSkip && (

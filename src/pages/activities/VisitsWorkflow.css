@@ -1,0 +1,98 @@
+/* Visits composition uses the existing semantic tokens; other modules keep their layout. */
+.visits-workflow { min-inline-size: 0; }
+.visits-workflow .vp-header-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.visits-workflow .vp-items { gap: var(--space-4); }
+.visits-workflow .vp-summary { gap: var(--space-4); padding: var(--space-5); }
+.visits-workflow .vp-summary-item { min-inline-size: 0; }
+.visits-workflow .vp-summary-value { font-variant-numeric: tabular-nums; }
+.visits-workflow .vp-order-hint {
+  padding: var(--space-3) var(--space-4);
+  border-inline-start: 3px solid var(--color-primary);
+  background: var(--color-primary-light);
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+}
+.visits-workflow .vp-item-wrapper {
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  overflow: clip;
+}
+.visits-workflow .pic { border: 0; border-radius: 0; padding: var(--space-4); }
+.visits-workflow .pic-body { min-inline-size: 0; gap: var(--space-2); }
+.visits-workflow .pic-top { flex-wrap: wrap; align-items: flex-start; }
+.visits-workflow .pic-customer { font-size: var(--text-base); overflow-wrap: anywhere; }
+.visits-workflow .pic-seq {
+  background: var(--bg-surface-2); border-radius: var(--radius-md);
+  padding: var(--space-2); align-self: start;
+}
+.visits-workflow .pic-meta { flex-wrap: wrap; }
+.visits-workflow .vp-item-actions {
+  padding: var(--space-3) var(--space-4);
+  border-block-start: 1px solid var(--border-primary);
+  background: var(--bg-surface-2);
+  flex-wrap: wrap;
+}
+.visits-workflow .pic-actions .btn {
+  min-block-size: 44px; padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--border-primary); border-radius: var(--radius-md);
+  background: var(--bg-surface); color: var(--text-primary);
+  font: inherit; font-weight: 600; cursor: pointer;
+}
+.visits-workflow .pic-actions .btn--primary {
+  background: var(--color-primary); border-color: var(--color-primary); color: var(--text-on-primary, #fff);
+}
+.visits-workflow :is(.vp-action-btn, .vp-edit-btn, .vem-op-action-btn, .vem-nav-btn) {
+  min-block-size: 44px;
+}
+.visits-workflow :is(.pic-actions .btn, .vp-action-btn, .vpie-ctrl-btn):focus-visible {
+  outline: 2px solid var(--color-primary); outline-offset: 3px;
+}
+.visits-workflow .vpw { max-inline-size: 1120px; margin-inline: auto; }
+.visits-workflow .vpw-body { padding: var(--space-5); }
+.visits-workflow .vpw-section-title { margin-block-end: var(--space-4); }
+.visits-workflow .vpw-settings-grid { gap: var(--space-5); }
+.visits-workflow .vpw-review-row { gap: var(--space-4); align-items: flex-start; }
+.visits-workflow .vpw-review-value { overflow-wrap: anywhere; min-inline-size: 0; }
+.visits-workflow .vpw-review-item-name { overflow-wrap: anywhere; }
+.visits-workflow .vpw-customer-name { white-space: normal; overflow-wrap: anywhere; }
+.visits-workflow .vpw-nav { position: relative; flex-wrap: wrap; padding-block: var(--space-4); }
+.visits-workflow .vpie-fields-grid { gap: var(--space-4); }
+.visits-workflow .vpie-field { min-inline-size: 0; }
+.visits-workflow :is(.vpie-select, .vpie-input) { min-block-size: 44px; }
+.visits-workflow .vem-header { border-radius: var(--radius-lg); margin-block-end: var(--space-4); }
+.visits-workflow .vem-next-step-hint {
+  background: var(--bg-surface-2); padding: var(--space-3);
+  border-radius: var(--radius-md); color: var(--text-secondary);
+}
+.visits-workflow .vem-gps-exception-container { margin-block-end: var(--space-3); }
+.visits-workflow .vem-tabs { flex-wrap: wrap; }
+.visits-workflow .vem-tab { flex: 1 1 180px; }
+.visits-workflow .vem-op-banner { position: relative; flex-wrap: wrap; gap: var(--space-3); }
+.visits-workflow .vem-card-row { flex-wrap: wrap; }
+@media (max-width: 768px) {
+  .visits-workflow .page-actions { inline-size: 100%; }
+  .visits-workflow .vp-header-actions { inline-size: 100%; flex-direction: row; }
+  .visits-workflow .vp-header-actions > button:first-child { flex: 1 1 160px; }
+  .visits-workflow .vp-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: var(--space-4); }
+  .visits-workflow .pic { grid-template-columns: 36px minmax(0, 1fr); gap: var(--space-3); }
+  .visits-workflow .pic-actions .btn { inline-size: 100%; }
+  .visits-workflow .vp-item-actions > button { flex: 1 1 120px; }
+  .visits-workflow .vpw-body { padding: var(--space-4); }
+  .visits-workflow .vpw-settings-grid { grid-template-columns: minmax(0, 1fr); }
+  .visits-workflow .vpw-type-chips { grid-template-columns: minmax(0, 1fr); }
+  .visits-workflow .vpw-nav > button { flex: 1 1 130px; }
+  .visits-workflow .vpie-fields-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .visits-workflow .vem-card { padding: var(--space-4); }
+  .visits-workflow .vem-sticky-action-bar { padding: var(--space-3); }
+}
+@media (min-width: 769px) and (max-width: 1024px) {
+  .visits-workflow .vpw-settings-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .visits-workflow .vpie-fields-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .visits-workflow .vp-summary { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (min-width: 1025px) {
+  .visits-workflow .pic { grid-template-columns: 44px minmax(0, 1fr); }
+  .visits-workflow .vpw-settings-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .visits-workflow .vpie-fields-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}

@@ -1,3 +1,4 @@
+import './VisitsWorkflow.css'
 /**
  * VisitPlanWizard — إنشاء خطة زيارات بـ 4 خطوات
  * يستبدل VisitPlanForm البسيط بـ Wizard احترافي:
@@ -132,7 +133,7 @@ export default function VisitPlanWizard() {
     planType === 'daily' && employeeId ? { employeeId, dateFrom: planDate, dateTo: planDate } : undefined
   )
   const existingPlans = existingPlansResult?.data ?? []
-  const hasDailyConflict = planType === 'daily' && existingPlans.length > 0
+  const hasDailyConflict = planType === 'daily' && !!employeeId && existingPlans.length > 0
 
   // ── Step 1: Customer selection ─────────────────────────────
   const [selectedCustomers, setSelectedCustomers] = useState<SelectedCustomer[]>([])
@@ -485,7 +486,7 @@ export default function VisitPlanWizard() {
   // RENDER
   // ═══════════════════════════════════════════════════════════
   return (
-    <div className="page-container animate-enter">
+    <div className="page-container visits-workflow animate-enter">
       <PageHeader
         title="خطة زيارات جديدة"
         subtitle="إنشاء خطة زيارات ميدانية"
@@ -496,7 +497,7 @@ export default function VisitPlanWizard() {
       />
 
       <div className="vpw">
-        <Stepper steps={WIZARD_STEPS} currentStep={step} />
+        <Stepper steps={WIZARD_STEPS} currentStep={step} mobileLayout="wrap" ariaLabel="خطوات إعداد خطة الزيارات" />
 
         <div className="vpw-body">
 
@@ -633,7 +634,7 @@ export default function VisitPlanWizard() {
               {/* Customer search results */}
               <div className="vpw-customer-list">
                 {customerSearch.isLoading && customerSearch.results.length === 0 ? (
-                  <div className="page-container animate-enter">
+                  <div className="page-container visits-workflow animate-enter">
                     <div className="edara-card max-w-[760px] mx-auto p-6">
                       {[1, 2, 3].map(i => <CardSkeleton key={i} />)}
                     </div>

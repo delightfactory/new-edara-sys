@@ -1,3 +1,4 @@
+import './VisitsWorkflow.css'
 /**
  * VisitExecutionMode — وضع التنفيذ الذكي للمندوب
  * شاشة مخصصة للتنفيذ الميداني (Mobile-first):
@@ -312,6 +313,25 @@ export default function VisitExecutionMode() {
     return false
   }, [completing, isPendingActive, isStarting, skipping, retryingOpId, currentItem, templatesLoading, templatesError, templatesLoaded, mandatoryTemplates.length, atomicChecklistReady, hasRequiredLocalPhotoReferences])
 
+  // ── Reason shown next to the disabled "إنهاء الزيارة" button — derived strictly
+  // from the same gating inputs as isCompleteDisabled, no new conditions.
+  const completeDisabledReason = useMemo(() => {
+    if (!isCompleteDisabled) return null
+    if (completing || isPendingActive || isStarting || skipping || retryingOpId !== null) return null
+    if (templatesError) return 'لا يمكن الإنهاء الآن — تعذر تحميل استبيانات الزيارة.'
+    if (templatesLoading || !templatesLoaded) return 'لا يمكن الإنهاء الآن — ما زالت استبيانات الزيارة قيد التحميل.'
+    if (mandatoryTemplates.length > 0 && !atomicChecklistReady) return 'أكمل الاستبيانات الإلزامية في تبويب الاستبيانات أولاً.'
+    if (hasRequiredLocalPhotoReferences) return 'صورة مطلوبة محفوظة على الجهاز — انتظر مزامنتها مع الخادم.'
+    return null
+  }, [isCompleteDisabled, completing, isPendingActive, isStarting, skipping, retryingOpId, templatesError, templatesLoading, templatesLoaded, mandatoryTemplates.length, atomicChecklistReady, hasRequiredLocalPhotoReferences])
+
+  // ── Concise next-step instruction — pre-start vs. active, from existing state only.
+  const nextStepHint = useMemo(() => {
+    if (!isActive) return 'اضغط "بدء الزيارة" لتسجيل موقعك والانتقال إلى الاستبيانات.'
+    if (isCompleteDisabled) return 'أكمل المطلوب أدناه ثم اضغط "إنهاء الزيارة".'
+    return 'راجع البيانات واضغط "إنهاء الزيارة" لإتمامها.'
+  }, [isActive, isCompleteDisabled])
+
   const handleRetryOperation = useCallback(async (opId: string) => {
     if (isActionExecutingRef.current || isStarting || completing || skipping || retryingOpId !== null) return
     const op = atomic.pendingOps.find(o => o.operationId === opId)
@@ -563,7 +583,7 @@ export default function VisitExecutionMode() {
   // ── Loading
   if (planLoading || itemsLoading || currentEmployeeLoading || atomic.loading) {
     return (
-      <div className="page-container animate-enter">
+      <div className="page-container visits-workflow animate-enter">
         <div className="edara-card p-6 text-center">
           <Loader2 size={32} className="animate-spin mx-auto mb-3 text-primary" />
           <p className="text-muted">جاري تحضير بيانات الخطة...</p>
@@ -604,7 +624,7 @@ export default function VisitExecutionMode() {
 
   if (atomic.error) {
     return (
-      <div className="page-container animate-enter">
+      <div className="page-container visits-workflow animate-enter">
         <div className="edara-card p-6 text-center text-red-500">
           <p>{atomic.error}</p>
           <Button variant="secondary" onClick={() => atomic.reloadFromDb()} className="mt-3">أعد المحاولة</Button>
@@ -617,7 +637,7 @@ export default function VisitExecutionMode() {
   const allDone = sortedItems.every(i => i.status === 'completed' || i.status === 'skipped' || i.status === 'missed')
 
   return (
-    <div className="page-container vem animate-enter">
+    <div className="page-container visits-workflow vem animate-enter">
       {/* ── Header bar ── */}
       <div className="vem-header">
         <button className="vem-back" onClick={() => navigate(`/activities/visit-plans/${id}`)}>
@@ -733,11 +753,50 @@ export default function VisitExecutionMode() {
           <div className={`vem-card ${isActive ? 'vem-card--active' : ''}`}>
             <div className="vem-card-seq">#{currentIndex + 1}</div>
 
-            {/* Tab Panel 1: العميل والتوجه */}
-            <div id="vem-tab-customer" role="tabpanel" hidden={isActive && activeTab !== 'customer'} className="vem-card-body">
+            {/* ── Identity bar: always visible, regardless of active tab ── */}
+            <div className="vem-identity-bar">
               <h3 className="vem-card-name">{currentItem.customer?.name || 'عميل'}</h3>
               <span className="vem-card-code">{currentItem.customer?.code}</span>
+            </div>
 
+            {/* ── Concise next-step guidance — differs pre-start vs. active ── */}
+            <p className="vem-next-step-hint">{nextStepHint}</p>
+
+            {/* ── GPS exception block — visible once on both tabs during an active visit ── */}
+            {isActive && (
+              <div className="vem-gps-exception-container">
+                {isGpsInvalid ? (
+                  <div className="vem-gps-warning">
+                    <p className="text-sm font-bold text-red-600">⚠️ أنت خارج النطاق الجغرافي المسموح به للعميل.</p>
+                    <p className="text-xs text-red-500">يمكنك كتابة مبرر، أو إنهاء الزيارة وسيتم تحويل الموقع للمراجعة دون تعطيلك.</p>
+                  </div>
+                ) : (
+                  atomic.session?.startGPSAccuracy !== null && atomic.session?.startGPSAccuracy !== undefined && (
+                    <div className={`vem-gps-accuracy-badge ${atomic.session.startGPSAccuracy > 50 ? 'vem-gps-accuracy-badge--low' : 'vem-gps-accuracy-badge--good'}`}>
+                      {atomic.session.startGPSAccuracy > 50 ? `⚠️ دقة موقع منخفضة: ${Math.round(atomic.session.startGPSAccuracy)} متر` : `✓ دقة موقع جيدة: ${Math.round(atomic.session.startGPSAccuracy)} متر`}
+                    </div>
+                  )
+                )}
+                {/* حقل المبرر يظهر فقط عند isGpsInvalid (Quick Wins UX) */}
+                {isGpsInvalid && (
+                  <>
+                    <label className="vem-gps-exception-label" htmlFor="visit-gps-reason">
+                      مبرر تجاوز موقع العميل الجغرافي <span className="vem-draft-status">(اختياري)</span>
+                    </label>
+                    <textarea
+                      id="visit-gps-reason" className="form-input vem-gps-exception-textarea"
+                      placeholder="اكتب التبرير إن كان متاحًا..."
+                      value={atomic.session?.gpsExceptionReason || ''}
+                      onChange={e => atomic.saveGpsExceptionReason(e.target.value)}
+                      disabled={isPendingActive}
+                    />
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Tab Panel 1: العميل والتوجه */}
+            <div id="vem-tab-customer" role="tabpanel" hidden={isActive && activeTab !== 'customer'} className="vem-card-body">
               {/* Phone */}
               {currentItem.customer?.phone && (
                 <a href={`tel:${currentItem.customer.phone}`} className="vem-card-row vem-card-phone">
@@ -896,36 +955,6 @@ export default function VisitExecutionMode() {
                     </div>
                   )}
 
-                  {/* GPS Exception Input & Warning — يظهر فقط عند وجود مشكلة في النطاق الجغرافي — */}
-                  <div className="vem-gps-exception-container">
-                    {isGpsInvalid ? (
-                      <div className="vem-gps-warning">
-                        <p className="text-sm font-bold text-red-600">⚠️ أنت خارج النطاق الجغرافي المسموح به للعميل.</p>
-                        <p className="text-xs text-red-500">يمكنك كتابة مبرر، أو إنهاء الزيارة وسيتم تحويل الموقع للمراجعة دون تعطيلك.</p>
-                      </div>
-                    ) : (
-                      atomic.session?.startGPSAccuracy !== null && atomic.session?.startGPSAccuracy !== undefined && (
-                        <div className={`vem-gps-accuracy-badge ${atomic.session.startGPSAccuracy > 50 ? 'vem-gps-accuracy-badge--low' : 'vem-gps-accuracy-badge--good'}`}>
-                          {atomic.session.startGPSAccuracy > 50 ? `⚠️ دقة موقع منخفضة: ${Math.round(atomic.session.startGPSAccuracy)} متر` : `✓ دقة موقع جيدة: ${Math.round(atomic.session.startGPSAccuracy)} متر`}
-                        </div>
-                      )
-                    )}
-                    {/* حقل المبرر يظهر فقط عند isGpsInvalid (Quick Wins UX) */}
-                    {isGpsInvalid && (
-                      <>
-                        <label className="vem-gps-exception-label">
-                          مبرر تجاوز موقع العميل الجغرافي <span className="vem-draft-status">(اختياري)</span>
-                        </label>
-                        <textarea
-                          className="form-input vem-gps-exception-textarea"
-                          placeholder="اكتب التبرير إن كان متاحًا..."
-                          value={atomic.session?.gpsExceptionReason || ''}
-                          onChange={e => atomic.saveGpsExceptionReason(e.target.value)}
-                          disabled={isPendingActive}
-                        />
-                      </>
-                    )}
-                  </div>
                 </div>
               )}
             </div>
@@ -956,6 +985,9 @@ export default function VisitExecutionMode() {
                     <><CheckCircle size={18} /> إنهاء الزيارة</>
                   )}
                 </button>
+              )}
+              {isActive && isCompleteDisabled && completeDisabledReason && (
+                <p className="vem-complete-disabled-reason" role="status">{completeDisabledReason}</p>
               )}
             </div>
 
@@ -1108,8 +1140,25 @@ export default function VisitExecutionMode() {
           border-radius: var(--radius-sm);
         }
         .vem-card-body { display: flex; flex-direction: column; gap: var(--space-2); }
-        .vem-card-name { font-size: var(--text-lg); font-weight: 700; margin: 0; margin-inline-start: var(--space-12); text-align: start; }
+        .vem-card-name {
+          font-size: var(--text-lg); font-weight: 700; margin: 0; text-align: start;
+          overflow-wrap: anywhere; min-width: 0;
+        }
         .vem-card-code { font-size: var(--text-xs); color: var(--text-muted); align-self: flex-start; }
+
+        .vem-identity-bar {
+          display: flex; flex-direction: column; gap: 2px;
+          margin-inline-start: var(--space-12); min-width: 0;
+          margin-bottom: var(--space-2);
+        }
+        .vem-next-step-hint {
+          margin: 0 0 var(--space-3); font-size: var(--text-sm);
+          color: var(--text-secondary); line-height: 1.6;
+        }
+        .vem-complete-disabled-reason {
+          margin: var(--space-2) 0 0; font-size: var(--text-xs);
+          color: var(--text-muted); text-align: center; line-height: 1.6;
+        }
 
         .vem-card-row {
           display: flex; align-items: center; gap: var(--space-2);
