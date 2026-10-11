@@ -161,59 +161,23 @@ export async function createPurchaseReturn(
 }
 
 export async function updatePurchaseReturn(
-  id:     string,
+  id: string,
   header: Partial<PurchaseReturnInput>,
   items?: PurchaseReturnItemInput[]
 ): Promise<PurchaseReturn> {
-  const cleanHeader = sanitize(header)
-
-  const { error: hdrError } = await supabase
-    .from('purchase_returns')
-    .update(cleanHeader)
-    .eq('id', id)
-    .eq('status', 'draft')
-  if (hdrError) throw translateError(hdrError)
-
-  if (items !== undefined) {
-    const { error: delError } = await supabase
-      .from('purchase_return_items')
-      .delete()
-      .eq('return_id', id)
-    if (delError) throw translateError(delError)
-
-    if (items.length > 0) {
-      const rows = items.map(item => ({
-        return_id:     id,
-        product_id:    item.product_id,
-        unit_id:       item.unit_id || null,
-        quantity:      item.quantity,
-        unit_price:    item.unit_price,
-        discount_rate: item.discount_rate ?? 0,
-        tax_rate:      item.tax_rate      ?? 0,
-      }))
-      const { error: insError } = await supabase
-        .from('purchase_return_items')
-        .insert(rows)
-      if (insError) throw translateError(insError)
-    }
-
-    const subtotal    = items.reduce((s, i) => s + i.quantity * i.unit_price, 0)
-    const discountAmt = items.reduce((s, i) => s + i.quantity * i.unit_price * ((i.discount_rate ?? 0) / 100), 0)
-    const taxAmt      = items.reduce(
-      (s, i) => s + i.quantity * i.unit_price * (1 - (i.discount_rate ?? 0) / 100) * ((i.tax_rate ?? 0) / 100), 0
-    )
-    const { error: totError } = await supabase
-      .from('purchase_returns')
-      .update({
-        subtotal:        Math.round(subtotal    * 100) / 100,
-        discount_amount: Math.round(discountAmt * 100) / 100,
-        tax_amount:      Math.round(taxAmt      * 100) / 100,
-        total_amount:    Math.round((subtotal - discountAmt + taxAmt) * 100) / 100,
-      })
-      .eq('id', id)
-    if (totError) throw translateError(totError)
-  }
-
+  const { error } = await supabase.rpc('update_purchase_return_draft', {
+    p_return_id: id,
+    p_header: sanitize(header),
+    p_items: items === undefined ? null : items.map(item => ({
+      product_id: item.product_id,
+      unit_id: item.unit_id || null,
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+      discount_rate: item.discount_rate ?? 0,
+      tax_rate: item.tax_rate ?? 0,
+    })),
+  })
+  if (error) throw translateError(error)
   return getPurchaseReturn(id)
 }
 

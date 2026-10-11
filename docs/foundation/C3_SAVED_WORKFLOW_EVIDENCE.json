@@ -1,0 +1,605 @@
+{
+  "parentSha": "60e8dbfcbe24f6e6d76b79e7243f2034018ce991",
+  "sale": {
+    "status": "PASS",
+    "scope": "Actual unchanged sales service via Vite SSR and owned Auth/PostgREST, saved credit sale/return; no browser, VAT/cash/procurement/release acceptance",
+    "owner": "edara-c3-compose-20261011",
+    "parentSha": "60e8dbfcbe24f6e6d76b79e7243f2034018ce991",
+    "cases": [
+      "Actual service creates saved numbered draft with embedded reference relations",
+      "Insufficient-stock confirmation rejects atomically without reservation or status change",
+      "Authorized real service confirmation and retry reserve once",
+      "Saved credit delivery reduces quantity/value, posts balanced 111 debit/credit, AR100; retry has no second effect",
+      "Saved full credit return restores quantity/value and AR, posts balanced reversal; retry has no second effect"
+    ],
+    "requests": [
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/sales_order_items",
+        "method": "DELETE",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/sales_order_items",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/sales_order_items",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "PATCH",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_sales_order",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/rest/v1/sales_order_items",
+        "method": "DELETE",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/sales_order_items",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/sales_order_items",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "PATCH",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_sales_order",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_sales_order",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/deliver_sales_order",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/deliver_sales_order",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/sales_returns",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/sales_return_items",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/sales_returns",
+        "method": "PATCH",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_sales_return",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_sales_return",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      }
+    ],
+    "sourceHashes": {
+      "src/lib/services/sales.ts": "7e7328445232dca887ba4909a534961841fd5b307448d15206cc93952fcbce72",
+      "src/lib/supabase/client.ts": "2ac923f7b21d53f9380af4c3f1b63de05ea6ce1bd0de18d83410e1c17c9ec0b8"
+    },
+    "publicFixtureRestored": true,
+    "sequencesMayAdvance": true
+  },
+  "unitDependency": {
+    "status": "PASS",
+    "scope": "Exact canonical dependency locally applied after explicit ROLLBACK qualification; original functions/ACLs unchanged, no production migration or workflow acceptance",
+    "file": "02_master_data.sql",
+    "sourceSha256": "6bd2d03f9707436283592bb4e09fdfd34ecbf440ef241d1ed836ae386a7060cb",
+    "statementSha256": "c169bbd6b72274c23688daed38c564f5a762e7fe97088df09fc21e612fe84b18",
+    "startByte": 20920,
+    "endByteExclusive": 21737,
+    "firstLine": 525,
+    "sqlSha256": "15d514b23028e4b9b17afc8b4d162eb1f1697a895f90e59144e3c49dfef3609e",
+    "signature": "get_base_quantity(uuid,uuid,numeric)",
+    "owner": "edara-c3-compose-20261011",
+    "rollbackHelperAbsent": true,
+    "existingFunctionsAndAclsPreserved": true,
+    "baseUnitConversionTwo": true,
+    "applied": true,
+    "reviewSession": "2494a3dc-2d66-430d-8dd2-074748c485ae",
+    "reviewReadOnlyViolation": false
+  },
+  "purchaseDependency": {
+    "status": "PASS",
+    "owner": "edara-c3-compose-20261011",
+    "scope": "Missing nullable product field copied exactly from canonical15 after real receive failure; no custom schema, financial arithmetic, table ACL/RLS or hosted migration change",
+    "entry": {
+      "file": "15_procurement_core_rpcs.sql",
+      "sourceSha256": "e473250c274e8cea560c8b6cc8b7bf43c580f39b74776210b03d593bfda69906",
+      "statementSha256": "d8a7c81a24fcdfd86da267411bc75da2101213f7442f37cda62504e690850695",
+      "firstLine": 718,
+      "startByte": 35222,
+      "endByteExclusive": 35305
+    },
+    "combinedSqlSha256": "0f7efd1ebfa8363c7ee89a57265c46c453c3c9aa78ac8e37f62e3f13d74d4591",
+    "helperStatement": {
+      "status": "EXTRACTED_NOT_APPLIED",
+      "scope": "One original unit conversion dependency required by received purchase item with real unit_id; no custom function body or production change",
+      "file": "02_master_data.sql",
+      "sourceSha256": "6bd2d03f9707436283592bb4e09fdfd34ecbf440ef241d1ed836ae386a7060cb",
+      "statementSha256": "c169bbd6b72274c23688daed38c564f5a762e7fe97088df09fc21e612fe84b18",
+      "startByte": 20920,
+      "endByteExclusive": 21737,
+      "firstLine": 525,
+      "sqlSha256": "15d514b23028e4b9b17afc8b4d162eb1f1697a895f90e59144e3c49dfef3609e",
+      "signature": "get_base_quantity(uuid,uuid,numeric)"
+    },
+    "rollbackColumnAbsent": true,
+    "allPreviousFunctionBodiesOwnersAclsPreserved": true,
+    "tableAclsAndRlsPoliciesPreserved": true,
+    "originalProductColumnValuesPreserved": true,
+    "allExistingProductNewValuesNull": true,
+    "firstPurchaseFailurePreserved": true
+  },
+  "purchaseFirstFailure": {
+    "status": "FAIL",
+    "scope": "Actual unchanged purchase services via Vite SSR and owned Auth/PostgREST, saved received/billed purchase and return with landed costs; no browser, VAT/cash/cancellation/release acceptance",
+    "owner": "edara-c3-compose-20261011",
+    "parentSha": "60e8dbfcbe24f6e6d76b79e7243f2034018ce991",
+    "cases": [
+      "Actual service saves numbered purchase with two units20 plus landed4, total44"
+    ],
+    "requests": [
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/purchase_invoices",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/purchase_invoice_items",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/purchase_invoices",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/receive_purchase_invoice",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      }
+    ],
+    "sourceHashes": {
+      "src/lib/services/purchases.ts": "7e7931ec3c722d4da947bec0226487825ea47b1d8a2f4b56c039f113815f3859",
+      "src/lib/services/purchase-returns.ts": "921a6371d4d77a532a67f83bfb0babad9bb765f05f0f4dd3e2d48297aec2ca77",
+      "src/lib/supabase/client.ts": "2ac923f7b21d53f9380af4c3f1b63de05ea6ce1bd0de18d83410e1c17c9ec0b8"
+    },
+    "publicFixtureRestored": true,
+    "sequencesMayAdvance": true,
+    "error": {
+      "stage": "receive",
+      "code": "42703",
+      "message": "column \"last_purchase_price\" of relation \"products\" does not exist"
+    }
+  },
+  "purchaseTestContractFailure": {
+    "status": "FAIL",
+    "scope": "Actual unchanged purchase services via Vite SSR and owned Auth/PostgREST, saved received/billed purchase and return with landed costs; no browser, VAT/cash/cancellation/release acceptance",
+    "owner": "edara-c3-compose-20261011",
+    "parentSha": "60e8dbfcbe24f6e6d76b79e7243f2034018ce991",
+    "cases": [
+      "Actual service saves numbered purchase with two units20 plus landed4, total44"
+    ],
+    "requests": [
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/purchase_invoices",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/purchase_invoice_items",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/purchase_invoices",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/receive_purchase_invoice",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/receive_purchase_invoice",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      }
+    ],
+    "sourceHashes": {
+      "src/lib/services/purchases.ts": "7e7931ec3c722d4da947bec0226487825ea47b1d8a2f4b56c039f113815f3859",
+      "src/lib/services/purchase-returns.ts": "921a6371d4d77a532a67f83bfb0babad9bb765f05f0f4dd3e2d48297aec2ca77",
+      "src/lib/supabase/client.ts": "2ac923f7b21d53f9380af4c3f1b63de05ea6ce1bd0de18d83410e1c17c9ec0b8"
+    },
+    "publicFixtureRestored": true,
+    "sequencesMayAdvance": true,
+    "error": {
+      "stage": "receive",
+      "code": "P0001",
+      "message": "لا يمكن تسجيل الاستلام — الفاتورة في حالة: received. يجب أن تكون (draft)"
+    }
+  },
+  "purchaseDraftBeforeFailure": {
+    "status": "FAIL",
+    "scope": "Actual unchanged purchase services via Vite SSR and owned Auth/PostgREST, saved received/billed purchase and return with landed costs; no browser, VAT/cash/cancellation/release acceptance",
+    "owner": "edara-c3-compose-20261011",
+    "parentSha": "60e8dbfcbe24f6e6d76b79e7243f2034018ce991",
+    "cases": [
+      "Actual service saves numbered purchase with two units20 plus landed4, total44",
+      "Receipt uses real base-unit conversion and owner stock helper: quantity12 value154 WAC12.8333; repeated receipt rejects with no second effect",
+      "Financial bill records AP44 and balanced44 journal; repeated billing rejects with no second effect",
+      "Overstock return rejected atomically without stock, ledger, journal or header mutation"
+    ],
+    "requests": [
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/purchase_invoices",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/purchase_invoice_items",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/purchase_invoices",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/receive_purchase_invoice",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/receive_purchase_invoice",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/rest/v1/rpc/bill_purchase_invoice",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/bill_purchase_invoice",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/rest/v1/purchase_returns",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/purchase_return_items",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/purchase_returns",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_purchase_return",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/rest/v1/purchase_returns",
+        "method": "PATCH",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/purchase_return_items",
+        "method": "DELETE",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/purchase_return_items",
+        "method": "POST",
+        "status": 409
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      }
+    ],
+    "sourceHashes": {
+      "src/lib/services/purchases.ts": "7e7931ec3c722d4da947bec0226487825ea47b1d8a2f4b56c039f113815f3859",
+      "src/lib/services/purchase-returns.ts": "921a6371d4d77a532a67f83bfb0babad9bb765f05f0f4dd3e2d48297aec2ca77",
+      "src/lib/supabase/client.ts": "2ac923f7b21d53f9380af4c3f1b63de05ea6ce1bd0de18d83410e1c17c9ec0b8"
+    },
+    "publicFixtureRestored": true,
+    "sequencesMayAdvance": true,
+    "error": {
+      "stage": "valid-return",
+      "code": null,
+      "message": "duplicate key value violates unique constraint \"uq_pri_return_product\""
+    }
+  },
+  "draftMigration": {
+    "status": "PASS",
+    "owner": "edara-c3-compose-20261011",
+    "migration": "supabase/migrations/20261011060000_atomic_purchase_return_draft.sql",
+    "migrationSha256": "44d03ed023993b1944a83917d01c4323c450496e0c54168c16a8feb7db1091fb",
+    "scope": "Single new atomic draft entry; exact rollback and one idempotent reapply, all existing functions/ACLs and table grants/RLS unchanged; not workflow acceptance",
+    "rollbackNewFunctionAbsent": true,
+    "originalFunctionBodiesOwnersAclsPreserved": true,
+    "tableAclsAndRlsPoliciesPreserved": true,
+    "anonymousExecuteDenied": true,
+    "authenticatedAndServiceRoleExecuteAllowed": true,
+    "idempotentReapplication": true,
+    "applied": true
+  },
+  "purchaseAfter": {
+    "status": "PASS",
+    "scope": "Actual unchanged purchase services via Vite SSR and owned Auth/PostgREST, saved received/billed purchase and return with landed costs; no browser, VAT/cash/cancellation/release acceptance",
+    "owner": "edara-c3-compose-20261011",
+    "parentSha": "60e8dbfcbe24f6e6d76b79e7243f2034018ce991",
+    "cases": [
+      "Actual service saves numbered purchase with two units20 plus landed4, total44",
+      "Receipt uses real base-unit conversion and owner stock helper: quantity12 value154 WAC12.8333; repeated receipt rejects with no second effect",
+      "Financial bill records AP44 and balanced44 journal; repeated billing rejects with no second effect",
+      "Overstock return rejected atomically without stock, ledger, journal or header mutation",
+      "Atomic draft edit replaces items and totals; invalid quantity and forbidden status reject with exact persisted rollback",
+      "Anonymous and restricted actual service edits denied without data changes",
+      "Confirmed return cannot be edited through atomic draft RPC",
+      "Return reduces AP40 leaving landed4, removes stock at current WAC with variance14.33, balanced40 journal; repeated confirmation rejects with no second effect"
+    ],
+    "requests": [
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/purchase_invoices",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/purchase_invoice_items",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/purchase_invoices",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/receive_purchase_invoice",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/receive_purchase_invoice",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/rest/v1/rpc/bill_purchase_invoice",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/bill_purchase_invoice",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/rest/v1/purchase_returns",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/purchase_return_items",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/purchase_returns",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_purchase_return",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/rest/v1/rpc/update_purchase_return_draft",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/purchase_returns",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/update_purchase_return_draft",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/rest/v1/rpc/update_purchase_return_draft",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/update_purchase_return_draft",
+        "method": "POST",
+        "status": 401
+      },
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/update_purchase_return_draft",
+        "method": "POST",
+        "status": 403
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_purchase_return",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_purchase_return",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/rest/v1/rpc/update_purchase_return_draft",
+        "method": "POST",
+        "status": 500
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      }
+    ],
+    "sourceHashes": {
+      "src/lib/services/purchases.ts": "7e7931ec3c722d4da947bec0226487825ea47b1d8a2f4b56c039f113815f3859",
+      "src/lib/services/purchase-returns.ts": "e07d9e4248d1c972f77ceb57a59a7c0fbb439b384f0977efa274d170132298b1",
+      "src/lib/supabase/client.ts": "2ac923f7b21d53f9380af4c3f1b63de05ea6ce1bd0de18d83410e1c17c9ec0b8"
+    },
+    "publicFixtureRestored": true,
+    "sequencesMayAdvance": true
+  },
+  "draftBoundary": {
+    "status": "PASS",
+    "owner": "edara-c3-compose-20261011",
+    "scope": "Owned SQL function boundary supplement, transaction ROLLBACK, not Auth/API/browser or statutory VAT acceptance",
+    "verificationSql": "supabase/verification/purchase_return_draft_atomic_boundary.sql",
+    "sqlSha256": "dfd307429e97f595f89ccab0d3c60c0b3fab598388b4364dcc1454018d760bfe",
+    "cases": [
+      "Header-only NULL items preserves existing items",
+      "Empty item array clears draft items and totals",
+      "Two 0.335 items with discount10/tax14 round aggregate sums to subtotal0.67 discount0.07 tax0.08 total0.69"
+    ],
+    "all48PublicRowsRestored": true
+  },
+  "gates": {
+    "forcedTypeExit": 0,
+    "lintExit": 0,
+    "buildExit": 0,
+    "testExit": 0,
+    "testFiles": 141,
+    "testsPassed": 1074,
+    "precacheEntries": 284,
+    "precacheKiB": 4276.57
+  },
+  "finalReview": {
+    "sessionId": "2494a3dc-2d66-430d-8dd2-074748c485ae",
+    "verdict": "PASS",
+    "resultSubtype": "success",
+    "readOnlyViolation": false
+  }
+}
