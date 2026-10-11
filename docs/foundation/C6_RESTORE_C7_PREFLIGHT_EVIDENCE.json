@@ -1,0 +1,1629 @@
+{
+  "identity": {
+    "checkedAt": "2026-10-11T12:48:55.455Z",
+    "origin": "https://edara.delight-world.com",
+    "status": 200,
+    "htmlSha256": "7be09b5589acb2949a7a21491401712618bb392b287b8401f617277fd2753ee6",
+    "assets": [
+      {
+        "url": "https://edara.delight-world.com/assets/index-BdM4Ymi3.js",
+        "status": 200,
+        "sha256": "37cd79a7711beb1044ca7d356425ce7de70444d4ff8d9549e8e892ddc0df0868"
+      }
+    ],
+    "supabaseRefs": [
+      "ozthzccqudrudicnneuu"
+    ],
+    "deploymentOrigin": "https://new-edara-k9jwx05wz-ahmed-salamas-projects-0ee0a828.vercel.app",
+    "deploymentStatus": 200,
+    "deploymentHtmlHashMatches": false,
+    "deploymentAssetComparisons": [
+      {
+        "path": "/assets/index-BdM4Ymi3.js",
+        "deploymentStatus": null,
+        "bodySha256Matches": false
+      }
+    ],
+    "scope": "Public HTML/assets identity and comparison with provider deployment URL only, no independent source reproducibility, Auth session, application workflow or performance acceptance"
+  },
+  "identityLimitation": "Unique deployment URL redirected to https://vercel.com/login; HTTP200 was login page. No served-asset to exact Git SHA binding or independent reproducible source build claim. Domain to deployment SHA is provider metadata; live bundle Supabase ref separately verified.",
+  "selectedPolicyComparison": {
+    "status": "PASS_SELECTED_POLICY_PARITY",
+    "scope": "Exact selected policy metadata comparison. Fixture gaps must be considered before full-App qualification; no production mutation.",
+    "comparisons": [
+      {
+        "table": "products",
+        "policy": "products_read",
+        "localPresent": true,
+        "exactDefinitionMatches": true,
+        "production": {
+          "tablename": "products",
+          "policyname": "products_read",
+          "cmd": "SELECT",
+          "roles": "{public}",
+          "qual": "( SELECT check_permission(( SELECT auth.uid() AS uid), 'products.read'::text) AS check_permission)",
+          "with_check": null
+        },
+        "local": {
+          "tablename": "products",
+          "policyname": "products_read",
+          "cmd": "SELECT",
+          "roles": "{public}",
+          "qual": "( SELECT check_permission(( SELECT auth.uid() AS uid), 'products.read'::text) AS check_permission)",
+          "with_check": null
+        }
+      },
+      {
+        "table": "products",
+        "policy": "products_write",
+        "localPresent": true,
+        "exactDefinitionMatches": true,
+        "production": {
+          "tablename": "products",
+          "policyname": "products_write",
+          "cmd": "ALL",
+          "roles": "{public}",
+          "qual": "( SELECT check_permission(( SELECT auth.uid() AS uid), 'products.create'::text) AS check_permission)",
+          "with_check": null
+        },
+        "local": {
+          "tablename": "products",
+          "policyname": "products_write",
+          "cmd": "ALL",
+          "roles": "{public}",
+          "qual": "( SELECT check_permission(( SELECT auth.uid() AS uid), 'products.create'::text) AS check_permission)",
+          "with_check": null
+        }
+      },
+      {
+        "table": "profiles",
+        "policy": "profiles_select",
+        "localPresent": true,
+        "exactDefinitionMatches": true,
+        "production": {
+          "tablename": "profiles",
+          "policyname": "profiles_select",
+          "cmd": "SELECT",
+          "roles": "{public}",
+          "qual": "((id = ( SELECT auth.uid() AS uid)) OR ( SELECT check_permission(( SELECT auth.uid() AS uid), 'auth.users.read'::text) AS check_permission))",
+          "with_check": null
+        },
+        "local": {
+          "tablename": "profiles",
+          "policyname": "profiles_select",
+          "cmd": "SELECT",
+          "roles": "{public}",
+          "qual": "((id = ( SELECT auth.uid() AS uid)) OR ( SELECT check_permission(( SELECT auth.uid() AS uid), 'auth.users.read'::text) AS check_permission))",
+          "with_check": null
+        }
+      },
+      {
+        "table": "profiles",
+        "policy": "profiles_update",
+        "localPresent": true,
+        "exactDefinitionMatches": true,
+        "production": {
+          "tablename": "profiles",
+          "policyname": "profiles_update",
+          "cmd": "UPDATE",
+          "roles": "{public}",
+          "qual": "((id = ( SELECT auth.uid() AS uid)) OR ( SELECT check_permission(( SELECT auth.uid() AS uid), 'auth.users.update'::text) AS check_permission))",
+          "with_check": null
+        },
+        "local": {
+          "tablename": "profiles",
+          "policyname": "profiles_update",
+          "cmd": "UPDATE",
+          "roles": "{public}",
+          "qual": "((id = ( SELECT auth.uid() AS uid)) OR ( SELECT check_permission(( SELECT auth.uid() AS uid), 'auth.users.update'::text) AS check_permission))",
+          "with_check": null
+        }
+      },
+      {
+        "table": "stock",
+        "policy": "stock_read",
+        "localPresent": true,
+        "exactDefinitionMatches": true,
+        "production": {
+          "tablename": "stock",
+          "policyname": "stock_read",
+          "cmd": "SELECT",
+          "roles": "{public}",
+          "qual": "(( SELECT check_permission(( SELECT auth.uid() AS uid), 'inventory.read_all'::text) AS check_permission) OR (( SELECT check_permission(( SELECT auth.uid() AS uid), 'inventory.read'::text) AS check_permission) AND (warehouse_id IN ( SELECT user_warehouse_ids_set() AS user_warehouse_ids_set))))",
+          "with_check": null
+        },
+        "local": {
+          "tablename": "stock",
+          "policyname": "stock_read",
+          "cmd": "SELECT",
+          "roles": "{public}",
+          "qual": "(( SELECT check_permission(( SELECT auth.uid() AS uid), 'inventory.read_all'::text) AS check_permission) OR (( SELECT check_permission(( SELECT auth.uid() AS uid), 'inventory.read'::text) AS check_permission) AND (warehouse_id IN ( SELECT user_warehouse_ids_set() AS user_warehouse_ids_set))))",
+          "with_check": null
+        }
+      },
+      {
+        "table": "units",
+        "policy": "units_read",
+        "localPresent": true,
+        "exactDefinitionMatches": true,
+        "production": {
+          "tablename": "units",
+          "policyname": "units_read",
+          "cmd": "SELECT",
+          "roles": "{public}",
+          "qual": "(( SELECT auth.uid() AS uid) IS NOT NULL)",
+          "with_check": null
+        },
+        "local": {
+          "tablename": "units",
+          "policyname": "units_read",
+          "cmd": "SELECT",
+          "roles": "{public}",
+          "qual": "(( SELECT auth.uid() AS uid) IS NOT NULL)",
+          "with_check": null
+        }
+      },
+      {
+        "table": "units",
+        "policy": "units_write",
+        "localPresent": true,
+        "exactDefinitionMatches": true,
+        "production": {
+          "tablename": "units",
+          "policyname": "units_write",
+          "cmd": "ALL",
+          "roles": "{public}",
+          "qual": "( SELECT check_permission(( SELECT auth.uid() AS uid), 'products.create'::text) AS check_permission)",
+          "with_check": null
+        },
+        "local": {
+          "tablename": "units",
+          "policyname": "units_write",
+          "cmd": "ALL",
+          "roles": "{public}",
+          "qual": "( SELECT check_permission(( SELECT auth.uid() AS uid), 'products.create'::text) AS check_permission)",
+          "with_check": null
+        }
+      },
+      {
+        "table": "warehouse_managers",
+        "policy": "wh_managers_read",
+        "localPresent": true,
+        "exactDefinitionMatches": true,
+        "production": {
+          "tablename": "warehouse_managers",
+          "policyname": "wh_managers_read",
+          "cmd": "SELECT",
+          "roles": "{public}",
+          "qual": "(( SELECT check_permission(( SELECT auth.uid() AS uid), 'inventory.read_all'::text) AS check_permission) OR (( SELECT check_permission(( SELECT auth.uid() AS uid), 'inventory.read'::text) AS check_permission) AND (warehouse_id IN ( SELECT user_warehouse_ids_set() AS user_warehouse_ids_set))))",
+          "with_check": null
+        },
+        "local": {
+          "tablename": "warehouse_managers",
+          "policyname": "wh_managers_read",
+          "cmd": "SELECT",
+          "roles": "{public}",
+          "qual": "(( SELECT check_permission(( SELECT auth.uid() AS uid), 'inventory.read_all'::text) AS check_permission) OR (( SELECT check_permission(( SELECT auth.uid() AS uid), 'inventory.read'::text) AS check_permission) AND (warehouse_id IN ( SELECT user_warehouse_ids_set() AS user_warehouse_ids_set))))",
+          "with_check": null
+        }
+      },
+      {
+        "table": "warehouse_managers",
+        "policy": "wh_managers_write",
+        "localPresent": true,
+        "exactDefinitionMatches": true,
+        "production": {
+          "tablename": "warehouse_managers",
+          "policyname": "wh_managers_write",
+          "cmd": "ALL",
+          "roles": "{public}",
+          "qual": "( SELECT check_permission(( SELECT auth.uid() AS uid), 'inventory.create'::text) AS check_permission)",
+          "with_check": null
+        },
+        "local": {
+          "tablename": "warehouse_managers",
+          "policyname": "wh_managers_write",
+          "cmd": "ALL",
+          "roles": "{public}",
+          "qual": "( SELECT check_permission(( SELECT auth.uid() AS uid), 'inventory.create'::text) AS check_permission)",
+          "with_check": null
+        }
+      },
+      {
+        "table": "warehouses",
+        "policy": "warehouses_read",
+        "localPresent": true,
+        "exactDefinitionMatches": true,
+        "production": {
+          "tablename": "warehouses",
+          "policyname": "warehouses_read",
+          "cmd": "SELECT",
+          "roles": "{public}",
+          "qual": "(( SELECT check_permission(( SELECT auth.uid() AS uid), 'inventory.read_all'::text) AS check_permission) OR (( SELECT check_permission(( SELECT auth.uid() AS uid), 'inventory.read'::text) AS check_permission) AND (id IN ( SELECT user_warehouse_ids_set() AS user_warehouse_ids_set))))",
+          "with_check": null
+        },
+        "local": {
+          "tablename": "warehouses",
+          "policyname": "warehouses_read",
+          "cmd": "SELECT",
+          "roles": "{public}",
+          "qual": "(( SELECT check_permission(( SELECT auth.uid() AS uid), 'inventory.read_all'::text) AS check_permission) OR (( SELECT check_permission(( SELECT auth.uid() AS uid), 'inventory.read'::text) AS check_permission) AND (id IN ( SELECT user_warehouse_ids_set() AS user_warehouse_ids_set))))",
+          "with_check": null
+        }
+      },
+      {
+        "table": "warehouses",
+        "policy": "warehouses_write",
+        "localPresent": true,
+        "exactDefinitionMatches": true,
+        "production": {
+          "tablename": "warehouses",
+          "policyname": "warehouses_write",
+          "cmd": "ALL",
+          "roles": "{public}",
+          "qual": "( SELECT check_permission(( SELECT auth.uid() AS uid), 'inventory.create'::text) AS check_permission)",
+          "with_check": null
+        },
+        "local": {
+          "tablename": "warehouses",
+          "policyname": "warehouses_write",
+          "cmd": "ALL",
+          "roles": "{public}",
+          "qual": "( SELECT check_permission(( SELECT auth.uid() AS uid), 'inventory.create'::text) AS check_permission)",
+          "with_check": null
+        }
+      }
+    ]
+  },
+  "originalBodyComparison": {
+    "status": "PASS_ORIGINAL_BODY_PARITY",
+    "scope": "Three functions intentionally replaced by candidate migrations match existing repository original bodies exactly or by CRLF-to-LF only. Does not itself validate new body semantics.",
+    "comparisons": [
+      {
+        "signature": "check_permission(uuid,text)",
+        "originalMatches": [
+          {
+            "path": "supabase/migrations/03g_performance_hardening.sql",
+            "sourceSha256": "0bfb6d4583df25ef80baec29c99c0fea2f1cf823bb102b0e20478c5e2368a784",
+            "bodyMd5": "5dda35c90a946eea2a95b89e317b59a4",
+            "bodyLfMd5": "541a1c8f898eafe5e1575d4d613a894e"
+          }
+        ],
+        "candidateCount": 2
+      },
+      {
+        "signature": "get_low_stock(uuid,integer,integer)",
+        "originalMatches": [
+          {
+            "path": "supabase/migrations/02f_hotfixes.sql",
+            "sourceSha256": "89dc593df62ecb56f8061ee9fe201a277bf6ec2330194f37f112724ba2991b18",
+            "bodyMd5": "05628c25a64a13d0a423af5ae3a40521",
+            "bodyLfMd5": "16e5061f4f13479c4f0b7087d4190173"
+          }
+        ],
+        "candidateCount": 1
+      },
+      {
+        "signature": "create_ui_manual_journal_entry(text,date,text,uuid,jsonb,uuid)",
+        "originalMatches": [
+          {
+            "path": "supabase/migrations/60_finance_field_guards.sql",
+            "sourceSha256": "5151f5bddc6eb18dd85a2c149a88fafac4456b39146fad119a5e272133575019",
+            "bodyMd5": "bd224be33a3cc76d177e00698fe3647f",
+            "bodyLfMd5": "a9e77549228ae8b5d0201f8e7dc7f44e"
+          }
+        ],
+        "candidateCount": 1
+      }
+    ]
+  },
+  "selectedFunctionCatalog": [
+    {
+      "signature": "add_custody_transaction(uuid,text,numeric,uuid,text,uuid,text,uuid)",
+      "identity_arguments": "p_custody_id uuid, p_type text, p_amount numeric, p_vault_id uuid, p_ref_type text, p_ref_id uuid, p_description text, p_user_id uuid",
+      "result_type": "uuid",
+      "argument_names": [
+        "p_custody_id",
+        "p_type",
+        "p_amount",
+        "p_vault_id",
+        "p_ref_type",
+        "p_ref_id",
+        "p_description",
+        "p_user_id"
+      ],
+      "security_definer": true,
+      "configuration": [
+        "search_path=public"
+      ],
+      "owner": "postgres",
+      "body_md5": "a7b0dea6dad7ba8edf0c32484032578b",
+      "body_lf_md5": "96278f788229a57b1cfcb93796e9f1b0",
+      "definition_md5": "7332f642569292274a7d538753baf5a1",
+      "anon_execute": true,
+      "authenticated_execute": true,
+      "service_role_execute": true
+    },
+    {
+      "signature": "add_vault_transaction(uuid,text,numeric,text,uuid,text,uuid)",
+      "identity_arguments": "p_vault_id uuid, p_type text, p_amount numeric, p_ref_type text, p_ref_id uuid, p_description text, p_user_id uuid",
+      "result_type": "uuid",
+      "argument_names": [
+        "p_vault_id",
+        "p_type",
+        "p_amount",
+        "p_ref_type",
+        "p_ref_id",
+        "p_description",
+        "p_user_id"
+      ],
+      "security_definer": true,
+      "configuration": [
+        "search_path=public"
+      ],
+      "owner": "postgres",
+      "body_md5": "a67eebccc8530beeec32798372f83842",
+      "body_lf_md5": "f2c2fbe110f6095c697c5785e8b0e03f",
+      "definition_md5": "c0be9506e1578912dfa0c0c7b2ee9653",
+      "anon_execute": true,
+      "authenticated_execute": true,
+      "service_role_execute": true
+    },
+    {
+      "signature": "allocate_payment_to_invoices(uuid,numeric,text,uuid,uuid)",
+      "identity_arguments": "p_customer_id uuid, p_amount numeric, p_source_type text, p_source_id uuid, p_user_id uuid",
+      "result_type": "jsonb",
+      "argument_names": [
+        "p_customer_id",
+        "p_amount",
+        "p_source_type",
+        "p_source_id",
+        "p_user_id"
+      ],
+      "security_definer": true,
+      "configuration": [
+        "search_path=public"
+      ],
+      "owner": "postgres",
+      "body_md5": "f9d403530eab50842d73ca1437ec65e3",
+      "body_lf_md5": "d02decd223662b1ab1b4c2096140e016",
+      "definition_md5": "d2bb4580a21665f692b9744cbf4ba6f0",
+      "anon_execute": true,
+      "authenticated_execute": true,
+      "service_role_execute": true
+    },
+    {
+      "signature": "allocate_payment_to_invoices(uuid,numeric,text,uuid,uuid,uuid)",
+      "identity_arguments": "p_customer_id uuid, p_amount numeric, p_source_type text, p_source_id uuid, p_user_id uuid, p_target_order_id uuid",
+      "result_type": "jsonb",
+      "argument_names": [
+        "p_customer_id",
+        "p_amount",
+        "p_source_type",
+        "p_source_id",
+        "p_user_id",
+        "p_target_order_id"
+      ],
+      "security_definer": true,
+      "configuration": [
+        "search_path=public"
+      ],
+      "owner": "postgres",
+      "body_md5": "05bd40a7487ac18e3bd7b742c6ed1e87",
+      "body_lf_md5": "a4bba77c0f335267a9f88707de9b1b0d",
+      "definition_md5": "5d4896c22a12344526bd2dbe58c2b8ce",
+      "anon_execute": true,
+      "authenticated_execute": true,
+      "service_role_execute": true
+    },
+    {
+      "signature": "bill_purchase_invoice(uuid,uuid,uuid,text)",
+      "identity_arguments": "p_invoice_id uuid, p_user_id uuid, p_vault_id uuid, p_payment_method text",
+      "result_type": "void",
+      "argument_names": [
+        "p_invoice_id",
+        "p_user_id",
+        "p_vault_id",
+        "p_payment_method"
+      ],
+      "security_definer": true,
+      "configuration": [
+        "search_path=public"
+      ],
+      "owner": "postgres",
+      "body_md5": "ed525ce19216f7a3f4a3cf5af508d46f",
+      "body_lf_md5": "6ced4b798e92262ba43d304b8e552959",
+      "definition_md5": "ee0355ec7f962f9cdeec7c8a138c36d0",
+      "anon_execute": true,
+      "authenticated_execute": true,
+      "service_role_execute": true
+    },
+    {
+      "signature": "cancel_purchase_invoice(uuid,uuid)",
+      "identity_arguments": "p_invoice_id uuid, p_user_id uuid",
+      "result_type": "void",
+      "argument_names": [
+        "p_invoice_id",
+        "p_user_id"
+      ],
+      "security_definer": true,
+      "configuration": [
+        "search_path=public"
+      ],
+      "owner": "postgres",
+      "body_md5": "5a9f0ae44c5eeb542b58c1d08eca1032",
+      "body_lf_md5": "08111d632e1a91374dff0eb6a00cbb02",
+      "definition_md5": "0875fa00de0da591160827a3c9b40d2a",
+      "anon_execute": true,
+      "authenticated_execute": true,
+      "service_role_execute": true
+    },
+    {
+      "signature": "cancel_sales_order(uuid,uuid,text)",
+      "identity_arguments": "p_order_id uuid, p_user_id uuid, p_reason text",
+      "result_type": "void",
+      "argument_names": [
+        "p_order_id",
+        "p_user_id",
+        "p_reason"
+      ],
+      "security_definer": true,
+      "configuration": [
+        "search_path=public"
+      ],
+      "owner": "postgres",
+      "body_md5": "2e4a7d0657e816c4e1ff1a7757594c49",
+      "body_lf_md5": "5b01cd98a38cccfbf0817064f6c3653d",
+      "definition_md5": "4178dbc0ff5f3100f03436f6ffecaab0",
+      "anon_execute": true,
+      "authenticated_execute": true,
+      "service_role_execute": true
+    },
+    {
+      "signature": "check_permission(uuid,text)",
+      "identity_arguments": "p_user_id uuid, p_permission text",
+      "result_type": "boolean",
+      "argument_names": [
+        "p_user_id",
+        "p_permission"
+      ],
+      "security_definer": true,
+      "configuration": [
+        "search_path=public"
+      ],
+      "owner": "postgres",
+      "body_md5": "5dda35c90a946eea2a95b89e317b59a4",
+      "body_lf_md5": "541a1c8f898eafe5e1575d4d613a894e",
+      "definition_md5": "992f41acdb2243086a5d69eae5d9fdf1",
+      "anon_execute": true,
+      "authenticated_execute": true,
+      "service_role_execute": true
+    },
+    {
+      "signature": "confirm_payment_receipt(uuid,text,uuid,text,uuid)",
+      "identity_arguments": "p_receipt_id uuid, p_action text, p_vault_id uuid, p_reason text, p_user_id uuid",
+      "result_type": "void",
+      "argument_names": [
+        "p_receipt_id",
+        "p_action",
+        "p_vault_id",
+        "p_reason",
+        "p_user_id"
+      ],
+      "security_definer": true,
+      "configuration": [
+        "search_path=public"
+      ],
+      "owner": "postgres",
+      "body_md5": "ffa04a0d97f4e6ccc4da3a35dbe65b55",
+      "body_lf_md5": "55d3dd087401806255d1d555da37798c",
+      "definition_md5": "23e1faefafbae222fbae32ee236fc9e9",
+      "anon_execute": true,
+      "authenticated_execute": true,
+      "service_role_execute": true
+    },
+    {
+      "signature": "confirm_purchase_return(uuid,uuid)",
+      "identity_arguments": "p_return_id uuid, p_user_id uuid",
+      "result_type": "void",
+      "argument_names": [
+        "p_return_id",
+        "p_user_id"
+      ],
+      "security_definer": true,
+      "configuration": [
+        "search_path=public"
+      ],
+      "owner": "postgres",
+      "body_md5": "02aeffe444956c689e85993df0043052",
+      "body_lf_md5": "462832b15e87f8c94fd65ae495b8e476",
+      "definition_md5": "11295e87feb90fd9b03b8fb7bae78ddb",
+      "anon_execute": true,
+      "authenticated_execute": true,
+      "service_role_execute": true
+    },
+    {
+      "signature": "confirm_sales_order(uuid,uuid)",
+      "identity_arguments": "p_order_id uuid, p_user_id uuid",
+      "result_type": "void",
+      "argument_names": [
+        "p_order_id",
+        "p_user_id"
+      ],
+      "security_definer": true,
+      "configuration": [
+        "search_path=public"
+      ],
+      "owner": "postgres",
+      "body_md5": "4fbd16f97401fdc19d78bf47812ca5dc",
+      "body_lf_md5": "552ee40494a1a728b2d3e320ac444a50",
+      "definition_md5": "63e96e6e35b2c57e58020b7d4ce09f74",
+      "anon_execute": true,
+      "authenticated_execute": true,
+      "service_role_execute": true
+    },
+    {
+      "signature": "confirm_sales_return(uuid,uuid,uuid,uuid)",
+      "identity_arguments": "p_return_id uuid, p_user_id uuid, p_custody_id uuid, p_vault_id uuid",
+      "result_type": "void",
+      "argument_names": [
+        "p_return_id",
+        "p_user_id",
+        "p_custody_id",
+        "p_vault_id"
+      ],
+      "security_definer": true,
+      "configuration": [
+        "search_path=public"
+      ],
+      "owner": "postgres",
+      "body_md5": "b2a5491f5393522f81206cc08be04829",
+      "body_lf_md5": "6357dae155739375ae89932c49e387d0",
+      "definition_md5": "c69cd41db998db6d93be9c8ed631359f",
+      "anon_execute": true,
+      "authenticated_execute": true,
+      "service_role_execute": true
+    },
+    {
+      "signature": "create_auto_journal_entry(text,uuid,text,text,text,numeric,uuid)",
+      "identity_arguments": "p_source_type text, p_source_id uuid, p_description text, p_debit_account text, p_credit_account text, p_amount numeric, p_user_id uuid",
+      "result_type": "uuid",
+      "argument_names": [
+        "p_source_type",
+        "p_source_id",
+        "p_description",
+        "p_debit_account",
+        "p_credit_account",
+        "p_amount",
+        "p_user_id"
+      ],
+      "security_definer": true,
+      "configuration": [
+        "search_path=public"
+      ],
+      "owner": "postgres",
+      "body_md5": "3dbad9e604794953624328d6ea3aec7b",
+      "body_lf_md5": "41b6cf37cad8b0477150013d1a002fbf",
+      "definition_md5": "3659a481fe35ba50ee4740a2f7ec75dc",
+      "anon_execute": true,
+      "authenticated_execute": true,
+      "service_role_execute": true
+    },
+    {
+      "signature": "create_manual_journal_entry(text,date,text,uuid,jsonb,uuid)",
+      "identity_arguments": "p_description text, p_entry_date date, p_source_type text, p_source_id uuid, p_lines jsonb, p_user_id uuid",
+      "result_type": "uuid",
+      "argument_names": [
+        "p_description",
+        "p_entry_date",
+        "p_source_type",
+        "p_source_id",
+        "p_lines",
+        "p_user_id"
+      ],
+      "security_definer": true,
+      "configuration": null,
+      "owner": "postgres",
+      "body_md5": "9b8d4bfcd96fe4c3bf25f33fab064c9e",
+      "body_lf_md5": "6ff97e09f3714d99077803b132ac2e40",
+      "definition_md5": "9ee305f01391449bfb660eee57078892",
+      "anon_execute": true,
+      "authenticated_execute": true,
+      "service_role_execute": true
+    },
+    {
+      "signature": "create_ui_manual_journal_entry(text,date,text,uuid,jsonb,uuid)",
+      "identity_arguments": "p_description text, p_entry_date date, p_source_type text, p_source_id uuid, p_lines jsonb, p_user_id uuid",
+      "result_type": "uuid",
+      "argument_names": [
+        "p_description",
+        "p_entry_date",
+        "p_source_type",
+        "p_source_id",
+        "p_lines",
+        "p_user_id"
+      ],
+      "security_definer": true,
+      "configuration": [
+        "search_path=public"
+      ],
+      "owner": "postgres",
+      "body_md5": "bd224be33a3cc76d177e00698fe3647f",
+      "body_lf_md5": "a9e77549228ae8b5d0201f8e7dc7f44e",
+      "definition_md5": "7bd8ea9abbbdf819facc09aca981d5ac",
+      "anon_execute": true,
+      "authenticated_execute": true,
+      "service_role_execute": true
+    },
+    {
+      "signature": "deduct_stock_at_wac(uuid,uuid,numeric,text,text,uuid,uuid)",
+      "identity_arguments": "p_warehouse_id uuid, p_product_id uuid, p_qty_out numeric, p_movement_type text, p_reference_type text, p_reference_id uuid, p_user_id uuid",
+      "result_type": "numeric",
+      "argument_names": [
+        "p_warehouse_id",
+        "p_product_id",
+        "p_qty_out",
+        "p_movement_type",
+        "p_reference_type",
+        "p_reference_id",
+        "p_user_id"
+      ],
+      "security_definer": true,
+      "configuration": [
+        "search_path=public"
+      ],
+      "owner": "postgres",
+      "body_md5": "2c8c9d2eef39b8cbb718e7c911e9fafd",
+      "body_lf_md5": "ffe5661706917d7d5089bda35c0319ae",
+      "definition_md5": "3def806bc600a79c4cbb4c4b08ca3bcd",
+      "anon_execute": true,
+      "authenticated_execute": true,
+      "service_role_execute": true
+    },
+    {
+      "signature": "deliver_sales_order(uuid,uuid,text,text,uuid,uuid,numeric,boolean,text,text,date)",
+      "identity_arguments": "p_order_id uuid, p_user_id uuid, p_payment_terms text, p_payment_method text, p_vault_id uuid, p_custody_id uuid, p_cash_amount numeric, p_override_credit boolean, p_bank_reference text, p_check_number text, p_check_date date",
+      "result_type": "void",
+      "argument_names": [
+        "p_order_id",
+        "p_user_id",
+        "p_payment_terms",
+        "p_payment_method",
+        "p_vault_id",
+        "p_custody_id",
+        "p_cash_amount",
+        "p_override_credit",
+        "p_bank_reference",
+        "p_check_number",
+        "p_check_date"
+      ],
+      "security_definer": true,
+      "configuration": [
+        "search_path=public"
+      ],
+      "owner": "postgres",
+      "body_md5": "b5111467282d217151291d4321c5cfd0",
+      "body_lf_md5": "ce9a92aaac8f7a46e1d05c4d9b709aaf",
+      "definition_md5": "7dae5771aea32e46d1b31c2b3431bb10",
+      "anon_execute": true,
+      "authenticated_execute": true,
+      "service_role_execute": true
+    },
+    {
+      "signature": "get_low_stock(uuid,integer,integer)",
+      "identity_arguments": "p_warehouse_id uuid, p_offset integer, p_limit integer",
+      "result_type": "TABLE(id uuid, warehouse_id uuid, product_id uuid, quantity numeric, reserved_quantity numeric, available_quantity numeric, wac numeric, total_cost_value numeric, warehouse_name text, product_name text, product_sku text, min_stock_level numeric, unit_name text, unit_symbol text, total_count bigint)",
+      "argument_names": [
+        "p_warehouse_id",
+        "p_offset",
+        "p_limit",
+        "id",
+        "warehouse_id",
+        "product_id",
+        "quantity",
+        "reserved_quantity",
+        "available_quantity",
+        "wac",
+        "total_cost_value",
+        "warehouse_name",
+        "product_name",
+        "product_sku",
+        "min_stock_level",
+        "unit_name",
+        "unit_symbol",
+        "total_count"
+      ],
+      "security_definer": true,
+      "configuration": [
+        "search_path=public"
+      ],
+      "owner": "postgres",
+      "body_md5": "05628c25a64a13d0a423af5ae3a40521",
+      "body_lf_md5": "16e5061f4f13479c4f0b7087d4190173",
+      "definition_md5": "9e4b7238379574d04c289cca131b9852",
+      "anon_execute": true,
+      "authenticated_execute": true,
+      "service_role_execute": true
+    },
+    {
+      "signature": "get_product_cost_metrics(uuid[])",
+      "identity_arguments": "p_product_ids uuid[]",
+      "result_type": "TABLE(product_id uuid, global_quantity numeric, global_total_cost_value numeric, global_wac numeric, warehouse_breakdown jsonb, cost_price numeric, last_purchase_price numeric)",
+      "argument_names": [
+        "p_product_ids",
+        "product_id",
+        "global_quantity",
+        "global_total_cost_value",
+        "global_wac",
+        "warehouse_breakdown",
+        "cost_price",
+        "last_purchase_price"
+      ],
+      "security_definer": true,
+      "configuration": [
+        "search_path=public"
+      ],
+      "owner": "postgres",
+      "body_md5": "ffaa312c492ed9fb8a11d83c5e61b57b",
+      "body_lf_md5": "97350b4c10b3d2d0786134963c027c5a",
+      "definition_md5": "c633c3cb49a77873379134ecfe516f6b",
+      "anon_execute": true,
+      "authenticated_execute": true,
+      "service_role_execute": true
+    },
+    {
+      "signature": "guard_product_cost_price()",
+      "identity_arguments": "",
+      "result_type": "trigger",
+      "argument_names": null,
+      "security_definer": true,
+      "configuration": [
+        "search_path=public"
+      ],
+      "owner": "postgres",
+      "body_md5": "7fbfe1cc5dd5daf6aa9d4c36883fb3fa",
+      "body_lf_md5": "616c5acf2c57d8f16d8113455b7a0d9e",
+      "definition_md5": "461ad72242ef28a00c1712a8e51896c1",
+      "anon_execute": true,
+      "authenticated_execute": true,
+      "service_role_execute": true
+    },
+    {
+      "signature": "pay_supplier(uuid,uuid,numeric,text,uuid,text)",
+      "identity_arguments": "p_invoice_id uuid, p_user_id uuid, p_amount numeric, p_payment_method text, p_vault_id uuid, p_notes text",
+      "result_type": "void",
+      "argument_names": [
+        "p_invoice_id",
+        "p_user_id",
+        "p_amount",
+        "p_payment_method",
+        "p_vault_id",
+        "p_notes"
+      ],
+      "security_definer": true,
+      "configuration": [
+        "search_path=public"
+      ],
+      "owner": "postgres",
+      "body_md5": "c953c6bbc00eec068c1031515a33610d",
+      "body_lf_md5": "8f378ebc71929551e0d655d0867bd5e5",
+      "definition_md5": "2b83e66a3842224d67f05c29002d8e56",
+      "anon_execute": true,
+      "authenticated_execute": true,
+      "service_role_execute": true
+    },
+    {
+      "signature": "receive_purchase_invoice(uuid,uuid)",
+      "identity_arguments": "p_invoice_id uuid, p_user_id uuid",
+      "result_type": "void",
+      "argument_names": [
+        "p_invoice_id",
+        "p_user_id"
+      ],
+      "security_definer": true,
+      "configuration": [
+        "search_path=public"
+      ],
+      "owner": "postgres",
+      "body_md5": "4a3dc59863f847ec769daf57a97b3e34",
+      "body_lf_md5": "07bd5202d7781f6705d0ffcaa2b13157",
+      "definition_md5": "4acdb467f31331c0c943ef450b902f39",
+      "anon_execute": true,
+      "authenticated_execute": true,
+      "service_role_execute": true
+    },
+    {
+      "signature": "reserve_stock(uuid,uuid,numeric)",
+      "identity_arguments": "p_warehouse_id uuid, p_product_id uuid, p_qty numeric",
+      "result_type": "void",
+      "argument_names": [
+        "p_warehouse_id",
+        "p_product_id",
+        "p_qty"
+      ],
+      "security_definer": true,
+      "configuration": [
+        "search_path=public"
+      ],
+      "owner": "postgres",
+      "body_md5": "c5c653ef373a6fc708b771455c080cd4",
+      "body_lf_md5": "64a98ca4b2b2156637879186dd581c3e",
+      "definition_md5": "83836508137e9647faa4a95c32769abb",
+      "anon_execute": true,
+      "authenticated_execute": true,
+      "service_role_execute": true
+    },
+    {
+      "signature": "unreserve_stock(uuid,uuid,numeric)",
+      "identity_arguments": "p_warehouse_id uuid, p_product_id uuid, p_qty numeric",
+      "result_type": "void",
+      "argument_names": [
+        "p_warehouse_id",
+        "p_product_id",
+        "p_qty"
+      ],
+      "security_definer": true,
+      "configuration": [
+        "search_path=public"
+      ],
+      "owner": "postgres",
+      "body_md5": "be3c80e3cfcd6a4bce85606b376206f3",
+      "body_lf_md5": "63bfb40664be99ad42edb6bbb6778286",
+      "definition_md5": "fe380ab5fa9cafc040eb76bc4bf6bcd1",
+      "anon_execute": true,
+      "authenticated_execute": true,
+      "service_role_execute": true
+    },
+    {
+      "signature": "update_stock_wac(uuid,uuid,numeric,numeric,text,text,uuid,uuid)",
+      "identity_arguments": "p_warehouse_id uuid, p_product_id uuid, p_qty_in numeric, p_unit_cost numeric, p_movement_type text, p_reference_type text, p_reference_id uuid, p_user_id uuid",
+      "result_type": "void",
+      "argument_names": [
+        "p_warehouse_id",
+        "p_product_id",
+        "p_qty_in",
+        "p_unit_cost",
+        "p_movement_type",
+        "p_reference_type",
+        "p_reference_id",
+        "p_user_id"
+      ],
+      "security_definer": true,
+      "configuration": [
+        "search_path=public"
+      ],
+      "owner": "postgres",
+      "body_md5": "f01baeae05985d7f1114df2b437328b1",
+      "body_lf_md5": "3175ef90a074ff33537e3b2faec46ade",
+      "definition_md5": "036d727a33175ffc58980691cf11ba56",
+      "anon_execute": true,
+      "authenticated_execute": true,
+      "service_role_execute": true
+    }
+  ],
+  "supabaseRef": "ozthzccqudrudicnneuu",
+  "productionBoundary": "Read-only catalog/privilege/policy/column metadata and public assets only; no production business rows, RPC workflow invocations, grants or migrations",
+  "restore": {
+    "status": "PASS",
+    "parentSha": "9576fc0d9629abbc72ef5510ee9c78147d1d9fb8",
+    "owner": "edara-c3-compose-20261011",
+    "publicTableCount": 48,
+    "authUserCount": 2,
+    "archiveSha256": "0e06c5aa2f34a4a49c7a827356d9972563a87fd0de03f7a7538ea3d083fcc939",
+    "restoreParity": true,
+    "sourceUnchanged": true,
+    "temporaryDatabaseRetired": true,
+    "privateArchiveNotCommitted": true,
+    "snapshot": {
+      "rows": [
+        {
+          "relation": "auth.identities",
+          "count": 2,
+          "digest": "ae51fb586226dd9b3ecf2435eb361121"
+        },
+        {
+          "relation": "auth.users",
+          "count": 2,
+          "digest": "d4f38cc5eb71cf70454890efa616b2a2"
+        },
+        {
+          "relation": "public.areas",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.audit_logs",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.branches",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.brands",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.chart_of_accounts",
+          "count": 30,
+          "digest": "6c4fe40d7894e108fae0269937a77609"
+        },
+        {
+          "relation": "public.cities",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.company_settings",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.custody_accounts",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.custody_transactions",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.customer_branches",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.customer_ledger",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.customers",
+          "count": 3,
+          "digest": "6b38d7a8c30995e79dc258d44b835afe"
+        },
+        {
+          "relation": "public.feature_flags",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.governorates",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.journal_entries",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.journal_entry_lines",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.notification_alert_state",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.payment_receipts",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.price_list_assignments",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.price_list_items",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.price_lists",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.product_categories",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.product_units",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.products",
+          "count": 3,
+          "digest": "9af432a2e58214731c7bb2127f4aaf99"
+        },
+        {
+          "relation": "public.profiles",
+          "count": 2,
+          "digest": "47154c5baf6caa6afbc5688d510494f1"
+        },
+        {
+          "relation": "public.purchase_invoice_items",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.purchase_invoices",
+          "count": 3,
+          "digest": "d2dcb1adac39d950fd4619237300d4f5"
+        },
+        {
+          "relation": "public.purchase_return_items",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.purchase_returns",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.role_permissions",
+          "count": 2,
+          "digest": "04910619d3eafa32f0064f4af83da5fc"
+        },
+        {
+          "relation": "public.roles",
+          "count": 2,
+          "digest": "fa89c56d67b93b3049c136671cf08d85"
+        },
+        {
+          "relation": "public.sales_order_due_date_history",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.sales_order_items",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.sales_orders",
+          "count": 7,
+          "digest": "17f8ac23f7dca28e576fa151cbb7b370"
+        },
+        {
+          "relation": "public.sales_return_items",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.sales_returns",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.shipping_companies",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.stock",
+          "count": 4,
+          "digest": "503088e875ef9acfb938187e0e727c2e"
+        },
+        {
+          "relation": "public.stock_movements",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.supplier_ledger",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.suppliers",
+          "count": 1,
+          "digest": "26be164a3bb2e2e1736c25a082f8b6f1"
+        },
+        {
+          "relation": "public.units",
+          "count": 1,
+          "digest": "0c2383620caa1f026f8d377554ee05b9"
+        },
+        {
+          "relation": "public.user_permission_overrides",
+          "count": 4,
+          "digest": "5c05f13aacd77d74ad097850228bc3d0"
+        },
+        {
+          "relation": "public.user_roles",
+          "count": 2,
+          "digest": "d39098b3b09b3e2eb1e526ca28715d8c"
+        },
+        {
+          "relation": "public.vault_transactions",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.vaults",
+          "count": 0,
+          "digest": "d751713988987e9331980363e24189ce"
+        },
+        {
+          "relation": "public.warehouse_managers",
+          "count": 1,
+          "digest": "da349825935d991c22ed2b7f75db9d2c"
+        },
+        {
+          "relation": "public.warehouses",
+          "count": 3,
+          "digest": "7244e955e4d2658888b2782e9e7033a5"
+        }
+      ],
+      "functionDigest": "9c2f8544e5827c6de5c3654eaae766d6",
+      "schemaDigest": "cabe307f4388a62f1788c74d2ed34c47"
+    },
+    "scope": "Current synthetic database after workflow qualification, restored into a fresh template0 DB in same owned PG17 cluster. Checks all48 public table row digests, Auth users/identities, public function bodies/owners/ACL, columns/defaults/ACL, RLS policies, triggers, constraints and indexes. Does not prove independent server/global-role bootstrap, Auth runtime after restore, or durable financial transaction replay."
+  },
+  "status": "PASS_BOUNDED_METADATA_AND_SAME_CLUSTER_RESTORE_ONLY",
+  "selectedProductionGrants": [
+    {
+      "table_name": "products",
+      "column_name": "cost_price",
+      "role_name": "anon",
+      "table_select": true,
+      "column_select": true
+    },
+    {
+      "table_name": "products",
+      "column_name": "cost_price",
+      "role_name": "authenticated",
+      "table_select": true,
+      "column_select": true
+    },
+    {
+      "table_name": "products",
+      "column_name": "cost_price",
+      "role_name": "service_role",
+      "table_select": true,
+      "column_select": true
+    },
+    {
+      "table_name": "products",
+      "column_name": "id",
+      "role_name": "anon",
+      "table_select": true,
+      "column_select": true
+    },
+    {
+      "table_name": "products",
+      "column_name": "id",
+      "role_name": "authenticated",
+      "table_select": true,
+      "column_select": true
+    },
+    {
+      "table_name": "products",
+      "column_name": "id",
+      "role_name": "service_role",
+      "table_select": true,
+      "column_select": true
+    },
+    {
+      "table_name": "products",
+      "column_name": "last_purchase_price",
+      "role_name": "anon",
+      "table_select": true,
+      "column_select": true
+    },
+    {
+      "table_name": "products",
+      "column_name": "last_purchase_price",
+      "role_name": "authenticated",
+      "table_select": true,
+      "column_select": true
+    },
+    {
+      "table_name": "products",
+      "column_name": "last_purchase_price",
+      "role_name": "service_role",
+      "table_select": true,
+      "column_select": true
+    },
+    {
+      "table_name": "stock",
+      "column_name": "id",
+      "role_name": "anon",
+      "table_select": true,
+      "column_select": true
+    },
+    {
+      "table_name": "stock",
+      "column_name": "id",
+      "role_name": "authenticated",
+      "table_select": true,
+      "column_select": true
+    },
+    {
+      "table_name": "stock",
+      "column_name": "id",
+      "role_name": "service_role",
+      "table_select": true,
+      "column_select": true
+    },
+    {
+      "table_name": "stock",
+      "column_name": "total_cost_value",
+      "role_name": "anon",
+      "table_select": true,
+      "column_select": true
+    },
+    {
+      "table_name": "stock",
+      "column_name": "total_cost_value",
+      "role_name": "authenticated",
+      "table_select": true,
+      "column_select": true
+    },
+    {
+      "table_name": "stock",
+      "column_name": "total_cost_value",
+      "role_name": "service_role",
+      "table_select": true,
+      "column_select": true
+    },
+    {
+      "table_name": "stock",
+      "column_name": "wac",
+      "role_name": "anon",
+      "table_select": true,
+      "column_select": true
+    },
+    {
+      "table_name": "stock",
+      "column_name": "wac",
+      "role_name": "authenticated",
+      "table_select": true,
+      "column_select": true
+    },
+    {
+      "table_name": "stock",
+      "column_name": "wac",
+      "role_name": "service_role",
+      "table_select": true,
+      "column_select": true
+    }
+  ],
+  "functionComparison": {
+    "status": "PASS_SELECTED_FUNCTION_COMPATIBILITY",
+    "scope": "Selected signatures/results/argument names and exact or CRLF-to-LF body comparison only; no whitespace/semantic normalization and no production writes",
+    "comparisons": [
+      {
+        "signature": "add_custody_transaction(uuid,text,numeric,uuid,text,uuid,text,uuid)",
+        "localPresent": true,
+        "signatureContractMatches": true,
+        "bodyExactMatches": true,
+        "bodyLfMatches": true,
+        "plannedBodyChange": false,
+        "productionAnonExecute": true,
+        "localAnonExecute": false,
+        "productionAuthenticatedExecute": true,
+        "localAuthenticatedExecute": false
+      },
+      {
+        "signature": "add_vault_transaction(uuid,text,numeric,text,uuid,text,uuid)",
+        "localPresent": true,
+        "signatureContractMatches": true,
+        "bodyExactMatches": true,
+        "bodyLfMatches": true,
+        "plannedBodyChange": false,
+        "productionAnonExecute": true,
+        "localAnonExecute": false,
+        "productionAuthenticatedExecute": true,
+        "localAuthenticatedExecute": false
+      },
+      {
+        "signature": "allocate_payment_to_invoices(uuid,numeric,text,uuid,uuid)",
+        "localPresent": true,
+        "signatureContractMatches": true,
+        "bodyExactMatches": true,
+        "bodyLfMatches": true,
+        "plannedBodyChange": false,
+        "productionAnonExecute": true,
+        "localAnonExecute": false,
+        "productionAuthenticatedExecute": true,
+        "localAuthenticatedExecute": false
+      },
+      {
+        "signature": "allocate_payment_to_invoices(uuid,numeric,text,uuid,uuid,uuid)",
+        "localPresent": true,
+        "signatureContractMatches": true,
+        "bodyExactMatches": true,
+        "bodyLfMatches": true,
+        "plannedBodyChange": false,
+        "productionAnonExecute": true,
+        "localAnonExecute": false,
+        "productionAuthenticatedExecute": true,
+        "localAuthenticatedExecute": false
+      },
+      {
+        "signature": "bill_purchase_invoice(uuid,uuid,uuid,text)",
+        "localPresent": true,
+        "signatureContractMatches": true,
+        "bodyExactMatches": true,
+        "bodyLfMatches": true,
+        "plannedBodyChange": false,
+        "productionAnonExecute": true,
+        "localAnonExecute": false,
+        "productionAuthenticatedExecute": true,
+        "localAuthenticatedExecute": true
+      },
+      {
+        "signature": "cancel_purchase_invoice(uuid,uuid)",
+        "localPresent": true,
+        "signatureContractMatches": true,
+        "bodyExactMatches": true,
+        "bodyLfMatches": true,
+        "plannedBodyChange": false,
+        "productionAnonExecute": true,
+        "localAnonExecute": false,
+        "productionAuthenticatedExecute": true,
+        "localAuthenticatedExecute": true
+      },
+      {
+        "signature": "cancel_sales_order(uuid,uuid,text)",
+        "localPresent": true,
+        "signatureContractMatches": true,
+        "bodyExactMatches": true,
+        "bodyLfMatches": true,
+        "plannedBodyChange": false,
+        "productionAnonExecute": true,
+        "localAnonExecute": false,
+        "productionAuthenticatedExecute": true,
+        "localAuthenticatedExecute": true
+      },
+      {
+        "signature": "check_permission(uuid,text)",
+        "localPresent": true,
+        "signatureContractMatches": true,
+        "bodyExactMatches": false,
+        "bodyLfMatches": false,
+        "plannedBodyChange": true,
+        "productionAnonExecute": true,
+        "localAnonExecute": true,
+        "productionAuthenticatedExecute": true,
+        "localAuthenticatedExecute": true
+      },
+      {
+        "signature": "confirm_payment_receipt(uuid,text,uuid,text,uuid)",
+        "localPresent": true,
+        "signatureContractMatches": true,
+        "bodyExactMatches": true,
+        "bodyLfMatches": true,
+        "plannedBodyChange": false,
+        "productionAnonExecute": true,
+        "localAnonExecute": false,
+        "productionAuthenticatedExecute": true,
+        "localAuthenticatedExecute": true
+      },
+      {
+        "signature": "confirm_purchase_return(uuid,uuid)",
+        "localPresent": true,
+        "signatureContractMatches": true,
+        "bodyExactMatches": true,
+        "bodyLfMatches": true,
+        "plannedBodyChange": false,
+        "productionAnonExecute": true,
+        "localAnonExecute": false,
+        "productionAuthenticatedExecute": true,
+        "localAuthenticatedExecute": true
+      },
+      {
+        "signature": "confirm_sales_order(uuid,uuid)",
+        "localPresent": true,
+        "signatureContractMatches": true,
+        "bodyExactMatches": true,
+        "bodyLfMatches": true,
+        "plannedBodyChange": false,
+        "productionAnonExecute": true,
+        "localAnonExecute": false,
+        "productionAuthenticatedExecute": true,
+        "localAuthenticatedExecute": true
+      },
+      {
+        "signature": "confirm_sales_return(uuid,uuid,uuid,uuid)",
+        "localPresent": true,
+        "signatureContractMatches": true,
+        "bodyExactMatches": true,
+        "bodyLfMatches": true,
+        "plannedBodyChange": false,
+        "productionAnonExecute": true,
+        "localAnonExecute": false,
+        "productionAuthenticatedExecute": true,
+        "localAuthenticatedExecute": true
+      },
+      {
+        "signature": "create_auto_journal_entry(text,uuid,text,text,text,numeric,uuid)",
+        "localPresent": true,
+        "signatureContractMatches": true,
+        "bodyExactMatches": true,
+        "bodyLfMatches": true,
+        "plannedBodyChange": false,
+        "productionAnonExecute": true,
+        "localAnonExecute": false,
+        "productionAuthenticatedExecute": true,
+        "localAuthenticatedExecute": false
+      },
+      {
+        "signature": "create_manual_journal_entry(text,date,text,uuid,jsonb,uuid)",
+        "localPresent": true,
+        "signatureContractMatches": true,
+        "bodyExactMatches": true,
+        "bodyLfMatches": true,
+        "plannedBodyChange": false,
+        "productionAnonExecute": true,
+        "localAnonExecute": false,
+        "productionAuthenticatedExecute": true,
+        "localAuthenticatedExecute": false
+      },
+      {
+        "signature": "create_ui_manual_journal_entry(text,date,text,uuid,jsonb,uuid)",
+        "localPresent": true,
+        "signatureContractMatches": true,
+        "bodyExactMatches": false,
+        "bodyLfMatches": false,
+        "plannedBodyChange": true,
+        "productionAnonExecute": true,
+        "localAnonExecute": false,
+        "productionAuthenticatedExecute": true,
+        "localAuthenticatedExecute": true
+      },
+      {
+        "signature": "deduct_stock_at_wac(uuid,uuid,numeric,text,text,uuid,uuid)",
+        "localPresent": true,
+        "signatureContractMatches": true,
+        "bodyExactMatches": true,
+        "bodyLfMatches": true,
+        "plannedBodyChange": false,
+        "productionAnonExecute": true,
+        "localAnonExecute": false,
+        "productionAuthenticatedExecute": true,
+        "localAuthenticatedExecute": false
+      },
+      {
+        "signature": "deliver_sales_order(uuid,uuid,text,text,uuid,uuid,numeric,boolean,text,text,date)",
+        "localPresent": true,
+        "signatureContractMatches": true,
+        "bodyExactMatches": true,
+        "bodyLfMatches": true,
+        "plannedBodyChange": false,
+        "productionAnonExecute": true,
+        "localAnonExecute": false,
+        "productionAuthenticatedExecute": true,
+        "localAuthenticatedExecute": true
+      },
+      {
+        "signature": "get_low_stock(uuid,integer,integer)",
+        "localPresent": true,
+        "signatureContractMatches": true,
+        "bodyExactMatches": false,
+        "bodyLfMatches": false,
+        "plannedBodyChange": true,
+        "productionAnonExecute": true,
+        "localAnonExecute": false,
+        "productionAuthenticatedExecute": true,
+        "localAuthenticatedExecute": true
+      },
+      {
+        "signature": "get_product_cost_metrics(uuid[])",
+        "localPresent": true,
+        "signatureContractMatches": true,
+        "bodyExactMatches": true,
+        "bodyLfMatches": true,
+        "plannedBodyChange": false,
+        "productionAnonExecute": true,
+        "localAnonExecute": false,
+        "productionAuthenticatedExecute": true,
+        "localAuthenticatedExecute": true
+      },
+      {
+        "signature": "guard_product_cost_price()",
+        "localPresent": true,
+        "signatureContractMatches": true,
+        "bodyExactMatches": true,
+        "bodyLfMatches": true,
+        "plannedBodyChange": false,
+        "productionAnonExecute": true,
+        "localAnonExecute": true,
+        "productionAuthenticatedExecute": true,
+        "localAuthenticatedExecute": true
+      },
+      {
+        "signature": "pay_supplier(uuid,uuid,numeric,text,uuid,text)",
+        "localPresent": true,
+        "signatureContractMatches": true,
+        "bodyExactMatches": true,
+        "bodyLfMatches": true,
+        "plannedBodyChange": false,
+        "productionAnonExecute": true,
+        "localAnonExecute": false,
+        "productionAuthenticatedExecute": true,
+        "localAuthenticatedExecute": true
+      },
+      {
+        "signature": "receive_purchase_invoice(uuid,uuid)",
+        "localPresent": true,
+        "signatureContractMatches": true,
+        "bodyExactMatches": true,
+        "bodyLfMatches": true,
+        "plannedBodyChange": false,
+        "productionAnonExecute": true,
+        "localAnonExecute": false,
+        "productionAuthenticatedExecute": true,
+        "localAuthenticatedExecute": true
+      },
+      {
+        "signature": "reserve_stock(uuid,uuid,numeric)",
+        "localPresent": true,
+        "signatureContractMatches": true,
+        "bodyExactMatches": true,
+        "bodyLfMatches": true,
+        "plannedBodyChange": false,
+        "productionAnonExecute": true,
+        "localAnonExecute": false,
+        "productionAuthenticatedExecute": true,
+        "localAuthenticatedExecute": false
+      },
+      {
+        "signature": "unreserve_stock(uuid,uuid,numeric)",
+        "localPresent": true,
+        "signatureContractMatches": true,
+        "bodyExactMatches": true,
+        "bodyLfMatches": true,
+        "plannedBodyChange": false,
+        "productionAnonExecute": true,
+        "localAnonExecute": false,
+        "productionAuthenticatedExecute": true,
+        "localAuthenticatedExecute": false
+      },
+      {
+        "signature": "update_stock_wac(uuid,uuid,numeric,numeric,text,text,uuid,uuid)",
+        "localPresent": true,
+        "signatureContractMatches": true,
+        "bodyExactMatches": true,
+        "bodyLfMatches": true,
+        "plannedBodyChange": false,
+        "productionAnonExecute": true,
+        "localAnonExecute": false,
+        "productionAuthenticatedExecute": true,
+        "localAuthenticatedExecute": false
+      }
+    ],
+    "newCandidateFunctions": [
+      "update_purchase_return_draft(uuid,jsonb,jsonb)"
+    ]
+  },
+  "deployment": {
+    "id": "dpl_Aa1KTwZFaBj9fj766JtTHMgLr6Ld",
+    "projectId": "prj_lxOEu9ZLCgeKdlJbIj2Rt4YMWBEF",
+    "url": "new-edara-k9jwx05wz-ahmed-salamas-projects-0ee0a828.vercel.app",
+    "domain": "edara.delight-world.com",
+    "target": "production",
+    "sha": "d0d5f35429463219e575d4e306464ea24ebed776",
+    "branch": "main"
+  },
+  "parentSha": "9576fc0d9629abbc72ef5510ee9c78147d1d9fb8",
+  "review": {
+    "status": "completed",
+    "readOnlyViolation": false,
+    "finalMessage": "This is a review request, not a code-change task — no plan/implementation is needed. I'll just answer directly.\n\n**Verdict: PASS, with two concrete gaps noted below that should be labeled as open rather than implied-covered.**\n\n**Gap 1 — Scope1 \"authenticated mapping\" lacks a bundle↔deployment content check.**\nYou verified (a) domain→SHA via Vercel API, and (b) live bundle references the Supabase project ID. But there's no stated comparison tying the *live served JS* back to the *commit tree* at that SHA (e.g., build hash, sourcemap, or asset-manifest match) beyond the fact that the project ID string appears in it. A stale CDN edge or a different deployment pinned to the same domain alias could still serve old JS referencing the same Supabase project (project ID rarely changes across deploys), so this one fact doesn't uniquely bind \"live bundle\" to \"SHA d0d5f35\". If no asset/build-hash comparison exists, the claim should read \"domain resolves to SHA X per Vercel; live JS targets the expected Supabase project\" rather than implying the live bundle is proven to originate from that exact SHA.\n\n**Gap 2 — Function/RLS/policy \"exact match\" set is a named subset, not exhaustive, and this should stay explicit in the writeup.**\n25 functions, 11 policies, \"selected\" grants — all fine as bounded claims, but the doc must not drift into language like \"DB schema verified\" or \"security posture confirmed\" without the \"selected/sample\" qualifier, since unselected functions/policies/grants are unreviewed. As written in your scope description this is already correctly qualified — just flagging it as the line not to cross in the final doc.\n\nEverything else is appropriately hedged: restore-equality claims already exclude Auth-runtime/global-role bootstrap/transaction-replay, candidate function bodies are explicitly separated from \"semantics qualified separately,\" and open baseline areas (app/Realtime/offline/update/performance/overall) are correctly left unclaimed. No overclaim found there."
+  },
+  "remaining": "Actual App/forms, unified performance/offline/update, Realtime and overall baseline/release acceptance remain open"
+}

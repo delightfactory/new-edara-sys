@@ -1,0 +1,346 @@
+{
+  "parentSha": "9576fc0d9629abbc72ef5510ee9c78147d1d9fb8",
+  "publishedScreenshots": [
+    {
+      "width": 390,
+      "path": "docs/foundation/evidence/c6-product-form-390.png",
+      "sha256": "d3f6a912963391f190dae0e041e525a582b08b41c998995116c7159364f2574b"
+    },
+    {
+      "width": 900,
+      "path": "docs/foundation/evidence/c6-product-form-900.png",
+      "sha256": "55f2a548f48fddf781b9088f5e85f87e4970658768152d4a997c72287c95ec3d"
+    },
+    {
+      "width": 1440,
+      "path": "docs/foundation/evidence/c6-product-form-1440.png",
+      "sha256": "a78dc412abc7effce40abe06fb46ae896adfe85d296c0db5305d0d29fe78b542"
+    }
+  ],
+  "status": "PASS_BOUNDED_PRODUCT_WORKFLOW_AND_LIGHT_LAYOUT_ONLY",
+  "workflow": {
+    "status": "PASS",
+    "parentSha": "9576fc0d9629abbc72ef5510ee9c78147d1d9fb8",
+    "scope": "Actual main/App/login/shell/routes and product create/edit using real owned Auth/PostgREST. Service workers disabled and Realtime backend unavailable; no offline/Realtime or broad baseline acceptance.",
+    "cases": [
+      "Actual protected product route redirects to real login and returns to the original form after Auth",
+      "Actual product form RTL and no horizontal overflow at390/900/1440",
+      "Product saved through actual form and persisted with name/SKU/unit/price",
+      "Actual edit route restores persisted product and writes an observed update"
+    ],
+    "requests": [
+      {
+        "stage": "actual-login",
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "actual-login",
+        "path": "/rest/v1/rpc/get_my_profile",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "actual-login",
+        "path": "/rest/v1/rpc/get_my_permission_denials",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "actual-login",
+        "path": "/rest/v1/rpc/get_unread_notifications_count",
+        "method": "POST",
+        "status": 404
+      },
+      {
+        "stage": "actual-login",
+        "path": "/rest/v1/product_categories",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "actual-login",
+        "path": "/rest/v1/brands",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "responsive-form",
+        "path": "/rest/v1/units",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "create",
+        "path": "/rest/v1/rpc/get_unread_notifications_count",
+        "method": "POST",
+        "status": 404
+      },
+      {
+        "stage": "create",
+        "path": "/rest/v1/products",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "stage": "edit",
+        "path": "/rest/v1/rpc/get_unread_notifications_count",
+        "method": "POST",
+        "status": 404
+      },
+      {
+        "stage": "edit",
+        "path": "/rest/v1/brands",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "edit",
+        "path": "/rest/v1/product_categories",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "edit",
+        "path": "/rest/v1/units",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "edit",
+        "path": "/rest/v1/rpc/get_my_profile",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "edit",
+        "path": "/rest/v1/rpc/get_my_permission_denials",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "edit",
+        "path": "/rest/v1/product_units",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "edit",
+        "path": "/rest/v1/products",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "edit",
+        "path": "/rest/v1/rpc/get_product_cost_metrics",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "edit",
+        "path": "/rest/v1/rpc/get_unread_notifications_count",
+        "method": "POST",
+        "status": 404
+      },
+      {
+        "stage": "edit",
+        "path": "/rest/v1/products",
+        "method": "PATCH",
+        "status": 200
+      }
+    ],
+    "externalRequests": [],
+    "pageErrors": [],
+    "screenshots": [
+      {
+        "width": 390,
+        "path": "C:\\Users\\DELL\\Documents\\Codex\\2026-10-10\\edara-baseline-foundation\\completion/c6-product-form-390.png"
+      },
+      {
+        "width": 900,
+        "path": "C:\\Users\\DELL\\Documents\\Codex\\2026-10-10\\edara-baseline-foundation\\completion/c6-product-form-900.png"
+      },
+      {
+        "width": 1440,
+        "path": "C:\\Users\\DELL\\Documents\\Codex\\2026-10-10\\edara-baseline-foundation\\completion/c6-product-form-1440.png"
+      }
+    ],
+    "timings": [
+      {
+        "label": "One local authenticated edit-route navigation sample; not before/after benchmark",
+        "milliseconds": 295
+      }
+    ],
+    "sourceHashes": {
+      "src/main.tsx": "403dd769f975606db53dfa09534442b20df4823edd1491e4a1d8351d4957cd0d",
+      "src/App.tsx": "99c28a5c207f5246d4ab7be63161d2162fd82cc8cd63a235aab60dcbc10ba235",
+      "src/components/layout/AuthProvider.tsx": "426a0b3a8f664199df9eb1fa7e928406bc9442255bcedf7f7c19f1c7a14c3376",
+      "src/pages/auth/LoginPage.tsx": "c8b3fa9cff70e87399bb2724b164d55b746765988fb591aeab1174a3c3ab16fe",
+      "src/pages/products/ProductFormPage.tsx": "0e5674fd71c02f1f94d8103718b6c0ac8a4ee28f50dfa29888e52a852c8540e3",
+      "src/lib/services/products.ts": "5b58358492ffd9d00fb701d3fda81287abb4ede52a331244fcd336ba97b23fca",
+      "src/lib/supabase/client.ts": "2ac923f7b21d53f9380af4c3f1b63de05ea6ce1bd0de18d83410e1c17c9ec0b8",
+      "vite.config.ts": "9153b77595ac722ebf83666baf699ade927755479b2a885ba7452d1647353f1c"
+    },
+    "publicFixtureRestored": true
+  },
+  "layout": {
+    "status": "PASS",
+    "parentSha": "9576fc0d9629abbc72ef5510ee9c78147d1d9fb8",
+    "scope": "Actual main/App/login/shell/routes and product create/edit using real owned Auth/PostgREST. Service workers disabled and Realtime backend unavailable; no offline/Realtime or broad baseline acceptance.",
+    "cases": [
+      "Actual protected product route redirects to real login and returns to the original form after Auth",
+      "Actual product form RTL and no horizontal overflow at390/900/1440 after relevant animations and fonts settle"
+    ],
+    "requests": [
+      {
+        "stage": "actual-login",
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "actual-login",
+        "path": "/rest/v1/rpc/get_my_profile",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "actual-login",
+        "path": "/rest/v1/rpc/get_my_permission_denials",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "stage": "responsive-form",
+        "path": "/rest/v1/rpc/get_unread_notifications_count",
+        "method": "POST",
+        "status": 404
+      },
+      {
+        "stage": "responsive-form",
+        "path": "/rest/v1/product_categories",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "responsive-form",
+        "path": "/rest/v1/units",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "responsive-form",
+        "path": "/rest/v1/brands",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "stage": "responsive-form",
+        "path": "/rest/v1/rpc/get_unread_notifications_count",
+        "method": "POST",
+        "status": 404
+      }
+    ],
+    "externalRequests": [],
+    "pageErrors": [],
+    "screenshots": [
+      {
+        "width": 390,
+        "path": "C:\\Users\\DELL\\Documents\\Codex\\2026-10-10\\edara-baseline-foundation\\completion/c6-product-form-390-settled.png",
+        "layout": {
+          "rtl": "rtl",
+          "overflow": false,
+          "main": {
+            "x": 0,
+            "width": 390,
+            "right": 390
+          },
+          "sidebar": {
+            "x": 422,
+            "width": 320,
+            "right": 742
+          }
+        }
+      },
+      {
+        "width": 900,
+        "path": "C:\\Users\\DELL\\Documents\\Codex\\2026-10-10\\edara-baseline-foundation\\completion/c6-product-form-900-settled.png",
+        "layout": {
+          "rtl": "rtl",
+          "overflow": false,
+          "main": {
+            "x": 0,
+            "width": 900,
+            "right": 900
+          },
+          "sidebar": {
+            "x": 932,
+            "width": 320,
+            "right": 1252
+          }
+        }
+      },
+      {
+        "width": 1440,
+        "path": "C:\\Users\\DELL\\Documents\\Codex\\2026-10-10\\edara-baseline-foundation\\completion/c6-product-form-1440-settled.png",
+        "layout": {
+          "rtl": "rtl",
+          "overflow": false,
+          "main": {
+            "x": 0,
+            "width": 1180,
+            "right": 1180
+          },
+          "sidebar": {
+            "x": 1180,
+            "width": 260,
+            "right": 1440
+          }
+        }
+      }
+    ],
+    "timings": [],
+    "sourceHashes": {
+      "src/main.tsx": "403dd769f975606db53dfa09534442b20df4823edd1491e4a1d8351d4957cd0d",
+      "src/App.tsx": "99c28a5c207f5246d4ab7be63161d2162fd82cc8cd63a235aab60dcbc10ba235",
+      "src/components/layout/AuthProvider.tsx": "426a0b3a8f664199df9eb1fa7e928406bc9442255bcedf7f7c19f1c7a14c3376",
+      "src/pages/auth/LoginPage.tsx": "c8b3fa9cff70e87399bb2724b164d55b746765988fb591aeab1174a3c3ab16fe",
+      "src/pages/products/ProductFormPage.tsx": "0e5674fd71c02f1f94d8103718b6c0ac8a4ee28f50dfa29888e52a852c8540e3",
+      "src/lib/services/products.ts": "5b58358492ffd9d00fb701d3fda81287abb4ede52a331244fcd336ba97b23fca",
+      "src/lib/supabase/client.ts": "2ac923f7b21d53f9380af4c3f1b63de05ea6ce1bd0de18d83410e1c17c9ec0b8",
+      "vite.config.ts": "9153b77595ac722ebf83666baf699ade927755479b2a885ba7452d1647353f1c"
+    },
+    "publicFixtureRestored": true
+  },
+  "harnessHistory": {
+    "servedRun": "Create and layout passed; edit selector searched save label instead of actual update label; corrected tool selector only",
+    "firstBrowser": "Static server guard mixed Windows separators, returned403; no App executed",
+    "preRun": "SQL NULL decoding corrected before browser run",
+    "visualCorrection": "Initial screenshots captured transition; separate layout probe waited relevant animations/fonts, resulting geometry and images reviewed",
+    "cleanup": "Restoring last_login_at fired updated_at trigger; original timestamps recovered from SHA-verified archive; recovery report below",
+    "finalWorkflow": "Actual create/edit PASS; no production code modified"
+  },
+  "cleanupRecovery": {
+    "status": "PASS",
+    "scope": "Recover only two synthetic profile timestamps changed by login/cleanup update trigger, from verified current archive. Original trigger restored; all48 public table row hashes equal archive baseline; temporary DB retired.",
+    "archiveSha256": "0e06c5aa2f34a4a49c7a827356d9972563a87fd0de03f7a7538ea3d083fcc939",
+    "publicFixtureRestored": true,
+    "triggerRestored": true,
+    "temporaryDatabaseRetired": true
+  },
+  "limits": [
+    "Manager save/edit tested on1440px/light only",
+    "390/900/1440 layout observations do not accept all UX/a11y/dark/mobile workflows",
+    "Missing source42 unread counter returned404 four times; notifications gap open",
+    "Service Workers blocked and Realtime service absent",
+    "One navigation timing is not before/after or production speed proof",
+    "Source/public fixture restored; Auth session metadata is not binary restore claim",
+    "Overall C3/C5/C6/C7 and baseline/release remain open"
+  ],
+  "review": {
+    "status": "completed",
+    "finalMessage": "This is an evaluation request on narrative text, not an implementation task — no code exploration or plan is needed. I'll answer directly.\n\n**Assessment: PASS, with the stated limitations correctly scoped.**\n\nSpecifics:\n\n- The claims are self-consistent and appropriately hedged. The report explicitly distinguishes what was observed (real HTTP calls, real DB inserts, real screenshots at three breakpoints) from what was *not* tested (dark mode, touch, accessibility, mobile parity for save/edit, performance).\n- No claim of CI, deployment, or source-code modification is made — consistent with the stated constraint that \"production source unchanged.\"\n- The 404s on `get_unread_notifications_count` and absent Realtime/Service Worker are flagged as open gaps rather than silently passed over or claimed fixed — correct handling.\n- The layout probe is appropriately caveated: \"screenshot geometry does not prove broad UX/accessibility/dark/touch or business-flow Mobile parity,\" and the save/edit action is noted as tested only at 1440px, light mode — this is an accurate, non-expanded scope statement.\n- The one performance-adjacent note (\"one edit navigation time sample\") is explicitly disclaimed as not a performance comparison — correctly avoids overclaiming speed/perf conclusions.\n- No claim is made that this constitutes full-app/baseline/C6 acceptance — explicitly disclaimed.\n\n**No overclaim found.** The text does not assert anything beyond the bounded evidence it describes (four workflow cases, three breakpoints, light mode only, known 404/Realtime/ServiceWorker gaps). It does not extend into source42 implementation work or unrelated redesign, and does not claim test execution was performed by this reviewer rather than root.\n\nSince this was a direct analytical judgment rather than a code-change task, no plan file or implementation is required.",
+    "readOnlyViolation": false
+  }
+}
