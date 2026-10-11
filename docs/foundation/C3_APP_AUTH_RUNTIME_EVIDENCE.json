@@ -1,0 +1,128 @@
+{
+  "status": "PASS",
+  "sha": "5709762d6fb41d3e4e6e20fa305af8790ccf4507",
+  "owner": "edara-c3-compose-20261011",
+  "cases": [
+    "anonymous INITIAL_SESSION under StrictMode",
+    "actual A login and deny-over-wildcard",
+    "same-A cached reload gated by verified identity",
+    "real logout retires cache/query/notifications",
+    "real B replaces A without permissions/query leak",
+    "late real A response after logout neither republishes nor persists last_login"
+  ],
+  "requests": [
+    {
+      "phase": "a-login",
+      "path": "/auth/v1/token",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "phase": "a-login",
+      "path": "/rest/v1/rpc/get_my_profile",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "phase": "a-login",
+      "path": "/rest/v1/rpc/get_my_permission_denials",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "phase": "a-reload",
+      "path": "/rest/v1/rpc/get_my_profile",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "phase": "a-reload",
+      "path": "/rest/v1/rpc/get_my_permission_denials",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "phase": "logout",
+      "path": "/auth/v1/logout",
+      "method": "POST",
+      "status": 204
+    },
+    {
+      "phase": "b-login",
+      "path": "/auth/v1/token",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "phase": "b-login",
+      "path": "/rest/v1/rpc/get_my_profile",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "phase": "b-login",
+      "path": "/rest/v1/rpc/get_my_permission_denials",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "phase": "b-login",
+      "path": "/auth/v1/logout",
+      "method": "POST",
+      "status": 204
+    },
+    {
+      "phase": "late-a",
+      "path": "/auth/v1/token",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "phase": "late-a",
+      "path": "/auth/v1/logout",
+      "method": "POST",
+      "status": 204
+    },
+    {
+      "phase": "late-a",
+      "path": "/rest/v1/rpc/get_my_profile",
+      "method": "POST",
+      "status": 200
+    }
+  ],
+  "sourceHashes": {
+    "src/components/layout/AuthProvider.tsx": "426a0b3a8f664199df9eb1fa7e928406bc9442255bcedf7f7c19f1c7a14c3376",
+    "src/lib/services/auth.ts": "6a901bdeb832a34e2bf6d5cdac2d1c09174ba57d95958d8c8fdf564b6d416c96",
+    "src/stores/auth-store.ts": "04a86393c581c377a39eaee70d35d39604a57dcfaad64e52fc60db7fb2d8acda",
+    "src/stores/notification-store.ts": "84c37ae62a580d23055d05fe5547aa68a9f17a5fca978b87bf7c5f862cf37c72",
+    "src/lib/query-client.ts": "f914ca09034114b646f1778796b3cdca4b6b7917cd61a552f883ebb46c590c3c",
+    "src/lib/supabase/client.ts": "2ac923f7b21d53f9380af4c3f1b63de05ea6ce1bd0de18d83410e1c17c9ec0b8"
+  },
+  "violations": [],
+  "cleanup": {
+    "contextClosed": true,
+    "browserExited": true,
+    "frontendClosed": true,
+    "platformKeptForNextQualification": true
+  },
+  "limitations": [
+    "Production Auth component/service/store with real Auth/RLS; not full App/dashboard/business/offline qualification",
+    "Test-only render probe, no SDK/service/store mocks or fabricated HTTP responses"
+  ],
+  "lateReply": {
+    "realResponseStatus": 200,
+    "heldCount": 1,
+    "observedBeforeLogoutTransitions": 6,
+    "lateTransitions": 0,
+    "persistedLastLoginUnchanged": true,
+    "patchCount": 0
+  },
+  "harnessSha256": "2b8ab85c671751da088ca49b30d3fc3d697d87b52cb63cbcab79a3320a5eb64e",
+  "privateCredentialAssetScan": "PASS",
+  "review": {
+    "verdict": "PASS",
+    "exitCode": 0,
+    "sessionId": "0b8bb050-aa1b-452b-ad88-07354ae6a739",
+    "readOnlyViolation": false
+  }
+}
