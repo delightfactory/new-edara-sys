@@ -217,14 +217,15 @@ export async function getStock(params?: {
     }
   }
 
-  // استخدام !inner لضمان صحة الفلترة على اسم/كود المنتج
+  // الـ view يحجب التكلفة في قاعدة البيانات مع إبقاء فلاتر المنتج والعلاقات.
+  // العدّ الدقيق يمنع صفحات وهمية من تقديرات الخطة، خاصة مع نطاق المخازن.
   let query = supabase
-    .from('stock')
+    .from('stock_read_safe')
     .select(`
       *,
       warehouse:warehouses(id, name, type),
       product:products!inner(id, name, sku, min_stock_level, base_unit:units!products_base_unit_id_fkey(id, name, symbol))
-    `, { count: 'estimated' })
+    `, { count: 'exact' })
     .order('updated_at', { ascending: false })
     .range(from, to)
 
