@@ -1,0 +1,187 @@
+{
+  "date": "2026-10-11",
+  "status": "PASS_ISOLATED_TARGET",
+  "builds": [
+    {
+      "name": "a",
+      "sourceSha": "80ebc7b8eba3911f299ca0e075446aa59f822cbf",
+      "swSha256": "dde70f3e4de1b2dd7f41fa7d69b9b1cabe77d77e2cbacf64ab2d1b02c9ad6763",
+      "indexSha256": "d67a44ed5f510e0018bb1309fccb6593a0322ad71a5b47a4dddd7214c41cefd1"
+    },
+    {
+      "name": "b",
+      "sourceSha": "7de9d55949f54a69312517a398b8afbea8a2b55d",
+      "swSha256": "975fd43db0e4dc3e4907dc86fd53710d44f96408b94a1fe0c4b6c1ca39e24541",
+      "indexSha256": "5907ca76908c0a5407a2d19f23e2abc41da97625fcfdf77129050a88f1f7a647"
+    }
+  ],
+  "testedSourceSha": "7de9d55949f54a69312517a398b8afbea8a2b55d",
+  "realtime": {
+    "actualApplicationUsers": 2,
+    "origins": [
+      "http://127.0.0.1:5182",
+      "http://127.0.0.1:5183"
+    ],
+    "stockSequence": [
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "bothUiUpdatedWithoutNavigation": true,
+    "foreignWarehouseSuppressedWithSameChannelPositiveControl": true,
+    "fixtureFramesAfterForeignChange": {
+      "manager": [
+        {
+          "id": "47000000-0000-4000-8000-000000000021",
+          "qty": 11,
+          "costKeys": []
+        },
+        {
+          "id": "47000000-0000-4000-8000-000000000022",
+          "qty": 5,
+          "costKeys": []
+        }
+      ],
+      "restricted": [
+        {
+          "id": "47000000-0000-4000-8000-000000000022",
+          "qty": 5,
+          "costKeys": []
+        }
+      ]
+    },
+    "restrictedCostColumnsAbsent": true,
+    "offlineThenOnline": {
+      "duringOffline": 5,
+      "afterOnline": 6,
+      "webSocketCloseObservedDuringShortOffline": false
+    },
+    "ownedServiceRestart": {
+      "socketCounts": [
+        {
+          "closed": 4,
+          "created": 3
+        },
+        {
+          "closed": 4,
+          "created": 3
+        }
+      ],
+      "positiveEventsAfterRestart": {
+        "manager": [
+          {
+            "id": "47000000-0000-4000-8000-000000000022",
+            "qty": 7,
+            "costKeys": []
+          }
+        ],
+        "restricted": [
+          {
+            "id": "47000000-0000-4000-8000-000000000022",
+            "qty": 7,
+            "costKeys": []
+          }
+        ]
+      },
+      "restrictedUiQuantityAfterRestart": 7
+    },
+    "networkOverridesRestored": true
+  },
+  "pwa": {
+    "origin": "http://127.0.0.1:5184",
+    "oldEntry": "/assets/index-C1Hu6q19.js",
+    "newEntry": "/assets/index-CiilYozo.js",
+    "updateToastObserved": true,
+    "navigationsBeforeUserUpdate": 0,
+    "draftRetainedWhileWaiting": true,
+    "laterDismissRetainedDraft": true,
+    "manualReopenBeforeAccept": true,
+    "explicitUpdateTopNavigations": 1,
+    "authenticatedAfterUpdate": true,
+    "routeRetainedAfterUpdate": "/customers/new",
+    "newHtmlFromServiceWorker": true,
+    "httpErrorsAtExplicitUpdate": 0,
+    "apiFromServiceWorkerAtUpdate": 0,
+    "offlineNewBuildAuthenticatedShell": true,
+    "networkRestored": true,
+    "postUpdateSalesRoute": "http://127.0.0.1:5184/sales/orders",
+    "postUpdateSalesHeading": "أوامر البيع"
+  },
+  "productionMutated": false,
+  "user5180Mutated": false,
+  "sdk": {
+    "status": "PASS_WITH_TABLE_ORDER_NORMALIZATION",
+    "actualTwoSdkUsers": true,
+    "actualApplicationUiStillPending": false,
+    "cases": [
+      "Authorized and scoped live UPDATE received with primary key/quantity and no financial keys",
+      "Foreign warehouse suppressed for scoped B with same-channel positive control",
+      "Revoked inventory grant stops events on live channel; regrant positive control resumes delivery",
+      "Authorized financial REST access remains available while Realtime carries no raw cost columns"
+    ],
+    "registeredStockSubscriptions": 2,
+    "events": {
+      "manager": 5,
+      "restricted": 3
+    },
+    "public158DigestsRestored": true,
+    "originalFailureRetained": true,
+    "comparisonIsRecordedSdkBeforeAfter": true,
+    "laterAppPhaseChangedTables": [
+      "profiles"
+    ],
+    "cleanupCorrection": "Owned2fixture updated_at restored; UNION ALL output order normalized by table identity; every158row digest unchanged and rechecked",
+    "assertionsNarrowed": false,
+    "publicationUnchanged": true,
+    "productionMutated": false,
+    "user5180Untouched": true,
+    "actualApplicationUiEvidence": "realtime in this artifact"
+  },
+  "cleanup": {
+    "status": "PASS",
+    "owner": "edara-qualification-20261011",
+    "archiveSha256": "898b09a23206f95c8f01219701421645fec44d3525ef9c942a1d9ee55c5be17b",
+    "publicTables": 158,
+    "allPublicCountsAndDigestsRestored": true,
+    "syntheticReaderAndStockRemoved": true,
+    "realtimeRetired": true,
+    "authRestHealthy": true,
+    "user5180Live": true,
+    "userRuntimeMutated": false,
+    "productionMutated": false
+  },
+  "retainedFailures": [
+    {
+      "stage": "Qualification proxy configuration",
+      "cause": "Duplicate Allow-Origin and missing content-profile preflight headers; corrected locally only"
+    },
+    {
+      "stage": "SDK cleanup attempt1",
+      "cause": "Stock updated_at trigger changed owned fixture timestamps; strict failure retained"
+    },
+    {
+      "stage": "SDK cleanup attempt2",
+      "cause": "UNION ALL table output order differed; all158 before/after keyed digests match, unmodified raw failure retained"
+    },
+    {
+      "stage": "Subsequent live digest comparison",
+      "cause": "App login phase updated profiles after SDK phase; not treated as SDK cleanup failure. Whole clone restoration later verifies158 counts and digests against prefixture snapshot"
+    }
+  ],
+  "limits": [
+    "Finite isolated local samples; historical intermittent failure cause remains unresolved",
+    "Production identity/network/target migrations and production rollout remain untested",
+    "PWA offline frontend shell only; no offline business-write acceptance",
+    "Only synthetic stock SQL updates used for CDC; financial valuation is outside this event test"
+  ],
+  "independentReview": {
+    "provider": "Claude Code",
+    "sessionId": "f604e1f3-e6f2-402e-b83d-baeaf7e1acd9",
+    "status": "completed",
+    "readOnlyViolation": false,
+    "verdict": "PASS for isolated target only",
+    "reviewerExecutedTests": false
+  }
+}
