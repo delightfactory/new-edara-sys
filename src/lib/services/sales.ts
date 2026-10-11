@@ -788,32 +788,6 @@ export async function confirmSalesReturn(returnId: string, params?: {
 
 
 // ============================================================
-// Payment Allocation â€” Ø§Ù„ØªÙˆØ²ÙŠØ¹ Ø§Ù„Ø°ÙƒÙŠ
-// ============================================================
-
-/**
- * ØªÙˆØ²ÙŠØ¹ Ø¯ÙØ¹Ø© Ø¹Ù„Ù‰ ÙÙˆØ§ØªÙŠØ± Ø§Ù„Ø¹Ù…ÙŠÙ„ (FIFO)
- */
-export async function allocatePayment(
-  customerId: string,
-  amount: number,
-  sourceType: string,
-  sourceId: string
-) {
-  const userId = await getAuthUserId()
-  const { data, error } = await supabase.rpc('allocate_payment_to_invoices', {
-    p_customer_id: customerId,
-    p_amount: amount,
-    p_source_type: sourceType,
-    p_source_id: sourceId,
-    p_user_id: userId,
-  })
-  if (error) throw error
-  return data as any[]
-}
-
-
-// ============================================================
 // Sales Stats â€” Ø¥Ø­ØµØ§Ø¦ÙŠØ§Øª Ø§Ù„Ù…Ø¨ÙŠØ¹Ø§Øª
 // ============================================================
 

@@ -1,0 +1,468 @@
+{
+  "parentSha": "1c8a32b279d9fc92e6b10c217f4095e9780d1e9e",
+  "before": {
+    "status": "OBSERVED_SECURITY_BYPASS",
+    "owner": "edara-c3-compose-20261011",
+    "parentSha": "1c8a32b279d9fc92e6b10c217f4095e9780d1e9e",
+    "scope": "Owned loopback allocation entry probes only; no production",
+    "requests": [
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/allocate_payment_to_invoices",
+        "method": "POST",
+        "status": 300
+      },
+      {
+        "path": "/rest/v1/rpc/allocate_payment_to_invoices",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/allocate_payment_to_invoices",
+        "method": "POST",
+        "status": 300
+      },
+      {
+        "path": "/rest/v1/rpc/allocate_payment_to_invoices",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      }
+    ],
+    "cases": [
+      {
+        "identity": "anonymous",
+        "entry": "five-named-arguments",
+        "code": "PGRST203",
+        "writeObserved": false
+      },
+      {
+        "identity": "anonymous",
+        "entry": "six-arguments",
+        "writeObserved": true,
+        "unbackedCreditObserved": true
+      },
+      {
+        "identity": "restricted",
+        "entry": "five-named-arguments",
+        "code": "PGRST203",
+        "writeObserved": false
+      },
+      {
+        "identity": "restricted",
+        "entry": "six-arguments",
+        "writeObserved": true,
+        "unbackedCreditObserved": true
+      }
+    ],
+    "publicFixtureRestored": true,
+    "authLoginMetadataExpected": true,
+    "fiveArgumentCatalogPrivileges": {
+      "anon": true,
+      "authenticated": true
+    }
+  },
+  "autoBefore": {
+    "status": "OBSERVED_SECURITY_BYPASS",
+    "owner": "edara-c3-compose-20261011",
+    "parentSha": "1c8a32b279d9fc92e6b10c217f4095e9780d1e9e",
+    "scope": "Owned loopback auto journal helper probes only; no production",
+    "requests": [
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/create_auto_journal_entry",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/create_auto_journal_entry",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      }
+    ],
+    "cases": [
+      {
+        "identity": "anonymous",
+        "writeObserved": true,
+        "balancedJournalStored": true
+      },
+      {
+        "identity": "restricted",
+        "writeObserved": true,
+        "balancedJournalStored": true
+      }
+    ],
+    "publicFixtureRestored": true,
+    "authLoginMetadataExpected": true
+  },
+  "localJournalDependency": {
+    "status": "PASS",
+    "owner": "edara-c3-compose-20261011",
+    "scope": "One original local-only receipt journal dependency; no production migration or complete database acceptance",
+    "source": "supabase/migrations/20b_audit_fixes.sql",
+    "sourceSha256": "1728ab94559628e179d934005a8045f87c39ee613a2a12ac23b6e40c11df3bf4",
+    "statementSha256": "4707325223d1dcb54d013d5fdeb226c9357df6099828b8c7fc85472ac544fba1",
+    "startByte": 3992,
+    "endByte": 6437,
+    "startLine": 41,
+    "endLine": 93,
+    "verificationFile": "supabase/verification/baseline_receipt_journal_dependency.sql",
+    "verificationSha256": "570b6fc6d04ca3e41d643db2589bc44126017814ce0b2022952676667ff2cbb2",
+    "signature": "public.create_auto_journal_entry(text,uuid,text,text,text,numeric,uuid)",
+    "absentBefore": true,
+    "rollbackRestoredAbsence": true,
+    "tableColumnAclsRlsUnchanged": true,
+    "appliedLocally": true
+  },
+  "migration": {
+    "status": "PASS",
+    "owner": "edara-c3-compose-20261011",
+    "migration": "supabase/migrations/20261011080000_payment_allocation_access_hardening.sql",
+    "migrationSha256": "21e89daaa11aafd90b1afb4387e3df550079e99e24f70882ea2a24ce8619202f",
+    "scope": "Three exact internal allocation and automatic-journal function ACLs only; owned synthetic database, no hosted migration or overall financial security acceptance",
+    "targetSignatures": [
+      "allocate_payment_to_invoices(uuid,numeric,text,uuid,uuid)",
+      "allocate_payment_to_invoices(uuid,numeric,text,uuid,uuid,uuid)",
+      "create_auto_journal_entry(text,uuid,text,text,text,numeric,uuid)"
+    ],
+    "rollbackExactAclRestored": true,
+    "allOtherFunctionBodiesPreserved": true,
+    "allOwnersAndDefinerFlagsPreserved": true,
+    "changedFunctionBodies": 0,
+    "unrelatedFunctionAclsPreserved": true,
+    "tableColumnAclsAndRlsPoliciesPreserved": true,
+    "publicTables": 48,
+    "applied": true,
+    "idempotentReapplication": true,
+    "claudeSession": "c0b90087-378e-4cd1-b310-57d7f6070e1e",
+    "reviewReadOnlyViolation": false,
+    "reviewStatus": "timeout",
+    "reviewVerdict": null
+  },
+  "actualServices": {
+    "status": "PASS",
+    "scope": "Actual unchanged sales service via Vite SSR and owned Auth/PostgREST, saved credit sale and receipt allocation, manager and own-custody self-confirm; no browser, VAT/procurement/release acceptance",
+    "owner": "edara-c3-compose-20261011",
+    "parentSha": "1c8a32b279d9fc92e6b10c217f4095e9780d1e9e",
+    "cases": [
+      "Manager real service creates numbered pending cash receipt60 against actual saved credit invoice100",
+      "Authenticated manager cannot call six-argument allocation and automatic-journal helpers directly",
+      "Restricted allocation/automatic-journal helpers/cross-owner receipt confirmation/own rejection denied without persisted changes",
+      "Restricted own-cash-custody exception remains valid: receipt40 confirms, debt100→60, paid40, custody40, balanced journal40; retry rejects without effect. Receipt was seeded by owner; restricted creation permission not claimed",
+      "Manager saved receipt60 confirms through internal owner allocation, debt60→0, paid100/completed, custody60, balanced journal60 and full actual service read relations; retry rejects without effect",
+      "Anonymous direct six-argument allocation and automatic journal denied42501"
+    ],
+    "requests": [
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/sales_order_items",
+        "method": "DELETE",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/sales_order_items",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/sales_order_items",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "PATCH",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_sales_order",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/deliver_sales_order",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/payment_receipts",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/rpc/allocate_payment_to_invoices",
+        "method": "POST",
+        "status": 403
+      },
+      {
+        "path": "/rest/v1/rpc/create_auto_journal_entry",
+        "method": "POST",
+        "status": 403
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/allocate_payment_to_invoices",
+        "method": "POST",
+        "status": 403
+      },
+      {
+        "path": "/rest/v1/rpc/create_auto_journal_entry",
+        "method": "POST",
+        "status": 403
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_payment_receipt",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_payment_receipt",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_payment_receipt",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_payment_receipt",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_payment_receipt",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/payment_receipts",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_payment_receipt",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/allocate_payment_to_invoices",
+        "method": "POST",
+        "status": 401
+      },
+      {
+        "path": "/rest/v1/rpc/create_auto_journal_entry",
+        "method": "POST",
+        "status": 401
+      }
+    ],
+    "sourceHashes": {
+      "src/lib/services/sales.ts": "f9f294df7bc1c3cd32a52090a4ad4a3494e0956eb6a9daa50228d62458ec3bb9",
+      "src/lib/services/payments.ts": "1fdaeed9a5b3ccd5446ad7321a40c5a1d9535438e83e74026dae7170f3f00810",
+      "src/lib/supabase/client.ts": "2ac923f7b21d53f9380af4c3f1b63de05ea6ce1bd0de18d83410e1c17c9ec0b8"
+    },
+    "publicFixtureRestored": true,
+    "sequencesMayAdvance": true
+  },
+  "initialReceiptAttempt": {
+    "status": "FAIL",
+    "scope": "Actual unchanged sales service via Vite SSR and owned Auth/PostgREST, saved credit sale and receipt allocation, manager and own-custody self-confirm; no browser, VAT/procurement/release acceptance",
+    "owner": "edara-c3-compose-20261011",
+    "parentSha": "1c8a32b279d9fc92e6b10c217f4095e9780d1e9e",
+    "cases": [
+      "Manager real service creates numbered pending cash receipt60 against actual saved credit invoice100",
+      "Authenticated manager cannot call six-argument allocation helper directly",
+      "Restricted helper/cross-owner receipt confirmation/own rejection denied without persisted changes"
+    ],
+    "requests": [
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/sales_order_items",
+        "method": "DELETE",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/sales_order_items",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/sales_order_items",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/sales_orders",
+        "method": "PATCH",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_sales_order",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/deliver_sales_order",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/payment_receipts",
+        "method": "POST",
+        "status": 201
+      },
+      {
+        "path": "/rest/v1/rpc/allocate_payment_to_invoices",
+        "method": "POST",
+        "status": 403
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/allocate_payment_to_invoices",
+        "method": "POST",
+        "status": 403
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_payment_receipt",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_payment_receipt",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_payment_receipt",
+        "method": "POST",
+        "status": 404
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      }
+    ],
+    "sourceHashes": {
+      "src/lib/services/sales.ts": "8d18181d839ceb22d0742e9a82867e4e204a24e89c933bdc9d7ebb6334e3f6ee",
+      "src/lib/services/payments.ts": "1fdaeed9a5b3ccd5446ad7321a40c5a1d9535438e83e74026dae7170f3f00810",
+      "src/lib/supabase/client.ts": "2ac923f7b21d53f9380af4c3f1b63de05ea6ce1bd0de18d83410e1c17c9ec0b8"
+    },
+    "publicFixtureRestored": true,
+    "sequencesMayAdvance": true,
+    "error": {
+      "stage": "own-custody-confirm",
+      "code": "42883",
+      "message": "function create_auto_journal_entry(unknown, uuid, text, text, unknown, numeric, uuid) does not exist"
+    }
+  },
+  "probeCorrections": [
+    {
+      "status": "FAIL",
+      "reason": "Harness used collection source_type rejected by existing ledger CHECK; corrected to supported payment_receipt, no product/schema change",
+      "httpRequests": 4,
+      "publicFixtureRestored": true
+    },
+    {
+      "status": "FAIL",
+      "reason": "Exact typed five-argument SQL is also ambiguous because six-argument overload has a default; two six-argument SDK writes observed, no successful five-argument call claimed",
+      "httpRequests": 6,
+      "publicFixtureRestored": true
+    }
+  ],
+  "gates": {
+    "forcedTypeExit": 0,
+    "lintExit": 0,
+    "buildExit": 0,
+    "testExit": 0,
+    "testFiles": 141,
+    "testsPassed": 1074,
+    "precacheEntries": 284,
+    "precacheKiB": 4276.57
+  },
+  "claudeReview": {
+    "sessionId": "c0b90087-378e-4cd1-b310-57d7f6070e1e",
+    "status": "timeout",
+    "verdict": null,
+    "readOnlyViolation": false,
+    "scope": "Embedded allocation contract; no final judgment, no retry of timed-out path. Codex reviewed exact source, actual flows and parity independently"
+  }
+}
