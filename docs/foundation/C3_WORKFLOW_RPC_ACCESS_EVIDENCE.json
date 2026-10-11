@@ -1,0 +1,177 @@
+{
+  "parentSha": "432cf9780f6c61cacb6a93dbe83f6101038431e2",
+  "aclQualification": {
+    "status": "PASS",
+    "owner": "edara-c3-compose-20261011",
+    "migration": "supabase/migrations/20261011050000_workflow_rpc_access_hardening.sql",
+    "migrationSha256": "3d5bc314a01c831bb15869b04777a180227f4422899958b31a612fe3693cb443",
+    "scope": "Five exact RPC EXECUTE ACLs only; owned synthetic local database; no hosted migration or overall security acceptance",
+    "targetSignatures": [
+      "reserve_stock(uuid,uuid,numeric)",
+      "unreserve_stock(uuid,uuid,numeric)",
+      "add_vault_transaction(uuid,text,numeric,text,uuid,text,uuid)",
+      "confirm_sales_order(uuid,uuid)",
+      "cancel_sales_order(uuid,uuid,text)"
+    ],
+    "rollbackExactAclRestored": true,
+    "allFunctionBodiesOwnersAndDefinerFlagsPreserved": true,
+    "unrelatedFunctionAclsPreserved": true,
+    "tableColumnAclsAndRlsPoliciesPreserved": true,
+    "publicTables": 48,
+    "applied": true,
+    "idempotentReapplication": true,
+    "claudeSession": "2494a3dc-2d66-430d-8dd2-074748c485ae",
+    "reviewReadOnlyViolation": false
+  },
+  "apiAfter": {
+    "status": "PASS",
+    "owner": "edara-c3-compose-20261011",
+    "scope": "Actual loopback Auth/PostgREST post-fix security denial and authorized owner-call probes; synthetic only, no browser/full workflow/release acceptance",
+    "requests": [
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/vaults",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/reserve_stock",
+        "method": "POST",
+        "status": 401
+      },
+      {
+        "path": "/rest/v1/rpc/unreserve_stock",
+        "method": "POST",
+        "status": 401
+      },
+      {
+        "path": "/rest/v1/rpc/add_vault_transaction",
+        "method": "POST",
+        "status": 401
+      },
+      {
+        "path": "/rest/v1/rpc/reserve_stock",
+        "method": "POST",
+        "status": 403
+      },
+      {
+        "path": "/rest/v1/rpc/unreserve_stock",
+        "method": "POST",
+        "status": 403
+      },
+      {
+        "path": "/rest/v1/rpc/add_vault_transaction",
+        "method": "POST",
+        "status": 403
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_sales_order",
+        "method": "POST",
+        "status": 401
+      },
+      {
+        "path": "/rest/v1/rpc/cancel_sales_order",
+        "method": "POST",
+        "status": 401
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_sales_order",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_sales_order",
+        "method": "POST",
+        "status": 400
+      },
+      {
+        "path": "/auth/v1/token",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_sales_order",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/confirm_sales_order",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/rest/v1/rpc/cancel_sales_order",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      },
+      {
+        "path": "/auth/v1/logout",
+        "method": "POST",
+        "status": 204
+      }
+    ],
+    "findings": [
+      {
+        "case": "reserve_stock",
+        "identity": "anonymous",
+        "denied": true,
+        "stockUnchanged": true
+      },
+      {
+        "case": "unreserve_stock",
+        "identity": "anonymous",
+        "denied": true,
+        "stockUnchanged": true
+      },
+      {
+        "case": "add_vault_transaction",
+        "identity": "anonymous",
+        "denied": true,
+        "vaultUnchanged": true
+      },
+      {
+        "case": "reserve_stock",
+        "identity": "restricted",
+        "denied": true,
+        "stockUnchanged": true
+      },
+      {
+        "case": "unreserve_stock",
+        "identity": "restricted",
+        "denied": true,
+        "stockUnchanged": true
+      },
+      {
+        "case": "add_vault_transaction",
+        "identity": "restricted",
+        "denied": true,
+        "vaultUnchanged": true
+      },
+      {
+        "case": "sales_business_entry",
+        "anonymousDenied": true,
+        "restrictedSpoofDenied": true,
+        "restrictedOwnPermissionDenied": true
+      },
+      {
+        "case": "authorized_sales_owner_calls",
+        "confirm": true,
+        "cancel": true,
+        "reserveUnreserveInternal": true,
+        "retryNoDoubleReserve": true
+      }
+    ],
+    "publicFixtureRestored": true,
+    "localLoginRetired": true,
+    "authLoginMetadataExpected": true
+  }
+}
