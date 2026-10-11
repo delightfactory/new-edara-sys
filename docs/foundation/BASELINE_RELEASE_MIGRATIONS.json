@@ -1,0 +1,43 @@
+{
+  "status": "UNAPPLIED_TO_PRODUCTION",
+  "candidateBranch": "codex/baseline-completion",
+  "applyPolicy": "Named files only, in order, after fresh target contract review, rollback preparation and explicit release approval. Fixture SQL excluded.",
+  "migrations": [
+    {
+      "path": "supabase/migrations/20261011021422_low_stock_scope_hardening.sql",
+      "sha256": "c0a612080a429d4bb89d3b977f73b08110ce806f9223895ef6224a6ed6a183a7"
+    },
+    {
+      "path": "supabase/migrations/20261011030000_stock_cost_read_hardening.sql",
+      "sha256": "8eb707b34e9dcb7017e766c78824679ebaf1f3cda00e468d4329372ad3601959"
+    },
+    {
+      "path": "supabase/migrations/20261011040000_active_profile_permission_gate.sql",
+      "sha256": "f7ff2377457a914e71e7c51211511d3c77b4b77d132c5b22783e87b49741b35e"
+    },
+    {
+      "path": "supabase/migrations/20261011050000_workflow_rpc_access_hardening.sql",
+      "sha256": "3d5bc314a01c831bb15869b04777a180227f4422899958b31a612fe3693cb443"
+    },
+    {
+      "path": "supabase/migrations/20261011060000_atomic_purchase_return_draft.sql",
+      "sha256": "44d03ed023993b1944a83917d01c4323c450496e0c54168c16a8feb7db1091fb"
+    },
+    {
+      "path": "supabase/migrations/20261011070000_financial_rpc_access_hardening.sql",
+      "sha256": "a79608b27c271c287757119b710721805e8dab4f23229c7df045e6f1783038c9"
+    },
+    {
+      "path": "supabase/migrations/20261011080000_payment_allocation_access_hardening.sql",
+      "sha256": "21e89daaa11aafd90b1afb4387e3df550079e99e24f70882ea2a24ce8619202f"
+    },
+    {
+      "path": "supabase/migrations/20261011090000_product_cost_read_hardening.sql",
+      "sha256": "1f4e799e5accc52d48dc695db1e7a3a840e95138e612ebc80e40fb6c7e202124"
+    },
+    {
+      "path": "supabase/migrations/20261011100000_notification_count_access_hardening.sql",
+      "sha256": "8def0b07076a8afc95cbab9a6fe9604b97f53a46e1273c784381c32675f73dfd"
+    }
+  ]
+}

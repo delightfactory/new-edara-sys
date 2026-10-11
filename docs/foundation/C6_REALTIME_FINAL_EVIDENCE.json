@@ -1,0 +1,1341 @@
+{
+  "status": "SCOPED_LOCAL_PASS_WITH_HISTORICAL_INTERMITTENT_REALTIME_FAILURE",
+  "parentSha": "ec45701bc95af28a49a6d7082982607b561d6fcd",
+  "branch": "codex/baseline-completion",
+  "productionMutated": false,
+  "sourceHashes": {
+    "src/components/shared/GlobalRealtimeManager.tsx": "082b77d7beeacb3587b2e156e8c453d492564391fc35610b62f6bd2d286f7543",
+    "src/__tests__/auth-identity.test.tsx": "9683d2b8ccfe5783dc69cd29b12383950efdd9600284ca7f897ea6c5d59c3262",
+    "supabase/verification/baseline_realtime_subscription_dependencies.sql": "dd4d55f7e48ad57fa99642bdcb8e88c5768fed7770529cd6c9c6d48625e06c3f"
+  },
+  "gates": {
+    "focused": {
+      "files": 1,
+      "tests": 17,
+      "status": "PASS"
+    },
+    "fullSuite": {
+      "files": 141,
+      "tests": 1076,
+      "status": "PASS",
+      "durationSeconds": 63.52
+    },
+    "type": "PASS",
+    "lint": "PASS",
+    "actualAppBuild": "PASS",
+    "review": {
+      "status": "PASS_LOCAL_CANDIDATE",
+      "sessionId": "2b003fa3-57ae-4405-94af-6718e4071120",
+      "readOnlyViolation": false,
+      "reviewerExecutedTests": false,
+      "productionGate": "Target preview two-user stock verification; earlier intermittent cause unresolved"
+    }
+  },
+  "historicalFailures": [
+    "Initial one-client channel failed when unpublished/nonexistent bindings shared the stock channel.",
+    "Earlier corrected two-client actual App run had both Postgres system-ready messages but no stock frame or UI update. No underlying runtime cause is proven.",
+    "SQL fanout harness first failed before function execution on generated id/claims_role insertion. Explicit identity values and generated claims_role corrected; transaction rollback verified.",
+    "Restore command succeeded but strict schema digest differed on 14 CHECK cast deparses; only exact column/operator/ordered literals/casts equivalence accepted."
+  ],
+  "cleanup": {
+    "all66PublicRowsRestored": true,
+    "temporaryOverridesRemoved": true,
+    "publicationTableCount": 0,
+    "realtimeSubscriptionCount": 0,
+    "replicationSlotCount": 0,
+    "ownedExperimentalRealtimeRetired": true,
+    "coreServicesRetained": 4
+  },
+  "reports": {
+    "c6-realtime-dependency-report.json": {
+      "status": "PASS",
+      "scope": "Exact original empty table/enum dependency closure for actual App subscriptions; no new module workflow/security acceptance",
+      "publicTableCount": 66,
+      "existing50RowsFunctionsAclsPoliciesUnchanged": true,
+      "rollbackAbsenceRestored": true,
+      "tables": [
+        "stock_transfers",
+        "expense_categories",
+        "expenses",
+        "hr_departments",
+        "hr_positions",
+        "hr_employees",
+        "visit_plan_templates",
+        "visit_plans",
+        "visit_plan_items",
+        "activity_types",
+        "call_plan_templates",
+        "call_plans",
+        "call_plan_items",
+        "activities",
+        "hr_work_locations",
+        "hr_attendance_days"
+      ],
+      "statements": [
+        {
+          "source": "supabase/migrations/17_hr_core.sql",
+          "sourceSha256": "445786dbaa989c8350ce310604c9102325b9d2ac5c68da388d929097c4df7a8e",
+          "startByte": 1465,
+          "endByte": 1582,
+          "statementSha256": "c733497b85db34ba40a7d157e8f48cc4affb750fbdc84eb64256e3e7e0334626"
+        },
+        {
+          "source": "supabase/migrations/17_hr_core.sql",
+          "sourceSha256": "445786dbaa989c8350ce310604c9102325b9d2ac5c68da388d929097c4df7a8e",
+          "startByte": 1586,
+          "endByte": 1737,
+          "statementSha256": "bb013cc69960d93709a9e454ba999981c1f63507903207003806dda3604c1a5a"
+        },
+        {
+          "source": "supabase/migrations/17_hr_core.sql",
+          "sourceSha256": "445786dbaa989c8350ce310604c9102325b9d2ac5c68da388d929097c4df7a8e",
+          "startByte": 1741,
+          "endByte": 1898,
+          "statementSha256": "b61c489a3d7031d396c9cdadf1919b78d9c5b07127fe7ed72388d656160efdcb"
+        },
+        {
+          "source": "supabase/migrations/17_hr_core.sql",
+          "sourceSha256": "445786dbaa989c8350ce310604c9102325b9d2ac5c68da388d929097c4df7a8e",
+          "startByte": 2078,
+          "endByte": 2260,
+          "statementSha256": "d06062160ad1d8a3021dbf7496c1746330cc1608134503959ad84688d8cd6f91"
+        },
+        {
+          "source": "supabase/migrations/18_hr_attendance_leaves.sql",
+          "sourceSha256": "e714de00110492367b994e7b456c5f1f4b5249dc02395af47f505b201560b1ff",
+          "startByte": 1461,
+          "endByte": 1710,
+          "statementSha256": "9998fc98c048625d00ab006bf06fc7d283244a151baff3a4f331254d987dd910"
+        },
+        {
+          "source": "supabase/migrations/18_hr_attendance_leaves.sql",
+          "sourceSha256": "e714de00110492367b994e7b456c5f1f4b5249dc02395af47f505b201560b1ff",
+          "startByte": 1714,
+          "endByte": 1910,
+          "statementSha256": "eb6c1119d953aa6ccbfe46bcd68c2f9a008c3f4b34ce9c263d1a218f361f9392"
+        },
+        {
+          "source": "supabase/migrations/18_hr_attendance_leaves.sql",
+          "sourceSha256": "e714de00110492367b994e7b456c5f1f4b5249dc02395af47f505b201560b1ff",
+          "startByte": 1914,
+          "endByte": 2054,
+          "statementSha256": "255b5ca875df4b3755073d69bfd85a4e39dccb711a2825977a9ab734b5f77475"
+        },
+        {
+          "source": "supabase/migrations/02_master_data.sql",
+          "sourceSha256": "6bd2d03f9707436283592bb4e09fdfd34ecbf440ef241d1ed836ae386a7060cb",
+          "startByte": 16798,
+          "endByte": 17640,
+          "statementSha256": "1eff6bd4746ceca8875031ae9f0a03c52036a4b6353f54916f94247cf9e170bf"
+        },
+        {
+          "source": "supabase/migrations/03_financial_infrastructure.sql",
+          "sourceSha256": "4d89184b09ea1df607e990dbf50808e44b851b0bb6db45979886d4852b203abb",
+          "startByte": 17512,
+          "endByte": 17869,
+          "statementSha256": "0f3e0452e513e36d64589725fac63cf1bc077edd8824a67bebbcaefc46e107e2"
+        },
+        {
+          "source": "supabase/migrations/03_financial_infrastructure.sql",
+          "sourceSha256": "4d89184b09ea1df607e990dbf50808e44b851b0bb6db45979886d4852b203abb",
+          "startByte": 18378,
+          "endByte": 19500,
+          "statementSha256": "91ac26201db46eb15423c0107a4cc9098bcf9c05c40bf1d08017cb47a97f3689"
+        },
+        {
+          "source": "supabase/migrations/17_hr_core.sql",
+          "sourceSha256": "445786dbaa989c8350ce310604c9102325b9d2ac5c68da388d929097c4df7a8e",
+          "startByte": 6074,
+          "endByte": 6903,
+          "statementSha256": "5f726225cd1996b6b54b212918ad5b299998f0b4d7246944b91b9a473a711b5e"
+        },
+        {
+          "source": "supabase/migrations/17_hr_core.sql",
+          "sourceSha256": "445786dbaa989c8350ce310604c9102325b9d2ac5c68da388d929097c4df7a8e",
+          "startByte": 8125,
+          "endByte": 8798,
+          "statementSha256": "7775e54141e236034ecb06174325522b1f0126d007cb17a1cb2eb922a7a4e0ea"
+        },
+        {
+          "source": "supabase/migrations/17_hr_core.sql",
+          "sourceSha256": "445786dbaa989c8350ce310604c9102325b9d2ac5c68da388d929097c4df7a8e",
+          "startByte": 10300,
+          "endByte": 13265,
+          "statementSha256": "d76e72fa1062e90cad24157e136f006366de388fcdc7d054c636caabcf21e057"
+        },
+        {
+          "source": "supabase/migrations/21_activities_module_mvp.sql",
+          "sourceSha256": "9b1b18a17af256f5930f544737ff5cf473c62006e5370f6926794ef045b341d2",
+          "startByte": 5662,
+          "endByte": 6320,
+          "statementSha256": "687a2d01416e1ebbf4985fa0fb4819b66b37b58596c8292a0ac3b8518482e919"
+        },
+        {
+          "source": "supabase/migrations/21_activities_module_mvp.sql",
+          "sourceSha256": "9b1b18a17af256f5930f544737ff5cf473c62006e5370f6926794ef045b341d2",
+          "startByte": 6575,
+          "endByte": 8231,
+          "statementSha256": "d19060fe8ae00b858f461641701407657927b0dd438c3d02cc214030a7fc9dba"
+        },
+        {
+          "source": "supabase/migrations/21_activities_module_mvp.sql",
+          "sourceSha256": "9b1b18a17af256f5930f544737ff5cf473c62006e5370f6926794ef045b341d2",
+          "startByte": 8705,
+          "endByte": 10112,
+          "statementSha256": "7650c63e34a43a70664fc65dac390cfce952ed526edd3ee9b879d28323ac173b"
+        },
+        {
+          "source": "supabase/migrations/21_activities_module_mvp.sql",
+          "sourceSha256": "9b1b18a17af256f5930f544737ff5cf473c62006e5370f6926794ef045b341d2",
+          "startByte": 3881,
+          "endByte": 4641,
+          "statementSha256": "c9638d252087c18179f2c18a2161b0811f5cc023c4be74956bc29dcd3c4fd58e"
+        },
+        {
+          "source": "supabase/migrations/21_activities_module_mvp.sql",
+          "sourceSha256": "9b1b18a17af256f5930f544737ff5cf473c62006e5370f6926794ef045b341d2",
+          "startByte": 10752,
+          "endByte": 11409,
+          "statementSha256": "fb235d5b9a5230272370f33071ffe331a553f6b0d7ae647fa595fa0a1775da31"
+        },
+        {
+          "source": "supabase/migrations/21_activities_module_mvp.sql",
+          "sourceSha256": "9b1b18a17af256f5930f544737ff5cf473c62006e5370f6926794ef045b341d2",
+          "startByte": 11660,
+          "endByte": 13302,
+          "statementSha256": "818c2b46f75dff4bff849683342e670f7999b41735d077748fa369fadcc06310"
+        },
+        {
+          "source": "supabase/migrations/21_activities_module_mvp.sql",
+          "sourceSha256": "9b1b18a17af256f5930f544737ff5cf473c62006e5370f6926794ef045b341d2",
+          "startByte": 13768,
+          "endByte": 15289,
+          "statementSha256": "b06e41f686a3a7de2373c3c79897c2afcb668b2faabd21d869f2804a290d32dd"
+        },
+        {
+          "source": "supabase/migrations/21_activities_module_mvp.sql",
+          "sourceSha256": "9b1b18a17af256f5930f544737ff5cf473c62006e5370f6926794ef045b341d2",
+          "startByte": 15923,
+          "endByte": 18812,
+          "statementSha256": "4f378613f451e88a5362460dfef609ca90259d52139258e092e7468e0874a886"
+        },
+        {
+          "source": "supabase/migrations/17_hr_core.sql",
+          "sourceSha256": "445786dbaa989c8350ce310604c9102325b9d2ac5c68da388d929097c4df7a8e",
+          "startByte": 21595,
+          "endByte": 22713,
+          "statementSha256": "86afe4f7b69a04db2d943b99990e544670ae24d16711eefe50a20756076f4670"
+        },
+        {
+          "source": "supabase/migrations/18_hr_attendance_leaves.sql",
+          "sourceSha256": "e714de00110492367b994e7b456c5f1f4b5249dc02395af47f505b201560b1ff",
+          "startByte": 4970,
+          "endByte": 7684,
+          "statementSha256": "1430ec207cb006326684144c479960cde98719cd6eb354244fe3975049320ef8"
+        }
+      ],
+      "ownedLocalRlsConfiguration": "ALTER TABLE public.stock_transfers ENABLE ROW LEVEL SECURITY;\nALTER TABLE public.expense_categories ENABLE ROW LEVEL SECURITY;\nALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;\nALTER TABLE public.hr_departments ENABLE ROW LEVEL SECURITY;\nALTER TABLE public.hr_positions ENABLE ROW LEVEL SECURITY;\nALTER TABLE public.hr_employees ENABLE ROW LEVEL SECURITY;\nALTER TABLE public.visit_plan_templates ENABLE ROW LEVEL SECURITY;\nALTER TABLE public.visit_plans ENABLE ROW LEVEL SECURITY;\nALTER TABLE public.visit_plan_items ENABLE ROW LEVEL SECURITY;\nALTER TABLE public.activity_types ENABLE ROW LEVEL SECURITY;\nALTER TABLE public.call_plan_templates ENABLE ROW LEVEL SECURITY;\nALTER TABLE public.call_plans ENABLE ROW LEVEL SECURITY;\nALTER TABLE public.call_plan_items ENABLE ROW LEVEL SECURITY;\nALTER TABLE public.activities ENABLE ROW LEVEL SECURITY;\nALTER TABLE public.hr_work_locations ENABLE ROW LEVEL SECURITY;\nALTER TABLE public.hr_attendance_days ENABLE ROW LEVEL SECURITY;",
+      "verificationFile": "supabase/verification/baseline_realtime_subscription_dependencies.sql",
+      "verificationSha256": "dd4d55f7e48ad57fa99642bdcb8e88c5768fed7770529cd6c9c6d48625e06c3f",
+      "all66Rls": true
+    },
+    "c6-stock-app-report.json": {
+      "status": "PASS",
+      "parentSha": "ec45701bc95af28a49a6d7082982607b561d6fcd",
+      "scope": "Actual App GlobalRealtimeManager, actual stock query and visible quantity update from real WAL event; no broader module/notification Realtime acceptance.",
+      "cases": [
+        "Actual protected product route redirects to real login and returns to the original form after Auth",
+        "Actual GlobalRealtimeManager stock event invalidates actual stock query and visible persisted quantity updates without navigation"
+      ],
+      "requests": [
+        {
+          "stage": "actual-login",
+          "path": "/auth/v1/token",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "actual-login",
+          "path": "/rest/v1/rpc/get_my_profile",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "actual-login",
+          "path": "/rest/v1/rpc/get_my_permission_denials",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "actual-login",
+          "path": "/rest/v1/rpc/get_unread_notifications_count",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "stock-realtime",
+          "path": "/rest/v1/product_categories",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "stock-realtime",
+          "path": "/rest/v1/brands",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "stock-realtime",
+          "path": "/rest/v1/rpc/get_unread_notifications_count",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "stock-realtime",
+          "path": "/rest/v1/warehouses",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "stock-realtime",
+          "path": "/rest/v1/rpc/get_my_profile",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "stock-realtime",
+          "path": "/rest/v1/stock_read_safe",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "stock-realtime",
+          "path": "/rest/v1/rpc/get_my_permission_denials",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "stock-realtime",
+          "path": "/rest/v1/profiles",
+          "method": "PATCH",
+          "status": 204
+        },
+        {
+          "stage": "stock-realtime",
+          "path": "/rest/v1/stock_read_safe",
+          "method": "GET",
+          "status": 200
+        }
+      ],
+      "externalRequests": [],
+      "pageErrors": [],
+      "screenshots": [],
+      "timings": [],
+      "sourceHashes": {
+        "src/components/shared/GlobalRealtimeManager.tsx": "082b77d7beeacb3587b2e156e8c453d492564391fc35610b62f6bd2d286f7543",
+        "src/main.tsx": "403dd769f975606db53dfa09534442b20df4823edd1491e4a1d8351d4957cd0d",
+        "src/App.tsx": "99c28a5c207f5246d4ab7be63161d2162fd82cc8cd63a235aab60dcbc10ba235",
+        "src/components/layout/AuthProvider.tsx": "426a0b3a8f664199df9eb1fa7e928406bc9442255bcedf7f7c19f1c7a14c3376",
+        "src/pages/auth/LoginPage.tsx": "c8b3fa9cff70e87399bb2724b164d55b746765988fb591aeab1174a3c3ab16fe",
+        "src/pages/products/ProductFormPage.tsx": "0e5674fd71c02f1f94d8103718b6c0ac8a4ee28f50dfa29888e52a852c8540e3",
+        "src/lib/services/products.ts": "5b58358492ffd9d00fb701d3fda81287abb4ede52a331244fcd336ba97b23fca",
+        "src/lib/supabase/client.ts": "2ac923f7b21d53f9380af4c3f1b63de05ea6ce1bd0de18d83410e1c17c9ec0b8",
+        "vite.config.ts": "9153b77595ac722ebf83666baf699ade927755479b2a885ba7452d1647353f1c"
+      },
+      "publicFixtureRestored": true,
+      "globalJoinReplies": [
+        {
+          "status": "ok",
+          "postgresChangeCount": 9
+        },
+        {
+          "status": "ok",
+          "postgresChangeCount": 9
+        }
+      ],
+      "realtimeConsole": [
+        "[Realtime] ✅ Connected — listening to 9 tables",
+        "[Realtime] ✅ Connected — listening to 1 tables",
+        "[Realtime] ✅ Connected — listening to 1 tables",
+        "[Realtime] ✅ Connected — listening to 9 tables",
+        "[Realtime] ✅ Connected — listening to 1 tables",
+        "[Realtime] ✅ Connected — listening to 1 tables"
+      ],
+      "stockSystemMessages": [
+        {
+          "status": "ok",
+          "extension": "postgres_changes"
+        },
+        {
+          "status": "ok",
+          "extension": "postgres_changes"
+        },
+        {
+          "status": "ok",
+          "extension": "postgres_changes"
+        },
+        {
+          "status": "ok",
+          "extension": "postgres_changes"
+        },
+        {
+          "status": "ok",
+          "extension": "postgres_changes"
+        },
+        {
+          "status": "ok",
+          "extension": "postgres_changes"
+        },
+        {
+          "status": "ok",
+          "extension": "postgres_changes"
+        },
+        {
+          "status": "ok",
+          "extension": "postgres_changes"
+        },
+        {
+          "status": "ok",
+          "extension": "postgres_changes"
+        },
+        {
+          "status": "ok",
+          "extension": "postgres_changes"
+        },
+        {
+          "status": "ok",
+          "extension": "postgres_changes"
+        }
+      ],
+      "stockSystemReady": true
+    },
+    "c6-stock-two-app-report.json": {
+      "status": "FAIL",
+      "parentSha": "ec45701bc95af28a49a6d7082982607b561d6fcd",
+      "scope": "Actual App GlobalRealtimeManager, actual stock query and visible quantity update from real WAL event; no broader module/notification Realtime acceptance.",
+      "cases": [
+        "Actual protected product route redirects to real login and returns to the original form after Auth"
+      ],
+      "requests": [
+        {
+          "stage": "actual-login",
+          "path": "/auth/v1/token",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "actual-login",
+          "path": "/rest/v1/rpc/get_my_profile",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "actual-login",
+          "path": "/rest/v1/rpc/get_my_permission_denials",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "actual-login",
+          "path": "/rest/v1/rpc/get_unread_notifications_count",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "actual-login",
+          "path": "/rest/v1/product_categories",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "actual-login",
+          "path": "/rest/v1/brands",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "actual-login",
+          "path": "/rest/v1/units",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "stock-realtime",
+          "path": "/rest/v1/rpc/get_unread_notifications_count",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "stock-realtime",
+          "path": "/rest/v1/warehouses",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "stock-realtime",
+          "path": "/rest/v1/stock_read_safe",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "stock-realtime",
+          "path": "/rest/v1/rpc/get_my_profile",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "stock-realtime",
+          "path": "/rest/v1/rpc/get_my_permission_denials",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "restricted-browser",
+          "path": "/auth/v1/token",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "restricted-browser",
+          "path": "/rest/v1/rpc/get_my_profile",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "restricted-browser",
+          "path": "/rest/v1/rpc/get_my_permission_denials",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "restricted-browser",
+          "path": "/rest/v1/rpc/get_unread_notifications_count",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "restricted-browser",
+          "path": "/rest/v1/warehouses",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "restricted-browser",
+          "path": "/rest/v1/stock_read_safe",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "stock-realtime",
+          "path": "/rest/v1/profiles",
+          "method": "PATCH",
+          "status": 204
+        },
+        {
+          "stage": "restricted-browser",
+          "path": "/rest/v1/profiles",
+          "method": "PATCH",
+          "status": 204
+        }
+      ],
+      "externalRequests": [],
+      "pageErrors": [],
+      "screenshots": [],
+      "timings": [],
+      "sourceHashes": {
+        "src/components/shared/GlobalRealtimeManager.tsx": "082b77d7beeacb3587b2e156e8c453d492564391fc35610b62f6bd2d286f7543",
+        "src/main.tsx": "403dd769f975606db53dfa09534442b20df4823edd1491e4a1d8351d4957cd0d",
+        "src/App.tsx": "99c28a5c207f5246d4ab7be63161d2162fd82cc8cd63a235aab60dcbc10ba235",
+        "src/components/layout/AuthProvider.tsx": "426a0b3a8f664199df9eb1fa7e928406bc9442255bcedf7f7c19f1c7a14c3376",
+        "src/pages/auth/LoginPage.tsx": "c8b3fa9cff70e87399bb2724b164d55b746765988fb591aeab1174a3c3ab16fe",
+        "src/pages/products/ProductFormPage.tsx": "0e5674fd71c02f1f94d8103718b6c0ac8a4ee28f50dfa29888e52a852c8540e3",
+        "src/lib/services/products.ts": "5b58358492ffd9d00fb701d3fda81287abb4ede52a331244fcd336ba97b23fca",
+        "src/lib/supabase/client.ts": "2ac923f7b21d53f9380af4c3f1b63de05ea6ce1bd0de18d83410e1c17c9ec0b8",
+        "vite.config.ts": "9153b77595ac722ebf83666baf699ade927755479b2a885ba7452d1647353f1c"
+      },
+      "publicFixtureRestored": true,
+      "globalJoinReplies": [
+        {
+          "status": "ok",
+          "postgresChangeCount": 9
+        },
+        {
+          "status": "ok",
+          "postgresChangeCount": 9
+        }
+      ],
+      "realtimeConsole": [
+        "[Realtime] ✅ Connected — listening to 9 tables",
+        "[Realtime] ✅ Connected — listening to 1 tables",
+        "[Realtime] ✅ Connected — listening to 1 tables",
+        "[Realtime] ✅ Connected — listening to 9 tables",
+        "[Realtime] ✅ Connected — listening to 1 tables",
+        "[Realtime] ✅ Connected — listening to 1 tables"
+      ],
+      "stockSystemMessages": [
+        {
+          "status": "ok",
+          "extension": "postgres_changes"
+        },
+        {
+          "status": "ok",
+          "extension": "postgres_changes"
+        }
+      ],
+      "stockSystemReady": true,
+      "restrictedStockFrames": [],
+      "restrictedReady": true,
+      "error": {
+        "stage": "stock-realtime",
+        "message": "expect(locator).toContainText(expected) failed\n\nLocator: getByRole('row').filter({ hasText: 'C3 product1' }).filter({ hasText: 'C3 warehouse2' }).getByRole('cell').nth(2)\nExpected substring: \"4\"\nReceived string:    \"3\"\nTimeout: 15000ms\n\nCall log:\n  - Expect \"to.have.text\" with timeout 15000ms\n  - waiting for getByRole('row').filter({ hasText: 'C3 product1' }).filter({ hasText: 'C3 warehouse2' }).getByRole('cell').nth(2)\n    33 × locator resolved to <td class=\"\">…</td>\n       - unexpected value \"3\"\n"
+      }
+    },
+    "c6-realtime-rls-fanout-report.json": {
+      "status": "PASS",
+      "scope": "One bounded SQL-side fanout diagnostic with constructed WAL; no live socket or full Realtime acceptance",
+      "cases": [
+        {
+          "row": "10000000-0000-4000-8000-000000000022",
+          "subscriptionIds": [
+            "20000000-0000-4000-8000-000000000001"
+          ],
+          "errors": [],
+          "recordKeys": [
+            "available_quantity",
+            "created_at",
+            "id",
+            "product_id",
+            "quantity",
+            "reserved_quantity",
+            "updated_at",
+            "warehouse_id"
+          ]
+        },
+        {
+          "row": "10000000-0000-4000-8000-000000000022",
+          "subscriptionIds": [
+            "20000000-0000-4000-8000-000000000001",
+            "20000000-0000-4000-8000-000000000002"
+          ],
+          "errors": [],
+          "recordKeys": [
+            "available_quantity",
+            "created_at",
+            "id",
+            "product_id",
+            "quantity",
+            "reserved_quantity",
+            "updated_at",
+            "warehouse_id"
+          ]
+        },
+        {
+          "row": "10000000-0000-4000-8000-000000000021",
+          "subscriptionIds": [
+            "20000000-0000-4000-8000-000000000001"
+          ],
+          "errors": [],
+          "recordKeys": [
+            "available_quantity",
+            "created_at",
+            "id",
+            "product_id",
+            "quantity",
+            "reserved_quantity",
+            "updated_at",
+            "warehouse_id"
+          ]
+        }
+      ],
+      "rollbackVerified": true
+    },
+    "c6-stock-two-app-diagnostic-report.json": {
+      "status": "PASS",
+      "parentSha": "ec45701bc95af28a49a6d7082982607b561d6fcd",
+      "scope": "Actual App GlobalRealtimeManager, actual stock query and visible quantity update from real WAL event; no broader module/notification Realtime acceptance.",
+      "cases": [
+        "Actual protected product route redirects to real login and returns to the original form after Auth",
+        "Two actual App/browser contexts receive stock invalidation and visible quantity update without navigation",
+        "Restricted live wire omits financial keys and foreign warehouse row, with later own-warehouse event positive control on same channel"
+      ],
+      "requests": [
+        {
+          "stage": "actual-login",
+          "path": "/auth/v1/token",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "actual-login",
+          "path": "/rest/v1/rpc/get_my_profile",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "actual-login",
+          "path": "/rest/v1/rpc/get_my_permission_denials",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "actual-login",
+          "path": "/rest/v1/rpc/get_unread_notifications_count",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "stock-realtime",
+          "path": "/rest/v1/product_categories",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "stock-realtime",
+          "path": "/rest/v1/brands",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "stock-realtime",
+          "path": "/rest/v1/units",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "stock-realtime",
+          "path": "/rest/v1/rpc/get_unread_notifications_count",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "stock-realtime",
+          "path": "/rest/v1/warehouses",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "stock-realtime",
+          "path": "/rest/v1/rpc/get_my_profile",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "stock-realtime",
+          "path": "/rest/v1/stock_read_safe",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "stock-realtime",
+          "path": "/rest/v1/rpc/get_my_permission_denials",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "restricted-browser",
+          "path": "/auth/v1/token",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "restricted-browser",
+          "path": "/rest/v1/rpc/get_my_profile",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "restricted-browser",
+          "path": "/rest/v1/rpc/get_my_permission_denials",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "restricted-browser",
+          "path": "/rest/v1/rpc/get_unread_notifications_count",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "restricted-browser",
+          "path": "/rest/v1/warehouses",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "restricted-browser",
+          "path": "/rest/v1/stock_read_safe",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "stock-realtime",
+          "path": "/rest/v1/profiles",
+          "method": "PATCH",
+          "status": 204
+        },
+        {
+          "stage": "restricted-browser",
+          "path": "/rest/v1/profiles",
+          "method": "PATCH",
+          "status": 204
+        },
+        {
+          "stage": "restricted-browser",
+          "path": "/rest/v1/stock_read_safe",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "stock-realtime",
+          "path": "/rest/v1/stock_read_safe",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "stock-realtime",
+          "path": "/rest/v1/stock_read_safe",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "restricted-browser",
+          "path": "/rest/v1/stock_read_safe",
+          "method": "GET",
+          "status": 200
+        }
+      ],
+      "externalRequests": [],
+      "pageErrors": [],
+      "screenshots": [],
+      "timings": [],
+      "sourceHashes": {
+        "src/components/shared/GlobalRealtimeManager.tsx": "082b77d7beeacb3587b2e156e8c453d492564391fc35610b62f6bd2d286f7543",
+        "src/main.tsx": "403dd769f975606db53dfa09534442b20df4823edd1491e4a1d8351d4957cd0d",
+        "src/App.tsx": "99c28a5c207f5246d4ab7be63161d2162fd82cc8cd63a235aab60dcbc10ba235",
+        "src/components/layout/AuthProvider.tsx": "426a0b3a8f664199df9eb1fa7e928406bc9442255bcedf7f7c19f1c7a14c3376",
+        "src/pages/auth/LoginPage.tsx": "c8b3fa9cff70e87399bb2724b164d55b746765988fb591aeab1174a3c3ab16fe",
+        "src/pages/products/ProductFormPage.tsx": "0e5674fd71c02f1f94d8103718b6c0ac8a4ee28f50dfa29888e52a852c8540e3",
+        "src/lib/services/products.ts": "5b58358492ffd9d00fb701d3fda81287abb4ede52a331244fcd336ba97b23fca",
+        "src/lib/supabase/client.ts": "2ac923f7b21d53f9380af4c3f1b63de05ea6ce1bd0de18d83410e1c17c9ec0b8",
+        "vite.config.ts": "9153b77595ac722ebf83666baf699ade927755479b2a885ba7452d1647353f1c"
+      },
+      "publicFixtureRestored": true,
+      "managerStockFrames": [
+        {
+          "topic": "realtime:global-realtime",
+          "ids": [
+            74771093
+          ],
+          "quantity": 4,
+          "errors": null
+        },
+        {
+          "topic": "realtime:global-realtime",
+          "ids": [
+            74771093
+          ],
+          "quantity": 11,
+          "errors": null
+        },
+        {
+          "topic": "realtime:global-realtime",
+          "ids": [
+            74771093
+          ],
+          "quantity": 5,
+          "errors": null
+        }
+      ],
+      "globalJoinReplies": [
+        {
+          "status": "ok",
+          "postgresChangeCount": 9
+        },
+        {
+          "status": "ok",
+          "postgresChangeCount": 9
+        }
+      ],
+      "realtimeConsole": [
+        "[Realtime] ✅ Connected — listening to 9 tables",
+        "[Realtime] ✅ Connected — listening to 1 tables",
+        "[Realtime] ✅ Connected — listening to 1 tables",
+        "[Realtime] ✅ Connected — listening to 9 tables",
+        "[Realtime] ✅ Connected — listening to 1 tables",
+        "[Realtime] ✅ Connected — listening to 1 tables"
+      ],
+      "stockSystemMessages": [
+        {
+          "status": "ok",
+          "extension": "postgres_changes"
+        }
+      ],
+      "stockSystemReady": true,
+      "restrictedStockFrames": [
+        {
+          "id": "10000000-0000-4000-8000-000000000022",
+          "quantity": 4,
+          "recordKeys": [
+            "id",
+            "quantity",
+            "created_at",
+            "product_id",
+            "updated_at",
+            "warehouse_id",
+            "reserved_quantity",
+            "available_quantity"
+          ],
+          "errors": null
+        },
+        {
+          "id": "10000000-0000-4000-8000-000000000022",
+          "quantity": 5,
+          "recordKeys": [
+            "id",
+            "quantity",
+            "created_at",
+            "product_id",
+            "updated_at",
+            "warehouse_id",
+            "reserved_quantity",
+            "available_quantity"
+          ],
+          "errors": null
+        }
+      ],
+      "restrictedReady": true,
+      "databaseSubscriptionsBeforeMutation": [
+        {
+          "role": "authenticated",
+          "user": "81228654-7bae-46b7-8bbb-ec8b8e38cef6",
+          "action": "*",
+          "subscriptionId": "5069aed4-c57d-11f1-aba1-62660f0f9387",
+          "selectedColumns": null
+        },
+        {
+          "role": "authenticated",
+          "user": "50e13f21-9c21-4849-bd12-d4add8d150f6",
+          "action": "*",
+          "subscriptionId": "513c0320-c57d-11f1-b300-62660f0f9387",
+          "selectedColumns": null
+        }
+      ],
+      "replicationBeforeMutation": [
+        {
+          "active": true,
+          "currentWal": "0/7F55C58",
+          "confirmedFlush": "0/7F55C58"
+        },
+        {
+          "active": true,
+          "currentWal": "0/7F55C58",
+          "confirmedFlush": "0/7F55C59"
+        }
+      ]
+    },
+    "c6-final-app-pwa-report.json": {
+      "status": "PASS",
+      "parentSha": "ec45701bc95af28a49a6d7082982607b561d6fcd",
+      "scope": "Actual App and real owned Auth/API, active SW, warm/offline/reconnect and explicit same-assets SW update. No cold comparison, offline business data/write, Realtime or production speed acceptance.",
+      "cases": [
+        "Actual protected product route redirects to real login and returns to the original form after Auth",
+        "Actual App Service Worker controls the page",
+        "Actual authenticated form shell reloads offline; business data/write availability not asserted",
+        "SW caches contain frontend assets only; no Auth/REST API requests",
+        "Byte-distinct identical-source SW waits for explicit update action; exactly one navigation and original route preserved"
+      ],
+      "requests": [
+        {
+          "stage": "actual-login",
+          "path": "/auth/v1/token",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "actual-login",
+          "path": "/rest/v1/rpc/get_my_profile",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "actual-login",
+          "path": "/rest/v1/rpc/get_my_permission_denials",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "actual-login",
+          "path": "/rest/v1/rpc/get_unread_notifications_count",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "actual-login",
+          "path": "/rest/v1/product_categories",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "actual-login",
+          "path": "/rest/v1/brands",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "actual-login",
+          "path": "/rest/v1/units",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "pwa-activation",
+          "path": "/rest/v1/profiles",
+          "method": "PATCH",
+          "status": 204
+        },
+        {
+          "stage": "update",
+          "path": "/rest/v1/rpc/get_unread_notifications_count",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "update",
+          "path": "/rest/v1/product_categories",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "update",
+          "path": "/rest/v1/brands",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "update",
+          "path": "/rest/v1/units",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "update",
+          "path": "/rest/v1/rpc/get_my_profile",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "update",
+          "path": "/rest/v1/rpc/get_my_permission_denials",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "update",
+          "path": "/rest/v1/brands",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "update",
+          "path": "/rest/v1/rpc/get_unread_notifications_count",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "update",
+          "path": "/rest/v1/units",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "update",
+          "path": "/rest/v1/rpc/get_my_profile",
+          "method": "POST",
+          "status": 200
+        },
+        {
+          "stage": "update",
+          "path": "/rest/v1/product_categories",
+          "method": "GET",
+          "status": 200
+        },
+        {
+          "stage": "update",
+          "path": "/rest/v1/rpc/get_my_permission_denials",
+          "method": "POST",
+          "status": 200
+        }
+      ],
+      "externalRequests": [],
+      "pageErrors": [],
+      "screenshots": [],
+      "timings": [
+        {
+          "label": "Warm authenticated form reload 1",
+          "milliseconds": 164
+        },
+        {
+          "label": "Warm authenticated form reload 2",
+          "milliseconds": 154
+        },
+        {
+          "label": "Warm authenticated form reload 3",
+          "milliseconds": 153
+        },
+        {
+          "label": "Offline shell and cached verified profile reload",
+          "milliseconds": 120
+        },
+        {
+          "label": "Reconnected form reload",
+          "milliseconds": 153
+        }
+      ],
+      "sourceHashes": {
+        "src/components/shared/GlobalRealtimeManager.tsx": "082b77d7beeacb3587b2e156e8c453d492564391fc35610b62f6bd2d286f7543",
+        "src/main.tsx": "403dd769f975606db53dfa09534442b20df4823edd1491e4a1d8351d4957cd0d",
+        "src/App.tsx": "99c28a5c207f5246d4ab7be63161d2162fd82cc8cd63a235aab60dcbc10ba235",
+        "src/components/layout/AuthProvider.tsx": "426a0b3a8f664199df9eb1fa7e928406bc9442255bcedf7f7c19f1c7a14c3376",
+        "src/pages/auth/LoginPage.tsx": "c8b3fa9cff70e87399bb2724b164d55b746765988fb591aeab1174a3c3ab16fe",
+        "src/pages/products/ProductFormPage.tsx": "0e5674fd71c02f1f94d8103718b6c0ac8a4ee28f50dfa29888e52a852c8540e3",
+        "src/lib/services/products.ts": "5b58358492ffd9d00fb701d3fda81287abb4ede52a331244fcd336ba97b23fca",
+        "src/lib/supabase/client.ts": "2ac923f7b21d53f9380af4c3f1b63de05ea6ce1bd0de18d83410e1c17c9ec0b8",
+        "vite.config.ts": "9153b77595ac722ebf83666baf699ade927755479b2a885ba7452d1647353f1c"
+      },
+      "publicFixtureRestored": true,
+      "cachedRequestCount": 284
+    },
+    "c6-final66-backup-restore-report.json": {
+      "status": "PASS_WITH_EXPLICIT_CHECK_REPARSE",
+      "publicTableCount": 66,
+      "archiveSha256": "ebfc2a409d154c3323e686862424637aa5d409bbfccd1db830bd804a014c6a59",
+      "all66PublicRowsAuthUsersIdentitiesEqual": true,
+      "publicFunctionBodyOwnerAclDigest": "057723b2c0dfd33bc38b5e44f288d04f",
+      "publicFunctionsEqual": true,
+      "otherSchemaTableColumnAclRlsPoliciesTriggersIndexesEqual": true,
+      "acceptedCheckCastReparse": [
+        {
+          "table": "activities",
+          "constraint": "activities_outcome_type_check",
+          "canonicalPredicate": {
+            "operator": "varchar-column-as-text equals any text array",
+            "column": "outcome_type",
+            "orderedValues": [
+              "order_placed",
+              "collection",
+              "followup_scheduled",
+              "refused",
+              "closed",
+              "promotion",
+              "exploratory",
+              "info_only",
+              "agreed_order",
+              "promised_payment",
+              "followup_visit",
+              "not_interested",
+              "no_answer",
+              "busy",
+              "callback_scheduled"
+            ]
+          }
+        },
+        {
+          "table": "activity_types",
+          "constraint": "activity_types_category_check",
+          "canonicalPredicate": {
+            "operator": "varchar-column-as-text equals any text array",
+            "column": "category",
+            "orderedValues": [
+              "visit",
+              "call",
+              "task"
+            ]
+          }
+        },
+        {
+          "table": "call_plan_items",
+          "constraint": "call_plan_items_priority_check",
+          "canonicalPredicate": {
+            "operator": "varchar-column-as-text equals any text array",
+            "column": "priority",
+            "orderedValues": [
+              "high",
+              "normal",
+              "low"
+            ]
+          }
+        },
+        {
+          "table": "call_plan_items",
+          "constraint": "call_plan_items_purpose_type_check",
+          "canonicalPredicate": {
+            "operator": "varchar-column-as-text equals any text array",
+            "column": "purpose_type",
+            "orderedValues": [
+              "sales",
+              "collection",
+              "activation",
+              "promotion",
+              "followup",
+              "service"
+            ]
+          }
+        },
+        {
+          "table": "call_plan_items",
+          "constraint": "call_plan_items_status_check",
+          "canonicalPredicate": {
+            "operator": "varchar-column-as-text equals any text array",
+            "column": "status",
+            "orderedValues": [
+              "pending",
+              "in_progress",
+              "completed",
+              "skipped",
+              "missed",
+              "rescheduled"
+            ]
+          }
+        },
+        {
+          "table": "call_plan_templates",
+          "constraint": "call_plan_templates_recurrence_check",
+          "canonicalPredicate": {
+            "operator": "varchar-column-as-text equals any text array",
+            "column": "recurrence",
+            "orderedValues": [
+              "none",
+              "daily",
+              "weekly",
+              "monthly"
+            ]
+          }
+        },
+        {
+          "table": "call_plans",
+          "constraint": "call_plans_plan_type_check",
+          "canonicalPredicate": {
+            "operator": "varchar-column-as-text equals any text array",
+            "column": "plan_type",
+            "orderedValues": [
+              "daily",
+              "weekly",
+              "campaign",
+              "recurring"
+            ]
+          }
+        },
+        {
+          "table": "call_plans",
+          "constraint": "call_plans_status_check",
+          "canonicalPredicate": {
+            "operator": "varchar-column-as-text equals any text array",
+            "column": "status",
+            "orderedValues": [
+              "draft",
+              "confirmed",
+              "in_progress",
+              "completed",
+              "partial",
+              "cancelled",
+              "missed"
+            ]
+          }
+        },
+        {
+          "table": "visit_plan_items",
+          "constraint": "visit_plan_items_priority_check",
+          "canonicalPredicate": {
+            "operator": "varchar-column-as-text equals any text array",
+            "column": "priority",
+            "orderedValues": [
+              "high",
+              "normal",
+              "low"
+            ]
+          }
+        },
+        {
+          "table": "visit_plan_items",
+          "constraint": "visit_plan_items_purpose_type_check",
+          "canonicalPredicate": {
+            "operator": "varchar-column-as-text equals any text array",
+            "column": "purpose_type",
+            "orderedValues": [
+              "sales",
+              "collection",
+              "activation",
+              "promotion",
+              "followup",
+              "service"
+            ]
+          }
+        },
+        {
+          "table": "visit_plan_items",
+          "constraint": "visit_plan_items_status_check",
+          "canonicalPredicate": {
+            "operator": "varchar-column-as-text equals any text array",
+            "column": "status",
+            "orderedValues": [
+              "pending",
+              "in_progress",
+              "completed",
+              "skipped",
+              "missed",
+              "rescheduled"
+            ]
+          }
+        },
+        {
+          "table": "visit_plan_templates",
+          "constraint": "visit_plan_templates_recurrence_check",
+          "canonicalPredicate": {
+            "operator": "varchar-column-as-text equals any text array",
+            "column": "recurrence",
+            "orderedValues": [
+              "none",
+              "daily",
+              "weekly",
+              "monthly"
+            ]
+          }
+        },
+        {
+          "table": "visit_plans",
+          "constraint": "visit_plans_plan_type_check",
+          "canonicalPredicate": {
+            "operator": "varchar-column-as-text equals any text array",
+            "column": "plan_type",
+            "orderedValues": [
+              "daily",
+              "weekly",
+              "campaign",
+              "recurring"
+            ]
+          }
+        },
+        {
+          "table": "visit_plans",
+          "constraint": "visit_plans_status_check",
+          "canonicalPredicate": {
+            "operator": "varchar-column-as-text equals any text array",
+            "column": "status",
+            "orderedValues": [
+              "draft",
+              "confirmed",
+              "in_progress",
+              "completed",
+              "partial",
+              "cancelled",
+              "missed"
+            ]
+          }
+        }
+      ],
+      "temporaryDatabaseRetired": true,
+      "privateArchiveOutsideGit": true,
+      "scope": "Same-cluster PG17 custom archive restore;14 literal varchar-array CHECKs deparse differently after reparse but exact column/operator/ordered ASCII values/casts match. Other metadata exact. No independent-server/global-roles/Auth-runtime or financial-transaction replay acceptance."
+    }
+  }
+}

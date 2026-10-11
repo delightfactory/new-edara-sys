@@ -66,11 +66,11 @@ class SyntheticSocket extends EventTarget {
   send(data: string | ArrayBufferLike | Blob | ArrayBufferView) {
     if (typeof data !== 'string') throw new Error('Unexpected binary socket message')
     const [joinRef, ref, topic, event, payload] = JSON.parse(data) as [string, string, string, string, { config?: { postgres_changes?: Record<string, unknown>[] } }]
-    if (!['phoenix', 'realtime:global-realtime', 'realtime:notifications:actor-a', 'realtime:notifications:actor-b'].includes(topic)) throw new Error('Unexpected realtime topic')
+    if (!['phoenix', 'realtime:global-realtime', 'realtime:global-realtime:sales_orders', 'realtime:global-realtime:hr_attendance_days', 'realtime:notifications:actor-a', 'realtime:notifications:actor-b'].includes(topic)) throw new Error('Unexpected realtime topic')
     if (event === 'access_token') return
     if (!['phx_join', 'phx_leave', 'heartbeat'].includes(event)) throw new Error('Unexpected realtime event')
     if (event === 'phx_join') socketTopics.push(topic)
-    const response = event === 'phx_join' ? { postgres_changes: (payload.config?.postgres_changes ?? []).map((row, id) => ({ ...row, id })) } : {}
+    const response = event === 'phx_join' ? { postgres_changes: (payload.config?.postgres_changes ?? []).map((row, index) => ({ ...row, id: index + 1 })) } : {}
     queueMicrotask(() => this.onmessage?.(new MessageEvent('message', { data: JSON.stringify([joinRef, ref, topic, 'phx_reply', { status: 'ok', response }]) })))
   }
   close() { this.readyState = 3; this.onclose?.(new CloseEvent('close')) }
@@ -179,6 +179,25 @@ afterEach(async () => {
 })
 
 describe('verified identity before cached UI and realtime', () => {
+  it.each([
+    ['hr_attendance_days', ['hr-attendance-days', 'hr-attendance-summary']],
+    ['sales_orders', ['sales-orders', 'sales-stats']],
+  ] as const)('invalidates %s queries through its independent real SDK channel', async (table, keys) => {
+    renderApp()
+    await publish(0, 'actor-a')
+    const topic = `realtime:global-realtime:${table}`
+    await settled(() => expect(socketTopics).toContain(topic))
+    keys.forEach(key => queryClient.setQueryData([key], []))
+    keys.forEach(key => expect(queryClient.getQueryState([key])?.isInvalidated).toBe(false))
+    await act(async () => {
+      sockets[0].onmessage?.(new MessageEvent('message', { data: JSON.stringify([null, null, topic, 'postgres_changes', {
+        ids: [1], data: { schema: 'public', table, type: 'UPDATE', columns: [], record: { id: 'synthetic-row' } },
+      }]) }))
+      await vi.advanceTimersByTimeAsync(1500)
+    })
+    keys.forEach(key => expect(queryClient.getQueryState([key])?.isInvalidated).toBe(true))
+  })
+
   it('hides cached identity and all channels while real SDK initialization waits on refresh HTTP', async () => {
     holdRefresh = true
     sdk.client = createSdk('actor-a', true)
@@ -328,7 +347,7 @@ describe('verified identity before cached UI and realtime', () => {
       expect(result.error).toBeNull()
       // Deliver through the real SDK before React cleans up the old subtree.
       sockets[0].onmessage?.(new MessageEvent('message', { data: JSON.stringify([null, null, 'realtime:notifications:actor-a', 'postgres_changes', {
-        ids: [0], data: { schema: 'public', table: 'notifications', type: 'INSERT', columns: [], record: {
+        ids: [1], data: { schema: 'public', table: 'notifications', type: 'INSERT', columns: [], record: {
           id: 'old-notification', user_id: 'actor-a', priority: 'high', category: 'system', title: 'إشعار الحساب السابق', body: 'اختبار',
         } },
       }]) }))

@@ -5,12 +5,11 @@
  * يستمع لتغييرات الجداول الحرجة عبر Supabase Realtime
  * ويُبطل React Query cache تلقائياً.
  *
- * المبدأ: قناتان منفصلتان:
- *   1. global-realtime  → عشرات الجداول → cache invalidation فوري (debounced)
- *   2. notifications:<userId> → إشعارات المستخدم فقط → store + toast
+ * قناة عامة للجداول المنشورة، وقناتان مستقلتان للمبيعات والحضور،
+ * وقناة إشعارات المستخدم. جميعها تستخدم اتصال SDK نفسه.
  *
  * Best Practices المُطبقة:
- * 1. قناة واحدة للبيانات العامة (singleton) → توفير WebSocket connections
+ * 1. تجميع البيانات العامة مع عزل الاشتراكات غير المنشورة دون اتصال جديد
  * 2. قناة منفصلة للإشعارات مع filter → لا تُستقبل إشعارات مستخدمين آخرين
  * 3. Debounce لتجنُّب سيل الـ invalidations عند bulk operations
  * 4. يعمل فقط عند وجود مستخدم مُسجّل دخول
@@ -54,7 +53,7 @@ const TABLE_QUERY_MAP: Record<string, string[]> = {
   sales_orders:        ['sales-orders', 'sales-stats'],
 
   // ─── الحضور (يتغير بشكل مستمر أثناء الدوام) ───
-  hr_attendance:       ['hr-attendance-days', 'hr-attendance-summary'],
+  hr_attendance_days:  ['hr-attendance-days', 'hr-attendance-summary'],
 
   // ─── التنفيذ الميداني للزيارات ───
   visit_plans:      ['visit-plans', 'visit-plan', 'visit-report'],
@@ -63,6 +62,9 @@ const TABLE_QUERY_MAP: Record<string, string[]> = {
 }
 
 const DEBOUNCE_MS = 1500 // 1.5 ثانية — يمنع cascade refetch في bulk operations
+// These tables are not published in the current backend. A failed binding
+// rolls back every subscription in its channel, so keep them independent.
+const ISOLATED_TABLES = ['sales_orders', 'hr_attendance_days']
 
 export default function GlobalRealtimeManager() {
   const queryClient = useQueryClient()
@@ -98,38 +100,42 @@ export default function GlobalRealtimeManager() {
 
     const tables = Object.keys(TABLE_QUERY_MAP)
 
-    // إنشاء قناة واحدة مع listener لكل جدول
-    let channel = supabase.channel('global-realtime')
-
-    tables.forEach(table => {
-      channel = channel.on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table },
-        () => {
-          if (useAuthStore.getState().profile?.id !== profileId) return
-          const queryKeys = TABLE_QUERY_MAP[table]
-          if (queryKeys) {
-            scheduleInvalidation(queryKeys)
+    const groups = [
+      { name: 'global-realtime', tables: tables.filter(table => !ISOLATED_TABLES.includes(table)) },
+      ...ISOLATED_TABLES.map(table => ({ name: `global-realtime:${table}`, tables: [table] })),
+    ]
+    const channels = groups.map(group => {
+      let channel = supabase.channel(group.name)
+      group.tables.forEach(table => {
+        channel = channel.on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table },
+          () => {
+            if (useAuthStore.getState().profile?.id !== profileId) return
+            const queryKeys = TABLE_QUERY_MAP[table]
+            if (queryKeys) {
+              scheduleInvalidation(queryKeys)
+            }
           }
+        )
+      })
+      channel.subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('[Realtime] ✅ Connected — listening to', group.tables.length, 'tables')
+        } else if (status === 'TIMED_OUT') {
+          console.warn('[Realtime] ⏱ Connection timed out — will retry')
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('[Realtime] ❌ Channel error:', err)
+        } else if (status === 'CLOSED') {
+          console.warn('[Realtime] 🔌 Connection closed')
         }
-      )
-    })
-
-    channel.subscribe((status, err) => {
-      if (status === 'SUBSCRIBED') {
-        console.log('[Realtime] ✅ Connected — listening to', tables.length, 'tables')
-      } else if (status === 'TIMED_OUT') {
-        console.warn('[Realtime] ⏱ Connection timed out — will retry')
-      } else if (status === 'CHANNEL_ERROR') {
-        console.error('[Realtime] ❌ Channel error:', err)
-      } else if (status === 'CLOSED') {
-        console.warn('[Realtime] 🔌 Connection closed')
-      }
+      })
+      return channel
     })
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
-      supabase.removeChannel(channel)
+      channels.forEach(channel => { supabase.removeChannel(channel) })
     }
   }, [profileId, queryClient, scheduleInvalidation])
 
