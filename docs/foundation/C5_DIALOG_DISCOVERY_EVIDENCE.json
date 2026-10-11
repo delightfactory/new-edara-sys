@@ -1,0 +1,29 @@
+{
+  "status": "OBSERVED",
+  "parentSha": "f3f67999c423b431ab7b0bcfa4864206ca137cb0",
+  "scope": "Actual shared components and CSS; isolated synthetic composition, no App/Auth/backend/operations",
+  "observations": {
+    "dateColorScheme": "normal",
+    "plainInitialFocusInside": false,
+    "plainAccessibleLabel": null,
+    "plainTabEscaped": true,
+    "plainFocusRestored": false,
+    "responsiveTabEscaped": true,
+    "duplicateTitleIds": 2,
+    "afterNestedEscape": {
+      "plain": false,
+      "parent": true,
+      "child": false,
+      "confirm": false,
+      "depth": 0,
+      "overflow": ""
+    },
+    "confirmLabelledBy": null,
+    "confirmAriaLabel": null
+  },
+  "violations": [],
+  "cleanup": {
+    "browserClosed": true,
+    "serverClosed": true
+  }
+}

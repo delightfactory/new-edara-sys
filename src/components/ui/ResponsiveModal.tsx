@@ -1,6 +1,6 @@
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useId, useRef, useState } from 'react'
 import { X } from 'lucide-react'
-import { useModalStack } from '@/hooks/useModalStack'
+import { useDialogLifecycle } from '@/hooks/useDialogLifecycle'
 
 interface ResponsiveModalProps {
   open: boolean
@@ -14,6 +14,8 @@ interface ResponsiveModalProps {
    * Useful for forms with unsaved data.
    */
   disableOverlayClose?: boolean
+  ariaLabelledBy?: string
+  ariaLabel?: string
 }
 
 /**
@@ -45,22 +47,18 @@ export default function ResponsiveModal({
   children,
   footer,
   disableOverlayClose = false,
+  ariaLabelledBy,
+  ariaLabel,
 }: ResponsiveModalProps) {
   const [isVisible, setIsVisible] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
-  const { push, pop } = useModalStack()
+  const titleId = useId()
+  const onFocusCapture = useDialogLifecycle(open, contentRef, onClose)
 
   // إغلاق المودال — بسيط كنمط home-care بدون guards معقّدة
   const requestClose = useCallback(() => {
     onClose()
   }, [onClose])
-
-  // Track modal depth so FAB can auto-hide
-  useEffect(() => {
-    if (open) { push() } else { pop() }
-    return () => { if (open) pop() }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
 
   // Stagger open animation
   useEffect(() => {
@@ -69,29 +67,6 @@ export default function ResponsiveModal({
       requestAnimationFrame(() => setIsVisible(true))
     } else {
       setIsVisible(false)
-    }
-  }, [open])
-
-  // Escape key — مع تجاهل الحدث أثناء استخدام منتقي الملفات
-  useEffect(() => {
-    if (!open) return
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') requestClose()
-    }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [open, requestClose])
-
-  // Lock body scroll
-  useEffect(() => {
-    if (open) document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = '' }
-  }, [open])
-
-  // Focus the dialog on open
-  useEffect(() => {
-    if (open && contentRef.current) {
-      contentRef.current.focus()
     }
   }, [open])
 
@@ -110,15 +85,17 @@ export default function ResponsiveModal({
         onClick={e => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
-        aria-labelledby={title ? 'rmodal-title' : undefined}
+        aria-labelledby={ariaLabelledBy ?? (title ? titleId : undefined)}
+        aria-label={ariaLabel}
         tabIndex={-1}
+        onFocusCapture={onFocusCapture}
       >
         {/* Drag handle — mobile only visual cue */}
         <div className="rmodal-handle" aria-hidden="true" />
 
         {title && (
           <div className="rmodal-header">
-            <span id="rmodal-title" className="rmodal-title">{title}</span>
+            <span id={titleId} className="rmodal-title">{title}</span>
             <button
               className="btn btn-ghost btn-icon"
               onClick={onClose}

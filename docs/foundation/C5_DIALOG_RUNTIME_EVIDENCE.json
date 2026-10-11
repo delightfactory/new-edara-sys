@@ -1,0 +1,374 @@
+{
+  "status": "PASS",
+  "parentSha": "f3f67999c423b431ab7b0bcfa4864206ca137cb0",
+  "scope": "Actual shared components and CSS; isolated synthetic composition, no App/Auth/backend/operations",
+  "cases": [
+    {
+      "width": 390,
+      "theme": "light",
+      "os": "light",
+      "scheme": "light",
+      "geometry": {
+        "x": 0,
+        "right": 390,
+        "bottom": 900,
+        "width": 390,
+        "direction": "rtl",
+        "scrollWidth": 390,
+        "clientWidth": 390
+      },
+      "focusInit": true,
+      "tabWrap": true,
+      "focusGuard": true,
+      "autofocusAndRestore": true,
+      "nestedTopCloseAndDepth": true,
+      "backdropOptOut": true,
+      "confirmLoadingAndCallbacks": true,
+      "parentRemovalRestore": true
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "os": "dark",
+      "scheme": "light",
+      "geometry": {
+        "x": 0,
+        "right": 390,
+        "bottom": 900,
+        "width": 390,
+        "direction": "rtl",
+        "scrollWidth": 390,
+        "clientWidth": 390
+      },
+      "focusInit": true,
+      "tabWrap": true,
+      "focusGuard": true,
+      "autofocusAndRestore": true,
+      "nestedTopCloseAndDepth": true,
+      "backdropOptOut": true,
+      "confirmLoadingAndCallbacks": true,
+      "parentRemovalRestore": true
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "os": "light",
+      "scheme": "dark",
+      "geometry": {
+        "x": 0,
+        "right": 390,
+        "bottom": 900,
+        "width": 390,
+        "direction": "rtl",
+        "scrollWidth": 390,
+        "clientWidth": 390
+      },
+      "focusInit": true,
+      "tabWrap": true,
+      "focusGuard": true,
+      "autofocusAndRestore": true,
+      "nestedTopCloseAndDepth": true,
+      "backdropOptOut": true,
+      "confirmLoadingAndCallbacks": true,
+      "parentRemovalRestore": true
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "os": "dark",
+      "scheme": "dark",
+      "geometry": {
+        "x": 0,
+        "right": 390,
+        "bottom": 900,
+        "width": 390,
+        "direction": "rtl",
+        "scrollWidth": 390,
+        "clientWidth": 390
+      },
+      "focusInit": true,
+      "tabWrap": true,
+      "focusGuard": true,
+      "autofocusAndRestore": true,
+      "nestedTopCloseAndDepth": true,
+      "backdropOptOut": true,
+      "confirmLoadingAndCallbacks": true,
+      "parentRemovalRestore": true
+    },
+    {
+      "width": 900,
+      "theme": "light",
+      "os": "light",
+      "scheme": "light",
+      "geometry": {
+        "x": 170,
+        "right": 730,
+        "bottom": 537.890625,
+        "width": 560,
+        "direction": "rtl",
+        "scrollWidth": 560,
+        "clientWidth": 560
+      },
+      "focusInit": true,
+      "tabWrap": true,
+      "focusGuard": true,
+      "autofocusAndRestore": true,
+      "nestedTopCloseAndDepth": true,
+      "backdropOptOut": true,
+      "confirmLoadingAndCallbacks": true,
+      "parentRemovalRestore": true
+    },
+    {
+      "width": 900,
+      "theme": "light",
+      "os": "dark",
+      "scheme": "light",
+      "geometry": {
+        "x": 170,
+        "right": 730,
+        "bottom": 537.890625,
+        "width": 560,
+        "direction": "rtl",
+        "scrollWidth": 560,
+        "clientWidth": 560
+      },
+      "focusInit": true,
+      "tabWrap": true,
+      "focusGuard": true,
+      "autofocusAndRestore": true,
+      "nestedTopCloseAndDepth": true,
+      "backdropOptOut": true,
+      "confirmLoadingAndCallbacks": true,
+      "parentRemovalRestore": true
+    },
+    {
+      "width": 900,
+      "theme": "dark",
+      "os": "light",
+      "scheme": "dark",
+      "geometry": {
+        "x": 170,
+        "right": 730,
+        "bottom": 537.890625,
+        "width": 560,
+        "direction": "rtl",
+        "scrollWidth": 560,
+        "clientWidth": 560
+      },
+      "focusInit": true,
+      "tabWrap": true,
+      "focusGuard": true,
+      "autofocusAndRestore": true,
+      "nestedTopCloseAndDepth": true,
+      "backdropOptOut": true,
+      "confirmLoadingAndCallbacks": true,
+      "parentRemovalRestore": true
+    },
+    {
+      "width": 900,
+      "theme": "dark",
+      "os": "dark",
+      "scheme": "dark",
+      "geometry": {
+        "x": 170,
+        "right": 730,
+        "bottom": 537.890625,
+        "width": 560,
+        "direction": "rtl",
+        "scrollWidth": 560,
+        "clientWidth": 560
+      },
+      "focusInit": true,
+      "tabWrap": true,
+      "focusGuard": true,
+      "autofocusAndRestore": true,
+      "nestedTopCloseAndDepth": true,
+      "backdropOptOut": true,
+      "confirmLoadingAndCallbacks": true,
+      "parentRemovalRestore": true
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "os": "light",
+      "scheme": "light",
+      "geometry": {
+        "x": 440,
+        "right": 1000,
+        "bottom": 537.890625,
+        "width": 560,
+        "direction": "rtl",
+        "scrollWidth": 560,
+        "clientWidth": 560
+      },
+      "focusInit": true,
+      "tabWrap": true,
+      "focusGuard": true,
+      "autofocusAndRestore": true,
+      "nestedTopCloseAndDepth": true,
+      "backdropOptOut": true,
+      "confirmLoadingAndCallbacks": true,
+      "parentRemovalRestore": true
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "os": "dark",
+      "scheme": "light",
+      "geometry": {
+        "x": 440,
+        "right": 1000,
+        "bottom": 537.890625,
+        "width": 560,
+        "direction": "rtl",
+        "scrollWidth": 560,
+        "clientWidth": 560
+      },
+      "focusInit": true,
+      "tabWrap": true,
+      "focusGuard": true,
+      "autofocusAndRestore": true,
+      "nestedTopCloseAndDepth": true,
+      "backdropOptOut": true,
+      "confirmLoadingAndCallbacks": true,
+      "parentRemovalRestore": true
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "os": "light",
+      "scheme": "dark",
+      "geometry": {
+        "x": 440,
+        "right": 1000,
+        "bottom": 537.890625,
+        "width": 560,
+        "direction": "rtl",
+        "scrollWidth": 560,
+        "clientWidth": 560
+      },
+      "focusInit": true,
+      "tabWrap": true,
+      "focusGuard": true,
+      "autofocusAndRestore": true,
+      "nestedTopCloseAndDepth": true,
+      "backdropOptOut": true,
+      "confirmLoadingAndCallbacks": true,
+      "parentRemovalRestore": true
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "os": "dark",
+      "scheme": "dark",
+      "geometry": {
+        "x": 440,
+        "right": 1000,
+        "bottom": 537.890625,
+        "width": 560,
+        "direction": "rtl",
+        "scrollWidth": 560,
+        "clientWidth": 560
+      },
+      "focusInit": true,
+      "tabWrap": true,
+      "focusGuard": true,
+      "autofocusAndRestore": true,
+      "nestedTopCloseAndDepth": true,
+      "backdropOptOut": true,
+      "confirmLoadingAndCallbacks": true,
+      "parentRemovalRestore": true
+    }
+  ],
+  "screenshots": [
+    {
+      "path": "evidence/c5-dialogs/c5-native-date-390-light.png",
+      "sha256": "d645334ea1ca22f31427c95575841d879ffbcaa351fcc32ee8b5b116a6ad7bbc"
+    },
+    {
+      "path": "evidence/c5-dialogs/c5-responsive-dialog-390-light.png",
+      "sha256": "13b943d009c03a3d91b81280586580438f185b01143c7b7ec28e16782b0e33e7"
+    },
+    {
+      "path": "evidence/c5-dialogs/c5-native-date-390-dark.png",
+      "sha256": "c3c9981a25a3b600752b3614e27c2973d4cc0a2b61d8d2f9ea86407dce0891e7"
+    },
+    {
+      "path": "evidence/c5-dialogs/c5-responsive-dialog-390-dark.png",
+      "sha256": "6981eebeb834ad4fb818be385d109d19a5992957a09afe16d35f10908d7983ea"
+    },
+    {
+      "path": "evidence/c5-dialogs/c5-native-date-900-light.png",
+      "sha256": "90f42668cc33787e5e3667f9962b6944265a394fe6c7b6ef807fb3a1aac33ebd"
+    },
+    {
+      "path": "evidence/c5-dialogs/c5-responsive-dialog-900-light.png",
+      "sha256": "2f65f6e36ccff984b656cf34e6c17684340218b1f931db85d5a40e2503c2cf7e"
+    },
+    {
+      "path": "evidence/c5-dialogs/c5-native-date-900-dark.png",
+      "sha256": "ebddeb49db81d3a07f0084b240b0ae49d42d87e8bdddd8b56e3ffea7c6108bb5"
+    },
+    {
+      "path": "evidence/c5-dialogs/c5-responsive-dialog-900-dark.png",
+      "sha256": "c43fa93a89ec349e69a9ede715dba04c667c2accf8770f190d19c5d817607ecd"
+    },
+    {
+      "path": "evidence/c5-dialogs/c5-native-date-1440-light.png",
+      "sha256": "49f7481af708955e062f72e5d5c8ef8b4fb8ddbb7c58f643f5b122b8887baf3b"
+    },
+    {
+      "path": "evidence/c5-dialogs/c5-responsive-dialog-1440-light.png",
+      "sha256": "715232cb81059388d4bd45fa9ca0b50709bc0f6bb74f5e8329dee74e7e36fd06"
+    },
+    {
+      "path": "evidence/c5-dialogs/c5-native-date-1440-dark.png",
+      "sha256": "36b1a6c7860b42347251c8fc5d19a98e005864a42849d8d85c6069aed4fa0f8a"
+    },
+    {
+      "path": "evidence/c5-dialogs/c5-responsive-dialog-1440-dark.png",
+      "sha256": "1169dc0b9c83c1b58ec16f7e0527dc008a37b245392047b0a902c19329ed0ae4"
+    }
+  ],
+  "violations": [],
+  "cleanup": {
+    "browserClosed": true,
+    "serverClosed": true
+  },
+  "probeComposition": "Actual shared components/stores/styles with simple native child controls as fixtures; no business page/Auth/backend mocks or calls",
+  "sourceHashes": {
+    "src/hooks/useDialogLifecycle.ts": "ae7ac0ae9932634abeb98c6d443e4f74785afe094ae0fe500a1acacccd5a14fc",
+    "src/components/ui/Modal.tsx": "97917eb735278d15045a76d0a010abd833d8f8d6594858e26e9cd8f5f71ee4ba",
+    "src/components/ui/ResponsiveModal.tsx": "87fde4cfb2088b5c3f16adf98486f6a4c6d5a416979f2ae5490637c03446ac13",
+    "src/components/ui/ConfirmDialog.tsx": "f964b70dbcb20d2f6fb18f5fa16ef3c559c6923e7009cb67125e8b56cef9a6b6",
+    "src/styles/design-system-v2-forms.css": "c1298a88c9a2c0e1b1cf471d406539e2c31d40e826ae7b3aae8444e6783313b4",
+    "src/components/ui/Modal.lifecycle.test.tsx": "5447cc950001cbfd6f8304b78a604cb2e1ddfcb76a4acbbe967accc2d0bb13d6"
+  },
+  "sourceHashTiming": "Captured after run and test-only typing corrections; product source was not edited during or after the browser run",
+  "gates": {
+    "fullSuite": {
+      "status": "PASS",
+      "files": 141,
+      "tests": 1074,
+      "command": "npm test -- --maxWorkers=1 --minWorkers=1",
+      "timing": "Before test-only this annotation and removal of unsupported exact query option; product source unchanged"
+    },
+    "focusedAfterTypingFix": {
+      "status": "PASS",
+      "files": 2,
+      "tests": 9,
+      "command": "npm test -- src/components/ui/Modal.lifecycle.test.tsx src/components/ui/DateField.test.tsx --maxWorkers=1 --minWorkers=1"
+    },
+    "lint": {
+      "status": "PASS",
+      "command": "npm run lint"
+    },
+    "build": {
+      "status": "PASS",
+      "command": "npm run build",
+      "includes": "Full TypeScript/Vite/SW",
+      "precacheEntries": 284,
+      "precacheKiB": 4277.2
+    }
+  }
+}

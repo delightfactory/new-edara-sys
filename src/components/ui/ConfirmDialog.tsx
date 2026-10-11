@@ -1,4 +1,5 @@
 import { AlertTriangle, Trash2, Info } from 'lucide-react'
+import { useId } from 'react'
 import ResponsiveModal from './ResponsiveModal'
 import Button from './Button'
 
@@ -42,8 +43,9 @@ export default function ConfirmDialog({
   variant = 'danger',
   loading = false,
 }: ConfirmDialogProps) {
+  const titleId = useId()
   return (
-    <ResponsiveModal open={open} onClose={onCancel} title="">
+    <ResponsiveModal open={open} onClose={onCancel} title="" ariaLabelledBy={titleId}>
       <div style={{ textAlign: 'center', paddingBottom: 8 }}>
         {/* Icon badge */}
         <div style={{
@@ -55,7 +57,7 @@ export default function ConfirmDialog({
           {icons[variant]}
         </div>
 
-        <h3 style={{ fontSize: 17, fontWeight: 700, marginBottom: 8, margin: '0 0 8px' }}>
+        <h3 id={titleId} style={{ fontSize: 17, fontWeight: 700, marginBottom: 8, margin: '0 0 8px' }}>
           {title}
         </h3>
         <p style={{

@@ -1,5 +1,9 @@
 /* Delight Design System V2 — form composition patterns. */
 
+/* Keep native calendar chrome aligned with the application's explicit theme. */
+.form-input[type="date"] { color-scheme: light; }
+[data-theme="dark"] .form-input[type="date"] { color-scheme: dark; }
+
 /* Canonical native form-control sizing for controls adopted through V2 Field. */
 .ds-field .form-input,
 .ds-field .form-select {
