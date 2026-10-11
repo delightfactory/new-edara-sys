@@ -106,7 +106,7 @@ export function SalesOrderFormActions({
   const isLast = activeIndex === lastIndex
 
   return (
-    <FormActions align="between" stickyOnMobile className="sales-order-form-actions-v2">
+    <FormActions align="between" className="sales-order-form-actions-v2">
       <Button
         type="button"
         variant="ghost"

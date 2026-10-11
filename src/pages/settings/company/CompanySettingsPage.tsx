@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { toast } from 'sonner'
 import { Save, Settings, Loader2 } from 'lucide-react'
 import { getSettings, updateSettings } from '@/lib/services/settings'
 import type { CompanySetting } from '@/lib/types/auth'
 import { useAuthStore } from '@/stores/auth-store'
+import StatePanel from '@/components/patterns/StatePanel'
+import Button from '@/components/ui/Button'
 
 const CATEGORY_LABELS: Record<string, string> = {
   company: '🏢 بيانات الشركة',
@@ -20,16 +22,28 @@ export default function CompanySettingsPage() {
   const can = useAuthStore(s => s.can)
   const [settings, setSettings] = useState<CompanySetting[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [saving, setSaving] = useState(false)
   const [activeTab, setActiveTab] = useState('company')
   const changedRef = useRef<Map<string, string>>(new Map())
 
-  useEffect(() => {
-    getSettings().then(data => {
+  const loadSettings = useCallback(async () => {
+    setLoading(true)
+    setLoadError(false)
+    try {
+      const data = await getSettings()
       setSettings(data)
+      setActiveTab(current => data.some(setting => setting.category === current)
+        ? current : data[0]?.category ?? 'company')
+    } catch {
+      setLoadError(true)
+      toast.error('فشل تحميل الإعدادات')
+    } finally {
       setLoading(false)
-    }).catch(() => toast.error('فشل تحميل الإعدادات'))
+    }
   }, [])
+
+  useEffect(() => { void loadSettings() }, [loadSettings])
 
   const categories = [...new Set(settings.map(s => s.category))]
   const filtered = settings.filter(s => s.category === activeTab)
@@ -91,6 +105,22 @@ export default function CompanySettingsPage() {
     return (
       <div className="page-container">
         {[1,2,3,4,5,6].map(i => <div key={i} className="skeleton" style={{ height: 48, marginBottom: 12 }} />)}
+      </div>
+    )
+  }
+
+  if (loadError || settings.length === 0) {
+    return (
+      <div className="page-container">
+        <h1 className="page-title">إعدادات الشركة</h1>
+        <StatePanel
+          kind={loadError ? 'error' : 'empty'}
+          title={loadError ? 'تعذر تحميل إعدادات الشركة' : 'لا توجد إعدادات للشركة'}
+          description={loadError
+            ? 'أعد المحاولة لتحميل الإعدادات.'
+            : 'ستظهر الإعدادات هنا بعد تجهيزها بواسطة مسؤول النظام.'}
+          action={loadError ? <Button onClick={() => { void loadSettings() }}>إعادة المحاولة</Button> : undefined}
+        />
       </div>
     )
   }

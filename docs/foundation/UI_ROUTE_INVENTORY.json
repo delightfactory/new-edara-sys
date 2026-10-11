@@ -1,0 +1,2195 @@
+{
+  "baseline": "17925696d377ebffb72b096c91f90244d9e52fd8",
+  "source": "src/App.tsx",
+  "routeDeclarationCount": 129,
+  "uniqueRegisteredPageFiles": 119,
+  "sourceSha256": "99c28a5c207f5246d4ab7be63161d2162fd82cc8cd63a235aab60dcbc10ba235",
+  "method": "TypeScript JSX AST; nested paths preserved; declarations are inventory, not runtime acceptance",
+  "routes": [
+    {
+      "path": "/login",
+      "components": [
+        {
+          "name": "LoginPage",
+          "file": "src/pages/auth/LoginPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/unauthorized",
+      "components": [
+        {
+          "name": "UnauthorizedPage",
+          "file": "src/pages/auth/UnauthorizedPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/",
+      "components": [],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/",
+      "components": [
+        {
+          "name": "DashboardPage",
+          "file": "src/pages/dashboard/DashboardPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/products",
+      "components": [
+        {
+          "name": "ProductsPage",
+          "file": "src/pages/products/ProductsPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/products/new",
+      "components": [
+        {
+          "name": "ProductFormPage",
+          "file": "src/pages/products/ProductFormPage.tsx"
+        }
+      ],
+      "permissions": [
+        "products.create"
+      ],
+      "type": "create",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/products/:id",
+      "components": [
+        {
+          "name": "ProductDetailPage",
+          "file": "src/pages/products/ProductDetailPage.tsx"
+        }
+      ],
+      "permissions": [
+        "products.read"
+      ],
+      "type": "detail",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/products/:id/edit",
+      "components": [
+        {
+          "name": "ProductFormPage",
+          "file": "src/pages/products/ProductFormPage.tsx"
+        }
+      ],
+      "permissions": [
+        "products.update"
+      ],
+      "type": "edit",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/products/categories",
+      "components": [
+        {
+          "name": "CategoriesPage",
+          "file": "src/pages/products/CategoriesPage.tsx"
+        }
+      ],
+      "permissions": [
+        "categories.create"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/products/price-lists",
+      "components": [
+        {
+          "name": "PriceListsPage",
+          "file": "src/pages/products/PriceListsPage.tsx"
+        }
+      ],
+      "permissions": [
+        "price_lists.read"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/products/bundles",
+      "components": [
+        {
+          "name": "BundlesPage",
+          "file": "src/pages/products/BundlesPage.tsx"
+        }
+      ],
+      "permissions": [
+        "products.read"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/products/brands",
+      "components": [
+        {
+          "name": "BrandsPage",
+          "file": "src/pages/products/BrandsPage.tsx"
+        }
+      ],
+      "permissions": [
+        "products.read"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/customers",
+      "components": [
+        {
+          "name": "CustomersPage",
+          "file": "src/pages/customers/CustomersPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/customers/new",
+      "components": [
+        {
+          "name": "CustomerFormPage",
+          "file": "src/pages/customers/CustomerFormPage.tsx"
+        }
+      ],
+      "permissions": [
+        "customers.create"
+      ],
+      "type": "create",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/customers/:id",
+      "components": [
+        {
+          "name": "CustomerDetailPage",
+          "file": "src/pages/customers/CustomerDetailPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "detail",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/customers/:id/edit",
+      "components": [
+        {
+          "name": "CustomerFormPage",
+          "file": "src/pages/customers/CustomerFormPage.tsx"
+        }
+      ],
+      "permissions": [
+        "customers.update"
+      ],
+      "type": "edit",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/credit",
+      "components": [
+        {
+          "name": "CreditManagementPage",
+          "file": "src/pages/credit/CreditManagementPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/credit/overdue",
+      "components": [
+        {
+          "name": "OverdueInvoicesPage",
+          "file": "src/pages/credit/OverdueInvoicesPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/suppliers",
+      "components": [
+        {
+          "name": "SuppliersPage",
+          "file": "src/pages/suppliers/SuppliersPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/suppliers/new",
+      "components": [
+        {
+          "name": "SupplierFormPage",
+          "file": "src/pages/suppliers/SupplierFormPage.tsx"
+        }
+      ],
+      "permissions": [
+        "suppliers.create"
+      ],
+      "type": "create",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/suppliers/:id",
+      "components": [
+        {
+          "name": "SupplierDetailPage",
+          "file": "src/pages/suppliers/SupplierDetailPage.tsx"
+        }
+      ],
+      "permissions": [
+        "suppliers.read"
+      ],
+      "type": "detail",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/suppliers/:id/edit",
+      "components": [
+        {
+          "name": "SupplierFormPage",
+          "file": "src/pages/suppliers/SupplierFormPage.tsx"
+        }
+      ],
+      "permissions": [
+        "suppliers.update"
+      ],
+      "type": "edit",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/inventory/warehouses",
+      "components": [
+        {
+          "name": "WarehousesPage",
+          "file": "src/pages/inventory/WarehousesPage.tsx"
+        }
+      ],
+      "permissions": [
+        "inventory.read"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/inventory/stock",
+      "components": [
+        {
+          "name": "StockPage",
+          "file": "src/pages/inventory/StockPage.tsx"
+        }
+      ],
+      "permissions": [
+        "inventory.read"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/inventory/transfers",
+      "components": [
+        {
+          "name": "TransfersPage",
+          "file": "src/pages/inventory/TransfersPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/inventory/transfers/:id",
+      "components": [
+        {
+          "name": "TransferDetailPage",
+          "file": "src/pages/inventory/TransferDetailPage.tsx"
+        }
+      ],
+      "permissions": [
+        "inventory.transfers.read"
+      ],
+      "type": "detail",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/inventory/adjustments",
+      "components": [
+        {
+          "name": "AdjustmentsPage",
+          "file": "src/pages/inventory/AdjustmentsPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/inventory/adjustments/:id",
+      "components": [
+        {
+          "name": "AdjustmentDetailPage",
+          "file": "src/pages/inventory/AdjustmentDetailPage.tsx"
+        }
+      ],
+      "permissions": [
+        "inventory.adjustments.read"
+      ],
+      "type": "detail",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/inventory/movements",
+      "components": [
+        {
+          "name": "StockMovementsPage",
+          "file": "src/pages/inventory/StockMovementsPage.tsx"
+        }
+      ],
+      "permissions": [
+        "inventory.read"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/inventory/valuation",
+      "components": [
+        {
+          "name": "InventoryValuationPage",
+          "file": "src/pages/inventory/InventoryValuationPage.tsx"
+        }
+      ],
+      "permissions": [
+        "finance.view_costs"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/sales/orders",
+      "components": [
+        {
+          "name": "SalesOrdersPage",
+          "file": "src/pages/sales/SalesOrdersPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/sales/orders/new",
+      "components": [
+        {
+          "name": "SalesOrderForm",
+          "file": "src/pages/sales/SalesOrderForm.tsx"
+        }
+      ],
+      "permissions": [
+        "sales.orders.create"
+      ],
+      "type": "create",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/sales/orders/:id",
+      "components": [
+        {
+          "name": "SalesOrderDetail",
+          "file": "src/pages/sales/SalesOrderDetail.tsx"
+        }
+      ],
+      "permissions": [
+        "sales.orders.read"
+      ],
+      "type": "detail",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/sales/orders/:id/edit",
+      "components": [
+        {
+          "name": "SalesOrderForm",
+          "file": "src/pages/sales/SalesOrderForm.tsx"
+        }
+      ],
+      "permissions": [
+        "sales.orders.create"
+      ],
+      "type": "edit",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/sales/returns",
+      "components": [
+        {
+          "name": "SalesReturnsPage",
+          "file": "src/pages/sales/SalesReturnsPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/sales/returns/new",
+      "components": [
+        {
+          "name": "SalesReturnForm",
+          "file": "src/pages/sales/SalesReturnForm.tsx"
+        }
+      ],
+      "permissions": [
+        "sales.returns.create"
+      ],
+      "type": "create",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/sales/returns/:id",
+      "components": [
+        {
+          "name": "SalesReturnDetail",
+          "file": "src/pages/sales/SalesReturnDetail.tsx"
+        }
+      ],
+      "permissions": [
+        "sales.returns.read"
+      ],
+      "type": "detail",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/sales/shipping",
+      "components": [
+        {
+          "name": "ShippingCompaniesPage",
+          "file": "src/pages/sales/ShippingCompaniesPage.tsx"
+        }
+      ],
+      "permissions": [
+        "sales.shipping.manage"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/purchases/invoices",
+      "components": [
+        {
+          "name": "PurchaseInvoicesPage",
+          "file": "src/pages/purchases/PurchaseInvoicesPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/purchases/invoices/new",
+      "components": [
+        {
+          "name": "PurchaseInvoiceForm",
+          "file": "src/pages/purchases/PurchaseInvoiceForm.tsx"
+        }
+      ],
+      "permissions": [
+        "procurement.invoices.create"
+      ],
+      "type": "create",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/purchases/invoices/:id",
+      "components": [
+        {
+          "name": "PurchaseInvoiceForm",
+          "file": "src/pages/purchases/PurchaseInvoiceForm.tsx"
+        }
+      ],
+      "permissions": [
+        "procurement.invoices.read"
+      ],
+      "type": "detail",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/purchases/returns",
+      "components": [
+        {
+          "name": "PurchaseReturnsPage",
+          "file": "src/pages/purchases/PurchaseReturnsPage.tsx"
+        }
+      ],
+      "permissions": [
+        "procurement.returns.read"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/purchases/returns/new",
+      "components": [
+        {
+          "name": "PurchaseReturnForm",
+          "file": "src/pages/purchases/PurchaseReturnForm.tsx"
+        }
+      ],
+      "permissions": [
+        "procurement.returns.create"
+      ],
+      "type": "create",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/purchases/returns/:id",
+      "components": [
+        {
+          "name": "PurchaseReturnForm",
+          "file": "src/pages/purchases/PurchaseReturnForm.tsx"
+        }
+      ],
+      "permissions": [
+        "procurement.returns.read"
+      ],
+      "type": "detail",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/finance/vaults",
+      "components": [
+        {
+          "name": "VaultsPage",
+          "file": "src/pages/finance/VaultsPage.tsx"
+        }
+      ],
+      "permissions": [
+        "finance.vaults.read"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/finance/custody",
+      "components": [
+        {
+          "name": "CustodyPage",
+          "file": "src/pages/finance/CustodyPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/finance/payments",
+      "components": [
+        {
+          "name": "PaymentsPage",
+          "file": "src/pages/finance/PaymentsPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/finance/payments/:id",
+      "components": [
+        {
+          "name": "PaymentReceiptDetail",
+          "file": "src/pages/finance/PaymentReceiptDetail.tsx"
+        }
+      ],
+      "permissions": [
+        "finance.payments.read"
+      ],
+      "type": "detail",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/finance/expenses",
+      "components": [
+        {
+          "name": "ExpensesPage",
+          "file": "src/pages/finance/ExpensesPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/finance/accounts",
+      "components": [
+        {
+          "name": "ChartOfAccountsPage",
+          "file": "src/pages/finance/ChartOfAccountsPage.tsx"
+        }
+      ],
+      "permissions": [
+        "finance.journal.read"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/finance/journals",
+      "components": [
+        {
+          "name": "JournalsPage",
+          "file": "src/pages/finance/JournalsPage.tsx"
+        }
+      ],
+      "permissions": [
+        "finance.journal.read"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/finance/ledger",
+      "components": [
+        {
+          "name": "LedgerPage",
+          "file": "src/pages/finance/LedgerPage.tsx"
+        }
+      ],
+      "permissions": [
+        "finance.ledger.read"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/finance/approval-rules",
+      "components": [
+        {
+          "name": "ApprovalRulesPage",
+          "file": "src/pages/finance/ApprovalRulesPage.tsx"
+        }
+      ],
+      "permissions": [
+        "settings.update"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/finance/balance-sheet",
+      "components": [
+        {
+          "name": "FinancialBalanceSheetPage",
+          "file": "src/pages/finance/FinancialBalanceSheetPage.tsx"
+        }
+      ],
+      "permissions": [
+        "finance.journal.read"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/branches",
+      "components": [
+        {
+          "name": "BranchesPage",
+          "file": "src/pages/branches/BranchesPage.tsx"
+        }
+      ],
+      "permissions": [
+        "branches.read"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/hr",
+      "components": [
+        {
+          "name": "HRDashboard",
+          "file": "src/pages/hr/HRDashboard.tsx"
+        }
+      ],
+      "permissions": [
+        "hr.employees.read"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/hr/employees",
+      "components": [
+        {
+          "name": "EmployeesPage",
+          "file": "src/pages/hr/employees/EmployeesPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/hr/employees/:id",
+      "components": [
+        {
+          "name": "EmployeeProfile",
+          "file": "src/pages/hr/employees/EmployeeProfile.tsx"
+        }
+      ],
+      "permissions": [
+        "hr.employees.read"
+      ],
+      "type": "detail",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/hr/attendance/checkin",
+      "components": [
+        {
+          "name": "AttendanceCheckin",
+          "file": "src/pages/hr/attendance/AttendanceCheckin.tsx"
+        }
+      ],
+      "permissions": [
+        "hr.attendance.checkin"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/hr/leaves",
+      "components": [
+        {
+          "name": "LeavesPage",
+          "file": "src/pages/hr/leaves/LeavesPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/hr/advances",
+      "components": [
+        {
+          "name": "AdvancesPage",
+          "file": "src/pages/hr/advances/AdvancesPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/hr/payroll",
+      "components": [
+        {
+          "name": "PayrollPage",
+          "file": "src/pages/hr/payroll/PayrollPage.tsx"
+        }
+      ],
+      "permissions": [
+        "hr.payroll.read"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/hr/payroll/:runId",
+      "components": [
+        {
+          "name": "PayrollRunDetail",
+          "file": "src/pages/hr/payroll/PayrollRunDetail.tsx"
+        }
+      ],
+      "permissions": [
+        "hr.payroll.read"
+      ],
+      "type": "detail",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/hr/payroll/target-payouts",
+      "components": [
+        {
+          "name": "TargetPayoutsPage",
+          "file": "src/pages/hr/payroll/TargetPayoutsPage.tsx"
+        }
+      ],
+      "permissions": [
+        "hr.payroll.read"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/hr/attendance",
+      "components": [
+        {
+          "name": "AttendancePage",
+          "file": "src/pages/hr/attendance/AttendancePage.tsx"
+        }
+      ],
+      "permissions": [
+        "hr.attendance.read"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/hr/permissions",
+      "components": [
+        {
+          "name": "PermissionsPage",
+          "file": "src/pages/hr/permissions/PermissionsPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/hr/commissions",
+      "components": [
+        {
+          "name": "CommissionsPage",
+          "file": "src/pages/hr/commissions/CommissionsPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/hr/settings",
+      "components": [
+        {
+          "name": "HRSettingsPage",
+          "file": "src/pages/hr/settings/HRSettingsPage.tsx"
+        }
+      ],
+      "permissions": [
+        "hr.settings.update"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/hr/delegations",
+      "components": [
+        {
+          "name": "DelegationsPage",
+          "file": "src/pages/hr/delegations/DelegationsPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/hr/adjustments",
+      "components": [
+        {
+          "name": "HRAdjustmentsPage",
+          "file": "src/pages/hr/adjustments/AdjustmentsPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/hr/my-profile",
+      "components": [
+        {
+          "name": "MyProfilePage",
+          "file": "src/pages/hr/MyProfilePage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/work",
+      "components": [
+        {
+          "name": "WorkHubPage",
+          "file": "src/pages/work/WorkHubPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/work/new",
+      "components": [
+        {
+          "name": "CreateTaskPage",
+          "file": "src/pages/work/CreateTaskPage.tsx"
+        }
+      ],
+      "permissions": [
+        "work.items.create"
+      ],
+      "type": "create",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/work/manage",
+      "components": [
+        {
+          "name": "WorkManagementPage",
+          "file": "src/pages/work/management/WorkManagementPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/work/team",
+      "components": [
+        {
+          "name": "SupervisorWorkPage",
+          "file": "src/pages/work/SupervisorWorkPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/work/:id",
+      "components": [
+        {
+          "name": "WorkDetailPage",
+          "file": "src/pages/work/WorkDetailPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "detail",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/notifications",
+      "components": [
+        {
+          "name": "NotificationsPage",
+          "file": "src/pages/notifications/NotificationsPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/reports",
+      "components": [
+        {
+          "name": "ReportsLayout",
+          "file": "src/pages/reports/ReportsLayout.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/reports",
+      "components": [
+        {
+          "name": "ReportsRedirect",
+          "file": "src/pages/reports/ReportsRedirect.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/reports/overview",
+      "components": [
+        {
+          "name": "ReportsOverviewPage",
+          "file": "src/pages/reports/OverviewPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/reports/sales",
+      "components": [
+        {
+          "name": "SalesPage",
+          "file": "src/pages/reports/SalesPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/reports/receivables",
+      "components": [
+        {
+          "name": "ReceivablesPage",
+          "file": "src/pages/reports/ReceivablesPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/reports/treasury",
+      "components": [
+        {
+          "name": "TreasuryPage",
+          "file": "src/pages/reports/TreasuryPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/reports/customers",
+      "components": [
+        {
+          "name": "CustomerHealthPage",
+          "file": "src/pages/reports/CustomerHealthPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/reports/reps",
+      "components": [
+        {
+          "name": "RepPerformancePage",
+          "file": "src/pages/reports/RepPerformancePage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/reports/products",
+      "components": [
+        {
+          "name": "ProductPerformancePage",
+          "file": "src/pages/reports/ProductPerformancePage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/reports/churn-risk",
+      "components": [
+        {
+          "name": "ChurnRiskPage",
+          "file": "src/pages/reports/ChurnRiskPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/reports/geography",
+      "components": [
+        {
+          "name": "GeographyPage",
+          "file": "src/pages/reports/GeographyPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/reports/target-attainment",
+      "components": [
+        {
+          "name": "TargetAttainmentPage",
+          "file": "src/pages/reports/TargetAttainmentPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/reports/credit-commitment",
+      "components": [
+        {
+          "name": "RepCreditCommitmentPage",
+          "file": "src/pages/reports/RepCreditCommitmentPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/reports/reengagement",
+      "components": [
+        {
+          "name": "CustomerReengagementPage",
+          "file": "src/pages/reports/CustomerReengagementPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/reports/visits",
+      "components": [
+        {
+          "name": "VisitReportsPage",
+          "file": "src/pages/reports/VisitReportsPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/reports/profitability",
+      "components": [
+        {
+          "name": "ProfitabilityLayout",
+          "file": "src/pages/reports/profitability/ProfitabilityLayout.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/reports/profitability",
+      "components": [
+        {
+          "name": "ProfitDashboard",
+          "file": "src/pages/reports/profitability/ProfitDashboard.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/reports/profitability/products",
+      "components": [
+        {
+          "name": "ProductProfitabilityPage",
+          "file": "src/pages/reports/profitability/ProductProfitabilityPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/reports/profitability/customers",
+      "components": [
+        {
+          "name": "CustomerProfitabilityPage",
+          "file": "src/pages/reports/profitability/CustomerProfitabilityPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/reports/profitability/reps",
+      "components": [
+        {
+          "name": "RepProfitabilityPage",
+          "file": "src/pages/reports/profitability/RepProfitabilityPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/reports/profitability/branch-direct",
+      "components": [
+        {
+          "name": "BranchDirectProfitPage",
+          "file": "src/pages/reports/profitability/BranchDirectProfitPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/reports/profitability/branch-final",
+      "components": [
+        {
+          "name": "BranchFinalProfitPage",
+          "file": "src/pages/reports/profitability/BranchFinalProfitPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/reports/profitability/quality",
+      "components": [
+        {
+          "name": "AllocationQualityPage",
+          "file": "src/pages/reports/profitability/AllocationQualityPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/settings/users",
+      "components": [
+        {
+          "name": "UsersPage",
+          "file": "src/pages/settings/users/UsersPage.tsx"
+        }
+      ],
+      "permissions": [
+        "auth.users.read"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/settings/users/new",
+      "components": [
+        {
+          "name": "UserFormPage",
+          "file": "src/pages/settings/users/UserFormPage.tsx"
+        }
+      ],
+      "permissions": [
+        "auth.users.create"
+      ],
+      "type": "create",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/settings/users/:id/edit",
+      "components": [
+        {
+          "name": "UserFormPage",
+          "file": "src/pages/settings/users/UserFormPage.tsx"
+        }
+      ],
+      "permissions": [
+        "auth.users.update"
+      ],
+      "type": "edit",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/settings/roles",
+      "components": [
+        {
+          "name": "RolesPage",
+          "file": "src/pages/settings/roles/RolesPage.tsx"
+        }
+      ],
+      "permissions": [
+        "auth.roles.read"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/settings/roles/new",
+      "components": [
+        {
+          "name": "RoleFormPage",
+          "file": "src/pages/settings/roles/RoleFormPage.tsx"
+        }
+      ],
+      "permissions": [
+        "auth.roles.create"
+      ],
+      "type": "create",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/settings/roles/:id/edit",
+      "components": [
+        {
+          "name": "RoleFormPage",
+          "file": "src/pages/settings/roles/RoleFormPage.tsx"
+        }
+      ],
+      "permissions": [
+        "auth.roles.update"
+      ],
+      "type": "edit",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/settings/company",
+      "components": [
+        {
+          "name": "CompanySettingsPage",
+          "file": "src/pages/settings/company/CompanySettingsPage.tsx"
+        }
+      ],
+      "permissions": [
+        "settings.read"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/settings/audit",
+      "components": [
+        {
+          "name": "AuditLogPage",
+          "file": "src/pages/settings/audit/AuditLogPage.tsx"
+        }
+      ],
+      "permissions": [
+        "settings.audit.read"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/activities",
+      "components": [
+        {
+          "name": "ActivitiesDashboard",
+          "file": "src/pages/activities/ActivitiesDashboard.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/activities/list",
+      "components": [
+        {
+          "name": "ActivitiesPage",
+          "file": "src/pages/activities/ActivitiesPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/activities/new",
+      "components": [
+        {
+          "name": "ActivityForm",
+          "file": "src/pages/activities/ActivityForm.tsx"
+        }
+      ],
+      "permissions": [
+        "activities.create"
+      ],
+      "type": "create",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/activities/:id",
+      "components": [
+        {
+          "name": "ActivityDetail",
+          "file": "src/pages/activities/ActivityDetail.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "detail",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/activities/:id/edit",
+      "components": [
+        {
+          "name": "ActivityForm",
+          "file": "src/pages/activities/ActivityForm.tsx"
+        }
+      ],
+      "permissions": [
+        "activities.update_own"
+      ],
+      "type": "edit",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/activities/types",
+      "components": [
+        {
+          "name": "ActivityTypesPage",
+          "file": "src/pages/activities/ActivityTypesPage.tsx"
+        }
+      ],
+      "permissions": [
+        "settings.update"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/activities/target-types",
+      "components": [
+        {
+          "name": "TargetTypesPage",
+          "file": "src/pages/activities/TargetTypesPage.tsx"
+        }
+      ],
+      "permissions": [
+        "settings.update"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/activities/visit-plans",
+      "components": [
+        {
+          "name": "VisitPlansPage",
+          "file": "src/pages/activities/VisitPlansPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/activities/visit-plans/new",
+      "components": [
+        {
+          "name": "VisitPlanForm",
+          "file": "src/pages/activities/VisitPlanForm.tsx"
+        }
+      ],
+      "permissions": [
+        "visit_plans.create"
+      ],
+      "type": "create",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/activities/visit-plans/:id",
+      "components": [
+        {
+          "name": "VisitPlanDetail",
+          "file": "src/pages/activities/VisitPlanDetail.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "detail",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/activities/visit-plans/:id/execute",
+      "components": [
+        {
+          "name": "VisitExecutionMode",
+          "file": "src/pages/activities/VisitExecutionMode.tsx"
+        }
+      ],
+      "permissions": [
+        "activities.create"
+      ],
+      "type": "detail",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/activities/call-plans",
+      "components": [
+        {
+          "name": "CallPlansPage",
+          "file": "src/pages/activities/CallPlansPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/activities/call-plans/new",
+      "components": [
+        {
+          "name": "CallPlanForm",
+          "file": "src/pages/activities/CallPlanForm.tsx"
+        }
+      ],
+      "permissions": [
+        "call_plans.create"
+      ],
+      "type": "create",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/activities/call-plans/:id",
+      "components": [
+        {
+          "name": "CallPlanDetail",
+          "file": "src/pages/activities/CallPlanDetail.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "detail",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/activities/targets",
+      "components": [
+        {
+          "name": "TargetsPage",
+          "file": "src/pages/activities/TargetsPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/activities/targets/new",
+      "components": [
+        {
+          "name": "TargetForm",
+          "file": "src/pages/activities/TargetForm.tsx"
+        }
+      ],
+      "permissions": [
+        "targets.assign"
+      ],
+      "type": "create",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/activities/targets/:id",
+      "components": [
+        {
+          "name": "TargetDetail",
+          "file": "src/pages/activities/TargetDetail.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "detail",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/activities/checklists",
+      "components": [
+        {
+          "name": "ChecklistTemplatesPage",
+          "file": "src/pages/activities/ChecklistTemplatesPage.tsx"
+        }
+      ],
+      "permissions": [
+        "checklists.manage"
+      ],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/activities/plan-templates",
+      "components": [
+        {
+          "name": "PlanTemplatesPage",
+          "file": "src/pages/activities/PlanTemplatesPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/documents/:kind/:id/preview",
+      "components": [
+        {
+          "name": "DocumentPreviewRoute",
+          "file": "src/features/output/components/DocumentPreviewRoute.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "detail",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    },
+    {
+      "path": "/*",
+      "components": [
+        {
+          "name": "NotFoundPage",
+          "file": "src/pages/NotFoundPage.tsx"
+        }
+      ],
+      "permissions": [],
+      "type": "collection_or_workspace",
+      "devices": {
+        "mobile": "NOT_RUNTIME_REVIEWED",
+        "tablet": "NOT_RUNTIME_REVIEWED",
+        "desktop": "NOT_RUNTIME_REVIEWED"
+      }
+    }
+  ]
+}
