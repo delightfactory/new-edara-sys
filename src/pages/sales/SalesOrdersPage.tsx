@@ -429,11 +429,12 @@ export default function SalesOrdersPage() {
             {can('sales.orders.create') && (
               <Button
                 id="smart-transfer-btn"
-                className="desktop-only-btn"
                 variant="secondary"
+                touchTarget
                 icon={<Zap size={15} />}
                 onClick={() => setSmartTransferOpen(true)}
                 title="إنشاء تحويل ذكي من المسودات"
+                aria-label="التحويل الذكي"
               >
                 التحويل الذكي
               </Button>
@@ -593,20 +594,6 @@ export default function SalesOrdersPage() {
         )}
       />
 
-      {can('sales.orders.create') && (
-        <Button
-          id="smart-transfer-fab"
-          className="smart-transfer-fab"
-          variant="primary"
-          size="lg"
-          touchTarget
-          icon={<Zap size={22} />}
-          onClick={() => setSmartTransferOpen(true)}
-          aria-label="التحويل الذكي"
-          title="التحويل الذكي"
-        />
-      )}
-
       <SmartTransferDialog
         open={smartTransferOpen}
         onClose={() => setSmartTransferOpen(false)}
@@ -667,24 +654,6 @@ export default function SalesOrdersPage() {
           background: var(--color-success-light);
           border-radius: var(--radius-lg);
           margin-top: var(--space-2);
-        }
-
-        .smart-transfer-fab {
-          display: none;
-          position: fixed;
-          bottom: calc(var(--bottom-nav-height, 64px) + var(--space-4) + 64px);
-          inset-inline-end: var(--space-4);
-          z-index: 155;
-          width: 50px;
-          height: 50px;
-          border-radius: 50%;
-          box-shadow: 0 6px 20px rgba(37, 99, 235, .32);
-          align-items: center;
-          justify-content: center;
-        }
-
-        @media (max-width: 768px) {
-          .smart-transfer-fab { display: flex; }
         }
       `}</style>
     </div>
