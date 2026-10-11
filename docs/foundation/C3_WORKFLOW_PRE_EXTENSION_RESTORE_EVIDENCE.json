@@ -1,0 +1,130 @@
+{
+  "status": "PASS",
+  "parentSha": "69cae84b15a55adc3e0700ee90be2200efb8270c",
+  "owner": "edara-c3-compose-20261011",
+  "scope": "Full database pg_dump custom archive restored in a fresh template0 database within the same owned PG17 cluster; not independent server/global-role restore or final-SHA workflow qualification",
+  "archiveSha256": "4f190ccb9b103e87d97f7511ea2d76285a456c1b41d4dd4c0a4579993ebb1f25",
+  "snapshot": {
+    "tables": {
+      "areas": {
+        "count": 0,
+        "digest": "d751713988987e9331980363e24189ce"
+      },
+      "audit_logs": {
+        "count": 0,
+        "digest": "d751713988987e9331980363e24189ce"
+      },
+      "branches": {
+        "count": 0,
+        "digest": "d751713988987e9331980363e24189ce"
+      },
+      "brands": {
+        "count": 0,
+        "digest": "d751713988987e9331980363e24189ce"
+      },
+      "cities": {
+        "count": 0,
+        "digest": "d751713988987e9331980363e24189ce"
+      },
+      "company_settings": {
+        "count": 0,
+        "digest": "d751713988987e9331980363e24189ce"
+      },
+      "custody_accounts": {
+        "count": 0,
+        "digest": "d751713988987e9331980363e24189ce"
+      },
+      "customer_branches": {
+        "count": 0,
+        "digest": "d751713988987e9331980363e24189ce"
+      },
+      "customers": {
+        "count": 3,
+        "digest": "8c2c5345ec4189d3d9c304b66494d0d0"
+      },
+      "feature_flags": {
+        "count": 0,
+        "digest": "d751713988987e9331980363e24189ce"
+      },
+      "governorates": {
+        "count": 0,
+        "digest": "d751713988987e9331980363e24189ce"
+      },
+      "price_lists": {
+        "count": 0,
+        "digest": "d751713988987e9331980363e24189ce"
+      },
+      "product_categories": {
+        "count": 0,
+        "digest": "d751713988987e9331980363e24189ce"
+      },
+      "products": {
+        "count": 3,
+        "digest": "15f89001fad101c0ead26440b1d6be33"
+      },
+      "profiles": {
+        "count": 2,
+        "digest": "47154c5baf6caa6afbc5688d510494f1"
+      },
+      "purchase_invoices": {
+        "count": 3,
+        "digest": "d2dcb1adac39d950fd4619237300d4f5"
+      },
+      "role_permissions": {
+        "count": 2,
+        "digest": "04910619d3eafa32f0064f4af83da5fc"
+      },
+      "roles": {
+        "count": 2,
+        "digest": "fa89c56d67b93b3049c136671cf08d85"
+      },
+      "sales_orders": {
+        "count": 7,
+        "digest": "17f8ac23f7dca28e576fa151cbb7b370"
+      },
+      "shipping_companies": {
+        "count": 0,
+        "digest": "d751713988987e9331980363e24189ce"
+      },
+      "stock": {
+        "count": 4,
+        "digest": "503088e875ef9acfb938187e0e727c2e"
+      },
+      "suppliers": {
+        "count": 1,
+        "digest": "d5f218e96f3a664d5fc9a689db192873"
+      },
+      "units": {
+        "count": 1,
+        "digest": "0c2383620caa1f026f8d377554ee05b9"
+      },
+      "user_permission_overrides": {
+        "count": 4,
+        "digest": "5c05f13aacd77d74ad097850228bc3d0"
+      },
+      "user_roles": {
+        "count": 2,
+        "digest": "d39098b3b09b3e2eb1e526ca28715d8c"
+      },
+      "vaults": {
+        "count": 0,
+        "digest": "d751713988987e9331980363e24189ce"
+      },
+      "warehouse_managers": {
+        "count": 1,
+        "digest": "da349825935d991c22ed2b7f75db9d2c"
+      },
+      "warehouses": {
+        "count": 3,
+        "digest": "7244e955e4d2658888b2782e9e7033a5"
+      }
+    },
+    "authUsers": "2|d5f807475e7894a2e6e7ce0c8286fa8b",
+    "publicFunctions": "2460158d7c6173875a530a91bd8fb9e8",
+    "aclAndPolicies": "f903d96f746f139f013d65797e097072"
+  },
+  "restoreParity": true,
+  "originalDatabaseUnchanged": true,
+  "temporaryDatabaseRetired": true,
+  "archivePrivateNotCommitted": true
+}
