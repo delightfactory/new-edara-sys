@@ -1,5 +1,6 @@
 import type { VisitPlanItem, CallPlanItem, PlanItemStatus } from '@/lib/types/activities'
 import ActivityStatusBadge from './ActivityStatusBadge'
+import VisitGuidance from './VisitGuidance'
 
 interface PlanItemCardProps {
   item: VisitPlanItem | CallPlanItem
@@ -80,6 +81,10 @@ export default function PlanItemCard({
             <span className="pic-duration">{item.estimated_duration_min} د</span>
           )}
         </div>
+
+        {type === 'visit' && (
+          <VisitGuidance title="المطلوب في الزيارة" text={(item as VisitPlanItem).purpose} />
+        )}
 
         {/* ✅ skip_reason (لا notes) */}
         {item.skip_reason && (

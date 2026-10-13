@@ -66,6 +66,7 @@ const mockAddPlanItemAtomicMutate = vi.fn()
 const mockDeletePlanItemAtomicMutate = vi.fn()
 
 let mockPlanStatus = 'in_progress'
+let mockPlanNotes: string | null = null
 let mockCurrentEmployee: { id: string } | null = { id: 'emp-123' }
 let mockPlanEmployeeId = 'emp-123'
 
@@ -151,6 +152,7 @@ vi.mock('@/hooks/useQueryHooks', () => ({
       employee_id: mockPlanEmployeeId,
       employee: { full_name: 'موظف 1' },
       status: mockPlanStatus,
+      notes: mockPlanNotes,
       total_customers: 1,
       completed_count: 0,
       skipped_count: 0,
@@ -239,7 +241,20 @@ describe('VisitPlanDetail - Execution Actions', () => {
     vi.clearAllMocks()
     mockIsAtomic = true
     mockPlanStatus = 'in_progress'
+    mockPlanNotes = null
     mockPermissions(['*'])
+  })
+
+  it.each(['confirmed', 'in_progress', 'completed'])('shows full saved plan notes for a %s plan', status => {
+    mockPlanStatus = status
+    mockPlanNotes = 'توجيهات عامة للخطة.\nراجع الهدف قبل الزيارة وسجّل النتيجة.'
+    render(<VisitPlanDetail />)
+    expect(screen.getByRole('region', { name: 'توجيهات الخطة' }).querySelector('p')?.textContent).toBe(mockPlanNotes)
+  })
+
+  it('omits the plan guidance section when there are no notes', () => {
+    render(<VisitPlanDetail />)
+    expect(screen.queryByRole('region', { name: 'توجيهات الخطة' })).toBeNull()
   })
 
   it('redirects to visit execution route on start visit click', async () => {

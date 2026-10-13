@@ -23,6 +23,7 @@ import type { ChecklistTemplate, VisitPlanItem, VisitCompletionChecklistResponse
 import GeoPermissionBanner from '@/components/shared/GeoPermissionBanner'
 import GeoPermissionDialog from '@/components/shared/GeoPermissionDialog'
 import VisitTimer from '@/components/shared/VisitTimer'
+import VisitGuidance from '@/components/shared/VisitGuidance'
 import ChecklistForm from '@/components/shared/ChecklistForm'
 import Button from '@/components/ui/Button'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
@@ -663,6 +664,10 @@ export default function VisitExecutionMode() {
         </div>
       </div>
 
+      {plan.notes?.trim() && (
+        <a className="vem-plan-guidance-link" href="#visit-plan-guidance">توجيهات الخطة</a>
+      )}
+
       {/* ── GPS Banner ── */}
       <GeoPermissionDialog
         open={showGeoDialog}
@@ -769,6 +774,8 @@ export default function VisitExecutionMode() {
               <h3 className="vem-card-name">{currentItem.customer?.name || 'عميل'}</h3>
               <span className="vem-card-code">{currentItem.customer?.code}</span>
             </div>
+
+            <VisitGuidance title="المطلوب في الزيارة" text={currentItem.purpose} />
 
             {/* ── Concise next-step guidance — differs pre-start vs. active ── */}
             <p className="vem-next-step-hint">{nextStepHint}</p>
@@ -1025,6 +1032,8 @@ export default function VisitExecutionMode() {
             )}
           </div>
 
+          <VisitGuidance id="visit-plan-guidance" title="توجيهات الخطة" text={plan.notes} />
+
           {/* ── Upcoming visits ── */}
           {nextItem && (
             <div className="vem-upcoming">
@@ -1055,6 +1064,10 @@ export default function VisitExecutionMode() {
           </div>
         </>
       ) : null}
+
+      {(allDone || !currentItem) && (
+        <VisitGuidance id="visit-plan-guidance" title="توجيهات الخطة" text={plan.notes} />
+      )}
 
       {/* ── Skip Modal ── */}
       <ResponsiveModal open={!!skipModal} onClose={() => setSkipModal(null)} title="تخطي الزيارة">
@@ -1117,6 +1130,13 @@ export default function VisitExecutionMode() {
           display: flex; flex-direction: column; flex: 1;
         }
         .vem-header-title { font-weight: 700; font-size: var(--text-base); }
+        .vem-plan-guidance-link {
+          display: inline-flex; align-items: center; min-height: 44px;
+          color: var(--color-primary); font-size: var(--text-sm); font-weight: 600;
+          margin-block-end: var(--space-3);
+        }
+        .vem-plan-guidance-link:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+        .vem-card > .visit-guidance { margin-block-end: var(--space-3); }
         .vem-header-progress { font-size: var(--text-xs); color: var(--text-muted); }
         .vem-progress-bar {
           position: absolute; bottom: 0; inset-inline-start: 0; inset-inline-end: 0; height: 3px;

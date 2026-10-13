@@ -32,6 +32,7 @@ import {
 import PageHeader from '@/components/shared/PageHeader'
 import Button from '@/components/ui/Button'
 import PlanItemCard from '@/components/shared/PlanItemCard'
+import VisitGuidance from '@/components/shared/VisitGuidance'
 import ActivityStatusBadge from '@/components/shared/ActivityStatusBadge'
 import ResponsiveModal from '@/components/ui/ResponsiveModal'
 import { CardSkeleton } from '@/components/ui/Skeleton'
@@ -948,6 +949,8 @@ export default function VisitPlanDetail() {
           <ActivityStatusBadge planStatus={plan.status} />
         </div>
       </div>
+
+      <VisitGuidance title="توجيهات الخطة" text={plan.notes} />
 
       {/* ── High Priority Alert ──────────────────────────────────── */}
       {highPriority.length > 0 && canSkip && (
