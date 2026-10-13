@@ -362,6 +362,64 @@ describe('VisitExecutionMode UI Integration Tests (Atomic Mode)', () => {
     vi.clearAllMocks()
   })
 
+  it.each([false, true])('shows full plan and current-visit guidance before start and during both tabs (active=%s)', active => {
+    const notes = 'توجيهات عامة للخطة.\nراجع ترتيب الزيارات ولا تختصر الملاحظات.'
+    const purpose = 'اعرض أربعة أصناف مناسبة.\nسجّل النتيجة والخطوة التالية.'
+    mockPlanData = { ...mockPlanData!, notes }
+    mockItemsData[0] = { ...mockItemsData[0], purpose, purpose_type: null }
+    vi.mocked(useVisitExecutionSession).mockReturnValue({
+      session: active ? { itemId: 'item-1', checklistDrafts: {} } : null,
+      pendingOps: [], loading: false, error: null,
+      startVisit: vi.fn(), completeVisit: vi.fn(), skipVisit: vi.fn(),
+      retryOperation: vi.fn(), discardFailedOperation: vi.fn(),
+      saveChecklistDraft: vi.fn(), saveGpsExceptionReason: vi.fn(), reloadFromDb: vi.fn()
+    } as unknown as ReturnType<typeof useVisitExecutionSession>)
+    render(<VisitExecutionMode />)
+    const assertGuidance = () => {
+      const planGuidance = screen.getByRole('region', { name: 'توجيهات الخطة' })
+      const itemGuidance = screen.getByRole('region', { name: 'المطلوب في الزيارة' })
+      expect(planGuidance.querySelector('p')?.textContent).toBe(notes)
+      expect(itemGuidance.querySelector('p')?.textContent).toBe(purpose)
+      expect(itemGuidance.closest('[hidden]')).toBeNull()
+      expect(itemGuidance.closest('[role="tabpanel"]')).toBeNull()
+      expect(screen.getByRole('link', { name: 'توجيهات الخطة' }).getAttribute('href')).toBe(`#${planGuidance.id}`)
+    }
+    assertGuidance()
+    if (active) {
+      fireEvent.click(screen.getByRole('tab', { name: /العميل والتوجه/ }))
+      assertGuidance()
+      fireEvent.click(screen.getByRole('tab', { name: /الاستبيانات والإثبات/ }))
+      assertGuidance()
+    } else {
+      expect((screen.getByRole('button', { name: 'بدء الزيارة' }) as HTMLButtonElement).disabled).toBe(false)
+    }
+  })
+
+  it('keeps one accessible plan-guidance section after every visit is completed', () => {
+    mockPlanData = { ...mockPlanData!, notes: 'راجع نتائج اليوم.' }
+    mockItemsData[0] = { ...mockItemsData[0], status: 'completed' }
+    vi.mocked(useVisitExecutionSession).mockReturnValue({
+      session: null, pendingOps: [], loading: false, error: null,
+      reloadFromDb: vi.fn()
+    } as unknown as ReturnType<typeof useVisitExecutionSession>)
+    render(<VisitExecutionMode />)
+    expect(screen.getAllByRole('region', { name: 'توجيهات الخطة' })).toHaveLength(1)
+    expect(screen.getByText('راجع نتائج اليوم.')).toBeDefined()
+  })
+
+  it('omits empty plan and visit guidance without adding a dead anchor', () => {
+    mockPlanData = { ...mockPlanData!, notes: ' \n ' }
+    mockItemsData[0] = { ...mockItemsData[0], purpose: null }
+    vi.mocked(useVisitExecutionSession).mockReturnValue({
+      session: null, pendingOps: [], loading: false, error: null,
+      reloadFromDb: vi.fn()
+    } as unknown as ReturnType<typeof useVisitExecutionSession>)
+    render(<VisitExecutionMode />)
+    expect(screen.queryByRole('region', { name: 'توجيهات الخطة' })).toBeNull()
+    expect(screen.queryByRole('region', { name: 'المطلوب في الزيارة' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'توجيهات الخطة' })).toBeNull()
+  })
+
   it('proves that if VISITS_ATOMIC_EXECUTION=false, legacy mode functions completely even if useVisitExecutionSession hook returns database/loading error', () => {
     mockAtomicExecution = false
 
