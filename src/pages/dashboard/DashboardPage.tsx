@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useQuery, type QueryFunctionContext } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/auth-store'
 import { supabase } from '@/lib/supabase/client'
 import {
@@ -36,79 +36,22 @@ interface SalesStats {
   deliveredToday: number
 }
 
-function fetchPendingSalesCount() {
-  return supabase.from('sales_orders').select('id', { count: 'exact', head: true }).in('status', ['confirmed', 'partially_delivered'])
+async function fetchOverviewStats(): Promise<OverviewStats> {
+  const { data, error } = await supabase.rpc('get_dashboard_overview_metrics')
+  if (error) throw error
+  if (!data) throw new Error('Dashboard overview response is missing')
+  return data as OverviewStats
 }
 
-function pendingSalesCount({ client, queryKey }: QueryFunctionContext) {
-  // Refetches with existing data must request a fresh count, even during another refresh.
-  if (client.getQueryData(queryKey) !== undefined) return fetchPendingSalesCount()
-  return client.fetchQuery({
-    queryKey: ['dashboard-pending-sales', ...queryKey.slice(1)],
-    queryFn: async () => fetchPendingSalesCount(),
-    staleTime: 0,
-    gcTime: 0,
-    retry: false,
-  })
-}
-
-async function fetchOverviewStats(pendingCount: ReturnType<typeof pendingSalesCount>): Promise<OverviewStats> {
-  const [customers, products, warehouses, stock, salesPending, purchasePending, lowStock] = await Promise.all([
-    supabase.from('customers').select('id', { count: 'exact', head: true }).eq('is_active', true),
-    supabase.from('products').select('id', { count: 'exact', head: true }).eq('is_active', true),
-    supabase.from('warehouses').select('id', { count: 'exact', head: true }).eq('is_active', true),
-    supabase.from('stock').select('id', { count: 'exact', head: true }),
-    pendingCount,
-    supabase.from('purchase_invoices').select('id', { count: 'exact', head: true }).eq('status', 'draft'),
-    supabase.rpc('get_low_stock', {
-      p_warehouse_id: null, p_offset: 0, p_limit: 1,
-    }),
-  ])
-
-  for (const result of [customers, products, warehouses, stock, salesPending, purchasePending, lowStock]) {
-    if (result.error) throw result.error
-  }
-
-  const { data: lowStockRows } = lowStock
-  const lowStockCount = (lowStockRows && lowStockRows.length > 0)
-    ? Number((lowStockRows as any[])[0].total_count)
-    : 0
-
-  return {
-    activeCustomers: customers.count ?? 0,
-    activeProducts: products.count ?? 0,
-    activeWarehouses: warehouses.count ?? 0,
-    stockItems: stock.count ?? 0,
-    pendingSalesOrders: salesPending.count ?? 0,
-    pendingPurchaseInvoices: purchasePending.count ?? 0,
-    lowStockItems: lowStockCount,
-  }
-}
-
-async function fetchSalesStats(pendingCount: ReturnType<typeof pendingSalesCount>): Promise<SalesStats> {
+async function fetchSalesStats(): Promise<SalesStats> {
   const today = new Date().toISOString().split('T')[0]
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
-
-  const [todayOrders, monthOrders, pendingOrders, deliveredToday] = await Promise.all([
-    supabase.from('sales_orders').select('total_amount').gte('created_at', today).eq('status', 'delivered'),
-    supabase.from('sales_orders').select('total_amount').gte('created_at', monthStart).eq('status', 'delivered'),
-    pendingCount,
-    supabase.from('sales_orders').select('id', { count: 'exact', head: true }).gte('created_at', today).eq('status', 'delivered'),
-  ])
-
-  for (const result of [todayOrders, monthOrders, pendingOrders, deliveredToday]) {
-    if (result.error) throw result.error
-  }
-
-  const todayRevenue = (todayOrders.data || []).reduce((s, o) => s + (o.total_amount || 0), 0)
-  const monthRevenue = (monthOrders.data || []).reduce((s, o) => s + (o.total_amount || 0), 0)
-
-  return {
-    todayRevenue,
-    monthRevenue,
-    pendingOrders: pendingOrders.count ?? 0,
-    deliveredToday: deliveredToday.count ?? 0,
-  }
+  const { data, error } = await supabase.rpc('get_dashboard_sales_metrics', {
+    p_today: today, p_month_start: monthStart,
+  })
+  if (error) throw error
+  if (!data) throw new Error('Dashboard sales response is missing')
+  return data as SalesStats
 }
 
 function MetricValue({ loading, children }: { loading?: boolean; children: ReactNode }) {
@@ -126,7 +69,7 @@ export default function DashboardPage() {
 
   const { data: overview, isLoading: loadingOverview, isError: overviewError, isFetching: fetchingOverview, refetch: refetchOverview } = useQuery({
     queryKey: ['dashboard-overview', profile?.id, permissionKey],
-    queryFn: context => fetchOverviewStats(pendingSalesCount(context)),
+    queryFn: fetchOverviewStats,
     enabled: !!profile?.id,
     staleTime: 60_000,
     retry: false,
@@ -138,7 +81,7 @@ export default function DashboardPage() {
 
   const { data: salesStats, isLoading: loadingSales, isError: salesError, isFetching: fetchingSales, refetch: refetchSales } = useQuery({
     queryKey: ['dashboard-sales', profile?.id, permissionKey],
-    queryFn: context => fetchSalesStats(pendingSalesCount(context)),
+    queryFn: fetchSalesStats,
     enabled: !!profile?.id && canViewSales,
     staleTime: 60_000,
     retry: false,
