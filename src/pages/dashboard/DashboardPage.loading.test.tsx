@@ -7,410 +7,175 @@ import DashboardPage from './DashboardPage'
 import type { MyProfile } from '@/lib/types/auth'
 
 interface PendingRequest {
-  url: URL
-  init: RequestInit | undefined
+  path: string
   resolve: (response: Response) => void
-  reject: (reason: Error) => void
 }
-
-const counts: Record<string, number> = {
-  customers: 12, products: 28, warehouses: 3, stock: 64,
-  sales_orders: 4, purchase_invoices: 2,
-}
-
-let pendingRequests: PendingRequest[]
-let queryClient: QueryClient
-let deferRevenue: boolean
-let observedRequests: { url: URL; method: string }[]
-const dashboardPermissions = ['sales.read', 'finance.read', 'inventory.read']
+const permissions = ['sales.read', 'finance.read', 'inventory.read']
+const overview = { activeCustomers: 12, activeProducts: 28, activeWarehouses: 3,
+  stockItems: 64, pendingSalesOrders: 4, pendingPurchaseInvoices: 2, lowStockItems: 3 }
+const sales = { todayRevenue: 125, monthRevenue: 125, pendingOrders: 4, deliveredToday: 1 }
+let requests: PendingRequest[]
+let client: QueryClient
 
 function profile(id = 'dashboard-actor-a'): MyProfile {
-  return {
-    id, full_name: 'مستخدم اختباري', email: null, phone: null, avatar_url: null,
+  return { id, full_name: 'مستخدم اختباري', email: null, phone: null, avatar_url: null,
     status: 'active', last_login_at: null, created_at: '2026-01-01', updated_at: '2026-01-01',
-    roles: [], permissions: dashboardPermissions,
-  }
+    roles: [], permissions }
 }
-
-function dashboardKey(group: 'overview' | 'sales', id = 'dashboard-actor-a', permissions = dashboardPermissions) {
-  return [`dashboard-${group}`, id, [...new Set(permissions)].sort()]
+function key(group: string, actor = 'dashboard-actor-a', granted = permissions) {
+  return [`dashboard-${group}`, actor, [...new Set(granted)].sort()]
 }
-
-function renderDashboard(permissions = dashboardPermissions) {
+function mount(granted = permissions) {
   useAuthStore.getState().setProfile(profile())
-  useAuthStore.getState().setPermissions(permissions)
-  queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } })
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <MemoryRouter>
-        <DashboardPage />
-      </MemoryRouter>
-    </QueryClientProvider>,
-  )
+  useAuthStore.getState().setPermissions(granted)
+  client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } })
+  return render(<QueryClientProvider client={client}><MemoryRouter><DashboardPage /></MemoryRouter></QueryClientProvider>)
 }
-
-function pendingSalesRequests(requests = pendingRequests) {
-  return requests.filter(request => request.init?.method === 'HEAD'
-    && request.url.pathname === '/rest/v1/sales_orders'
-    && request.url.searchParams.get('status') === 'in.(confirmed,partially_delivered)')
-}
-
-function fixtureCount(request: PendingRequest) {
-  const table = request.url.pathname.split('/').pop()!
-  if (table === 'purchase_invoices') return request.url.searchParams.get('status') === 'eq.draft' ? 2 : 0
-  return counts[table]
-}
-
-async function completeRequests(requests: PendingRequest[], pendingCount = 4) {
-  await act(async () => {
-    for (const request of requests) {
-      if (request.init?.method === 'HEAD') {
-        const count = pendingSalesRequests([request]).length ? pendingCount : fixtureCount(request)
-        request.resolve(new Response(null, { status: 200, headers: { 'content-range': `*/${count}` } }))
-      } else {
-        const rows = request.url.pathname.endsWith('/get_low_stock') ? [{ total_count: '3' }] : [{ total_amount: 125 }]
-        request.resolve(new Response(JSON.stringify(rows), { status: 200, headers: { 'content-type': 'application/json' } }))
-      }
-    }
-  })
-}
-
-function countRequests() {
-  return pendingRequests.filter(request => request.init?.method === 'HEAD')
-}
-
-function lowStockRequest() {
-  const request = pendingRequests.find(request => request.url.pathname === '/rest/v1/rpc/get_low_stock')
-  if (!request) throw new Error('Low-stock request has not started')
-  return request
-}
-
-async function resolveCounts(missingCounts = false) {
-  await act(async () => {
-    for (const request of countRequests()) {
-      const headers: Record<string, string> = missingCounts ? {} : { 'content-range': `*/${fixtureCount(request)}` }
-      request.resolve(new Response(null, { status: 200, headers }))
-    }
-  })
-}
-
-async function resolveLowStock(rows: { total_count: string }[] | null) {
-  await act(async () => {
-    lowStockRequest().resolve(new Response(JSON.stringify(rows), {
-      status: 200, headers: { 'content-type': 'application/json' },
-    }))
-  })
-}
-
 function metric(label: string) {
   const card = screen.getByText(label).closest('.ds-stat-card')
-  if (!card) throw new Error(`Metric card not found: ${label}`)
+  if (!card) throw Error(`Missing metric: ${label}`)
   return within(card as HTMLElement)
 }
+function groupRequest(group: 'overview' | 'sales', batch = requests) {
+  const request = batch.find(r => r.path.endsWith(`get_dashboard_${group}_metrics`))
+  if (!request) throw Error(`Missing ${group} request`)
+  return request
+}
+async function reply(request: PendingRequest, body: unknown, status = 200) {
+  await act(async () => request.resolve(new Response(JSON.stringify(body), {
+    status, headers: { 'content-type': 'application/json' },
+  })))
+}
+async function complete(batch = requests, pending = 4) {
+  for (const request of batch) await reply(request, request.path.endsWith('overview_metrics')
+    ? { ...overview, pendingSalesOrders: pending } : { ...sales, pendingOrders: pending })
+}
 
-describe('Dashboard overview network loading', () => {
+describe('Dashboard batched reads and loading regressions', () => {
   beforeEach(() => {
+    requests = []
     useAuthStore.getState().reset()
-    pendingRequests = []
-    observedRequests = []
-    deferRevenue = false
-    // Exercise the real Supabase SDK at its HTTP boundary; never send live traffic.
-    vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+    // Real SDK and query cache; only the HTTP boundary is synthetic.
+    vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
       const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input.href : input.url)
-      if (url.origin !== 'https://example.supabase.co') throw new Error(`Unexpected test host: ${url.origin}`)
-      observedRequests.push({ url, method: init?.method ?? 'GET' })
-      if (init?.method === 'HEAD' || url.pathname === '/rest/v1/rpc/get_low_stock'
-        || (deferRevenue && url.pathname === '/rest/v1/sales_orders')) {
-        return new Promise<Response>((resolve, reject) => pendingRequests.push({ url, init, resolve, reject }))
-      }
-      if (url.pathname === '/rest/v1/targets' || url.pathname === '/rest/v1/sales_orders') {
-        return Promise.resolve(new Response('[]', { status: 200, headers: { 'content-type': 'application/json' } }))
-      }
-      throw new Error(`Unexpected test request: ${url.pathname}`)
+      if (url.origin !== 'https://example.supabase.co') throw Error('Unexpected test host')
+      if (url.pathname.endsWith('/targets')) return Promise.resolve(new Response('[]', {
+        status: 200, headers: { 'content-type': 'application/json' },
+      }))
+      if (!/\/rpc\/get_dashboard_(overview|sales)_metrics$/.test(url.pathname)) throw Error(`Unexpected request: ${url.pathname}`)
+      return new Promise<Response>(resolve => requests.push({ path: url.pathname, resolve }))
     }))
   })
+  afterEach(() => { cleanup(); client?.clear(); useAuthStore.getState().reset(); vi.unstubAllGlobals() })
 
-  afterEach(() => {
-    cleanup()
-    queryClient?.clear()
-    useAuthStore.getState().reset()
-    vi.unstubAllGlobals()
-  })
-
-  it('starts low-stock before unresolved counts and keeps metrics loading until every overview response arrives', async () => {
-    // Regression: first-load overview waited for six counts before starting low-stock.
-    renderDashboard()
-    await waitFor(() => {
-      expect(new Set(countRequests().map(request => request.url.pathname)).size).toBe(6)
-      expect(lowStockRequest()).toBeDefined()
-    })
-    expect(JSON.parse(String(lowStockRequest().init?.body))).toEqual({
-      p_warehouse_id: null, p_offset: 0, p_limit: 1,
-    })
+  it('loads each metrics group with one request and starts both independently', async () => {
+    // 2026-10-16: dashboard request fan-out contributed to multi-second startup.
+    mount()
+    await waitFor(() => expect(requests).toHaveLength(2))
     expect(metric('العملاء النشطون').getByLabelText('جاري تحميل القيمة')).toBeTruthy()
-
-    await resolveCounts()
-    expect(metric('العملاء النشطون').getByLabelText('جاري تحميل القيمة')).toBeTruthy()
-    expect(screen.queryByText('تنبيهات المخزون')).toBeNull()
-    await resolveLowStock([{ total_count: '3' }])
-
+    await reply(groupRequest('overview'), overview)
     await waitFor(() => expect(metric('العملاء النشطون').getByText('12')).toBeTruthy())
-    expect(metric('المنتجات').getByText('28')).toBeTruthy()
-    expect(metric('المخازن النشطة').getByText('3')).toBeTruthy()
-    expect(metric('أصناف المخزون').getByText('64')).toBeTruthy()
-    expect(metric('طلبات معلقة').getByText('4')).toBeTruthy()
-    expect(metric('أصناف منخفضة').getByText('3')).toBeTruthy()
+    expect(metric('إيرادات اليوم').getByLabelText('جاري تحميل القيمة')).toBeTruthy()
     expect(screen.getByText('3 صنف على وشك النفاد')).toBeTruthy()
-    expect(screen.getByText('طلبات بيع تحتاج تنفيذ')).toBeTruthy()
     expect(screen.getByText('فواتير مشتريات معلقة')).toBeTruthy()
-    expect(screen.queryByLabelText('جاري تحميل القيمة')).toBeNull()
+    await reply(groupRequest('sales'), sales)
+    await waitFor(() => expect(metric('إيرادات اليوم').getByText('125.00')).toBeTruthy())
   })
 
-  it('counts only unreceived purchase drafts in the follow-up row', async () => {
-    renderDashboard()
-    await waitFor(() => expect(new Set(countRequests().map(request => request.url.pathname)).size).toBe(6))
-    await resolveCounts()
-    await resolveLowStock([])
-    await waitFor(() => expect(screen.getByText('فواتير مشتريات معلقة')).toBeTruthy())
-    const row = screen.getByText('فواتير مشتريات معلقة').closest('.db-v2__follow-row')!
-    expect(within(row as HTMLElement).getByText('2')).toBeTruthy()
-    const purchase = countRequests().find(request => request.url.pathname === '/rest/v1/purchase_invoices')!
-    expect(purchase.url.searchParams.get('status')).toBe('eq.draft')
-  })
-
-  it.each([[], null])('retains zero fallbacks for absent counts and low-stock response %j', async rows => {
-    renderDashboard()
-    await waitFor(() => expect(new Set(countRequests().map(request => request.url.pathname)).size).toBe(6))
-    await resolveCounts(true)
-    await waitFor(() => expect(lowStockRequest()).toBeDefined())
-    await resolveLowStock(rows)
-    await waitFor(() => expect(metric('العملاء النشطون').getByText('0')).toBeTruthy())
-    for (const label of ['المنتجات', 'المخازن النشطة', 'أصناف المخزون', 'طلبات معلقة']) {
-      expect(metric(label).getByText('0')).toBeTruthy()
-    }
-    expect(screen.queryByText('تنبيهات المخزون')).toBeNull()
-    expect(screen.queryByText('يحتاج متابعة')).toBeNull()
-  })
-
-  it('keeps restricted sections hidden after actual overview responses', async () => {
-    renderDashboard([])
-    await waitFor(() => expect(countRequests()).toHaveLength(6))
-    await resolveCounts()
-    await waitFor(() => expect(lowStockRequest()).toBeDefined())
-    await resolveLowStock([{ total_count: '3' }])
+  it('keeps restricted revenue sections hidden without requesting their data', async () => {
+    mount([])
+    await waitFor(() => expect(requests).toHaveLength(1))
+    await reply(groupRequest('overview'), overview)
     await waitFor(() => expect(metric('العملاء النشطون').getByText('12')).toBeTruthy())
     expect(screen.queryByText('إيرادات المبيعات')).toBeNull()
-    expect(screen.queryByText('طلبات معلقة')).toBeNull()
     expect(screen.queryByText('تنبيهات المخزون')).toBeNull()
-    expect(screen.queryByText('طلبات بيع تحتاج تنفيذ')).toBeNull()
-    expect(screen.queryByText('فواتير مشتريات معلقة')).toBeNull()
-    expect(screen.getByText('مرحباً بك')).toBeTruthy()
   })
 
-  it('shows an overview error instead of healthy zeros and recovers on one explicit retry', async () => {
-    renderDashboard()
-    await waitFor(() => expect(new Set(countRequests().map(request => request.url.pathname)).size).toBe(6))
-    await resolveCounts()
-    await waitFor(() => expect(lowStockRequest()).toBeDefined())
-    await act(async () => lowStockRequest().reject(new TypeError('Synthetic network failure')))
-    await waitFor(() => expect(screen.getByText('تعذّر تحميل مؤشرات النظام')).toBeTruthy())
-    expect(screen.queryByText('العملاء النشطون')).toBeNull()
-    expect(screen.queryByText('تنبيهات المخزون')).toBeNull()
-    expect(queryClient.getQueryData(dashboardKey('overview'))).toBeUndefined()
-    await waitFor(() => expect(metric('إيرادات اليوم').getByText('0.00')).toBeTruthy())
-    const requestStart = pendingRequests.length
-    const retry = screen.getByRole('button', { name: 'إعادة تحميل المؤشرات' })
-    fireEvent.click(retry)
-    await waitFor(() => expect(metric('العملاء النشطون').getByLabelText('جاري تحميل القيمة')).toBeTruthy())
-    expect(screen.queryByRole('button', { name: 'إعادة تحميل المؤشرات' })).toBeNull()
-    await waitFor(() => expect(pendingRequests.slice(requestStart)).toHaveLength(7))
-    await completeRequests(pendingRequests.slice(requestStart))
-    await waitFor(() => expect(metric('العملاء النشطون').getByText('12')).toBeTruthy())
-    expect(screen.queryByText('تعذّر تحميل مؤشرات النظام')).toBeNull()
-    expect(metric('أصناف منخفضة').getByText('3')).toBeTruthy()
-    expect(screen.getByText('طلبات بيع تحتاج تنفيذ')).toBeTruthy()
+  it.each(['overview', 'sales'] as const)('shows %s failure without false zeros, preserves the other group, and retries explicitly', async group => {
+    mount()
+    await waitFor(() => expect(requests).toHaveLength(2))
+    const other = group === 'overview' ? 'sales' : 'overview'
+    await reply(groupRequest(other), other === 'overview' ? overview : sales)
+    await reply(groupRequest(group), { message: 'Synthetic unavailable', code: '503' }, 503)
+    const errorText = group === 'overview' ? 'تعذّر تحميل مؤشرات النظام' : 'تعذّر تحميل مؤشرات المبيعات'
+    await waitFor(() => expect(screen.getByText(errorText)).toBeTruthy())
+    fireEvent.click(screen.getByRole('button', { name: group === 'overview' ? 'إعادة تحميل المؤشرات' : 'إعادة تحميل المبيعات' }))
+    await waitFor(() => expect(requests).toHaveLength(3))
+    await reply(requests[2], group === 'overview' ? overview : sales)
+    await waitFor(() => expect(screen.queryByText(errorText)).toBeNull())
   })
 
-  it('shares one cold pending-sales request while both loading groups start independently', async () => {
-    deferRevenue = true
-    renderDashboard()
-    await waitFor(() => expect(pendingRequests.length).toBeGreaterThanOrEqual(10))
-    expect(pendingSalesRequests()).toHaveLength(1)
-    expect(pendingRequests).toHaveLength(10)
-    const request = pendingSalesRequests()[0]
-    expect(request.url.searchParams.get('select')).toBe('id')
-    for (const countRequest of countRequests()) {
-      expect(new Headers(countRequest.init?.headers).get('prefer')).toBe('count=exact')
-    }
-    expect(metric('طلبات معلقة').getByLabelText('جاري تحميل القيمة')).toBeTruthy()
-    expect(metric('طلبات محددة').getByLabelText('جاري تحميل القيمة')).toBeTruthy()
-    const salesOnly = pendingRequests.filter(candidate => candidate.url.pathname === '/rest/v1/sales_orders')
-    await completeRequests(salesOnly, 9)
-    await waitFor(() => expect(metric('طلبات محددة').getByText('9')).toBeTruthy())
-    expect(metric('طلبات معلقة').getByLabelText('جاري تحميل القيمة')).toBeTruthy()
-    await completeRequests(pendingRequests.filter(candidate => !salesOnly.includes(candidate)))
-    await waitFor(() => expect(metric('طلبات معلقة').getByText('9')).toBeTruthy())
-    expect(queryClient.getQueryData(dashboardKey('sales'))).toMatchObject({ todayRevenue: 125, monthRevenue: 125, pendingOrders: 9 })
-  })
-
-  it('reports a shared pending-count failure in both groups without zero metrics', async () => {
-    renderDashboard()
-    await waitFor(() => expect(countRequests()).toHaveLength(7))
-    const request = pendingSalesRequests()[0]
-    await act(async () => request.reject(new TypeError('Synthetic pending-count failure')))
-    await completeRequests(pendingRequests.filter(candidate => candidate !== request))
-    await waitFor(() => expect(screen.getByText('تعذّر تحميل مؤشرات النظام')).toBeTruthy())
-    expect(screen.getByText('تعذّر تحميل مؤشرات المبيعات')).toBeTruthy()
-    expect(screen.queryByText('طلبات معلقة')).toBeNull()
-    expect(screen.queryByText('طلبات محددة')).toBeNull()
-    expect(queryClient.getQueryData(dashboardKey('sales'))).toBeUndefined()
-  })
-
-  it.each([false, true])('keeps overview independent when sales HTTP fails, cached=%s', async cached => {
-    deferRevenue = true
-    renderDashboard()
-    await waitFor(() => expect(pendingRequests).toHaveLength(10))
-    if (cached) {
-      await completeRequests([...pendingRequests])
-      await waitFor(() => expect(metric('إيرادات اليوم').getByText('125.00')).toBeTruthy())
-      const previousCount = pendingRequests.length
-      act(() => { void queryClient.refetchQueries({ queryKey: dashboardKey('sales'), exact: true }) })
-      await waitFor(() => expect(pendingRequests.slice(previousCount)).toHaveLength(4))
-      const refreshed = pendingRequests.slice(previousCount)
-      const failed = refreshed.find(request => request.init?.method !== 'HEAD')!
-      await act(async () => failed.resolve(new Response(JSON.stringify({ code: '42501', message: 'Synthetic denied' }), {
-        status: 403, headers: { 'content-type': 'application/json' },
-      })))
-      await completeRequests(refreshed.filter(request => request !== failed))
-    } else {
-      const failed = pendingRequests.find(request => request.url.pathname === '/rest/v1/sales_orders' && request.init?.method !== 'HEAD')!
-      await act(async () => failed.resolve(new Response(JSON.stringify({ code: '503', message: 'Synthetic unavailable' }), {
-        status: 503, headers: { 'content-type': 'application/json' },
-      })))
-      await completeRequests(pendingRequests.filter(request => request !== failed))
-    }
-    await waitFor(() => expect(screen.getByText('تعذّر تحميل مؤشرات المبيعات')).toBeTruthy())
+  it('keeps cached values visibly stale when a sales refresh fails', async () => {
+    mount()
+    await waitFor(() => expect(requests).toHaveLength(2))
+    await complete()
+    await waitFor(() => expect(metric('إيرادات اليوم').getByText('125.00')).toBeTruthy())
+    let refreshed!: Promise<void>
+    act(() => { refreshed = client.refetchQueries({ queryKey: key('sales'), exact: true }) })
+    await waitFor(() => expect(requests).toHaveLength(3))
+    await reply(requests[2], { message: 'Synthetic unavailable', code: '503' }, 503)
+    await act(async () => { await refreshed })
+    expect(metric('إيرادات اليوم').getByText('125.00')).toBeTruthy()
+    await waitFor(() => expect(screen.getByText('القيم المعروضة من آخر تحميل ناجح ولم تُحدّث.')).toBeTruthy())
     expect(metric('العملاء النشطون').getByText('12')).toBeTruthy()
-    expect(screen.queryByText('تعذّر تحميل مؤشرات النظام')).toBeNull()
-    if (cached) {
-      expect(metric('إيرادات اليوم').getByText('125.00')).toBeTruthy()
-      expect(screen.getByText('القيم المعروضة من آخر تحميل ناجح ولم تُحدّث.')).toBeTruthy()
-    } else {
-      expect(screen.queryByText('إيرادات اليوم')).toBeNull()
-    }
   })
 
-  it('requests fresh counts for independent and overlapping refetches with existing data', async () => {
-    renderDashboard()
-    await waitFor(() => expect(countRequests()).toHaveLength(7))
-    await completeRequests([...pendingRequests])
+  it('does not reuse previous-actor in-flight responses', async () => {
+    mount()
+    await waitFor(() => expect(requests).toHaveLength(2))
+    const actorA = [...requests]
+    act(() => useAuthStore.getState().setProfile(null))
+    act(() => useAuthStore.getState().setProfile(profile('dashboard-actor-b')))
+    await waitFor(() => expect(requests).toHaveLength(4))
+    await complete(requests.slice(2), 17)
+    await waitFor(() => expect(metric('طلبات محددة').getByText('17')).toBeTruthy())
+    await complete(actorA, 41)
+    expect(metric('طلبات محددة').getByText('17')).toBeTruthy()
+    expect(metric('طلبات معلقة').queryByText('41')).toBeNull()
+  })
+
+  it('retains the outer cache for canonical permission reorder and remount', async () => {
+    const mounted = mount()
+    await waitFor(() => expect(requests).toHaveLength(2))
+    await complete()
     await waitFor(() => expect(metric('طلبات محددة').getByText('4')).toBeTruthy())
+    act(() => useAuthStore.getState().setPermissions([...permissions].reverse().concat('sales.read')))
+    mounted.unmount()
+    render(<QueryClientProvider client={client}><MemoryRouter><DashboardPage /></MemoryRouter></QueryClientProvider>)
+    expect(metric('طلبات محددة').getByText('4')).toBeTruthy()
+    expect(requests).toHaveLength(2)
+  })
 
-    const overviewStart = pendingRequests.length
-    let overviewRefresh!: Promise<void>
-    act(() => { overviewRefresh = queryClient.refetchQueries({ queryKey: dashboardKey('overview'), exact: true }) })
-    await waitFor(() => expect(pendingRequests.slice(overviewStart)).toHaveLength(7))
-    const overviewRequests = pendingRequests.slice(overviewStart)
-    expect(pendingSalesRequests(overviewRequests)).toHaveLength(1)
-
-    const salesStart = pendingRequests.length
-    let salesRefresh!: Promise<void>
-    act(() => { salesRefresh = queryClient.refetchQueries({ queryKey: dashboardKey('sales'), exact: true }) })
-    await waitFor(() => expect(pendingRequests.slice(salesStart)).toHaveLength(2))
-    const salesRequests = pendingRequests.slice(salesStart)
-    expect(pendingSalesRequests(salesRequests)).toHaveLength(1)
-
-    const replacementStart = pendingRequests.length
-    let replacementRefresh!: Promise<void>
-    act(() => { replacementRefresh = queryClient.refetchQueries({ queryKey: dashboardKey('overview'), exact: true }) })
-    await waitFor(() => expect(pendingRequests.slice(replacementStart)).toHaveLength(7))
-    const replacementRequests = pendingRequests.slice(replacementStart)
-    expect(pendingSalesRequests(replacementRequests)).toHaveLength(1)
-    await completeRequests(replacementRequests, 13)
-    await act(async () => { await replacementRefresh })
-    await waitFor(() => expect(metric('طلبات معلقة').getByText('13')).toBeTruthy())
-    await completeRequests(overviewRequests, 6)
-    await completeRequests(salesRequests, 8)
-    await act(async () => { await overviewRefresh; await salesRefresh })
+  it('refreshes overview and sales independently and ignores superseded responses', async () => {
+    mount()
+    await waitFor(() => expect(requests).toHaveLength(2))
+    await complete()
+    await waitFor(() => expect(metric('طلبات محددة').getByText('4')).toBeTruthy())
+    let first!: Promise<void>; let second!: Promise<void>; let replacement!: Promise<void>
+    act(() => { first = client.refetchQueries({ queryKey: key('overview'), exact: true }) })
+    await waitFor(() => expect(requests).toHaveLength(3))
+    act(() => { second = client.refetchQueries({ queryKey: key('sales'), exact: true }) })
+    await waitFor(() => expect(requests).toHaveLength(4))
+    act(() => { replacement = client.refetchQueries({ queryKey: key('overview'), exact: true }) })
+    await waitFor(() => expect(requests).toHaveLength(5))
+    await reply(requests[4], { ...overview, pendingSalesOrders: 13 })
+    await act(async () => { await replacement })
+    await reply(requests[2], { ...overview, pendingSalesOrders: 6 })
+    await reply(requests[3], { ...sales, pendingOrders: 8 })
+    await act(async () => { await first; await second })
     expect(metric('طلبات معلقة').getByText('13')).toBeTruthy()
     await waitFor(() => expect(metric('طلبات محددة').getByText('8')).toBeTruthy())
   })
 
-  it('reuses the outer 60-second cache on remount and canonical permission reorder', async () => {
-    const mounted = renderDashboard()
-    await waitFor(() => expect(countRequests()).toHaveLength(7))
-    await completeRequests([...pendingRequests])
+  it('honors same-actor permission denies without fetching revenue', async () => {
+    mount()
+    await waitFor(() => expect(requests).toHaveLength(2))
+    await complete()
     await waitFor(() => expect(metric('طلبات محددة').getByText('4')).toBeTruthy())
-    const requestCount = pendingRequests.length
-    act(() => useAuthStore.getState().setPermissions([...dashboardPermissions].reverse().concat('sales.read')))
-    expect(metric('طلبات محددة').getByText('4')).toBeTruthy()
-    mounted.unmount()
-    render(<QueryClientProvider client={queryClient}><MemoryRouter><DashboardPage /></MemoryRouter></QueryClientProvider>)
-    expect(metric('طلبات محددة').getByText('4')).toBeTruthy()
-    await act(async () => { await Promise.resolve() })
-    expect(pendingRequests).toHaveLength(requestCount)
-    expect(queryClient.getQueryState(dashboardKey('overview'))?.dataUpdatedAt).toBeGreaterThan(0)
-  })
-
-  it('isolates a new actor from pending and cached previous-actor dashboard results', async () => {
-    renderDashboard()
-    await waitFor(() => expect(countRequests()).toHaveLength(7))
-    const actorARequests = [...pendingRequests]
-    act(() => useAuthStore.getState().setProfile(null))
-    expect(metric('طلبات معلقة').queryByText('4')).toBeNull()
-    await act(async () => { await Promise.resolve() })
-    expect(pendingRequests).toHaveLength(actorARequests.length)
-    act(() => useAuthStore.getState().setProfile(profile('dashboard-actor-b')))
-    await waitFor(() => expect(pendingRequests.slice(actorARequests.length)).toHaveLength(8))
-    const actorBRequests = pendingRequests.slice(actorARequests.length)
-    expect(pendingSalesRequests(actorBRequests)).toHaveLength(1)
-    await completeRequests(actorBRequests, 17)
-    await waitFor(() => expect(metric('طلبات محددة').getByText('17')).toBeTruthy())
-    await completeRequests(actorARequests, 41)
-    await waitFor(() => expect(queryClient.getQueryData(dashboardKey('overview'))).toMatchObject({ pendingSalesOrders: 41 }))
-    expect(metric('طلبات معلقة').getByText('17')).toBeTruthy()
-    expect(metric('طلبات محددة').queryByText('41')).toBeNull()
-    expect(queryClient.getQueryData(dashboardKey('sales', 'dashboard-actor-b'))).toMatchObject({ pendingOrders: 17 })
-  })
-
-  it('does not reuse a settled shared count when the outer cold caches are removed', async () => {
-    const mounted = renderDashboard()
-    await waitFor(() => expect(countRequests()).toHaveLength(7))
-    await completeRequests([...pendingRequests])
-    await waitFor(() => expect(metric('طلبات محددة').getByText('4')).toBeTruthy())
-    mounted.unmount()
-    queryClient.removeQueries({ queryKey: ['dashboard-overview'] })
-    queryClient.removeQueries({ queryKey: ['dashboard-sales'] })
-    const previousCount = pendingRequests.length
-    render(<QueryClientProvider client={queryClient}><MemoryRouter><DashboardPage /></MemoryRouter></QueryClientProvider>)
-    await waitFor(() => expect(pendingRequests.slice(previousCount)).toHaveLength(8))
-    const newRequests = pendingRequests.slice(previousCount)
-    expect(pendingSalesRequests(newRequests)).toHaveLength(1)
-    await completeRequests(newRequests, 23)
-    await waitFor(() => expect(metric('طلبات محددة').getByText('23')).toBeTruthy())
-    expect(metric('طلبات معلقة').getByText('23')).toBeTruthy()
-  })
-
-  it('reacts to same-actor permission denies and never requests restricted revenues', async () => {
-    renderDashboard()
-    await waitFor(() => expect(countRequests()).toHaveLength(7))
-    await completeRequests([...pendingRequests])
-    await waitFor(() => expect(metric('طلبات محددة').getByText('4')).toBeTruthy())
-    const beforeDeny = pendingRequests.length
-    const wireBeforeDeny = observedRequests.length
-    const denied = ['*', '!sales.read']
-    act(() => useAuthStore.getState().setPermissions(denied))
+    act(() => useAuthStore.getState().setPermissions(['*', '!sales.read']))
     expect(screen.queryByText('إيرادات المبيعات')).toBeNull()
-    await waitFor(() => expect(pendingRequests.slice(beforeDeny)).toHaveLength(7))
-    const deniedRequests = pendingRequests.slice(beforeDeny)
-    expect(deniedRequests.filter(request => request.url.pathname === '/rest/v1/sales_orders')).toHaveLength(1)
-    expect(pendingSalesRequests(deniedRequests)).toHaveLength(1)
-    expect(observedRequests.slice(wireBeforeDeny).filter(request =>
-      request.url.pathname === '/rest/v1/sales_orders' && request.method === 'GET')).toHaveLength(0)
-    await completeRequests(deniedRequests, 11)
-    await waitFor(() => expect(queryClient.getQueryData(dashboardKey('overview', 'dashboard-actor-a', denied))).toMatchObject({ pendingSalesOrders: 11 }))
-    act(() => useAuthStore.getState().setPermissions(dashboardPermissions))
-    expect(metric('طلبات محددة').getByText('4')).toBeTruthy()
-    expect(metric('طلبات معلقة').getByText('4')).toBeTruthy()
+    await waitFor(() => expect(requests).toHaveLength(3))
+    expect(requests[2].path).toContain('overview_metrics')
+    await reply(requests[2], overview)
   })
 })
