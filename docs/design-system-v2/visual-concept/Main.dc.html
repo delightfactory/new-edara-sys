@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>التشخيص والمبادئ</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0F6E7A}a:hover{color:#0B5560}
+</style>
+</helmet>
+<div dir="rtl" style="width: 1440px; height: 1720px; box-sizing: border-box; background: #F3F5F7; font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif; color: #0F1A23; display: flex; flex-direction: column">
+
+  <header style="background: #0D1B24; color: #FFFFFF; padding: 72px 96px 64px; display: flex; flex-direction: column; gap: 28px">
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <div style="display: flex; align-items: center; gap: 14px">
+        <div style="width: 44px; height: 44px; border-radius: 10px; background: {{brand}}; display: flex; align-items: center; justify-content: center">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10l8-6 8 6v10"></path><path d="M9 20v-6h6v6"></path></svg>
+        </div>
+        <div style="display: flex; flex-direction: column">
+          <span style="font-size: 20px; font-weight: 700; letter-spacing: 0">إدارة</span>
+          <span style="font-size: 12px; color: #A9B8C0">EDARA · Enterprise Suite</span>
+        </div>
+      </div>
+      <span style="font-size: 13px; color: #A9B8C0; border: 1px solid #2A3B46; padding: 6px 12px; border-radius: 999px">الإصدار 2.0 · مسودة تصميم</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 14px; max-width: 980px">
+      <h1 style="margin: 0; font-size: 52px; line-height: 1.25; font-weight: 700">نظام تصميم موحّد لمنصة إدارة قابلة لإعادة البيع</h1>
+      <p style="margin: 0; font-size: 19px; line-height: 1.8; color: #C7D2D8">تصور مؤسسي جديد للهوية، والمكونات، والنماذج، وهيكل التطبيق — مبني على فحص فعلي لشفرة المشروع الحالية (154 صفحة، 87 وجهة تنقل، 12 مجموعة قوائم)، ومصمم ليُعاد تلوينه وتسميته لكل عميل دون لمس الشفرة.</p>
+    </div>
+  </header>
+
+  <section style="padding: 56px 96px 0; display: flex; flex-direction: column; gap: 24px">
+    <div style="display: flex; align-items: baseline; justify-content: space-between">
+      <h2 style="margin: 0; font-size: 28px; font-weight: 700">تشخيص الواجهة الحالية</h2>
+      <span style="font-size: 14px; color: #5B6875">أرقام مستخرجة من مجلد src/ بتاريخ 23 أكتوبر 2026</span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px">
+      <sc-for list="{{metrics}}" as="m" hint-placeholder-count="8">
+        <div style="background: #FFFFFF; border: 1px solid #E7EBEF; border-radius: 10px; padding: 22px 24px; display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 36px; font-weight: 700; color: #0F1A23; font-variant-numeric: tabular-nums">{{m.value}}</span>
+          <span style="font-size: 15px; font-weight: 600; color: #0F1A23">{{m.label}}</span>
+          <span style="font-size: 13px; line-height: 1.6; color: #5B6875">{{m.note}}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+      <div style="background: #FFFFFF; border: 1px solid #E7EBEF; border-radius: 10px; padding: 24px; display: flex; flex-direction: column; gap: 10px">
+        <span style="font-size: 13px; font-weight: 600; color: #B42318">الهوية</span>
+        <p style="margin: 0; font-size: 15px; line-height: 1.8; color: #33404C">خط Cairo مع الأزرق الافتراضي لـ Tailwind ‎#2563EB — مظهر عام لا يميّز المنتج ولا يمكن تخصيصه لكل عميل. الوضع الداكن يعيد تعريف جزء من الرموز فقط.</p>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E7EBEF; border-radius: 10px; padding: 24px; display: flex; flex-direction: column; gap: 10px">
+        <span style="font-size: 13px; font-weight: 600; color: #B42318">المكونات</span>
+        <p style="margin: 0; font-size: 15px; line-height: 1.8; color: #33404C">نسختان من الشريط الجانبي ومن StatCard، وطبقتا CSS متراكبتان (components.css بـ 902 سطر + ستة ملفات design-system-v2). الصفحات تبني الأزرار والجداول يدويًا بدل المكونات.</p>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E7EBEF; border-radius: 10px; padding: 24px; display: flex; flex-direction: column; gap: 10px">
+        <span style="font-size: 13px; font-weight: 600; color: #B42318">النماذج والتخطيط</span>
+        <p style="margin: 0; font-size: 15px; line-height: 1.8; color: #33404C">نموذج طلب البيع وحده 1,859 سطرًا و139 تنسيقًا مضمّنًا. شجرة تنقل واحدة تحمل 87 وجهة في 12 مجموعة، بلا بحث شامل أو أوامر سريعة.</p>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding: 56px 96px 0; display: flex; flex-direction: column; gap: 24px">
+    <h2 style="margin: 0; font-size: 28px; font-weight: 700">مبادئ التصميم الجديد</h2>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+      <sc-for list="{{principles}}" as="p" hint-placeholder-count="6">
+        <div style="background: #FFFFFF; border: 1px solid #E7EBEF; border-radius: 10px; padding: 24px; display: flex; gap: 16px; align-items: flex-start">
+          <span style="flex: none; width: 36px; height: 36px; border-radius: 8px; background: {{brandSoft}}; color: {{brand}}; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums">{{p.n}}</span>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 17px; font-weight: 700">{{p.title}}</span>
+            <span style="font-size: 14px; line-height: 1.75; color: #5B6875">{{p.body}}</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="padding: 56px 96px 72px; display: flex; flex-direction: column; gap: 24px">
+    <h2 style="margin: 0; font-size: 28px; font-weight: 700">خطة الانتقال</h2>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; background: #FFFFFF; border: 1px solid #E7EBEF; border-radius: 10px; overflow: hidden">
+      <sc-for list="{{phases}}" as="ph" hint-placeholder-count="4">
+        <div style="padding: 24px; display: flex; flex-direction: column; gap: 10px; border-inline-start: 1px solid #E7EBEF">
+          <div style="display: flex; align-items: center; gap: 10px">
+            <span style="width: 28px; height: 28px; border-radius: 999px; background: {{brand}}; color: #FFFFFF; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center">{{ph.n}}</span>
+            <span style="font-size: 16px; font-weight: 700">{{ph.title}}</span>
+          </div>
+          <span style="font-size: 14px; line-height: 1.75; color: #33404C">{{ph.body}}</span>
+          <span style="font-size: 12px; font-weight: 600; color: #5B6875">{{ph.out}}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"brand":{"editor":"color","default":"#0F6E7A","options":["#0F6E7A","#2F4AC9","#6B3FA0","#1F2937"]},"$preview":{"width":1440,"height":1720}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const brand = this.props.brand ?? '#0F6E7A';
+    const mix = (hex, t) => {
+      const n = parseInt(hex.slice(1), 16);
+      const c = [n >> 16, (n >> 8) & 255, n & 255].map(v => Math.round(v + (255 - v) * t));
+      return '#' + c.map(v => v.toString(16).padStart(2, '0')).join('');
+    };
+    return {
+      brand,
+      brandSoft: mix(brand, 0.88),
+      metrics: [
+        { value: '5,269', label: 'تنسيق مضمّن style={{}}', note: 'قرارات تصميم مبعثرة داخل JSX بدل الرموز والمكونات.' },
+        { value: '128', label: 'لونًا مكتوبًا يدويًا', note: 'قيم hex مختلفة في ملفات tsx وcss، أكثرها ‎#2563EB و‎#DC2626.' },
+        { value: '66', label: 'حجم خط مختلف', note: 'في التنسيقات المضمّنة وحدها، مقابل 7 أحجام في tokens.css.' },
+        { value: '27', label: 'قيمة لاستدارة الزوايا', note: 'مقابل 5 قيم معرفة في الرموز.' },
+        { value: '104', label: 'ملفًا بكتلة <style> داخلية', note: 'CSS يُحقن وقت التشغيل ويصعب تتبعه أو إعادة تخصيصه.' },
+        { value: '416', label: 'زر <button> خام', note: 'في الصفحات، رغم وجود مكوّن Button المستخدم في 84 ملفًا.' },
+        { value: '54', label: 'جدول <table> خام', note: 'بجانب DataTable، فتختلف الكثافة والفرز والحالات الفارغة.' },
+        { value: '0', label: 'صفحة تستخدم Field', note: 'مكوّن الحقل الموحد موجود ومختبر لكنه غير معتمد في النماذج.' }
+      ],
+      principles: [
+        { n: '1', title: 'الرموز أولًا', body: 'كل لون ومسافة وحجم خط يأتي من رمز دلالي واحد. لا hex ولا px داخل الصفحات — يُفرض بقاعدة lint.' },
+        { n: '2', title: 'قابل لإعادة العلامة', body: 'الشعار ولون العلامة والخط عبر ثلاثة متغيرات لكل مستأجر، وتُشتق منها كل الدرجات تلقائيًا.' },
+        { n: '3', title: 'كثافة مؤسسية', body: 'ثلاثة مستويات كثافة (مضغوط/افتراضي/مريح) للجداول والنماذج، وأرقام جدولية متراصة.' },
+        { n: '4', title: 'عربي أولًا', body: 'تخطيط RTL أصلي بخصائص منطقية (inline-start)، وخط IBM Plex Sans Arabic بأوزان واضحة للأرقام والعربية واللاتينية.' },
+        { n: '5', title: 'قالب قبل الصفحة', body: 'أربعة قوالب (لوحة، قائمة، نموذج، كيان) تغطي 154 صفحة؛ الصفحة تملأ القالب ولا تعيد تصميمه.' },
+        { n: '6', title: 'متاح للجميع', body: 'تباين AA لكل النصوص، تركيز مرئي، أهداف لمس 44px على الجوال، وحالات لا تعتمد على اللون وحده.' }
+      ],
+      phases: [
+        { n: '1', title: 'الأساسات', body: 'ملف رموز جديد بطبقتين (أساسية ودلالية)، الخط الجديد، دمج طبقتي CSS في طبقة واحدة، وتوحيد الوضع الداكن.', out: 'المخرج: tokens.css + theme.ts' },
+        { n: '2', title: 'المكونات', body: 'إعادة بناء Button وField وSelect وDataTable وStatusBadge وModal وDrawer على الرموز، وحذف النسخ المكررة.', out: 'المخرج: مكتبة ui/ موثّقة' },
+        { n: '3', title: 'القوالب والهيكل', body: 'هيكل جديد: شريط وحدات + قائمة سياقية + لوحة أوامر Ctrl+K، وقوالب ListPage وFormPage وDetailPage.', out: 'المخرج: layouts/ + navigation' },
+        { n: '4', title: 'ترحيل الصفحات', body: 'ترحيل الوحدات بالترتيب: المبيعات ← العملاء ← المخزون ← المالية ← الموارد البشرية ← التقارير.', out: 'المخرج: صفر تنسيق مضمّن' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>خريطة النظام الفعلية</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0F6E7A}a:hover{color:#0B5560}
+</style>
+</helmet>
+<div dir="rtl" style="width: 1440px; height: 2200px; box-sizing: border-box; background: #FFFFFF; font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif; color: #0F1A23; padding: 72px 96px; display: flex; flex-direction: column; gap: 48px">
+
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <span style="font-size: 13px; font-weight: 600; color: {{brand}}">00ب — خريطة النظام الفعلية</span>
+    <h1 style="margin: 0; font-size: 40px; font-weight: 700">ما يحتويه النظام اليوم، كما هو في الكود</h1>
+    <p style="margin: 0; font-size: 16px; line-height: 1.8; color: #5B6875; max-width: 1000px">المصدر: <span style="font-family: 'IBM Plex Mono', monospace" dir="ltr">src/navigation/registry.ts</span> و<span style="font-family: 'IBM Plex Mono', monospace" dir="ltr">sidebar.ts</span> وأنواع الحالات في <span style="font-family: 'IBM Plex Mono', monospace" dir="ltr">src/lib/types</span>. التصميم الجديد لا يضيف وحدات ولا يحذفها؛ يعيد تنظيم الوصول إليها فقط. أي عنصر غير موجود حاليًا معلَّم في الشاشات بشارة <span style="display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 4px; background: #F3EEFB; color: #6B3FA0; font-size: 12px; font-weight: 600">مقترح</span>.</p>
+  </div>
+
+  <section style="display: flex; flex-direction: column; gap: 16px">
+    <div style="display: flex; justify-content: space-between; align-items: baseline">
+      <h2 style="margin: 0; font-size: 22px; font-weight: 700">هيكل التنقل: 8 مجموعات ← 12 قائمة ← 75 صفحة</h2>
+      <span style="font-size: 13px; color: #5B6875">كل مجموعة في registry تصبح أيقونة في شريط الوحدات، وقوائم sidebar تصبح عناوين داخل القائمة السياقية</span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px">
+      <sc-for list="{{groups}}" as="g" hint-placeholder-count="8">
+        <div style="border: 1px solid #E7EBEF; border-radius: 10px; overflow: hidden; display: flex; flex-direction: column">
+          <div style="background: #0D1B24; color: #FFFFFF; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center">
+            <span style="font-size: 15px; font-weight: 700">{{g.label}}</span>
+            <span style="font-size: 12px; color: #A9B8C0; font-family: 'IBM Plex Mono', monospace" dir="ltr">{{g.id}} · {{g.count}}</span>
+          </div>
+          <div style="padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 10px">
+            <sc-for list="{{g.menus}}" as="m" hint-placeholder-count="2">
+              <div style="display: flex; flex-direction: column; gap: 4px">
+                <span style="font-size: 12px; font-weight: 700; color: {{brandText}}">{{m.title}}</span>
+                <span style="font-size: 13px; line-height: 1.75; color: #33404C">{{m.pages}}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 16px">
+    <h2 style="margin: 0; font-size: 22px; font-weight: 700">دورة أمر البيع الفعلية</h2>
+    <div style="display: flex; align-items: stretch; gap: 0; border: 1px solid #E7EBEF; border-radius: 10px; overflow: hidden">
+      <sc-for list="{{flow}}" as="f" hint-placeholder-count="5">
+        <div style="flex: 1; padding: 18px 18px; display: flex; flex-direction: column; gap: 8px; border-inline-start: 1px solid #E7EBEF; background: {{f.bg}}">
+          <span style="display: inline-flex; align-self: flex-start; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 4px; background: {{f.sbg}}; color: {{f.sfg}}; font-size: 12px; font-weight: 700"><span style="width: 6px; height: 6px; border-radius: 999px; background: {{f.sfg}}"></span>{{f.status}}</span>
+          <span style="font-size: 14px; font-weight: 600">{{f.action}}</span>
+          <span style="font-size: 13px; line-height: 1.7; color: #5B6875">{{f.what}}</span>
+          <span style="font-size: 12px; color: #5B6875; font-family: 'IBM Plex Mono', monospace" dir="ltr">{{f.perm}}</span>
+        </div>
+      </sc-for>
+    </div>
+    <span style="font-size: 13px; color: #5B6875">الإلغاء متاح من «مسودة» و«مؤكد» (sales.orders.cancel) مع سبب إلزامي · المرتجع متاح من «مُسلّم» و«مكتمل» · النسخ متاح دائمًا · «التحويل الذكي» ينشئ تحويل مخزون من المسودات.</span>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 16px">
+    <div style="display: flex; justify-content: space-between; align-items: baseline">
+      <h2 style="margin: 0; font-size: 22px; font-weight: 700">قاموس الحالات: كل حالة في النظام ← 5 ألوان دلالية فقط</h2>
+      <span style="font-size: 13px; color: #5B6875">يحل محل STATUS_VARIANTS المعرّفة داخل كل صفحة على حدة</span>
+    </div>
+    <div style="display: flex; flex-direction: column; border: 1px solid #E7EBEF; border-radius: 10px; overflow: hidden">
+      <div style="display: grid; grid-template-columns: 200px repeat(5, minmax(0, 1fr)); background: #F9FAFB; font-size: 12px; font-weight: 700; color: #5B6875; border-bottom: 1px solid #E7EBEF">
+        <span style="padding: 10px 16px">الكيان (النوع في الكود)</span>
+        <sc-for list="{{tones}}" as="t" hint-placeholder-count="5">
+          <span style="padding: 10px 12px; display: flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 3px; background: {{t.fg}}"></span>{{t.name}}</span>
+        </sc-for>
+      </div>
+      <sc-for list="{{statusRows}}" as="r" hint-placeholder-count="10">
+        <div style="display: grid; grid-template-columns: 200px repeat(5, minmax(0, 1fr)); border-bottom: 1px solid #E7EBEF; font-size: 13px; align-items: start">
+          <div style="padding: 10px 16px; display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600">{{r.entity}}</span><span style="font-size: 11px; color: #5B6875; font-family: 'IBM Plex Mono', monospace" dir="ltr">{{r.type}}</span></div>
+          <sc-for list="{{r.cells}}" as="c" hint-placeholder-count="5">
+            <div style="padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 4px">
+              <sc-for list="{{c.items}}" as="i" hint-placeholder-count="1">
+                <span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; background: {{c.bg}}; color: {{c.fg}}; font-size: 12px; font-weight: 600; white-space: nowrap">{{i}}</span>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px">
+    <div style="border: 1px solid #E7EBEF; border-radius: 10px; padding: 24px; display: flex; flex-direction: column; gap: 12px">
+      <h2 style="margin: 0; font-size: 18px; font-weight: 700">ما يدعم إعادة البيع اليوم</h2>
+      <span style="font-size: 14px; line-height: 1.8; color: #33404C">جدول <span style="font-family: 'IBM Plex Mono', monospace" dir="ltr">company_settings</span> يحمل فعلًا: اسم الشركة (عربي/إنجليزي)، الشعار، الهاتف، العنوان، الرقم الضريبي، البريد، الموقع، تذييل المستندات، رمز العملة وكودها — وتستخدمها المطبوعات فقط عبر branding-resolver.</span>
+      <div style="display: flex; flex-wrap: wrap; gap: 6px">
+        <sc-for list="{{keys}}" as="k" hint-placeholder-count="8">
+          <span style="font-size: 12px; font-family: 'IBM Plex Mono', monospace; padding: 3px 8px; border-radius: 4px; background: #F0F2F5; color: #33404C" dir="ltr">{{k}}</span>
+        </sc-for>
+      </div>
+    </div>
+    <div style="border: 1px solid #E7EBEF; border-radius: 10px; padding: 24px; display: flex; flex-direction: column; gap: 12px">
+      <h2 style="margin: 0; font-size: 18px; font-weight: 700">ما يلزم إضافته للواجهة</h2>
+      <span style="font-size: 14px; line-height: 1.8; color: #33404C">الواجهة نفسها ما زالت ثابتة: الشعار «DE» واسم «EDARA — نظام الإدارة» مكتوبان داخل SidebarV2، واللون ‎#2563EB داخل tokens.css. المقترح: ثلاثة مفاتيح جديدة في الجدول نفسه تُقرأ عند الإقلاع وتُطبَّق كمتغيرات CSS.</span>
+      <div style="display: flex; flex-wrap: wrap; gap: 6px">
+        <span style="font-size: 12px; font-family: 'IBM Plex Mono', monospace; padding: 3px 8px; border-radius: 4px; background: #F3EEFB; color: #6B3FA0" dir="ltr">ui.brand_color</span>
+        <span style="font-size: 12px; font-family: 'IBM Plex Mono', monospace; padding: 3px 8px; border-radius: 4px; background: #F3EEFB; color: #6B3FA0" dir="ltr">ui.app_name</span>
+        <span style="font-size: 12px; font-family: 'IBM Plex Mono', monospace; padding: 3px 8px; border-radius: 4px; background: #F3EEFB; color: #6B3FA0" dir="ltr">ui.density</span>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"brand":{"editor":"color","default":"#0F6E7A","options":["#0F6E7A","#2F4AC9","#6B3FA0","#1F2937"]},"$preview":{"width":1440,"height":2200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const brand = this.props.brand ?? '#0F6E7A';
+    const rgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
+    const hex = c => '#' + c.map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
+    const shade = (h, t) => hex(rgb(h).map(v => v * (1 - t)));
+    const T = {
+      mute: { name: 'محايد', fg: '#4A5763', bg: '#F0F2F5' },
+      info: { name: 'معلومة / جارٍ', fg: '#175CD3', bg: '#EAF1FD' },
+      warn: { name: 'تحذير / بانتظار', fg: '#A15C07', bg: '#FDF3E2' },
+      ok: { name: 'نجاح / منتهٍ', fg: '#13774A', bg: '#E7F4EC' },
+      bad: { name: 'خطر / مرفوض', fg: '#B42318', bg: '#FDECEA' }
+    };
+    const order = ['mute', 'info', 'warn', 'ok', 'bad'];
+    const row = (entity, type, m) => ({ entity, type, cells: order.map(k => ({ items: m[k] || [], fg: T[k].fg, bg: T[k].bg })) });
+    return {
+      brand,
+      brandText: shade(brand, 0.12),
+      groups: [
+        { label: 'الرئيسية', id: 'home', count: '2', menus: [{ title: 'عام', pages: 'لوحة القيادة · الإشعارات' }] },
+        { label: 'التشغيل', id: 'operations', count: '12', menus: [
+          { title: 'إدارة العمل', pages: 'مساحة العمل · أعمال الفريق · إدارة العمل' },
+          { title: 'المبيعات', pages: 'طلبات البيع · مرتجعات البيع · شركات الشحن' },
+          { title: 'المشتريات', pages: 'فواتير الشراء · مرتجعات المشتريات' },
+          { title: 'العملاء', pages: 'العملاء · إدارة الائتمان · الفواتير المتأخرة — والموردون' }] },
+        { label: 'المخزون', id: 'inventory', count: '12', menus: [
+          { title: 'المخزون', pages: 'المخازن · أرصدة المخزون · التحويلات · التسويات · حركات المخزون · تقييم المخزون' },
+          { title: 'المنتجات', pages: 'المنتجات · التصنيفات · قوائم الأسعار · الباقات · العلامات التجارية — والفروع' }] },
+        { label: 'المالية', id: 'finance', count: '9', menus: [
+          { title: 'المالية', pages: 'الخزائن · العهد · إيصالات الدفع · المصروفات · شجرة الحسابات · القيود المحاسبية · دفتر الحسابات · الميزان المالي · قواعد الموافقات' }] },
+        { label: 'الأنشطة الميدانية', id: 'field', count: '8', menus: [
+          { title: 'الأنشطة', pages: 'لوحة الأنشطة · قائمة الأنشطة · خطط الزيارات · خطط المكالمات · الأهداف · استبيانات الزيارات · أنواع الأنشطة · أنواع الأهداف' }] },
+        { label: 'الأفراد', id: 'people', count: '14', menus: [
+          { title: 'الخدمات الذاتية', pages: 'ملفي الشخصي · تسجيل الحضور · الأذونات · الإجازات · السلف' },
+          { title: 'الشئون الإدارية', pages: 'لوحة الشئون · الموظفون · الحضور · العمولات · مسير الرواتب · مكافآت الأهداف · مكافآت وخصومات · التفويضات · الإعدادات' }] },
+        { label: 'التقارير', id: 'insights', count: '14', menus: [
+          { title: 'التقارير', pages: 'نظرة عامة · المبيعات · المستحقات · الخزينة · صحة العملاء · أداء المندوبين · الزيارات · أداء المنتجات · خطر الخمود · التحليل الجغرافي · إنجاز الأهداف · الالتزام الائتماني · إعادة الاستهداف · الربحية' }] },
+        { label: 'الإعدادات', id: 'settings', count: '4', menus: [
+          { title: 'الإعدادات', pages: 'المستخدمون · الأدوار والصلاحيات · إعدادات الشركة · سجل المراجعة' }] }
+      ],
+      flow: [
+        { status: 'مسودة', action: 'إنشاء من النموذج', what: '4 خطوات: بيانات الطلب ← المنتجات ← التوصيل ← المراجعة، ثم «حفظ المسودة». لا مخزن ولا دفع هنا.', perm: 'sales.orders.create', sfg: T.mute.fg, sbg: T.mute.bg, bg: '#FFFFFF' },
+        { status: 'مؤكد', action: 'تأكيد', what: 'اختيار المخزن، فحص التوافر، وحجز الكميات.', perm: 'sales.orders.confirm', sfg: T.info.fg, sbg: T.info.bg, bg: '#FFFFFF' },
+        { status: 'مسلّم جزئياً', action: 'حالة في القاعدة', what: 'معرّفة في قيد الحالة وتُحسب في «طلبات معلقة»، لكن لا يوجد مسار تسليم جزئي في الواجهة حاليًا.', perm: 'sales_orders.status', sfg: T.warn.fg, sbg: T.warn.bg, bg: '#FFFFFF' },
+        { status: 'مُسلّم', action: 'تسليم', what: 'طريقة السداد (نقدي/آجل/مختلط)، وجهة التحصيل (خزينة أو عهدة)، إثبات الدفع، فحص الائتمان وتجاوزه.', perm: 'override_credit عند التجاوز', sfg: T.ok.fg, sbg: T.ok.bg, bg: '#FFFFFF' },
+        { status: 'مكتمل', action: 'تلقائي عند السداد', what: 'يتحول تلقائيًا عندما يصبح المدفوع + المرتجع ≥ الإجمالي (deliver_sales_order).', perm: 'sales.returns.create', sfg: T.ok.fg, sbg: T.ok.bg, bg: '#F9FAFB' }
+      ],
+      tones: order.map(k => T[k]),
+      statusRows: [
+        row('أوامر البيع', 'SalesOrderStatus', { mute: ['مسودة', 'ملغي'], info: ['مؤكد'], warn: ['مسلّم جزئياً'], ok: ['مُسلّم', 'مكتمل'] }),
+        row('مرتجعات البيع / الشراء', 'SalesReturnStatus', { mute: ['مسودة', 'ملغي'], ok: ['مؤكد'] }),
+        row('فواتير الشراء', 'PurchaseInvoiceStatus', { mute: ['مسودة', 'ملغاة'], info: ['مستلمة', 'معتمدة'], ok: ['مدفوعة'] }),
+        row('تحويلات المخزون', 'TransferStatus', { mute: ['ملغي'], info: ['معتمد', 'قيد النقل'], warn: ['معلق'], ok: ['مستلم'] }),
+        row('تسويات المخزون', 'AdjustmentStatus', { mute: ['مسودة'], warn: ['معلقة'], ok: ['معتمدة'], bad: ['مرفوضة'] }),
+        row('المصروفات', 'ExpenseStatus', { mute: ['مسودة'], warn: ['بانتظار الموافقة'], ok: ['معتمد'], bad: ['مرفوض'] }),
+        row('إيصالات الدفع', 'PaymentReceiptStatus', { warn: ['معلق'], ok: ['مؤكد'], bad: ['مرفوض'] }),
+        row('خطط الزيارات', 'PlanStatus', { mute: ['مسودة', 'ملغاة'], info: ['مؤكدة', 'جارية'], warn: ['جزئية'], ok: ['مكتملة'], bad: ['فائتة'] }),
+        row('طلبات الإجازة', 'HRLeaveRequestStatus', { mute: ['مسودة', 'ملغاة'], warn: ['بانتظار المشرف', 'بانتظار الموارد البشرية'], info: ['معتمدة من المشرف'], ok: ['معتمدة'], bad: ['مرفوضة'] }),
+        row('السلف', 'HRAdvanceStatus', { mute: ['ملغاة'], warn: ['بانتظار المشرف', 'بانتظار HR', 'بانتظار المالية'], info: ['معتمدة', 'مصروفة'], ok: ['مسددة بالكامل'], bad: ['مرفوضة'] }),
+        row('مسير الرواتب', 'HRPayrollRunStatus', { mute: ['مسودة', 'ملغى'], info: ['جارٍ الحساب'], warn: ['مراجعة'], ok: ['معتمد', 'مدفوع'] }),
+        row('المستخدمون', 'UserStatus', { mute: ['غير نشط'], ok: ['نشط'], bad: ['موقوف'] })
+      ],
+      keys: ['company.name', 'company.name_en', 'company.logo_url', 'company.phone', 'company.address', 'company.tax_number', 'company.footer_note', 'finance.currency_symbol']
+    };
+  }
+}
+</script>
+</body>
+</html>

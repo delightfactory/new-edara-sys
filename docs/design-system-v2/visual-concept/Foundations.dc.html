@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>الأساسات</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0F6E7A}a:hover{color:#0B5560}
+</style>
+</helmet>
+<div dir="rtl" style="width: 1440px; height: 2080px; box-sizing: border-box; background: #FFFFFF; font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif; color: #0F1A23; padding: 72px 96px; display: flex; flex-direction: column; gap: 56px">
+
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <span style="font-size: 13px; font-weight: 600; color: {{brand}}">01 — الأساسات</span>
+    <h1 style="margin: 0; font-size: 40px; font-weight: 700">الرموز: لون، خط، مسافة، عمق</h1>
+    <p style="margin: 0; font-size: 16px; line-height: 1.8; color: #5B6875; max-width: 900px">طبقتان: رموز أساسية (درجات خام) لا تُستخدم مباشرة، ورموز دلالية (--surface، --text-muted، --status-danger) هي الوحيدة المسموح بها في المكونات. تغيير لون العلامة يعيد اشتقاق السلم كاملًا.</p>
+  </div>
+
+  <section style="display: flex; flex-direction: column; gap: 20px">
+    <div style="display: flex; justify-content: space-between; align-items: baseline">
+      <h2 style="margin: 0; font-size: 22px; font-weight: 700">لون العلامة — قابل للاستبدال لكل عميل</h2>
+      <span style="font-size: 13px; color: #5B6875; font-family: 'IBM Plex Mono', monospace" dir="ltr">--brand-50 … --brand-900</span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 8px">
+      <sc-for list="{{brandScale}}" as="s" hint-placeholder-count="10">
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <div style="height: 72px; border-radius: 8px; background: {{s.hex}}; border: 1px solid #E7EBEF"></div>
+          <span style="font-size: 13px; font-weight: 600">{{s.name}}</span>
+          <span style="font-size: 12px; color: #5B6875; font-family: 'IBM Plex Mono', monospace" dir="ltr">{{s.hex}}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px">
+    <div style="display: flex; flex-direction: column; gap: 16px">
+      <h2 style="margin: 0; font-size: 22px; font-weight: 700">المحايد (Slate)</h2>
+      <div style="display: flex; flex-direction: column; border: 1px solid #E7EBEF; border-radius: 10px; overflow: hidden">
+        <sc-for list="{{neutrals}}" as="n" hint-placeholder-count="8">
+          <div style="display: flex; align-items: center; gap: 16px; padding: 10px 16px; border-bottom: 1px solid #E7EBEF">
+            <span style="width: 40px; height: 28px; border-radius: 6px; background: {{n.hex}}; border: 1px solid #D5DBE1"></span>
+            <span style="font-size: 14px; font-weight: 600; width: 64px">{{n.name}}</span>
+            <span style="font-size: 13px; color: #5B6875; flex: 1">{{n.use}}</span>
+            <span style="font-size: 12px; color: #5B6875; font-family: 'IBM Plex Mono', monospace" dir="ltr">{{n.hex}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 16px">
+      <h2 style="margin: 0; font-size: 22px; font-weight: 700">الحالات الدلالية</h2>
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <sc-for list="{{statuses}}" as="st" hint-placeholder-count="5">
+          <div style="display: flex; align-items: center; gap: 16px; padding: 14px 16px; border-radius: 10px; background: {{st.bg}}">
+            <span style="width: 40px; height: 40px; border-radius: 8px; background: {{st.fg}}"></span>
+            <div style="display: flex; flex-direction: column; gap: 2px; flex: 1">
+              <span style="font-size: 15px; font-weight: 700; color: {{st.fg}}">{{st.name}}</span>
+              <span style="font-size: 13px; color: #33404C">{{st.use}}</span>
+            </div>
+            <span style="font-size: 12px; color: #33404C; font-family: 'IBM Plex Mono', monospace" dir="ltr">{{st.fg}} / {{st.bg}}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display: flex; align-items: center; gap: 16px; padding: 14px 16px; border-radius: 10px; background: #0D1B24; color: #FFFFFF">
+        <span style="width: 40px; height: 40px; border-radius: 8px; background: #C9962B"></span>
+        <div style="display: flex; flex-direction: column; gap: 2px; flex: 1">
+          <span style="font-size: 15px; font-weight: 700">الهيكل الداكن + لمسة ذهبية</span>
+          <span style="font-size: 13px; color: #C7D2D8">شريط الوحدات والشعار؛ الذهبي للتمييز فقط وليس للنص على الأبيض</span>
+        </div>
+        <span style="font-size: 12px; color: #C7D2D8; font-family: 'IBM Plex Mono', monospace" dir="ltr">#0D1B24 / #C9962B</span>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 40px">
+    <div style="display: flex; flex-direction: column; gap: 16px">
+      <div style="display: flex; justify-content: space-between; align-items: baseline">
+        <h2 style="margin: 0; font-size: 22px; font-weight: 700">الطباعة — IBM Plex Sans Arabic</h2>
+        <span style="font-size: 13px; color: #5B6875">بديلًا عن Cairo: أرقام جدولية، وأوزان أوضح في الأحجام الصغيرة</span>
+      </div>
+      <div style="display: flex; flex-direction: column; border-top: 1px solid #E7EBEF">
+        <sc-for list="{{typeScale}}" as="t" hint-placeholder-count="8">
+          <div style="display: flex; align-items: baseline; gap: 24px; padding: 14px 0; border-bottom: 1px solid #E7EBEF">
+            <span style="width: 110px; flex: none; font-size: 12px; color: #5B6875; font-family: 'IBM Plex Mono', monospace" dir="ltr">{{t.spec}}</span>
+            <span style="width: 90px; flex: none; font-size: 13px; font-weight: 600; color: #33404C">{{t.name}}</span>
+            <span style="font-size: {{t.size}}; font-weight: {{t.weight}}; line-height: 1.4">{{t.sample}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 16px">
+      <h2 style="margin: 0; font-size: 22px; font-weight: 700">الأرقام والعملة</h2>
+      <div style="border: 1px solid #E7EBEF; border-radius: 10px; padding: 24px; display: flex; flex-direction: column; gap: 18px">
+        <div style="display: flex; flex-direction: column; gap: 4px">
+          <span style="font-size: 12px; color: #5B6875">إجمالي المبيعات</span>
+          <span style="font-size: 32px; font-weight: 700; font-variant-numeric: tabular-nums">1,248,500.00 <span style="font-size: 16px; font-weight: 500; color: #5B6875">ج.م</span></span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px; font-variant-numeric: tabular-nums; font-size: 14px">
+          <div style="display: flex; justify-content: space-between"><span style="color: #5B6875">أرقام لاتينية جدولية</span><span style="font-weight: 600">12,480.50</span></div>
+          <div style="display: flex; justify-content: space-between"><span style="color: #5B6875">سالب (محاسبي)</span><span style="font-weight: 600; color: #B42318">(3,200.00)</span></div>
+          <div style="display: flex; justify-content: space-between"><span style="color: #5B6875">نسبة</span><span style="font-weight: 600; color: #13774A">+12.4%</span></div>
+          <div style="display: flex; justify-content: space-between"><span style="color: #5B6875">رقم مستند</span><span style="font-weight: 500; font-family: 'IBM Plex Mono', monospace" dir="ltr">SO-2026-004812</span></div>
+          <div style="display: flex; justify-content: space-between"><span style="color: #5B6875">تاريخ</span><span style="font-weight: 600">23 أكتوبر 2026</span></div>
+        </div>
+        <p style="margin: 0; font-size: 13px; line-height: 1.7; color: #5B6875">المبالغ تُحاذى إلى طرف الخلية وتُعرض بخانتين عشريتين ثابتتين؛ العملة رمز للمستأجر وليست نصًا ثابتًا.</p>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px">
+    <div style="display: flex; flex-direction: column; gap: 16px">
+      <h2 style="margin: 0; font-size: 22px; font-weight: 700">المسافات (شبكة 4)</h2>
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <sc-for list="{{spaces}}" as="sp" hint-placeholder-count="9">
+          <div style="display: flex; align-items: center; gap: 12px">
+            <span style="width: 64px; font-size: 12px; color: #5B6875; font-family: 'IBM Plex Mono', monospace" dir="ltr">{{sp.name}}</span>
+            <span style="height: 12px; width: {{sp.px}}; background: {{brand}}; border-radius: 2px"></span>
+            <span style="font-size: 12px; color: #5B6875">{{sp.px}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 16px">
+      <h2 style="margin: 0; font-size: 22px; font-weight: 700">الزوايا</h2>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+        <sc-for list="{{radii}}" as="r" hint-placeholder-count="5">
+          <div style="display: flex; flex-direction: column; gap: 8px; align-items: center; padding: 16px; border: 1px solid #E7EBEF; border-radius: 10px">
+            <span style="width: 64px; height: 48px; background: #F3F5F7; border: 2px solid #33404C; border-radius: {{r.px}}"></span>
+            <span style="font-size: 13px; font-weight: 600">{{r.name}} · {{r.px}}</span>
+            <span style="font-size: 12px; color: #5B6875">{{r.use}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 16px">
+      <h2 style="margin: 0; font-size: 22px; font-weight: 700">العمق والكثافة</h2>
+      <div style="display: flex; flex-direction: column; gap: 14px; background: #F3F5F7; padding: 20px; border-radius: 10px">
+        <div style="background: #FFFFFF; border: 1px solid #E7EBEF; border-radius: 8px; padding: 14px 16px; font-size: 13px"><b>e0</b> — حد فقط: البطاقات والجداول</div>
+        <div style="background: #FFFFFF; border-radius: 8px; padding: 14px 16px; font-size: 13px; box-shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.10)"><b>e1</b> — القوائم المنسدلة والعناصر المرفوعة</div>
+        <div style="background: #FFFFFF; border-radius: 8px; padding: 14px 16px; font-size: 13px; box-shadow: 0 12px 24px -6px rgba(16,24,40,.18), 0 4px 8px -4px rgba(16,24,40,.08)"><b>e2</b> — النوافذ والأدراج</div>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; text-align: center">
+        <div style="border: 1px solid #E7EBEF; border-radius: 8px; padding: 10px 6px; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 18px; font-weight: 700">32</span><span style="font-size: 12px; color: #5B6875">مضغوط</span></div>
+        <div style="border: 2px solid {{brand}}; border-radius: 8px; padding: 9px 5px; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 18px; font-weight: 700">40</span><span style="font-size: 12px; color: #5B6875">افتراضي</span></div>
+        <div style="border: 1px solid #E7EBEF; border-radius: 8px; padding: 10px 6px; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 18px; font-weight: 700">48</span><span style="font-size: 12px; color: #5B6875">مريح / لمس</span></div>
+      </div>
+      <span style="font-size: 12px; color: #5B6875">ارتفاع صف الجدول والحقل بالبكسل لكل مستوى كثافة</span>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"brand":{"editor":"color","default":"#0F6E7A","options":["#0F6E7A","#2F4AC9","#6B3FA0","#1F2937"]},"$preview":{"width":1440,"height":2080}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const brand = this.props.brand ?? '#0F6E7A';
+    const rgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
+    const hex = c => '#' + c.map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('').toUpperCase();
+    const tint = (h, t) => hex(rgb(h).map(v => v + (255 - v) * t));
+    const shade = (h, t) => hex(rgb(h).map(v => v * (1 - t)));
+    const steps = [['50', tint(brand, 0.94)], ['100', tint(brand, 0.86)], ['200', tint(brand, 0.72)], ['300', tint(brand, 0.54)], ['400', tint(brand, 0.3)], ['500', tint(brand, 0.12)], ['600', brand.toUpperCase()], ['700', shade(brand, 0.2)], ['800', shade(brand, 0.38)], ['900', shade(brand, 0.55)]];
+    return {
+      brand,
+      brandScale: steps.map(([name, h]) => ({ name, hex: h })),
+      neutrals: [
+        { name: '0', hex: '#FFFFFF', use: 'السطح الأساسي' },
+        { name: '25', hex: '#F9FAFB', use: 'رأس الجدول، السطح الثانوي' },
+        { name: '50', hex: '#F3F5F7', use: 'خلفية التطبيق' },
+        { name: '100', hex: '#E7EBEF', use: 'حدود ناعمة، فواصل' },
+        { name: '200', hex: '#D5DBE1', use: 'حدود الحقول' },
+        { name: '500', hex: '#5B6875', use: 'نص ثانوي (تباين 5.7:1)' },
+        { name: '700', hex: '#33404C', use: 'نص الجسم' },
+        { name: '900', hex: '#0F1A23', use: 'العناوين والنص الأساسي' }
+      ],
+      statuses: [
+        { name: 'نجاح', use: 'مُعتمد، مُسلَّم، مدفوع', fg: '#13774A', bg: '#E7F4EC' },
+        { name: 'تحذير', use: 'بانتظار الموافقة، قارب الحد', fg: '#A15C07', bg: '#FDF3E2' },
+        { name: 'خطر', use: 'متأخر، مرفوض، تجاوز الائتمان', fg: '#B42318', bg: '#FDECEA' },
+        { name: 'معلومة', use: 'جديد، قيد التنفيذ', fg: '#175CD3', bg: '#EAF1FD' },
+        { name: 'محايد', use: 'مسودة، مؤرشف، ملغى', fg: '#4A5763', bg: '#F0F2F5' }
+      ],
+      typeScale: [
+        { name: 'Display', spec: '32 / 40 · 700', size: '32px', weight: 700, sample: 'لوحة التحكم التنفيذية' },
+        { name: 'H1', spec: '24 / 32 · 700', size: '24px', weight: 700, sample: 'طلبات البيع' },
+        { name: 'H2', spec: '20 / 28 · 600', size: '20px', weight: 600, sample: 'بيانات العميل' },
+        { name: 'H3', spec: '16 / 24 · 600', size: '16px', weight: 600, sample: 'بنود الطلب' },
+        { name: 'Body', spec: '14 / 22 · 400', size: '14px', weight: 400, sample: 'يُعتمد الطلب تلقائيًا إذا كان ضمن حد الائتمان.' },
+        { name: 'Body sm', spec: '13 / 20 · 400', size: '13px', weight: 400, sample: 'آخر تحديث منذ 5 دقائق بواسطة أحمد سالم' },
+        { name: 'Label', spec: '13 / 20 · 600', size: '13px', weight: 600, sample: 'اسم العميل' },
+        { name: 'Caption', spec: '12 / 16 · 500', size: '12px', weight: 500, sample: 'الحقول المميزة بنجمة إلزامية' }
+      ],
+      spaces: [
+        { name: 'space-1', px: '4px' }, { name: 'space-2', px: '8px' }, { name: 'space-3', px: '12px' },
+        { name: 'space-4', px: '16px' }, { name: 'space-5', px: '20px' }, { name: 'space-6', px: '24px' },
+        { name: 'space-8', px: '32px' }, { name: 'space-10', px: '40px' }, { name: 'space-16', px: '64px' }
+      ],
+      radii: [
+        { name: 'xs', px: '4px', use: 'الشارات' },
+        { name: 'sm', px: '6px', use: 'الأزرار والحقول' },
+        { name: 'md', px: '8px', use: 'البطاقات' },
+        { name: 'lg', px: '12px', use: 'النوافذ' },
+        { name: 'full', px: '999px', use: 'الصور الرمزية' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

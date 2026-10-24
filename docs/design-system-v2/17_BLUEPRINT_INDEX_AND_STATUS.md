@@ -30,6 +30,8 @@
 | `15_CONTROL_AND_FORM_CONTRACTS.md` | Button/field/badge/dialog/table/filter/action contracts | Established |
 | `16_CURRENT_COMPONENT_INVENTORY_AND_GAPS.md` | Actual current components vs V2 gaps | Established |
 | `18_IMPLEMENTATION_EPICS.md` | Executable PR/epic sequence | Established when present |
+| `31_VISUAL_DIRECTION_CONCEPT.md` | Proposed visual direction, token values and screen boards (Claude) | Proposed — awaiting owner decisions D1–D5 |
+| `32_AGENT_COORDINATION_PROTOCOL.md` | Claude ↔ Codex roles, slice board, questions, handoff log | Active |
 
 ## Source-audit evidence coverage
 

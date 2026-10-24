@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>تطبيق الجوال</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0F6E7A}a:hover{color:#0B5560}
+button,input{font-family:inherit}
+</style>
+</helmet>
+<div dir="rtl" style="width: 1360px; height: 1040px; box-sizing: border-box; background: #E7EBEF; font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif; color: #0F1A23; padding: 44px 56px; display: flex; flex-direction: column; gap: 26px">
+  <div style="display: flex; justify-content: space-between; align-items: flex-end">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span style="font-size: 13px; font-weight: 600; color: {{brandText}}">08 — تطبيق الجوال (PWA)</span>
+      <h1 style="margin: 0; font-size: 30px; font-weight: 700">مساحة العمل · تنفيذ الزيارة · أوامر البيع</h1>
+    </div>
+    <span style="font-size: 14px; color: #33404C; max-width: 480px; line-height: 1.7">الشريط السفلي كما في mobile.ts: الرئيسية، العمل، المبيعات، العملاء، القائمة. زر الإنشاء العائم من CREATION_ACTIONS ويختفي في صفحات النماذج والتفاصيل.</span>
+  </div>
+
+  <div style="display: flex; gap: 48px; justify-content: center">
+
+    <div style="width: 390px; height: 844px; border-radius: 36px; background: #F3F5F7; box-shadow: 0 0 0 10px #0D1B24, 0 24px 48px -12px rgba(16,24,40,.35); overflow: hidden; display: flex; flex-direction: column">
+      <div style="background: #FFFFFF; border-bottom: 1px solid #E7EBEF; padding: 24px 16px 14px; display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; justify-content: space-between; align-items: center">
+          <div style="display: flex; flex-direction: column"><span style="font-size: 12px; color: #5B6875">مركز التشغيل اليومي</span><span style="font-size: 19px; font-weight: 700">العمل والمتابعات</span></div>
+          <button style="height: 40px; padding: 0 12px; border-radius: 10px; border: 0; background: {{brand}}; color: #FFFFFF; font-size: 13px; font-weight: 600">مهمة جديدة</button>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+          <div style="padding: 8px 10px; border-radius: 8px; background: #FDECEA; display: flex; flex-direction: column"><span style="font-size: 17px; font-weight: 700; color: #B42318">3</span><span style="font-size: 11px; color: #8C1D13">متأخر</span></div>
+          <div style="padding: 8px 10px; border-radius: 8px; background: #FDF3E2; display: flex; flex-direction: column"><span style="font-size: 17px; font-weight: 700; color: #A15C07">2</span><span style="font-size: 11px; color: #7A4405">معرض للخطر</span></div>
+          <div style="padding: 8px 10px; border-radius: 8px; background: #F0F2F5; display: flex; flex-direction: column"><span style="font-size: 17px; font-weight: 700; color: #33404C">1</span><span style="font-size: 11px; color: #33404C">معطل</span></div>
+        </div>
+      </div>
+      <div style="padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; flex: 1; overflow: hidden">
+        <div style="display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 700">مطلوب مني الآن</span><span style="font-size: 12px; color: #5B6875">مرتبة حسب أقرب إجراء يحتاج قرارك أو تنفيذك.</span></div>
+        <sc-for list="{{work}}" as="w" hint-placeholder-count="3">
+          <div style="background: #FFFFFF; border: 1px solid #E7EBEF; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px">
+              <span style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; background: {{w.kbg}}; color: {{w.kfg}}">{{w.kind}}</span>
+              <span style="font-size: 11px; font-weight: 600; color: {{w.dfg}}">{{w.due}}</span>
+            </div>
+            <span style="font-size: 14px; font-weight: 600; line-height: 1.5">{{w.title}}</span>
+            <div style="display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: #5B6875">
+              <span>الخطوة التالية: <b style="color: #33404C">{{w.next}}</b></span>
+              <span>الكرة الآن عند: <b style="color: #33404C">{{w.ball}}</b></span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <nav aria-label="التنقل الرئيسي" style="background: #FFFFFF; border-top: 1px solid #E7EBEF; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 6px 4px 18px">
+        <sc-for list="{{navWork}}" as="t" hint-placeholder-count="5">
+          <a href="#" aria-current="{{t.current}}" style="display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 0; text-decoration: none; color: {{t.fg}}">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.d}}"></path></svg>
+            <span style="font-size: 11px; font-weight: {{t.weight}}">{{t.label}}</span>
+          </a>
+        </sc-for>
+      </nav>
+    </div>
+
+    <div style="width: 390px; height: 844px; border-radius: 36px; background: #F3F5F7; box-shadow: 0 0 0 10px #0D1B24, 0 24px 48px -12px rgba(16,24,40,.35); overflow: hidden; display: flex; flex-direction: column">
+      <div style="background: #FFFFFF; border-bottom: 1px solid #E7EBEF; padding: 24px 16px 14px; display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; align-items: center; gap: 8px">
+          <button aria-label="رجوع" style="width: 44px; height: 44px; border-radius: 10px; border: 0; background: #F3F5F7; color: #33404C; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
+          <div style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 16px; font-weight: 700">هايبر الريان</span><span style="font-size: 12px; color: #5B6875">خطة اليوم · البند 4 من 8</span></div>
+          <span style="font-size: 15px; font-weight: 700; font-family: 'IBM Plex Mono', monospace; color: {{brandText}}" dir="ltr">⏱ 12:48</span>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px">
+          <span style="font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: {{brandSoft}}; color: {{brandText}}">مبيعات</span>
+          <span style="font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: {{brandSoft}}; color: {{brandText}}">تحصيل</span>
+          <span style="font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: #E7F4EC; color: #13774A; display: inline-flex; align-items: center; gap: 4px"><span style="width: 6px; height: 6px; border-radius: 999px; background: #13774A"></span>الموقع مُعتمد</span>
+        </div>
+      </div>
+      <div style="padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; flex: 1; overflow: hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 14px; font-weight: 700">استبيان الزيارة</span><span style="font-size: 12px; color: #5B6875">حفظ تلقائي</span></div>
+        <sc-for list="{{checks}}" as="c" hint-placeholder-count="3">
+          <div style="background: #FFFFFF; border: 1px solid #E7EBEF; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px">
+            <span style="font-size: 14px; font-weight: 600">{{c.q}}</span>
+            <div style="display: flex; gap: 8px">
+              <button style="flex: 1; height: 44px; border-radius: 8px; border: {{c.yb}}; background: {{c.ybg}}; color: {{c.yfg}}; font-size: 14px; font-weight: 600">نعم</button>
+              <button style="flex: 1; height: 44px; border-radius: 8px; border: {{c.nb}}; background: {{c.nbg}}; color: {{c.nfg}}; font-size: 14px; font-weight: 600">لا</button>
+            </div>
+          </div>
+        </sc-for>
+        <div style="background: #FFFFFF; border: 1px solid #E7EBEF; border-radius: 12px; padding: 12px 14px; display: flex; gap: 10px; align-items: center">
+          <span style="width: 44px; height: 44px; border-radius: 8px; background: #F0F2F5; display: flex; align-items: center; justify-content: center; flex: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#33404C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4zM9 13a3 3 0 1 0 6 0a3 3 0 1 0-6 0"></path></svg></span>
+          <div style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 13px; font-weight: 600">صورة الاستبيان</span><span style="font-size: 12px; color: #A15C07">محفوظة محليًا · بانتظار المزامنة</span></div>
+        </div>
+        <div style="display: flex; gap: 8px; padding: 10px 12px; border-radius: 10px; background: #EAF1FD; font-size: 12px; color: #11408F; line-height: 1.6">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#175CD3" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex: none; margin-top: 2px"><path d="M2 9a15 15 0 0 1 20 0M5.5 12.5a10 10 0 0 1 13 0M9 16a5 5 0 0 1 6 0M12 19.5v.5"></path></svg>
+          لا يمكن إنهاء الزيارة قبل مزامنة الصور المطلوبة مع الخادم.
+        </div>
+      </div>
+      <div style="background: #FFFFFF; border-top: 1px solid #E7EBEF; padding: 12px 16px 22px; display: flex; flex-direction: column; gap: 8px">
+        <div style="display: flex; gap: 8px">
+          <button style="flex: 1; height: 44px; border-radius: 8px; border: 1px solid #D5DBE1; background: #FFFFFF; font-size: 14px; font-weight: 600; color: #33404C">أمر بيع</button>
+          <button style="flex: 1; height: 44px; border-radius: 8px; border: 1px solid #D5DBE1; background: #FFFFFF; font-size: 14px; font-weight: 600; color: #33404C">سند تحصيل</button>
+        </div>
+        <button style="height: 48px; border-radius: 8px; border: 0; background: {{brand}}; color: #FFFFFF; font-size: 15px; font-weight: 600">إنهاء الزيارة</button>
+      </div>
+    </div>
+
+    <div style="width: 390px; height: 844px; border-radius: 36px; background: #F3F5F7; box-shadow: 0 0 0 10px #0D1B24, 0 24px 48px -12px rgba(16,24,40,.35); overflow: hidden; display: flex; flex-direction: column; position: relative">
+      <div style="background: #FFFFFF; border-bottom: 1px solid #E7EBEF; padding: 24px 16px 12px; display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; justify-content: space-between; align-items: center">
+          <div style="display: flex; flex-direction: column"><span style="font-size: 19px; font-weight: 700">أوامر البيع</span><span style="font-size: 12px; color: #5B6875">[1,284] طلب</span></div>
+          <button aria-label="الفلاتر" style="width: 44px; height: 44px; border-radius: 10px; border: 1px solid #D5DBE1; background: #FFFFFF; color: #33404C; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"></path></svg></button>
+        </div>
+        <label style="display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 12px; border-radius: 10px; background: #F3F5F7; color: #5B6875">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+          <input aria-label="بحث" placeholder="رقم الطلب أو اسم أو هاتف العميل" style="flex: 1; min-width: 0; border: 0; background: transparent; font-size: 14px; outline: none">
+        </label>
+      </div>
+      <div style="padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; flex: 1; overflow: hidden">
+        <sc-for list="{{orders}}" as="o" hint-placeholder-count="4">
+          <div style="background: #FFFFFF; border: 1px solid #E7EBEF; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px">
+              <div style="display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 600">{{o.customer}}</span><span style="font-size: 12px; color: #5B6875; font-family: 'IBM Plex Mono', monospace" dir="ltr">{{o.id}}</span></div>
+              <span style="display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 4px; background: {{o.sbg}}; color: {{o.sfg}}; font-size: 11px; font-weight: 700; white-space: nowrap"><span style="width: 5px; height: 5px; border-radius: 999px; background: {{o.sfg}}"></span>{{o.status}}</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; font-size: 12px">
+              <div style="display: flex; flex-direction: column"><span style="color: #5B6875">الإجمالي</span><b style="font-variant-numeric: tabular-nums; color: {{brandText}}">{{o.total}}</b></div>
+              <div style="display: flex; flex-direction: column"><span style="color: #5B6875">المدفوع</span><b style="font-variant-numeric: tabular-nums">{{o.paid}}</b></div>
+              <div style="display: flex; flex-direction: column"><span style="color: #5B6875">الدفع</span><b>{{o.pay}}</b></div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <a href="#" style="position: absolute; left: 16px; bottom: 96px; height: 52px; padding: 0 18px; border-radius: 999px; background: {{brand}}; color: #FFFFFF; text-decoration: none; display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; box-shadow: 0 8px 20px -6px rgba(16,24,40,.4)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>طلب بيع</a>
+      <nav aria-label="التنقل الرئيسي" style="background: #FFFFFF; border-top: 1px solid #E7EBEF; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 6px 4px 18px">
+        <sc-for list="{{navSales}}" as="t" hint-placeholder-count="5">
+          <a href="#" aria-current="{{t.current}}" style="display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 0; text-decoration: none; color: {{t.fg}}">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.d}}"></path></svg>
+            <span style="font-size: 11px; font-weight: {{t.weight}}">{{t.label}}</span>
+          </a>
+        </sc-for>
+      </nav>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"brand":{"editor":"color","default":"#0F6E7A","options":["#0F6E7A","#2F4AC9","#6B3FA0","#1F2937"]},"$preview":{"width":1360,"height":1040}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const brand = this.props.brand ?? '#0F6E7A';
+    const rgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
+    const hex = c => '#' + c.map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
+    const tint = (h, t) => hex(rgb(h).map(v => v + (255 - v) * t));
+    const shade = (h, t) => hex(rgb(h).map(v => v * (1 - t)));
+    const brandSoft = tint(brand, 0.9);
+    const brandText = shade(brand, 0.12);
+    const S = { ok: ['#13774A', '#E7F4EC'], warn: ['#A15C07', '#FDF3E2'], bad: ['#B42318', '#FDECEA'], info: ['#175CD3', '#EAF1FD'], mute: ['#4A5763', '#F0F2F5'] };
+    const D = {
+      home: 'M4 5h7v7H4zM13 5h7v4h-7zM13 11h7v8h-7zM4 14h7v5H4z',
+      work: 'M9 4h6v3H9zM6 6H5v15h14V6h-1M9 13l2 2 4-4',
+      sales: 'M3 4h2l2.4 11h10.2L20 8H6.2M8 20a1.2 1.2 0 1 0 2.4 0a1.2 1.2 0 1 0-2.4 0M15 20a1.2 1.2 0 1 0 2.4 0a1.2 1.2 0 1 0-2.4 0',
+      cust: 'M5.5 7.5a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 6.5M18.5 14.5a6 6 0 0 1 3 5.5',
+      menu: 'M4 6h16M4 12h16M4 18h16'
+    };
+    const nav = active => [['dashboard', 'الرئيسية', D.home], ['work', 'العمل', D.work], ['sales', 'المبيعات', D.sales], ['customers', 'العملاء', D.cust], ['menu', 'القائمة', D.menu]]
+      .map(([id, label, d]) => ({ label, d, current: id === active ? 'page' : 'false', fg: id === active ? brandText : '#5B6875', weight: id === active ? 700 : 500 }));
+    const yes = { yb: '1.5px solid ' + brand, ybg: brandSoft, yfg: brandText, nb: '1px solid #D5DBE1', nbg: '#FFFFFF', nfg: '#33404C' };
+    const no = { yb: '1px solid #D5DBE1', ybg: '#FFFFFF', yfg: '#33404C', nb: '1.5px solid #B42318', nbg: '#FDECEA', nfg: '#B42318' };
+    const none = { yb: '1px solid #D5DBE1', ybg: '#FFFFFF', yfg: '#33404C', nb: '1px solid #D5DBE1', nbg: '#FFFFFF', nfg: '#33404C' };
+    return {
+      brand, brandSoft, brandText,
+      navWork: nav('work'),
+      navSales: nav('sales'),
+      work: [
+        { kind: 'قرار اعتماد', kfg: S.warn[0], kbg: S.warn[1], due: 'متأخر · أمس', dfg: S.bad[0], title: 'اعتماد مصروف عهدة — وقود فرع الإسكندرية', next: 'اعتماد أو رفض', ball: 'أنا' },
+        { kind: 'فرز طلب', kfg: S.info[0], kbg: S.info[1], due: 'اليوم 2:00 م', dfg: S.warn[0], title: 'طلب صيانة ثلاجة العرض — هايبر الريان', next: 'قبول وإسناد', ball: 'أنا' },
+        { kind: 'مراجعة إتمام', kfg: S.ok[0], kbg: S.ok[1], due: 'غدًا', dfg: '#5B6875', title: 'تحديث أسعار قائمة الجملة — نوفمبر', next: 'مراجعة الإتمام', ball: 'أنا — المسؤول النهائي' }
+      ],
+      checks: [
+        { q: 'هل منتجاتنا في مستوى العين؟', ...yes },
+        { q: 'هل يوجد منتج منافس بسعر أقل؟', ...no },
+        { q: 'هل يوجد نقص في أي صنف؟', ...none }
+      ],
+      orders: [
+        { customer: 'مؤسسة النور للتجارة', id: 'SO-20261023-0412', status: 'مُسلّم', sfg: S.ok[0], sbg: S.ok[1], total: '48,250', paid: '0', pay: 'آجل' },
+        { customer: 'سوبر ماركت الهدى', id: 'SO-20261023-0411', status: 'مكتمل', sfg: S.ok[0], sbg: S.ok[1], total: '12,900', paid: '12,900', pay: 'نقدي' },
+        { customer: 'شركة الأمل للتوزيع', id: 'SO-20261022-0406', status: 'مؤكد', sfg: S.info[0], sbg: S.info[1], total: '96,400', paid: '0', pay: '—' },
+        { customer: 'تموينات الفجر', id: 'SO-20261020-0395', status: 'مسودة', sfg: S.mute[0], sbg: S.mute[1], total: '22,100', paid: '0', pay: '—' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

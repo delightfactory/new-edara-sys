@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>أمر بيع جديد</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F3F5F7}
+a{color:#0F6E7A}a:hover{color:#0B5560}
+button,input,select,textarea{font-family:inherit}
+</style>
+</helmet>
+<div dir="rtl" style="font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif; color: #0F1A23; background: #F3F5F7; display: flex; flex-wrap: wrap; align-items: stretch; min-height: 1180px">
+
+  <nav aria-label="التنقل الرئيسي" style="flex: 0 1 76px; background: #0D1B24; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 16px 0">
+    <span style="width: 40px; height: 40px; border-radius: 10px; background: {{brand}}; color: #FFFFFF; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; font-family: 'IBM Plex Mono', monospace">DE</span>
+    <sc-for list="{{rail}}" as="m" hint-placeholder-count="8">
+      <a href="#" aria-current="{{m.current}}" style="width: 66px; padding: 8px 0; border-radius: 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; background: {{m.bg}}; color: {{m.fg}}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{m.d}}"></path></svg>
+        <span style="font-size: 11px; font-weight: 500; text-align: center; line-height: 1.3">{{m.label}}</span>
+      </a>
+    </sc-for>
+  </nav>
+
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <header style="background: #FFFFFF; border-bottom: 1px solid #E7EBEF; padding: 14px 32px; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between">
+        <div style="display: flex; align-items: center; gap: 14px">
+          <a href="OrdersList.dc.html" aria-label="رجوع" style="width: 36px; height: 36px; border-radius: 6px; border: 1px solid #D5DBE1; display: flex; align-items: center; justify-content: center; color: #33404C">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></a>
+          <div style="display: flex; flex-direction: column; gap: 2px">
+            <h1 style="margin: 0; font-size: 20px; font-weight: 700">أمر بيع جديد</h1>
+            <span style="font-size: 13px; color: #5B6875">للعميل: مؤسسة النور للتجارة</span>
+          </div>
+        </div>
+        <span style="font-size: 12px; color: #5B6875">يُحفظ كمسودة · المخزن يُحدد عند «التأكيد» · الدفع عند «التسليم»</span>
+      </div>
+      <ol aria-label="خطوات النموذج" style="list-style: none; margin: 0; padding: 0; display: flex; gap: 0; align-items: center">
+        <sc-for list="{{steps}}" as="s" hint-placeholder-count="4">
+          <li style="flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0">
+            <span style="width: 28px; height: 28px; flex: none; border-radius: 999px; background: {{s.dotBg}}; color: {{s.dotFg}}; border: {{s.dotBorder}}; box-sizing: border-box; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center">{{s.mark}}</span>
+            <div style="display: flex; flex-direction: column; min-width: 0"><span style="font-size: 13px; font-weight: {{s.weight}}; color: {{s.fg}}; white-space: nowrap">{{s.label}}</span><span style="font-size: 11px; color: #5B6875; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{s.hint}}</span></div>
+            <span style="flex: 1; height: 2px; background: {{s.line}}; margin: 0 8px; min-width: 12px"></span>
+          </li>
+        </sc-for>
+      </ol>
+    </header>
+
+    <div style="padding: 24px 32px; display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; max-width: 1360px; width: 100%; box-sizing: border-box">
+      <div style="flex: 999 1 640px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+
+        <section aria-label="بيانات الطلب — مكتملة" style="background: #FFFFFF; border: 1px solid #E7EBEF; border-radius: 8px; padding: 14px 20px; display: flex; flex-wrap: wrap; gap: 24px; align-items: center">
+          <span style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600"><span style="width: 22px; height: 22px; border-radius: 999px; background: #E7F4EC; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#13774A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span>بيانات الطلب</span>
+          <span style="font-size: 13px"><span style="color: #5B6875">العميل:</span> <b>مؤسسة النور للتجارة</b> <span style="font-family: 'IBM Plex Mono', monospace; color: #5B6875" dir="ltr">CUS-01616</span></span>
+          <span style="font-size: 13px"><span style="color: #5B6875">المندوب:</span> <b>محمد علي</b></span>
+          <span style="font-size: 13px"><span style="color: #5B6875">تاريخ الطلب:</span> <b>23/10/2026</b></span>
+          <span style="font-size: 13px"><span style="color: #5B6875">عنوان التسليم:</span> <b>فرع مدينة نصر ★</b></span>
+          <button style="margin-inline-start: auto; height: 30px; padding: 0 10px; border: 0; background: transparent; color: {{brandText}}; font-size: 13px; font-weight: 600">تعديل</button>
+        </section>
+
+        <section aria-labelledby="items-h" style="background: #FFFFFF; border: 1px solid {{brandRing}}; box-shadow: 0 0 0 3px {{brandSoft}}; border-radius: 8px">
+          <div style="padding: 16px 20px; border-bottom: 1px solid #E7EBEF; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <div style="display: flex; align-items: center; gap: 10px">
+              <span style="width: 24px; height: 24px; border-radius: 999px; background: {{brand}}; color: #FFFFFF; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center">2</span>
+              <h2 id="items-h" style="margin: 0; font-size: 16px; font-weight: 600">بنود الطلب</h2>
+              <span style="font-size: 12px; color: #5B6875; background: #F0F2F5; padding: 2px 8px; border-radius: 999px">4 منتج</span>
+            </div>
+            <span style="font-size: 12px; color: #5B6875; display: flex; align-items: center; gap: 6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>السعر مقفل لمن لا يملك صلاحية تعديل السعر</span>
+          </div>
+          <div style="overflow-x: auto">
+            <table style="width: 100%; min-width: 780px; border-collapse: collapse; font-size: 14px">
+              <thead><tr style="background: #F9FAFB; color: #5B6875; font-size: 12px">
+                <th style="padding: 10px 20px; text-align: start; font-weight: 600; border-bottom: 1px solid #E7EBEF">المنتج</th>
+                <th style="width: 120px; padding: 10px 8px; text-align: start; font-weight: 600; border-bottom: 1px solid #E7EBEF">الوحدة</th>
+                <th style="width: 85px; padding: 10px 8px; text-align: start; font-weight: 600; border-bottom: 1px solid #E7EBEF">الكمية</th>
+                <th style="width: 110px; padding: 10px 8px; text-align: start; font-weight: 600; border-bottom: 1px solid #E7EBEF">سعر الوحدة</th>
+                <th style="width: 76px; padding: 10px 8px; text-align: start; font-weight: 600; border-bottom: 1px solid #E7EBEF">خصم %</th>
+                <th style="width: 70px; padding: 10px 8px; text-align: start; font-weight: 600; border-bottom: 1px solid #E7EBEF">الضريبة</th>
+                <th style="width: 110px; padding: 10px 8px; text-align: left; font-weight: 600; border-bottom: 1px solid #E7EBEF">الإجمالي</th>
+                <th style="width: 44px; border-bottom: 1px solid #E7EBEF"></th>
+              </tr></thead>
+              <tbody>
+                <sc-for list="{{lines}}" as="l" hint-placeholder-count="4">
+                  <tr>
+                    <td style="padding: 8px 20px; border-bottom: 1px solid #E7EBEF"><div style="display: flex; flex-direction: column; line-height: 1.35"><span style="font-weight: 600">{{l.name}}</span><span style="font-size: 12px; color: #5B6875; font-family: 'IBM Plex Mono', monospace" dir="ltr">{{l.sku}}</span></div></td>
+                    <td style="padding: 8px; border-bottom: 1px solid #E7EBEF"><select aria-label="الوحدة" style="width: 100%; height: 32px; padding: 0 8px; border: 1px solid #D5DBE1; border-radius: 6px; font-size: 13px; background: #FFFFFF; color: #0F1A23"><option>{{l.unit}}</option></select></td>
+                    <td style="padding: 8px; border-bottom: 1px solid #E7EBEF"><input aria-label="الكمية" value="{{l.qty}}" inputmode="decimal" style="width: 100%; box-sizing: border-box; height: 32px; padding: 0 8px; border: 1px solid #D5DBE1; border-radius: 6px; font-size: 13px; font-variant-numeric: tabular-nums"></td>
+                    <td style="padding: 8px; border-bottom: 1px solid #E7EBEF"><div style="display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 8px; border: 1px solid #E7EBEF; border-radius: 6px; background: #F3F5F7; font-size: 13px; color: #33404C; font-variant-numeric: tabular-nums"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8994A0" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>{{l.price}}</div></td>
+                    <td style="padding: 8px; border-bottom: 1px solid #E7EBEF"><input aria-label="خصم %" value="{{l.disc}}" inputmode="decimal" style="width: 100%; box-sizing: border-box; height: 32px; padding: 0 8px; border: 1px solid #D5DBE1; border-radius: 6px; font-size: 13px; font-variant-numeric: tabular-nums"></td>
+                    <td style="padding: 8px; border-bottom: 1px solid #E7EBEF; color: #5B6875; font-size: 13px">{{l.tax}}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #E7EBEF; text-align: left; font-weight: 600; font-variant-numeric: tabular-nums">{{l.total}}</td>
+                    <td style="border-bottom: 1px solid #E7EBEF; text-align: center"><button aria-label="حذف البند" style="width: 30px; height: 30px; border: 0; border-radius: 6px; background: transparent; color: #5B6875"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"></path></svg></button></td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+          <div style="padding: 12px 20px 16px">
+            <label style="display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border: 1px dashed #B6BFC8; border-radius: 6px; color: #5B6875">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+              <input aria-label="إضافة بند آخر" placeholder="إضافة بند آخر — ابحث عن منتج بالاسم أو الكود..." style="flex: 1; min-width: 0; border: 0; font-size: 14px; outline: none; background: transparent">
+            </label>
+          </div>
+        </section>
+
+        <section aria-label="التوصيل — لم تبدأ" style="background: #FFFFFF; border: 1px solid #E7EBEF; border-radius: 8px; padding: 14px 20px; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; color: #5B6875">
+          <span style="width: 24px; height: 24px; border-radius: 999px; border: 1.5px solid #B6BFC8; box-sizing: border-box; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center">3</span>
+          <span style="font-size: 14px; font-weight: 600; color: #33404C">التوصيل</span>
+          <span style="font-size: 13px">توصيل مباشر · شحن (شركة الشحن، التكلفة، «على حساب العميل») · استلام ذاتي · ملاحظات</span>
+        </section>
+      </div>
+
+      <aside aria-label="ملخص الطلب" style="flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+        <section style="background: #FFFFFF; border: 1px solid #E7EBEF; border-radius: 8px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; justify-content: space-between; align-items: center"><h2 style="margin: 0; font-size: 15px; font-weight: 600">الائتمان</h2><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; background: #E7F4EC; color: #13774A; font-size: 12px; font-weight: 700">✓ متاح</span></div>
+          <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; font-variant-numeric: tabular-nums">
+            <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; color: #5B6875">الرصيد</span><span style="font-size: 14px; font-weight: 700">102,350</span></div>
+            <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; color: #5B6875">الحد</span><span style="font-size: 14px; font-weight: 700">150,000</span></div>
+            <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; color: #5B6875">الائتمان المتاح</span><span style="font-size: 14px; font-weight: 700; color: #13774A">47,650</span></div>
+          </div>
+          <div style="height: 8px; border-radius: 999px; background: #E7EBEF; overflow: hidden; display: flex"><div style="width: 68%; background: #8994A0"></div><div style="width: 27%; background: {{brand}}"></div></div>
+          <span style="font-size: 12px; color: #5B6875">شروط الدفع: آجل — 30 يوم · الطلب الحالي يستهلك 27% إضافية</span>
+        </section>
+
+        <section style="background: #FFFFFF; border: 1px solid #E7EBEF; border-radius: 8px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px">
+          <h2 style="margin: 0; font-size: 15px; font-weight: 600">مراجعة الطلب</h2>
+          <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px; font-variant-numeric: tabular-nums">
+            <div style="display: flex; justify-content: space-between"><span style="color: #5B6875">المجموع</span><span>41,150.00</span></div>
+            <div style="display: flex; justify-content: space-between"><span style="color: #5B6875">إجمالي الخصومات</span><span style="color: #B42318">− 699.50</span></div>
+            <div style="display: flex; justify-content: space-between; color: #8994A0"><span>الضريبة · الشحن</span><span>تظهر عند وجود قيمة</span></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline; padding-top: 12px; border-top: 2px solid #E7EBEF">
+            <span style="font-size: 15px; font-weight: 700">الإجمالي الكلي</span>
+            <span style="font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: {{brandText}}">40,450.50 <span style="font-size: 12px; font-weight: 500; color: #5B6875">ج.م</span></span>
+          </div>
+          <div style="display: flex; gap: 8px; padding: 10px 12px; border-radius: 6px; background: #F9FAFB; border: 1px solid #E7EBEF; font-size: 12px; color: #33404C">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B6875" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex: none; margin-top: 2px"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v6M12 7.5v.5"></path></svg>
+            الحد الأدنى للطلب [1,000] ج.م — يمنع الحفظ إذا لم يتحقق
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <div style="margin-top: auto; position: sticky; bottom: 0; background: #FFFFFF; border-top: 1px solid #E7EBEF; padding: 12px 32px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between">
+      <button style="height: 40px; padding: 0 16px; border-radius: 6px; border: 1px solid #D5DBE1; background: #FFFFFF; font-size: 14px; font-weight: 600; color: #33404C; display: inline-flex; align-items: center; gap: 6px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>السابق</button>
+      <span style="font-size: 13px; color: #5B6875">الخطوة 2 من 4</span>
+      <button style="height: 40px; min-width: 140px; padding: 0 20px; border-radius: 6px; border: 0; background: {{brand}}; color: #FFFFFF; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px">التالي: التوصيل
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"brand":{"editor":"color","default":"#0F6E7A","options":["#0F6E7A","#2F4AC9","#6B3FA0","#1F2937"]},"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const brand = this.props.brand ?? '#0F6E7A';
+    const rgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
+    const hex = c => '#' + c.map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
+    const tint = (h, t) => hex(rgb(h).map(v => v + (255 - v) * t));
+    const shade = (h, t) => hex(rgb(h).map(v => v * (1 - t)));
+    const brandText = shade(brand, 0.12);
+    const I = {
+      home: 'M4 11l8-7 8 7v9h-5v-6H9v6H4z',
+      ops: 'M4 7h16v12H4zM9 7V5h6v2M4 12h16',
+      inv: 'M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10',
+      fin: 'M3 7h15a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 7l12-3v3M16 13.5h.5',
+      field: 'M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21zM10 9.5a2 2 0 1 0 4 0a2 2 0 1 0-4 0',
+      people: 'M5.5 7.5a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 6.5M18.5 14.5a6 6 0 0 1 3 5.5',
+      rep: 'M4 20V4M4 20h16M8 16v-5M12 16V8M16 16v-3',
+      set: 'M9 12a3 3 0 1 0 6 0a3 3 0 1 0-6 0M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1'
+    };
+    const railDef = [['home', 'الرئيسية'], ['ops', 'التشغيل'], ['inv', 'المخزون'], ['fin', 'المالية'], ['field', 'الأنشطة الميدانية'], ['people', 'الأفراد'], ['rep', 'التقارير'], ['set', 'الإعدادات']];
+    const active = 'ops';
+    const step = (label, hint, state, last) => ({
+      label, hint,
+      mark: state === 'done' ? '✓' : state.n,
+      dotBg: state === 'done' ? '#E7F4EC' : state.cur ? brand : '#FFFFFF',
+      dotFg: state === 'done' ? '#13774A' : state.cur ? '#FFFFFF' : '#5B6875',
+      dotBorder: state === 'done' || state.cur ? '0' : '1.5px solid #B6BFC8',
+      fg: state.cur ? '#0F1A23' : state === 'done' ? '#33404C' : '#5B6875',
+      weight: state.cur ? 700 : 500,
+      line: last ? 'transparent' : (state === 'done' ? brand : '#E7EBEF')
+    });
+    return {
+      brand, brandText,
+      brandSoft: tint(brand, 0.92),
+      brandRing: tint(brand, 0.6),
+      rail: railDef.map(([id, label]) => ({ label, d: I[id], current: id === active ? 'page' : 'false', bg: id === active ? 'rgba(255,255,255,.10)' : 'transparent', fg: id === active ? '#FFFFFF' : '#A9B8C0' })),
+      steps: [
+        step('بيانات الطلب', 'العميل · المندوب · التاريخ', 'done'),
+        step('المنتجات', 'البنود والأسعار والخصم', { n: '2', cur: true }),
+        step('التوصيل', 'الطريقة والشحن والملاحظات', { n: '3' }),
+        step('المراجعة', 'الإجماليات ثم حفظ المسودة', { n: '4' }, true)
+      ],
+      lines: [
+        { name: 'زيت عباد الشمس 1 لتر', sku: 'OIL-SUN-1L', unit: 'كرتونة × 12', qty: '20', price: '780.00', disc: '2', tax: '0%', total: '15,288.00' },
+        { name: 'أرز مصري 5 كجم', sku: 'RIC-EG-5K', unit: 'شيكارة', qty: '40', price: '265.00', disc: '0', tax: '0%', total: '10,600.00' },
+        { name: 'سكر أبيض 1 كجم', sku: 'SUG-WH-1K', unit: 'كرتونة × 10', qty: '25', price: '310.00', disc: '5', tax: '0%', total: '7,362.50' },
+        { name: 'مكرونة 400 جم', sku: 'PAS-400G', unit: 'كرتونة × 20', qty: '30', price: '240.00', disc: '0', tax: '0%', total: '7,200.00' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
